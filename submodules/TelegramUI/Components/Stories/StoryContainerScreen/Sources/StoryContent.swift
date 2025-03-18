@@ -161,7 +161,6 @@ public final class StoryContentContextState {
         public let preferHighQualityStories: Bool
         public let boostsToUnrestrict: Int32?
         public let appliedBoosts: Int32?
-        public let sendPaidMessageStars: StarsAmount?
         
         public init(
             isMuted: Bool,
@@ -171,8 +170,7 @@ public final class StoryContentContextState {
             isPremiumRequiredForMessaging: Bool,
             preferHighQualityStories: Bool,
             boostsToUnrestrict: Int32?,
-            appliedBoosts: Int32?,
-            sendPaidMessageStars: StarsAmount?
+            appliedBoosts: Int32?
         ) {
             self.isMuted = isMuted
             self.areVoiceMessagesAvailable = areVoiceMessagesAvailable
@@ -182,7 +180,6 @@ public final class StoryContentContextState {
             self.preferHighQualityStories = preferHighQualityStories
             self.boostsToUnrestrict = boostsToUnrestrict
             self.appliedBoosts = appliedBoosts
-            self.sendPaidMessageStars = sendPaidMessageStars
         }
         
         public static func == (lhs: StoryContentContextState.AdditionalPeerData, rhs: StoryContentContextState.AdditionalPeerData) -> Bool {
@@ -208,9 +205,6 @@ public final class StoryContentContextState {
                 return false
             }
             if lhs.appliedBoosts != rhs.appliedBoosts {
-                return false
-            }
-            if lhs.sendPaidMessageStars != rhs.sendPaidMessageStars {
                 return false
             }
             return true

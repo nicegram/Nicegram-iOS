@@ -2,11 +2,7 @@ import Foundation
 import UIKit
 
 public enum ChatNavigationButtonAction: Equatable {
-    public enum ChatInfoSection {
-        case groupsInCommon
-        case recommendedChannels
-    }
-    case openChatInfo(expandAvatar: Bool, section: ChatInfoSection?)
+    case openChatInfo(expandAvatar: Bool, recommendedChannels: Bool)
     case clearHistory
     case clearCache
     case cancelMessageSelection

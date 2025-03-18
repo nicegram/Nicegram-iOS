@@ -48,7 +48,6 @@ public enum ContactMultiselectionControllerMode {
         public var onlyUsers: Bool
         public var disableChannels: Bool
         public var disableBots: Bool
-        public var disableContacts: Bool
         
         public init(
             title: String,
@@ -60,8 +59,7 @@ public enum ContactMultiselectionControllerMode {
             displayPresence: Bool = false,
             onlyUsers: Bool = false,
             disableChannels: Bool = false,
-            disableBots: Bool = false,
-            disableContacts: Bool = false
+            disableBots: Bool = false
         ) {
             self.title = title
             self.searchPlaceholder = searchPlaceholder
@@ -73,7 +71,6 @@ public enum ContactMultiselectionControllerMode {
             self.onlyUsers = onlyUsers
             self.disableChannels = disableChannels
             self.disableBots = disableBots
-            self.disableContacts = disableContacts
         }
     }
     
@@ -96,7 +93,6 @@ public enum ContactListFilter {
 public final class ContactMultiselectionControllerParams {
     public let context: AccountContext
     public let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
-    public let title: String?
     public let mode: ContactMultiselectionControllerMode
     public let options: Signal<[ContactListAdditionalOption], NoError>
     public let filters: [ContactListFilter]
@@ -110,10 +106,9 @@ public final class ContactMultiselectionControllerParams {
     public let openProfile: ((EnginePeer) -> Void)?
     public let sendMessage: ((EnginePeer) -> Void)?
     
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, title: String? = nil, mode: ContactMultiselectionControllerMode, options: Signal<[ContactListAdditionalOption], NoError> = .single([]), filters: [ContactListFilter] = [.excludeSelf], onlyWriteable: Bool = false, isGroupInvitation: Bool = false, isPeerEnabled: ((EnginePeer) -> Bool)? = nil, attemptDisabledItemSelection: ((EnginePeer, ChatListDisabledPeerReason) -> Void)? = nil, alwaysEnabled: Bool = false, limit: Int32? = nil, reachedLimit: ((Int32) -> Void)? = nil, openProfile: ((EnginePeer) -> Void)? = nil, sendMessage: ((EnginePeer) -> Void)? = nil) {
+    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, mode: ContactMultiselectionControllerMode, options: Signal<[ContactListAdditionalOption], NoError> = .single([]), filters: [ContactListFilter] = [.excludeSelf], onlyWriteable: Bool = false, isGroupInvitation: Bool = false, isPeerEnabled: ((EnginePeer) -> Bool)? = nil, attemptDisabledItemSelection: ((EnginePeer, ChatListDisabledPeerReason) -> Void)? = nil, alwaysEnabled: Bool = false, limit: Int32? = nil, reachedLimit: ((Int32) -> Void)? = nil, openProfile: ((EnginePeer) -> Void)? = nil, sendMessage: ((EnginePeer) -> Void)? = nil) {
         self.context = context
         self.updatedPresentationData = updatedPresentationData
-        self.title = title
         self.mode = mode
         self.options = options
         self.filters = filters

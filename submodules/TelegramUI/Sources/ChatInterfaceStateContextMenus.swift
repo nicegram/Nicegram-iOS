@@ -1175,19 +1175,9 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
         }
         
-        if data.messageActions.options.contains(.sendGift), !message.id.peerId.isTelegramNotifications {
+        if data.messageActions.options.contains(.sendGift) {
             let sendGiftTitle: String
-            var isIncoming = message.effectivelyIncoming(context.account.peerId)
-            for media in message.media {
-                if let action = media as? TelegramMediaAction, case let .starGiftUnique(_, isUpgrade, _, _, _, _, _, _, _, _) = action.action {
-                    if isUpgrade && message.author?.id == context.account.peerId {
-                        isIncoming = true
-                    }
-                }
-            }
-            if message.id.peerId == context.account.peerId {
-                sendGiftTitle = chatPresentationInterfaceState.strings.Conversation_ContextMenuBuyGift
-            } else if isIncoming {
+            if message.effectivelyIncoming(context.account.peerId) {
                 let peerName = message.peers[message.id.peerId].flatMap(EnginePeer.init)?.compactDisplayTitle ?? ""
                 sendGiftTitle = chatPresentationInterfaceState.strings.Conversation_ContextMenuSendGiftTo(peerName).string
             } else {
@@ -3280,7 +3270,7 @@ private final class ChatReadReportContextItemNode: ASDisplayNode, ContextMenuCus
                                 }
                                 |> map { result -> StickerPackCollectionInfo? in
                                     if case let .result(info, _, _) = result {
-                                        return info._parse()
+                                        return info
                                     } else {
                                         return nil
                                     }

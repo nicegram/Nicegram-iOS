@@ -52,7 +52,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatMessageItemCommon",
         "//submodules/AnimatedCountLabelNode",
         "//submodules/AudioWaveform",
-        "//submodules/DeviceProximity",
     ],
     visibility = [
         "//visibility:public",

@@ -559,7 +559,7 @@ final class StoryItemSetViewListComponent: Component {
                                     if let availableReactions = component.availableReactions {
                                         for availableReaction in availableReactions.reactionItems {
                                             if availableReaction.reaction.rawValue == reaction {
-                                                animationFile = availableReaction.listAnimation._parse()
+                                                animationFile = availableReaction.listAnimation
                                                 break
                                             }
                                         }
@@ -573,7 +573,7 @@ final class StoryItemSetViewListComponent: Component {
                                     if let availableReactions = component.availableReactions {
                                         for availableReaction in availableReactions.reactionItems {
                                             if availableReaction.reaction.rawValue == reaction {
-                                                animationFile = availableReaction.listAnimation._parse()
+                                                animationFile = availableReaction.listAnimation
                                                 break
                                             }
                                         }

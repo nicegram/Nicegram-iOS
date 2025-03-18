@@ -36,22 +36,22 @@ public final class ReactionItem {
     }
     
     public let reaction: ReactionItem.Reaction
-    public let appearAnimation: TelegramMediaFile.Accessor
-    public let stillAnimation: TelegramMediaFile.Accessor
-    public let listAnimation: TelegramMediaFile.Accessor
-    public let largeListAnimation: TelegramMediaFile.Accessor
-    public let applicationAnimation: TelegramMediaFile.Accessor?
-    public let largeApplicationAnimation: TelegramMediaFile.Accessor?
+    public let appearAnimation: TelegramMediaFile
+    public let stillAnimation: TelegramMediaFile
+    public let listAnimation: TelegramMediaFile
+    public let largeListAnimation: TelegramMediaFile
+    public let applicationAnimation: TelegramMediaFile?
+    public let largeApplicationAnimation: TelegramMediaFile?
     public let isCustom: Bool
     
     public init(
         reaction: ReactionItem.Reaction,
-        appearAnimation: TelegramMediaFile.Accessor,
-        stillAnimation: TelegramMediaFile.Accessor,
-        listAnimation: TelegramMediaFile.Accessor,
-        largeListAnimation: TelegramMediaFile.Accessor,
-        applicationAnimation: TelegramMediaFile.Accessor?,
-        largeApplicationAnimation: TelegramMediaFile.Accessor?,
+        appearAnimation: TelegramMediaFile,
+        stillAnimation: TelegramMediaFile,
+        listAnimation: TelegramMediaFile,
+        largeListAnimation: TelegramMediaFile,
+        applicationAnimation: TelegramMediaFile?,
+        largeApplicationAnimation: TelegramMediaFile?,
         isCustom: Bool
     ) {
         self.reaction = reaction
@@ -69,7 +69,7 @@ public final class ReactionItem {
         case let .builtin(value):
             return .builtin(value)
         case let .custom(fileId):
-            return .custom(fileId: fileId, file: self.listAnimation._parse())
+            return .custom(fileId: fileId, file: self.listAnimation)
         case .stars:
             return .stars
         }
@@ -455,18 +455,21 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
     
     public static func randomGenericReactionEffect(context: AccountContext) -> Signal<String?, NoError> {
         return context.engine.stickers.loadedStickerPack(reference: .emojiGenericAnimations, forceActualized: false)
-        |> map { result -> TelegramMediaFile? in
+        |> map { result -> [TelegramMediaFile]? in
             switch result {
             case let .result(_, items, _):
-                return items.randomElement()?.file._parse()
+                return items.map(\.file)
             default:
                 return nil
             }
         }
         |> filter { $0 != nil }
         |> take(1)
-        |> mapToSignal { file -> Signal<String?, NoError> in
-            guard let file else {
+        |> mapToSignal { items -> Signal<String?, NoError> in
+            guard let items = items else {
+                return .single(nil)
+            }
+            guard let file = items.randomElement() else {
                 return .single(nil)
             }
             return Signal { subscriber in
@@ -640,9 +643,14 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                 let filterList: [String] = ["😖", "😫", "🫠", "😨", "❓"]
                 for featuredEmojiPack in view.items.lazy.map({ $0.contents.get(FeaturedStickerPackItem.self)! }) {
                     for item in featuredEmojiPack.topItems {
-                        if let alt = item.file.customEmojiAlt {
-                            if filterList.contains(alt) {
-                                filteredFiles.append(item.file._parse())
+                        for attribute in item.file.attributes {
+                            switch attribute {
+                            case let .CustomEmoji(_, _, alt, _):
+                                if filterList.contains(alt) {
+                                    filteredFiles.append(item.file)
+                                }
+                            default:
+                                break
                             }
                         }
                     }
@@ -1679,9 +1687,9 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                         )
                         
                         if case .locked = item.icon {
-                            strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation._parse())
+                            strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation)
                         } else if strongSelf.reactionsLocked {
-                            strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation._parse())
+                            strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation)
                         } else {
                             strongSelf.customReactionSource = (sourceView, sourceRect, sourceLayer, reactionItem)
                             strongSelf.reactionSelected?(updateReaction, isLongPress)
@@ -1703,9 +1711,9 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                     )
                     strongSelf.customReactionSource = (sourceView, sourceRect, sourceLayer, reactionItem)
                     if case .locked = item.icon {
-                        strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation._parse())
+                        strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation)
                     } else if strongSelf.reactionsLocked {
-                        strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation._parse())
+                        strongSelf.premiumReactionsSelected?(reactionItem.stillAnimation)
                     } else {
                         strongSelf.reactionSelected?(reactionItem.updateMessageReaction, isLongPress)
                     }
@@ -1741,7 +1749,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                             if let strongSelf = self {
                                 strongSelf.scheduledEmojiContentAnimationHint = EmojiPagerContentComponent.ContentAnimation(type: .groupInstalled(id: collectionId, scrollToGroup: true))
                             }
-                            let _ = strongSelf.context.engine.stickers.addStickerPackInteractively(info: featuredEmojiPack.info._parse(), items: featuredEmojiPack.topItems).start()
+                            let _ = strongSelf.context.engine.stickers.addStickerPackInteractively(info: featuredEmojiPack.info, items: featuredEmojiPack.topItems).start()
                             
                             break
                         }
@@ -1917,11 +1925,11 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                                 }
                                             }
                                             
-                                            let animationData = EntityKeyboardAnimationData(file: TelegramMediaFile.Accessor(itemFile), partialReference: .none)
+                                            let animationData = EntityKeyboardAnimationData(file: itemFile, partialReference: .none)
                                             let resultItem = EmojiPagerContentComponent.Item(
                                                 animationData: animationData,
                                                 content: .animation(animationData),
-                                                itemFile: TelegramMediaFile.Accessor(itemFile),
+                                                itemFile: itemFile,
                                                 subgroupId: nil,
                                                 icon: icon,
                                                 tintMode: tintMode
@@ -2029,7 +2037,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                         localPacksSignal
                                     )
                                     |> map { view, availableReactions, hasPremium, foundPacks, foundEmoji, foundLocalPacks -> [EmojiPagerContentComponent.ItemGroup] in
-                                        var result: [(String, TelegramMediaFile.Accessor?, String)] = []
+                                        var result: [(String, TelegramMediaFile?, String)] = []
                                         
                                         var allEmoticons: [String: String] = [:]
                                         for keyword in keywords {
@@ -2043,9 +2051,9 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                                 switch attribute {
                                                 case let .CustomEmoji(_, _, alt, _):
                                                     if !alt.isEmpty, let keyword = allEmoticons[alt] {
-                                                        result.append((alt, TelegramMediaFile.Accessor(itemFile), keyword))
+                                                        result.append((alt, itemFile, keyword))
                                                     } else if alt == query {
-                                                        result.append((alt, TelegramMediaFile.Accessor(itemFile), alt))
+                                                        result.append((alt, itemFile, alt))
                                                     }
                                                 default:
                                                     break
@@ -2057,13 +2065,18 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                             guard let item = entry.item as? StickerPackItem else {
                                                 continue
                                             }
-                                            if !item.file.isPremiumEmoji {
-                                                if let alt = item.file.customEmojiAlt {
-                                                    if !alt.isEmpty, let keyword = allEmoticons[alt] {
-                                                        result.append((alt, item.file, keyword))
-                                                    } else if alt == query {
-                                                        result.append((alt, item.file, alt))
+                                            for attribute in item.file.attributes {
+                                                switch attribute {
+                                                case let .CustomEmoji(_, _, alt, _):
+                                                    if !item.file.isPremiumEmoji {
+                                                        if !alt.isEmpty, let keyword = allEmoticons[alt] {
+                                                            result.append((alt, item.file, keyword))
+                                                        } else if alt == query {
+                                                            result.append((alt, item.file, alt))
+                                                        }
                                                     }
+                                                default:
+                                                    break
                                                 }
                                             }
                                         }
@@ -2281,11 +2294,11 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                             }
                                         }
                                         
-                                        let animationData = EntityKeyboardAnimationData(file: TelegramMediaFile.Accessor(itemFile), partialReference: .none)
+                                        let animationData = EntityKeyboardAnimationData(file: itemFile, partialReference: .none)
                                         let resultItem = EmojiPagerContentComponent.Item(
                                             animationData: animationData,
                                             content: .animation(animationData),
-                                            itemFile: TelegramMediaFile.Accessor(itemFile),
+                                            itemFile: itemFile,
                                             subgroupId: nil,
                                             icon: icon,
                                             tintMode: tintMode
@@ -2338,12 +2351,11 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                                     continue
                                 }
                                 existingIds.insert(itemFile.fileId)
-                                let animationData = EntityKeyboardAnimationData(file: TelegramMediaFile.Accessor(itemFile))
+                                let animationData = EntityKeyboardAnimationData(file: itemFile)
                                 let item = EmojiPagerContentComponent.Item(
                                     animationData: animationData,
                                     content: .animation(animationData),
-                                    itemFile: TelegramMediaFile.Accessor(itemFile),
-                                    subgroupId: nil,
+                                    itemFile: itemFile, subgroupId: nil,
                                     icon: .none,
                                     tintMode: animationData.isTemplate ? .primary : .none
                                 )
@@ -2717,20 +2729,25 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
         let additionalAnimationNode: DefaultAnimatedStickerNodeImpl?
         var genericAnimationView: AnimationView?
         
-        var additionalAnimation: TelegramMediaFile.Accessor?
+        var additionalAnimation: TelegramMediaFile?
         if self.didTriggerExpandedReaction {
             additionalAnimation = itemNode.item.largeApplicationAnimation
         } else {
             additionalAnimation = itemNode.item.applicationAnimation
             
             if additionalAnimation == nil && itemNode.item.isCustom {
-                if let alt = itemNode.item.stillAnimation.customEmojiAlt {
-                    if let availableReactions = self.availableReactions {
-                        for availableReaction in availableReactions.reactions {
-                            if availableReaction.value == .builtin(alt) {
-                                additionalAnimation = availableReaction.aroundAnimation
+                outer: for attribute in itemNode.item.stillAnimation.attributes {
+                    if case let .CustomEmoji(_, _, alt, _) = attribute {
+                        if let availableReactions = self.availableReactions {
+                            for availableReaction in availableReactions.reactions {
+                                if availableReaction.value == .builtin(alt) {
+                                    additionalAnimation = availableReaction.aroundAnimation
+                                    break outer
+                                }
                             }
                         }
+                        
+                        break
                     }
                 }
             }
@@ -2745,8 +2762,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             }
             
-            let additionalAnimationFile = additionalAnimation._parse()
-            additionalAnimationNodeValue.setup(source: AnimatedStickerResourceSource(account: itemNode.context.account, resource: additionalAnimationFile.resource), width: Int(effectFrame.width * 2.0), height: Int(effectFrame.height * 2.0), playbackMode: .once, mode: .direct(cachePathPrefix: self.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(additionalAnimationFile.resource.id)))
+            additionalAnimationNodeValue.setup(source: AnimatedStickerResourceSource(account: itemNode.context.account, resource: additionalAnimation.resource), width: Int(effectFrame.width * 2.0), height: Int(effectFrame.height * 2.0), playbackMode: .once, mode: .direct(cachePathPrefix: self.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(additionalAnimation.resource.id)))
             additionalAnimationNodeValue.frame = effectFrame
             additionalAnimationNodeValue.updateLayout(size: effectFrame.size)
             self.addSubnode(additionalAnimationNodeValue)
@@ -2783,14 +2799,13 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                 
                 for i in 1 ... 32 {
                     let allLayers = view.allLayers(forKeypath: AnimationKeypath(keypath: "placeholder_\(i)"))
-                    let itemNodeListAnimationFile = itemNode.item.listAnimation._parse()
                     for animationLayer in allLayers {
                         let baseItemLayer = InlineStickerItemLayer(
                             context: itemNode.context,
                             userLocation: .other,
                             attemptSynchronousLoad: false,
-                            emoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: itemNode.item.listAnimation.fileId.id, file: itemNodeListAnimationFile),
-                            file: itemNodeListAnimationFile,
+                            emoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: itemNode.item.listAnimation.fileId.id, file: itemNode.item.listAnimation),
+                            file: itemNode.item.listAnimation,
                             cache: animationCache,
                             renderer: animationRenderer,
                             placeholderColor: UIColor(white: 0.0, alpha: 0.0),
@@ -3068,11 +3083,11 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
                 switch reaction {
                 case let .reaction(reactionItem, icon):
                     if case .custom = reactionItem.updateMessageReaction, let hasPremium = self.hasPremium, !hasPremium, !self.allPresetReactionsAreAvailable {
-                        self.premiumReactionsSelected?(reactionItem.stillAnimation._parse())
+                        self.premiumReactionsSelected?(reactionItem.stillAnimation)
                     } else if self.reactionsLocked {
-                        self.premiumReactionsSelected?(reactionItem.stillAnimation._parse())
+                        self.premiumReactionsSelected?(reactionItem.stillAnimation)
                     } else if case .locked = icon {
-                        self.premiumReactionsSelected?(reactionItem.stillAnimation._parse())
+                        self.premiumReactionsSelected?(reactionItem.stillAnimation)
                     } else {
                         self.reactionSelected?(reactionItem.updateMessageReaction, false)
                     }
@@ -3259,9 +3274,9 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
         for (_, itemNode) in self.visibleItemNodes {
             if let itemNode = itemNode as? ReactionNode, itemNode.item.reaction == reaction {
                 if case .custom = itemNode.item.updateMessageReaction, let hasPremium = self.hasPremium, !hasPremium {
-                    self.premiumReactionsSelected?(itemNode.item.stillAnimation._parse())
+                    self.premiumReactionsSelected?(itemNode.item.stillAnimation)
                 } else if self.reactionsLocked {
-                    self.premiumReactionsSelected?(itemNode.item.stillAnimation._parse())
+                    self.premiumReactionsSelected?(itemNode.item.stillAnimation)
                 } else {
                     self.reactionSelected?(itemNode.item.updateMessageReaction, isLarge)
                 }
@@ -3435,11 +3450,11 @@ public final class StandaloneReactionAnimation: ASDisplayNode {
         
         var additionalAnimationResource: MediaResource?
         if isLarge && !forceSmallEffectAnimation {
-            additionalAnimationResource = reaction.largeApplicationAnimation?._parse().resource
+            additionalAnimationResource = reaction.largeApplicationAnimation?.resource
         } else if case .stars = reaction.reaction.rawValue {
-            additionalAnimationResource = reaction.largeApplicationAnimation?._parse().resource ?? reaction.applicationAnimation?._parse().resource
+            additionalAnimationResource = reaction.largeApplicationAnimation?.resource ?? reaction.applicationAnimation?.resource
         } else {
-            additionalAnimationResource = reaction.applicationAnimation?._parse().resource
+            additionalAnimationResource = reaction.applicationAnimation?.resource
         }
         if additionalAnimationResource == nil, let customEffectResource {
             additionalAnimationResource = customEffectResource
@@ -3525,13 +3540,12 @@ public final class StandaloneReactionAnimation: ASDisplayNode {
                 for i in 1 ... 7 {
                     let allLayers = view.allLayers(forKeypath: AnimationKeypath(keypath: "placeholder_\(i)"))
                     for animationLayer in allLayers {
-                        let itemListAnimationFile = reaction.listAnimation._parse()
                         let baseItemLayer = InlineStickerItemLayer(
                             context: context,
                             userLocation: .other,
                             attemptSynchronousLoad: false,
-                            emoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: reaction.listAnimation.fileId.id, file: itemListAnimationFile),
-                            file: itemListAnimationFile,
+                            emoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: reaction.listAnimation.fileId.id, file: reaction.listAnimation),
+                            file: reaction.listAnimation,
                             cache: animationCache,
                             renderer: animationRenderer,
                             placeholderColor: UIColor(white: 0.0, alpha: 0.0),
@@ -3884,9 +3898,9 @@ public final class StandaloneReactionAnimation: ASDisplayNode {
         
         var additionalAnimation: TelegramMediaFile?
         if didTriggerExpandedReaction {
-            additionalAnimation = item.largeApplicationAnimation?._parse()
+            additionalAnimation = item.largeApplicationAnimation
         } else {
-            additionalAnimation = item.applicationAnimation?._parse()
+            additionalAnimation = item.applicationAnimation
         }
         
         if let additionalAnimation = additionalAnimation {

@@ -40,7 +40,6 @@ swift_library(
         "//submodules/TelegramUI/Components/EntityKeyboardGifContent:EntityKeyboardGifContent",
         "//submodules/TelegramUI/Components/LegacyMessageInputPanelInputView:LegacyMessageInputPanelInputView",
         "//submodules/AttachmentTextInputPanelNode",
-        "//submodules/TelegramUI/Components/BatchVideoRendering",
     ],
     visibility = [
         "//visibility:public",

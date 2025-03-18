@@ -41,7 +41,6 @@ import DeviceAccess
 import DeviceLocationManager
 import LegacyMediaPickerUI
 import GenerateStickerPlaceholderImage
-import PassKit
 
 private let durgerKingBotIds: [Int64] = [5104055776, 2200339955]
 
@@ -152,7 +151,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
     
     static var activeDownloads: [FileDownload] = []
     
-    fileprivate class Node: ViewControllerTracingNode, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, ASScrollViewDelegate {
+    fileprivate class Node: ViewControllerTracingNode, WKNavigationDelegate, WKUIDelegate, ASScrollViewDelegate {
         private weak var controller: WebAppController?
         
         private let backgroundNode: ASDisplayNode
@@ -564,60 +563,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
             self.placeholderNode?.update(backgroundColor: .clear, foregroundColor: foregroundColor, shimmeringColor: shimmeringColor, shapes: shapes, horizontal: true, size: placeholderSize, mask: true)
             
             return placeholderSize
-        }
-        
-        
-        func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping @MainActor (WKNavigationResponsePolicy) -> Void) {
-            if #available(iOS 14.5, *), navigationResponse.response.suggestedFilename?.lowercased().hasSuffix(".pkpass") == true {
-                decisionHandler(.download)
-            } else {
-                decisionHandler(.allow)
-            }
-        }
-        
-        private var downloadArguments: (String, String)?
-        
-        @available(iOS 14.5, *)
-        func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
-            download.delegate = self
-        }
-        
-        @available(iOS 14.5, *)
-        func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
-            download.delegate = self
-        }
-        
-        @available(iOS 14.5, *)
-        func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
-            let path = NSTemporaryDirectory() + NSUUID().uuidString
-            self.downloadArguments = (path, suggestedFilename)
-            completionHandler(URL(fileURLWithPath: path))
-        }
-        
-        @available(iOS 14.5, *)
-        func downloadDidFinish(_ download: WKDownload) {
-            if let (path, fileName) = self.downloadArguments {
-                let tempFile = TempBox.shared.file(path: path, fileName: fileName)
-                let url = URL(fileURLWithPath: tempFile.path)
-                
-                if fileName.hasSuffix(".pkpass") {
-                    if let data = try? Data(contentsOf: url), let pass = try? PKPass(data: data) {
-                        let passLibrary = PKPassLibrary()
-                        if passLibrary.containsPass(pass) {
-                            let alertController = textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: self.presentationData.strings.WebBrowser_PassExistsError, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_OK, action: {})])
-                            self.controller?.present(alertController, in: .window(.root))
-                        } else if let controller = PKAddPassesViewController(pass: pass) {
-                            self.controller?.view.window?.rootViewController?.present(controller, animated: true)
-                        }
-                    }
-                }
-                self.downloadArguments = nil
-            }
-        }
-        
-        @available(iOS 14.5, *)
-        func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
-            self.downloadArguments = nil
         }
         
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -2650,7 +2595,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId)),
                 self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: controller.botId)),
                 self.context.engine.stickers.loadedStickerPack(reference: .iconStatusEmoji, forceActualized: false)
-                |> map { result -> [TelegramMediaFile.Accessor] in
+                |> map { result -> [TelegramMediaFile] in
                     switch result {
                     case let .result(_, items, _):
                         return items.map(\.file)

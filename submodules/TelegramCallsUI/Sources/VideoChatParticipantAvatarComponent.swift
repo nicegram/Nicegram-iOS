@@ -132,14 +132,14 @@ private final class BlobView: UIView {
 }
 
 final class VideoChatParticipantAvatarComponent: Component {
-    let call: VideoChatCall
+    let call: PresentationGroupCall
     let peer: EnginePeer
     let myPeerId: EnginePeer.Id
     let isSpeaking: Bool
     let theme: PresentationTheme
 
     init(
-        call: VideoChatCall,
+        call: PresentationGroupCall,
         peer: EnginePeer,
         myPeerId: EnginePeer.Id,
         isSpeaking: Bool,
@@ -153,7 +153,7 @@ final class VideoChatParticipantAvatarComponent: Component {
     }
 
     static func ==(lhs: VideoChatParticipantAvatarComponent, rhs: VideoChatParticipantAvatarComponent) -> Bool {
-        if lhs.call != rhs.call {
+        if lhs.call !== rhs.call {
             return false
         }
         if lhs.peer != rhs.peer {
@@ -229,11 +229,6 @@ final class VideoChatParticipantAvatarComponent: Component {
             
             let previousComponent = self.component
             self.component = component
-            
-            if let previousComponent, previousComponent.call != component.call {
-                self.audioLevelDisposable?.dispose()
-                self.audioLevelDisposable = nil
-            }
             
             let avatarNode: AvatarNode
             if let current = self.avatarNode {

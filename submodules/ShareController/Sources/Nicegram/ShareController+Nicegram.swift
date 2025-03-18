@@ -11,7 +11,7 @@ public func shareController(
     
     let subject: ShareControllerSubject
     if let media {
-        subject = .media(media, nil, text: text)
+        subject = .media(media, text: text)
     } else {
         subject = .text(text)
     }

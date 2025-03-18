@@ -810,8 +810,6 @@ public final class DrawingEntitiesView: UIView, TGPhotoDrawingEntitiesView {
                 selectionView.handlePan(gestureRecognizer)
             } else if let stickerEntity = selectedEntityView.entity as? DrawingStickerEntity, case .message = stickerEntity.content {
                 selectionView.handlePan(gestureRecognizer)
-            } else if let stickerEntity = selectedEntityView.entity as? DrawingStickerEntity, case .gift = stickerEntity.content {
-                selectionView.handlePan(gestureRecognizer)
             } else {
                 var isTrappedInBin = false
                 let scale = 100.0 / selectedEntityView.bounds.size.width

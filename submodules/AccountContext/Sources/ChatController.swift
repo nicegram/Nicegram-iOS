@@ -314,12 +314,10 @@ public struct ChatControllerInitialBotAppStart {
 public enum ChatControllerInteractionNavigateToPeer {
     public struct InfoParams {
         public let switchToRecommendedChannels: Bool
-        public let switchToGroupsInCommon: Bool
         public let ignoreInSavedMessages: Bool
         
-        public init(switchToRecommendedChannels: Bool = false, switchToGroupsInCommon: Bool = false, ignoreInSavedMessages: Bool = false) {
+        public init(switchToRecommendedChannels: Bool = false, ignoreInSavedMessages: Bool = false) {
             self.switchToRecommendedChannels = switchToRecommendedChannels
-            self.switchToGroupsInCommon = switchToGroupsInCommon
             self.ignoreInSavedMessages = ignoreInSavedMessages
         }
     }
@@ -966,11 +964,6 @@ public final class PeerInfoNavigationSourceTag {
     }
 }
 
-public enum PeerInfoAvatarUploadStatus {
-    case progress(Float)
-    case done
-}
-
 public protocol PeerInfoScreen: ViewController {
     var peerId: PeerId { get }
     var privacySettings: Promise<AccountPrivacySettings?> { get }
@@ -979,8 +972,7 @@ public protocol PeerInfoScreen: ViewController {
     func toggleStorySelection(ids: [Int32], isSelected: Bool)
     func togglePaneIsReordering(isReordering: Bool)
     func cancelItemSelection()
-    func openAvatarSetup(completedWithUploadingImage: @escaping (UIImage, Signal<PeerInfoAvatarUploadStatus, NoError>) -> UIView?)
-    func openAvatars()
+    func openAvatarSetup()
 }
 
 public extension Peer {

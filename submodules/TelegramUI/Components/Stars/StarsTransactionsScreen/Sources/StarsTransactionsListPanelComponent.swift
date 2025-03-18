@@ -17,7 +17,6 @@ import BundleIconComponent
 import PhotoResources
 import StarsAvatarComponent
 import GiftAnimationComponent
-import TelegramStringFormatting
 
 private extension StarsContext.State.Transaction {
     var extendedId: String {
@@ -304,15 +303,9 @@ final class StarsTransactionsListPanelComponent: Component {
                     var uniqueGift: StarGift.UniqueGift?
                     switch item.peer {
                     case let .peer(peer):
-                        if let months = item.premiumGiftMonths {
-                            itemTitle = peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)
-                            itemSubtitle = environment.strings.Stars_Intro_Transaction_TelegramPremium(months)
-                        } else if item.flags.contains(.isPaidMessage) {
-                            itemTitle = peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)
-                            itemSubtitle = environment.strings.Stars_Intro_Transaction_PaidMessage(item.paidMessageCount ?? 1)
-                        } else if let starGift = item.starGift {
+                        if let starGift = item.starGift {
                             if item.flags.contains(.isStarGiftUpgrade), case let .unique(gift) = starGift {
-                                itemTitle = "\(gift.title) #\(presentationStringsFormattedNumber(gift.number, environment.dateTimeFormat.groupingSeparator))"
+                                itemTitle = "\(gift.title) #\(gift.number)"
                                 itemSubtitle = environment.strings.Stars_Intro_Transaction_GiftUpgrade
                                 uniqueGift = gift
                             } else {
@@ -356,13 +349,8 @@ final class StarsTransactionsListPanelComponent: Component {
                                 itemSubtitle = environment.strings.Stars_Intro_Transaction_Gift_Title
                                 itemPeer = .fragment
                             } else {
-                                if (item.count.value < 0 && !item.flags.contains(.isRefund)) || (item.count.value > 0 && item.flags.contains(.isRefund)) {
-                                    itemTitle = environment.strings.Stars_Intro_Transaction_FragmentWithdrawal_Title
-                                    itemSubtitle = environment.strings.Stars_Intro_Transaction_FragmentWithdrawal_Subtitle
-                                } else {
-                                    itemTitle = environment.strings.Stars_Intro_Transaction_FragmentTopUp_Title
-                                    itemSubtitle = environment.strings.Stars_Intro_Transaction_FragmentTopUp_Subtitle
-                                }
+                                itemTitle = environment.strings.Stars_Intro_Transaction_FragmentTopUp_Title
+                                itemSubtitle = environment.strings.Stars_Intro_Transaction_FragmentTopUp_Subtitle
                             }
                         } else {
                             if item.count > StarsAmount.zero && !item.flags.contains(.isRefund) {
@@ -392,12 +380,16 @@ final class StarsTransactionsListPanelComponent: Component {
                     }
                     
                     let itemLabel: NSAttributedString
-                    let formattedLabel = formatStarsAmountText(item.count, dateTimeFormat: environment.dateTimeFormat, showPlus: true)
+                    let labelString: String
                     
-                    let smallLabelFont = Font.with(size: floor(fontBaseDisplaySize / 17.0 * 13.0))
-                    let labelFont = Font.medium(fontBaseDisplaySize)
-                    let labelColor = formattedLabel.hasPrefix("-") ? environment.theme.list.itemDestructiveColor : environment.theme.list.itemDisclosureActions.constructive.fillColor
-                    itemLabel = tonAmountAttributedString(formattedLabel, integralFont: labelFont, fractionalFont: smallLabelFont, color: labelColor, decimalSeparator: environment.dateTimeFormat.decimalSeparator)
+                    let absCount = StarsAmount(value: abs(item.count.value), nanos: abs(item.count.nanos))
+                    let formattedLabel = presentationStringsFormattedNumber(absCount, environment.dateTimeFormat.groupingSeparator)
+                    if item.count < StarsAmount.zero {
+                        labelString = "- \(formattedLabel)"
+                    } else {
+                        labelString = "+ \(formattedLabel)"
+                    }
+                    itemLabel = NSAttributedString(string: labelString, font: Font.medium(fontBaseDisplaySize), textColor: labelString.hasPrefix("-") ? environment.theme.list.itemDestructiveColor : environment.theme.list.itemDisclosureActions.constructive.fillColor)
                     
                     var itemDateColor = environment.theme.list.itemSecondaryTextColor
                     itemDate = stringForMediumCompactDate(timestamp: item.date, strings: environment.strings, dateTimeFormat: environment.dateTimeFormat)

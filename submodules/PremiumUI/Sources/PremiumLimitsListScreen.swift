@@ -135,7 +135,7 @@ public class PremiumLimitsListScreen: ViewController {
                     }
                 }
                 
-                var result: [TelegramMediaFile.Accessor] = []
+                var result: [TelegramMediaFile] = []
                 if let items = items {
                     for item in items {
                         if let mediaItem = item.contents.get(RecentMediaItem.self) {
@@ -144,22 +144,26 @@ public class PremiumLimitsListScreen: ViewController {
                     }
                 }
                 return (result.map { file -> TelegramMediaFile in
-                    let file = file._parse()
-                    if let displayText = TelegramMediaFile.Accessor(file).stickerDisplayText {
-                        if let replacementFile = stickerOverrides[.builtin(displayText)], let dimensions = replacementFile.dimensions {
-                            let _ = dimensions
-                            return TelegramMediaFile(
-                                fileId: file.fileId,
-                                partialReference: file.partialReference,
-                                resource: file.resource,
-                                previewRepresentations: file.previewRepresentations,
-                                videoThumbnails: [TelegramMediaFile.VideoThumbnail(dimensions: dimensions, resource: replacementFile.resource)],
-                                immediateThumbnailData: file.immediateThumbnailData,
-                                mimeType: file.mimeType,
-                                size: file.size,
-                                attributes: file.attributes,
-                                alternativeRepresentations: file.alternativeRepresentations
-                            )
+                    for attribute in file.attributes {
+                        switch attribute {
+                        case let .Sticker(displayText, _, _):
+                            if let replacementFile = stickerOverrides[.builtin(displayText)], let dimensions = replacementFile.dimensions {
+                                let _ = dimensions
+                                return TelegramMediaFile(
+                                    fileId: file.fileId,
+                                    partialReference: file.partialReference,
+                                    resource: file.resource,
+                                    previewRepresentations: file.previewRepresentations,
+                                    videoThumbnails: [TelegramMediaFile.VideoThumbnail(dimensions: dimensions, resource: replacementFile.resource)],
+                                    immediateThumbnailData: file.immediateThumbnailData,
+                                    mimeType: file.mimeType,
+                                    size: file.size,
+                                    attributes: file.attributes,
+                                    alternativeRepresentations: file.alternativeRepresentations
+                                )
+                            }
+                        default:
+                            break
                         }
                     }
                     return file
@@ -837,24 +841,6 @@ public class PremiumLimitsListScreen: ViewController {
                                 )),
                                 title: strings.Premium_MessageEffects,
                                 text: strings.Premium_MessageEffectsInfo,
-                                textColor: textColor
-                            )
-                        )
-                    )
-                )
-                availableItems[.paidMessages] = DemoPagerComponent.Item(
-                    AnyComponentWithIdentity(
-                        id: PremiumDemoScreen.Subject.paidMessages,
-                        component: AnyComponent(
-                            PageComponent(
-                                content: AnyComponent(PhoneDemoComponent(
-                                    context: context,
-                                    position: .top,
-                                    videoFile: videos["paid_messages"],
-                                    decoration: .badgeStars
-                                )),
-                                title: strings.Premium_PaidMessages,
-                                text: strings.Premium_PaidMessagesInfo,
                                 textColor: textColor
                             )
                         )

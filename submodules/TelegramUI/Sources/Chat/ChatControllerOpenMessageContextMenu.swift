@@ -280,7 +280,7 @@ extension ChatControllerImpl {
                                                     placeholderColor: .clear,
                                                     attemptSynchronous: true
                                                 ),
-                                                file: items.first?.file._parse(),
+                                                file: items.first?.file,
                                                 action: action)
                                             return .single(actions)
                                         } else {
@@ -305,20 +305,8 @@ extension ChatControllerImpl {
                 
                 self.canReadHistory.set(false)
                 
-                var hideReactionPanelTail = false
-                for media in message.media {
-                    if let action = media as? TelegramMediaAction {
-                        switch action.action {
-                        case .phoneCall:
-                            break
-                        default:
-                            hideReactionPanelTail = true
-                        }
-                    }
-                }
-                
                 let isSecret = self.presentationInterfaceState.copyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat
-                let controller = ContextController(presentationData: self.presentationData, source: source, items: actionsSignal, recognizer: recognizer, gesture: gesture, disableScreenshots: isSecret, hideReactionPanelTail: hideReactionPanelTail)
+                let controller = ContextController(presentationData: self.presentationData, source: source, items: actionsSignal, recognizer: recognizer, gesture: gesture, disableScreenshots: isSecret)
                 controller.dismissed = { [weak self] in
                     self?.canReadHistory.set(true)
                 }
@@ -412,9 +400,12 @@ extension ChatControllerImpl {
                         guard let starsContext = self.context.starsContext else {
                             return
                         }
+                        guard let peerId = self.chatLocation.peerId else {
+                            return
+                        }
                         let _ = (combineLatest(
                             starsContext.state,
-                            self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ReactionSettings(id: message.id.peerId))
+                            self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ReactionSettings(id: peerId))
                         )
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { [weak self] state, reactionSettings in
@@ -447,8 +438,9 @@ extension ChatControllerImpl {
                                             return
                                         }
                                         
-                                        let purchaseScreen = strongSelf.context.sharedContext.makeStarsPurchaseScreen(context: strongSelf.context, starsContext: starsContext, options: options, purpose: .reactions(peerId: message.id.peerId, requiredStars: 1), completion: { result in
+                                        let purchaseScreen = strongSelf.context.sharedContext.makeStarsPurchaseScreen(context: strongSelf.context, starsContext: starsContext, options: options, purpose: .reactions(peerId: peerId, requiredStars: 1), completion: { result in
                                             let _ = result
+                                            //TODO:release
                                         })
                                         strongSelf.push(purchaseScreen)
                                     })
@@ -457,12 +449,12 @@ extension ChatControllerImpl {
                                 return
                             }
                             
-                            let _ = (strongSelf.context.engine.messages.sendStarsReaction(id: message.id, count: 1, privacy: nil)
-                            |> deliverOnMainQueue).startStandalone(next: { privacy in
+                            let _ = (strongSelf.context.engine.messages.sendStarsReaction(id: message.id, count: 1, isAnonymous: nil)
+                            |> deliverOnMainQueue).startStandalone(next: { isAnonymous in
                                 guard let strongSelf = self else {
                                     return
                                 }
-                                strongSelf.displayOrUpdateSendStarsUndo(messageId: message.id, count: 1, privacy: privacy)
+                                strongSelf.displayOrUpdateSendStarsUndo(messageId: message.id, count: 1, isAnonymous: isAnonymous)
                             })
                         })
                     } else {

@@ -98,7 +98,7 @@ public final class VoiceChatJoinScreen: ViewController {
             currentGroupCall = callManager.currentGroupCallSignal
             |> castError(GetCurrentGroupCallError.self)
             |> mapToSignal { call -> Signal<(PresentationGroupCall, Int64, Bool)?, GetCurrentGroupCallError> in
-                if case let .group(call) = call {
+                if let call = call {
                     return call.summaryState
                     |> castError(GetCurrentGroupCallError.self)
                     |> map { state -> (PresentationGroupCall, Int64, Bool)? in

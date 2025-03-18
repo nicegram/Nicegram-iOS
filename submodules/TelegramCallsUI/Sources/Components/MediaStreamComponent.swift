@@ -1007,10 +1007,7 @@ public final class MediaStreamComponent: CombinedComponent {
 
 public final class MediaStreamComponentController: ViewControllerComponentContainer, VoiceChatController {
     private let context: AccountContext
-    public let callImpl: PresentationGroupCall
-    public var call: VideoChatCall {
-        return .group(self.callImpl)
-    }
+    public let call: PresentationGroupCall
     public private(set) var currentOverlayController: VoiceChatOverlayController? = nil
     public var parentNavigationController: NavigationController?
     
@@ -1023,7 +1020,7 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
     
     public init(call: PresentationGroupCall) {
         self.context = call.accountContext
-        self.callImpl = call
+        self.call = call
         
         super.init(context: call.accountContext, component: MediaStreamComponent(call: call as! PresentationGroupCallImpl), navigationBarAppearance: .none)
         
@@ -1036,9 +1033,6 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
     
     required public init(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-    
-    public func updateCall(call: VideoChatCall) {
     }
     
     override public func viewDidAppear(_ animated: Bool) {
@@ -1137,7 +1131,7 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
             guard let strongSelf = self else {
                 return
             }
-            guard let peerId = strongSelf.callImpl.peerId else {
+            guard let peerId = strongSelf.call.peerId else {
                 return
             }
             
@@ -1181,11 +1175,11 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
         }
         let _ = formatSendTitle
         
-        guard let peerId = self.callImpl.peerId else {
+        guard let peerId = self.call.peerId else {
             return
         }
         
-        let _ = (combineLatest(queue: .mainQueue(), self.context.account.postbox.loadedPeerWithId(peerId), self.callImpl.state |> take(1))
+        let _ = (combineLatest(queue: .mainQueue(), self.context.account.postbox.loadedPeerWithId(peerId), self.call.state |> take(1))
         |> deliverOnMainQueue).start(next: { [weak self] peer, callState in
             if let strongSelf = self {
                 var inviteLinks = inviteLinks

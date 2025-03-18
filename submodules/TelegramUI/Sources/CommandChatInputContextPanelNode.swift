@@ -181,8 +181,6 @@ private struct CommandChatInputContextPanelEntry: Comparable, Identifiable {
                     openWebApp: { _ in
                     },
                     openPhotoSetup: {
-                    },
-                    openAdInfo: { _ in
                     }
                 )
                 

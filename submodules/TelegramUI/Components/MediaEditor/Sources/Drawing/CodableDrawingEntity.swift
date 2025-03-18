@@ -180,11 +180,6 @@ public enum CodableDrawingEntity: Equatable {
                     coordinates: coordinates,
                     messageId: messageId
                 )
-            } else if case let .gift(gift, _) = entity.content {
-                return .starGift(
-                    coordinates: coordinates,
-                    slug: gift.slug
-                )
             } else {
                 return nil
             }

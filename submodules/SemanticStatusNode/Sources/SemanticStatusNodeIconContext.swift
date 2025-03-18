@@ -131,7 +131,11 @@ final class SemanticStatusNodeIconContext: SemanticStatusNodeStateContext {
         }
     }
     
-    private(set) var icon: SemanticStatusNodeIcon
+    var icon: SemanticStatusNodeIcon {
+        didSet {
+            self.animationNode?.enqueueState(self.icon == .play ? .play : .pause, animated: self.iconImage != nil)
+        }
+    }
 
     private var animationNode: PlayPauseIconNode?
     private var iconImage: UIImage?
@@ -166,11 +170,6 @@ final class SemanticStatusNodeIconContext: SemanticStatusNodeStateContext {
     }
     
     var requestUpdate: () -> Void = {}
-    
-    func setIcon(icon: SemanticStatusNodeIcon, animated: Bool) {
-        self.icon = icon
-        self.animationNode?.enqueueState(self.icon == .play ? .play : .pause, animated: animated)
-    }
     
     func drawingState(transitionFraction: CGFloat) -> SemanticStatusNodeStateDrawingState {
         return DrawingState(transitionFraction: transitionFraction, icon: self.icon, iconImage: self.iconImage, iconOffset: self.iconOffset)

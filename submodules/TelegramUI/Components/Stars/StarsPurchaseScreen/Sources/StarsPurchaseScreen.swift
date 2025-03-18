@@ -331,12 +331,6 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                 textString = strings.Stars_Purchase_StarGiftInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
             case .upgradeStarGift:
                 textString = strings.Stars_Purchase_UpgradeStarGiftInfo
-            case let .sendMessage(peerId, _):
-                if peerId.namespace == Namespaces.Peer.CloudUser {
-                    textString = strings.Stars_Purchase_SendMessageInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
-                } else {
-                    textString = strings.Stars_Purchase_SendGroupMessageInfo(component.peers.first?.value.compactDisplayTitle ?? "").string
-                }
             }
             
             let markdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: textColor), bold: MarkdownAttributeSet(font: boldTextFont, textColor: textColor), link: MarkdownAttributeSet(font: textFont, textColor: accentColor), linkAttribute: { contents in
@@ -927,7 +921,7 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
                 titleText = strings.Stars_Purchase_GetStars
             case .gift:
                 titleText = strings.Stars_Purchase_GiftStars
-            case let .topUp(requiredStars, _), let .transfer(_, requiredStars), let .reactions(_, requiredStars), let .subscription(_, requiredStars, _), let .unlockMedia(requiredStars), let .starGift(_, requiredStars), let .upgradeStarGift(requiredStars), let .sendMessage(_, requiredStars):
+            case let .topUp(requiredStars, _), let .transfer(_, requiredStars), let .reactions(_, requiredStars), let .subscription(_, requiredStars, _), let .unlockMedia(requiredStars), let .starGift(_, requiredStars), let .upgradeStarGift(requiredStars):
                 titleText = strings.Stars_Purchase_StarsNeeded(Int32(requiredStars))
             }
             
@@ -954,14 +948,14 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
                 availableSize: context.availableSize,
                 transition: .immediate
             )
-            
-            let formattedBalance = formatStarsAmountText(state.starsState?.balance ?? StarsAmount.zero, dateTimeFormat: environment.dateTimeFormat)
-            let smallLabelFont = Font.regular(11.0)
-            let labelFont = Font.semibold(14.0)
-            let balanceText = tonAmountAttributedString(formattedBalance, integralFont: labelFont, fractionalFont: smallLabelFont, color: environment.theme.actionSheet.primaryTextColor, decimalSeparator: environment.dateTimeFormat.decimalSeparator)
+            let starsBalance: StarsAmount = state.starsState?.balance ?? StarsAmount.zero
             let balanceValue = balanceValue.update(
                 component: MultilineTextComponent(
-                    text: .plain(balanceText),
+                    text: .plain(NSAttributedString(
+                        string: presentationStringsFormattedNumber(starsBalance, environment.dateTimeFormat.groupingSeparator),
+                        font: Font.semibold(14.0),
+                        textColor: environment.theme.actionSheet.primaryTextColor
+                    )),
                     maximumNumberOfLines: 1
                 ),
                 availableSize: context.availableSize,
@@ -1368,8 +1362,6 @@ private extension StarsPurchasePurpose {
             return [peerId]
         case let .starGift(peerId, _):
             return [peerId]
-        case let .sendMessage(peerId, _):
-            return [peerId]
         default:
             return []
         }
@@ -1390,8 +1382,6 @@ private extension StarsPurchasePurpose {
         case let .starGift(_, requiredStars):
             return requiredStars
         case let .upgradeStarGift(requiredStars):
-            return requiredStars
-        case let .sendMessage(_, requiredStars):
             return requiredStars
         default:
             return nil

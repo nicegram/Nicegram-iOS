@@ -385,16 +385,16 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         }
         self.tabBarControllerNode.tabBarNode.selectedIndex = tabBarSelectedIndex
         
-        var transitionScale: CGFloat = 0.998
+        var transitionSale: CGFloat = 0.998
         if let currentView = self.currentController?.view {
-            transitionScale = (currentView.frame.height - 3.0) / currentView.frame.height
+            transitionSale = (currentView.frame.height - 3.0) / currentView.frame.height
         }
         if let currentController = self.currentController {
             currentController.willMove(toParent: nil)
             //self.tabBarControllerNode.currentControllerNode = nil
             
             if animated {
-                currentController.view.layer.animateScale(from: 1.0, to: transitionScale, duration: 0.12, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { completed in
+                currentController.view.layer.animateScale(from: 1.0, to: transitionSale, duration: 0.12, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { completed in
                     if completed {
                         currentController.view.layer.removeAllAnimations()
                     }
@@ -416,7 +416,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
             
             let commit = self.tabBarControllerNode.setCurrentControllerNode(currentController.displayNode)
             if animated {
-                currentController.view.layer.animateScale(from: transitionScale, to: 1.0, duration: 0.15, delay: 0.1, timingFunction: kCAMediaTimingFunctionSpring)
+                currentController.view.layer.animateScale(from: transitionSale, to: 1.0, duration: 0.15, delay: 0.1, timingFunction: kCAMediaTimingFunctionSpring)
                 currentController.view.layer.allowsGroupOpacity = true
                 currentController.view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.1, completion: { completed in
                     if completed {
@@ -472,35 +472,6 @@ open class TabBarControllerImpl: ViewController, TabBarController {
             }
             
             currentController.containerLayoutUpdated(updatedLayout, transition: transition)
-        }
-    }
-    
-    public func updateControllerLayout(controller: ViewController) {
-        guard let layout = self.validLayout else {
-            return
-        }
-        if self.controllers.contains(where: { $0 === controller }) {
-            let currentController = controller
-            currentController.view.frame = CGRect(origin: CGPoint(), size: layout.size)
-            
-            var updatedLayout = layout
-            
-            var tabBarHeight: CGFloat
-            var options: ContainerViewLayoutInsetOptions = []
-            if updatedLayout.metrics.widthClass == .regular {
-                options.insert(.input)
-            }
-            let bottomInset: CGFloat = updatedLayout.insets(options: options).bottom
-            if !updatedLayout.safeInsets.left.isZero {
-                tabBarHeight = 34.0 + bottomInset
-            } else {
-                tabBarHeight = 49.0 + bottomInset
-            }
-            if !self.tabBarControllerNode.tabBarHidden {
-                updatedLayout.intrinsicInsets.bottom = tabBarHeight
-            }
-            
-            currentController.containerLayoutUpdated(updatedLayout, transition: .immediate)
         }
     }
     

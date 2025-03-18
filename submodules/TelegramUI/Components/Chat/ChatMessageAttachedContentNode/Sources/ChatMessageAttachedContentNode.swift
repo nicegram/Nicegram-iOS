@@ -315,7 +315,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
             
             var mediaAndFlags = mediaAndFlags
             if let mediaAndFlagsValue = mediaAndFlags {
-                if mediaAndFlagsValue.0.first is TelegramMediaStory || mediaAndFlagsValue.0.first is WallpaperPreviewMedia || mediaAndFlagsValue.0.first is UniqueGiftPreviewMedia {
+                if mediaAndFlagsValue.0.first is TelegramMediaStory || mediaAndFlagsValue.0.first is WallpaperPreviewMedia {
                     var flags = mediaAndFlagsValue.1
                     flags.remove(.preferMediaInline)
                     mediaAndFlags = (mediaAndFlagsValue.0, flags)
@@ -360,9 +360,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             contentMediaAutomaticDownload = .prefetch
                         }
                         
-                        if let _ = file.videoCover {
-                            contentMediaAutomaticPlayback = false
-                        } else if file.isAnimated {
+                        if file.isAnimated {
                             contentMediaAutomaticPlayback = context.sharedContext.energyUsageSettings.autoplayGif
                         } else if file.isVideo && context.sharedContext.energyUsageSettings.autoplayVideo {
                             var willDownloadOrLocal = false
@@ -376,15 +374,13 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 contentMediaAspectFilled = true
                             }
                         }
-                    } else if media is TelegramMediaImage {
+                    } else if let _ = media as? TelegramMediaImage {
                         contentMediaValue = media
-                    } else if media is TelegramMediaWebFile {
+                    } else if let _ = media as? TelegramMediaWebFile {
                         contentMediaValue = media
-                    } else if media is WallpaperPreviewMedia {
+                    } else if let _ = media as? WallpaperPreviewMedia {
                         contentMediaValue = media
-                    } else if media is TelegramMediaStory {
-                        contentMediaValue = media
-                    } else if media is UniqueGiftPreviewMedia {
+                    } else if let _ = media as? TelegramMediaStory {
                         contentMediaValue = media
                     }
                 }

@@ -1108,14 +1108,8 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
         self.rightOpaqueEdge = right
         
         if let params = self.params {
-            let fullTrackHeight: CGFloat
-            if case .cover = params.style {
-                fullTrackHeight = trackHeight
-            } else {
-                fullTrackHeight = 33.0
-            }
             self.updateThumbnailContainers(
-                scrubberSize: CGSize(width: params.availableSize.width, height: fullTrackHeight),
+                scrubberSize: CGSize(width: params.availableSize.width, height: 33.0),
                 availableSize: params.availableSize,
                 transition: transition
             )

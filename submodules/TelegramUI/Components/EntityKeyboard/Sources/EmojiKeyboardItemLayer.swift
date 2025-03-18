@@ -53,7 +53,6 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
     private var iconLayer: SimpleLayer?
     private var tintIconLayer: SimpleLayer?
     
-    private(set) var underlyingContentLayer: SimpleLayer?
     private(set) var tintContentLayer: SimpleLayer?
     
     private var badge: Badge?
@@ -94,9 +93,6 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
             if let mirrorLayer = self.tintContentLayer {
                 mirrorLayer.position = value
             }
-            if let mirrorLayer = self.underlyingContentLayer {
-                mirrorLayer.position = value
-            }
             super.position = value
         }
     }
@@ -108,9 +104,6 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
             if let mirrorLayer = self.tintContentLayer {
                 mirrorLayer.bounds = value
             }
-            if let mirrorLayer = self.underlyingContentLayer {
-                mirrorLayer.bounds = value
-            }
             super.bounds = value
         }
     }
@@ -119,9 +112,7 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
         if let mirrorLayer = self.tintContentLayer {
             mirrorLayer.add(animation, forKey: key)
         }
-        if let mirrorLayer = self.underlyingContentLayer {
-            mirrorLayer.add(animation, forKey: key)
-        }
+        
         super.add(animation, forKey: key)
     }
     
@@ -129,9 +120,7 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
         if let mirrorLayer = self.tintContentLayer {
             mirrorLayer.removeAllAnimations()
         }
-        if let mirrorLayer = self.underlyingContentLayer {
-            mirrorLayer.removeAllAnimations()
-        }
+        
         super.removeAllAnimations()
     }
     
@@ -139,9 +128,7 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
         if let mirrorLayer = self.tintContentLayer {
             mirrorLayer.removeAnimation(forKey: forKey)
         }
-        if let mirrorLayer = self.underlyingContentLayer {
-            mirrorLayer.removeAnimation(forKey: forKey)
-        }
+        
         super.removeAnimation(forKey: forKey)
     }
     
@@ -177,21 +164,19 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
         
         switch content {
         case let .animation(animationData):
-            let animationDataResource = animationData.resource._parse()
-            
             let loadAnimation: () -> Void = { [weak self] in
                 guard let strongSelf = self else {
                     return
                 }
                 
-                strongSelf.disposable = renderer.add(target: strongSelf, cache: cache, itemId: animationDataResource.resource.id.stringRepresentation, unique: false, size: pixelSize, fetch: animationCacheFetchFile(context: context, userLocation: .other, userContentType: .sticker, resource: animationDataResource, type: animationData.type.animationCacheAnimationType, keyframeOnly: pixelSize.width >= 120.0, customColor: animationData.isTemplate ? .white : nil))
+                strongSelf.disposable = renderer.add(target: strongSelf, cache: cache, itemId: animationData.resource.resource.id.stringRepresentation, unique: false, size: pixelSize, fetch: animationCacheFetchFile(context: context, userLocation: .other, userContentType: .sticker, resource: animationData.resource, type: animationData.type.animationCacheAnimationType, keyframeOnly: pixelSize.width >= 120.0, customColor: animationData.isTemplate ? .white : nil))
             }
             
             if attemptSynchronousLoad {
-                if !renderer.loadFirstFrameSynchronously(target: self, cache: cache, itemId: animationDataResource.resource.id.stringRepresentation, size: pixelSize) {
+                if !renderer.loadFirstFrameSynchronously(target: self, cache: cache, itemId: animationData.resource.resource.id.stringRepresentation, size: pixelSize) {
                     self.updateDisplayPlaceholder(displayPlaceholder: true)
                     
-                    self.fetchDisposable = renderer.loadFirstFrame(target: self, cache: cache, itemId: animationDataResource.resource.id.stringRepresentation, size: pixelSize, fetch: animationCacheFetchFile(context: context, userLocation: .other, userContentType: .sticker, resource: animationDataResource, type: animationData.type.animationCacheAnimationType, keyframeOnly: true, customColor: animationData.isTemplate ? .white : nil), completion: { [weak self] success, isFinal in
+                    self.fetchDisposable = renderer.loadFirstFrame(target: self, cache: cache, itemId: animationData.resource.resource.id.stringRepresentation, size: pixelSize, fetch: animationCacheFetchFile(context: context, userLocation: .other, userContentType: .sticker, resource: animationData.resource, type: animationData.type.animationCacheAnimationType, keyframeOnly: true, customColor: animationData.isTemplate ? .white : nil), completion: { [weak self] success, isFinal in
                         if !isFinal {
                             if !success {
                                 Queue.mainQueue().async {
@@ -221,7 +206,7 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
                     loadAnimation()
                 }
             } else {
-                self.fetchDisposable = renderer.loadFirstFrame(target: self, cache: cache, itemId: animationDataResource.resource.id.stringRepresentation, size: pixelSize, fetch: animationCacheFetchFile(context: context, userLocation: .other, userContentType: .sticker, resource: animationDataResource, type: animationData.type.animationCacheAnimationType, keyframeOnly: true, customColor: animationData.isTemplate ? .white : nil), completion: { [weak self] success, isFinal in
+                self.fetchDisposable = renderer.loadFirstFrame(target: self, cache: cache, itemId: animationData.resource.resource.id.stringRepresentation, size: pixelSize, fetch: animationCacheFetchFile(context: context, userLocation: .other, userContentType: .sticker, resource: animationData.resource, type: animationData.type.animationCacheAnimationType, keyframeOnly: true, customColor: animationData.isTemplate ? .white : nil), completion: { [weak self] success, isFinal in
                     if !isFinal {
                         if !success {
                             Queue.mainQueue().async {
@@ -247,16 +232,6 @@ public final class EmojiKeyboardItemLayer: MultiAnimationRenderTarget {
                         }
                     }
                 })
-            }
-            
-            if let particleColor = animationData.particleColor {
-                let underlyingContentLayer = SimpleLayer()
-                self.underlyingContentLayer = underlyingContentLayer
-                
-                let starsLayer = StarsEffectLayer()
-                starsLayer.frame = CGRect(origin: CGPoint(x: -3.0, y: -3.0), size: CGSize(width: 42.0, height: 42.0))
-                starsLayer.update(color: particleColor, size: CGSize(width: 42.0, height: 42.0))
-                underlyingContentLayer.addSublayer(starsLayer)
             }
         case let .staticEmoji(staticEmoji):
             let image = generateImage(pointSize, opaque: false, scale: min(UIScreenScale, 3.0), rotatedContext: { size, context in

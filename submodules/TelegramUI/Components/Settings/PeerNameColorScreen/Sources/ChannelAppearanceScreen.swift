@@ -187,7 +187,9 @@ final class ChannelAppearanceScreenComponent: Component {
         private let emojiStatusSection = ComponentView<Empty>()
         private let emojiPackSection = ComponentView<Empty>()
         private let stickerPackSection = ComponentView<Empty>()
-                
+        
+        private var chatPreviewItemNode: PeerNameColorChatPreviewItemNode?
+        
         private var isUpdating: Bool = false
         
         private var component: ChannelAppearanceScreenComponent?
@@ -225,6 +227,7 @@ final class ChannelAppearanceScreenComponent: Component {
         private var applyDisposable: Disposable?
         
         private weak var emojiStatusSelectionController: ViewController?
+        private weak var currentUndoController: UndoOverlayController?
         
         override init(frame: CGRect) {
             self.scrollView = ScrollView()
@@ -465,7 +468,12 @@ final class ChannelAppearanceScreenComponent: Component {
                 self.displayBoostLevels(subject: requiredBoostSubject)
                 return
             }
-                        
+            
+            if resolvedState.changes.isEmpty {
+                self.environment?.controller()?.dismiss()
+                return
+            }
+            
             self.isApplyingSettings = true
             self.state?.updated(transition: .immediate)
             
@@ -719,7 +727,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     }
            
                     if let result {
-                        self.updatedPeerStatus = PeerEmojiStatus(content: .emoji(fileId: result.fileId.id), expirationDate: timestamp)
+                        self.updatedPeerStatus = PeerEmojiStatus(fileId: result.fileId.id, expirationDate: timestamp)
                     } else {
                         self.updatedPeerStatus = .some(nil)
                     }
@@ -1071,8 +1079,7 @@ final class ChannelAppearanceScreenComponent: Component {
                                     isGroup ? environment.strings.Conversation_StatusMembers(Int32($0)) : environment.strings.Conversation_StatusSubscribers(Int32($0))
                                 },
                                 files: self.cachedIconFiles,
-                                nameDisplayOrder: presentationData.nameDisplayOrder,
-                                showBackground: false
+                                nameDisplayOrder: presentationData.nameDisplayOrder
                             ),
                             params: ListViewItemLayoutParams(width: availableSize.width, leftInset: 0.0, rightInset: 0.0, availableHeight: 10000.0, isStandalone: true)
                         ))),

@@ -156,7 +156,7 @@ extension ChatControllerImpl {
                 var viewOnceAvailable = false
                 if let peerId = self.chatLocation.peerId {
                     allowLiveUpload = peerId.namespace != Namespaces.Peer.SecretChat
-                    viewOnceAvailable = !isScheduledMessages && peerId.namespace == Namespaces.Peer.CloudUser && peerId != self.context.account.peerId && !isBot && self.presentationInterfaceState.sendPaidMessageStars == nil
+                    viewOnceAvailable = !isScheduledMessages && peerId.namespace == Namespaces.Peer.CloudUser && peerId != self.context.account.peerId && !isBot
                 } else if case .customChatContents = self.chatLocation {
                     allowLiveUpload = true
                 }
@@ -249,12 +249,6 @@ extension ChatControllerImpl {
             updatedAction = .preview
         }
         
-        var sendImmediately = false
-        if let _ = self.presentationInterfaceState.sendPaidMessageStars, case .send = action {
-            updatedAction = .preview
-            sendImmediately = true
-        }
-        
         if let audioRecorderValue = self.audioRecorderValue {
             switch action {
             case .pause:
@@ -302,10 +296,6 @@ extension ChatControllerImpl {
                             strongSelf.recorderFeedback = nil
                             strongSelf.updateDownButtonVisibility()
                             strongSelf.recorderDataDisposable.set(nil)
-                            
-                            if sendImmediately {
-                                strongSelf.interfaceInteraction?.sendRecordedMedia(false, false)
-                            }
                         }
                     }
                 }))
@@ -486,7 +476,7 @@ extension ChatControllerImpl {
         self.updateDownButtonVisibility()
     }
     
-    func sendMediaRecording(silentPosting: Bool? = nil, scheduleTime: Int32? = nil, viewOnce: Bool = false, messageEffect: ChatSendMessageEffect? = nil, postpone: Bool = false) {
+    func sendMediaRecording(silentPosting: Bool? = nil, scheduleTime: Int32? = nil, viewOnce: Bool = false, messageEffect: ChatSendMessageEffect? = nil) {
         self.chatDisplayNode.updateRecordedMediaDeleted(false)
         
         guard let recordedMediaPreview = self.presentationInterfaceState.interfaceState.mediaDraftState else {
@@ -535,9 +525,9 @@ extension ChatControllerImpl {
             
             let transformedMessages: [EnqueueMessage]
             if let silentPosting = silentPosting {
-                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: silentPosting, postpone: postpone)
+                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: silentPosting)
             } else if let scheduleTime = scheduleTime {
-                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: false, scheduleTime: scheduleTime, postpone: postpone)
+                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: false, scheduleTime: scheduleTime)
             } else {
                 transformedMessages = self.transformEnqueueMessages(messages)
             }

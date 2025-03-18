@@ -619,18 +619,14 @@ open class LegacyController: ViewController, PresentableController {
     override open func dismiss(completion: (() -> Void)? = nil) {
         self.view.endEditing(true)
         switch self.presentation {
-        case .modal:
-            self.controllerNode.animateModalOut { [weak self] in
-                self?.presentingViewController?.dismiss(animated: false, completion: completion)
-            }
-        case .custom:
-            if let _ = self.navigationController as? NavigationController {
-                super.dismiss(animated: false, completion: completion)
-            } else {
+            case .modal:
+                self.controllerNode.animateModalOut { [weak self] in
+                    self?.presentingViewController?.dismiss(animated: false, completion: completion)
+                }
+            case .custom:
                 self.presentingViewController?.dismiss(animated: false, completion: completion)
-            }
-        case .navigation:
-            (self.navigationController as? NavigationController)?.filterController(self, animated: true)
+            case .navigation:
+                (self.navigationController as? NavigationController)?.filterController(self, animated: true)
         }
     }
     

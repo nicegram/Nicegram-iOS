@@ -188,7 +188,7 @@ final class VideoChatMicButtonComponent: Component {
         case scheduled(state: ScheduledState)
     }
     
-    let call: VideoChatCall
+    let call: PresentationGroupCall
     let strings: PresentationStrings
     let content: Content
     let isCollapsed: Bool
@@ -197,7 +197,7 @@ final class VideoChatMicButtonComponent: Component {
     let scheduleAction: () -> Void
 
     init(
-        call: VideoChatCall,
+        call: PresentationGroupCall,
         strings: PresentationStrings,
         content: Content,
         isCollapsed: Bool,
@@ -215,9 +215,6 @@ final class VideoChatMicButtonComponent: Component {
     }
 
     static func ==(lhs: VideoChatMicButtonComponent, rhs: VideoChatMicButtonComponent) -> Bool {
-        if lhs.call != rhs.call {
-            return false
-        }
         if lhs.content != rhs.content {
             return false
         }
@@ -325,11 +322,6 @@ final class VideoChatMicButtonComponent: Component {
             
             let previousComponent = self.component
             self.component = component
-            
-            if let previousComponent, previousComponent.call != component.call {
-                self.audioLevelDisposable?.dispose()
-                self.audioLevelDisposable = nil
-            }
             
             let alphaTransition: ComponentTransition = transition.animation.isImmediate ? .immediate : .easeInOut(duration: 0.2)
             
@@ -620,8 +612,8 @@ final class VideoChatMicButtonComponent: Component {
                 switch component.content {
                 case .unmuted:
                     if self.audioLevelDisposable == nil {
-                        self.audioLevelDisposable = (component.call.myAudioLevelAndSpeaking
-                        |> deliverOnMainQueue).startStrict(next: { [weak self] value, _ in
+                        self.audioLevelDisposable = (component.call.myAudioLevel
+                        |> deliverOnMainQueue).startStrict(next: { [weak self] value in
                             guard let self, let blobView = self.blobView else {
                                 return
                             }

@@ -142,16 +142,8 @@ public final class SharedWakeupManager {
                 |> distinctUntilChanged
                 
                 let hasActiveGroupCalls = (callManager?.currentGroupCallSignal ?? .single(nil))
-                |> map { call -> Bool in
-                    guard let call else {
-                        return false
-                    }
-                    switch call {
-                    case let .conferenceSource(conferenceSource):
-                        return conferenceSource.context.account.id == account.id
-                    case let .group(groupCall):
-                        return groupCall.accountContext.account.id == account.id
-                    }
+                |> map { call in
+                    return call?.accountContext.account.id == account.id
                 }
                 |> distinctUntilChanged
                 

@@ -22,12 +22,8 @@ final class StarsBalanceComponent: Component {
     let actionAvailable: Bool
     let actionIsEnabled: Bool
     let actionCooldownUntilTimestamp: Int32?
-    let actionIcon: UIImage?
     let action: () -> Void
-    let secondaryActionTitle: String?
-    let secondaryActionIcon: UIImage?
-    let secondaryActionCooldownUntilTimestamp: Int32?
-    let secondaryAction: (() -> Void)?
+    let buyAds: (() -> Void)?
     let additionalAction: AnyComponent<Empty>?
     
     init(
@@ -40,12 +36,8 @@ final class StarsBalanceComponent: Component {
         actionAvailable: Bool,
         actionIsEnabled: Bool,
         actionCooldownUntilTimestamp: Int32? = nil,
-        actionIcon: UIImage? = nil,
         action: @escaping () -> Void,
-        secondaryActionTitle: String? = nil,
-        secondaryActionIcon: UIImage? = nil,
-        secondaryActionCooldownUntilTimestamp: Int32? = nil,
-        secondaryAction: (() -> Void)? = nil,
+        buyAds: (() -> Void)?,
         additionalAction: AnyComponent<Empty>? = nil
     ) {
         self.theme = theme
@@ -57,12 +49,8 @@ final class StarsBalanceComponent: Component {
         self.actionAvailable = actionAvailable
         self.actionIsEnabled = actionIsEnabled
         self.actionCooldownUntilTimestamp = actionCooldownUntilTimestamp
-        self.actionIcon = actionIcon
         self.action = action
-        self.secondaryActionTitle = secondaryActionTitle
-        self.secondaryActionCooldownUntilTimestamp = secondaryActionCooldownUntilTimestamp
-        self.secondaryActionIcon = secondaryActionIcon
-        self.secondaryAction = secondaryAction
+        self.buyAds = buyAds
         self.additionalAction = additionalAction
     }
     
@@ -88,12 +76,6 @@ final class StarsBalanceComponent: Component {
         if lhs.actionCooldownUntilTimestamp != rhs.actionCooldownUntilTimestamp {
             return false
         }
-        if lhs.secondaryActionTitle != rhs.secondaryActionTitle {
-            return false
-        }
-        if lhs.secondaryActionCooldownUntilTimestamp != rhs.secondaryActionCooldownUntilTimestamp {
-            return false
-        }
         if lhs.count != rhs.count {
             return false
         }
@@ -108,7 +90,7 @@ final class StarsBalanceComponent: Component {
         private let title = ComponentView<Empty>()
         private let subtitle = ComponentView<Empty>()
         private var button = ComponentView<Empty>()
-        private var secondaryButton = ComponentView<Empty>()
+        private var buyAdsButton = ComponentView<Empty>()
         
         private var additionalButton = ComponentView<Empty>()
         
@@ -139,13 +121,7 @@ final class StarsBalanceComponent: Component {
                 remainingCooldownSeconds = max(0, remainingCooldownSeconds)
             }
             
-            var remainingSecondaryCooldownSeconds: Int32 = 0
-            if let cooldownUntilTimestamp = component.secondaryActionCooldownUntilTimestamp {
-                remainingSecondaryCooldownSeconds = cooldownUntilTimestamp - Int32(Date().timeIntervalSince1970)
-                remainingSecondaryCooldownSeconds = max(0, remainingSecondaryCooldownSeconds)
-            }
-            
-            if remainingCooldownSeconds > 0 || remainingSecondaryCooldownSeconds > 0  {
+            if remainingCooldownSeconds > 0 {
                 if self.timer == nil {
                     self.timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self] _ in
                         guard let self else {
@@ -164,20 +140,12 @@ final class StarsBalanceComponent: Component {
             let sideInset: CGFloat = 16.0
             var contentHeight: CGFloat = sideInset
             
-            let formattedLabel = formatStarsAmountText(component.count, dateTimeFormat: component.dateTimeFormat)
-            let labelFont: UIFont
-            if formattedLabel.contains(component.dateTimeFormat.decimalSeparator) {
-                labelFont = Font.with(size: 48.0, design: .round, weight: .semibold)
-            } else {
-                labelFont = Font.with(size: 48.0, design: .round, weight: .semibold)
-            }
-            let smallLabelFont = Font.with(size: 32.0, design: .round, weight: .regular)
-            let balanceString = tonAmountAttributedString(formattedLabel, integralFont: labelFont, fractionalFont: smallLabelFont, color: component.theme.list.itemPrimaryTextColor, decimalSeparator: component.dateTimeFormat.decimalSeparator)
+            let balanceString = presentationStringsFormattedNumber(component.count, component.dateTimeFormat.groupingSeparator)
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(
                     MultilineTextComponent(
-                        text: .plain(balanceString)
+                        text: .plain(NSAttributedString(string: balanceString, font: Font.with(size: 48.0, design: .round, weight: .semibold), textColor: component.theme.list.itemPrimaryTextColor))
                     )
                 ),
                 environment: {},
@@ -229,16 +197,18 @@ final class StarsBalanceComponent: Component {
             if component.actionAvailable {
                 contentHeight += 12.0
                 
+                var actionTitle = component.actionTitle
                 var withdrawWidth = availableSize.width - sideInset * 2.0
-                if let _ = component.secondaryAction {
+                if let _ = component.buyAds {
                     withdrawWidth = (withdrawWidth - 10.0) / 2.0
+                    actionTitle = component.strings.Stars_BotRevenue_Withdraw_WithdrawShort
                 }
                 
                 let content: AnyComponentWithIdentity<Empty>
                 if remainingCooldownSeconds > 0 {
                     content = AnyComponentWithIdentity(id: AnyHashable(1 as Int), component: AnyComponent(
                         VStack([
-                            AnyComponentWithIdentity(id: AnyHashable(1 as Int), component: AnyComponent(Text(text: component.actionTitle, font: Font.semibold(17.0), color: component.theme.list.itemCheckColors.foregroundColor))),
+                            AnyComponentWithIdentity(id: AnyHashable(1 as Int), component: AnyComponent(Text(text: actionTitle, font: Font.semibold(17.0), color: component.theme.list.itemCheckColors.foregroundColor))),
                             AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(HStack([
                                 AnyComponentWithIdentity(id: 1, component: AnyComponent(BundleIconComponent(name: "Chat List/StatusLockIcon", tintColor: component.theme.list.itemCheckColors.fillColor.mixedWith(component.theme.list.itemCheckColors.foregroundColor, alpha: 0.7)))),
                                 AnyComponentWithIdentity(id: 0, component: AnyComponent(Text(text: stringForRemainingTime(remainingCooldownSeconds), font: Font.with(size: 11.0, weight: .medium, traits: [.monospacedNumbers]), color: component.theme.list.itemCheckColors.fillColor.mixedWith(component.theme.list.itemCheckColors.foregroundColor, alpha: 0.7))))
@@ -246,17 +216,7 @@ final class StarsBalanceComponent: Component {
                         ], spacing: 1.0)
                     ))
                 } else {
-                    var items: [AnyComponentWithIdentity<Empty>] = []
-                    if let icon = component.actionIcon {
-                        items.append(AnyComponentWithIdentity(id: "icon", component: AnyComponent(Image(image: icon, tintColor: component.theme.list.itemCheckColors.foregroundColor, size: icon.size))))
-                    }
-                    items.append(AnyComponentWithIdentity(id: "label", component: AnyComponent(Text(text: component.actionTitle, font: Font.semibold(17.0), color: component.theme.list.itemCheckColors.foregroundColor))))
-                    content = AnyComponentWithIdentity(
-                        id: AnyHashable(0 as Int),
-                        component: AnyComponent(
-                            HStack(items, spacing: 7.0)
-                        )
-                    )
+                    content = AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(Text(text: actionTitle, font: Font.semibold(17.0), color: component.theme.list.itemCheckColors.foregroundColor)))
                 }
                                 
                 let buttonSize = self.button.update(
@@ -289,33 +249,8 @@ final class StarsBalanceComponent: Component {
                     buttonView.frame = buttonFrame
                 }
                 
-                if let secondaryActionTitle = component.secondaryActionTitle {
-                    let content: AnyComponentWithIdentity<Empty>
-                    var items: [AnyComponentWithIdentity<Empty>] = []
-                    if let icon = component.secondaryActionIcon {
-                        items.append(AnyComponentWithIdentity(id: "icon", component: AnyComponent(Image(image: icon, tintColor: component.theme.list.itemCheckColors.foregroundColor, size: icon.size))))
-                    }
-                    if remainingSecondaryCooldownSeconds > 0 {
-                        items.append(AnyComponentWithIdentity(id: AnyHashable(1 as Int), component: AnyComponent(
-                            VStack([
-                                AnyComponentWithIdentity(id: AnyHashable(1 as Int), component: AnyComponent(Text(text: secondaryActionTitle, font: Font.semibold(17.0), color: component.theme.list.itemCheckColors.foregroundColor))),
-                                AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(HStack([
-                                    AnyComponentWithIdentity(id: 1, component: AnyComponent(BundleIconComponent(name: "Chat List/StatusLockIcon", tintColor: component.theme.list.itemCheckColors.fillColor.mixedWith(component.theme.list.itemCheckColors.foregroundColor, alpha: 0.7)))),
-                                    AnyComponentWithIdentity(id: 0, component: AnyComponent(Text(text: stringForRemainingTime(remainingSecondaryCooldownSeconds), font: Font.with(size: 11.0, weight: .medium, traits: [.monospacedNumbers]), color: component.theme.list.itemCheckColors.fillColor.mixedWith(component.theme.list.itemCheckColors.foregroundColor, alpha: 0.7))))
-                                ], spacing: 3.0)))
-                            ], spacing: 1.0)
-                        )))
-                    } else {
-                        items.append(AnyComponentWithIdentity(id: "label", component: AnyComponent(Text(text: secondaryActionTitle, font: Font.semibold(17.0), color: component.theme.list.itemCheckColors.foregroundColor))))
-                    }
-                    content = AnyComponentWithIdentity(
-                        id: AnyHashable(0 as Int),
-                        component: AnyComponent(
-                            HStack(items, spacing: 7.0)
-                        )
-                    )
-                    
-                    let buttonSize = self.secondaryButton.update(
+                if let _ = component.buyAds {
+                    let buttonSize = self.buyAdsButton.update(
                         transition: transition,
                         component: AnyComponent(ButtonComponent(
                             background: ButtonComponent.Background(
@@ -323,7 +258,7 @@ final class StarsBalanceComponent: Component {
                                 foreground: component.theme.list.itemCheckColors.foregroundColor,
                                 pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
                             ),
-                            content: content,
+                            content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(Text(text: component.strings.Stars_BotRevenue_Withdraw_BuyAds, font: Font.semibold(17.0), color: component.theme.list.itemCheckColors.foregroundColor))),
                             isEnabled: component.actionIsEnabled,
                             allowActionWhenDisabled: false,
                             displaysProgress: false,
@@ -331,13 +266,13 @@ final class StarsBalanceComponent: Component {
                                 guard let self, let component = self.component else {
                                     return
                                 }
-                                component.secondaryAction?()
+                                component.buyAds?()
                             }
                         )),
                         environment: {},
                         containerSize: CGSize(width: withdrawWidth, height: 50.0)
                     )
-                    if let buttonView = self.secondaryButton.view {
+                    if let buttonView = self.buyAdsButton.view {
                         if buttonView.superview == nil {
                             self.addSubview(buttonView)
                         }

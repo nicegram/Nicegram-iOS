@@ -356,7 +356,6 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                     selectedBackground: themeColors.reactionActiveBackground.argb,
                     deselectedForeground: themeColors.reactionInactiveForeground.argb,
                     selectedForeground: themeColors.reactionActiveForeground.argb,
-                    selectedIconTintColor: 0,
                     deselectedStarsBackground: themeColors.reactionStarsInactiveBackground.argb,
                     selectedStarsBackground: themeColors.reactionStarsActiveBackground.argb,
                     deselectedStarsForeground: themeColors.reactionStarsInactiveForeground.argb,
@@ -375,7 +374,6 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                     selectedBackground: themeColors.reactionActiveBackground.argb,
                     deselectedForeground: themeColors.reactionInactiveForeground.argb,
                     selectedForeground: themeColors.reactionActiveForeground.argb,
-                    selectedIconTintColor: 0,
                     deselectedStarsBackground: themeColors.reactionStarsInactiveBackground.argb,
                     selectedStarsBackground: themeColors.reactionStarsActiveBackground.argb,
                     deselectedStarsForeground: themeColors.reactionStarsInactiveForeground.argb,
@@ -733,7 +731,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                                 if let availableReactions = arguments.availableReactions {
                                     for availableReaction in availableReactions.reactions {
                                         if availableReaction.value == reaction.value {
-                                            centerAnimation = availableReaction.centerAnimation?._parse()
+                                            centerAnimation = availableReaction.centerAnimation
                                             break
                                         }
                                     }

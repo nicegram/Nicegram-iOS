@@ -31,7 +31,6 @@ swift_library(
         "//submodules/PeerPresenceStatusManager",
         "//submodules/UndoUI",
         "//submodules/AnimatedAvatarSetNode",
-        "//submodules/TelegramUI/Components/Chat/ChatMessagePaymentAlertController",
     ],
     visibility = [
         "//visibility:public",

@@ -77,7 +77,6 @@ import StarsIntroScreen
 import ContentReportScreen
 import AffiliateProgramSetupScreen
 import GalleryUI
-import ShareController
 
 import NGCore
 import NGData
@@ -167,33 +166,28 @@ public final class SharedAccountContextImpl: SharedAccountContext {
     public var callManager: PresentationCallManager?
     let hasInAppPurchases: Bool
     
+    private var callDisposable: Disposable?
     private var callStateDisposable: Disposable?
     
     private(set) var currentCallStatusBarNode: CallStatusBarNodeImpl?
     
-    private var callDisposable: Disposable?
     private var groupCallDisposable: Disposable?
     
     private var callController: CallController?
-    
-    private var currentCall: PresentationCurrentCall?
-    
+    private var call: PresentationCall?
     public let hasOngoingCall = ValuePromise<Bool>(false)
+    private let callState = Promise<PresentationCallState?>(nil)
     private var awaitingCallConnectionDisposable: Disposable?
     private var callPeerDisposable: Disposable?
-    private var callIsConferenceDisposable: Disposable?
     
     private var groupCallController: VoiceChatController?
     public var currentGroupCallController: ViewController? {
         return self.groupCallController
     }
-    private var hasGroupCallOnScreenValue: Bool = false
-    private let hasGroupCallOnScreenPromise = Promise<Bool>(false)
+    private let hasGroupCallOnScreenPromise = ValuePromise<Bool>(false, ignoreRepeated: true)
     public var hasGroupCallOnScreen: Signal<Bool, NoError> {
         return self.hasGroupCallOnScreenPromise.get()
     }
-    
-    private var streamController: MediaStreamComponentController?
     
     private var immediateHasOngoingCallValue = Atomic<Bool>(value: false)
     public var immediateHasOngoingCall: Bool {
@@ -837,73 +831,24 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 guard let self else {
                     return
                 }
-                
-                if let call {
-                    self.updateCurrentCall(call: .call(call))
-                } else if let current = self.currentCall, case .call = current {
-                    self.updateCurrentCall(call: nil)
-                }
-                
-                /*if call !== self.call {
-                    let previousCall = self.call
+                    
+                if call !== self.call {
                     self.call = call
                     
                     self.callController?.dismiss()
                     self.callController = nil
                     self.hasOngoingCall.set(false)
-                    self.callState.set(.single(nil))
-                    
-                    if let previousCall, let groupCallController = self.groupCallController {
-                        var matches = false
-                        switch groupCallController.call {
-                        case let .conferenceSource(conferenceSource):
-                            if conferenceSource === previousCall {
-                                matches = true
-                            }
-                        case let .group(groupCall):
-                            if (groupCall as? PresentationGroupCallImpl)?.upgradedConferenceCall === previousCall {
-                                matches = true
-                            }
-                        }
-                        
-                        if matches {
-                            self.groupCallController = nil
-                            groupCallController.dismiss(closing: true, manual: false)
-                        }
-                    }
                     
                     self.notificationController?.setBlocking(nil)
                     
                     self.callPeerDisposable?.dispose()
                     self.callPeerDisposable = nil
-                    self.callIsConferenceDisposable?.dispose()
-                    self.callIsConferenceDisposable = nil
                     
                     if let call {
+                        self.callState.set(call.state
+                        |> map(Optional.init))
                         self.hasOngoingCall.set(true)
                         setNotificationCall(call)
-                        
-                        self.callIsConferenceDisposable = (call.conferenceState
-                        |> filter { $0 != nil }
-                        |> take(1)
-                        |> deliverOnMainQueue).startStrict(next: { [weak self] _ in
-                            guard let self else {
-                                return
-                            }
-                            guard let call = self.call else {
-                                return
-                            }
-                            guard let callController = self.callController, callController.call === call else {
-                                if self.callController == nil, call.conferenceStateValue != nil {
-                                    self.presentControllerWithCurrentCall()
-                                    self.notificationController?.setBlocking(nil)
-                                }
-                                return
-                            }
-                            if call.conferenceStateValue != nil {
-                                self.presentControllerWithCurrentCall()
-                            }
-                        })
                         
                         if call.isOutgoing {
                             self.presentControllerWithCurrentCall()
@@ -963,46 +908,157 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                         self.awaitingCallConnectionDisposable = nil
                         setNotificationCall(nil)
                     }
-                }*/
+                }
             })
             
             self.groupCallDisposable = (callManager.currentGroupCallSignal
             |> deliverOnMainQueue).start(next: { [weak self] call in
-                guard let self else {
-                    return
+                if let strongSelf = self {
+                    if call !== strongSelf.groupCallController?.call {
+                        strongSelf.groupCallController?.dismiss(closing: true, manual: false)
+                        strongSelf.groupCallController = nil
+                        strongSelf.hasOngoingCall.set(false)
+                        
+                        if let call = call, let navigationController = mainWindow.viewController as? NavigationController {
+                            mainWindow.hostView.containerView.endEditing(true)
+                            
+                            if call.isStream {
+                                strongSelf.hasGroupCallOnScreenPromise.set(true)
+                                let groupCallController = MediaStreamComponentController(call: call)
+                                groupCallController.onViewDidAppear = { [weak self] in
+                                    if let strongSelf = self {
+                                        strongSelf.hasGroupCallOnScreenPromise.set(true)
+                                    }
+                                }
+                                groupCallController.onViewDidDisappear = { [weak self] in
+                                    if let strongSelf = self {
+                                        strongSelf.hasGroupCallOnScreenPromise.set(false)
+                                    }
+                                }
+                                groupCallController.navigationPresentation = .flatModal
+                                groupCallController.parentNavigationController = navigationController
+                                strongSelf.groupCallController = groupCallController
+                                navigationController.pushViewController(groupCallController)
+                            } else {
+                                strongSelf.hasGroupCallOnScreenPromise.set(true)
+                                
+                                let _ = (makeVoiceChatControllerInitialData(sharedContext: strongSelf, accountContext: call.accountContext, call: call)
+                                |> deliverOnMainQueue).start(next: { [weak strongSelf, weak navigationController] initialData in
+                                    guard let strongSelf, let navigationController else {
+                                        return
+                                    }
+                                    
+                                    let groupCallController = makeVoiceChatController(sharedContext: strongSelf, accountContext: call.accountContext, call: call, initialData: initialData)
+                                    groupCallController.onViewDidAppear = { [weak strongSelf] in
+                                        if let strongSelf {
+                                            strongSelf.hasGroupCallOnScreenPromise.set(true)
+                                        }
+                                    }
+                                    groupCallController.onViewDidDisappear = { [weak strongSelf] in
+                                        if let strongSelf {
+                                            strongSelf.hasGroupCallOnScreenPromise.set(false)
+                                        }
+                                    }
+                                    groupCallController.navigationPresentation = .flatModal
+                                    groupCallController.parentNavigationController = navigationController
+                                    strongSelf.groupCallController = groupCallController
+                                    navigationController.pushViewController(groupCallController)
+                                })
+                            }
+                            
+                            strongSelf.hasOngoingCall.set(true)
+                        } else {
+                            strongSelf.hasOngoingCall.set(false)
+                        }
+                    }
                 }
-                
-                if let call {
-                    self.updateCurrentCall(call: .group(call))
-                } else if let current = self.currentCall, case .group = current {
-                    self.updateCurrentCall(call: nil)
+            })
+            
+            let callSignal: Signal<PresentationCall?, NoError> = .single(nil)
+            |> then(
+                callManager.currentCallSignal
+                |> deliverOnMainQueue
+                |> mapToSignal { call -> Signal<PresentationCall?, NoError> in
+                    guard let call else {
+                        return .single(nil)
+                    }
+                    return call.state
+                    |> map { [weak call] state -> PresentationCall? in
+                        guard let call else {
+                            return nil
+                        }
+                        switch state.state {
+                        case .ringing:
+                            return nil
+                        case .terminating, .terminated:
+                            return nil
+                        default:
+                            return call
+                        }
+                    }
+                }
+                |> distinctUntilChanged(isEqual: { lhs, rhs in
+                    return lhs === rhs
+                })
+            )
+            let groupCallSignal: Signal<PresentationGroupCall?, NoError> = .single(nil)
+            |> then(
+                callManager.currentGroupCallSignal
+            )
+            
+            self.callStateDisposable = combineLatest(queue: .mainQueue(),
+                callSignal,
+                groupCallSignal,
+                self.hasGroupCallOnScreenPromise.get()
+            ).start(next: { [weak self] call, groupCall, hasGroupCallOnScreen in
+                if let strongSelf = self {
+                    let statusBarContent: CallStatusBarNodeImpl.Content?
+                    if let call = call {
+                        statusBarContent = .call(strongSelf, call.context.account, call)
+                    } else if let groupCall = groupCall, !hasGroupCallOnScreen {
+                        statusBarContent = .groupCall(strongSelf, groupCall.account, groupCall)
+                    } else {
+                        statusBarContent = nil
+                    }
+                    
+                    var resolvedCallStatusBarNode: CallStatusBarNodeImpl?
+                    if let statusBarContent = statusBarContent {
+                        if let current = strongSelf.currentCallStatusBarNode {
+                            resolvedCallStatusBarNode = current
+                        } else {
+                            resolvedCallStatusBarNode = CallStatusBarNodeImpl()
+                            strongSelf.currentCallStatusBarNode = resolvedCallStatusBarNode
+                        }
+                        resolvedCallStatusBarNode?.update(content: statusBarContent)
+                    } else {
+                        strongSelf.currentCallStatusBarNode = nil
+                    }
+                    
+                    if let navigationController = strongSelf.mainWindow?.viewController as? NavigationController {
+                        navigationController.setForceInCallStatusBar(resolvedCallStatusBarNode)
+                    }
                 }
             })
             
             mainWindow.inCallNavigate = { [weak self] in
-                guard let self else {
+                guard let strongSelf = self else {
                     return
                 }
-                if let callController = self.callController {
-                    mainWindow.hostView.containerView.endEditing(true)
-                    if callController.view.superview == nil {
-                        if useFlatModalCallsPresentation(context: callController.call.context) {
-                            (mainWindow.viewController as? NavigationController)?.pushViewController(callController)
-                        } else {
+                if let callController = strongSelf.callController {
+                    if callController.isNodeLoaded {
+                        mainWindow.hostView.containerView.endEditing(true)
+                        if callController.view.superview == nil {
                             mainWindow.present(callController, on: .calls)
+                        } else {
+                            callController.expandFromPipIfPossible()
                         }
-                    } else {
-                        callController.expandFromPipIfPossible()
                     }
-                } else if let groupCallController = self.groupCallController {
-                    mainWindow.hostView.containerView.endEditing(true)
-                    if groupCallController.view.superview == nil {
-                        (mainWindow.viewController as? NavigationController)?.pushViewController(groupCallController)
-                    }
-                } else if let streamController = self.streamController {
-                    mainWindow.hostView.containerView.endEditing(true)
-                    if streamController.view.superview == nil {
-                        (mainWindow.viewController as? NavigationController)?.pushViewController(streamController)
+                } else if let groupCallController = strongSelf.groupCallController {
+                    if groupCallController.isNodeLoaded {
+                        mainWindow.hostView.containerView.endEditing(true)
+                        if groupCallController.view.superview == nil {
+                            (mainWindow.viewController as? NavigationController)?.pushViewController(groupCallController)
+                        }
                     }
                 }
             }
@@ -1189,452 +1245,35 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }
     }
     
-    private func updateCurrentCall(call: PresentationCurrentCall?) {
-        if self.currentCall == call {
-            return
-        }
-        
-        if let currentCall = self.currentCall {
-            if case .call = currentCall {
-                self.callPeerDisposable?.dispose()
-                self.callPeerDisposable = nil
-                
-                self.awaitingCallConnectionDisposable?.dispose()
-                self.awaitingCallConnectionDisposable = nil
-                
-                self.notificationController?.setBlocking(nil)
-            }
-        }
-        
-        self.currentCall = call
-        
-        let beginDisplayingCallStatusBar = Promise<Void>()
-        
-        var shouldResetGroupCallOnScreen = true
-        
-        var transitioningToConferenceCallController: CallController?
-        if let call, case let .group(groupCall) = call, case let .conferenceSource(conferenceSource) = groupCall, let callController = self.callController, callController.call === conferenceSource {
-            transitioningToConferenceCallController = callController
-            if callController.navigationPresentation != .flatModal {
-                callController.dismissWithoutAnimation()
-            }
-            self.callController = nil
-            shouldResetGroupCallOnScreen = false
-        }
-        
-        if let callController = self.callController {
-            self.callController = nil
-            callController.dismiss()
-        }
-        if let groupCallController = self.groupCallController {
-            if case let .group(groupCall) = call, case let .group(groupCall) = groupCall, let conferenceSourceId = groupCall.conferenceSource {
-                if case let .conferenceSource(conferenceSource) = groupCallController.call, conferenceSource.internalId == conferenceSourceId {
-                    groupCallController.updateCall(call: .group(groupCall))
-                    
-                    self.updateInCallStatusBarData(hasGroupCallOnScreen: self.hasGroupCallOnScreenValue)
-                    
-                    return
-                }
-            }
-            
-            self.groupCallController = nil
-            groupCallController.dismiss()
-        }
-        if let streamController = self.streamController {
-            self.streamController = nil
-            streamController.dismiss()
-        }
-        
-        if shouldResetGroupCallOnScreen {
-            self.hasGroupCallOnScreenPromise.set(.single(false))
-        }
-        
-        self.callStateDisposable?.dispose()
-        self.callStateDisposable = nil
-        
-        if case let .call(call) = call {
-            let callController = CallController(sharedContext: self, account: call.context.account, call: call, easyDebugAccess: !GlobalExperimentalSettings.isAppStoreBuild)
-            self.callController = callController
-            let thisCallIsOnScreenPromise = ValuePromise<Bool>(false, ignoreRepeated: true)
-            callController.restoreUIForPictureInPicture = { [weak self, weak callController] completion in
-                guard let self, let callController else {
-                    completion(false)
-                    return
-                }
-                if callController.window == nil {
-                    if useFlatModalCallsPresentation(context: callController.call.context) {
-                        (self.mainWindow?.viewController as? NavigationController)?.pushViewController(callController)
-                    } else {
-                        self.mainWindow?.present(callController, on: .calls)
-                    }
-                }
-                completion(true)
-            }
-            callController.onViewDidAppear = {
-                thisCallIsOnScreenPromise.set(true)
-            }
-            callController.onViewDidDisappear = {
-                thisCallIsOnScreenPromise.set(false)
-            }
-            
-            if call.isOutgoing {
-                self.mainWindow?.hostView.containerView.endEditing(true)
-                
-                thisCallIsOnScreenPromise.set(true)
-                self.hasGroupCallOnScreenPromise.set(thisCallIsOnScreenPromise.get())
-                
-                if useFlatModalCallsPresentation(context: callController.call.context) {
-                    (self.mainWindow?.viewController as? NavigationController)?.pushViewController(callController)
-                } else {
-                    self.mainWindow?.present(callController, on: .calls)
-                }
-            } else {
-                self.hasGroupCallOnScreenPromise.set(thisCallIsOnScreenPromise.get())
-                
-                if !call.isIntegratedWithCallKit {
-                    self.callPeerDisposable = (call.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: call.peerId))
-                    |> deliverOnMainQueue).startStrict(next: { [weak self, weak call] peer in
-                        guard let self, let call, let peer else {
-                            return
-                        }
-                        if self.currentCall != .call(call) {
-                            return
-                        }
-                        
-                        let presentationData = self.currentPresentationData.with({ $0 })
-                        self.notificationController?.setBlocking(ChatCallNotificationItem(
-                            context: call.context,
-                            strings: presentationData.strings,
-                            nameDisplayOrder: presentationData.nameDisplayOrder,
-                            peer: peer,
-                            isVideo: call.isVideo,
-                            action: { [weak call] answerAction in
-                                guard let call else {
-                                    return
-                                }
-                                if answerAction {
-                                    self.notificationController?.setBlocking(nil)
-                                    call.answer()
-                                } else {
-                                    self.notificationController?.setBlocking(nil)
-                                    call.rejectBusy()
-                                }
-                            }
-                        ))
-                    })
-                }
-                
-                self.awaitingCallConnectionDisposable = (call.state
-                |> filter { state in
-                    switch state.state {
-                    case .ringing:
-                        return false
-                    case .terminating, .terminated:
-                        return false
-                    default:
-                        return true
-                    }
-                }
-                |> take(1)
-                |> deliverOnMainQueue).start(next: { [weak self, weak callController] _ in
-                    guard let self, let callController, self.callController === callController else {
-                        return
-                    }
-                    self.notificationController?.setBlocking(nil)
-                    
-                    self.callPeerDisposable?.dispose()
-                    self.callPeerDisposable = nil
-                    
-                    thisCallIsOnScreenPromise.set(true)
-                    if useFlatModalCallsPresentation(context: callController.call.context) {
-                        (self.mainWindow?.viewController as? NavigationController)?.pushViewController(callController)
-                    } else {
-                        self.mainWindow?.present(callController, on: .calls)
-                    }
-                })
-            }
-            
-            beginDisplayingCallStatusBar.set(call.state
-            |> filter { state in
-                switch state.state {
-                case .ringing:
-                    return false
-                case .terminating, .terminated:
-                    return false
-                default:
-                    return true
-                }
-            }
-            |> take(1)
-            |> map { _ -> Void in
-                return Void()
-            })
-        }
-        
-        var groupCallIsStream = false
-        if case let .group(groupCall) = call, case let .group(value) = groupCall {
-            groupCallIsStream = value.isStream
-        }
-        
-        if case let .group(groupCall) = call, !groupCallIsStream {
-            let _ = (makeVoiceChatControllerInitialData(sharedContext: self, accountContext: groupCall.accountContext, call: groupCall)
-            |> deliverOnMainQueue).start(next: { [weak self, weak transitioningToConferenceCallController] initialData in
-                guard let self else {
-                    return
-                }
-                guard let navigationController = self.mainWindow?.viewController as? NavigationController else {
-                    return
-                }
-                
-                let thisCallIsOnScreenPromise = ValuePromise<Bool>(false, ignoreRepeated: true)
-                
-                let groupCallController = makeVoiceChatController(sharedContext: self, accountContext: groupCall.accountContext, call: groupCall, initialData: initialData, sourceCallController: transitioningToConferenceCallController)
-                groupCallController.onViewDidAppear = {
-                    thisCallIsOnScreenPromise.set(true)
-                }
-                groupCallController.onViewDidDisappear = {
-                    thisCallIsOnScreenPromise.set(false)
-                }
-                groupCallController.navigationPresentation = .flatModal
-                groupCallController.parentNavigationController = navigationController
-                self.groupCallController = groupCallController
-                
-                self.mainWindow?.hostView.containerView.endEditing(true)
-                
-                thisCallIsOnScreenPromise.set(true)
-                self.hasGroupCallOnScreenPromise.set(thisCallIsOnScreenPromise.get())
-                beginDisplayingCallStatusBar.set(.single(Void()))
-                
-                if let transitioningToConferenceCallController {
-                    transitioningToConferenceCallController.onViewDidAppear = nil
-                    transitioningToConferenceCallController.onViewDidDisappear = nil
-                }
-                
-                if let transitioningToConferenceCallController {
-                    var viewControllers = navigationController.viewControllers
-                    if let index = viewControllers.firstIndex(where: { $0 === transitioningToConferenceCallController }) {
-                        viewControllers.insert(groupCallController, at: index)
-                        navigationController.setViewControllers(viewControllers, animated: false)
-                        #if DEBUG
-                        assert(viewControllers[index + 1] === transitioningToConferenceCallController)
-                        #endif
-                        viewControllers.removeAll(where: { $0 === transitioningToConferenceCallController })
-                        navigationController.setViewControllers(viewControllers, animated: false)
-                    } else {
-                        navigationController.pushViewController(groupCallController)
-                    }
-                } else {
-                    navigationController.pushViewController(groupCallController)
-                }
-            })
-        }
-        
-        if case let .group(groupCall) = call, case let .group(group) = groupCall, groupCallIsStream {
-            if let navigationController = self.mainWindow?.viewController as? NavigationController {
-                let streamController = MediaStreamComponentController(call: group)
-                streamController.navigationPresentation = .flatModal
-                streamController.parentNavigationController = navigationController
-                
-                let thisCallIsOnScreenPromise = ValuePromise<Bool>(false, ignoreRepeated: true)
-                streamController.onViewDidAppear = {
-                    thisCallIsOnScreenPromise.set(true)
-                }
-                streamController.onViewDidDisappear = {
-                    thisCallIsOnScreenPromise.set(false)
-                }
-                
-                self.streamController = streamController
-                
-                self.mainWindow?.hostView.containerView.endEditing(true)
-                
-                thisCallIsOnScreenPromise.set(true)
-                self.hasGroupCallOnScreenPromise.set(thisCallIsOnScreenPromise.get())
-                beginDisplayingCallStatusBar.set(.single(Void()))
-                
-                navigationController.pushViewController(streamController)
-            }
-        }
-        
-        if self.currentCall != nil {
-            self.callStateDisposable = (combineLatest(queue: .mainQueue(),
-                self.hasGroupCallOnScreenPromise.get(),
-                beginDisplayingCallStatusBar.get()
-            )
-            |> deliverOnMainQueue).startStrict(next: { [weak self] hasGroupCallOnScreen, _ in
-                guard let self else {
-                    return
-                }
-                self.hasGroupCallOnScreenValue = hasGroupCallOnScreen
-                self.updateInCallStatusBarData(hasGroupCallOnScreen: hasGroupCallOnScreen)
-            })
-        } else {
-            self.hasGroupCallOnScreenValue = false
-            self.currentCallStatusBarNode = nil
-            if let navigationController = self.mainWindow?.viewController as? NavigationController {
-                navigationController.setForceInCallStatusBar(nil)
-            }
-        }
-    }
-    
-    private func updateInCallStatusBarData(hasGroupCallOnScreen: Bool) {
-        var statusBarContent: CallStatusBarNodeImpl.Content?
-        if !hasGroupCallOnScreen, let currentCall = self.currentCall {
-            switch currentCall {
-            case let .call(call):
-                statusBarContent = .call(self, call.context.account, call)
-            case let .group(groupCall):
-                switch groupCall {
-                case let .conferenceSource(conferenceSource):
-                    statusBarContent = .call(self, conferenceSource.context.account, conferenceSource)
-                case let .group(groupCall):
-                    statusBarContent = .groupCall(self, groupCall.account, groupCall)
-                }
-            }
-        }
-        
-        var resolvedCallStatusBarNode: CallStatusBarNodeImpl?
-        if let statusBarContent {
-            if let current = self.currentCallStatusBarNode {
-                resolvedCallStatusBarNode = current
-            } else {
-                resolvedCallStatusBarNode = CallStatusBarNodeImpl()
-                self.currentCallStatusBarNode = resolvedCallStatusBarNode
-            }
-            resolvedCallStatusBarNode?.update(content: statusBarContent)
-        } else {
-            self.currentCallStatusBarNode = nil
-        }
-        
-        if let navigationController = self.mainWindow?.viewController as? NavigationController {
-            navigationController.setForceInCallStatusBar(resolvedCallStatusBarNode)
-        }
-    }
-    
     private func presentControllerWithCurrentCall() {
-        /*guard let call = self.call else {
+        guard let call = self.call else {
             return
         }
         
-        if call.conferenceStateValue != nil {
-            if let groupCallController = self.groupCallController {
-                if groupCallController.call == call.conferenceCall.flatMap(VideoChatCall.group) || groupCallController.call == .conferenceSource(call) {
-                    return
-                }
-                groupCallController.dismiss(closing: true, manual: false)
-                self.groupCallController = nil
-            }
-            var transitioniongCallController: CallController?
-            if let callController = self.callController {
-                transitioniongCallController = callController
-                if callController.navigationPresentation != .flatModal {
-                    callController.dismissWithoutAnimation()
-                }
+        if let currentCallController = self.callController {
+            if currentCallController.call == .call(call) {
+                self.navigateToCurrentCall()
+                return
+            } else {
                 self.callController = nil
+                currentCallController.dismiss()
             }
-            
-            let groupCall: VideoChatCall
-            if let conferenceCall = call.conferenceCall, case .ready = call.conferenceStateValue {
-                groupCall = .group(conferenceCall)
-            } else {
-                groupCall = .conferenceSource(call)
+        }
+        
+        self.mainWindow?.hostView.containerView.endEditing(true)
+        let callController = CallController(sharedContext: self, account: call.context.account, call: .call(call), easyDebugAccess: !GlobalExperimentalSettings.isAppStoreBuild)
+        self.callController = callController
+        callController.restoreUIForPictureInPicture = { [weak self, weak callController] completion in
+            guard let self, let callController else {
+                completion(false)
+                return
             }
-            let _ = (makeVoiceChatControllerInitialData(sharedContext: self, accountContext: call.context, call: groupCall)
-            |> deliverOnMainQueue).start(next: { [weak self, weak transitioniongCallController] initialData in
-                guard let self else {
-                    return
-                }
-                guard let navigationController = self.mainWindow?.viewController as? NavigationController else {
-                    return
-                }
-                guard let call = self.call else {
-                    return
-                }
-                
-                let groupCall: VideoChatCall
-                if let conferenceCall = call.conferenceCall, case .ready = call.conferenceStateValue {
-                    groupCall = .group(conferenceCall)
-                } else {
-                    groupCall = .conferenceSource(call)
-                }
-                
-                let groupCallController = makeVoiceChatController(sharedContext: self, accountContext: call.context, call: groupCall, initialData: initialData, sourceCallController: transitioniongCallController)
-                groupCallController.onViewDidAppear = { [weak self] in
-                    if let self {
-                        self.hasGroupCallOnScreenPromise.set(true)
-                    }
-                }
-                groupCallController.onViewDidDisappear = { [weak self] in
-                    if let self {
-                        self.hasGroupCallOnScreenPromise.set(false)
-                    }
-                }
-                groupCallController.navigationPresentation = .flatModal
-                groupCallController.parentNavigationController = navigationController
-                self.groupCallController = groupCallController
-                
-                transitioniongCallController?.onViewDidAppear = nil
-                transitioniongCallController?.onViewDidDisappear = nil
-                
-                self.hasGroupCallOnScreenPromise.set(true)
-                if let transitioniongCallController, let navigationController = transitioniongCallController.navigationController as? NavigationController {
-                    var viewControllers = navigationController.viewControllers
-                    if let index = viewControllers.firstIndex(where: { $0 === transitioniongCallController }) {
-                        viewControllers.insert(groupCallController, at: index)
-                        navigationController.setViewControllers(viewControllers, animated: false)
-                        viewControllers.remove(at: index + 1)
-                        navigationController.setViewControllers(viewControllers, animated: false)
-                    } else {
-                        navigationController.pushViewController(groupCallController)
-                    }
-                } else {
-                    navigationController.pushViewController(groupCallController)
-                }
-            })
-        } else {
-            if let currentCallController = self.callController {
-                if currentCallController.call === call {
-                    self.navigateToCurrentCall()
-                    return
-                } else {
-                    self.callController = nil
-                    currentCallController.dismiss()
-                }
-            }
-            
-            self.mainWindow?.hostView.containerView.endEditing(true)
-            let callController = CallController(sharedContext: self, account: call.context.account, call: call, easyDebugAccess: !GlobalExperimentalSettings.isAppStoreBuild)
-            self.callController = callController
-            callController.restoreUIForPictureInPicture = { [weak self, weak callController] completion in
-                guard let self, let callController else {
-                    completion(false)
-                    return
-                }
-                if callController.window == nil {
-                    if useFlatModalCallsPresentation(context: callController.call.context) {
-                        (self.mainWindow?.viewController as? NavigationController)?.pushViewController(callController)
-                    } else {
-                        self.mainWindow?.present(callController, on: .calls)
-                    }
-                }
-                completion(true)
-            }
-            callController.onViewDidAppear = { [weak self] in
-                if let self {
-                    self.hasGroupCallOnScreenPromise.set(true)
-                }
-            }
-            callController.onViewDidDisappear = { [weak self] in
-                if let self {
-                    self.hasGroupCallOnScreenPromise.set(false)
-                }
-            }
-            if useFlatModalCallsPresentation(context: callController.call.context) {
-                self.hasGroupCallOnScreenPromise.set(true)
-                (self.mainWindow?.viewController as? NavigationController)?.pushViewController(callController)
-            } else {
+            if callController.window == nil {
                 self.mainWindow?.present(callController, on: .calls)
             }
-        }*/
+            completion(true)
+        }
+        self.mainWindow?.present(callController, on: .calls)
     }
     
     public func updateNotificationTokensRegistration() {
@@ -1925,22 +1564,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         if let callController = self.callController {
             if callController.isNodeLoaded && callController.view.superview == nil {
                 mainWindow.hostView.containerView.endEditing(true)
-                
-                if useFlatModalCallsPresentation(context: callController.call.context) {
-                    (mainWindow.viewController as? NavigationController)?.pushViewController(callController)
-                } else {
-                    mainWindow.present(callController, on: .calls)
-                }
+                mainWindow.present(callController, on: .calls)
             }
         } else if let groupCallController = self.groupCallController {
             if groupCallController.isNodeLoaded && groupCallController.view.superview == nil {
                 mainWindow.hostView.containerView.endEditing(true)
                 (mainWindow.viewController as? NavigationController)?.pushViewController(groupCallController)
-            }
-        } else if let streamController = self.streamController {
-            if streamController.isNodeLoaded && streamController.view.superview == nil {
-                mainWindow.hostView.containerView.endEditing(true)
-                (mainWindow.viewController as? NavigationController)?.pushViewController(streamController)
             }
         }
     }
@@ -2300,8 +1929,6 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }, playMessageEffect: { _ in
         }, editMessageFactCheck: { _ in
         }, sendGift: { _ in
-        }, openUniqueGift: { _ in
-        }, openMessageFeeException: {
         }, requestMessageUpdate: { _, _ in
         }, cancelInteractiveKeyboardGestures: {
         }, dismissTextInput: {
@@ -2606,8 +2233,6 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSource = .messageEffects
         case .animatedEmoji:
             mappedSource = .animatedEmoji
-        case .paidMessages:
-            mappedSource = .paidMessages
         }
         let controller = PremiumIntroScreen(context: context, source: mappedSource, modal: modal, forceDark: forceDark)
         controller.wasDismissed = dismissed
@@ -2664,8 +2289,6 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mappedSubject = .folderTags
         case .messageEffects:
             mappedSubject = .messageEffects
-        case .paidMessages:
-            mappedSubject = .paidMessages
         case .business:
             mappedSubject = .business
             buttonText = presentationData.strings.Chat_EmptyStateIntroFooterPremiumActionButton
@@ -2721,7 +2344,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
 
         var presentBirthdayPickerImpl: (() -> Void)?
-        let starsMode: ContactSelectionControllerMode = .starsGifting(birthdays: birthdays, hasActions: false, showSelf: false, selfSubtitle: nil)
+        let starsMode: ContactSelectionControllerMode = .starsGifting(birthdays: birthdays, hasActions: false, showSelf: false)
     
         let contactOptions: Signal<[ContactListAdditionalOption], NoError> = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Birthday(id: context.account.peerId))
         |> map { birthday in
@@ -2796,27 +2419,21 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         var mode: ContactSelectionControllerMode = .generic
         var currentBirthdays: [EnginePeer.Id: TelegramBirthday]?
         
-        if case let .starGiftTransfer(birthdays, _, _, _, _, showSelf) = source {
-            mode = .starsGifting(birthdays: birthdays, hasActions: false, showSelf: showSelf, selfSubtitle: presentationData.strings.Premium_Gift_ContactSelection_TransferSelf)
+        if case let .starGiftTransfer(birthdays, _, _, _, _) = source {
+            mode = .starsGifting(birthdays: birthdays, hasActions: false, showSelf: false)
             currentBirthdays = birthdays
         } else if case let .chatList(birthdays) = source {
-            mode = .starsGifting(birthdays: birthdays, hasActions: true, showSelf: true, selfSubtitle: presentationData.strings.Premium_Gift_ContactSelection_BuySelf)
+            mode = .starsGifting(birthdays: birthdays, hasActions: true, showSelf: true)
             currentBirthdays = birthdays
         } else if case let .settings(birthdays) = source {
-            mode = .starsGifting(birthdays: birthdays, hasActions: true, showSelf: true, selfSubtitle: presentationData.strings.Premium_Gift_ContactSelection_BuySelf)
+            mode = .starsGifting(birthdays: birthdays, hasActions: true, showSelf: true)
             currentBirthdays = birthdays
         } else {
-            mode = .starsGifting(birthdays: nil, hasActions: true, showSelf: false, selfSubtitle: nil)
+            mode = .starsGifting(birthdays: nil, hasActions: true, showSelf: false)
         }
         
-        var allowChannelsInSearch = false
-        var isChannelGift = false
         let contactOptions: Signal<[ContactListAdditionalOption], NoError>
-        if case let .starGiftTransfer(_, reference, _, _, canExportDate, _) = source {
-            allowChannelsInSearch = true
-            if case let .peer(peerId, _) = reference, peerId.namespace == Namespaces.Peer.CloudChannel {
-                isChannelGift = true
-            }
+        if case let .starGiftTransfer(_, _, _, _, canExportDate) = source {
             var subtitle: String?
             if let canExportDate {
                 let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
@@ -2882,7 +2499,6 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             autoDismiss: false,
             title: { _ in return title },
             options: contactOptions,
-            allowChannelsInSearch: allowChannelsInSearch,
             openProfile: { peer in
                 openProfileImpl?(peer)
             },
@@ -2964,58 +2580,30 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         }
         
         presentExportAlertImpl = { [weak controller] in
-            guard let controller, case let .starGiftTransfer(_, reference, gift, _, canExportDate, _) = source, let canExportDate else {
+            guard let controller, case let .starGiftTransfer(_, _, _, _, canExportDate) = source, let canExportDate else {
                 return
             }
             let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+            let title: String
+            let text: String
             if currentTime > canExportDate {
-                let alertController = giftWithdrawAlertController(context: context, gift: gift, commit: {
-                    let _ = (context.engine.payments.checkStarGiftWithdrawalAvailability(reference: reference)
-                    |> deliverOnMainQueue).start(error: { [weak controller] error in
-                        switch error {
-                        case .serverProvided:
-                            return
-                        case .requestPassword:
-                            let alertController = confirmGiftWithdrawalController(context: context, reference: reference, present: { [weak controller] c, a in
-                                controller?.present(c, in: .window(.root))
-                            }, completion: { [weak controller] url in
-                                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                                context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: url, forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
-                                
-                                guard let controller, let navigationController = controller.navigationController as? NavigationController else {
-                                    return
-                                }
-                                var controllers = navigationController.viewControllers
-                                controllers = controllers.filter { !($0 is ContactSelectionController) }
-                                navigationController.setViewControllers(controllers, animated: true)
-                            })
-                            controller?.present(alertController, in: .window(.root))
-                        default:
-                            let alertController = giftWithdrawalController(context: context, reference: reference, initialError: error, present: { [weak controller] c, a in
-                                controller?.present(c, in: .window(.root))
-                            }, completion: { _ in
-                                
-                            })
-                            controller?.present(alertController, in: .window(.root))
-                        }
-                    })
-                })
-                controller.present(alertController, in: .window(.root))
+                title = presentationData.strings.Gift_Transfer_UpdateRequired_Title
+                text = presentationData.strings.Gift_Transfer_UpdateRequired_Text
             } else {
                 let delta = canExportDate - currentTime
                 let days: Int32 = Int32(ceil(Float(delta) / 86400.0))
                 let daysString = presentationData.strings.Gift_Transfer_UnlockPending_Text_Days(days)
-                let title = presentationData.strings.Gift_Transfer_UnlockPending_Title
-                let text = presentationData.strings.Gift_Transfer_UnlockPending_Text(daysString).string
-                let alertController = textAlertController(context: context, title: title, text: text, actions: [
-                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
-                ])
-                controller.present(alertController, in: .window(.root))
+                title = presentationData.strings.Gift_Transfer_UnlockPending_Title
+                text = presentationData.strings.Gift_Transfer_UnlockPending_Text(daysString).string
             }
+            let alertController = textAlertController(context: context, title: title, text: text, actions: [
+                TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+            ])
+            controller.present(alertController, in: .window(.root))
         }
         
         presentTransferAlertImpl = { [weak controller] peer in
-            guard let controller, case let .starGiftTransfer(_, _, gift, transferStars, _, _) = source else {
+            guard let controller, case let .starGiftTransfer(_, _, gift, transferStars, _) = source else {
                 return
             }
             let alertController = giftTransferAlertController(context: context, gift: gift, peer: peer, transferStars: transferStars, commit: { [weak controller] in
@@ -3026,42 +2614,25 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 }
                 var controllers = navigationController.viewControllers
                 controllers = controllers.filter { !($0 is ContactSelectionController) }
-                
-                if !isChannelGift {
-                    if peer.id.namespace == Namespaces.Peer.CloudChannel {
-                        if let controller = context.sharedContext.makePeerInfoController(
-                            context: context,
-                            updatedPresentationData: nil,
-                            peer: peer._asPeer(),
-                            mode: .gifts,
-                            avatarInitiallyExpanded: false,
-                            fromChat: false,
-                            requestsContext: nil
-                        ) {
-                            controllers.append(controller)
-                        }
-                    } else {
-                        var foundController = false
-                        for controller in controllers.reversed() {
-                            if let chatController = controller as? ChatController, case .peer(id: peer.id) = chatController.chatLocation {
-                                chatController.hintPlayNextOutgoingGift()
-                                foundController = true
-                                break
-                            }
-                        }
-                        if !foundController {
-                            let chatController = context.sharedContext.makeChatController(context: context, chatLocation: .peer(id: peer.id), subject: nil, botStart: nil, mode: .standard(.default), params: nil)
-                            chatController.hintPlayNextOutgoingGift()
-                            controllers.append(chatController)
-                        }
+                var foundController = false
+                for controller in controllers.reversed() {
+                    if let chatController = controller as? ChatController, case .peer(id: peer.id) = chatController.chatLocation {
+                        chatController.hintPlayNextOutgoingGift()
+                        foundController = true
+                        break
                     }
+                }
+                if !foundController {
+                    let chatController = context.sharedContext.makeChatController(context: context, chatLocation: .peer(id: peer.id), subject: nil, botStart: nil, mode: .standard(.default), params: nil)
+                    chatController.hintPlayNextOutgoingGift()
+                    controllers.append(chatController)
                 }
                 navigationController.setViewControllers(controllers, animated: true)
                 
                 Queue.mainQueue().after(0.3) {
                     let tooltipController = UndoOverlayController(
                         presentationData: presentationData,
-                        content: .forward(savedMessages: false, text: presentationData.strings.Gift_Transfer_Success("\(gift.title) #\(presentationStringsFormattedNumber(gift.number, presentationData.dateTimeFormat.groupingSeparator))", peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)).string),
+                        content: .forward(savedMessages: false, text: presentationData.strings.Gift_Transfer_Success("\(gift.title) #\(gift.number)", peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)).string),
                         elevatedLayout: false,
                         action: { _ in return true }
                     )
@@ -3076,11 +2647,11 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return controller
     }
     
-    public func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption], hasBirthday: Bool, completion: (() -> Void)?) -> ViewController {
+    public func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption], hasBirthday: Bool) -> ViewController {
         guard let starsContext = context.starsContext else {
             fatalError()
         }
-        let controller = GiftOptionsScreen(context: context, starsContext: starsContext, peerId: peerId, premiumOptions: premiumOptions, hasBirthday: hasBirthday, completion: completion)
+        let controller = GiftOptionsScreen(context: context, starsContext: starsContext, peerId: peerId, premiumOptions: premiumOptions, hasBirthday: hasBirthday)
         controller.navigationPresentation = .modal
         return controller
     }
@@ -3470,10 +3041,6 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return StarsWithdrawScreen(context: context, mode: .withdraw(stats), completion: completion)
     }
     
-    public func makeStarsWithdrawalScreen(context: AccountContext, completion: @escaping (Int64) -> Void) -> ViewController {
-        return StarsWithdrawScreen(context: context, mode: .accountWithdraw, completion: completion)
-    }
-    
     public func makeStarsGiftScreen(context: AccountContext, message: EngineMessage) -> ViewController {
         return StarsTransactionScreen(context: context, subject: .gift(message))
     }
@@ -3486,90 +3053,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return StarsIntroScreen(context: context)
     }
     
-    public func makeGiftViewScreen(context: AccountContext, message: EngineMessage, shareStory: ((StarGift.UniqueGift) -> Void)?) -> ViewController {
-        return GiftViewScreen(context: context, subject: .message(message), shareStory: shareStory)
-    }
-    
-    public func makeGiftViewScreen(context: AccountContext, gift: StarGift.UniqueGift, shareStory: ((StarGift.UniqueGift) -> Void)?, dismissed: (() -> Void)?) -> ViewController {
-        let controller = GiftViewScreen(context: context, subject: .uniqueGift(gift), shareStory: shareStory)
-        controller.disposed = {
-            dismissed?()
-        }
-        return controller
-    }
-    
-    public func makeGiftWearPreviewScreen(context: AccountContext, gift: StarGift.UniqueGift) -> ViewController {
-        let controller = GiftViewScreen(context: context, subject: .wearPreview(gift))
-        return controller
-    }
-    
-    public func makeStorySharingScreen(context: AccountContext, subject: StorySharingSubject, parentController: ViewController) -> ViewController {
-        let editorSubject: Signal<MediaEditorScreenImpl.Subject?, NoError>
-        switch subject {
-        case let .messages(messages):
-            editorSubject = .single(.message(messages.map { $0.id }))
-        case let .gift(gift):
-            editorSubject = .single(.gift(gift))
-        }
-        
-        let externalState = MediaEditorTransitionOutExternalState(
-            storyTarget: nil,
-            isForcedTarget: false,
-            isPeerArchived: false,
-            transitionOut: nil
-        )
-        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let controller = MediaEditorScreenImpl(
-            context: context,
-            mode: .storyEditor,
-            subject: editorSubject,
-            transitionIn: nil,
-            transitionOut: { _, _ in
-                return nil
-            },
-            completion: { [weak parentController] result, commit in
-                let targetPeerId: EnginePeer.Id
-                let target: Stories.PendingTarget
-                if let sendAsPeerId = result.options.sendAsPeerId {
-                    target = .peer(sendAsPeerId)
-                    targetPeerId = sendAsPeerId
-                } else {
-                    target = .myStories
-                    targetPeerId = context.account.peerId
-                }
-                externalState.storyTarget = target
-                
-                if let rootController = context.sharedContext.mainWindow?.viewController as? TelegramRootControllerInterface {
-                    rootController.proceedWithStoryUpload(target: target, result: result, existingMedia: nil, forwardInfo: nil, externalState: externalState, commit: commit)
-                }
-                
-                let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: targetPeerId))
-                |> deliverOnMainQueue).start(next: { peer in
-                    guard let peer else {
-                        return
-                    }
-                    let text: String
-                    if case .channel = peer {
-                        text = presentationData.strings.Story_MessageReposted_Channel(peer.compactDisplayTitle).string
-                    } else {
-                        text = presentationData.strings.Story_MessageReposted_Personal
-                    }
-                    Queue.mainQueue().after(0.25) {
-                        parentController?.present(UndoOverlayController(
-                            presentationData: presentationData,
-                            content: .forward(savedMessages: false, text: text),
-                            elevatedLayout: false,
-                            action: { _ in return false }
-                        ), in: .current)
-                        
-                        Queue.mainQueue().after(0.1) {
-                            HapticFeedback().success()
-                        }
-                    }
-                })
-            }
-        )
-        return controller
+    public func makeGiftViewScreen(context: AccountContext, message: EngineMessage) -> ViewController {
+        return GiftViewScreen(context: context, subject: .message(message))
     }
     
     public func makeContentReportScreen(context: AccountContext, subject: ReportContentSubject, forceDark: Bool, present: @escaping (ViewController) -> Void, completion: @escaping () -> Void, requestSelectMessages: ((String, Data, String?) -> Void)?) {
@@ -3581,24 +3066,12 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         })
     }
     
-    public func makeShareController(context: AccountContext, subject: ShareControllerSubject, forceExternal: Bool, shareStory: (() -> Void)?, enqueued: (([PeerId], [Int64]) -> Void)?, actionCompleted: (() -> Void)?) -> ViewController {
-        let controller = ShareController(context: context, subject: subject, externalShare: forceExternal)
-        controller.shareStory = shareStory
-        controller.enqueued = enqueued
-        controller.actionCompleted = actionCompleted
-        return controller
-    }
-    
     public func makeMiniAppListScreenInitialData(context: AccountContext) -> Signal<MiniAppListScreenInitialData, NoError> {
         return MiniAppListScreen.initialData(context: context)
     }
     
     public func makeMiniAppListScreen(context: AccountContext, initialData: MiniAppListScreenInitialData) -> ViewController {
         return MiniAppListScreen(context: context, initialData: initialData as! MiniAppListScreen.InitialData)
-    }
-    
-    public func makeIncomingMessagePrivacyScreen(context: AccountContext, value: GlobalPrivacySettings.NonContactChatsPrivacy, exceptions: SelectivePrivacySettings, update: @escaping (GlobalPrivacySettings.NonContactChatsPrivacy) -> Void) -> ViewController {
-        return incomingMessagePrivacyScreen(context: context, value: value, exceptions: exceptions, update: update)
     }
     
     public func openWebApp(context: AccountContext, parentController: ViewController, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, botPeer: EnginePeer, chatPeer: EnginePeer?, threadId: Int64?, buttonText: String, url: String, simple: Bool, source: ChatOpenWebViewSource, skipTermsOfService: Bool, payload: String?) {
@@ -3633,21 +3106,15 @@ private func peerInfoControllerImpl(context: AccountContext, updatedPresentation
     } else if let _ = peer as? TelegramChannel {
         var forumTopicThread: ChatReplyThreadMessage?
         var switchToRecommendedChannels = false
-        var switchToGifts = false
-        var switchToGroupsInCommon = false
         switch mode {
         case let .forumTopic(thread):
             forumTopicThread = thread
         case .recommendedChannels:
             switchToRecommendedChannels = true
-        case .gifts:
-            switchToGifts = true
-        case .groupsInCommon:
-            switchToGroupsInCommon = true
         default:
             break
         }
-        return PeerInfoScreenImpl(context: context, updatedPresentationData: updatedPresentationData, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, nearbyPeerDistance: nil, reactionSourceMessageId: nil, callMessages: [], forumTopicThread: forumTopicThread, switchToRecommendedChannels: switchToRecommendedChannels, switchToGifts: switchToGifts, switchToGroupsInCommon: switchToGroupsInCommon)
+        return PeerInfoScreenImpl(context: context, updatedPresentationData: updatedPresentationData, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, nearbyPeerDistance: nil, reactionSourceMessageId: nil, callMessages: [], forumTopicThread: forumTopicThread, switchToRecommendedChannels: switchToRecommendedChannels)
     } else if peer is TelegramUser {
         var nearbyPeerDistance: Int32?
         var reactionSourceMessageId: MessageId?
@@ -3656,7 +3123,6 @@ private func peerInfoControllerImpl(context: AccountContext, updatedPresentation
         var forumTopicThread: ChatReplyThreadMessage?
         var isMyProfile = false
         var switchToGifts = false
-        var switchToGroupsInCommon = false
         
         switch mode {
         case let .nearbyPeer(distance):
@@ -3673,27 +3139,16 @@ private func peerInfoControllerImpl(context: AccountContext, updatedPresentation
             forumTopicThread = thread
         case .myProfile:
             isMyProfile = true
-        case .gifts:
-            switchToGifts = true
         case .myProfileGifts:
             isMyProfile = true
             switchToGifts = true
-        case .groupsInCommon:
-            switchToGroupsInCommon = true
         default:
             break
         }
         // MARK: Nicegram NCG-7704 God's eye, isBot
-        return PeerInfoScreenImpl(context: context, updatedPresentationData: updatedPresentationData, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, nearbyPeerDistance: nearbyPeerDistance, reactionSourceMessageId: reactionSourceMessageId, callMessages: callMessages, isMyProfile: isMyProfile, hintGroupInCommon: hintGroupInCommon, forumTopicThread: forumTopicThread, switchToGifts: switchToGifts, switchToGroupsInCommon: switchToGroupsInCommon, isBot: (peer as? TelegramUser)?.botInfo != nil)
+        return PeerInfoScreenImpl(context: context, updatedPresentationData: updatedPresentationData, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, nearbyPeerDistance: nearbyPeerDistance, reactionSourceMessageId: reactionSourceMessageId, callMessages: callMessages, isMyProfile: isMyProfile, hintGroupInCommon: hintGroupInCommon, forumTopicThread: forumTopicThread, switchToGifts: switchToGifts, isBot: (peer as? TelegramUser)?.botInfo != nil)
     } else if peer is TelegramSecretChat {
         return PeerInfoScreenImpl(context: context, updatedPresentationData: updatedPresentationData, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, nearbyPeerDistance: nil, reactionSourceMessageId: nil, callMessages: [])
     }
     return nil
-}
-
-private func useFlatModalCallsPresentation(context: AccountContext) -> Bool {
-    if let data = context.currentAppConfiguration.with({ $0 }).data, data["ios_killswitch_modalcalls"] != nil {
-        return false
-    }
-    return true
 }

@@ -47,7 +47,6 @@ swift_library(
         "//submodules/Components/BlurredBackgroundComponent",
         "//submodules/ProgressNavigationButtonNode",
         "//submodules/TelegramUI/Components/Gifts/GiftViewScreen",
-        "//submodules/ConfettiEffect",
     ],
     visibility = [
         "//visibility:public",

@@ -31,10 +31,6 @@
 - (void)prepareForEditing;
 - (void)returnFromEditing;
 
-- (void)prepareForCoverEditing;
-- (void)returnFromCoverEditing;
-
-- (NSTimeInterval)currentPosition;
 - (UIImage *)screenImage;
 - (UIImage *)transitionImage;
 - (CGRect)editorTransitionViewRect;

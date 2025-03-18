@@ -75,10 +75,9 @@ private final class PrefetchManagerInnerImpl {
                     let popularEmoji = ["\u{2764}", "👍", "👎", "😳", "😒", "🥳", "😡", "😮", "😂", "😘", "😍", "🙄", "😎"]
                     for emoji in popularEmoji {
                         if let sticker = animatedEmojiStickers[emoji] {
-                            let stickerFile = sticker.file._parse()
-                            if let _ = account.postbox.mediaBox.completedResourcePath(stickerFile.resource) {
+                            if let _ = account.postbox.mediaBox.completedResourcePath(sticker.file.resource) {
                             } else {
-                                stickerItems.append(.animatedEmojiSticker(stickerFile))
+                                stickerItems.append(.animatedEmojiSticker(sticker.file))
                             }
                         }
                     }

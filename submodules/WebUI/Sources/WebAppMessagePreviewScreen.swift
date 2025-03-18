@@ -22,7 +22,6 @@ import ListSectionComponent
 import ListItemComponentAdaptor
 import TelegramStringFormatting
 import UndoUI
-import ChatMessagePaymentAlertController
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -325,8 +324,7 @@ private final class WebAppMessagePreviewSheetComponent: CombinedComponent {
                         preparedMessage: context.component.preparedMessage,
                         dismiss: {
                             animateOut.invoke(Action { _ in
-                                if let controller = controller() as? WebAppMessagePreviewScreen {
-                                    controller.completeWithResult(false)
+                                if let controller = controller() {
                                     controller.dismiss(completion: nil)
                                 }
                             })
@@ -411,100 +409,45 @@ public final class WebAppMessagePreviewScreen: ViewControllerComponentContainer 
         fatalError("init(coder:) has not been implemented")
     }
     
-    private func presentPaidMessageAlertIfNeeded(peers: [EnginePeer], requiresStars: [EnginePeer.Id: Int64], completion: @escaping () -> Void) {
+    fileprivate func complete(peers: [EnginePeer]) {
+        for peer in peers {
+            let _ = self.context.engine.messages.enqueueOutgoingMessage(
+                to: peer.id,
+                replyTo: nil,
+                storyId: nil,
+                content: .preparedInlineMessage(self.preparedMessage)
+            ).start()
+        }
         
-    }
-    
-    fileprivate func complete(peers: [EnginePeer], controller: ViewController?) {
-        let _ = (self.context.engine.data.get(
-            EngineDataMap(
-                peers.map { TelegramEngine.EngineData.Item.Peer.SendPaidMessageStars.init(id: $0.id) }
-            )
-        )
-        |> deliverOnMainQueue).start(next: { [weak self] sendPaidMessageStars in
-            guard let self else {
-                return
-            }
-            var totalAmount: StarsAmount = .zero
-            var chargingPeers: [EnginePeer] = []
-            for peer in peers {
-                if let maybeAmount = sendPaidMessageStars[peer.id], let amount = maybeAmount {
-                    totalAmount = totalAmount + amount
-                    chargingPeers.append(peer)
-                }
-            }
-            
-            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-            let proceed = { [weak self] in
-                guard let self else {
+        let text: String
+        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+        if peers.count == 1, let peer = peers.first {
+            let peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+            text = presentationData.strings.Conversation_ForwardTooltip_Chat_One(peerName).string
+        } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
+            let firstPeerName = firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+            let secondPeerName = secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+            text = presentationData.strings.Conversation_ForwardTooltip_TwoChats_One(firstPeerName, secondPeerName).string
+        } else if let peer = peers.first {
+            let peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+            text = presentationData.strings.Conversation_ForwardTooltip_ManyChats_One(peerName, "\(peers.count - 1)").string
+        } else {
+            text = ""
+        }
+        
+        if let navigationController = self.navigationController as? NavigationController {
+            Queue.mainQueue().after(1.0) {
+                guard let lastController = navigationController.viewControllers.last as? ViewController else {
                     return
                 }
-                
-                for peer in peers {
-                    var starsAmount: StarsAmount?
-                    if let maybeAmount = sendPaidMessageStars[peer.id], let amount = maybeAmount {
-                        starsAmount = amount
-                    }
-                    let _ = self.context.engine.messages.enqueueOutgoingMessage(
-                        to: peer.id,
-                        replyTo: nil,
-                        storyId: nil,
-                        content: .preparedInlineMessage(self.preparedMessage),
-                        sendPaidMessageStars: starsAmount
-                    ).start()
-                }
-                
-                let text: String
-                if peers.count == 1, let peer = peers.first {
-                    let peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                    text = presentationData.strings.Conversation_ForwardTooltip_Chat_One(peerName).string
-                } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
-                    let firstPeerName = firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                    let secondPeerName = secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                    text = presentationData.strings.Conversation_ForwardTooltip_TwoChats_One(firstPeerName, secondPeerName).string
-                } else if let peer = peers.first {
-                    let peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                    text = presentationData.strings.Conversation_ForwardTooltip_ManyChats_One(peerName, "\(peers.count - 1)").string
-                } else {
-                    text = ""
-                }
-                
-                if let navigationController = self.navigationController as? NavigationController {
-                    Queue.mainQueue().after(1.0) {
-                        guard let lastController = navigationController.viewControllers.last as? ViewController else {
-                            return
-                        }
-                        lastController.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: false, text: text), elevatedLayout: false, position: .top, animateInAsReplacement: true, action: { action in
-                            return false
-                        }), in: .window(.root))
-                    }
-                }
-                
-                self.completeWithResult(true)
-                self.dismiss()
-                controller?.dismiss()
+                lastController.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: false, text: text), elevatedLayout: false, position: .top, animateInAsReplacement: true, action: { action in
+                    return false
+                }), in: .window(.root))
             }
-            
-            if totalAmount.value > 0 {
-                let controller = chatMessagePaymentAlertController(
-                    context: nil,
-                    presentationData: presentationData,
-                    updatedPresentationData: nil,
-                    peers: chargingPeers,
-                    count: 1,
-                    amount: totalAmount,
-                    totalAmount: totalAmount,
-                    hasCheck: false,
-                    navigationController: self.navigationController as? NavigationController,
-                    completion: { _ in
-                        proceed()
-                    }
-                )
-                self.present(controller, in: .window(.root))
-            } else {
-                proceed()
-            }
-        })
+        }
+        
+        self.completeWithResult(true)
+        self.dismiss()
     }
         
     private var completed = false
@@ -524,7 +467,8 @@ public final class WebAppMessagePreviewScreen: ViewControllerComponentContainer 
             guard let self else {
                 return
             }
-            self.complete(peers: peers, controller: controller)
+            self.complete(peers: peers)
+            controller?.dismiss()
         }
         
         self.push(controller)

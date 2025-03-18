@@ -48,7 +48,6 @@ public final class OpenChatMessageParams {
     public let gallerySource: GalleryControllerItemSource?
     public let centralItemUpdated: ((MessageId) -> Void)?
     public let getSourceRect: (() -> CGRect?)?
-    public let blockInteraction: Promise<Bool>
     
     public init(
         context: AccountContext,
@@ -110,6 +109,5 @@ public final class OpenChatMessageParams {
         self.gallerySource = gallerySource
         self.centralItemUpdated = centralItemUpdated
         self.getSourceRect = getSourceRect
-        self.blockInteraction = Promise()
     }
 }

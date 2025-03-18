@@ -38,8 +38,6 @@
 @property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterAccessoryView> *defaultFooterAccessoryLeftView;
 @property (nonatomic, strong) UIView<TGModernGalleryDefaultFooterAccessoryView> *defaultFooterAccessoryRightView;
 
-@property (nonatomic, assign) bool gesturesEnabled;
-
 - (void)_setItem:(id<TGModernGalleryItem>)item;
 - (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)synchronously;
 

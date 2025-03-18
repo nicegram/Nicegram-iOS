@@ -115,7 +115,6 @@ public func webpagePreviewWithProgress(account: Account, urls: [String], webpage
                                                 duration: nil,
                                                 author: nil,
                                                 isMediaLargeByDefault: true,
-                                                imageIsVideoCover: false,
                                                 image: image,
                                                 file: nil,
                                                 story: nil,
@@ -156,8 +155,8 @@ public func webpagePreviewWithProgress(account: Account, urls: [String], webpage
             }
             
             return account.network.requestWithAdditionalInfo(Api.functions.messages.getWebPagePreview(flags: 0, message: urls.joined(separator: " "), entities: nil), info: .progress)
-            |> `catch` { _ -> Signal<NetworkRequestResult<Api.messages.WebPagePreview>, NoError> in
-                return .single(.result(.webPagePreview(media: .messageMediaEmpty, users: [])))
+            |> `catch` { _ -> Signal<NetworkRequestResult<Api.MessageMedia>, NoError> in
+                return .single(.result(.messageMediaEmpty))
             }
             |> mapToSignal { result -> Signal<WebpagePreviewWithProgressResult, NoError> in
                 switch result {
@@ -170,44 +169,36 @@ public func webpagePreviewWithProgress(account: Account, urls: [String], webpage
                         return .complete()
                     }
                 case let .result(result):
-                    if case let .webPagePreview(result, _) = result, let preCachedResources = result.preCachedResources {
+                    if let preCachedResources = result.preCachedResources {
                         for (resource, data) in preCachedResources {
                             account.postbox.mediaBox.storeResourceData(resource.id, data: data)
                         }
                     }
                     switch result {
-                    case let .webPagePreview(media, users):
-                        switch media {
-                        case let .messageMediaWebPage(_, webpage):
-                            return account.postbox.transaction { transaction -> Signal<WebpagePreviewWithProgressResult, NoError> in
-                                let peers = AccumulatedPeers(users: users)
-                                updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: peers)
-                                
-                                if let media = telegramMediaWebpageFromApiWebpage(webpage), let url = media.content.url {
-                                    if case .Loaded = media.content {
-                                        return .single(.result(WebpagePreviewResult.Result(webpage: media, sourceUrl: url)))
-                                    } else {
-                                        return .single(.result(WebpagePreviewResult.Result(webpage: media, sourceUrl: url)))
-                                        |> then(
-                                            account.stateManager.updatedWebpage(media.webpageId)
-                                            |> take(1)
-                                            |> map { next -> WebpagePreviewWithProgressResult in
-                                                if let url = next.content.url {
-                                                    return .result(WebpagePreviewResult.Result(webpage: next, sourceUrl: url))
-                                                } else {
-                                                    return .result(nil)
-                                                }
-                                            }
-                                        )
+                    case let .messageMediaWebPage(flags, webpage):
+                        let _ = flags
+                        if let media = telegramMediaWebpageFromApiWebpage(webpage), let url = media.content.url {
+                            if case .Loaded = media.content {
+                                return .single(.result(WebpagePreviewResult.Result(webpage: media, sourceUrl: url)))
+                            } else {
+                                return .single(.result(WebpagePreviewResult.Result(webpage: media, sourceUrl: url)))
+                                |> then(
+                                    account.stateManager.updatedWebpage(media.webpageId)
+                                    |> take(1)
+                                    |> map { next -> WebpagePreviewWithProgressResult in
+                                        if let url = next.content.url {
+                                            return .result(WebpagePreviewResult.Result(webpage: next, sourceUrl: url))
+                                        } else {
+                                            return .result(nil)
+                                        }
                                     }
-                                } else {
-                                    return .single(.result(nil))
-                                }
+                                )
                             }
-                            |> switchToLatest
-                        default:
+                        } else {
                             return .single(.result(nil))
                         }
+                    default:
+                        return .single(.result(nil))
                     }
                 }
             }
@@ -248,12 +239,11 @@ public func actualizedWebpage(account: Account, webpage: TelegramMediaWebpage) -
                                 duration: content.duration,
                                 author: content.author,
                                 isMediaLargeByDefault: content.isMediaLargeByDefault,
-                                imageIsVideoCover: content.imageIsVideoCover,
                                 image: content.image,
                                 file: content.file,
                                 story: content.story,
                                 attributes: content.attributes,
-                                instantPage: (content.instantPage?._parse()).flatMap({ InstantPage(blocks: $0.blocks, media: $0.media, isComplete: $0.isComplete, rtl: $0.rtl, url: $0.url, views: views) })
+                                instantPage: content.instantPage.flatMap({ InstantPage(blocks: $0.blocks, media: $0.media, isComplete: $0.isComplete, rtl: $0.rtl, url: $0.url, views: views) })
                             ))
                             let updatedWebpage = TelegramMediaWebpage(webpageId: webpage.webpageId, content: updatedContent)
                             updateMessageMedia(transaction: transaction, id: webpage.webpageId, media: updatedWebpage)

@@ -496,9 +496,6 @@ final class ChatSendMessageContextScreenComponent: Component {
                 if sendMessage.hasTimers {
                     canSchedule = false
                 }
-                if let _ = sendMessage.sendPaidMessageStars {
-                    canSchedule = false
-                }
                 canMakePaidContent = sendMessage.canMakePaidContent
                 currentPrice = sendMessage.currentPrice
             case .editMessage:

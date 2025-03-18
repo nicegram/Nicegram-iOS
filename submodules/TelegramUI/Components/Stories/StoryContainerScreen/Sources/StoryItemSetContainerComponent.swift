@@ -1738,7 +1738,7 @@ public final class StoryItemSetContainerComponent: Component {
                                             if let availableReactions = component.availableReactions {
                                                 for availableReaction in availableReactions.reactionItems {
                                                     if availableReaction.reaction.rawValue == value {
-                                                        centerAnimation = availableReaction.listAnimation._parse()
+                                                        centerAnimation = availableReaction.listAnimation
                                                         break
                                                     }
                                                 }
@@ -1749,7 +1749,7 @@ public final class StoryItemSetContainerComponent: Component {
                                             if let availableReactions = component.availableReactions {
                                                 for availableReaction in availableReactions.reactionItems {
                                                     if availableReaction.reaction.rawValue == value {
-                                                        centerAnimation = availableReaction.listAnimation._parse()
+                                                        centerAnimation = availableReaction.listAnimation
                                                         break
                                                     }
                                                 }
@@ -1906,10 +1906,6 @@ public final class StoryItemSetContainerComponent: Component {
                     }
                 }
             }
-        }
-        
-        func inFocusUpdated(isInFocus: Bool) {
-            self.updateIsProgressPaused()
         }
         
         func activateInput() -> Bool {
@@ -2823,12 +2819,7 @@ public final class StoryItemSetContainerComponent: Component {
                 
                 inputPlaceholder = .counter(items)
             } else {
-                if let sendPaidMessageStars = component.slice.additionalPeerData.sendPaidMessageStars {
-                    let dateTimeFormat = component.context.sharedContext.currentPresentationData.with { $0 }.dateTimeFormat
-                    inputPlaceholder = .plain(component.strings.Chat_InputTextPaidMessagePlaceholder(" # \(presentationStringsFormattedNumber(Int32(sendPaidMessageStars.value), dateTimeFormat.groupingSeparator))").string)
-                } else {
-                    inputPlaceholder = .plain(isGroup ? component.strings.Story_InputPlaceholderReplyInGroup : component.strings.Story_InputPlaceholderReplyPrivately)
-                }
+                inputPlaceholder = .plain(isGroup ? component.strings.Story_InputPlaceholderReplyInGroup : component.strings.Story_InputPlaceholderReplyPrivately)
             }
             
             let startTime22 = CFAbsoluteTimeGetCurrent()
@@ -2872,7 +2863,6 @@ public final class StoryItemSetContainerComponent: Component {
                         strings: component.strings,
                         style: .story,
                         placeholder: inputPlaceholder,
-                        sendPaidMessageStars: component.slice.additionalPeerData.sendPaidMessageStars,
                         maxLength: 4096,
                         queryTypes: [.mention, .hashtag, .emoji],
                         alwaysDarkWhenHasText: component.metrics.widthClass == .regular,
@@ -2957,7 +2947,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 if let availableReactions = component.availableReactions {
                                     for availableReaction in availableReactions.reactionItems {
                                         if availableReaction.reaction.rawValue == value {
-                                            centerAnimation = availableReaction.listAnimation._parse()
+                                            centerAnimation = availableReaction.listAnimation
                                             break
                                         }
                                     }
@@ -2968,7 +2958,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 if let availableReactions = component.availableReactions {
                                     for availableReaction in availableReactions.reactionItems {
                                         if availableReaction.reaction.rawValue == value {
-                                            centerAnimation = availableReaction.listAnimation._parse()
+                                            centerAnimation = availableReaction.listAnimation
                                             break
                                         }
                                     }
@@ -3441,7 +3431,7 @@ public final class StoryItemSetContainerComponent: Component {
                                                 elevatedLayout: false,
                                                 position: .top,
                                                 animateInAsReplacement: false,
-                                                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                                blurred: true,
                                                 action: { _ in return false }
                                             ), nil)
                                         })))
@@ -3462,7 +3452,7 @@ public final class StoryItemSetContainerComponent: Component {
                                                 elevatedLayout: false,
                                                 position: .top,
                                                 animateInAsReplacement: false,
-                                                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                                blurred: true,
                                                 action: { _ in return false }
                                             ), nil)
                                         })))
@@ -3498,7 +3488,7 @@ public final class StoryItemSetContainerComponent: Component {
                                                 elevatedLayout: false,
                                                 position: .top,
                                                 animateInAsReplacement: false,
-                                                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                                blurred: true,
                                                 action: { [weak self] action in
                                                     guard let self, let component = self.component else {
                                                         return false
@@ -3545,7 +3535,7 @@ public final class StoryItemSetContainerComponent: Component {
                                                     elevatedLayout: false,
                                                     position: .top,
                                                     animateInAsReplacement: false,
-                                                    appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                                    blurred: true,
                                                     action: { [weak self] action in
                                                         guard let self, let component = self.component else {
                                                             return false
@@ -4298,7 +4288,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 storeAttributedTextInPasteboard(text)
                                 
                                 let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
-                                let undoController = UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, appearance: UndoOverlayController.Appearance(isBlurred: true), action: { _ in true })
+                                let undoController = UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, blurred: true, action: { _ in true })
                                 self.sendMessageContext.tooltipScreen?.dismiss()
                                 self.sendMessageContext.tooltipScreen = undoController
                                 component.controller()?.present(undoController, in: .current)
@@ -4588,7 +4578,7 @@ public final class StoryItemSetContainerComponent: Component {
                                     var animation: TelegramMediaFile?
                                     for reaction in availableReactions.reactions {
                                         if reaction.value == updateReaction.reaction {
-                                            animation = reaction.centerAnimation?._parse()
+                                            animation = reaction.centerAnimation
                                             break
                                         }
                                     }
@@ -4653,10 +4643,6 @@ public final class StoryItemSetContainerComponent: Component {
                                     case .stars:
                                         break
                                     }
-                                    
-                                    if let sendPaidMessageStars = component.slice.additionalPeerData.sendPaidMessageStars {
-                                        messageAttributes.append(PaidStarsMessageAttribute(stars: sendPaidMessageStars, postponeSending: false))
-                                    }
 
                                     let message: EnqueueMessage = .message(
                                         text: text,
@@ -4703,6 +4689,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 })
                             }
                         }
+                        
                         if self.displayLikeReactions {
                             if component.slice.item.storyItem.myReaction == updateReaction.reaction {
                                 action()
@@ -4713,9 +4700,7 @@ public final class StoryItemSetContainerComponent: Component {
                             }
                         } else {
                             self.sendMessageContext.performWithPossibleStealthModeConfirmation(view: self, action: {
-                                self.sendMessageContext.presentPaidMessageAlertIfNeeded(view: self, completion: {
-                                    action()
-                                })
+                                action()
                             })
                         }
                     }
@@ -4761,7 +4746,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 controller?.replace(with: c)
                             }
                             component.controller()?.push(controller)
-                        }), elevatedLayout: false, animateInAsReplacement: false, appearance: UndoOverlayController.Appearance(isBlurred: true), action: { _ in true })
+                        }), elevatedLayout: false, animateInAsReplacement: false, blurred: true, action: { _ in true })
                         component.controller()?.present(undoController, in: .current)
                     }
                 }
@@ -5036,7 +5021,7 @@ public final class StoryItemSetContainerComponent: Component {
                 content: .info(title: nil, text: text, timeout: nil, customUndoText: nil),
                 elevatedLayout: false,
                 animateInAsReplacement: false,
-                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                blurred: true,
                 action: { _ in return false }
             )
             self.sendMessageContext.tooltipScreen = controller
@@ -5220,7 +5205,6 @@ public final class StoryItemSetContainerComponent: Component {
                 }
                 navigationController.setViewControllers(viewControllers, animated: true)
             }
-            self.updateIsProgressPaused()
         }
         
         func navigateToPeer(peer: EnginePeer, chat: Bool, subject: ChatControllerSubject? = nil) {
@@ -5482,7 +5466,7 @@ public final class StoryItemSetContainerComponent: Component {
                 ),
                 elevatedLayout: false,
                 animateInAsReplacement: false,
-                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                blurred: true,
                 action: { [weak self] action in
                     guard let self else {
                         return false
@@ -6000,7 +5984,7 @@ public final class StoryItemSetContainerComponent: Component {
                                         placeholderColor: .clear,
                                         attemptSynchronous: true
                                     ),
-                                    file: items.first?.file._parse(),
+                                    file: items.first?.file,
                                     action: action)
                                 return .single(tip)
                             } else {
@@ -6207,7 +6191,7 @@ public final class StoryItemSetContainerComponent: Component {
                             content: .info(title: nil, text: component.strings.Story_ToastRemovedFromProfileText, timeout: nil, customUndoText: nil),
                             elevatedLayout: false,
                             animateInAsReplacement: false,
-                            appearance: UndoOverlayController.Appearance(isBlurred: true),
+                            blurred: true,
                             action: { _ in return false }
                         ), nil)
                     } else {
@@ -6216,7 +6200,7 @@ public final class StoryItemSetContainerComponent: Component {
                             content: .info(title: component.strings.Story_ToastSavedToProfileTitle, text: component.strings.Story_ToastSavedToProfileText, timeout: nil, customUndoText: nil),
                             elevatedLayout: false,
                             animateInAsReplacement: false,
-                            appearance: UndoOverlayController.Appearance(isBlurred: true),
+                            blurred: true,
                             action: { _ in return false }
                         ), nil)
                     }
@@ -6274,7 +6258,7 @@ public final class StoryItemSetContainerComponent: Component {
                                     content: .linkCopied(title: nil, text: component.strings.Story_ToastLinkCopied),
                                     elevatedLayout: false,
                                     animateInAsReplacement: false,
-                                    appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                    blurred: true,
                                     action: { _ in return false }
                                 ), nil)
                             }
@@ -6414,7 +6398,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 content: .info(title: nil, text: isGroup ? presentationData.strings.Story_ToastRemovedFromGroupText : presentationData.strings.Story_ToastRemovedFromChannelText, timeout: nil, customUndoText: nil),
                                 elevatedLayout: false,
                                 animateInAsReplacement: false,
-                                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                blurred: true,
                                 action: { _ in return false }
                             )
                         } else {
@@ -6423,7 +6407,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 content: .info(title: isGroup ? presentationData.strings.Story_ToastSavedToGroupTitle : presentationData.strings.Story_ToastSavedToChannelTitle, text: isGroup ? presentationData.strings.Story_ToastSavedToGroupText : presentationData.strings.Story_ToastSavedToChannelText, timeout: nil, customUndoText: nil),
                                 elevatedLayout: false,
                                 animateInAsReplacement: false,
-                                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                blurred: true,
                                 action: { _ in return false }
                             ), nil)
                         }
@@ -6487,7 +6471,7 @@ public final class StoryItemSetContainerComponent: Component {
                                     content: .linkCopied(title: nil, text: component.strings.Story_ToastLinkCopied),
                                     elevatedLayout: false,
                                     animateInAsReplacement: false,
-                                    appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                    blurred: true,
                                     action: { _ in return false }
                                 ), nil)
                             }
@@ -6741,7 +6725,7 @@ public final class StoryItemSetContainerComponent: Component {
                                     ], title: nil, text: component.strings.StoryFeed_TooltipNotifyOn(component.slice.effectivePeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)).string, customUndoText: nil, timeout: nil),
                                     elevatedLayout: false,
                                     animateInAsReplacement: false,
-                                    appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                    blurred: true,
                                     action: { _ in return false }
                                 ), nil)
                             } else {
@@ -6756,7 +6740,7 @@ public final class StoryItemSetContainerComponent: Component {
                                     ], title: nil, text: component.strings.StoryFeed_TooltipNotifyOff(component.slice.effectivePeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)).string, customUndoText: nil, timeout: nil),
                                     elevatedLayout: false,
                                     animateInAsReplacement: false,
-                                    appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                    blurred: true,
                                     action: { _ in return false }
                                 ), nil)
                             }
@@ -6786,7 +6770,7 @@ public final class StoryItemSetContainerComponent: Component {
                                         content: .linkCopied(title: nil, text: component.strings.Story_ToastLinkCopied),
                                         elevatedLayout: false,
                                         animateInAsReplacement: false,
-                                        appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                        blurred: true,
                                         action: { _ in return false }
                                     ), nil)
                                 }
@@ -6830,7 +6814,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 content: .info(title: title, text: text, timeout: nil, customUndoText: nil),
                                 elevatedLayout: false,
                                 animateInAsReplacement: false,
-                                appearance: UndoOverlayController.Appearance(isBlurred: true),
+                                blurred: true,
                                 action: { _ in return false }
                             ), in: .current)
                             
@@ -7006,6 +6990,44 @@ public final class StoryItemSetContainerComponent: Component {
                                 },
                                 requestSelectMessages: nil
                             )
+                            
+//                            let options: [PeerReportOption] = [.spam, .violence, .pornography, .childAbuse, .copyright, .illegalDrugs, .personalDetails, .other]
+//                            presentPeerReportOptions(
+//                                context: component.context,
+//                                parent: controller,
+//                                contextController: c,
+//                                backAction: { _ in },
+//                                subject: .story(component.slice.effectivePeer.id, component.slice.item.storyItem.id),
+//                                options: options,
+//                                passthrough: true,
+//                                forceTheme: defaultDarkPresentationTheme,
+//                                isDetailedReportingVisible: { [weak self] isReporting in
+//                                    guard let self else {
+//                                        return
+//                                    }
+//                                    self.isReporting = isReporting
+//                                    self.updateIsProgressPaused()
+//                                },
+//                                completion: { [weak self] reason, _ in
+//                                    guard let self, let component = self.component, let controller = component.controller(), let reason else {
+//                                        return
+//                                    }
+//                                    let _ = component.context.engine.peers.reportPeerStory(peerId: component.slice.effectivePeer.id, storyId: component.slice.item.storyItem.id, reason: reason, message: "").startStandalone()
+//                                    controller.present(
+//                                        UndoOverlayController(
+//                                            presentationData: presentationData,
+//                                            content: .emoji(
+//                                                name: "PoliceCar",
+//                                                text: presentationData.strings.Report_Succeed
+//                                            ),
+//                                            elevatedLayout: false,
+//                                            blurred: true,
+//                                            action: { _ in return false }
+//                                        )
+//                                        , in: .current
+//                                    )
+//                                }
+//                            )
                         })))
                     }
                 }

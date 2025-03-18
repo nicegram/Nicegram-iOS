@@ -11,36 +11,6 @@
 #define UIView NSView
 #endif
 
-@interface OngoingCallConnectionDescription : NSObject
-
-@property (nonatomic, readonly) int64_t connectionId;
-@property (nonatomic, strong, readonly) NSString * _Nonnull ip;
-@property (nonatomic, strong, readonly) NSString * _Nonnull ipv6;
-@property (nonatomic, readonly) int32_t port;
-@property (nonatomic, strong, readonly) NSData * _Nonnull peerTag;
-
-- (instancetype _Nonnull)initWithConnectionId:(int64_t)connectionId ip:(NSString * _Nonnull)ip ipv6:(NSString * _Nonnull)ipv6 port:(int32_t)port peerTag:(NSData * _Nonnull)peerTag;
-
-@end
-
-@protocol OngoingCallThreadLocalContextQueue <NSObject>
-
-- (void)dispatch:(void (^ _Nonnull)())f;
-- (bool)isCurrent;
-
-@end
-
-@interface VoipProxyServer : NSObject
-
-@property (nonatomic, strong, readonly) NSString * _Nonnull host;
-@property (nonatomic, readonly) int32_t port;
-@property (nonatomic, strong, readonly) NSString * _Nullable username;
-@property (nonatomic, strong, readonly) NSString * _Nullable password;
-
-- (instancetype _Nonnull)initWithHost:(NSString * _Nonnull)host port:(int32_t)port username:(NSString * _Nullable)username password:(NSString * _Nullable)password;
-
-@end
-
 @interface CallAudioTone : NSObject
 
 @property (nonatomic, strong, readonly) NSData * _Nonnull samples;
@@ -244,10 +214,10 @@ typedef NS_ENUM(int32_t, OngoingCallDataSavingWebrtc) {
 
 - (void)setOnFatalError:(dispatch_block_t _Nullable)onError;
 - (void)setOnPause:(void (^ _Nullable)(bool))onPause;
-- (void)setOnIsActiveUpdated:(void (^ _Nonnull)(bool))onIsActiveUpdated;
+- (void)setOnIsActiveUpdated:(void (^_Nonnull)(bool))onIsActiveUpdated;
 
 #if TARGET_OS_IOS
-- (void)submitSampleBuffer:(CMSampleBufferRef _Nonnull)sampleBuffer rotation:(OngoingCallVideoOrientationWebrtc)rotation completion:(void (^_Nonnull)())completion;
+- (void)submitPixelBuffer:(CVPixelBufferRef _Nonnull)pixelBuffer rotation:(OngoingCallVideoOrientationWebrtc)rotation;
 #endif
 
 - (GroupCallDisposable * _Nonnull)addVideoOutput:(void (^_Nonnull)(CallVideoFrameData * _Nonnull))sink;
@@ -488,7 +458,7 @@ isConference:(bool)isConference;
 
 - (void)getStats:(void (^ _Nonnull)(OngoingGroupCallStats * _Nonnull))completion;
 
-- (void)activateIncomingAudio;
+- (void)addRemoteConnectedEvent:(bool)isRemoteConnected;
 
 @end
 

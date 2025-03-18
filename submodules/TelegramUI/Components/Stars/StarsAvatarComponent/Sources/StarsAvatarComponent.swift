@@ -124,7 +124,6 @@ public final class StarsAvatarComponent: Component {
                         GiftItemComponent(
                             context: component.context,
                             theme: component.theme,
-                            strings: component.context.sharedContext.currentPresentationData.with { $0 }.strings,
                             peer: nil,
                             subject: .uniqueGift(gift: gift),
                             mode: .thumbnail

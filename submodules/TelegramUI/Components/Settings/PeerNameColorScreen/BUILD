@@ -52,8 +52,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatMessageItemImpl",
         "//submodules/TelegramUI/Components/Settings/PeerNameColorItem",
         "//submodules/TelegramUI/Components/EmojiActionIconComponent",
-        "//submodules/TelegramUI/Components/TabSelectorComponent",
-        "//submodules/TelegramUI/Components/PlainButtonComponent",
     ],
     visibility = [
         "//visibility:public",

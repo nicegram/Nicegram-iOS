@@ -175,8 +175,6 @@ public final class ChatPanelInterfaceInteraction {
     public let hideTranslationPanel: () -> Void
     public let openPremiumGift: () -> Void
     public let openPremiumRequiredForMessaging: () -> Void
-    public let openStarsPurchase: (Int64?) -> Void
-    public let openMessagePayment: () -> Void
     public let updateHistoryFilter: ((ChatPresentationInterfaceState.HistoryFilter?) -> ChatPresentationInterfaceState.HistoryFilter?) -> Void
     public let updateDisplayHistoryFilterAsList: (Bool) -> Void
     public let openBoostToUnrestrict: () -> Void
@@ -299,8 +297,6 @@ public final class ChatPanelInterfaceInteraction {
         hideTranslationPanel:  @escaping () -> Void,
         openPremiumGift: @escaping () -> Void,
         openPremiumRequiredForMessaging: @escaping () -> Void,
-        openStarsPurchase: @escaping (Int64?) -> Void,
-        openMessagePayment: @escaping () -> Void,
         openBoostToUnrestrict: @escaping () -> Void,
         updateVideoTrimRange: @escaping (Double, Double, Bool, Bool) -> Void,
         updateHistoryFilter: @escaping ((ChatPresentationInterfaceState.HistoryFilter?) -> ChatPresentationInterfaceState.HistoryFilter?) -> Void,
@@ -422,8 +418,6 @@ public final class ChatPanelInterfaceInteraction {
         self.hideTranslationPanel = hideTranslationPanel
         self.openPremiumGift = openPremiumGift
         self.openPremiumRequiredForMessaging = openPremiumRequiredForMessaging
-        self.openStarsPurchase = openStarsPurchase
-        self.openMessagePayment = openMessagePayment
         self.openBoostToUnrestrict = openBoostToUnrestrict
         self.updateVideoTrimRange = updateVideoTrimRange
         self.updateHistoryFilter = updateHistoryFilter
@@ -550,8 +544,6 @@ public final class ChatPanelInterfaceInteraction {
         }, hideTranslationPanel: {
         }, openPremiumGift: {
         }, openPremiumRequiredForMessaging: {
-        }, openStarsPurchase: { _ in
-        }, openMessagePayment: {
         }, openBoostToUnrestrict: {
         }, updateVideoTrimRange: { _, _, _, _ in
         }, updateHistoryFilter: { _ in

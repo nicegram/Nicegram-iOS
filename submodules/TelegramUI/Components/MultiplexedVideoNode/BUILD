@@ -19,8 +19,6 @@ swift_library(
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/ShimmerEffect:ShimmerEffect",
         "//submodules/SoftwareVideo:SoftwareVideo",
-        "//submodules/TelegramUI/Components/BatchVideoRendering",
-        "//submodules/TelegramUI/Components/GifVideoLayer",
     ],
     visibility = [
         "//visibility:public",

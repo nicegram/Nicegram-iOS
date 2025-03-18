@@ -10,7 +10,7 @@ import ShareController
 import LegacyUI
 import LegacyMediaPickerUI
 
-public func presentedLegacyCamera(context: AccountContext, peer: Peer?, chatLocation: ChatLocation, cameraView: TGAttachmentCameraView?, menuController: TGMenuSheetController?, parentController: ViewController, attachmentController: ViewController? = nil, editingMedia: Bool, saveCapturedPhotos: Bool, mediaGrouping: Bool, initialCaption: NSAttributedString, hasSchedule: Bool, enablePhoto: Bool, enableVideo: Bool, sendPaidMessageStars: Int64 = 0, sendMessagesWithSignals: @escaping ([Any]?, Bool, Int32, ChatSendMessageActionSheetController.SendParameters?) -> Void, recognizedQRCode: @escaping (String) -> Void = { _ in }, presentSchedulePicker: @escaping (Bool, @escaping (Int32) -> Void) -> Void, presentTimerPicker: @escaping (@escaping (Int32) -> Void) -> Void, getCaptionPanelView: @escaping () -> TGCaptionPanelView?, dismissedWithResult: @escaping () -> Void = {}, finishedTransitionIn: @escaping () -> Void = {}) {
+public func presentedLegacyCamera(context: AccountContext, peer: Peer?, chatLocation: ChatLocation, cameraView: TGAttachmentCameraView?, menuController: TGMenuSheetController?, parentController: ViewController, attachmentController: ViewController? = nil, editingMedia: Bool, saveCapturedPhotos: Bool, mediaGrouping: Bool, initialCaption: NSAttributedString, hasSchedule: Bool, enablePhoto: Bool, enableVideo: Bool, sendMessagesWithSignals: @escaping ([Any]?, Bool, Int32) -> Void, recognizedQRCode: @escaping (String) -> Void = { _ in }, presentSchedulePicker: @escaping (Bool, @escaping (Int32) -> Void) -> Void, presentTimerPicker: @escaping (@escaping (Int32) -> Void) -> Void, getCaptionPanelView: @escaping () -> TGCaptionPanelView?, dismissedWithResult: @escaping () -> Void = {}, finishedTransitionIn: @escaping () -> Void = {}) {
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
     let legacyController = LegacyController(presentation: .custom, theme: presentationData.theme)
     legacyController.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .portrait, compactSize: .portrait)
@@ -35,7 +35,6 @@ public func presentedLegacyCamera(context: AccountContext, peer: Peer?, chatLoca
     } else {
         controller = TGCameraController(context: legacyController.context, saveEditedPhotos: saveCapturedPhotos && !isSecretChat, saveCapturedMedia: saveCapturedPhotos && !isSecretChat)
     }
-    controller.sendPaidMessageStars = sendPaidMessageStars
     controller.modalPresentationStyle = .fullScreen
     controller.inhibitMultipleCapture = editingMedia
     
@@ -143,17 +142,11 @@ public func presentedLegacyCamera(context: AccountContext, peer: Peer?, chatLoca
     
     controller.finishedWithResults = { [weak menuController, weak legacyController] overlayController, selectionContext, editingContext, currentItem, silentPosting, scheduleTime in
         if let selectionContext = selectionContext, let editingContext = editingContext {
-            let textIsAboveMedia = editingContext.isCaptionAbove()
-            let parameters = ChatSendMessageActionSheetController.SendParameters(
-                effect: nil,
-                textIsAboveMedia: textIsAboveMedia
-            )
-            
             let nativeGenerator = legacyAssetPickerItemGenerator()
             let signals = TGCameraController.resultSignals(for: selectionContext, editingContext: editingContext, currentItem: currentItem, storeAssets: saveCapturedPhotos && !isSecretChat, saveEditedPhotos: saveCapturedPhotos && !isSecretChat, descriptionGenerator: { _1, _2, _3 in
                 nativeGenerator(_1, _2, _3, nil)
             })
-            sendMessagesWithSignals(signals, silentPosting, scheduleTime, parameters)
+            sendMessagesWithSignals(signals, silentPosting, scheduleTime)
         }
         
         menuController?.dismiss(animated: false)
@@ -170,7 +163,7 @@ public func presentedLegacyCamera(context: AccountContext, peer: Peer?, chatLoca
                 description["timer"] = timer
             }
             if let item = legacyAssetPickerItemGenerator()(description, caption, nil, nil) {
-                sendMessagesWithSignals([SSignal.single(item)], false, 0, nil)
+                sendMessagesWithSignals([SSignal.single(item)], false, 0)
             }
         }
         
@@ -196,7 +189,7 @@ public func presentedLegacyCamera(context: AccountContext, peer: Peer?, chatLoca
                 description["timer"] = timer
             }
             if let item = legacyAssetPickerItemGenerator()(description, caption, nil, nil) {
-                sendMessagesWithSignals([SSignal.single(item)], false, 0, nil)
+                sendMessagesWithSignals([SSignal.single(item)], false, 0)
             }
         }
         menuController?.dismiss(animated: false)
@@ -254,7 +247,7 @@ public func presentedLegacyShortcutCamera(context: AccountContext, saveCapturedM
                 nativeGenerator(_1, _2, _3, nil)
             })
             if let parentController = parentController {
-                parentController.present(ShareController(context: context, subject: .fromExternal(1, { peerIds, _, _, text, account, silently in
+                parentController.present(ShareController(context: context, subject: .fromExternal({ peerIds, _, text, account, silently in
                     guard let account = account as? ShareControllerAppAccountContext else {
                         return .single(.done)
                     }

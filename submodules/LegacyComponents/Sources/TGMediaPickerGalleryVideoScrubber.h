@@ -28,9 +28,6 @@
 @property (nonatomic, readonly) bool isScrubbing;
 @property (nonatomic, assign) bool isPlaying;
 @property (nonatomic, assign) NSTimeInterval value;
-
-- (instancetype)initWithFrame:(CGRect)frame cover:(bool)cover;
-
 - (void)setValue:(NSTimeInterval)value resetPosition:(bool)resetPosition;
 
 - (void)setTrimApplied:(bool)trimApplied;
@@ -51,7 +48,6 @@
 - (CGPoint)scrubberPositionForPosition:(NSTimeInterval)position;
 
 - (void)_updateScrubberAnimationsAndResetCurrentPosition:(bool)resetCurrentPosition;
-- (void)_layoutTrimCurtainViews;
 
 @end
 

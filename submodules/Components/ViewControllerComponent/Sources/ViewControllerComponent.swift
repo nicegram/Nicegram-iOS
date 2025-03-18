@@ -218,16 +218,6 @@ open class ViewControllerComponentContainer: ViewController {
             }
             self.containerLayoutUpdated(layout: currentLayout.layout, navigationHeight: currentLayout.navigationHeight, transition: transition)
         }
-        
-        override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-            if let result = super.hitTest(point, with: event) {
-                if result === self.view {
-                    return nil
-                }
-                return result
-            }
-            return nil
-        }
     }
     
     public var node: Node {
@@ -236,7 +226,7 @@ open class ViewControllerComponentContainer: ViewController {
     
     private let context: AccountContext
     private var theme: Theme
-    public private(set) var component: AnyComponent<ViewControllerComponentContainer.Environment>
+    private let component: AnyComponent<ViewControllerComponentContainer.Environment>
     
     private var presentationDataDisposable: Disposable?
     public private(set) var validLayout: ContainerViewLayout?
@@ -387,7 +377,6 @@ open class ViewControllerComponentContainer: ViewController {
     }
     
     public func updateComponent(component: AnyComponent<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) {
-        self.component = component
         self.node.updateComponent(component: component, transition: transition)
     }
 }

@@ -68,15 +68,15 @@ public struct GridNodeLayout: Equatable {
     public let scrollIndicatorInsets: UIEdgeInsets?
     public let preloadSize: CGFloat
     public let type: GridNodeLayoutType
-    public let cutouts: [CGRect]
+    public let cutout: CGRect?
     
-    public init(size: CGSize, insets: UIEdgeInsets, scrollIndicatorInsets: UIEdgeInsets? = nil, preloadSize: CGFloat, type: GridNodeLayoutType, cutouts: [CGRect] = []) {
+    public init(size: CGSize, insets: UIEdgeInsets, scrollIndicatorInsets: UIEdgeInsets? = nil, preloadSize: CGFloat, type: GridNodeLayoutType, cutout: CGRect? = nil) {
         self.size = size
         self.insets = insets
         self.scrollIndicatorInsets = scrollIndicatorInsets
         self.preloadSize = preloadSize
         self.type = type
-        self.cutouts = cutouts
+        self.cutout = cutout
     }
 }
 
@@ -568,12 +568,8 @@ open class GridNode: GridNodeScroller, ASScrollViewDelegate {
                             }
                         }
                         
-                        if !self.gridLayout.cutouts.isEmpty, nextItemOrigin.y < itemSize.height * 3.0 {
-                            for cutout in self.gridLayout.cutouts {
-                                if cutout.intersects(CGRect(origin: nextItemOrigin, size: itemSize)) {
-                                    nextItemOrigin.x += cutout.width + itemSpacing
-                                }
-                            }
+                        if let cutout = self.gridLayout.cutout, cutout.intersects(CGRect(origin: nextItemOrigin, size: itemSize)) {
+                            nextItemOrigin.x += cutout.width + itemSpacing
                         }
                         
                         if !incrementedCurrentRow {

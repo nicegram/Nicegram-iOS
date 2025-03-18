@@ -12,7 +12,6 @@ import TextFormat
 import PeerInfoCoverComponent
 import AnimatedStickerNode
 import TelegramAnimatedStickerNode
-import EmojiStatusComponent
 
 public final class GiftCompositionComponent: Component {
     public class ExternalState {
@@ -31,9 +30,6 @@ public final class GiftCompositionComponent: Component {
     let context: AccountContext
     let theme: PresentationTheme
     let subject: Subject
-    let animationOffset: CGPoint?
-    let animationScale: CGFloat?
-    let displayAnimationStars: Bool
     let externalState: ExternalState?
     let requestUpdate: () -> Void
     
@@ -41,18 +37,12 @@ public final class GiftCompositionComponent: Component {
         context: AccountContext,
         theme: PresentationTheme,
         subject: Subject,
-        animationOffset: CGPoint? = nil,
-        animationScale: CGFloat? = nil,
-        displayAnimationStars: Bool = false,
         externalState: ExternalState? = nil,
         requestUpdate: @escaping () -> Void = {}
     ) {
         self.context = context
         self.theme = theme
         self.subject = subject
-        self.animationOffset = animationOffset
-        self.animationScale = animationScale
-        self.displayAnimationStars = displayAnimationStars
         self.externalState = externalState
         self.requestUpdate = requestUpdate
     }
@@ -67,23 +57,12 @@ public final class GiftCompositionComponent: Component {
         if lhs.subject != rhs.subject {
             return false
         }
-        if lhs.animationOffset != rhs.animationOffset {
-            return false
-        }
-        if lhs.animationScale != rhs.animationScale {
-            return false
-        }
-        if lhs.displayAnimationStars != rhs.displayAnimationStars {
-            return false
-        }
         return true
     }
 
     public final class View: UIView {
         private var component: GiftCompositionComponent?
         private weak var componentState: EmptyComponentState?
-        
-        private var starsLayer: StarsEffectLayer?
         
         private let background = ComponentView<Empty>()
         private var animationNode: AnimatedStickerNode?
@@ -277,12 +256,6 @@ public final class GiftCompositionComponent: Component {
                 if animateTransition, let backgroundView = self.background.view as? PeerInfoCoverComponent.View {
                     backgroundView.animateTransition()
                 }
-                
-                var avatarCenter = CGPoint(x: availableSize.width / 2.0, y: 104.0)
-                if let _ = component.animationScale {
-                    avatarCenter = CGPoint(x: avatarCenter.x, y: 67.0)
-                }
-                
                 let _ = self.background.update(
                     transition: backgroundTransition,
                     component: AnyComponent(PeerInfoCoverComponent(
@@ -290,10 +263,9 @@ public final class GiftCompositionComponent: Component {
                         subject: .custom(backgroundColor, secondBackgroundColor, patternColor, patternFile?.fileId.id),
                         files: files,
                         isDark: false,
-                        avatarCenter: avatarCenter,
+                        avatarCenter: CGPoint(x: availableSize.width / 2.0, y: 104.0),
                         avatarScale: 1.0,
-                        defaultHeight: 300.0,
-                        gradientOnTop: true,
+                        defaultHeight: availableSize.height,
                         avatarTransitionFraction: 0.0,
                         patternTransitionFraction: 0.0
                     )),
@@ -307,9 +279,7 @@ public final class GiftCompositionComponent: Component {
                         backgroundView.isUserInteractionEnabled = false
                         self.insertSubview(backgroundView, at: 0)
                         
-                        if previousComponent != nil {
-                            backgroundView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
-                        }
+                        backgroundView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
                     }
                     backgroundTransition.setFrame(view: backgroundView, frame: CGRect(origin: .zero, size: availableSize))
                 }
@@ -322,20 +292,17 @@ public final class GiftCompositionComponent: Component {
             let iconSize = CGSize(width: 136.0, height: 136.0)
             
             var startFromIndex: Int?
-            var animationTransition = transition
             if animateTransition, let disappearingAnimationNode = self.animationNode {
                 self.animationNode = nil
                 startFromIndex = disappearingAnimationNode.currentFrameIndex
                 disappearingAnimationNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
                     disappearingAnimationNode.view.removeFromSuperview()
                 })
-                animationTransition = .immediate
             }
             
             if let file = animationFile {
                 let animationNode: AnimatedStickerNode
                 if self.animationNode == nil {
-                    animationTransition = .immediate
                     animationNode = DefaultAnimatedStickerNodeImpl()
                     animationNode.isUserInteractionEnabled = false
                     self.animationNode = animationNode
@@ -366,41 +333,9 @@ public final class GiftCompositionComponent: Component {
                 }
             }
             if let animationNode = self.animationNode {
-                let offset = component.animationOffset ?? .zero
-                var size = CGSize(width: iconSize.width, height: iconSize.height)
-                if let scale = component.animationScale {
-                    size = CGSize(width: size.width * scale, height: size.height * scale)
-                }
-                let animationFrame = CGRect(origin: CGPoint(x: availableSize.width / 2.0 + offset.x - size.width / 2.0, y: 88.0 + offset.y - size.height / 2.0), size: size)
-                animationNode.layer.bounds = CGRect(origin: .zero, size: iconSize)
-                animationTransition.setPosition(layer: animationNode.layer, position: animationFrame.center)
-                animationTransition.setScale(layer: animationNode.layer, scale: size.width / iconSize.width)
-                
-                if component.displayAnimationStars {
-                    var starsTransition = transition
-                    let starsLayer: StarsEffectLayer
-                    if let current = self.starsLayer {
-                        starsLayer = current
-                    } else {
-                        starsTransition = .immediate
-                        starsLayer = StarsEffectLayer()
-                        self.layer.insertSublayer(starsLayer, below: animationNode.layer)
-                        self.starsLayer = starsLayer
-                        starsLayer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
-                    }
-                    let starsSize = CGSize(width: 36.0, height: 36.0)
-                    starsLayer.update(color: .white, size: starsSize)
-                    starsLayer.bounds = CGRect(origin: .zero, size: starsSize)
-                    starsTransition.setPosition(layer: starsLayer, position: animationFrame.center)
-                } else if let starsLayer = self.starsLayer {
-                    self.starsLayer = nil
-                    transition.setPosition(layer: starsLayer, position: animationFrame.center)
-                    starsLayer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
-                        starsLayer.removeFromSuperlayer()
-                    })
-                }
+                transition.setFrame(layer: animationNode.layer, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - iconSize.width) / 2.0), y: 20.0), size: iconSize))
             }
-                        
+            
             return availableSize
         }
     }
@@ -411,58 +346,5 @@ public final class GiftCompositionComponent: Component {
 
     public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
         return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
-    }
-}
-
-private final class StarsEffectLayer: SimpleLayer {
-    private let emitterLayer = CAEmitterLayer()
-    
-    override init() {
-        super.init()
-        
-        self.addSublayer(self.emitterLayer)
-    }
-    
-    override init(layer: Any) {
-        super.init(layer: layer)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setup(color: UIColor) {
-        let emitter = CAEmitterCell()
-        emitter.name = "emitter"
-        emitter.contents = UIImage(bundleImageName: "Premium/Stars/Particle")?.cgImage
-        emitter.birthRate = 8.0
-        emitter.lifetime = 2.0
-        emitter.velocity = 0.1
-        emitter.scale = 0.12
-        emitter.scaleRange = 0.02
-        emitter.alphaRange = 0.1
-        emitter.emissionRange = .pi * 2.0
-        
-        let staticColors: [Any] = [
-            color.withAlphaComponent(0.0).cgColor,
-            color.withAlphaComponent(0.55).cgColor,
-            color.withAlphaComponent(0.55).cgColor,
-            color.withAlphaComponent(0.0).cgColor
-        ]
-        let staticColorBehavior = CAEmitterCell.createEmitterBehavior(type: "colorOverLife")
-        staticColorBehavior.setValue(staticColors, forKey: "colors")
-        emitter.setValue([staticColorBehavior], forKey: "emitterBehaviors")
-        self.emitterLayer.emitterCells = [emitter]
-    }
-    
-    func update(color: UIColor, size: CGSize) {
-        if self.emitterLayer.emitterCells == nil {
-            self.setup(color: color)
-        }
-        self.emitterLayer.emitterShape = .circle
-        self.emitterLayer.emitterSize = size
-        self.emitterLayer.emitterMode = .surface
-        self.emitterLayer.frame = CGRect(origin: .zero, size: size)
-        self.emitterLayer.emitterPosition = CGPoint(x: size.width / 2.0, y: size.height / 2.0)
     }
 }

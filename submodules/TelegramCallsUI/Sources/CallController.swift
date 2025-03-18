@@ -13,7 +13,6 @@ import AccountContext
 import TelegramNotices
 import AppBundle
 import TooltipUI
-import CallScreen
 
 protocol CallControllerNodeProtocol: AnyObject {
     var isMuted: Bool { get set }
@@ -27,7 +26,6 @@ protocol CallControllerNodeProtocol: AnyObject {
     var presentCallRating: ((CallId, Bool) -> Void)? { get set }
     var present: ((ViewController) -> Void)? { get set }
     var callEnded: ((Bool) -> Void)? { get set }
-    var willBeDismissedInteractively: (() -> Void)? { get set }
     var dismissedInteractively: (() -> Void)? { get set }
     var dismissAllTooltips: (() -> Void)? { get set }
     
@@ -43,6 +41,193 @@ protocol CallControllerNodeProtocol: AnyObject {
 }
 
 public final class CallController: ViewController {
+    public enum Call: Equatable {
+        case call(PresentationCall)
+        case groupCall(PresentationGroupCall)
+        
+        public static func ==(lhs: Call, rhs: Call) -> Bool {
+            switch lhs {
+            case let .call(lhsCall):
+                if case let .call(rhsCall) = rhs {
+                    return lhsCall === rhsCall
+                } else {
+                    return false
+                }
+            case let .groupCall(lhsGroupCall):
+                if case let .groupCall(rhsGroupCall) = rhs {
+                    return lhsGroupCall === rhsGroupCall
+                } else {
+                    return false
+                }
+            }
+        }
+        
+        public var context: AccountContext {
+            switch self {
+            case let .call(call):
+                return call.context
+            case let .groupCall(groupCall):
+                return groupCall.accountContext
+            }
+        }
+        
+        public var peerId: EnginePeer.Id? {
+            switch self {
+            case let .call(call):
+                return call.peerId
+            case let .groupCall(groupCall):
+                return groupCall.peerId
+            }
+        }
+        
+        public func requestVideo() {
+            switch self {
+            case let .call(call):
+                call.requestVideo()
+            case let .groupCall(groupCall):
+                groupCall.requestVideo()
+            }
+        }
+        
+        public func disableVideo() {
+            switch self {
+            case let .call(call):
+                call.disableVideo()
+            case let .groupCall(groupCall):
+                groupCall.disableVideo()
+            }
+        }
+        
+        public func disableScreencast() {
+            switch self {
+            case let .call(call):
+                (call as? PresentationCallImpl)?.disableScreencast()
+            case let .groupCall(groupCall):
+                groupCall.disableScreencast()
+            }
+        }
+        
+        public func switchVideoCamera() {
+            switch self {
+            case let .call(call):
+                call.switchVideoCamera()
+            case let .groupCall(groupCall):
+                groupCall.switchVideoCamera()
+            }
+        }
+        
+        public func toggleIsMuted() {
+            switch self {
+            case let .call(call):
+                call.toggleIsMuted()
+            case let .groupCall(groupCall):
+                groupCall.toggleIsMuted()
+            }
+        }
+        
+        public func setCurrentAudioOutput(_ output: AudioSessionOutput) {
+            switch self {
+            case let .call(call):
+                call.setCurrentAudioOutput(output)
+            case let .groupCall(groupCall):
+                groupCall.setCurrentAudioOutput(output)
+            }
+        }
+        
+        public var isMuted: Signal<Bool, NoError> {
+            switch self {
+            case let .call(call):
+                return call.isMuted
+            case let .groupCall(groupCall):
+                return groupCall.isMuted
+            }
+        }
+        
+        public var audioLevel: Signal<Float, NoError> {
+            switch self {
+            case let .call(call):
+                return call.audioLevel
+            case let .groupCall(groupCall):
+                var audioLevelId: UInt32?
+                return groupCall.audioLevels |> map { audioLevels -> Float in
+                    var result: Float = 0
+                    for item in audioLevels {
+                        if let audioLevelId {
+                            if item.1 == audioLevelId {
+                                result = item.2
+                                break
+                            }
+                        } else {
+                            if item.1 != 0 {
+                                audioLevelId = item.1
+                                result = item.2
+                                break
+                            }
+                        }
+                    }
+                    
+                    return result
+                }
+            }
+        }
+        
+        public var isOutgoing: Bool {
+            switch self {
+            case let .call(call):
+                return call.isOutgoing
+            case .groupCall:
+                return false
+            }
+        }
+        
+        public func makeOutgoingVideoView(completion: @escaping (PresentationCallVideoView?) -> Void) {
+            switch self {
+            case let .call(call):
+                call.makeOutgoingVideoView(completion: completion)
+            case let .groupCall(groupCall):
+                groupCall.makeOutgoingVideoView(requestClone: false, completion: { a, _ in
+                    completion(a)
+                })
+            }
+        }
+        
+        public var audioOutputState: Signal<([AudioSessionOutput], AudioSessionOutput?), NoError> {
+            switch self {
+            case let .call(call):
+                return call.audioOutputState
+            case let .groupCall(groupCall):
+                return groupCall.audioOutputState
+            }
+        }
+        
+        public func debugInfo() -> Signal<(String, String), NoError> {
+            switch self {
+            case let .call(call):
+                return call.debugInfo()
+            case .groupCall:
+                return .single(("", ""))
+            }
+        }
+        
+        public func answer() {
+            switch self {
+            case let .call(call):
+                call.answer()
+            case .groupCall:
+                break
+            }
+        }
+        
+        public func hangUp() -> Signal<Bool, NoError> {
+            switch self {
+            case let .call(call):
+                return call.hangUp()
+            case let .groupCall(groupCall):
+                return groupCall.leave(terminateIfPossible: false)
+            }
+        }
+    }
+    
     private var controllerNode: CallControllerNodeProtocol {
         return self.displayNode as! CallControllerNodeProtocol
     }
@@ -57,7 +242,7 @@ public final class CallController: ViewController {
     
     private let sharedContext: SharedAccountContext
     private let account: Account
-    public let call: PresentationCall
+    public let call: CallController.Call
     private let easyDebugAccess: Bool
     
     private var presentationData: PresentationData
@@ -69,7 +254,7 @@ public final class CallController: ViewController {
     private var disposable: Disposable?
     
     private var callMutedDisposable: Disposable?
-    private var isMuted: Bool = false
+    private var isMuted = false
     
     private var presentedCallRating = false
     
@@ -83,10 +268,7 @@ public final class CallController: ViewController {
     public var onViewDidAppear: (() -> Void)?
     public var onViewDidDisappear: (() -> Void)?
     
-    private var isAnimatingDismiss: Bool = false
-    private var isDismissed: Bool = false
-    
-    public init(sharedContext: SharedAccountContext, account: Account, call: PresentationCall, easyDebugAccess: Bool) {
+    public init(sharedContext: SharedAccountContext, account: Account, call: CallController.Call, easyDebugAccess: Bool) {
         self.sharedContext = sharedContext
         self.account = account
         self.call = call
@@ -95,12 +277,6 @@ public final class CallController: ViewController {
         self.presentationData = sharedContext.currentPresentationData.with { $0 }
         
         super.init(navigationBarPresentationData: nil)
-        
-        if let data = call.context.currentAppConfiguration.with({ $0 }).data, data["ios_killswitch_modalcalls"] != nil {
-        } else {
-            self.navigationPresentation = .flatModal
-            self.flatReceivesModalTransition = true
-        }
         
         self._ready.set(combineLatest(queue: .mainQueue(), self.isDataReady.get(), self.isContentsReady.get())
         |> map { a, b -> Bool in
@@ -117,10 +293,84 @@ public final class CallController: ViewController {
         
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .portrait, compactSize: .portrait)
         
-        self.disposable = (call.state
-        |> deliverOnMainQueue).start(next: { [weak self] callState in
-            self?.callStateUpdated(callState)
-        })
+        switch call {
+        case let .call(call):
+            self.disposable = (call.state
+            |> deliverOnMainQueue).start(next: { [weak self] callState in
+                self?.callStateUpdated(callState)
+            })
+        case let .groupCall(groupCall):
+            let accountPeerId = groupCall.account.peerId
+            let videoEndpoints: Signal<(local: String?, remote: PresentationGroupCallRequestedVideo?), NoError> = groupCall.members
+            |> map { members -> (local: String?, remote: PresentationGroupCallRequestedVideo?) in
+                guard let members else {
+                    return (nil, nil)
+                }
+                var local: String?
+                var remote: PresentationGroupCallRequestedVideo?
+                for participant in members.participants {
+                    if let video = participant.requestedPresentationVideoChannel(minQuality: .thumbnail, maxQuality: .full) ?? participant.requestedVideoChannel(minQuality: .thumbnail, maxQuality: .full) {
+                        if participant.peer.id == accountPeerId {
+                            local = video.endpointId
+                        } else {
+                            if remote == nil {
+                                remote = video
+                            }
+                        }
+                    }
+                }
+                return (local, remote)
+            }
+            |> distinctUntilChanged(isEqual: { lhs, rhs in
+                return lhs == rhs
+            })
+            
+            var startTimestamp: Double?
+            self.disposable = (combineLatest(queue: .mainQueue(),
+                groupCall.state,
+                videoEndpoints
+            )
+            |> deliverOnMainQueue).start(next: { [weak self] callState, videoEndpoints in
+                guard let self else {
+                    return
+                }
+                let mappedState: PresentationCallState.State
+                switch callState.networkState {
+                case .connecting:
+                    mappedState = .connecting(nil)
+                case .connected:
+                    let timestamp = startTimestamp ?? CFAbsoluteTimeGetCurrent()
+                    startTimestamp = timestamp
+                    mappedState = .active(timestamp, nil, Data())
+                }
+                
+                var mappedLocalVideoState: PresentationCallState.VideoState = .inactive
+                var mappedRemoteVideoState: PresentationCallState.RemoteVideoState = .inactive
+                
+                if let local = videoEndpoints.local {
+                    mappedLocalVideoState = .active(isScreencast: false, endpointId: local)
+                }
+                if let remote = videoEndpoints.remote {
+                    mappedRemoteVideoState = .active(endpointId: remote.endpointId)
+                }
+                
+                if case let .groupCall(groupCall) = self.call {
+                    var requestedVideo: [PresentationGroupCallRequestedVideo] = []
+                    if let remote = videoEndpoints.remote {
+                        requestedVideo.append(remote)
+                    }
+                    groupCall.setRequestedVideoList(items: requestedVideo)
+                }
+                
+                self.callStateUpdated(PresentationCallState(
+                    state: mappedState,
+                    videoState: mappedLocalVideoState,
+                    remoteVideoState: mappedRemoteVideoState,
+                    remoteAudioState: .active,
+                    remoteBatteryLevel: .normal
+                ))
+            })
+        }
         
         self.callMutedDisposable = (call.isMuted
         |> deliverOnMainQueue).start(next: { [weak self] value in
@@ -346,22 +596,20 @@ public final class CallController: ViewController {
             }
         }
         
-        self.controllerNode.willBeDismissedInteractively = { [weak self] in
-            guard let self else {
-                return
-            }
-            self.notifyDismissed()
-        }
         self.controllerNode.dismissedInteractively = { [weak self] in
             guard let self else {
                 return
             }
             self.didPlayPresentationAnimation = false
-            self.superDismiss()
+            self.presentingViewController?.dismiss(animated: false, completion: nil)
         }
         
         let callPeerView: Signal<PeerView?, NoError>
-        callPeerView = self.account.postbox.peerView(id: self.call.peerId) |> map(Optional.init)
+        if let peerId = self.call.peerId {
+            callPeerView = self.account.postbox.peerView(id: peerId) |> map(Optional.init)
+        } else {
+            callPeerView = .single(nil)
+        }
         
         self.peerDisposable = (combineLatest(queue: .mainQueue(),
             self.account.postbox.peerView(id: self.account.peerId) |> take(1),
@@ -393,8 +641,6 @@ public final class CallController: ViewController {
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        self.isDismissed = false
-        
         if !self.didPlayPresentationAnimation {
             self.didPlayPresentationAnimation = true
             
@@ -403,9 +649,7 @@ public final class CallController: ViewController {
         
         self.idleTimerExtensionDisposable.set(self.sharedContext.applicationBindings.pushIdleTimerExtension())
         
-        DispatchQueue.main.async { [weak self] in
-            self?.onViewDidAppear?()
-        }
+        self.onViewDidAppear?()
     }
     
     override public func viewDidDisappear(_ animated: Bool) {
@@ -413,39 +657,7 @@ public final class CallController: ViewController {
         
         self.idleTimerExtensionDisposable.set(nil)
         
-        self.notifyDismissed()
-    }
-    
-    func notifyDismissed() {
-        if !self.isDismissed {
-            self.isDismissed = true
-            DispatchQueue.main.async {
-                self.onViewDidDisappear?()
-            }
-        }
-    }
-    
-    final class AnimateOutToGroupChat {
-        let containerView: UIView
-        let incomingPeerId: EnginePeer.Id
-        let incomingVideoLayer: CALayer?
-        let incomingVideoPlaceholder: VideoSource.Output?
-        
-        init(
-            containerView: UIView,
-            incomingPeerId: EnginePeer.Id,
-            incomingVideoLayer: CALayer?,
-            incomingVideoPlaceholder: VideoSource.Output?
-        ) {
-            self.containerView = containerView
-            self.incomingPeerId = incomingPeerId
-            self.incomingVideoLayer = incomingVideoLayer
-            self.incomingVideoPlaceholder = incomingVideoPlaceholder
-        }
-    }
-    
-    func animateOutToGroupChat(completion: @escaping () -> Void) -> AnimateOutToGroupChat? {
-        return (self.controllerNode as? CallControllerNodeV2)?.animateOutToGroupChat(completion: completion)
+        self.onViewDidDisappear?()
     }
     
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
@@ -455,97 +667,41 @@ public final class CallController: ViewController {
     }
     
     override public func dismiss(completion: (() -> Void)? = nil) {
-        if !self.isAnimatingDismiss {
-            self.notifyDismissed()
+        self.controllerNode.animateOut(completion: { [weak self] in
+            self?.didPlayPresentationAnimation = false
+            self?.presentingViewController?.dismiss(animated: false, completion: nil)
             
-            self.isAnimatingDismiss = true
-            self.controllerNode.animateOut(completion: { [weak self] in
-                guard let self else {
-                    return
-                }
-                self.isAnimatingDismiss = false
-                self.superDismiss()
-                completion?()
-            })
-        }
-    }
-    
-    public func dismissWithoutAnimation() {
-        self.superDismiss()
-    }
-    
-    private func superDismiss() {
-        self.didPlayPresentationAnimation = false
-        if self.navigationPresentation == .flatModal {
-            super.dismiss()
-        } else {
-            self.presentingViewController?.dismiss(animated: false, completion: nil)
-        }
+            completion?()
+        })
     }
     
     private func conferenceAddParticipant() {
-        var disablePeerIds: [EnginePeer.Id] = []
-        disablePeerIds.append(self.call.context.account.peerId)
-        disablePeerIds.append(self.call.peerId)
-        let controller = CallController.openConferenceAddParticipant(context: self.call.context, disablePeerIds: disablePeerIds, completion: { [weak self] peerIds in
+        let controller = self.call.context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(
+            context: self.call.context,
+            filter: [.onlyWriteable],
+            hasChatListSelector: true,
+            hasContactSelector: true,
+            hasGlobalSearch: true,
+            title: "Add Participant",
+            pretendPresentedInModal: false
+        ))
+        controller.peerSelected = { [weak self, weak controller] peer, _ in
+            controller?.dismiss()
+            
             guard let self else {
                 return
             }
-            
-            let _ = self.call.upgradeToConference(invitePeerIds: peerIds, completion: { _ in
-            })
-        })
-        self.push(controller)
-    }
-    
-    static func openConferenceAddParticipant(context: AccountContext, disablePeerIds: [EnginePeer.Id], completion: @escaping ([EnginePeer.Id]) -> Void) -> ViewController {
-        //TODO:localize
-        let presentationData = context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: defaultDarkPresentationTheme)
-        let controller = context.sharedContext.makeContactMultiselectionController(ContactMultiselectionControllerParams(
-            context: context,
-            updatedPresentationData: (initial: presentationData, signal: .single(presentationData)),
-            title: "Invite Members",
-            mode: .peerSelection(searchChatList: true, searchGroups: false, searchChannels: false),
-            isPeerEnabled: { peer in
-                guard case let .user(user) = peer else {
-                    return false
-                }
-                if disablePeerIds.contains(user.id) {
-                    return false
-                }
-                if user.botInfo != nil {
-                    return false
-                }
-                return true
-            }
-        ))
-        controller.navigationPresentation = .modal
-        let _ = (controller.result |> take(1) |> deliverOnMainQueue).startStandalone(next: { [weak controller] result in
-            guard case let .result(peerIds, _) = result else {
-                controller?.dismiss()
+            guard case let .call(call) = self.call else {
                 return
             }
-            if peerIds.isEmpty {
-                controller?.dismiss()
+            guard let call = call as? PresentationCallImpl else {
                 return
             }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                controller?.dismiss()
-            }
-            
-            let invitePeerIds = peerIds.compactMap { item -> EnginePeer.Id? in
-                if case let .peer(peerId) = item {
-                    return peerId
-                } else {
-                    return nil
-                }
-            }
-            
-            completion(invitePeerIds)
-        })
+            let _ = call.requestAddToConference(peerId: peer.id)
+        }
+        self.dismiss()
         
-        return controller
+        (self.call.context.sharedContext.mainWindow?.viewController as? NavigationController)?.pushViewController(controller)
     }
     
     @objc private func backPressed() {

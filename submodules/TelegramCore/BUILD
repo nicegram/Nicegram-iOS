@@ -23,8 +23,6 @@ swift_library(
         "//submodules/Utils/RangeSet:RangeSet",
         "//submodules/Utils/DarwinDirStat",
         "//submodules/Emoji",
-        "//submodules/TelegramCore/FlatBuffers",
-        "//submodules/TelegramCore/FlatSerialization",
     ],
     visibility = [
         "//visibility:public",

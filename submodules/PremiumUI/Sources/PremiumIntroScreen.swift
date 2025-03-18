@@ -306,12 +306,6 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
-        case .paidMessages:
-            if case .messageEffects = rhs {
-                return true
-            } else {
-                return false
-            }
         }
     }
     
@@ -359,7 +353,6 @@ public enum PremiumSource: Equatable {
     case messageTags
     case folderTags
     case messageEffects
-    case paidMessages
     
     var identifier: String? {
         switch self {
@@ -453,8 +446,6 @@ public enum PremiumSource: Equatable {
             return "folder_tags"
         case .messageEffects:
             return "effects"
-        case .paidMessages:
-            return "paid_messages"
         }
     }
 }
@@ -483,7 +474,6 @@ public enum PremiumPerk: CaseIterable {
     case business
     case folderTags
     case messageEffects
-    case paidMessages
     
     case businessLocation
     case businessHours
@@ -518,8 +508,7 @@ public enum PremiumPerk: CaseIterable {
             .messagePrivacy,
             .folderTags,
             .business,
-            .messageEffects,
-            .paidMessages
+            .messageEffects
         ]
     }
     
@@ -593,8 +582,6 @@ public enum PremiumPerk: CaseIterable {
             return "folder_tags"
         case .messageEffects:
             return "effects"
-        case .paidMessages:
-            return "paid_messages"
         case .business:
             return "business"
         case .businessLocation:
@@ -664,8 +651,6 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_Business
         case .messageEffects:
             return strings.Premium_MessageEffects
-        case .paidMessages:
-            return strings.Premium_PaidMessages
         case .businessLocation:
             return strings.Business_Location
         case .businessHours:
@@ -733,8 +718,6 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_BusinessInfo
         case .messageEffects:
             return strings.Premium_MessageEffectsInfo
-        case .paidMessages:
-            return strings.Premium_PaidMessagesInfo
         case .businessLocation:
             return strings.Business_LocationInfo
         case .businessHours:
@@ -802,8 +785,7 @@ public enum PremiumPerk: CaseIterable {
             return "Premium/Perk/Business"
         case .messageEffects:
             return "Premium/Perk/MessageEffects"
-        case .paidMessages:
-            return "Premium/Perk/PaidMessages"
+            
         case .businessLocation:
             return "Premium/BusinessPerk/Location"
         case .businessHours:
@@ -841,7 +823,6 @@ struct PremiumIntroConfiguration {
             .colors,
             .wallpapers,
             .profileBadge,
-            .paidMessages,
             .messagePrivacy,
             .advancedChatManagement,
             .noAds,
@@ -889,7 +870,7 @@ struct PremiumIntroConfiguration {
             if perks.count < 4 {
                 perks = PremiumIntroConfiguration.defaultValue.perks
             }
-                        
+            
             var businessPerks: [PremiumPerk] = []
             if let values = data["business_promo_order"] as? [String] {
                 for value in values {
@@ -1600,7 +1581,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 if let view = views.views[stickersKey] as? OrderedItemListView {
                     for item in view.items {
                         if let mediaItem = item.contents.get(RecentMediaItem.self) {
-                            let file = mediaItem.media._parse()
+                            let file = mediaItem.media
                             strongSelf.preloadDisposableSet.add(freeMediaFileResourceInteractiveFetched(account: context.account, userLocation: .other, fileReference: .standalone(media: file), resource: file.resource).start())
                             if let effect = file.videoThumbnails.first {
                                 strongSelf.preloadDisposableSet.add(freeMediaFileResourceInteractiveFetched(account: context.account, userLocation: .other, fileReference: .standalone(media: file), resource: effect.resource).start())
@@ -1882,7 +1863,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 UIColor(rgb: 0xdb374b),
                 UIColor(rgb: 0xcb3e6d),
                 UIColor(rgb: 0xbc4395),
-                UIColor(rgb: 0xbc4395),
                 UIColor(rgb: 0xab4ac4),
                 UIColor(rgb: 0xab4ac4),
                 UIColor(rgb: 0xa34cd7),
@@ -2116,8 +2096,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 demoSubject = .messagePrivacy
                             case .messageEffects:
                                 demoSubject = .messageEffects
-                            case .paidMessages:
-                                demoSubject = .paidMessages
                             case .business:
                                 demoSubject = .business
                                 let _ = ApplicationSpecificNotice.setDismissedBusinessBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()

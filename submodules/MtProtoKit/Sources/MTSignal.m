@@ -6,8 +6,6 @@
 #import <MtProtoKit/MTAtomic.h>
 #import <MtProtoKit/MTBag.h>
 
-#import <os/lock.h>
-
 @interface MTSubscriberDisposable : NSObject <MTDisposable>
 {
     __weak MTSubscriber *_subscriber;
@@ -126,7 +124,7 @@
 
 @interface MTSignalQueueState : NSObject <MTDisposable>
 {
-    os_unfair_lock _lock;
+    pthread_mutex_t _lock;
     bool _executingSignal;
     bool _terminated;
     
@@ -147,12 +145,18 @@
     self = [super init];
     if (self != nil)
     {
+        pthread_mutex_init(&_lock, nil);
+        
         _subscriber = subscriber;
         _currentDisposable = [[MTMetaDisposable alloc] init];
         _queuedSignals = queueMode ? [[NSMutableArray alloc] init] : nil;
         _queueMode = queueMode;
     }
     return self;
+}
+
+- (void)dealloc {
+    pthread_mutex_destroy(&_lock);
 }
 
 - (void)beginWithDisposable:(id<MTDisposable>)disposable
@@ -163,8 +167,9 @@
 - (void)enqueueSignal:(MTSignal *)signal
 {
     bool startSignal = false;
-    os_unfair_lock_lock(&_lock);
-    if (_queueMode && _executingSignal) {
+    pthread_mutex_lock(&_lock);
+    if (_queueMode && _executingSignal)
+    {
         [_queuedSignals addObject:signal];
     }
     else
@@ -172,29 +177,17 @@
         _executingSignal = true;
         startSignal = true;
     }
-    os_unfair_lock_unlock(&_lock);
+    pthread_mutex_unlock(&_lock);
     
     if (startSignal)
     {
         __weak MTSignalQueueState *weakSelf = self;
         id<MTDisposable> disposable = [signal startWithNext:^(id next)
         {
-            __strong MTSignalQueueState *strongSelf = weakSelf;
-            if (strongSelf) {
-                #if DEBUG
-                assert(strongSelf->_subscriber != nil);
-                #endif
-                [strongSelf->_subscriber putNext:next];
-            }
+            [_subscriber putNext:next];
         } error:^(id error)
         {
-            __strong MTSignalQueueState *strongSelf = weakSelf;
-            if (strongSelf) {
-                #if DEBUG
-                assert(strongSelf->_subscriber != nil);
-                #endif
-                [strongSelf->_subscriber putError:error];
-            }
+            [_subscriber putError:error];
         } completed:^
         {
             __strong MTSignalQueueState *strongSelf = weakSelf;
@@ -212,7 +205,7 @@
     MTSignal *nextSignal = nil;
     
     bool terminated = false;
-    os_unfair_lock_lock(&_lock);
+    pthread_mutex_lock(&_lock);
     _executingSignal = false;
     
     if (_queueMode)
@@ -228,7 +221,7 @@
     }
     else
         terminated = _terminated;
-    os_unfair_lock_unlock(&_lock);
+    pthread_mutex_unlock(&_lock);
     
     if (terminated)
         [_subscriber putCompletion];
@@ -237,29 +230,17 @@
         __weak MTSignalQueueState *weakSelf = self;
         id<MTDisposable> disposable = [nextSignal startWithNext:^(id next)
         {
-            __strong MTSignalQueueState *strongSelf = weakSelf;
-            if (strongSelf) {
-                #if DEBUG
-                assert(strongSelf->_subscriber != nil);
-                #endif
-                [strongSelf->_subscriber putNext:next];
-            }
+            [_subscriber putNext:next];
         } error:^(id error)
         {
-            __strong MTSignalQueueState *strongSelf = weakSelf;
-            if (strongSelf) {
-                #if DEBUG
-                assert(strongSelf->_subscriber != nil);
-                #endif
-                [strongSelf->_subscriber putError:error];
-            }
+            [_subscriber putError:error];
         } completed:^
         {
             __strong MTSignalQueueState *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 [strongSelf headCompleted];
             }
-        }];
+}];
         
         [_currentDisposable setDisposable:disposable];
     }
@@ -268,14 +249,13 @@
 - (void)beginCompletion
 {
     bool executingSignal = false;
-    os_unfair_lock_lock(&_lock);
+    pthread_mutex_lock(&_lock);
     executingSignal = _executingSignal;
     _terminated = true;
-    os_unfair_lock_unlock(&_lock);
+    pthread_mutex_unlock(&_lock);
     
-    if (!executingSignal) {
+    if (!executingSignal)
         [_subscriber putCompletion];
-    }
 }
 
 - (void)dispose
@@ -446,7 +426,7 @@
         MTMetaDisposable *startDisposable = [[MTMetaDisposable alloc] init];
         MTMetaDisposable *timerDisposable = [[MTMetaDisposable alloc] init];
         
-        MTTimer *timer = [[MTTimer alloc] initWithTimeout:seconds repeat:false completion:^() {
+        MTTimer *timer = [[MTTimer alloc] initWithTimeout:seconds repeat:false completion:^{
             [startDisposable setDisposable:[self startWithNext:^(id next)
             {
                 [subscriber putNext:next];
@@ -519,16 +499,15 @@
 {
     return [[MTSignal alloc] initWithGenerator:^id<MTDisposable> (MTSubscriber *subscriber)
     {
-        MTMetaDisposable *mainDisposable = [[MTMetaDisposable alloc] init];
-        MTMetaDisposable *alternativeDisposable = [[MTMetaDisposable alloc] init];
+        MTDisposableSet *disposable = [[MTDisposableSet alloc] init];
         
-        [mainDisposable setDisposable:[self startWithNext:^(id next)
+        [disposable add:[self startWithNext:^(id next)
         {
             [subscriber putNext:next];
         } error:^(id error)
         {
             MTSignal *signal = f(error);
-            [alternativeDisposable setDisposable:[signal startWithNext:^(id next)
+            [disposable add:[signal startWithNext:^(id next)
             {
                 [subscriber putNext:next];
             } error:^(id error)
@@ -543,10 +522,7 @@
             [subscriber putCompletion];
         }]];
         
-        return [[MTBlockDisposable alloc] initWithBlock:^{
-            [mainDisposable dispose];
-            [alternativeDisposable dispose];
-        }];
+        return disposable;
     }];
 }
 

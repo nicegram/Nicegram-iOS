@@ -590,16 +590,14 @@ public final class EntityKeyboardComponent: Component {
                 for itemGroup in emojiContent.panelItemGroups {
                     if !itemGroup.items.isEmpty {
                         if let id = itemGroup.groupId.base as? String, id != "peerSpecific" {
-                            if id == "recent" || id == "liked" || id == "collectible" {
+                            if id == "recent" || id == "liked" {
                                 let iconMapping: [String: EntityKeyboardIconTopPanelComponent.Icon] = [
                                     "recent": .recent,
                                     "liked": .liked,
-                                    "collectible": .collectible
                                 ]
                                 let titleMapping: [String: String] = [
                                     "recent": component.strings.Stickers_Recent,
                                     "liked": "",
-                                    "collectible": ""
                                 ]
                                 if let icon = iconMapping[id], let title = titleMapping[id] {
                                     topEmojiItems.append(EntityKeyboardTopPanelComponent.Item(

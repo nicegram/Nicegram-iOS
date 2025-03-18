@@ -883,11 +883,7 @@ private final class SparseItemGridBindingImpl: SparseItemGridBinding, ListShimme
                         selectedMedia = image
                         break
                     } else if let file = media as? TelegramMediaFile {
-                        if let cover = file.videoCover {
-                            selectedMedia = cover
-                        } else {
-                            selectedMedia = file
-                        }
+                        selectedMedia = file
                         break
                     }
                 }

@@ -1007,9 +1007,9 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     let (emoji, fitz) = item.message.text.basicEmoji
                     var emojiFile: TelegramMediaFile?
                     
-                    emojiFile = item.associatedData.animatedEmojiStickers[emoji]?.first?.file._parse()
+                    emojiFile = item.associatedData.animatedEmojiStickers[emoji]?.first?.file
                     if emojiFile == nil {
-                        emojiFile = item.associatedData.animatedEmojiStickers[emoji.strippedEmoji]?.first?.file._parse()
+                        emojiFile = item.associatedData.animatedEmojiStickers[emoji.strippedEmoji]?.first?.file
                     }
                     
                     if let emojiFile = emojiFile {

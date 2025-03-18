@@ -30,12 +30,3 @@
 - (void)setInternalHidden:(bool)internalHidden animated:(bool)animated;
 
 @end
-
-
-@interface TGMediaPickerCoverButton : UIButton
-
-- (void)setImage:(UIImage *)image;
-
-- (instancetype)initWithFrame:(CGRect)frame gallery:(bool)gallery;
-
-@end

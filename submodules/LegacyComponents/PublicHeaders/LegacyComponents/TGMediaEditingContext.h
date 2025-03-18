@@ -47,8 +47,6 @@
 
 @property (nonatomic, readonly) bool inhibitEditing;
 
-@property (nonatomic, assign) int64_t sendPaidMessageStars;
-
 + (instancetype)contextForCaptionsOnly;
 
 - (SSignal *)imageSignalForItem:(NSObject<TGMediaEditableItem> *)item;
@@ -63,13 +61,6 @@
 
 - (void)setImage:(UIImage *)image thumbnailImage:(UIImage *)thumbnailImage forItem:(id<TGMediaEditableItem>)item synchronous:(bool)synchronous;
 - (void)setFullSizeImage:(UIImage *)image forItem:(id<TGMediaEditableItem>)item;
-
-- (SSignal *)coverImageSignalForItem:(NSObject<TGMediaEditableItem> *)item;
-- (void)setCoverImage:(UIImage *)image position:(NSNumber *)position forItem:(id<TGMediaEditableItem>)item;
-- (UIImage *)coverImageForItem:(NSObject<TGMediaEditableItem> *)item;
-
-- (NSNumber *)coverPositionForItem:(NSObject<TGMediaEditableItem> *)item;
-- (void)setCoverImage:(UIImage *)image position:(NSNumber *)position forItem:(id<TGMediaEditableItem>)item;
 
 - (void)setTemporaryRep:(id)rep forItem:(id<TGMediaEditableItem>)item;
 

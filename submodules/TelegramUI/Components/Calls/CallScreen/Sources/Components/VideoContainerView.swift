@@ -29,7 +29,7 @@ public func resolveCallVideoRotationAngle(angle: Float, followsDeviceOrientation
     return (angle + interfaceAngle).truncatingRemainder(dividingBy: Float.pi * 2.0)
 }
 
-final class VideoContainerLayer: SimpleLayer {
+private final class VideoContainerLayer: SimpleLayer {
     let contentsLayer: SimpleLayer
     
     override init() {
@@ -129,15 +129,10 @@ final class VideoContainerView: HighlightTrackingButton {
     
     let key: Key
     
-    let videoContainerLayer: VideoContainerLayer
-    var videoContainerLayerTaken: Bool = false
+    private let videoContainerLayer: VideoContainerLayer
     
     private var videoLayer: PrivateCallVideoLayer
     private var disappearingVideoLayer: DisappearingVideo?
-    
-    var currentVideoOutput: VideoSource.Output? {
-        return self.videoLayer.video
-    }
     
     let blurredContainerLayer: SimpleLayer
     
@@ -250,7 +245,7 @@ final class VideoContainerView: HighlightTrackingButton {
         self.layer.addSublayer(self.shadowContainer)
         
         self.highligthedChanged = { [weak self] highlighted in
-            guard let self, let params = self.params, !self.videoContainerLayer.bounds.isEmpty, !self.videoContainerLayerTaken else {
+            guard let self, let params = self.params, !self.videoContainerLayer.bounds.isEmpty else {
                 return
             }
             var highlightedState = false
@@ -321,10 +316,6 @@ final class VideoContainerView: HighlightTrackingButton {
     }
     
     @objc private func panGesture(_ recognizer: UIPanGestureRecognizer) {
-        if self.videoContainerLayerTaken {
-            return
-        }
-        
         switch recognizer.state {
         case .began, .changed:
             self.dragVelocity = CGPoint()
@@ -558,9 +549,6 @@ final class VideoContainerView: HighlightTrackingButton {
     }
     
     private func update(previousParams: Params?, params: Params, transition: ComponentTransition) {
-        if self.videoContainerLayerTaken {
-            return
-        }
         guard let videoMetrics = self.videoMetrics else {
             return
         }

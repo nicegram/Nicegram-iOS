@@ -77,9 +77,6 @@ public enum PresentationResourceKey: Int32 {
     case itemListTopicArrowIcon
     case itemListAddBoostsIcon
     case itemListPremiumIcon
-    case itemListRoundTopupIcon
-    case itemListRoundWithdrawIcon
-    case itemListStatsIcon
     
     case statsReactionsIcon
     case statsForwardsIcon
@@ -310,7 +307,6 @@ public enum PresentationResourceKey: Int32 {
     
     case storyViewListLikeIcon
     case navigationPostStoryIcon
-    case navigationSortIcon
     
     case chatReplyBackgroundTemplateIncomingImage
     case chatReplyBackgroundTemplateOutgoingDashedImage
@@ -318,17 +314,10 @@ public enum PresentationResourceKey: Int32 {
     
     case chatBubbleCloseIcon
     
-    case chatEmptyStateStarIcon
-    case chatPlaceholderStarIcon
-    case chatUserInfoWarningIcon
-    
     case avatarPremiumLockBadgeBackground
     case avatarPremiumLockBadge
     case shareAvatarPremiumLockBadgeBackground
     case shareAvatarPremiumLockBadge
-    
-    case shareAvatarStarsLockBadgeBackground
-    case shareAvatarStarsLockBadgeInnerBackground
     
     case sharedLinkIcon
     

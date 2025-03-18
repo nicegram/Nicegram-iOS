@@ -26,7 +26,6 @@ swift_library(
         "//submodules/TelegramStringFormatting",
         "//submodules/PresentationDataUtils",
         "//submodules/TextFormat",
-        "//submodules/Markdown",
         "//submodules/AvatarNode",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
         "//submodules/TelegramUI/Components/Stars/ItemShimmeringLoadingComponent",

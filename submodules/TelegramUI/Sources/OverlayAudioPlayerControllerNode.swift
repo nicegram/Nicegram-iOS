@@ -181,8 +181,6 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         }, playMessageEffect: { _ in
         }, editMessageFactCheck: { _ in
         }, sendGift: { _ in
-        }, openUniqueGift: { _ in
-        }, openMessageFeeException: {
         }, requestMessageUpdate: { _, _ in
         }, cancelInteractiveKeyboardGestures: {
         }, dismissTextInput: {

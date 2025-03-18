@@ -73,7 +73,7 @@ func getWeather(context: AccountContext, load: Bool) -> Signal<StickerPickerScre
                                     if let match = context.animatedEmojiStickersValue[effectiveEmoji]?.first {
                                         return .single(.loaded(StickerPickerScreen.Weather.LoadedWeather(
                                             emoji: effectiveEmoji,
-                                            emojiFile: match.file._parse(),
+                                            emojiFile: match.file,
                                             temperature: weather.temperature
                                         )))
                                     } else {

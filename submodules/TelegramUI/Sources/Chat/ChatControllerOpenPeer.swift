@@ -130,19 +130,17 @@ extension ChatControllerImpl {
             if case let .peer(currentPeerId) = self.chatLocation, peer?.id == currentPeerId {
                 switch navigation {
                     case let .info(params):
-                        var section: ChatNavigationButtonAction.ChatInfoSection?
+                        var recommendedChannels = false
                         if let params {
                             if params.switchToRecommendedChannels {
-                                section = .recommendedChannels
-                            } else if params.switchToGroupsInCommon {
-                                section = .groupsInCommon
+                                recommendedChannels = true
                             }
                             if params.ignoreInSavedMessages && currentPeerId == self.context.account.peerId {
                                 self.playShakeAnimation()
                                 return
                             }
                         }
-                        self.navigationButtonAction(.openChatInfo(expandAvatar: expandAvatar, section: section))
+                        self.navigationButtonAction(.openChatInfo(expandAvatar: expandAvatar, recommendedChannels: recommendedChannels))
                     case let .chat(textInputState, _, _):
                         if let textInputState = textInputState {
                             self.updateChatPresentationInterfaceState(animated: true, interactive: true, {
@@ -191,12 +189,8 @@ extension ChatControllerImpl {
                                         if let fromReactionMessageId = fromReactionMessageId {
                                             mode = .reaction(fromReactionMessageId)
                                         }
-                                        if case let .info(params) = navigation, let params {
-                                            if params.switchToRecommendedChannels {
-                                                mode = .recommendedChannels
-                                            } else if params.switchToGroupsInCommon {
-                                                mode = .groupsInCommon
-                                            }
+                                        if case let .info(params) = navigation, let params, params.switchToRecommendedChannels {
+                                            mode = .recommendedChannels
                                         }
                                         if peer.id == strongSelf.context.account.peerId {
                                             mode = .myProfile

@@ -16,8 +16,7 @@ swift_library(
         "//submodules/GZip:GZip",
         "//submodules/rlottie:RLottieBinding",
         "//submodules/AppBundle:AppBundle",
-        "//submodules/ManagedAnimationNode:ManagedAnimationNode",
-        "//submodules/Components/HierarchyTrackingLayer",
+        "//submodules/ManagedAnimationNode:ManagedAnimationNode"
     ],
     visibility = [
         "//visibility:public",

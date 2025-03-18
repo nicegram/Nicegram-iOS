@@ -211,8 +211,6 @@ final class GreetingMessageListItemComponent: Component {
                     openWebApp: { _ in
                     },
                     openPhotoSetup: {
-                    },
-                    openAdInfo: { _ in
                     }
                 )
                 self.chatListNodeInteraction = chatListNodeInteraction

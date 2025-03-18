@@ -234,7 +234,7 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
                             )
                             |> take(1)
                             |> map { view, availableReactions, hasPremium -> [EmojiPagerContentComponent.ItemGroup] in
-                                var result: [(String, TelegramMediaFile.Accessor?, String)] = []
+                                var result: [(String, TelegramMediaFile?, String)] = []
                                 
                                 var allEmoticons: [String: String] = [:]
                                 for keyword in keywords {
@@ -247,16 +247,18 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
                                     guard let item = entry.item as? StickerPackItem else {
                                         continue
                                     }
-                                    
-                                    if item.file.isCustomEmoji {
-                                        if !item.file.isPremiumEmoji || hasPremium {
-                                            if let alt = item.file.customEmojiAlt {
+                                    for attribute in item.file.attributes {
+                                        switch attribute {
+                                        case let .CustomEmoji(_, _, alt, _):
+                                            if !item.file.isPremiumEmoji || hasPremium {
                                                 if !alt.isEmpty, let keyword = allEmoticons[alt] {
                                                     result.append((alt, item.file, keyword))
                                                 } else if alt == query {
                                                     result.append((alt, item.file, alt))
                                                 }
                                             }
+                                        default:
+                                            break
                                         }
                                     }
                                 }
@@ -327,11 +329,11 @@ public final class EmojiSearchContent: ASDisplayNode, EntitySearchContainerNode 
                                 continue
                             }
                             existingIds.insert(itemFile.fileId)
-                            let animationData = EntityKeyboardAnimationData(file: TelegramMediaFile.Accessor(itemFile))
+                            let animationData = EntityKeyboardAnimationData(file: itemFile)
                             let item = EmojiPagerContentComponent.Item(
                                 animationData: animationData,
                                 content: .animation(animationData),
-                                itemFile: TelegramMediaFile.Accessor(itemFile),
+                                itemFile: itemFile,
                                 subgroupId: nil,
                                 icon: .none,
                                 tintMode: animationData.isTemplate ? .primary : .none

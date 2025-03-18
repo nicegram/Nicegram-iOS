@@ -222,40 +222,12 @@ public func mergedMessageReactions(attributes: [MessageAttribute], isTags: Bool)
             if let index = topPeers.firstIndex(where: { $0.isMy }) {
                 topPeers[index].count += pendingStars.count
             } else {
-                let isAnonymous: Bool
-                let topPeerId: PeerId?
-                switch pendingStars.privacy {
-                case .anonymous:
-                    isAnonymous = true
-                    topPeerId = pendingStars.accountPeerId
-                case .default:
-                    isAnonymous = false
-                    topPeerId = pendingStars.accountPeerId
-                case let .peer(peerId):
-                    isAnonymous = false
-                    topPeerId = peerId
-                }
-                
-                topPeers.append(ReactionsMessageAttribute.TopPeer(peerId: topPeerId, count: pendingStars.count, isTop: false, isMy: true, isAnonymous: isAnonymous))
+                topPeers.append(ReactionsMessageAttribute.TopPeer(peerId: pendingStars.accountPeerId, count: pendingStars.count, isTop: false, isMy: true, isAnonymous: pendingStars.isAnonymous))
             }
             reactions.insert(MessageReaction(value: .stars, count: updatedCount, chosenOrder: -1), at: 0)
             return ReactionsMessageAttribute(canViewList: current?.canViewList ?? false, isTags: current?.isTags ?? isTags, reactions: reactions, recentPeers: result.recentPeers, topPeers: topPeers)
         } else {
-            let isAnonymous: Bool
-            let topPeerId: PeerId?
-            switch pendingStars.privacy {
-            case .anonymous:
-                isAnonymous = true
-                topPeerId = pendingStars.accountPeerId
-            case .default:
-                isAnonymous = false
-                topPeerId = pendingStars.accountPeerId
-            case let .peer(peerId):
-                isAnonymous = false
-                topPeerId = peerId
-            }
-            
-            return ReactionsMessageAttribute(canViewList: current?.canViewList ?? false, isTags: current?.isTags ?? isTags, reactions: [MessageReaction(value: .stars, count: pendingStars.count, chosenOrder: -1)], recentPeers: [], topPeers: [ReactionsMessageAttribute.TopPeer(peerId: topPeerId, count: pendingStars.count, isTop: false, isMy: true, isAnonymous: isAnonymous)])
+            return ReactionsMessageAttribute(canViewList: current?.canViewList ?? false, isTags: current?.isTags ?? isTags, reactions: [MessageReaction(value: .stars, count: pendingStars.count, chosenOrder: -1)], recentPeers: [], topPeers: [ReactionsMessageAttribute.TopPeer(peerId: pendingStars.accountPeerId, count: pendingStars.count, isTop: false, isMy: true, isAnonymous: pendingStars.isAnonymous)])
         }
     } else {
         return result

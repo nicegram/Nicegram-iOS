@@ -200,7 +200,7 @@ public final class GifContext {
                 var items: [GifPagerContentComponent.Item] = []
                 for gifItem in savedGifs {
                     items.append(GifPagerContentComponent.Item(
-                        file: .savedGif(media: gifItem.contents.get(RecentMediaItem.self)!.media._parse()),
+                        file: .savedGif(media: gifItem.contents.get(RecentMediaItem.self)!.media),
                         contextResult: nil
                     ))
                 }

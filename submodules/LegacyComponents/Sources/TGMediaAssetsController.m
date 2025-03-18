@@ -260,7 +260,6 @@
         pickerController.hasSilentPosting = strongController.hasSilentPosting;
         pickerController.hasSchedule = strongController.hasSchedule;
         pickerController.reminder = strongController.reminder;
-        pickerController.hasCoverButton = strongController.hasCoverButton;
         pickerController.forum = strongController.forum;
         pickerController.isSuggesting = strongController.isSuggesting;
         pickerController.presentScheduleController = strongController.presentScheduleController;
@@ -364,12 +363,6 @@
 {
     _reminder = reminder;
     self.pickerController.reminder = reminder;
-}
-
-- (void)setHasCoverButton:(bool)hasCoverButton
-{
-    _hasCoverButton = hasCoverButton;
-    self.pickerController.hasCoverButton = hasCoverButton;
 }
 
 - (void)setForum:(bool)forum {
@@ -1338,8 +1331,6 @@
                     CGSize dimensions = [TGMediaVideoConverter dimensionsFor:asset.originalSize adjustments:adjustments preset:preset];
                     NSTimeInterval duration = adjustments.trimApplied ? (adjustments.trimEndValue - adjustments.trimStartValue) : asset.videoDuration;
                     
-                    UIImage *coverImage = [editingContext coverImageForItem:asset];
-                    
                     [signals addObject:[thumbnailSignal map:^id(UIImage *image)
                     {
                         NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
@@ -1350,7 +1341,6 @@
                         dict[@"adjustments"] = adjustments;
                         dict[@"dimensions"] = [NSValue valueWithCGSize:dimensions];
                         dict[@"duration"] = @(duration);
-                        dict[@"coverImage"] = coverImage;
                         
                         if (adjustments.paintingData.stickers.count > 0)
                             dict[@"stickers"] = adjustments.paintingData.stickers;

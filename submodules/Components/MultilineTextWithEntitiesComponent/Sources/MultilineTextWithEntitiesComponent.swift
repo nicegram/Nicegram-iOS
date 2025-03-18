@@ -30,7 +30,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
     public let textShadowColor: UIColor?
     public let textStroke: (UIColor, CGFloat)?
     public let highlightColor: UIColor?
-    public let highlightInset: UIEdgeInsets
     public let handleSpoilers: Bool
     public let manualVisibilityControl: Bool
     public let resetAnimationsOnVisibilityChange: Bool
@@ -54,7 +53,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
         textShadowColor: UIColor? = nil,
         textStroke: (UIColor, CGFloat)? = nil,
         highlightColor: UIColor? = nil,
-        highlightInset: UIEdgeInsets = .zero,
         handleSpoilers: Bool = false,
         manualVisibilityControl: Bool = false,
         resetAnimationsOnVisibilityChange: Bool = false,
@@ -77,7 +75,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
         self.textShadowColor = textShadowColor
         self.textStroke = textStroke
         self.highlightColor = highlightColor
-        self.highlightInset = highlightInset
         self.highlightAction = highlightAction
         self.handleSpoilers = handleSpoilers
         self.manualVisibilityControl = manualVisibilityControl
@@ -147,10 +144,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
             return false
         }
         
-        if lhs.highlightInset != rhs.highlightInset {
-            return false
-        }
-        
         return true
     }
     
@@ -196,7 +189,6 @@ public final class MultilineTextWithEntitiesComponent: Component {
             self.textNode.textShadowColor = component.textShadowColor
             self.textNode.textStroke = component.textStroke
             self.textNode.linkHighlightColor = component.highlightColor
-            self.textNode.linkHighlightInset = component.highlightInset
             self.textNode.highlightAttributeAction = component.highlightAction
             self.textNode.tapAttributeAction = component.tapAction
             self.textNode.longTapAttributeAction = component.longTapAction

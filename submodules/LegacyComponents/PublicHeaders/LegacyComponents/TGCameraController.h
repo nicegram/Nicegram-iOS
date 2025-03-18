@@ -45,8 +45,6 @@ typedef enum {
 @property (nonatomic, strong) id<TGPhotoPaintStickersContext> stickersContext;
 @property (nonatomic, assign) bool shortcut;
 
-@property (nonatomic, assign) int64_t sendPaidMessageStars;
-
 @property (nonatomic, strong) NSAttributedString *forcedCaption;
 
 @property (nonatomic, strong) NSString *recipientName;

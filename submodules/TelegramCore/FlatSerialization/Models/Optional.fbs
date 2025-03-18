@@ -1,5 +1,0 @@
-namespace TelegramCore;
-
-struct OptionalBool {
-    value:bool (id: 0);
-}

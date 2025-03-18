@@ -138,7 +138,6 @@ private func parseJson(_ input: [String: Any], url: String) -> TelegramMediaWebp
                 duration: nil,
                 author: byline,
                 isMediaLargeByDefault: nil,
-                imageIsVideoCover: false,
                 image: nil,
                 file: nil,
                 story: nil,

@@ -396,7 +396,6 @@ public class ShareRootControllerImpl {
                 voipVersions: [],
                 appData: .single(nil),
                 externalRequestVerificationStream: .never(),
-                externalRecaptchaRequestVerification: { _, _ in return .never() },
                 autolockDeadine: .single(nil),
                 encryptionProvider: OpenSSLEncryptionProvider(),
                 deviceModelName: nil,
@@ -546,8 +545,8 @@ public class ShareRootControllerImpl {
                             } |> runOn(Queue.mainQueue())
                         }
                         
-                        let sentItems: ([PeerId], [PeerId: Int64], [PeerId: StarsAmount], [PreparedShareItemContent], ShareControllerAccountContext, Bool, String) -> Signal<ShareControllerExternalStatus, NoError> = { peerIds, threadIds, requireStars, contents, account, silently, additionalText in
-                            let sentItems = sentShareItems(accountPeerId: account.accountPeerId, postbox: account.stateManager.postbox, network: account.stateManager.network, stateManager: account.stateManager, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: nil), to: peerIds, threadIds: threadIds, requireStars: requireStars, items: contents, silently: silently, additionalText: additionalText)
+                        let sentItems: ([PeerId], [PeerId: Int64], [PreparedShareItemContent], ShareControllerAccountContext, Bool, String) -> Signal<ShareControllerExternalStatus, NoError> = { peerIds, threadIds, contents, account, silently, additionalText in
+                            let sentItems = sentShareItems(accountPeerId: account.accountPeerId, postbox: account.stateManager.postbox, network: account.stateManager.network, stateManager: account.stateManager, auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: nil), to: peerIds, threadIds: threadIds, items: contents, silently: silently, additionalText: additionalText)
                             |> `catch` { _ -> Signal<
                                 Float, NoError> in
                                 return .complete()
@@ -558,20 +557,8 @@ public class ShareRootControllerImpl {
                             }
                             |> then(.single(.done))
                         }
-                         
-                        var itemCount = 1
-                        
-                        if let extensionItems = self?.getExtensionContext()?.inputItems as? [NSExtensionItem] {
-                            for item in extensionItems {
-                                if let attachments = item.attachments {
-                                    itemCount = 0
-                                    for _ in attachments {
-                                        itemCount += 1
-                                    }
-                                }
-                            }
-                        }
-                        let shareController = ShareController(environment: environment, currentContext: context, subject: .fromExternal(itemCount, { peerIds, threadIds, requireStars, additionalText, account, silently in
+                                            
+                        let shareController = ShareController(environment: environment, currentContext: context, subject: .fromExternal({ peerIds, threadIds, additionalText, account, silently in
                             if let strongSelf = self, let inputItems = strongSelf.getExtensionContext()?.inputItems, !inputItems.isEmpty, !peerIds.isEmpty {
                                 let rawSignals = TGItemProviderSignals.itemSignals(forInputItems: inputItems)!
                                 return preparedShareItems(postbox: account.stateManager.postbox, network: account.stateManager.network, to: peerIds[0], dataItems: rawSignals)
@@ -597,11 +584,11 @@ public class ShareRootControllerImpl {
                                         return requestUserInteraction(value)
                                         |> castError(ShareControllerError.self)
                                         |> mapToSignal { contents -> Signal<ShareControllerExternalStatus, ShareControllerError> in
-                                            return sentItems(peerIds, threadIds, requireStars, contents, account, silently, additionalText)
+                                            return sentItems(peerIds, threadIds, contents, account, silently, additionalText)
                                             |> castError(ShareControllerError.self)
                                         }
                                     case let .done(contents):
-                                        return sentItems(peerIds, threadIds, requireStars, contents, account, silently, additionalText)
+                                        return sentItems(peerIds, threadIds, contents, account, silently, additionalText)
                                         |> castError(ShareControllerError.self)
                                     }
                                 }

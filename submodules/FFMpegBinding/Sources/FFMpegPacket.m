@@ -65,8 +65,4 @@
     return avcodec_send_packet((AVCodecContext *)[codecContext impl], _impl);
 }
 
-- (void)reuse {
-    av_packet_unref(_impl);
-}
-
 @end

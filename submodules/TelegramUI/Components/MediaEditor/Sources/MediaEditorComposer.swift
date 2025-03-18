@@ -126,8 +126,6 @@ final class MediaEditorComposer {
         
         if values.isSticker {
             self.maskImage = roundedCornersMaskImage(size: CGSize(width: floor(1080.0 * 0.97), height: floor(1080.0 * 0.97)))
-        } else if values.isAvatar {
-            self.maskImage = rectangleMaskImage(size: CGSize(width: 1080.0, height: 1080.0))
         }
         
         if let drawing = values.drawing, let drawingImage = CIImage(image: drawing, options: [.colorSpace: self.colorSpace]) {
@@ -226,10 +224,8 @@ public func makeEditorImageComposition(context: CIContext, postbox: Postbox, inp
     var maskImage: CIImage?
     if values.isSticker {
         maskImage = roundedCornersMaskImage(size: CGSize(width: floor(1080.0 * 0.97), height: floor(1080.0 * 0.97)))
-    } else if values.isAvatar {
+    } else if let _ = outputDimensions {
         maskImage = rectangleMaskImage(size: CGSize(width: 1080.0, height: 1080.0))
-    } else if let outputDimensions {
-        maskImage = rectangleMaskImage(size: outputDimensions.aspectFitted(CGSize(width: 1080.0, height: 1920.0)))
     }
     
     if let drawing = values.drawing, let image = CIImage(image: drawing, options: [.colorSpace: colorSpace]) {
@@ -241,7 +237,7 @@ public func makeEditorImageComposition(context: CIContext, postbox: Postbox, inp
         entities.append(contentsOf: composerEntitiesForDrawingEntity(postbox: postbox, textScale: textScale, entity: entity.entity, colorSpace: colorSpace))
     }
     
-    makeEditorImageFrameComposition(context: context, inputImage: inputImage, drawingImage: drawingImage, maskImage: maskImage, dimensions: dimensions, outputDimensions: outputDimensions, values: values, entities: entities, time: time, textScale: textScale, completion: { compositedImage in
+    makeEditorImageFrameComposition(context: context, inputImage: inputImage, drawingImage: drawingImage, maskImage: maskImage, dimensions: dimensions, values: values, entities: entities, time: time, textScale: textScale, completion: { compositedImage in
         if var compositedImage {
             let outputDimensions = outputDimensions ?? dimensions
             let scale = outputDimensions.width / compositedImage.extent.width
@@ -258,7 +254,7 @@ public func makeEditorImageComposition(context: CIContext, postbox: Postbox, inp
     })
 }
 
-private func makeEditorImageFrameComposition(context: CIContext, inputImage: CIImage, drawingImage: CIImage?, maskImage: CIImage?, dimensions: CGSize, outputDimensions: CGSize? = nil, values: MediaEditorValues, entities: [MediaEditorComposerEntity], time: CMTime, textScale: CGFloat = 1.0, completion: @escaping (CIImage?) -> Void) {
+private func makeEditorImageFrameComposition(context: CIContext, inputImage: CIImage, drawingImage: CIImage?, maskImage: CIImage?, dimensions: CGSize, values: MediaEditorValues, entities: [MediaEditorComposerEntity], time: CMTime, textScale: CGFloat = 1.0, completion: @escaping (CIImage?) -> Void) {
     var isClear = false
     if let gradientColor = values.gradientColors?.first, gradientColor.alpha.isZero {
         isClear = true
@@ -268,7 +264,7 @@ private func makeEditorImageFrameComposition(context: CIContext, inputImage: CII
     
     var mediaImage = inputImage.samplingLinear().transformed(by: CGAffineTransform(translationX: -inputImage.extent.midX, y: -inputImage.extent.midY))
     
-    if values.isStory || values.isSticker || values.isAvatar || values.isCover {
+    if values.isStory || values.isSticker {
         resultImage = mediaImage.samplingLinear().composited(over: resultImage)
     } else {
         let initialScale = dimensions.width / mediaImage.extent.width
@@ -299,16 +295,9 @@ private func makeEditorImageFrameComposition(context: CIContext, inputImage: CII
             }
             
             resultImage = resultImage.transformed(by: CGAffineTransform(translationX: dimensions.width / 2.0, y: dimensions.height / 2.0))
-            if values.isSticker {
+            if values.isSticker || values.isAvatar {
                 let minSize = min(dimensions.width, dimensions.height)
                 let scaledSize = CGSize(width: floor(minSize * 0.97), height: floor(minSize * 0.97))
-                resultImage = resultImage.transformed(by: CGAffineTransform(translationX: -(dimensions.width - scaledSize.width) / 2.0, y: -(dimensions.height - scaledSize.height) / 2.0)).cropped(to: CGRect(origin: .zero, size: scaledSize))
-            } else if values.isAvatar {
-                let minSize = min(dimensions.width, dimensions.height)
-                let scaledSize = CGSize(width: minSize, height: minSize)
-                resultImage = resultImage.transformed(by: CGAffineTransform(translationX: -(dimensions.width - scaledSize.width) / 2.0, y: -(dimensions.height - scaledSize.height) / 2.0)).cropped(to: CGRect(origin: .zero, size: scaledSize))
-            } else if values.isCover, let outputDimensions {
-                let scaledSize = outputDimensions.aspectFitted(dimensions)
                 resultImage = resultImage.transformed(by: CGAffineTransform(translationX: -(dimensions.width - scaledSize.width) / 2.0, y: -(dimensions.height - scaledSize.height) / 2.0)).cropped(to: CGRect(origin: .zero, size: scaledSize))
             } else if values.isStory {
                 resultImage = resultImage.cropped(to: CGRect(origin: .zero, size: dimensions))

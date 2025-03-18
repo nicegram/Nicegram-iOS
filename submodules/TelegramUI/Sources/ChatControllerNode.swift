@@ -76,7 +76,6 @@ import NGUI
 //
 
 private final class ChatControllerNodeView: UITracingLayerView, WindowInputAccessoryHeightProvider {
-    weak var node: ChatControllerNode?
     var inputAccessoryHeight: (() -> CGFloat)?
     var hitTestImpl: ((CGPoint, UIEvent?) -> UIView?)?
     
@@ -88,17 +87,7 @@ private final class ChatControllerNodeView: UITracingLayerView, WindowInputAcces
         if let result = self.hitTestImpl?(point, event) {
             return result
         }
-        guard let result = super.hitTest(point, with: event) else {
-            return nil
-        }
-        if let node = self.node {
-            if result === node.historyNodeContainer.view {
-                if node.historyNode.alpha == 0.0 {
-                    return nil
-                }
-            }
-        }
-        return result
+        return super.hitTest(point, with: event)
     }
 }
 
@@ -211,7 +200,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private(set) var validLayout: (ContainerViewLayout, CGFloat)?
     private var visibleAreaInset = UIEdgeInsets()
     
-    private(set) var searchNavigationNode: ChatSearchNavigationContentNode?
+    private var searchNavigationNode: ChatSearchNavigationContentNode?
     
     private var navigationModalFrame: NavigationModalFrame?
     
@@ -233,7 +222,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var chatImportStatusPanel: ChatImportStatusPanel?
     
     private(set) var adPanelNode: ChatAdPanelNode?
-    private(set) var feePanelNode: ChatFeePanelNode?
     
     private let titleAccessoryPanelContainer: ChatControllerTitlePanelNodeContainer
     private var titleAccessoryPanelNode: ChatTitleAccessoryPanelNode?
@@ -343,7 +331,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     var requestUpdateChatInterfaceState: (ContainedViewLayoutTransition, Bool, (ChatInterfaceState) -> ChatInterfaceState) -> Void = { _, _, _ in }
     var requestUpdateInterfaceState: (ContainedViewLayoutTransition, Bool, (ChatPresentationInterfaceState) -> ChatPresentationInterfaceState) -> Void = { _, _, _ in }
-    var sendMessages: ([EnqueueMessage], Bool?, Int32?, Bool, Bool) -> Void = { _, _, _, _, _ in }
+    var sendMessages: ([EnqueueMessage], Bool?, Int32?, Bool) -> Void = { _, _, _, _ in }
     var displayAttachmentMenu: () -> Void = { }
     var paste: (ChatTextInputPanelPasteData) -> Void = { _ in }
     var updateTypingActivity: (Bool) -> Void = { _ in }
@@ -830,8 +818,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             return ChatControllerNodeView()
         })
         
-        (self.view as? ChatControllerNodeView)?.node = self
-        
         (self.view as? ChatControllerNodeView)?.inputAccessoryHeight = { [weak self] in
             if let strongSelf = self {
                 return strongSelf.getWindowInputAccessoryHeight()
@@ -1040,26 +1026,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         self.textInputPanelNode?.sendMessage = { [weak self] in
-            if let self, let controller = self.controller {
-                if case .scheduledMessages = self.chatPresentationInterfaceState.subject, self.chatPresentationInterfaceState.editMessageState == nil {
-                    self.controllerInteraction.scheduleCurrentMessage(nil)
+            if let strongSelf = self {
+                if case .scheduledMessages = strongSelf.chatPresentationInterfaceState.subject, strongSelf.chatPresentationInterfaceState.editMessageState == nil {
+                    strongSelf.controllerInteraction.scheduleCurrentMessage(nil)
                 } else {
-                    if let _ = self.chatPresentationInterfaceState.sendPaidMessageStars {
-                        var count: Int32
-                        if let forwardedCount = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds?.count, forwardedCount > 0 {
-                            count = Int32(forwardedCount)
-                            if self.chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.length > 0 {
-                                count += 1
-                            }
-                        } else {
-                            count = Int32(ceil(CGFloat(self.chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.length) / 4096.0))
-                        }
-                        controller.presentPaidMessageAlertIfNeeded(count: count, completion: { [weak self] postpone in
-                            self?.sendCurrentMessage(postpone: postpone)
-                        })
-                    } else {
-                        self.sendCurrentMessage()
-                    }
+                    strongSelf.sendCurrentMessage()
                 }
             }
         }
@@ -1726,6 +1697,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 dismissedAdPanelNode = self.adPanelNode
                 self.adPanelNode = adPanelNode
                 self.titleAccessoryPanelContainer.addSubnode(adPanelNode)
+                
+                adPanelNode.clipsToBounds = true
             }
             
             let height = adPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, transition: transition, interfaceState: self.chatPresentationInterfaceState)
@@ -1742,46 +1715,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         } else if let adPanelNode = self.adPanelNode {
             dismissedAdPanelNode = adPanelNode
             self.adPanelNode = nil
-        }
-        
-        var dismissedFeePanelNode: ChatFeePanelNode?
-        var feePanelHeight: CGFloat?
-        
-        var displayFeePanel = false
-        if let user = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.botInfo == nil, let chatHistoryState = self.chatPresentationInterfaceState.chatHistoryState, case .loaded(false, _) = chatHistoryState {
-            if !self.chatPresentationInterfaceState.peerIsBlocked, let paidMessageStars = self.chatPresentationInterfaceState.contactStatus?.peerStatusSettings?.paidMessageStars, paidMessageStars.value > 0 {
-                displayFeePanel = true
-            }
-        }
-        if displayFeePanel {
-            var animateAppearance = false
-            let feePanelNode: ChatFeePanelNode
-            if let current = self.feePanelNode {
-                feePanelNode = current
-            } else {
-                feePanelNode = ChatFeePanelNode(context: self.context)
-                feePanelNode.controllerInteraction = self.controllerInteraction
-                feePanelNode.clipsToBounds = true
-                animateAppearance = true
-            }
-            
-            if self.feePanelNode != feePanelNode {
-                dismissedFeePanelNode = self.feePanelNode
-                self.feePanelNode = feePanelNode
-                self.titleAccessoryPanelContainer.addSubnode(feePanelNode)
-            }
-            
-            let height = feePanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, transition: transition, interfaceState: self.chatPresentationInterfaceState)
-            
-            feePanelHeight = height
-            if transition.isAnimated && animateAppearance {
-                feePanelNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-                feePanelNode.subnodeTransform = CATransform3DMakeTranslation(0.0, -height, 0.0)
-                transition.updateSublayerTransformOffset(layer: feePanelNode.layer, offset: CGPoint())
-            }
-        } else if let feePanelNode = self.feePanelNode {
-            dismissedFeePanelNode = feePanelNode
-            self.feePanelNode = nil
         }
         
         var inputPanelNodeBaseHeight: CGFloat = 0.0
@@ -2092,13 +2025,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         var adPanelFrame: CGRect?
         if let _ = self.adPanelNode, let panelHeight = adPanelHeight {
             adPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: extraNavigationBarHeight), size: CGSize(width: layout.size.width, height: panelHeight))
-            insets.top += panelHeight
-            extraNavigationBarHeight += panelHeight
-        }
-        
-        var feePanelFrame: CGRect?
-        if let _ = self.feePanelNode, let panelHeight = feePanelHeight {
-            feePanelFrame = CGRect(origin: CGPoint(x: 0.0, y: extraNavigationBarHeight), size: CGSize(width: layout.size.width, height: panelHeight))
             insets.top += panelHeight
             extraNavigationBarHeight += panelHeight
         }
@@ -2607,10 +2533,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             adPanelNode.frame = adPanelFrame
         }
         
-        if let feePanelNode = self.feePanelNode, let feePanelFrame, !feePanelNode.frame.equalTo(feePanelFrame) {
-            feePanelNode.frame = feePanelFrame
-        }
-        
         if let secondaryInputPanelNode = self.secondaryInputPanelNode, let apparentSecondaryInputPanelFrame = apparentSecondaryInputPanelFrame, !secondaryInputPanelNode.frame.equalTo(apparentSecondaryInputPanelFrame) {
             if immediatelyLayoutSecondaryInputPanelAndAnimateAppearance {
                 secondaryInputPanelNode.frame = apparentSecondaryInputPanelFrame.offsetBy(dx: 0.0, dy: apparentSecondaryInputPanelFrame.height + previousInputPanelBackgroundFrame.maxY - apparentSecondaryInputPanelFrame.maxY)
@@ -2733,15 +2655,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             transition.updateAlpha(node: dismissedAdPanelNode, alpha: 0.0)
             transition.updateFrame(node: dismissedAdPanelNode, frame: dismissedPanelFrame, completion: { [weak dismissedAdPanelNode] _ in
                 dismissedAdPanelNode?.removeFromSupernode()
-            })
-        }
-        
-        if let dismissedFeePanelNode {
-            var dismissedPanelFrame = dismissedFeePanelNode.frame
-            dismissedPanelFrame.origin.y = -dismissedPanelFrame.size.height
-            transition.updateAlpha(node: dismissedFeePanelNode, alpha: 0.0)
-            transition.updateFrame(node: dismissedFeePanelNode, frame: dismissedPanelFrame, completion: { [weak dismissedFeePanelNode] _ in
-                dismissedFeePanelNode?.removeFromSupernode()
             })
         }
         
@@ -4440,7 +4353,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    func sendCurrentMessage(silentPosting: Bool? = nil, scheduleTime: Int32? = nil, postpone: Bool = false, messageEffect: ChatSendMessageEffect? = nil, completion: @escaping () -> Void = {}) {
+    func sendCurrentMessage(silentPosting: Bool? = nil, scheduleTime: Int32? = nil, messageEffect: ChatSendMessageEffect? = nil, completion: @escaping () -> Void = {}) {
         if let textInputPanelNode = self.inputPanelNode as? ChatTextInputPanelNode {
             self.historyNode.justSentTextMessage = true
             
@@ -4598,7 +4511,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                             if !entities.isEmpty {
                                 attributes.append(TextEntitiesMessageAttribute(entities: entities))
                             }
-                                                        
                             var webpage: TelegramMediaWebpage?
                             if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
                                 if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
@@ -4679,7 +4591,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                             messages.append(.forward(source: id, threadId: replyThreadId, grouping: .auto, attributes: attributes, correlationId: nil, asCopy: asCopy))
                         }
                     }
-                                        
+                    
                     var usedCorrelationId: Int64?
 
                     if !messages.isEmpty, case .message = messages[messages.count - 1] {
@@ -4710,7 +4622,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     }, usedCorrelationId)
                     completion()
                     
-                    self.sendMessages(messages, silentPosting, scheduleTime, messages.count > 1, postpone)
+                    self.sendMessages(messages, silentPosting, scheduleTime, messages.count > 1)
                 }
             }
         }
@@ -4757,17 +4669,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    private var previousConfettiAnimationTimestamp: Double?
-    func playConfettiAnimation() {
-        guard self.view.bounds.width > 0.0 else {
-            return
-        }
-        let currentTime = CACurrentMediaTime()
-        if let previousConfettiAnimationTimestamp = self.previousConfettiAnimationTimestamp, abs(currentTime - previousConfettiAnimationTimestamp) < 0.1 {
-            return
-        }
-        self.previousConfettiAnimationTimestamp = currentTime
-        
+    func animateQuizCorrectOptionSelected() {
         self.view.insertSubview(ConfettiView(frame: self.view.bounds), aboveSubview: self.historyNode.view)
     }
     

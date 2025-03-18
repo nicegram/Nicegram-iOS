@@ -18,6 +18,7 @@
 
 #else
 #import "platform/darwin/VideoMetalView.h"
+#import "platform/darwin/GLVideoView.h"
 #import "platform/darwin/VideoSampleBufferView.h"
 #import "platform/darwin/VideoCaptureView.h"
 #import "platform/darwin/CustomExternalCapturer.h"

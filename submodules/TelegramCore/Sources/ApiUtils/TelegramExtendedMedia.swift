@@ -16,7 +16,8 @@ extension TelegramExtendedMedia {
             }
             self = .preview(dimensions: dimensions, immediateThumbnailData: immediateThumbnailData, videoDuration: videoDuration)
         case let .messageExtendedMedia(apiMedia):
-            if let media = textMediaAndExpirationTimerFromApiMedia(apiMedia, peerId).media {
+            let (media, _, _, _, _) = textMediaAndExpirationTimerFromApiMedia(apiMedia, peerId)
+            if let media = media {
                 self = .full(media: media)
             } else {
                 return nil

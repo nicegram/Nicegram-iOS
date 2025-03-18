@@ -18,7 +18,7 @@ private final class IconsNode: ASDisplayNode {
     private let context: AccountContext
     private var animationLayer: InlineStickerItemLayer?
     
-    private var files: [TelegramMediaFile.Accessor]
+    private var files: [TelegramMediaFile]
     private var currentIndex = 0
     private var switchingToNext = false
     
@@ -26,7 +26,7 @@ private final class IconsNode: ASDisplayNode {
     
     private var currentParams: (size: CGSize, theme: PresentationTheme)?
     
-    init(context: AccountContext, files: [TelegramMediaFile.Accessor]) {
+    init(context: AccountContext, files: [TelegramMediaFile]) {
         self.context = context
         self.files = files
         
@@ -63,7 +63,7 @@ private final class IconsNode: ASDisplayNode {
                 disappearingAnimationLayer = self.animationLayer
                 self.switchingToNext = false
             }
-            let file = self.files[self.currentIndex]._parse()
+            let file = self.files[self.currentIndex]
             let emoji = ChatTextInputTextCustomEmojiAttribute(
                 interactivelySelectedFromPackId: nil,
                 fileId: file.fileId.id,
@@ -132,7 +132,7 @@ private final class WebAppEmojiStatusAlertContentNode: AlertContentNode {
         strings: PresentationStrings,
         accountPeer: EnginePeer,
         botName: String,
-        icons: [TelegramMediaFile.Accessor],
+        icons: [TelegramMediaFile],
         actions: [TextAlertAction]
     ) {
         self.strings = strings
@@ -331,7 +331,7 @@ func webAppEmojiStatusAlertController(
     context: AccountContext,
     accountPeer: EnginePeer,
     botName: String,
-    icons: [TelegramMediaFile.Accessor],
+    icons: [TelegramMediaFile],
     completion: @escaping (Bool) -> Void
 ) -> AlertController {
     let presentationData = context.sharedContext.currentPresentationData.with { $0 }

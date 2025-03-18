@@ -382,7 +382,7 @@ extension ChatControllerImpl {
                     strongSelf.present(actionSheet, in: .window(.root))
                 })
             }
-        case let .openChatInfo(expandAvatar, section):
+        case let .openChatInfo(expandAvatar, recommendedChannels):
             let _ = self.presentVoiceMessageDiscardAlert(action: {
                 switch self.chatLocationInfoData {
                 case let .peer(peerView):
@@ -414,16 +414,7 @@ extension ChatControllerImpl {
                                 if let validLayout = strongSelf.validLayout, validLayout.deviceMetrics.type == .tablet {
                                     expandAvatar = false
                                 }
-                                let  mode: PeerInfoControllerMode
-                                switch section {
-                                case .groupsInCommon:
-                                    mode = .groupsInCommon
-                                case .recommendedChannels:
-                                    mode = .recommendedChannels
-                                default:
-                                    mode = .generic
-                                }
-                                if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, peer: peer, mode: mode, avatarInitiallyExpanded: expandAvatar, fromChat: true, requestsContext: strongSelf.inviteRequestsContext) {
+                                if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, peer: peer, mode: recommendedChannels ? .recommendedChannels : .generic, avatarInitiallyExpanded: expandAvatar, fromChat: true, requestsContext: strongSelf.inviteRequestsContext) {
                                     strongSelf.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             }

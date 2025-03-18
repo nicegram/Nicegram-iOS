@@ -2,8 +2,6 @@
 
 #import <LegacyComponents/LegacyComponentsContext.h>
 
-@protocol TGPhotoPaintStickersContext;
-
 typedef NS_OPTIONS(NSUInteger, TGPhotoEditorTab) {
     TGPhotoEditorNoneTab        = 0,
     TGPhotoEditorCropTab        = 1 << 0,
@@ -55,9 +53,7 @@ typedef enum
 @property (nonatomic, assign) TGPhotoEditorBackButton backButtonType;
 @property (nonatomic, assign) TGPhotoEditorDoneButton doneButtonType;
 
-@property (nonatomic, assign) int64_t sendPaidMessageStars;
-
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context backButton:(TGPhotoEditorBackButton)backButton doneButton:(TGPhotoEditorDoneButton)doneButton solidBackground:(bool)solidBackground stickersContext:(id<TGPhotoPaintStickersContext>)stickersContext;
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context backButton:(TGPhotoEditorBackButton)backButton doneButton:(TGPhotoEditorDoneButton)doneButton solidBackground:(bool)solidBackground;
 
 - (void)transitionInAnimated:(bool)animated;
 - (void)transitionInAnimated:(bool)animated transparent:(bool)transparent;

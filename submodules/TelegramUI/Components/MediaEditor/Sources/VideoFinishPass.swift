@@ -435,10 +435,8 @@ final class VideoFinishPass: RenderPass {
             y: canvasSize.height / 2.0 + values.cropOffset.y
         )
         
-        self.isStory = values.isStory || values.isSticker || values.isAvatar || values.isCover
+        self.isStory = values.isStory || values.isSticker
         self.isSticker = values.gradientColors?.first?.alpha == 0.0
-        self.coverDimensions = values.coverDimensions
-        
         self.mainPosition = VideoFinishPass.VideoPosition(position: position, size: self.mainPosition.size, scale: values.cropScale, rotation: values.cropRotation, mirroring: values.cropMirroring, baseScale: self.mainPosition.baseScale)
             
         if let position = values.additionalVideoPosition, let scale = values.additionalVideoScale, let rotation = values.additionalVideoRotation {
@@ -449,9 +447,15 @@ final class VideoFinishPass: RenderPass {
         }
         self.videoDuration = videoDuration
         self.additionalVideoDuration = additionalVideoDuration
-        self.videoRange = values.videoTrimRange
-        self.additionalVideoRange = values.additionalVideoTrimRange
-        self.additionalVideoOffset = values.additionalVideoOffset
+        if let videoTrimRange = values.videoTrimRange {
+            self.videoRange = videoTrimRange
+        }
+        if let additionalVideoTrimRange = values.additionalVideoTrimRange {
+            self.additionalVideoRange = additionalVideoTrimRange
+        }
+        if let additionalVideoOffset = values.additionalVideoOffset {
+            self.additionalVideoOffset = additionalVideoOffset
+        }
         
         if let gradientColors = values.gradientColors, let top = gradientColors.first, let bottom = gradientColors.last {
             let (topRed, topGreen, topBlue, topAlpha) = top.components
@@ -484,7 +488,6 @@ final class VideoFinishPass: RenderPass {
     
     private var isStory = true
     private var isSticker = true
-    private var coverDimensions: CGSize?
     private var videoPositionChanges: [VideoPositionChange] = []
     private var videoDuration: Double?
     private var additionalVideoDuration: Double?
@@ -696,10 +699,7 @@ final class VideoFinishPass: RenderPass {
         }
         
         let baseScale: CGFloat
-        if let dimensions = self.coverDimensions {
-            let fittedCanvasDimensions = dimensions.aspectFitted(canvasSize)
-            baseScale = max(fittedCanvasDimensions.width / CGFloat(input.texture.width), fittedCanvasDimensions.height / CGFloat(input.texture.height))
-        } else if !self.isSticker {
+        if !self.isSticker {
             if input.texture.height > input.texture.width {
                 baseScale = max(canvasSize.width / CGFloat(input.texture.width), canvasSize.height / CGFloat(input.texture.height))
             } else {

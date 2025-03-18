@@ -242,8 +242,7 @@ private class AdMessagesHistoryContextImpl {
                 emojiStatus: nil,
                 approximateBoostLevel: nil,
                 subscriptionUntilDate: nil,
-                verificationIconFileId: nil,
-                sendPaidMessageStars: nil
+                verificationIconFileId: nil
             )
             messagePeers[author.id] = author
             
@@ -469,7 +468,7 @@ private class AdMessagesHistoryContextImpl {
                                 }
                                 
                                 let photo = photo.flatMap { telegramMediaImageFromApiPhoto($0) }
-                                let contentMedia = textMediaAndExpirationTimerFromApiMedia(media, peerId).media
+                                let (contentMedia, _, _, _, _) = textMediaAndExpirationTimerFromApiMedia(media, peerId)
                                 
                                 parsedMessages.append(CachedMessage(
                                     opaqueId: randomId.makeData(),

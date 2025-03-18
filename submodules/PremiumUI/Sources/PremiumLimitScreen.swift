@@ -1088,14 +1088,7 @@ private final class LimitSheetContent: CombinedComponent {
                 let premiumLimit = state.premiumLimits.maxExpiringStoriesCount
                 iconName = "Premium/Stories"
                 badgeText = "\(limit)"
-                if component.count >= premiumLimit {
-                    let limitNumberString = strings.Premium_MaxExpiringStoriesFinalTextNumberFormat(Int32(premiumLimit))
-                    string = strings.Premium_MaxExpiringStoriesFinalTextFormat(limitNumberString).string
-                } else {
-                    let limitNumberString = strings.Premium_MaxExpiringStoriesTextNumberFormat(Int32(limit))
-                    let premiumLimitNumberString = strings.Premium_MaxExpiringStoriesTextPremiumNumberFormat(Int32(premiumLimit))
-                    string = strings.Premium_MaxExpiringStoriesTextFormat(limitNumberString, premiumLimitNumberString).string
-                }
+                string = component.count >= premiumLimit ? strings.Premium_MaxExpiringStoriesFinalText("\(premiumLimit)").string : strings.Premium_MaxExpiringStoriesText("\(limit)", "\(premiumLimit)").string
                 defaultValue = ""
                 premiumValue = component.count >= premiumLimit ? "" : "\(premiumLimit)"
                 badgePosition = max(0.32, CGFloat(component.count) / CGFloat(premiumLimit))
@@ -1103,8 +1096,7 @@ private final class LimitSheetContent: CombinedComponent {
             
                 if isPremiumDisabled {
                     badgeText = "\(limit)"
-                    let numberString = strings.Premium_MaxExpiringStoriesNoPremiumTextNumberFormat(Int32(limit))
-                    string = strings.Premium_MaxExpiringStoriesNoPremiumTextFormat(numberString).string
+                    string = strings.Premium_MaxExpiringStoriesNoPremiumText("\(limit)").string
                 }
                 buttonAnimationName = nil
             case .storiesWeekly:

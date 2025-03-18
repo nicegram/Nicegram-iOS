@@ -63,7 +63,6 @@ import MediaEditor
 import TelegramUIDeclareEncodables
 import ContextMenuScreen
 import MetalEngine
-import RecaptchaEnterprise
 
 #if canImport(AppCenter)
 import AppCenter
@@ -370,8 +369,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private let voipDeviceToken = Promise<Data?>(nil)
     private let regularDeviceToken = Promise<Data?>(nil)
-    
-    private var recaptchaClientsBySiteKey: [String: Promise<RecaptchaClient>] = [:]
         
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         precondition(!testIsLaunched)
@@ -695,63 +692,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 Logger.shared.log("data", "can't deserialize")
             }
             return data
-        }, externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(), externalRecaptchaRequestVerification: { method, siteKey in
-            return Signal { subscriber in
-                let recaptchaClient: Promise<RecaptchaClient>
-                if let current = self.recaptchaClientsBySiteKey[siteKey] {
-                    recaptchaClient = current
-                } else {
-                    recaptchaClient = Promise<RecaptchaClient>()
-                    self.recaptchaClientsBySiteKey[siteKey] = recaptchaClient
-                    
-                    Recaptcha.fetchClient(withSiteKey: siteKey) { client, error in
-                        Queue.mainQueue().async {
-                            guard let client else {
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient creation error: \(String(describing: error)).")
-                                return
-                            }
-                            recaptchaClient.set(.single(client))
-                        }
-                    }
-                }
-                
-                return (recaptchaClient.get()
-                |> take(1)
-                |> mapToSignal { recaptchaClient -> Signal<String?, NoError> in
-                    return Signal { subscriber in
-                        var recaptchaAction: RecaptchaAction?
-                        switch method {
-                        case "signup":
-                            recaptchaAction = RecaptchaAction.signup
-                        default:
-                            break
-                        }
-                        
-                        guard let recaptchaAction else {
-                            subscriber.putNext(nil)
-                            subscriber.putCompletion()
-                            
-                            return EmptyDisposable
-                        }
-                        recaptchaClient.execute(withAction: recaptchaAction) { token, error in
-                            if let token {
-                                subscriber.putNext(token)
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient executed successfully")
-                            } else {
-                                subscriber.putNext(nil)
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient execute error: \(String(describing: error))")
-                            }
-                            subscriber.putCompletion()
-                        }
-                        
-                        return ActionDisposable {
-                        }
-                    }
-                    |> runOn(Queue.mainQueue())
-                }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
-            }
-            |> runOn(Queue.mainQueue())
-        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
+        }, externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(), autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
@@ -2242,14 +2183,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 extendNow = false
             }
             sharedApplicationContext.wakeupManager.allowBackgroundTimeExtension(timeout: 2.0, extendNow: extendNow)
-            
-            let _ = (sharedApplicationContext.sharedContext.activeAccountContexts
-             |> take(1)
-             |> deliverOnMainQueue).start(next: { activeAccounts in
-                for (_, context, _) in activeAccounts.accounts {
-                    context.account.postbox.clearCaches()
-                }
-            })
         })
         
         self.isInForegroundValue = false
@@ -3278,7 +3211,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private func maybeCheckForUpdates() {
         #if targetEnvironment(simulator)
         #else
-        guard let buildConfig = self.buildConfig, let appCenterId = buildConfig.appCenterId, !appCenterId.isEmpty else {
+        guard let buildConfig = self.buildConfig, !buildConfig.isAppStoreBuild, let appCenterId = buildConfig.appCenterId, !appCenterId.isEmpty else {
             return
         }
         let timestamp = CFAbsoluteTimeGetCurrent()

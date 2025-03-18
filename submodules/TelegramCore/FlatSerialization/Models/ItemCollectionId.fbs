@@ -1,6 +1,0 @@
-namespace TelegramCore;
-
-struct ItemCollectionId {
-    namespace: int;
-    id: int64;
-}

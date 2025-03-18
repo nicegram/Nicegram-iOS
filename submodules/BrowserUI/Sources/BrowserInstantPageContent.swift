@@ -32,7 +32,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     private var originalContent: BrowserContent?
     private let url: String
     
-    private var webPage: (webPage: TelegramMediaWebpage, instantPage: InstantPage?)?
+    private var webPage: TelegramMediaWebpage?
     
     let uuid: UUID
     
@@ -97,11 +97,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     
     init(context: AccountContext, presentationData: PresentationData, webPage: TelegramMediaWebpage, anchor: String?, url: String, sourceLocation: InstantPageSourceLocation, preloadedResouces: [Any]?, originalContent: BrowserContent? = nil) {
         self.context = context
-        var instantPage: InstantPage?
-        if case let .Loaded(content) = webPage.content {
-            instantPage = content.instantPage?._parse()
-        }
-        self.webPage = (webPage, instantPage)
+        self.webPage = webPage
         self.presentationData = presentationData
         self.theme = instantPageThemeForType(presentationData.theme.overallDarkAppearance ? .dark : .light, settings: .defaultSettings)
         self.sourceLocation = sourceLocation
@@ -271,7 +267,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     }
     
     private func updateWebPage(_ webPage: TelegramMediaWebpage?, anchor: String?, state: InstantPageStoredState? = nil) {
-        if self.webPage?.webPage != webPage {
+        if self.webPage != webPage {
             if self.webPage != nil && self.currentLayout != nil {
                 if let snapshotView = self.scrollNode.view.snapshotView(afterScreenUpdates: false) {
                     snapshotView.frame = self.scrollNode.frame
@@ -283,15 +279,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
             }
             
             self.setupScrollOffsetOnLayout = self.webPage == nil
-            if let webPage {
-                var instantPage: InstantPage?
-                if case let .Loaded(content) = webPage.content {
-                    instantPage = content.instantPage?._parse()
-                }
-                self.webPage = (webPage, instantPage)
-            } else {
-                self.webPage = nil
-            }
+            self.webPage = webPage
             if let anchor = anchor {
                 self.initialAnchor = anchor.removingPercentEncoding
             } else if let state = state {
@@ -467,11 +455,11 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     }
     
     private func updatePageLayout() {
-        guard let (size, insets, _) = self.containerLayout, let (webPage, instantPage) = self.webPage else {
+        guard let (size, insets, _) = self.containerLayout, let webPage = self.webPage else {
             return
         }
         
-        let currentLayout = instantPageLayoutForWebPage(webPage, instantPage: instantPage, userLocation: self.sourceLocation.userLocation, boundingWidth: size.width, safeInset: insets.left, strings: self.presentationData.strings, theme: self.theme, dateTimeFormat: self.presentationData.dateTimeFormat, webEmbedHeights: self.currentWebEmbedHeights)
+        let currentLayout = instantPageLayoutForWebPage(webPage, userLocation: self.sourceLocation.userLocation, boundingWidth: size.width, safeInset: insets.left, strings: self.presentationData.strings, theme: self.theme, dateTimeFormat: self.presentationData.dateTimeFormat, webEmbedHeights: self.currentWebEmbedHeights)
         
         for (_, tileNode) in self.visibleTiles {
             tileNode.removeFromSupernode()
@@ -932,7 +920,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
             }
         }
 
-        if let page = self.webPage?.instantPage, page.url == baseUrl || baseUrl.isEmpty, let anchor = anchor {
+        if let webPage = self.webPage, case let .Loaded(content) = webPage.content, let page = content.instantPage, page.url == baseUrl || baseUrl.isEmpty, let anchor = anchor {
             self.scrollToAnchor(anchor)
             return
         }
@@ -1041,7 +1029,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     }
         
     private func openMedia(_ media: InstantPageMedia) {
-        guard let items = self.currentLayout?.items, let (webPage, _) = self.webPage else {
+        guard let items = self.currentLayout?.items, let webPage = self.webPage else {
             return
         }
         
@@ -1169,7 +1157,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                 let _ = saveToCameraRoll(context: self.context, postbox: self.context.account.postbox, userLocation: self.sourceLocation.userLocation, mediaReference: .standalone(media: media)).start()
             }
         }), ContextMenuAction(content: .text(title: self.presentationData.strings.Conversation_ContextMenuShare, accessibilityLabel: self.presentationData.strings.Conversation_ContextMenuShare), action: { [weak self] in
-            if let self, let (webPage, _) = self.webPage, let image = media.media._asMedia() as? TelegramMediaImage {
+            if let self, let webPage = self.webPage, let image = media.media._asMedia() as? TelegramMediaImage {
                 self.present(ShareController(context: self.context, subject: .image(image.representations.map({ ImageRepresentationWithReference(representation: $0, reference: MediaResourceReference.media(media: .webPage(webPage: WebpageReference(webPage), media: image), resource: $0.resource)) }))), nil)
             }
         })], catchTapsOutside: true)
@@ -1312,7 +1300,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                         strongSelf.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
                     }
                 }), ContextMenuAction(content: .text(title: strings.Conversation_ContextMenuShare, accessibilityLabel: strings.Conversation_ContextMenuShare), action: { [weak self] in
-                    if let strongSelf = self, let (webPage, _) = strongSelf.webPage, case let .Loaded(content) = webPage.content {
+                    if let strongSelf = self, let webPage = strongSelf.webPage, case let .Loaded(content) = webPage.content {
                         strongSelf.present(ShareController(context: strongSelf.context, subject: .quote(text: text, url: content.url)), nil)
                     }
                 })]
@@ -1380,7 +1368,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     }
     
     private func presentReferenceView(item: InstantPageTextItem, referenceAnchor: String) {
-        guard let (webPage, instantPage) = self.webPage else {
+        guard let webPage = self.webPage else {
             return
         }
         
@@ -1401,7 +1389,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
             return
         }
         
-        let controller = InstantPageReferenceController(context: self.context, sourceLocation: self.sourceLocation, theme: theme, webPage: webPage, instantPage: instantPage, anchorText: anchorText, openUrl: { [weak self] url in
+        let controller = InstantPageReferenceController(context: self.context, sourceLocation: self.sourceLocation, theme: theme, webPage: webPage, anchorText: anchorText, openUrl: { [weak self] url in
             self?.openUrl(url)
         }, openUrlIn: { [weak self] url in
             self?.openUrlIn(url)
@@ -1456,7 +1444,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
                     }
                     self.scrollNode.view.setContentOffset(CGPoint(x: 0.0, y: targetY), animated: true)
                 }
-            } else if let instantPage = self.webPage?.instantPage, !instantPage.isComplete {
+            } else if case let .Loaded(content) = self.webPage?.content, let instantPage = content.instantPage, !instantPage.isComplete {
 //                self.loadProgress.set(0.5)
                 self.pendingAnchor = anchor
             }
@@ -1492,7 +1480,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     }
     
     func addToRecentlyVisited() {
-        if let (webPage, _) = self.webPage {
+        if let webPage = self.webPage {
             let _ = addRecentlyVisitedLink(engine: self.context.engine, webPage: webPage).startStandalone()
         }
     }

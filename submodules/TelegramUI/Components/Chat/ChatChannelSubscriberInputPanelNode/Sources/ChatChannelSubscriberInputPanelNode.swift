@@ -17,8 +17,6 @@ import ChatPresentationInterfaceState
 import ChatInputPanelNode
 import AccountContext
 import OldChannelsController
-import TooltipUI
-import TelegramNotices
 
 private enum SubscriberAction: Equatable {
     case join
@@ -156,7 +154,6 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
     //
     
     private let helpButton: HighlightableButtonNode
-    private let giftButton: HighlightableButtonNode
     
     private var action: SubscriberAction?
     
@@ -187,9 +184,6 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         self.badgeText.isHidden = true
         
         self.helpButton = HighlightableButtonNode()
-        self.helpButton.isHidden = true
-        self.giftButton = HighlightableButtonNode()
-        self.giftButton.isHidden = true
         
         self.discussButton.addSubnode(self.discussButtonText)
         self.discussButton.addSubnode(self.badgeBackground)
@@ -203,12 +197,10 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         self.addSubnode(self.discussButton)
         self.view.addSubview(self.activityIndicator)
         self.addSubnode(self.helpButton)
-        self.addSubnode(self.giftButton)
         
         self.button.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: .touchUpInside)
         self.discussButton.addTarget(self, action: #selector(self.discussPressed), forControlEvents: .touchUpInside)
         self.helpButton.addTarget(self, action: #selector(self.helpPressed), forControlEvents: .touchUpInside)
-        self.giftButton.addTarget(self, action: #selector(self.giftPressed), forControlEvents: .touchUpInside)
     }
     
     deinit {
@@ -221,10 +213,6 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             return nil
         }
         return super.hitTest(point, with: event)
-    }
-    
-    @objc private func giftPressed() {
-        self.interfaceInteraction?.openPremiumGift()
     }
     
     @objc private func helpPressed() {
@@ -331,53 +319,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         return self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, isSecondary: isSecondary, transition: transition, interfaceState: interfaceState, metrics: metrics, force: false)
     }
     
-    private var displayedGiftTooltip = false
-    private func presentGiftTooltip() {
-        guard let context = self.context, !self.displayedGiftTooltip, let parentController = self.interfaceInteraction?.chatController() else {
-            return
-        }
-        self.displayedGiftTooltip = true
-
-        let _ = (ApplicationSpecificNotice.getChannelSendGiftTooltip(accountManager: context.sharedContext.accountManager)
-        |> deliverOnMainQueue).start(next: { [weak self] count in
-            guard let self else {
-                return
-            }
-            guard count < 2 else {
-                return
-            }
-            
-            let _ = ApplicationSpecificNotice.incrementChannelSendGiftTooltip(accountManager: context.sharedContext.accountManager).start()
-            
-            Queue.mainQueue().after(0.4, {
-                let absoluteFrame = self.giftButton.view.convert(self.giftButton.bounds, to: parentController.view)
-                let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: absoluteFrame.minY + 11.0), size: CGSize())
-                
-                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                let text: String = presentationData.strings.Chat_SendGiftTooltip
-              
-                let tooltipController = TooltipScreen(
-                    account: context.account,
-                    sharedContext: context.sharedContext,
-                    text: .plain(text: text),
-                    balancedTextLayout: false,
-                    style: .wide,
-                    arrowStyle: .small,
-                    icon: nil,
-                    location: .point(location, .bottom),
-                    displayDuration: .default,
-                    inset: 8.0,
-                    shouldDismissOnTouch: { _, _ in
-                        return .ignore
-                    }
-                )
-                self.interfaceInteraction?.presentControllerInCurrent(tooltipController, nil)
-            })
-        })
-    }
-    
     private func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, force: Bool) -> CGFloat {
-        let isFirstTime = self.layoutData == nil
         self.layoutData = (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, isSecondary, metrics)
         
         if self.presentationInterfaceState != interfaceState || force {
@@ -387,7 +329,6 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             if previousState?.theme !== interfaceState.theme {
                 self.badgeBackground.image = PresentationResourcesChatList.badgeBackgroundActive(interfaceState.theme, diameter: 20.0)
                 self.helpButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/Help"), color: interfaceState.theme.chat.inputPanel.panelControlAccentColor), for: .normal)
-                self.giftButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/Gift"), color: interfaceState.theme.chat.inputPanel.panelControlAccentColor), for: .normal)
             }
             
             if let context = self.context, let peer = interfaceState.renderedPeer?.peer, previousState?.renderedPeer?.peer == nil || !peer.isEqual(previousState!.renderedPeer!.peer!) || previousState?.theme !== interfaceState.theme || previousState?.strings !== interfaceState.strings || previousState?.peerIsMuted != interfaceState.peerIsMuted || previousState?.pinnedMessage != interfaceState.pinnedMessage || force {
@@ -429,40 +370,23 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         let panelHeight = defaultHeight(metrics: metrics)
         
         if self.discussButton.isHidden {
-            if let peer = interfaceState.renderedPeer?.peer as? TelegramChannel {
-                if case .broadcast = peer.info, interfaceState.starGiftsAvailable {
-                    if self.giftButton.isHidden && !isFirstTime {
-                        self.giftButton.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-                        self.giftButton.layer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
-                    }
-                    
-                    self.giftButton.isHidden = false
-                    self.helpButton.isHidden = true
-                    
-                    self.presentGiftTooltip()
-                } else if peer.flags.contains(.isGigagroup), self.action == .muteNotifications || self.action == .unmuteNotifications {
-                    self.giftButton.isHidden = true
-                    self.helpButton.isHidden = false
-                } else {
-                    self.giftButton.isHidden = true
-                    self.helpButton.isHidden = true
-                }
-            } else {
-                self.giftButton.isHidden = true
-                self.helpButton.isHidden = true
-            }
             if let action = self.action, action == .muteNotifications || action == .unmuteNotifications {
                 let buttonWidth = self.button.calculateSizeThatFits(CGSize(width: width, height: panelHeight)).width + 24.0
                 self.button.frame = CGRect(origin: CGPoint(x: floor((width - buttonWidth) / 2.0), y: 0.0), size: CGSize(width: buttonWidth, height: panelHeight))
+                
+                if let peer = interfaceState.renderedPeer?.peer as? TelegramChannel, peer.flags.contains(.isGigagroup) {
+                    self.helpButton.isHidden = false
+                } else {
+                    self.helpButton.isHidden = true
+                }
             } else {
                 self.button.frame = CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: width - leftInset - rightInset, height: panelHeight))
+                self.helpButton.isHidden = true
             }
-            self.giftButton.frame = CGRect(x: width - rightInset - panelHeight - 5.0, y: 0.0, width: panelHeight, height: panelHeight)
             self.helpButton.frame = CGRect(x: width - rightInset - panelHeight, y: 0.0, width: panelHeight, height: panelHeight)
         } else {
-            self.giftButton.isHidden = true
             self.helpButton.isHidden = true
-                        
+            
             let availableWidth = min(600.0, width - leftInset - rightInset)
             let leftOffset = floor((width - availableWidth) / 2.0)
             self.button.frame = CGRect(origin: CGPoint(x: leftOffset, y: 0.0), size: CGSize(width: floor(availableWidth / 2.0), height: panelHeight))

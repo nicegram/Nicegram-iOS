@@ -232,8 +232,6 @@ final class QuickReplySetupScreenComponent: Component {
                     openWebApp: { _ in
                     },
                     openPhotoSetup: {
-                    },
-                    openAdInfo: { _ in
                     }
                 )
                 

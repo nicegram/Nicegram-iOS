@@ -1,6 +1,0 @@
-namespace TelegramCore;
-
-struct PixelDimensions {
-    width: int;
-    height: int;
-}

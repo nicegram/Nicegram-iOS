@@ -265,10 +265,6 @@ private func filterMessageAttributesForOutgoingMessage(_ attributes: [MessageAtt
             return true
         case _ as EffectMessageAttribute:
             return true
-        case _ as ForwardVideoTimestampAttribute:
-            return true
-        case _ as PaidStarsMessageAttribute:
-            return true
         default:
             return false
         }
@@ -295,8 +291,6 @@ private func filterMessageAttributesForForwardedMessage(_ attributes: [MessageAt
             case _ as MediaSpoilerMessageAttribute:
                 return true
             case _ as InvertMediaMessageAttribute:
-                return true
-            case _ as PaidStarsMessageAttribute:
                 return true
             case let attribute as ReplyMessageAttribute:
                 if attribute.quote != nil {
@@ -419,19 +413,6 @@ public func resendMessages(account: Account, messageIds: [MessageId]) -> Signal<
     return account.postbox.transaction { transaction -> Void in
         var removeMessageIds: [MessageId] = []
         for (peerId, ids) in messagesIdsGroupedByPeerId(messageIds) {
-            var sendPaidMessageStars: StarsAmount?
-            let peer = transaction.getPeer(peerId)
-            if let user = peer as? TelegramUser, user.flags.contains(.requireStars) {
-                if let cachedUserData = transaction.getPeerCachedData(peerId: user.id) as? CachedUserData {
-                    sendPaidMessageStars = cachedUserData.sendPaidMessageStars
-                }
-            } else if let channel = peer as? TelegramChannel {
-                if channel.flags.contains(.isCreator) || channel.adminRights != nil {
-                } else {
-                    sendPaidMessageStars = channel.sendPaidMessageStars
-                }
-            }
-            
             var messages: [EnqueueMessage] = []
             for id in ids {
                 if let message = transaction.getMessage(id), !message.flags.contains(.Incoming) {
@@ -453,15 +434,8 @@ public func resendMessages(account: Account, messageIds: [MessageId]) -> Signal<
                         } else if let attribute = attribute as? ForwardSourceInfoAttribute {
                             forwardSource = attribute.messageId
                         } else {
-                            if attribute is PaidStarsMessageAttribute {
-                            } else {
-                                filteredAttributes.append(attribute)
-                            }
+                            filteredAttributes.append(attribute)
                         }
-                    }
-                    
-                    if let sendPaidMessageStars {
-                        filteredAttributes.append(PaidStarsMessageAttribute(stars: sendPaidMessageStars, postponeSending: false))
                     }
 
                     if let forwardSource = forwardSource {
@@ -993,12 +967,6 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                     }
                                 } else {
                                     forwardInfo = nil
-                                }
-                            }
-                            
-                            for attribute in requestedAttributes {
-                                if attribute is ForwardVideoTimestampAttribute {
-                                    attributes.append(attribute)
                                 }
                             }
                         } else {

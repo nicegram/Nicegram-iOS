@@ -298,8 +298,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
                     forwardMessageIds: selfController.presentationInterfaceState.interfaceState.forwardMessageIds ?? [],
                     canMakePaidContent: false,
                     currentPrice: nil,
-                    hasTimers: false,
-                    sendPaidMessageStars: selfController.presentationInterfaceState.sendPaidMessageStars
+                    hasTimers: false
                 )),
                 hasEntityKeyboard: hasEntityKeyboard,
                 gesture: gesture,

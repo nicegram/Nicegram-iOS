@@ -480,10 +480,10 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             }
             
             if emojiFile == nil {
-                emojiFile = item.associatedData.animatedEmojiStickers[emoji]?.first?.file._parse()
+                emojiFile = item.associatedData.animatedEmojiStickers[emoji]?.first?.file
             }
             if emojiFile == nil {
-                emojiFile = item.associatedData.animatedEmojiStickers[emoji.strippedEmoji]?.first?.file._parse()
+                emojiFile = item.associatedData.animatedEmojiStickers[emoji.strippedEmoji]?.first?.file
             }
             
             if item.message.text.count == 1, (item.message.textEntitiesAttribute?.entities ?? []).isEmpty && emojiFile != nil {
@@ -544,7 +544,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 
                 if let animationItems = animationItems {
                     for (_, animationItem) in animationItems {
-                        self.disposables.add(freeMediaFileInteractiveFetched(account: item.context.account, userLocation: .peer(item.message.id.peerId), fileReference: .standalone(media: animationItem.file._parse())).startStrict())
+                        self.disposables.add(freeMediaFileInteractiveFetched(account: item.context.account, userLocation: .peer(item.message.id.peerId), fileReference: .standalone(media: animationItem.file)).startStrict())
                     }
                 }
             }
@@ -1967,7 +1967,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             return
         }
         
-        self.playEffectAnimation(resource: file._parse().resource)
+        self.playEffectAnimation(resource: file.resource)
     }
     
     private var playedPremiumStickerAnimation = false

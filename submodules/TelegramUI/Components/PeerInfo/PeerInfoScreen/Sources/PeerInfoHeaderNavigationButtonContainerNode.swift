@@ -18,9 +18,8 @@ enum PeerInfoHeaderNavigationButtonKey {
     case editPhoto
     case editVideo
     case more
-    case sort
     case qrCode
-    case moreSearchSort
+    case moreToSearch
     case postStory
 }
 
@@ -52,23 +51,9 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
             button.updateContentsColor(backgroundColor: self.backgroundContentColor, contentsColor: self.contentsColor, canBeExpanded: canBeExpanded, transition: transition)
             transition.updateSublayerTransformOffset(layer: button.layer, offset: CGPoint(x: canBeExpanded ? -8.0 : 0.0, y: 0.0))
         }
-        
-        var accumulatedRightButtonOffset: CGFloat = canBeExpanded ? 16.0 : 0.0
-        for spec in self.currentRightButtons.reversed() {
-            guard let button = self.rightButtonNodes[spec.key] else {
-                continue
-            }
+        for (_, button) in self.rightButtonNodes {
             button.updateContentsColor(backgroundColor: self.backgroundContentColor, contentsColor: self.contentsColor, canBeExpanded: canBeExpanded, transition: transition)
-            transition.updateSublayerTransformOffset(layer: button.layer, offset: CGPoint(x: accumulatedRightButtonOffset, y: 0.0))
-            if self.backgroundContentColor.alpha != 0.0 {
-                accumulatedRightButtonOffset -= 6.0
-            }
-        }
-        for (key, button) in self.rightButtonNodes {
-            if !self.currentRightButtons.contains(where: { $0.key == key }) {
-                button.updateContentsColor(backgroundColor: self.backgroundContentColor, contentsColor: self.contentsColor, canBeExpanded: canBeExpanded, transition: transition)
-                transition.updateSublayerTransformOffset(layer: button.layer, offset: CGPoint(x: 0.0, y: 0.0))
-            }
+            transition.updateSublayerTransformOffset(layer: button.layer, offset: CGPoint(x: canBeExpanded ? 16.0 : 0.0, y: 0.0))
         }
     }
     
@@ -183,19 +168,18 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
             }
         }
         
-        var accumulatedRightButtonOffset: CGFloat = self.canBeExpanded ? 16.0 : 0.0
         if self.currentRightButtons != rightButtons || presentationData.strings !== self.presentationData?.strings {
             self.currentRightButtons = rightButtons
             
-            var nextRegularButtonOrigin = size.width - sideInset - 8.0
-            var nextExpandedButtonOrigin = size.width - sideInset - 8.0
+            var nextRegularButtonOrigin = size.width - sideInset
+            var nextExpandedButtonOrigin = size.width - sideInset
             for spec in rightButtons.reversed() {
                 let buttonNode: PeerInfoHeaderNavigationButton
                 var wasAdded = false
                 
                 var key = spec.key
-                if key == .more || key == .search || key == .sort {
-                    key = .moreSearchSort
+                if key == .more || key == .search {
+                    key = .moreToSearch
                 }
                 
                 if let current = self.rightButtonNodes[key] {
@@ -226,7 +210,7 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                     buttonNode.updateContentsColor(backgroundColor: self.backgroundContentColor, contentsColor: self.contentsColor, canBeExpanded: self.canBeExpanded, transition: .immediate)
                     
                     if shouldAnimateIn {
-                        if key == .moreSearchSort || key == .searchWithTags || key == .standaloneSearch {
+                        if key == .moreToSearch || key == .searchWithTags || key == .standaloneSearch {
                             buttonNode.layer.animateScale(from: 0.001, to: 1.0, duration: 0.2)
                         }
                     }
@@ -235,10 +219,7 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                     buttonNode.alpha = 0.0
                     transition.updateAlpha(node: buttonNode, alpha: alphaFactor * alphaFactor)
                     
-                    transition.updateSublayerTransformOffset(layer: buttonNode.layer, offset: CGPoint(x: accumulatedRightButtonOffset, y: 0.0))
-                    if self.backgroundContentColor.alpha != 0.0 {
-                        accumulatedRightButtonOffset -= 6.0
-                    }
+                    transition.updateSublayerTransformOffset(layer: buttonNode.layer, offset: CGPoint(x: canBeExpanded ? 16.0 : 0.0, y: 0.0))
                 } else {
                     transition.updateFrameAdditiveToCenter(node: buttonNode, frame: buttonFrame)
                     transition.updateAlpha(node: buttonNode, alpha: alphaFactor * alphaFactor)
@@ -246,8 +227,8 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
             }
             var removeKeys: [PeerInfoHeaderNavigationButtonKey] = []
             for (key, _) in self.rightButtonNodes {
-                if key == .moreSearchSort {
-                    if !rightButtons.contains(where: { $0.key == .more || $0.key == .search || $0.key == .sort }) {
+                if key == .moreToSearch {
+                    if !rightButtons.contains(where: { $0.key == .more || $0.key == .search }) {
                         removeKeys.append(key)
                     }
                 } else if !rightButtons.contains(where: { $0.key == key }) {
@@ -256,7 +237,7 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
             }
             for key in removeKeys {
                 if let buttonNode = self.rightButtonNodes.removeValue(forKey: key) {
-                    if key == .moreSearchSort || key == .searchWithTags || key == .standaloneSearch {
+                    if key == .moreToSearch || key == .searchWithTags || key == .standaloneSearch {
                         buttonNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak buttonNode] _ in
                             buttonNode?.removeFromSupernode()
                         })
@@ -267,13 +248,13 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
                 }
             }
         } else {
-            var nextRegularButtonOrigin = size.width - sideInset - 8.0
-            var nextExpandedButtonOrigin = size.width - sideInset - 8.0
+            var nextRegularButtonOrigin = size.width - sideInset
+            var nextExpandedButtonOrigin = size.width - sideInset
                         
             for spec in rightButtons.reversed() {
                 var key = spec.key
-                if key == .more || key == .search || key == .sort {
-                    key = .moreSearchSort
+                if key == .more || key == .search {
+                    key = .moreToSearch
                 }
                 
                 if let buttonNode = self.rightButtonNodes[key] {

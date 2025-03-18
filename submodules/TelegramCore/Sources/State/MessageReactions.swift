@@ -135,7 +135,7 @@ public func updateMessageReactionsInteractively(account: Account, messageIds: [M
                                     recentReactionItem = RecentReactionItem(.builtin(value))
                                 case let .custom(fileId, file):
                                     if let file = file ?? (transaction.getMedia(MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)) as? TelegramMediaFile) {
-                                        recentReactionItem = RecentReactionItem(.custom(TelegramMediaFile.Accessor(file)))
+                                        recentReactionItem = RecentReactionItem(.custom(file))
                                     } else {
                                         continue
                                     }
@@ -172,10 +172,10 @@ public func updateMessageReactionsInteractively(account: Account, messageIds: [M
     |> ignoreValues
 }
 
-func _internal_sendStarsReactionsInteractively(account: Account, messageId: MessageId, count: Int, privacy: TelegramPaidReactionPrivacy?) -> Signal<TelegramPaidReactionPrivacy, NoError> {
-    return account.postbox.transaction { transaction -> TelegramPaidReactionPrivacy in
+func _internal_sendStarsReactionsInteractively(account: Account, messageId: MessageId, count: Int, isAnonymous: Bool?) -> Signal<Bool, NoError> {
+    return account.postbox.transaction { transaction -> Bool in
         transaction.setPendingMessageAction(type: .sendStarsReaction, id: messageId, action: SendStarsReactionsAction(randomId: Int64.random(in: Int64.min ... Int64.max)))
-        var resolvedPrivacyValue: TelegramPaidReactionPrivacy = .default
+        var resolvedIsAnonymousValue = false
         transaction.updateMessage(messageId, update: { currentMessage in
             var storeForwardInfo: StoreMessageForwardInfo?
             if let forwardInfo = currentMessage.forwardInfo {
@@ -183,44 +183,36 @@ func _internal_sendStarsReactionsInteractively(account: Account, messageId: Mess
             }
             var mappedCount = Int32(count)
             var attributes = currentMessage.attributes
-            var resolvedPrivacy = _internal_getStarsReactionDefaultPrivacy(transaction: transaction)
+            var resolvedIsAnonymous = _internal_getStarsReactionDefaultToPrivate(transaction: transaction)
             for attribute in attributes {
                 if let attribute = attribute as? ReactionsMessageAttribute {
                     if let myReaction = attribute.topPeers.first(where: { $0.isMy }) {
-                        if myReaction.isAnonymous {
-                            resolvedPrivacy = .anonymous
-                        } else if myReaction.peerId == account.peerId {
-                            resolvedPrivacy = .default
-                        } else if let peerId = myReaction.peerId {
-                            resolvedPrivacy = .peer(peerId)
-                        } else {
-                            resolvedPrivacy = .anonymous
-                        }
+                        resolvedIsAnonymous = myReaction.isAnonymous
                     }
                 }
             }
             loop: for j in 0 ..< attributes.count {
                 if let current = attributes[j] as? PendingStarsReactionsMessageAttribute {
                     mappedCount += current.count
-                    resolvedPrivacy = current.privacy
+                    resolvedIsAnonymous = current.isAnonymous
                     attributes.remove(at: j)
                     break loop
                 }
             }
             
-            if let privacy {
-                resolvedPrivacy = privacy
-                _internal_setStarsReactionDefaultPrivacy(privacy: privacy, transaction: transaction)
+            if let isAnonymous {
+                resolvedIsAnonymous = isAnonymous
+                _internal_setStarsReactionDefaultToPrivate(isPrivate: isAnonymous, transaction: transaction)
             }
                 
-            attributes.append(PendingStarsReactionsMessageAttribute(accountPeerId: account.peerId, count: mappedCount, privacy: resolvedPrivacy))
+            attributes.append(PendingStarsReactionsMessageAttribute(accountPeerId: account.peerId, count: mappedCount, isAnonymous: resolvedIsAnonymous))
             
-            resolvedPrivacyValue = resolvedPrivacy
+            resolvedIsAnonymousValue = resolvedIsAnonymous
             
             return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
         })
         
-        return resolvedPrivacyValue
+        return resolvedIsAnonymousValue
     }
 }
 
@@ -252,9 +244,9 @@ func _internal_forceSendPendingSendStarsReaction(account: Account, messageId: Me
     return .complete()
 }
 
-func _internal_updateStarsReactionPrivacy(account: Account, messageId: MessageId, privacy: TelegramPaidReactionPrivacy) -> Signal<Never, NoError> {
-    return account.postbox.transaction { transaction -> (Api.InputPeer?, Api.InputPeer?) in
-        _internal_setStarsReactionDefaultPrivacy(privacy: privacy, transaction: transaction)
+func _internal_updateStarsReactionIsAnonymous(account: Account, messageId: MessageId, isAnonymous: Bool) -> Signal<Never, NoError> {
+    return account.postbox.transaction { transaction -> Api.InputPeer? in
+        _internal_setStarsReactionDefaultToPrivate(isPrivate: isAnonymous, transaction: transaction)
         
         transaction.updateMessage(messageId, update: { currentMessage in
             var storeForwardInfo: StoreMessageForwardInfo?
@@ -266,17 +258,7 @@ func _internal_updateStarsReactionPrivacy(account: Account, messageId: MessageId
                 if let attribute = attributes[j] as? ReactionsMessageAttribute {
                     var updatedTopPeers = attribute.topPeers
                     if let index = updatedTopPeers.firstIndex(where: { $0.isMy }) {
-                        switch privacy {
-                        case .anonymous:
-                            updatedTopPeers[index].isAnonymous = true
-                            updatedTopPeers[index].peerId = nil
-                        case .default:
-                            updatedTopPeers[index].isAnonymous = false
-                            updatedTopPeers[index].peerId = account.peerId
-                        case let .peer(peerId):
-                            updatedTopPeers[index].isAnonymous = false
-                            updatedTopPeers[index].peerId = peerId
-                        }
+                        updatedTopPeers[index].isAnonymous = isAnonymous
                     }
                     attributes[j] = ReactionsMessageAttribute(canViewList: attribute.canViewList, isTags: attribute.isTags, reactions: attribute.reactions, recentPeers: attribute.recentPeers, topPeers: updatedTopPeers)
                 }
@@ -284,35 +266,14 @@ func _internal_updateStarsReactionPrivacy(account: Account, messageId: MessageId
             return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
         })
         
-        var privacyPeerId: PeerId?
-        if case let .peer(peerId) = privacy {
-            privacyPeerId = peerId
-        }
-        
-        return (
-            transaction.getPeer(messageId.peerId).flatMap(apiInputPeer),
-            privacyPeerId.flatMap { privacyPeerId in transaction.getPeer(privacyPeerId).flatMap(apiInputPeer) }
-        )
+        return transaction.getPeer(messageId.peerId).flatMap(apiInputPeer)
     }
-    |> mapToSignal { inputPeer, inputPrivacyPeer -> Signal<Never, NoError> in
+    |> mapToSignal { inputPeer -> Signal<Never, NoError> in
         guard let inputPeer else {
             return .complete()
         }
         
-        let mappedPrivacy: Api.PaidReactionPrivacy
-        switch privacy {
-        case .anonymous:
-            mappedPrivacy = .paidReactionPrivacyAnonymous
-        case .default:
-            mappedPrivacy = .paidReactionPrivacyDefault
-        case .peer:
-            guard let inputPrivacyPeer else {
-                return .complete()
-            }
-            mappedPrivacy = .paidReactionPrivacyPeer(peer: inputPrivacyPeer)
-        }
-        
-        return account.network.request(Api.functions.messages.togglePaidReactionPrivacy(peer: inputPeer, msgId: messageId.id, private: mappedPrivacy))
+        return account.network.request(Api.functions.messages.togglePaidReactionPrivacy(peer: inputPeer, msgId: messageId.id, private: isAnonymous ? .boolTrue : .boolFalse))
         |> `catch` { _ -> Signal<Api.Bool, NoError> in
             return .single(.boolFalse)
         }
@@ -408,7 +369,7 @@ private func requestUpdateMessageReaction(postbox: Postbox, network: Network, st
 }
 
 private func requestSendStarsReaction(postbox: Postbox, network: Network, stateManager: AccountStateManager, messageId: MessageId) -> Signal<Never, RequestUpdateMessageReactionError> {
-    return postbox.transaction { transaction -> (Peer, Int32, Api.PaidReactionPrivacy)? in
+    return postbox.transaction { transaction -> (Peer, Int32, Bool)? in
         guard let peer = transaction.getPeer(messageId.peerId) else {
             return nil
         }
@@ -416,32 +377,19 @@ private func requestSendStarsReaction(postbox: Postbox, network: Network, stateM
             return nil
         }
         var count: Int32 = 0
-        var privacy: Api.PaidReactionPrivacy = .paidReactionPrivacyDefault
+        var isAnonymous = false
         for attribute in message.attributes {
             if let attribute = attribute as? PendingStarsReactionsMessageAttribute {
                 count += attribute.count
-                
-                let mappedPrivacy: Api.PaidReactionPrivacy
-                switch attribute.privacy {
-                case .anonymous:
-                    mappedPrivacy = .paidReactionPrivacyAnonymous
-                case .default:
-                    mappedPrivacy = .paidReactionPrivacyDefault
-                case let .peer(peerId):
-                    guard let inputPrivacyPeer = transaction.getPeer(peerId).flatMap(apiInputPeer) else {
-                        return nil
-                    }
-                    mappedPrivacy = .paidReactionPrivacyPeer(peer: inputPrivacyPeer)
-                }
-                privacy = mappedPrivacy
+                isAnonymous = attribute.isAnonymous
                 break
             }
         }
-        return (peer, count, privacy)
+        return (peer, count, isAnonymous)
     }
     |> castError(RequestUpdateMessageReactionError.self)
     |> mapToSignal { peerAndValue in
-        guard let (peer, count, privacy) = peerAndValue else {
+        guard let (peer, count, isAnonymous) = peerAndValue else {
             return .fail(.generic)
         }
         guard let inputPeer = apiInputPeer(peer) else {
@@ -459,7 +407,7 @@ private func requestSendStarsReaction(postbox: Postbox, network: Network, stateM
             var flags: Int32 = 0
             flags |= 1 << 0
             
-            let signal: Signal<Never, RequestUpdateMessageReactionError> = network.request(Api.functions.messages.sendPaidReaction(flags: flags, peer: inputPeer, msgId: messageId.id, count: count, randomId: Int64(bitPattern: randomId), private: privacy))
+            let signal: Signal<Never, RequestUpdateMessageReactionError> = network.request(Api.functions.messages.sendPaidReaction(flags: flags, peer: inputPeer, msgId: messageId.id, count: count, randomId: Int64(bitPattern: randomId), private: isAnonymous ? .boolTrue : .boolFalse))
             |> mapError { _ -> RequestUpdateMessageReactionError in
                 return .generic
             }
@@ -1083,29 +1031,10 @@ func _internal_updateDefaultReaction(account: Account, reaction: MessageReaction
 }
 
 struct StarsReactionDefaultToPrivateData: Codable {
-    private enum CodingKeys: String, CodingKey {
-        case isPrivate = "isPrivate"
-        case privacy = "p"
-    }
+    var isPrivate: Bool
     
-    var privacy: TelegramPaidReactionPrivacy
-    
-    init(privacy: TelegramPaidReactionPrivacy) {
-        self.privacy = privacy
-    }
-    
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let privacy = try container.decodeIfPresent(TelegramPaidReactionPrivacy.self, forKey: .privacy) {
-            self.privacy = privacy
-        } else {
-            self.privacy = try container.decode(Bool.self, forKey: .isPrivate) ? .anonymous : .default
-        }
-    }
-    
-    func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(self.privacy, forKey: .privacy)
+    init(isPrivate: Bool) {
+        self.isPrivate = isPrivate
     }
     
     static func key() -> ValueBoxKey {
@@ -1115,15 +1044,15 @@ struct StarsReactionDefaultToPrivateData: Codable {
     }
 }
 
-func _internal_getStarsReactionDefaultPrivacy(transaction: Transaction) -> TelegramPaidReactionPrivacy {
+func _internal_getStarsReactionDefaultToPrivate(transaction: Transaction) -> Bool {
     guard let value = transaction.retrieveItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.starsReactionDefaultToPrivate, key: StarsReactionDefaultToPrivateData.key()))?.get(StarsReactionDefaultToPrivateData.self) else {
-        return .default
+        return false
     }
-    return value.privacy
+    return value.isPrivate
 }
 
-func _internal_setStarsReactionDefaultPrivacy(privacy: TelegramPaidReactionPrivacy, transaction: Transaction) {
-    guard let entry = CodableEntry(StarsReactionDefaultToPrivateData(privacy: privacy)) else {
+func _internal_setStarsReactionDefaultToPrivate(isPrivate: Bool, transaction: Transaction) {
+    guard let entry = CodableEntry(StarsReactionDefaultToPrivateData(isPrivate: isPrivate)) else {
         return
     }
     transaction.putItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.starsReactionDefaultToPrivate, key: StarsReactionDefaultToPrivateData.key()), entry: entry)

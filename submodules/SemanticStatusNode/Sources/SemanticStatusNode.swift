@@ -6,7 +6,6 @@ import SwiftSignalKit
 import RLottieBinding
 import GZip
 import AppBundle
-import HierarchyTrackingLayer
 
 public enum SemanticStatusNodeState: Equatable {
     public struct ProgressAppearance: Equatable {
@@ -91,7 +90,7 @@ private func svgPath(_ path: StaticString, scale: CGPoint = CGPoint(x: 1.0, y: 1
 }
 
 private extension SemanticStatusNodeState {
-    func context(current: SemanticStatusNodeStateContext?, animated: Bool) -> SemanticStatusNodeStateContext {
+    func context(current: SemanticStatusNodeStateContext?) -> SemanticStatusNodeStateContext {
         switch self {
         case .none, .download, .play, .pause, .customIcon:
             let icon: SemanticStatusNodeIcon
@@ -115,7 +114,7 @@ private extension SemanticStatusNodeState {
                 if current.icon == icon {
                     return current
                 } else if (current.icon == .play && icon == .pause) || (current.icon == .pause && icon == .play) {
-                    current.setIcon(icon: icon, animated: animated)
+                    current.icon = icon
                     return current
                 } else {
                     return SemanticStatusNodeIconContext(icon: icon)
@@ -377,8 +376,6 @@ public final class SemanticStatusNode: ASControlNode {
     private var stateContext: SemanticStatusNodeStateContext
     private var appearanceContext: SemanticStatusNodeAppearanceContext
     
-    private let hierarchyTrackingLayer: HierarchyTrackingLayer
-    
     private var disposable: Disposable?
     private var backgroundNodeImage: UIImage?
     
@@ -394,16 +391,13 @@ public final class SemanticStatusNode: ASControlNode {
     
     public init(backgroundNodeColor: UIColor, foregroundNodeColor: UIColor, image: Signal<(TransformImageArguments) -> DrawingContext?, NoError>? = nil, overlayForegroundNodeColor: UIColor? = nil, cutout: CGRect? = nil) {
         self.state = .none
-        self.stateContext = self.state.context(current: nil, animated: false)
+        self.stateContext = self.state.context(current: nil)
         self.appearanceContext = SemanticStatusNodeAppearanceContext(background: backgroundNodeColor, foreground: foregroundNodeColor, backgroundImage: nil, overlayForeground: overlayForegroundNodeColor, cutout: cutout)
-        self.hierarchyTrackingLayer = HierarchyTrackingLayer()
         
         super.init()
         
-        self.layer.addSublayer(self.hierarchyTrackingLayer)
-        
         self.isOpaque = false
-        self.displaysAsynchronously = false
+        self.displaysAsynchronously = true
         
         if let image {
             self.setBackgroundImage(image, size: CGSize(width: 44.0, height: 44.0))
@@ -426,6 +420,7 @@ public final class SemanticStatusNode: ASControlNode {
                 animate = true
             }
         }
+        
         if self.stateContext.isAnimating {
             animate = true
         }
@@ -454,15 +449,12 @@ public final class SemanticStatusNode: ASControlNode {
             self.hasState = true
             animated = false
         }
-        if !self.hierarchyTrackingLayer.isInHierarchy {
-            animated = false
-        }
         if self.state != state || self.appearanceContext.cutout != cutout {
             self.state = state
             let previousStateContext = self.stateContext
             let previousAppearanceContext = updateCutout ? self.appearanceContext : nil
             
-            self.stateContext = self.state.context(current: self.stateContext, animated: animated)
+            self.stateContext = self.state.context(current: self.stateContext)
             self.stateContext.requestUpdate = { [weak self] in
                 self?.setNeedsDisplay()
             }

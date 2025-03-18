@@ -132,11 +132,6 @@ public final class PresentationCallVideoView {
     }
 }
 
-public enum PresentationCallConferenceState {
-    case preparing
-    case ready
-}
-
 public protocol PresentationCall: AnyObject {
     var context: AccountContext { get }
     var isIntegratedWithCallKit: Bool { get }
@@ -149,10 +144,6 @@ public protocol PresentationCall: AnyObject {
     
     var state: Signal<PresentationCallState, NoError> { get }
     var audioLevel: Signal<Float, NoError> { get }
-    
-    var conferenceState: Signal<PresentationCallConferenceState?, NoError> { get }
-    var conferenceStateValue: PresentationCallConferenceState? { get }
-    var conferenceCall: PresentationGroupCall? { get }
 
     var isMuted: Signal<Bool, NoError> { get }
     
@@ -174,7 +165,7 @@ public protocol PresentationCall: AnyObject {
     func setCurrentAudioOutput(_ output: AudioSessionOutput)
     func debugInfo() -> Signal<(String, String), NoError>
     
-    func upgradeToConference(invitePeerIds: [EnginePeer.Id], completion: @escaping (PresentationGroupCall) -> Void) -> Disposable
+    func createConferenceIfPossible()
     
     func makeOutgoingVideoView(completion: @escaping (PresentationCallVideoView?) -> Void)
 }
@@ -402,22 +393,6 @@ public extension GroupCallParticipantsContext.Participant {
     }
 }
 
-public struct PresentationGroupCallInvitedPeer: Equatable {
-    public enum State {
-        case requesting
-        case ringing
-        case connecting
-    }
-    
-    public var id: EnginePeer.Id
-    public var state: State?
-    
-    public init(id: EnginePeer.Id, state: State?) {
-        self.id = id
-        self.state = state
-    }
-}
-
 public protocol PresentationGroupCall: AnyObject {
     var account: Account { get }
     var accountContext: AccountContext { get }
@@ -430,9 +405,6 @@ public protocol PresentationGroupCall: AnyObject {
     var schedulePending: Bool { get }
     
     var isStream: Bool { get }
-    var isConference: Bool { get }
-    var conferenceSource: CallSessionInternalId? { get }
-    var encryptionKeyValue: Data? { get }
     
     var audioOutputState: Signal<([AudioSessionOutput], AudioSessionOutput?), NoError> { get }
     
@@ -485,7 +457,7 @@ public protocol PresentationGroupCall: AnyObject {
     
     func invitePeer(_ peerId: EnginePeer.Id) -> Bool
     func removedPeer(_ peerId: EnginePeer.Id)
-    var invitedPeers: Signal<[PresentationGroupCallInvitedPeer], NoError> { get }
+    var invitedPeers: Signal<[EnginePeer.Id], NoError> { get }
     
     var inviteLinks: Signal<GroupCallInviteLinks?, NoError> { get }
     
@@ -494,64 +466,9 @@ public protocol PresentationGroupCall: AnyObject {
     func loadMoreMembers(token: String)
 }
 
-public enum VideoChatCall: Equatable {
-    case group(PresentationGroupCall)
-    case conferenceSource(PresentationCall)
-    
-    public static func ==(lhs: VideoChatCall, rhs: VideoChatCall) -> Bool {
-        switch lhs {
-        case let .group(lhsGroup):
-            if case let .group(rhsGroup) = rhs, lhsGroup === rhsGroup {
-                return true
-            } else {
-                return false
-            }
-        case let .conferenceSource(lhsConferenceSource):
-            if case let .conferenceSource(rhsConferenceSource) = rhs, lhsConferenceSource === rhsConferenceSource {
-                return true
-            } else {
-                return false
-            }
-        }
-    }
-}
-
-public extension VideoChatCall {
-    var accountContext: AccountContext {
-        switch self {
-        case let .group(group):
-            return group.accountContext
-        case let .conferenceSource(conferenceSource):
-            return conferenceSource.context
-        }
-    }
-}
-
-public enum PresentationCurrentCall: Equatable {
-    case call(PresentationCall)
-    case group(VideoChatCall)
-    
-    public static func ==(lhs: PresentationCurrentCall, rhs: PresentationCurrentCall) -> Bool {
-        switch lhs {
-        case let .call(lhsCall):
-            if case let .call(rhsCall) = rhs, lhsCall === rhsCall {
-                return true
-            } else {
-                return false
-            }
-        case let .group(lhsCall):
-            if case let .group(rhsCall) = rhs, lhsCall == rhsCall {
-                return true
-            } else {
-                return false
-            }
-        }
-    }
-}
-
 public protocol PresentationCallManager: AnyObject {
     var currentCallSignal: Signal<PresentationCall?, NoError> { get }
-    var currentGroupCallSignal: Signal<VideoChatCall?, NoError> { get }
+    var currentGroupCallSignal: Signal<PresentationGroupCall?, NoError> { get }
     var hasActiveCall: Bool { get }
     var hasActiveGroupCall: Bool { get }
     
