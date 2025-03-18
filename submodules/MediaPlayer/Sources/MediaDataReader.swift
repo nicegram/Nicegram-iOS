@@ -6,95 +6,10 @@ import VideoToolbox
 import Postbox
 
 #if os(macOS)
-private let internal_isHardwareAv1Supported: Bool = {
+public let internal_isHardwareAv1Supported: Bool = {
     let value = VTIsHardwareDecodeSupported(kCMVideoCodecType_AV1)
     return value
 }()
-
-
-public final class ChunkMediaPlayerPart {
-    public enum Id: Hashable {
-        case tempFile(path: String)
-        case directFile(path: String, audio: DirectStream?, video: DirectStream?)
-    }
-    
-    public struct DirectStream: Hashable {
-        public let index: Int
-        public let startPts: CMTime
-        public let endPts: CMTime
-        public let duration: Double
-        
-        public init(index: Int, startPts: CMTime, endPts: CMTime, duration: Double) {
-            self.index = index
-            self.startPts = startPts
-            self.endPts = endPts
-            self.duration = duration
-        }
-    }
-    
-    public enum Content {
-        public final class TempFile {
-            public let file: TempBoxFile
-            
-            public init(file: TempBoxFile) {
-                self.file = file
-            }
-            
-            deinit {
-                TempBox.shared.dispose(self.file)
-            }
-        }
-        
-        public final class FFMpegDirectFile {
-            public let path: String
-            public let audio: DirectStream?
-            public let video: DirectStream?
-            
-            public init(path: String, audio: DirectStream?, video: DirectStream?) {
-                self.path = path
-                self.audio = audio
-                self.video = video
-            }
-        }
-        
-        case tempFile(TempFile)
-        case directFile(FFMpegDirectFile)
-    }
-    
-    public let startTime: Double
-    public let endTime: Double
-    public let content: Content
-    public let clippedStartTime: Double?
-    public let codecName: String?
-    
-    public var id: Id {
-        switch self.content {
-        case let .tempFile(tempFile):
-            return .tempFile(path: tempFile.file.path)
-        case let .directFile(directFile):
-            return .directFile(path: directFile.path, audio: directFile.audio, video: directFile.video)
-        }
-    }
-    
-    public init(startTime: Double, clippedStartTime: Double? = nil, endTime: Double, content: Content, codecName: String?) {
-        self.startTime = startTime
-        self.clippedStartTime = clippedStartTime
-        self.endTime = endTime
-        self.content = content
-        self.codecName = codecName
-    }
-}
-
-public final class ChunkMediaPlayerPartsState {
-    public let duration: Double?
-    public let parts: [ChunkMediaPlayerPart]
-    
-    public init(duration: Double?, parts: [ChunkMediaPlayerPart]) {
-        self.duration = duration
-        self.parts = parts
-    }
-}
-
 #endif
 
 public enum MediaDataReaderReadSampleBufferResult {
@@ -135,14 +50,27 @@ public final class FFMpegMediaDataReaderV2: MediaDataReader {
         self.isVideo = isVideo
         
         let source: FFMpegFileReader.SourceDescription
-        var seek: (streamIndex: Int, pts: Int64)?
+        var seek: FFMpegFileReader.Seek?
         var maxReadablePts: (streamIndex: Int, pts: Int64, isEnded: Bool)?
         switch content {
         case let .tempFile(tempFile):
             source = .file(tempFile.file.path)
         case let .directStream(directStream):
-            source = .resource(mediaBox: directStream.mediaBox, resource: directStream.resource, size: directStream.size)
-            seek = (directStream.seek.streamIndex, directStream.seek.pts)
+            let mappedRanges: [Range<Int64>]
+            #if DEBUG && false
+            var mappedRangesValue: [Range<Int64>] = []
+            var testOffset: Int64 = 0
+            while testOffset < directStream.size {
+                let testBlock: Int64 = min(3 * 1024 + 1, directStream.size - testOffset)
+                mappedRangesValue.append(testOffset ..< (testOffset + testBlock))
+                testOffset += testBlock
+            }
+            mappedRanges = mappedRangesValue
+            #else
+            mappedRanges = [0 ..< directStream.size]
+            #endif
+            source = .resource(mediaBox: directStream.mediaBox, resource: directStream.resource, resourceSize: directStream.size, mappedRanges: mappedRanges)
+            seek = .stream(streamIndex: directStream.seek.streamIndex, pts: directStream.seek.pts)
             maxReadablePts = directStream.maxReadablePts
         }
         
@@ -150,6 +78,14 @@ public final class FFMpegMediaDataReaderV2: MediaDataReader {
             var passthroughDecoder = true
             var useHardwareAcceleration = false
             
+            if (codecName == "h264" || codecName == "hevc") {
+                passthroughDecoder = false
+                #if targetEnvironment(simulator)
+                useHardwareAcceleration = false
+                #else
+                useHardwareAcceleration = true
+                #endif
+            }
             if (codecName == "av1" || codecName == "av01") {
                 passthroughDecoder = false
                 useHardwareAcceleration = internal_isHardwareAv1Supported

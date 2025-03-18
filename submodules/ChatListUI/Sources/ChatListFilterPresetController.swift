@@ -378,10 +378,9 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
         case .screenHeader:
             return ChatListFilterSettingsHeaderItem(context: arguments.context, theme: presentationData.theme, text: "", animation: .newFolder, sectionId: self.section)
         case let .nameHeader(title, enableAnimations):
-            //TODO:localize
             var actionText: String?
             if let enableAnimations {
-                actionText = enableAnimations ? "Disable Animations" : "Enable Animations"
+                actionText = enableAnimations ? presentationData.strings.ChatListFilter_NameDisableAnimations : presentationData.strings.ChatListFilter_NameEnableAnimations
             }
             return ItemListSectionHeaderItem(presentationData: presentationData, text: title, actionText: actionText, action: {
                 arguments.toggleNameAnimations()
@@ -675,7 +674,6 @@ private func chatListFilterPresetControllerEntries(context: AccountContext, pres
         resolvedColor = context.peerNameColors.getChatFolderTag(tagColor, dark: presentationData.theme.overallDarkAppearance)
     }
     
-    //TODO:localize
     entries.append(.tagColorHeader(name: state.name, color: resolvedColor, isPremium: isPremium))
     entries.append(.tagColor(colors: context.peerNameColors, currentColor: tagColor, isPremium: isPremium))
     entries.append(.tagColorFooter)
@@ -1281,7 +1279,8 @@ private final class ChatListFilterPresetController: ItemListController {
                 isGeneralThreadClosed: nil,
                 replyMessage: nil,
                 accountPeerColor: nil,
-                businessIntro: nil
+                businessIntro: nil,
+                starGiftsAvailable: false
             )
             
             self.inputMediaNodeBackground.backgroundColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor.cgColor

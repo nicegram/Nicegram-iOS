@@ -214,6 +214,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
                     strings: presentationData.strings,
                     style: .media,
                     placeholder: .plain(presentationData.strings.MediaPicker_AddCaption),
+                    sendPaidMessageStars: nil,
                     maxLength: Int(self.context.userLimits.maxCaptionLength),
                     queryTypes: [.mention, .hashtag],
                     alwaysDarkWhenHasText: false,
@@ -367,7 +368,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         
         let title = self.currentIsCaptionAbove ? presentationData.strings.MediaPicker_InvertCaption_Updated_Up_Title : presentationData.strings.MediaPicker_InvertCaption_Updated_Down_Title
-        let text = self.currentIsCaptionAbove ? presentationData.strings.MediaPicker_InvertCaption_Updated_Up_Text : presentationData.strings.MediaPicker_InvertCaption_Updated_Down_Title
+        let text = self.currentIsCaptionAbove ? presentationData.strings.MediaPicker_InvertCaption_Updated_Up_Text : presentationData.strings.MediaPicker_InvertCaption_Updated_Down_Text
         let animationName = self.currentIsCaptionAbove ? "message_preview_sort_above" : "message_preview_sort_below"
         
         let controller = UndoOverlayController(

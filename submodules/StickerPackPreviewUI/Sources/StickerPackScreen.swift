@@ -13,7 +13,6 @@ import ShimmerEffect
 import ContextUI
 import MoreButtonNode
 import UndoUI
-import ShareController
 import TextFormat
 import PremiumUI
 import OverlayStatusController
@@ -306,18 +305,7 @@ private final class StickerPackContainer: ASDisplayNode {
             guard let self else {
                 return
             }
-            if let mainPreviewIconView = self.mainPreviewIcon?.view {
-                mainPreviewIconView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak self] _ in
-                    guard let self else {
-                        return
-                    }
-                    if let mainPreviewIconView = self.mainPreviewIcon?.view {
-                        self.mainPreviewIcon = nil
-                        mainPreviewIconView.removeFromSuperview()
-                    }
-                })
-                mainPreviewIconView.layer.animateScale(from: 1.0, to: 0.5, duration: 0.2, removeOnCompletion: false)
-            }
+            self.hideMainPreviewIcon()
         }
         
         self.gridNode.interactiveScrollingEnded = { [weak self] in
@@ -471,7 +459,7 @@ private final class StickerPackContainer: ASDisplayNode {
                 
                 var contents: [LoadedStickerPack] = []
                 for (info, items, isInstalled) in strongSelf.currentStickerPacks {
-                    contents.append(.result(info: info, items: items, installed: isInstalled))
+                    contents.append(.result(info: StickerPackCollectionInfo.Accessor(info), items: items, installed: isInstalled))
                 }
                 strongSelf.updateStickerPackContents(contents, hasPremium: false)
                 
@@ -488,7 +476,7 @@ private final class StickerPackContainer: ASDisplayNode {
                 
                 var contents: [LoadedStickerPack] = []
                 for (info, items, isInstalled) in strongSelf.currentStickerPacks {
-                    contents.append(.result(info: info, items: items, installed: isInstalled))
+                    contents.append(.result(info: StickerPackCollectionInfo.Accessor(info), items: items, installed: isInstalled))
                 }
                 strongSelf.updateStickerPackContents(contents, hasPremium: false)
                 
@@ -555,9 +543,9 @@ private final class StickerPackContainer: ASDisplayNode {
                                     menuItems.append(.action(ContextMenuActionItem(text: actionTitle, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: iconName), color: theme.contextMenu.primaryColor) }, action: { _, f in
                                         if let strongSelf = self, let peekController = strongSelf.peekController {
                                             if let animationNode = (peekController.contentNode as? StickerPreviewPeekContentNode)?.animationNode {
-                                                let _ = strongSelf.sendSticker?(.standalone(media: item.file), animationNode.view, animationNode.bounds)
+                                                let _ = strongSelf.sendSticker?(.standalone(media: item.file._parse()), animationNode.view, animationNode.bounds)
                                             } else if let imageNode = (peekController.contentNode as? StickerPreviewPeekContentNode)?.imageNode {
-                                                let _ = strongSelf.sendSticker?(.standalone(media: item.file), imageNode.view, imageNode.bounds)
+                                                let _ = strongSelf.sendSticker?(.standalone(media: item.file._parse()), imageNode.view, imageNode.bounds)
                                             }
                                         }
                                         f(.default)
@@ -567,10 +555,10 @@ private final class StickerPackContainer: ASDisplayNode {
                                     f(.default)
                                     
                                     if let strongSelf = self {
-                                        let _ = (strongSelf.context.engine.stickers.toggleStickerSaved(file: item.file, saved: !isStarred)
+                                        let _ = (strongSelf.context.engine.stickers.toggleStickerSaved(file: item.file._parse(), saved: !isStarred)
                                         |> deliverOnMainQueue).start(next: { [weak self] result in
                                             if let self, let contorller = self.controller {
-                                                contorller.present(UndoOverlayController(presentationData: self.presentationData, content: .sticker(context: context, file: item.file, loop: true, title: nil, text: !isStarred ? self.presentationData.strings.Conversation_StickerAddedToFavorites : self.presentationData.strings.Conversation_StickerRemovedFromFavorites, undoText: nil, customAction: nil), elevatedLayout: false, action: { _ in return false }), in: .window(.root))
+                                                contorller.present(UndoOverlayController(presentationData: self.presentationData, content: .sticker(context: context, file: item.file._parse(), loop: true, title: nil, text: !isStarred ? self.presentationData.strings.Conversation_StickerAddedToFavorites : self.presentationData.strings.Conversation_StickerRemovedFromFavorites, undoText: nil, customAction: nil), elevatedLayout: false, action: { _ in return false }), in: .window(.root))
                                             }
                                         })
                                     }
@@ -580,7 +568,7 @@ private final class StickerPackContainer: ASDisplayNode {
                                     menuItems.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.Stickers_EditSticker, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Draw"), color: theme.contextMenu.primaryColor) }, action: { _, f in
                                         f(.default)
                                         if let self {
-                                            self.openEditSticker(item.file)
+                                            self.openEditSticker(item.file._parse())
                                         }
                                     })))
                                     if !strongSelf.isEditing {
@@ -613,7 +601,7 @@ private final class StickerPackContainer: ASDisplayNode {
                                                         } else {
                                                             self.currentStickerPack = (info, updatedItems, installed)
                                                             self.reorderAndUpdateEntries()
-                                                            let _ = self.context.engine.stickers.deleteStickerFromStickerSet(sticker: .stickerPack(stickerPack: .id(id: info.id.id, accessHash: info.accessHash), media: item.file)).startStandalone()
+                                                            let _ = self.context.engine.stickers.deleteStickerFromStickerSet(sticker: .stickerPack(stickerPack: .id(id: info.id.id, accessHash: info.accessHash), media: item.file._parse())).startStandalone()
                                                         }
                                                     }
                                                 }))
@@ -623,7 +611,7 @@ private final class StickerPackContainer: ASDisplayNode {
                                     })))
                                 }
                             }
-                            return (itemNode.view, itemNode.bounds, StickerPreviewPeekContent(context: strongSelf.context, theme: strongSelf.presentationData.theme, strings: strongSelf.presentationData.strings, item: .pack(item.file), isLocked: item.file.isPremiumSticker && !hasPremium, menu: menuItems, openPremiumIntro: { [weak self] in
+                            return (itemNode.view, itemNode.bounds, StickerPreviewPeekContent(context: strongSelf.context, theme: strongSelf.presentationData.theme, strings: strongSelf.presentationData.strings, item: .pack(item.file._parse()), isLocked: item.file.isPremiumSticker && !hasPremium, menu: menuItems, openPremiumIntro: { [weak self] in
                                 guard let strongSelf = self else {
                                     return
                                 }
@@ -643,6 +631,8 @@ private final class StickerPackContainer: ASDisplayNode {
             return nil
         }, present: { [weak self] content, sourceView, sourceRect in
             if let strongSelf = self {
+                strongSelf.hideMainPreviewIcon()
+                
                 let controller = PeekController(presentationData: strongSelf.presentationData, content: content, sourceView: {
                     return (sourceView, sourceRect)
                 })
@@ -697,6 +687,21 @@ private final class StickerPackContainer: ASDisplayNode {
         self.gridNode.view.addGestureRecognizer(reorderingGestureRecognizer)
     }
     
+    private func hideMainPreviewIcon() {
+        if let mainPreviewIconView = self.mainPreviewIcon?.view {
+            mainPreviewIconView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak self] _ in
+                guard let self else {
+                    return
+                }
+                if let mainPreviewIconView = self.mainPreviewIcon?.view {
+                    self.mainPreviewIcon = nil
+                    mainPreviewIconView.removeFromSuperview()
+                }
+            })
+            mainPreviewIconView.layer.animateScale(from: 1.0, to: 0.5, duration: 0.2, removeOnCompletion: false)
+        }
+    }
+    
     private var reorderFeedback: HapticFeedback?
     private var reorderNode: ReorderingItemNode?
     private var reorderInitialIndex: Int?
@@ -747,7 +752,7 @@ private final class StickerPackContainer: ASDisplayNode {
                 self.reorderFeedback?.tap()
                 
                 if let reorderPosition = self.reorderPosition, let file = itemNode.stickerPackItem?.file {
-                    let _ = self.context.engine.stickers.reorderSticker(sticker: .standalone(media: file), position: reorderPosition).startStandalone()
+                    let _ = self.context.engine.stickers.reorderSticker(sticker: .standalone(media: file._parse()), position: reorderPosition).startStandalone()
                     
                     if let (info, items, isInstalled) = self.currentStickerPack {
                         var updatedItems = items
@@ -1127,13 +1132,19 @@ private final class StickerPackContainer: ASDisplayNode {
             
             if let strongSelf = self {
                 let parentNavigationController = strongSelf.controller?.parentNavigationController
-                let shareController = ShareController(context: strongSelf.context, subject: shareSubject)
-                shareController.actionCompleted = { [weak parentNavigationController] in
-                    if let parentNavigationController = parentNavigationController, let controller = parentNavigationController.topViewController as? ViewController {
-                        let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-                        controller.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                let shareController = strongSelf.context.sharedContext.makeShareController(
+                    context: strongSelf.context,
+                    subject: shareSubject,
+                    forceExternal: false,
+                    shareStory: nil,
+                    enqueued: nil,
+                    actionCompleted: { [weak parentNavigationController] in
+                        if let parentNavigationController = parentNavigationController, let controller = parentNavigationController.topViewController as? ViewController {
+                            let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
+                            controller.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+                        }
                     }
-                }
+                )
                 strongSelf.controller?.present(shareController, in: .window(.root))
             }
         })))
@@ -1523,7 +1534,7 @@ private final class StickerPackContainer: ASDisplayNode {
                     self.requestDismiss()
                     dismissed = true
                 case .navigatedNext, .ignored:
-                    self.updateStickerPackContents([.result(info: info, items: items, installed: !installed)], hasPremium: false)
+                    self.updateStickerPackContents([.result(info: StickerPackCollectionInfo.Accessor(info), items: items, installed: !installed)], hasPremium: false)
             }
             
             let actionPerformed = self.controller?.actionPerformed
@@ -1696,11 +1707,11 @@ private final class StickerPackContainer: ASDisplayNode {
                 var installedCount = 0
                 for content in contents {
                     if case let .result(info, items, isInstalled) = content {
-                        entries.append(.emojis(index: index, stableId: index, info: info, items: items, title: info.title, isInstalled: isInstalled))
+                        entries.append(.emojis(index: index, stableId: index, info: info._parse(), items: items, title: info.title, isInstalled: isInstalled))
                         if isInstalled {
                             installedCount += 1
                         }
-                        currentStickerPacks.append((info, items, isInstalled))
+                        currentStickerPacks.append((info._parse(), items, isInstalled))
                     }
                     index += 1
                 }
@@ -1761,6 +1772,9 @@ private final class StickerPackContainer: ASDisplayNode {
             case let .result(info, items, installed):
                 isEditable = info.flags.contains(.isCreator) && !info.flags.contains(.isEmoji)
                 self.onReady()
+                
+                let info = info._parse()
+                
                 if !items.isEmpty && self.currentStickerPack == nil {
                     if let _ = self.validLayout, abs(self.expandScrollProgress - 1.0) < .ulpOfOne {
                         scrollToItem = GridNodeScrollToItem(index: 0, position: .top(0.0), transition: .immediate, directionHint: .up, adjustForSection: false)
@@ -2184,7 +2198,7 @@ private final class StickerPackContainer: ASDisplayNode {
         transition.updateFrame(node: self.backgroundNode, frame: backgroundFrame)
         
         if let previewIconFile = self.previewIconFile, let mainPreviewIcon = self.mainPreviewIcon {
-            let iconFitSize = CGSize(width: 90.0, height: 90.0)
+            let iconFitSize = CGSize(width: 120.0, height: 120.0)
             let iconSize = mainPreviewIcon.update(
                 transition: .immediate,
                 component: AnyComponent(EmojiStatusComponent(

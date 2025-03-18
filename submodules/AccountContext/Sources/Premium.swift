@@ -42,6 +42,7 @@ public enum PremiumIntroSource {
     case folderTags
     case animatedEmoji
     case messageEffects
+    case paidMessages
 }
 
 public enum PremiumGiftSource: Equatable {
@@ -50,7 +51,7 @@ public enum PremiumGiftSource: Equatable {
     case settings([EnginePeer.Id: TelegramBirthday]?)
     case chatList([EnginePeer.Id: TelegramBirthday]?)
     case stars([EnginePeer.Id: TelegramBirthday]?)
-    case starGiftTransfer([EnginePeer.Id: TelegramBirthday]?, EngineMessage.Id, StarGift.UniqueGift, Int64, Int32?)
+    case starGiftTransfer([EnginePeer.Id: TelegramBirthday]?, StarGiftReference, StarGift.UniqueGift, Int64, Int32?, Bool)
     case channelBoost
     case deeplink(String?)
 }
@@ -79,6 +80,7 @@ public enum PremiumDemoSubject {
     case folderTags
     case business
     case messageEffects
+    case paidMessages
     
     case businessLocation
     case businessHours
@@ -121,6 +123,7 @@ public enum BoostSubject: Equatable {
     case audioTranscription
     case emojiPack
     case noAds
+    case wearGift
 }
 
 public enum StarsPurchasePurpose: Equatable {
@@ -133,6 +136,7 @@ public enum StarsPurchasePurpose: Equatable {
     case unlockMedia(requiredStars: Int64)
     case starGift(peerId: EnginePeer.Id, requiredStars: Int64)
     case upgradeStarGift(requiredStars: Int64)
+    case sendMessage(peerId: EnginePeer.Id, requiredStars: Int64)
 }
 
 public struct PremiumConfiguration {
@@ -157,6 +161,7 @@ public struct PremiumConfiguration {
             minChannelWallpaperLevel: 9,
             minChannelCustomWallpaperLevel: 10,
             minChannelRestrictAdsLevel: 50,
+            minChannelWearGiftLevel: 8,
             minGroupProfileIconLevel: 7,
             minGroupEmojiStatusLevel: 8,
             minGroupWallpaperLevel: 9,
@@ -185,6 +190,7 @@ public struct PremiumConfiguration {
     public let minChannelWallpaperLevel: Int32
     public let minChannelCustomWallpaperLevel: Int32
     public let minChannelRestrictAdsLevel: Int32
+    public let minChannelWearGiftLevel: Int32
     public let minGroupProfileIconLevel: Int32
     public let minGroupEmojiStatusLevel: Int32
     public let minGroupWallpaperLevel: Int32
@@ -212,6 +218,7 @@ public struct PremiumConfiguration {
         minChannelWallpaperLevel: Int32,
         minChannelCustomWallpaperLevel: Int32,
         minChannelRestrictAdsLevel: Int32,
+        minChannelWearGiftLevel: Int32,
         minGroupProfileIconLevel: Int32,
         minGroupEmojiStatusLevel: Int32,
         minGroupWallpaperLevel: Int32,
@@ -238,6 +245,7 @@ public struct PremiumConfiguration {
         self.minChannelWallpaperLevel = minChannelWallpaperLevel
         self.minChannelCustomWallpaperLevel = minChannelCustomWallpaperLevel
         self.minChannelRestrictAdsLevel = minChannelRestrictAdsLevel
+        self.minChannelWearGiftLevel = minChannelWearGiftLevel
         self.minGroupProfileIconLevel = minGroupProfileIconLevel
         self.minGroupEmojiStatusLevel = minGroupEmojiStatusLevel
         self.minGroupWallpaperLevel = minGroupWallpaperLevel
@@ -272,6 +280,7 @@ public struct PremiumConfiguration {
                 minChannelWallpaperLevel: get(data["channel_wallpaper_level_min"]) ?? defaultValue.minChannelWallpaperLevel,
                 minChannelCustomWallpaperLevel: get(data["channel_custom_wallpaper_level_min"]) ?? defaultValue.minChannelCustomWallpaperLevel,
                 minChannelRestrictAdsLevel: get(data["channel_restrict_sponsored_level_min"]) ?? defaultValue.minChannelRestrictAdsLevel,
+                minChannelWearGiftLevel: get(data["channel_emoji_status_level_min"]) ?? defaultValue.minChannelWearGiftLevel,
                 minGroupProfileIconLevel: get(data["group_profile_bg_icon_level_min"]) ?? defaultValue.minGroupProfileIconLevel,
                 minGroupEmojiStatusLevel: get(data["group_emoji_status_level_min"]) ?? defaultValue.minGroupEmojiStatusLevel,
                 minGroupWallpaperLevel: get(data["group_wallpaper_level_min"]) ?? defaultValue.minGroupWallpaperLevel,

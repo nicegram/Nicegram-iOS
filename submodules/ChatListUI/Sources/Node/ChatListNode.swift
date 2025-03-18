@@ -134,6 +134,7 @@ public final class ChatListNodeInteraction {
     let editPeer: (ChatListItem) -> Void
     let openWebApp: (TelegramUser) -> Void
     let openPhotoSetup: () -> Void
+    let openAdInfo: (ASDisplayNode) -> Void
     
     public var searchTextHighightState: String?
     var highlightedChatLocation: ChatListHighlightedLocation?
@@ -196,7 +197,8 @@ public final class ChatListNodeInteraction {
         dismissNotice: @escaping (ChatListNotice) -> Void,
         editPeer: @escaping (ChatListItem) -> Void,
         openWebApp: @escaping (TelegramUser) -> Void,
-        openPhotoSetup: @escaping () -> Void
+        openPhotoSetup: @escaping () -> Void,
+        openAdInfo: @escaping (ASDisplayNode) -> Void
     ) {
         self.activateSearch = activateSearch
         // MARK: Nicegram PinnedChats
@@ -247,6 +249,7 @@ public final class ChatListNodeInteraction {
         self.editPeer = editPeer
         self.openWebApp = openWebApp
         self.openPhotoSetup = openPhotoSetup
+        self.openAdInfo = openAdInfo
     }
 }
 
@@ -1296,6 +1299,7 @@ public final class ChatListNode: ListView {
     public var openStarsTopup: ((Int64?) -> Void)?
     public var openWebApp: ((TelegramUser) -> Void)?
     public var openPhotoSetup: (() -> Void)?
+    public var openAdInfo: ((ASDisplayNode) -> Void)?
     
     private var theme: PresentationTheme
     
@@ -1836,7 +1840,7 @@ public final class ChatListNode: ListView {
                 |> filter { !$0.isEmpty }
                 |> deliverOnMainQueue).start(next: { giftOptions in
                     let premiumOptions = giftOptions.filter { $0.users == 1 }.map { CachedPremiumGiftOption(months: $0.months, currency: $0.currency, amount: $0.amount, botUrl: "", storeProductId: $0.storeProductId) }
-                    let controller = self.context.sharedContext.makeGiftOptionsController(context: self.context, peerId: peerId, premiumOptions: premiumOptions, hasBirthday: true)
+                    let controller = self.context.sharedContext.makeGiftOptionsController(context: self.context, peerId: peerId, premiumOptions: premiumOptions, hasBirthday: true, completion: nil)
                     controller.navigationPresentation = .modal
                     self.push?(controller)
                 })
@@ -1969,9 +1973,10 @@ public final class ChatListNode: ListView {
                 }))
             case .premiumGrace:
                 let _ = self.context.engine.notices.dismissServerProvidedSuggestion(suggestion: .gracePremium).startStandalone()
-//                self.present?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.ChatList_BirthdayInSettingsInfo, timeout: 5.0, customUndoText: nil), elevatedLayout: false, action: { _ in
-//                    return true
-//                }))
+            case .setupPhoto:
+                let _ = self.context.engine.notices.dismissServerProvidedSuggestion(suggestion: .setupPhoto).startStandalone()
+            case .starsSubscriptionLowBalance:
+                let _ = self.context.engine.notices.dismissServerProvidedSuggestion(suggestion: .starsSubscriptionLowBalance).startStandalone()
             default:
                 break
             }
@@ -1986,6 +1991,8 @@ public final class ChatListNode: ListView {
                 return
             }
             self.openPhotoSetup?()
+        }, openAdInfo: { [weak self] node in
+            self?.openAdInfo?(node)
         })
         nodeInteraction.isInlineMode = isInlineMode
         
@@ -2087,7 +2094,7 @@ public final class ChatListNode: ListView {
                 context.account.stateManager.contactBirthdays,
                 starsSubscriptionsContextPromise.get()
             )
-            |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, data, birthdays, starsSubscriptionsContext -> Signal<ChatListNotice?, NoError> in
+            |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, data, birthdays, starsSubscriptionsContext -> Signal<ChatListNotice?, NoError> in                
                 let (accountPeer, birthday) = data
                 
                 if let newSessionReview = newSessionReviews.first {

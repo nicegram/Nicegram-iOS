@@ -78,6 +78,7 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                 selectedBackground: themeColors.reactionActiveBackground.argb,
                 deselectedForeground: themeColors.reactionInactiveForeground.argb,
                 selectedForeground: themeColors.reactionActiveForeground.argb,
+                selectedIconTintColor: 0,
                 deselectedStarsBackground: themeColors.reactionStarsInactiveBackground.argb,
                 selectedStarsBackground: themeColors.reactionStarsActiveBackground.argb,
                 deselectedStarsForeground: themeColors.reactionStarsInactiveForeground.argb,
@@ -95,6 +96,7 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                 selectedBackground: themeColors.reactionActiveBackground.argb,
                 deselectedForeground: themeColors.reactionInactiveForeground.argb,
                 selectedForeground: themeColors.reactionActiveForeground.argb,
+                selectedIconTintColor: 0,
                 deselectedStarsBackground: themeColors.reactionStarsInactiveBackground.argb,
                 selectedStarsBackground: themeColors.reactionStarsActiveBackground.argb,
                 deselectedStarsForeground: themeColors.reactionStarsInactiveForeground.argb,
@@ -117,6 +119,7 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                 selectedBackground: themeColors.reactionActiveBackground.argb,
                 deselectedForeground: themeColors.reactionInactiveForeground.argb,
                 selectedForeground: themeColors.reactionActiveForeground.argb,
+                selectedIconTintColor: presentationData.theme.theme.overallDarkAppearance ? 0 : presentationData.theme.theme.chat.message.incoming.accentTextColor.argb,
                 deselectedStarsBackground: selectReactionFillStaticColor(theme: presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper, isStars: true).argb,
                 selectedStarsBackground: themeColors.reactionStarsActiveBackground.argb,
                 deselectedStarsForeground: themeColors.reactionStarsInactiveForeground.argb,
@@ -153,7 +156,7 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                     if let availableReactions = availableReactions {
                         for availableReaction in availableReactions.reactions {
                             if availableReaction.value == reaction.value {
-                                centerAnimation = availableReaction.centerAnimation
+                                centerAnimation = availableReaction.centerAnimation?._parse()
                                 break
                             }
                         }
@@ -164,7 +167,7 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                     if let availableReactions = availableReactions {
                         for availableReaction in availableReactions.reactions {
                             if availableReaction.value == reaction.value {
-                                centerAnimation = availableReaction.centerAnimation
+                                centerAnimation = availableReaction.centerAnimation?._parse()
                                 break
                             }
                         }

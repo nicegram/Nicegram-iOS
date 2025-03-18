@@ -160,6 +160,7 @@ public final class MessageInputPanelComponent: Component {
     public let strings: PresentationStrings
     public let style: Style
     public let placeholder: Placeholder
+    public let sendPaidMessageStars: StarsAmount?
     public let maxLength: Int?
     public let queryTypes: ContextQueryTypes
     public let alwaysDarkWhenHasText: Bool
@@ -218,6 +219,7 @@ public final class MessageInputPanelComponent: Component {
         strings: PresentationStrings,
         style: Style,
         placeholder: Placeholder,
+        sendPaidMessageStars: StarsAmount?,
         maxLength: Int?,
         queryTypes: ContextQueryTypes,
         alwaysDarkWhenHasText: Bool,
@@ -276,6 +278,7 @@ public final class MessageInputPanelComponent: Component {
         self.style = style
         self.nextInputMode = nextInputMode
         self.placeholder = placeholder
+        self.sendPaidMessageStars = sendPaidMessageStars
         self.maxLength = maxLength
         self.queryTypes = queryTypes
         self.alwaysDarkWhenHasText = alwaysDarkWhenHasText
@@ -344,6 +347,9 @@ public final class MessageInputPanelComponent: Component {
             return false
         }
         if lhs.placeholder != rhs.placeholder {
+            return false
+        }
+        if lhs.sendPaidMessageStars != rhs.sendPaidMessageStars {
             return false
         }
         if lhs.maxLength != rhs.maxLength {
@@ -457,7 +463,7 @@ public final class MessageInputPanelComponent: Component {
             
     public final class View: UIView {
         private let fieldBackgroundView: BlurredBackgroundView
-        private let vibrancyEffectView: UIVisualEffectView
+        private let fieldBackgroundTint: UIView
         private let gradientView: UIImageView
         private let bottomGradientView: UIView
         
@@ -499,6 +505,7 @@ public final class MessageInputPanelComponent: Component {
         
         private var viewForOverlayContent: ViewForOverlayContent?
         private var currentEmojiSuggestionView: ComponentHostView<Empty>?
+        private var currentEmojiSearchView: ComponentHostView<Empty>?
         
         private var viewsIconView: UIImageView?
         private var viewStatsCountText: AnimatedCountLabelView?
@@ -522,12 +529,16 @@ public final class MessageInputPanelComponent: Component {
         }
         
         override init(frame: CGRect) {
-            self.fieldBackgroundView = BlurredBackgroundView(color: UIColor(white: 0.0, alpha: 0.5), enableBlur: true)
-            
-            self.vibrancyEffectView = UIVisualEffectView(effect: UIVibrancyEffect(blurEffect: UIBlurEffect(style: .dark)))
+            self.fieldBackgroundView = BlurredBackgroundView(color: nil, enableBlur: true)
+            self.fieldBackgroundTint = UIView()
+            self.fieldBackgroundTint.backgroundColor = UIColor(white: 1.0, alpha: 0.1)
             
             self.mediaRecordingVibrancyContainer = UIView()
-            self.vibrancyEffectView.contentView.addSubview(self.mediaRecordingVibrancyContainer)
+            if let filter = CALayer.luminanceToAlpha() {
+                self.mediaRecordingVibrancyContainer.backgroundColor = .white
+                self.mediaRecordingVibrancyContainer.layer.filters = [filter]
+            }
+            self.fieldBackgroundTint.mask = self.mediaRecordingVibrancyContainer
             
             self.gradientView = UIImageView()
             self.bottomGradientView = UIView()
@@ -538,8 +549,8 @@ public final class MessageInputPanelComponent: Component {
             
             self.addSubview(self.bottomGradientView)
             self.addSubview(self.gradientView)
-            self.fieldBackgroundView.addSubview(self.vibrancyEffectView)
             self.addSubview(self.fieldBackgroundView)
+            self.addSubview(self.fieldBackgroundTint)
             self.addSubview(self.textClippingView)
             
             self.viewForOverlayContent = ViewForOverlayContent(
@@ -560,6 +571,7 @@ public final class MessageInputPanelComponent: Component {
                         return
                     }
                     self.textFieldExternalState.dismissedEmojiSuggestionPosition = self.textFieldExternalState.currentEmojiSuggestion?.position
+                    self.textFieldExternalState.dismissedEmojiSearchPosition = self.textFieldExternalState.currentEmojiSearch?.position
                     self.state?.updated()
                 }
             )
@@ -669,7 +681,7 @@ public final class MessageInputPanelComponent: Component {
             if self.contextQueryPeer == nil, let peerId = component.chatLocation?.peerId {
                 let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
                 |> deliverOnMainQueue).start(next: { [weak self] peer in
-                    guard let self, peer?.addressName != nil else {
+                    guard let self, let peer, case .channel = peer, peer.addressName != nil else {
                         return
                     }
                     self.contextQueryPeer = peer
@@ -719,6 +731,15 @@ public final class MessageInputPanelComponent: Component {
                     return result
                 }
                 self.textFieldExternalState.dismissedEmojiSuggestionPosition = currentEmojiSuggestion.position
+                if let textFieldView = self.textField.view as? TextFieldComponent.View {
+                    textFieldView.updateEmojiSuggestion(transition: .immediate)
+                }
+                self.state?.updated()
+            } else if let _ = self.textField.view, let currentEmojiSearch = self.textFieldExternalState.currentEmojiSearch, let currentEmojiSearchView = self.currentEmojiSearchView {
+                if let result = currentEmojiSearchView.hitTest(self.convert(point, to: currentEmojiSearchView), with: event) {
+                    return result
+                }
+                self.textFieldExternalState.dismissedEmojiSearchPosition = currentEmojiSearch.position
                 if let textFieldView = self.textField.view as? TextFieldComponent.View {
                     textFieldView.updateEmojiSuggestion(transition: .immediate)
                 }
@@ -845,43 +866,75 @@ public final class MessageInputPanelComponent: Component {
             )
             let isEditing = self.textFieldExternalState.isEditing || component.forceIsEditing
             
-            var placeholderItems: [AnimatedTextComponent.Item] = []
-            switch component.placeholder {
-            case let .plain(string):
-                placeholderItems.append(AnimatedTextComponent.Item(id: AnyHashable(0 as Int), content: .text(string)))
-            case let .counter(items):
-                for item in items {
-                    switch item.content {
-                    case let .text(string):
-                        placeholderItems.append(AnimatedTextComponent.Item(id: AnyHashable(item.id), content: .text(string)))
-                    case let .number(value, minDigits):
-                        placeholderItems.append(AnimatedTextComponent.Item(id: AnyHashable(item.id), content: .number(value, minDigits: minDigits)))
+            let placeholderTransition: ComponentTransition = (previousPlaceholder != nil && previousPlaceholder != component.placeholder) ? ComponentTransition(animation: .curve(duration: 0.3, curve: .spring)) : .immediate
+            let placeholderSize: CGSize
+            if case let .plain(string) = component.placeholder, string.contains("#") {
+                let attributedPlaceholder = NSMutableAttributedString(string: string, font:Font.regular(17.0), textColor: UIColor(rgb: 0xffffff, alpha: 0.4))
+                if let range = attributedPlaceholder.string.range(of: "#") {
+                    attributedPlaceholder.addAttribute(.attachment, value: PresentationResourcesChat.chatPlaceholderStarIcon(component.theme)!, range: NSRange(range, in: attributedPlaceholder.string))
+                    attributedPlaceholder.addAttribute(.foregroundColor, value: UIColor(rgb: 0xffffff, alpha: 0.4), range: NSRange(range, in: attributedPlaceholder.string))
+                    attributedPlaceholder.addAttribute(.baselineOffset, value: 1.0, range: NSRange(range, in: attributedPlaceholder.string))
+                }
+                
+                placeholderSize = self.placeholder.update(
+                    transition: placeholderTransition,
+                    component: AnyComponent(MultilineTextComponent(text: .plain(attributedPlaceholder))),
+                    environment: {},
+                    containerSize: availableTextFieldSize
+                )
+                
+                let vibrancyAttributedPlaceholder = NSMutableAttributedString(string: string, font:Font.regular(17.0), textColor: UIColor.black)
+                if let range = vibrancyAttributedPlaceholder.string.range(of: "#") {
+                    vibrancyAttributedPlaceholder.addAttribute(.attachment, value: PresentationResourcesChat.chatPlaceholderStarIcon(component.theme)!, range: NSRange(range, in: vibrancyAttributedPlaceholder.string))
+                    vibrancyAttributedPlaceholder.addAttribute(.foregroundColor, value: UIColor.black, range: NSRange(range, in: vibrancyAttributedPlaceholder.string))
+                    vibrancyAttributedPlaceholder.addAttribute(.baselineOffset, value: 1.0, range: NSRange(range, in: vibrancyAttributedPlaceholder.string))
+                }
+                
+                let _ = self.vibrancyPlaceholder.update(
+                    transition: placeholderTransition,
+                    component: AnyComponent(MultilineTextComponent(text: .plain(attributedPlaceholder))),
+                    environment: {},
+                    containerSize: availableTextFieldSize
+                )
+            } else {
+                var placeholderItems: [AnimatedTextComponent.Item] = []
+                switch component.placeholder {
+                case let .plain(string):
+                    placeholderItems.append(AnimatedTextComponent.Item(id: AnyHashable(0 as Int), content: .text(string)))
+                case let .counter(items):
+                    for item in items {
+                        switch item.content {
+                        case let .text(string):
+                            placeholderItems.append(AnimatedTextComponent.Item(id: AnyHashable(item.id), content: .text(string)))
+                        case let .number(value, minDigits):
+                            placeholderItems.append(AnimatedTextComponent.Item(id: AnyHashable(item.id), content: .number(value, minDigits: minDigits)))
+                        }
                     }
                 }
+                
+                placeholderSize = self.placeholder.update(
+                    transition: placeholderTransition,
+                    component: AnyComponent(AnimatedTextComponent(
+                        font: Font.regular(17.0),
+                        color: UIColor(rgb: 0xffffff, alpha: 0.4),
+                        items: placeholderItems
+                    )),
+                    environment: {},
+                    containerSize: availableTextFieldSize
+                )
+                
+                let _ = self.vibrancyPlaceholder.update(
+                    transition: placeholderTransition,
+                    component: AnyComponent(AnimatedTextComponent(
+                        font: Font.regular(17.0),
+                        color: .black,
+                        items: placeholderItems
+                    )),
+                    environment: {},
+                    containerSize: availableTextFieldSize
+                )
             }
             
-            let placeholderTransition: ComponentTransition = (previousPlaceholder != nil && previousPlaceholder != component.placeholder) ? ComponentTransition(animation: .curve(duration: 0.3, curve: .spring)) : .immediate
-            let placeholderSize = self.placeholder.update(
-                transition: placeholderTransition,
-                component: AnyComponent(AnimatedTextComponent(
-                    font: Font.regular(17.0),
-                    color: UIColor(rgb: 0xffffff, alpha: 0.3),
-                    items: placeholderItems
-                )),
-                environment: {},
-                containerSize: availableTextFieldSize
-            )
-            
-            let _ = self.vibrancyPlaceholder.update(
-                transition: placeholderTransition,
-                component: AnyComponent(AnimatedTextComponent(
-                    font: Font.regular(17.0),
-                    color: .white,
-                    items: placeholderItems
-                )),
-                environment: {},
-                containerSize: availableTextFieldSize
-            )
             if !isEditing && component.setMediaRecordingActive == nil {
                 insets.right = defaultInsets.left
             }
@@ -912,7 +965,7 @@ public final class MessageInputPanelComponent: Component {
                     if let headerView = headerView as? ForwardInfoPanelComponent.View {
                         if headerView.superview == nil {
                             self.addSubview(headerView)
-                            self.vibrancyEffectView.contentView.addSubview(headerView.backgroundView)
+                            self.mediaRecordingVibrancyContainer.addSubview(headerView.backgroundView)
                             
                             headerView.backgroundView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.4)
                         }
@@ -965,11 +1018,15 @@ public final class MessageInputPanelComponent: Component {
             let rawFieldBackgroundFrame = fieldBackgroundFrame
             fieldBackgroundFrame.size.height += headerHeight
                         
-            transition.setFrame(view: self.vibrancyEffectView, frame: CGRect(origin: CGPoint(), size: fieldBackgroundFrame.size))
-            self.vibrancyEffectView.isHidden = false // component.style == .media
+            //transition.setFrame(view: self.vibrancyEffectView, frame: CGRect(origin: CGPoint(), size: fieldBackgroundFrame.size))
             
             transition.setFrame(view: self.fieldBackgroundView, frame: fieldBackgroundFrame)
             self.fieldBackgroundView.update(size: fieldBackgroundFrame.size, cornerRadius: headerHeight > 0.0 ? 18.0 : baseFieldHeight * 0.5, transition: transition.containedViewLayoutTransition)
+            transition.setFrame(view: self.fieldBackgroundTint, frame: fieldBackgroundFrame)
+            transition.setFrame(view: self.mediaRecordingVibrancyContainer, frame: CGRect(origin: CGPoint(), size: fieldBackgroundFrame.size))
+            
+            //self.fieldBackgroundTint.backgroundColor = .blue
+            transition.setCornerRadius(layer: self.fieldBackgroundTint.layer, cornerRadius: headerHeight > 0.0 ? 18.0 : baseFieldHeight * 0.5)
             
             var textClippingFrame = rawFieldBackgroundFrame.offsetBy(dx: 0.0, dy: headerHeight)
             if component.style == .media, !isEditing {
@@ -993,7 +1050,7 @@ public final class MessageInputPanelComponent: Component {
             if let placeholderView = self.placeholder.view, let vibrancyPlaceholderView = self.vibrancyPlaceholder.view {
                 if vibrancyPlaceholderView.superview == nil {
                     vibrancyPlaceholderView.layer.anchorPoint = CGPoint()
-                    self.vibrancyEffectView.contentView.addSubview(vibrancyPlaceholderView)
+                    self.mediaRecordingVibrancyContainer.addSubview(vibrancyPlaceholderView)
                     
                     vibrancyPlaceholderView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.4)
                 }
@@ -1395,7 +1452,11 @@ public final class MessageInputPanelComponent: Component {
                     inputActionButtonMode = .send
                 } else {
                     if self.textFieldExternalState.hasText {
-                        inputActionButtonMode = .send
+                        if let sendPaidMessageStars = component.sendPaidMessageStars, "".isEmpty {
+                            inputActionButtonMode = .stars(sendPaidMessageStars.value)
+                        } else {
+                            inputActionButtonMode = .send
+                        }
                     } else if !isEditing && component.forwardAction != nil {
                         inputActionButtonMode = .forward
                     } else {
@@ -1420,7 +1481,7 @@ public final class MessageInputPanelComponent: Component {
                         switch mode {
                         case .none:
                             break
-                        case .send:
+                        case .send, .stars:
                             if case .up = action {
                                 if component.recordedAudioPreview != nil {
                                     component.sendMessageAction()
@@ -1768,7 +1829,7 @@ public final class MessageInputPanelComponent: Component {
                 lightFieldColor = UIColor(white: 0.2, alpha: 0.45)
             } else if self.textFieldExternalState.hasText && component.alwaysDarkWhenHasText {
                 fieldBackgroundIsDark = true
-            } else if isEditing || component.style == .editor {
+            } else if isEditing || component.style == .story || component.style == .editor {
                 fieldBackgroundIsDark = true
             }
             self.fieldBackgroundView.updateColor(color: fieldBackgroundIsDark ? UIColor(white: 0.0, alpha: 0.5) : lightFieldColor, transition: transition.containedViewLayoutTransition)
@@ -2129,6 +2190,18 @@ public final class MessageInputPanelComponent: Component {
                 })
             }
             
+            if let emojiSearch = self.textFieldExternalState.currentEmojiSearch, emojiSearch.disposable == nil {
+                emojiSearch.disposable = (EmojiSuggestionsComponent.searchData(context: component.context, isSavedMessages: false, query: emojiSearch.position.value)
+                |> deliverOnMainQueue).start(next: { [weak self, weak emojiSearch] result in
+                    guard let self, let emojiSearch, self.textFieldExternalState.currentEmojiSearch === emojiSearch else {
+                        return
+                    }
+                    
+                    emojiSearch.value = result
+                    self.state?.updated()
+                })
+            }
+            
             var hasTrackingView = self.textFieldExternalState.hasTrackingView
             if let currentEmojiSuggestion = self.textFieldExternalState.currentEmojiSuggestion, let value = currentEmojiSuggestion.value as? [TelegramMediaFile], value.isEmpty {
                 hasTrackingView = false
@@ -2151,6 +2224,20 @@ public final class MessageInputPanelComponent: Component {
                         currentEmojiSuggestionView?.removeFromSuperview()
                     })
                 }
+                
+                if let currentEmojiSearch = self.textFieldExternalState.currentEmojiSearch {
+                    self.textFieldExternalState.currentEmojiSearch = nil
+                    currentEmojiSearch.disposable?.dispose()
+                }
+                
+                if let currentEmojiSearchView = self.currentEmojiSearchView {
+                    self.currentEmojiSearchView = nil
+                    
+                    currentEmojiSearchView.alpha = 0.0
+                    currentEmojiSearchView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { [weak currentEmojiSearchView] _ in
+                        currentEmojiSearchView?.removeFromSuperview()
+                    })
+                }
             }
             
             if let currentEmojiSuggestion = self.textFieldExternalState.currentEmojiSuggestion, let value = currentEmojiSuggestion.value as? [TelegramMediaFile] {
@@ -2163,8 +2250,6 @@ public final class MessageInputPanelComponent: Component {
                     self.addSubview(currentEmojiSuggestionView)
                     
                     currentEmojiSuggestionView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
-                    
-                    //self.installEmojiSuggestionPreviewGesture(hostView: currentEmojiSuggestionView)
                 }
             
                 let globalPosition: CGPoint
@@ -2182,7 +2267,7 @@ public final class MessageInputPanelComponent: Component {
                         context: component.context,
                         userLocation: .other,
                         theme: EmojiSuggestionsComponent.Theme(
-                            backgroundColor: UIColor(white: 0.0, alpha: 0.5),
+                            backgroundColor: UIColor(white: 0.1, alpha: 1.0),
                             textColor: .white,
                             placeholderColor: UIColor(rgb: 0xffffff).mixedWith(UIColor(rgb: 0x1c1c1d), alpha: 0.9)
                         ),
@@ -2201,7 +2286,7 @@ public final class MessageInputPanelComponent: Component {
                             
                             var text: String?
                             var emojiAttribute: ChatTextInputTextCustomEmojiAttribute?
-                    loop:   for attribute in file.attributes {
+                            loop: for attribute in file.attributes {
                                 switch attribute {
                                 case let .CustomEmoji(_, _, displayText, _):
                                     text = displayText
@@ -2249,6 +2334,113 @@ public final class MessageInputPanelComponent: Component {
                 let viewFrame = CGRect(origin: CGPoint(x: min(self.bounds.width - sideInset - viewSize.width, max(panelLeftInset, floor(globalPosition.x - viewSize.width / 2.0))), y: globalPosition.y - 4.0 - viewSize.height), size: viewSize)
                 currentEmojiSuggestionView.frame = viewFrame
                 if let componentView = currentEmojiSuggestionView.componentView as? EmojiSuggestionsComponent.View {
+                    componentView.adjustBackground(relativePositionX: floor(globalPosition.x - viewFrame.minX))
+                }
+            }
+            
+            if let currentEmojiSearch = self.textFieldExternalState.currentEmojiSearch, let value = currentEmojiSearch.value as? [TelegramMediaFile], !value.isEmpty {
+                let currentEmojiSearchView: ComponentHostView<Empty>
+                if let current = self.currentEmojiSearchView {
+                    currentEmojiSearchView = current
+                } else {
+                    currentEmojiSearchView = ComponentHostView<Empty>()
+                    self.currentEmojiSearchView = currentEmojiSearchView
+                    self.addSubview(currentEmojiSearchView)
+                    
+                    currentEmojiSearchView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
+                }
+            
+                var globalPosition: CGPoint
+                if let textView = self.textField.view {
+                    globalPosition = textView.convert(currentEmojiSearch.localPosition, to: self)
+                    globalPosition.x += 16.0
+                } else {
+                    globalPosition = .zero
+                }
+                
+                let sideInset: CGFloat = 7.0
+                
+                let viewSize = currentEmojiSearchView.update(
+                    transition: .immediate,
+                    component: AnyComponent(EmojiSuggestionsComponent(
+                        context: component.context,
+                        userLocation: .other,
+                        theme: EmojiSuggestionsComponent.Theme(
+                            backgroundColor: UIColor(white: 0.1, alpha: 1.0),
+                            textColor: .white,
+                            placeholderColor: UIColor(rgb: 0xffffff).mixedWith(UIColor(rgb: 0x1c1c1d), alpha: 0.9)
+                        ),
+                        animationCache: component.context.animationCache,
+                        animationRenderer: component.context.animationRenderer,
+                        files: value,
+                        action: { [weak self] file in
+                            guard let self, let textView = self.textField.view as? TextFieldComponent.View, let currentEmojiSearch = self.textFieldExternalState.currentEmojiSearch else {
+                                return
+                            }
+                            
+                            AudioServicesPlaySystemSound(0x450)
+                            
+                            let inputState = textView.getInputState()
+                            let inputText = NSMutableAttributedString(attributedString: inputState.inputText)
+                            
+                            var text: String?
+                            var emojiAttribute: ChatTextInputTextCustomEmojiAttribute?
+                            loop: for attribute in file.attributes {
+                                switch attribute {
+                                case let .CustomEmoji(_, _, displayText, _):
+                                    text = displayText
+                                    emojiAttribute = ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: file.fileId.id, file: file)
+                                    break loop
+                                default:
+                                    break
+                                }
+                            }
+                            
+                            if let emojiAttribute = emojiAttribute, let text = text {
+                                let replacementText = NSAttributedString(string: text, attributes: [ChatTextInputAttributes.customEmoji: emojiAttribute])
+                                
+                                var range = currentEmojiSearch.position.range
+                                let previousText = inputText.attributedSubstring(from: range)
+                                if range.location != 0 && inputText.attributedSubstring(from: NSRange(location: range.location - 1, length: range.length + 1)).string.hasPrefix(":") {
+                                    range = NSRange(location: range.location - 1, length: range.length + 1)
+                                }
+                                inputText.replaceCharacters(in: range, with: replacementText)
+                                
+                                var replacedUpperBound = range.lowerBound
+                                while true {
+                                    if inputText.attributedSubstring(from: NSRange(location: 0, length: replacedUpperBound)).string.hasSuffix(previousText.string) {
+                                        let replaceRange = NSRange(location: replacedUpperBound - previousText.length, length: previousText.length)
+                                        if replaceRange.location < 0 {
+                                            break
+                                        }
+                                        let adjacentString = inputText.attributedSubstring(from: replaceRange)
+                                        if adjacentString.string != previousText.string || adjacentString.attribute(ChatTextInputAttributes.customEmoji, at: 0, effectiveRange: nil) != nil {
+                                            break
+                                        }
+                                        inputText.replaceCharacters(in: replaceRange, with: NSAttributedString(string: text, attributes: [ChatTextInputAttributes.customEmoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: emojiAttribute.interactivelySelectedFromPackId, fileId: emojiAttribute.fileId, file: emojiAttribute.file)]))
+                                        replacedUpperBound = replaceRange.lowerBound
+                                    } else {
+                                        break
+                                    }
+                                }
+                                
+                                let selectionPosition = range.lowerBound + (replacementText.string as NSString).length
+                                textView.updateText(inputText, selectionRange: selectionPosition ..< selectionPosition)
+                            }
+                        }
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: self.bounds.width - sideInset * 2.0, height: 100.0)
+                )
+                
+                var viewFrame = CGRect(origin: CGPoint(x: globalPosition.x - floor((viewSize.width) * 0.5), y: globalPosition.y - 4.0 - viewSize.height), size: viewSize)
+                if viewFrame.origin.x + viewFrame.width > self.bounds.width - sideInset {
+                    viewFrame.origin.x = self.bounds.width - sideInset - viewFrame.width
+                }
+                viewFrame.origin.x = max(viewFrame.origin.x, sideInset)
+                
+                currentEmojiSearchView.frame = viewFrame
+                if let componentView = currentEmojiSearchView.componentView as? EmojiSuggestionsComponent.View {
                     componentView.adjustBackground(relativePositionX: floor(globalPosition.x - viewFrame.minX))
                 }
             }

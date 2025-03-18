@@ -1051,7 +1051,8 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
     }
     
     public var toggleQuoteCollapse: ((NSRange) -> Void)?
-    
+    public var onUpdateLayout: (() -> Void)?
+        
     private let displayInternal: ChatInputTextInternal
     private let measureInternal: ChatInputTextInternal
     
@@ -1111,6 +1112,10 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
         super.init(frame: CGRect(), textContainer: self.displayInternal.textContainer, disableTiling: disableTiling)
         
         self.delegate = self
+        
+        if #available(iOS 18.0, *) {
+            self.supportsAdaptiveImageGlyph = false
+        }
         
         self.displayInternal.updateDisplayElements = { [weak self] in
             self?.updateTextElements()
@@ -1218,7 +1223,7 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
 
     @objc public func textViewDidChange(_ textView: UITextView) {
         self.selectionChangedForEditedText = true
-        
+                
         self.updateTextContainerInset()
         
         self.customDelegate?.chatInputTextNodeDidUpdateText()
@@ -1382,6 +1387,8 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
         for id in removedBlockQuotes {
             self.blockQuotes.removeValue(forKey: id)
         }
+        
+        self.onUpdateLayout?()
     }
     
     override public func caretRect(for position: UITextPosition) -> CGRect {

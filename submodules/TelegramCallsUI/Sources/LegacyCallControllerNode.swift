@@ -63,6 +63,7 @@ final class LegacyCallControllerNode: ASDisplayNode, CallControllerNodeProtocol 
     var back: (() -> Void)?
     var presentCallRating: ((CallId, Bool) -> Void)?
     var callEnded: ((Bool) -> Void)?
+    var willBeDismissedInteractively: (() -> Void)?
     var dismissedInteractively: (() -> Void)?
     var present: ((ViewController) -> Void)?
     var dismissAllTooltips: (() -> Void)?
@@ -224,7 +225,7 @@ final class LegacyCallControllerNode: ASDisplayNode, CallControllerNodeProtocol 
                             switch type {
                                 case .busy:
                                     statusValue = .text(self.presentationData.strings.Call_StatusBusy)
-                                case .hungUp, .missed:
+                                case .hungUp, .missed, .switchedToConference:
                                     statusValue = .text(self.presentationData.strings.Call_StatusEnded)
                             }
                         case .error:
