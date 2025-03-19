@@ -2462,7 +2462,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         let font = UIFont.mainFont(ofSize: 13, weight: .semibold)
         var godsEyeButtonSize = CGSize(width: 48, height: 48)
         var title = ""
-        var godsEyeYInset: CGFloat = isMyProfile ? 65 : 210
+        var godsEyeYInset: CGFloat = isMyProfile ? 125 : 205
         
         godsEyeButtonNode.contentHorizontalAlignment = .middle
         godsEyeButtonNode.contentEdgeInsets = .zero
@@ -2489,7 +2489,6 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             color: presentationData.theme.list.itemBlocksBackgroundColor
         )
         
-        /*presentationData?.theme.list.itemPrimaryTextColor*/
         godsEyeButtonNode.setBackgroundImage(godsEyeBackgroundImage, for: .normal)
         godsEyeButtonNode.setImage(UIImage(bundleImageName: "gods_eye"), for: .normal)
         godsEyeButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemPrimaryTextColor, for: .normal)
