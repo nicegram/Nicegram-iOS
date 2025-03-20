@@ -340,6 +340,7 @@ private extension FullInformation.Information {
                 gigagroup: false,
                 title: "",
                 username: info.username,
+                usernames: nil,
                 date: 0,
                 restrictions: [],
                 participantsCount: nil,
@@ -376,6 +377,7 @@ private extension FullInformation.Information {
                 gigagroup: chatModel?.gigagroup ?? false,
                 title: chatModel?.title ?? "",
                 username: chatModel?.username,
+                usernames: chatModel?.usernames,
                 date: chatModel?.date ?? 0,
                 restrictions: chatModel?.restrictions ?? [],
                 participantsCount: max(chatFullModel.participantsCount, chatModel?.participantsCount ?? 0),
@@ -408,6 +410,7 @@ private extension FullInformation.Information.RecommendationInformation {
                 gigagroup: chatModel.gigagroup,
                 title: chatModel.title,
                 username: chatModel.username,
+                usernames: chatModel.usernames,
                 date: chatModel.date,
                 restrictions: chatModel.restrictions,
                 participantsCount: chatModel.participantsCount,
@@ -439,6 +442,7 @@ private extension Api.Chat {
         var participantsCount: Int32 = 0
         var id: Int64 = 0
         var username: String = ""
+        var usernames: [String] = []
         var title: String = ""
         var about: String = ""
         var restrictions = [FullInformation.Information.Payload.Restriction]()
@@ -457,7 +461,7 @@ private extension Api.Chat {
             let isGigagroup = channel.flags.contains(.isGigagroup)
             let isMegagroup = channel.flags.contains(.isMegagroup)
             let type = isGigagroup || isMegagroup ? "group" : "channel"
-
+            
             model = model
                 .with(\.type, type)
                 .with(\.verified, channel.flags.contains(.isVerified))
@@ -466,6 +470,7 @@ private extension Api.Chat {
                 .with(\.fake, channel.flags.contains(.isFake))
                 .with(\.gigagroup, isGigagroup)
                 .with(\.megagroup, isMegagroup)
+                .with(\.usernames, channel.usernames.compactMap { $0.isActive ? $0.username : nil })
         } else {
             model = model
                 .with(\.type, "group")
@@ -479,6 +484,7 @@ private extension Api.Chat {
                     return .init(platform: platform, reason: reason, text: text)
                 }
             } ?? []
+            
             model = model
                 .with(\.id, id)
                 .with(\.title, title)
