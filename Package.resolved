@@ -23,7 +23,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
-        "branch" : "feat/ton-connect-fixes",
+        "branch" : "release/1.0.0",
         "revision" : "f2f671902ff52d1cec8006191762f86052ca3b30"
       }
     },
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "qa/build-468",
-        "revision" : "5f6ebd1165598ef02adf08c86556f3d92a5892af"
+        "branch" : "develop",
+        "revision" : "55908179a642b065a1123512fc49b1e01c3e4380"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "qa/build-468",
-        "revision" : "9a04a51f10011bc151cd09d493871346ea088508"
+        "branch" : "develop",
+        "revision" : "6e5c97d7c6c29a384dba9f748176245935b885f0"
       }
     },
     {
