@@ -168,6 +168,7 @@ public final class MediaEditor {
         case asset(PHAsset)
         case draft(MediaEditorDraft)
         case message(MessageId)
+        case gift(StarGift.UniqueGift)
         case sticker(TelegramMediaFile)
         
         var dimensions: PixelDimensions {
@@ -178,7 +179,7 @@ public final class MediaEditor {
                 return PixelDimensions(width: Int32(asset.pixelWidth), height: Int32(asset.pixelHeight))
             case let .draft(draft):
                 return draft.dimensions
-            case .message, .sticker, .videoCollage:
+            case .message, .gift, .sticker, .videoCollage:
                 return PixelDimensions(width: 1080, height: 1920)
             }
         }
@@ -307,7 +308,15 @@ public final class MediaEditor {
         return self.renderer.finalRenderedImage(mirror: mirror)
     }
             
-    private var wallpapers: ((day: UIImage, night: UIImage?))?
+    private var wallpapersValue: ((day: UIImage, night: UIImage?))? {
+        didSet {
+            self.wallpapersPromise.set(.single(self.wallpapersValue))
+        }
+    }
+    private let wallpapersPromise = Promise<(day: UIImage, night: UIImage?)?>()
+    public var wallpapers: Signal<((day: UIImage, night: UIImage?))?, NoError> {
+        return self.wallpapersPromise.get()
+    }
     
     private struct PlaybackState: Equatable {
         let duration: Double
@@ -566,6 +575,7 @@ public final class MediaEditor {
                 audioTrackSamples: nil,
                 collageTrackSamples: nil,
                 coverImageTimestamp: nil,
+                coverDimensions: nil,
                 qualityPreset: nil
             )
         }
@@ -817,7 +827,7 @@ public final class MediaEditor {
                         player = self.makePlayer(asset: asset)
                     }
                 }
-                return getChatWallpaperImage(context: self.context, messageId: messageId)
+                return getChatWallpaperImage(context: self.context, peerId: messageId.peerId)
                 |> map { _, image, nightImage in
                     return TextureSourceResult(
                         image: image,
@@ -827,6 +837,17 @@ public final class MediaEditor {
                         gradientColors: GradientColors(top: .black, bottom: .black)
                     )
                 }
+            }
+        case .gift:
+            textureSource = getChatWallpaperImage(context: self.context, peerId: self.context.account.peerId)
+            |> map { _, image, nightImage in
+                return TextureSourceResult(
+                    image: image,
+                    nightImage: nightImage,
+                    player: nil,
+                    playerIsReference: true,
+                    gradientColors: GradientColors(top: .black, bottom: .black)
+                )
             }
         case let .sticker(file):
             let entity = MediaEditorComposerStickerEntity(
@@ -859,10 +880,13 @@ public final class MediaEditor {
                 
                 let textureSource = UniversalTextureSource(renderTarget: renderTarget)
                 
-                if case .message = self.self.subject {
+                switch self.subject {
+                case .message, .gift:
                     if let image = textureSourceResult.image {
-                        self.wallpapers = (image, textureSourceResult.nightImage ?? image)
+                        self.wallpapersValue = (image, textureSourceResult.nightImage ?? image)
                     }
+                default:
+                    break
                 }
             
                 self.player = textureSourceResult.player
@@ -1228,7 +1252,7 @@ public final class MediaEditor {
             return values.withUpdatedNightTheme(nightTheme)
         }
         
-        guard let (dayImage, nightImage) = self.wallpapers, let nightImage else {
+        guard let (dayImage, nightImage) = self.wallpapersValue, let nightImage else {
             return
         }
         
@@ -2179,6 +2203,12 @@ public final class MediaEditor {
     public func setCoverImageTimestamp(_ coverImageTimestamp: Double?) {
         self.updateValues(mode: .skipRendering) { values in
             return values.withUpdatedCoverImageTimestamp(coverImageTimestamp)
+        }
+    }
+    
+    public func setCoverDimensions(_ coverDimensions: CGSize?) {
+        self.updateValues(mode: .skipRendering) { values in
+            return values.withUpdatedCoverDimensions(coverDimensions)
         }
     }
     

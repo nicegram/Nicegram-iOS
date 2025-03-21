@@ -1,5 +1,7 @@
 import Foundation
 import Postbox
+import FlatBuffers
+import FlatSerialization
 
 public struct RecentMediaItemId {
     public let rawValue: MemoryBuffer
@@ -26,27 +28,47 @@ public struct RecentMediaItemId {
 }
 
 public final class RecentMediaItem: Codable, Equatable {
-    public let media: TelegramMediaFile
+    public let media: TelegramMediaFile.Accessor
+    private let serializedFile: Data?
     
     public init(_ media: TelegramMediaFile) {
-        self.media = media
+        self.media = TelegramMediaFile.Accessor(media)
+        self.serializedFile = nil
     }
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: StringCodingKey.self)
 
-        let mediaData = try container.decode(AdaptedPostboxDecoder.RawObjectData.self, forKey: "m")
-        self.media = TelegramMediaFile(decoder: PostboxDecoder(buffer: MemoryBuffer(data: mediaData.data)))
+        if let serializedFileData = try container.decodeIfPresent(Data.self, forKey: "md") {
+            self.serializedFile = serializedFileData
+            var byteBuffer = ByteBuffer(data: serializedFileData)
+            self.media = TelegramMediaFile.Accessor(FlatBuffers_getRoot(byteBuffer: &byteBuffer) as TelegramCore_TelegramMediaFile, serializedFileData)
+        } else {
+            let mediaData = try container.decode(AdaptedPostboxDecoder.RawObjectData.self, forKey: "m")
+            let media = TelegramMediaFile(decoder: PostboxDecoder(buffer: MemoryBuffer(data: mediaData.data)))
+            self.media = TelegramMediaFile.Accessor(media)
+            self.serializedFile = nil
+        }
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: StringCodingKey.self)
 
-        try container.encode(PostboxEncoder().encodeObjectToRawData(self.media), forKey: "m")
+        if let serializedFile = self.serializedFile {
+            try container.encode(serializedFile, forKey: "md")
+        } else if let file = self.media._wrappedFile {
+            var builder = FlatBufferBuilder(initialSize: 1024)
+            let value = file.encodeToFlatBuffers(builder: &builder)
+            builder.finish(offset: value)
+            let serializedFile = builder.data
+            try container.encode(serializedFile, forKey: "md")
+        } else {
+            preconditionFailure()
+        }
     }
     
     public static func ==(lhs: RecentMediaItem, rhs: RecentMediaItem) -> Bool {
-        return lhs.media.isEqual(to: rhs.media)
+        return lhs.media == rhs.media
     }
 }
 
@@ -233,7 +255,7 @@ public struct RecentReactionItemId {
 
 public final class RecentReactionItem: Codable, Equatable {
     public enum Content: Equatable {
-        case custom(TelegramMediaFile)
+        case custom(TelegramMediaFile.Accessor)
         case builtin(String)
         case stars
     }
@@ -257,9 +279,13 @@ public final class RecentReactionItem: Codable, Equatable {
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: StringCodingKey.self)
-
-        if let mediaData = try container.decodeIfPresent(AdaptedPostboxDecoder.RawObjectData.self, forKey: "m") {
-            self.content = .custom(TelegramMediaFile(decoder: PostboxDecoder(buffer: MemoryBuffer(data: mediaData.data))))
+        
+        if let mediaData = try container.decodeIfPresent(Data.self, forKey: "md") {
+            var byteBuffer = ByteBuffer(data: mediaData)
+            let file = TelegramMediaFile.Accessor(FlatBuffers_getRoot(byteBuffer: &byteBuffer) as TelegramCore_TelegramMediaFile, mediaData)
+            self.content = .custom(file)
+        } else if let mediaData = try container.decodeIfPresent(AdaptedPostboxDecoder.RawObjectData.self, forKey: "m") {
+            self.content = .custom(TelegramMediaFile.Accessor(TelegramMediaFile(decoder: PostboxDecoder(buffer: MemoryBuffer(data: mediaData.data)))))
         } else if let _ = try container.decodeIfPresent(Int64.self, forKey: "star") {
             self.content = .stars
         } else {
@@ -272,7 +298,17 @@ public final class RecentReactionItem: Codable, Equatable {
 
         switch self.content {
         case let .custom(file):
-            try container.encode(PostboxEncoder().encodeObjectToRawData(file), forKey: "m")
+            if let serializedFile = file._wrappedData {
+                try container.encode(serializedFile, forKey: "md")
+            } else if let file = file._wrappedFile {
+                var builder = FlatBufferBuilder(initialSize: 1024)
+                let value = file.encodeToFlatBuffers(builder: &builder)
+                builder.finish(offset: value)
+                let serializedFile = builder.data
+                try container.encode(serializedFile, forKey: "md")
+            } else {
+                preconditionFailure()
+            }
         case let .builtin(string):
             try container.encode(string, forKey: "s")
         case .stars:
@@ -282,5 +318,49 @@ public final class RecentReactionItem: Codable, Equatable {
     
     public static func ==(lhs: RecentReactionItem, rhs: RecentReactionItem) -> Bool {
         return lhs.content == rhs.content
+    }
+}
+
+public struct RecentStarGiftItemId {
+    public let rawValue: MemoryBuffer
+    public let id: Int64
+    
+    public init(_ rawValue: MemoryBuffer) {
+        self.rawValue = rawValue
+        assert(rawValue.length == 8)
+        var id: Int64 = 0
+        memcpy(&id, rawValue.memory, 8)
+        self.id = id
+    }
+    
+    public init(_ id: Int64) {
+        var id = id
+        self.id = id
+        self.rawValue = MemoryBuffer(memory: malloc(8)!, capacity: 8, length: 8, freeWhenDone: true)
+        memcpy(self.rawValue.memory, &id, 8)
+    }
+}
+
+public final class RecentStarGiftItem: Codable, Equatable {
+    public let starGift: StarGift.UniqueGift
+    
+    public init(_ starGift: StarGift.UniqueGift) {
+        self.starGift = starGift
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: StringCodingKey.self)
+
+        self.starGift = try container.decode(StarGift.UniqueGift.self, forKey: "g")
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: StringCodingKey.self)
+
+        try container.encode(self.starGift, forKey: "g")
+    }
+    
+    public static func ==(lhs: RecentStarGiftItem, rhs: RecentStarGiftItem) -> Bool {
+        return lhs.starGift == rhs.starGift
     }
 }

@@ -235,7 +235,7 @@ private final class SpyOnFriendsContextImpl {
 public extension Api.Chat {
     var title: String? {
         switch self {
-        case let .channel(_, _, _, _, title, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+        case let .channel(_, _, _, _, title, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
             return title
         case let .chat(_, _, title, _, _, _, _, _, _, _):
             return title

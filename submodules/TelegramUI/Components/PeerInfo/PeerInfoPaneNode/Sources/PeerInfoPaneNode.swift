@@ -20,11 +20,12 @@ public enum PeerInfoPaneKey: Int32 {
     case links
     case gifs
     case groupsInCommon
-    case recommended
-// MARK: Nicegram NCG-7303 Spy on friends
+    case similarChannels
+    case similarBots
+    // MARK: Nicegram NCG-7303 Spy on friends
     @available(iOS 15.0, *)
     case spyOnFriends
-//
+    //
 }
 
 public struct PeerInfoStatusData: Equatable {

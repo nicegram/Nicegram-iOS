@@ -73,10 +73,8 @@ public final class NativeVideoContent: UniversalVideoContent {
     
     public static func isHLSVideo(file: TelegramMediaFile) -> Bool {
         for alternativeRepresentation in file.alternativeRepresentations {
-            if let alternativeFile = alternativeRepresentation as? TelegramMediaFile {
-                if alternativeFile.mimeType == "application/x-mpegurl" {
-                    return true
-                }
+            if alternativeRepresentation.mimeType == "application/x-mpegurl" {
+                return true
             }
         }
         return false
@@ -277,10 +275,10 @@ private enum PlayerImpl {
     }
 }
 
-extension ChunkMediaPlayerV2.MediaDataReaderParams {
+public extension ChunkMediaPlayerV2.MediaDataReaderParams {
     init(context: AccountContext) {
         var useV2Reader = true
-        if let data = context.currentAppConfiguration.with({ $0 }).data, let value = data["ios_video_v2_reader"] as? Double {
+        if let data = context.currentAppConfiguration.with({ $0 }).data, let value = data["ios_video_v2_reader2"] as? Double {
             useV2Reader = value != 0.0
         }
         

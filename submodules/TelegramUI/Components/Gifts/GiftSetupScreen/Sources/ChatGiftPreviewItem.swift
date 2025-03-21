@@ -29,12 +29,13 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
     let dateTimeFormat: PresentationDateTimeFormat
     let nameDisplayOrder: PresentationPersonNameOrder
     
-    let accountPeer: EnginePeer?
+    let peers: [EnginePeer]
     let subject: ChatGiftPreviewItem.Subject
-    let isSelf: Bool
+    let chatPeerId: EnginePeer.Id?
     let text: String
     let entities: [MessageTextEntity]
-    let includeUpgrade: Bool
+    let upgradeStars: Int64?
+    let chargeStars: Int64?
     
     init(
         context: AccountContext,
@@ -47,12 +48,13 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
         wallpaper: TelegramWallpaper,
         dateTimeFormat: PresentationDateTimeFormat,
         nameDisplayOrder: PresentationPersonNameOrder,
-        accountPeer: EnginePeer?,
+        peers: [EnginePeer],
         subject: ChatGiftPreviewItem.Subject,
-        isSelf: Bool,
+        chatPeerId: EnginePeer.Id?,
         text: String,
         entities: [MessageTextEntity],
-        includeUpgrade: Bool
+        upgradeStars: Int64?,
+        chargeStars: Int64?
     ) {
         self.context = context
         self.theme = theme
@@ -64,12 +66,13 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
         self.wallpaper = wallpaper
         self.dateTimeFormat = dateTimeFormat
         self.nameDisplayOrder = nameDisplayOrder
-        self.accountPeer = accountPeer
+        self.peers = peers
         self.subject = subject
-        self.isSelf = isSelf
+        self.chatPeerId = chatPeerId
         self.text = text
         self.entities = entities
-        self.includeUpgrade = includeUpgrade
+        self.upgradeStars = upgradeStars
+        self.chargeStars = chargeStars
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -137,7 +140,10 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
         if lhs.nameDisplayOrder != rhs.nameDisplayOrder {
             return false
         }
-        if lhs.accountPeer != rhs.accountPeer {
+        if lhs.peers != rhs.peers {
+            return false
+        }
+        if lhs.subject != rhs.subject {
             return false
         }
         if lhs.text != rhs.text {
@@ -146,7 +152,7 @@ final class ChatGiftPreviewItem: ListViewItem, ItemListItem, ListItemComponentAd
         if lhs.entities != rhs.entities {
             return false
         }
-        if lhs.includeUpgrade != rhs.includeUpgrade {
+        if lhs.upgradeStars != rhs.upgradeStars {
             return false
         }
         return true
@@ -209,10 +215,7 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
             let separatorHeight = UIScreenPixel
             
             let peerId = PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(1))
-            var chatPeerId = peerId
-            if item.isSelf {
-                chatPeerId = item.accountPeer?.id ?? chatPeerId
-            }
+            let chatPeerId = item.chatPeerId ?? peerId
             
             var items: [ListViewItem] = []
             for _ in 0 ..< 1 {
@@ -221,7 +224,9 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
                 var peers = SimpleDictionary<PeerId, Peer>()
                 let messages = SimpleDictionary<MessageId, Message>()
                 
-                peers[authorPeerId] = item.accountPeer?._asPeer()
+                for peer in item.peers {
+                    peers[peer.id] = peer._asPeer()
+                }
                 
                 let media: [Media]
                 switch item.subject {
@@ -234,7 +239,7 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
                 case let .starGift(gift):
                     media = [
                         TelegramMediaAction(
-                            action: .starGift(gift: .generic(gift), convertStars: gift.convertStars, text: item.text, entities: item.entities, nameHidden: false, savedToProfile: false, converted: false, upgraded: false, canUpgrade: true, upgradeStars: item.includeUpgrade ? 1 : nil, isRefunded: false, upgradeMessageId: nil)
+                            action: .starGift(gift: .generic(gift), convertStars: gift.convertStars, text: item.text, entities: item.entities, nameHidden: false, savedToProfile: false, converted: false, upgraded: false, canUpgrade: gift.upgradeStars != nil, upgradeStars: item.upgradeStars, isRefunded: false, upgradeMessageId: nil, peerId: nil, senderId: nil, savedId: nil)
                         )
                     ]
                 }
@@ -244,13 +249,21 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
             }
             
             var nodes: [ListViewItemNode] = []
+            var currentNodes = currentNodes
+            if let nodes = currentNodes, nodes.count != items.count {
+                for node in nodes {
+                    node.removeFromSupernode()
+                }
+                currentNodes = nil
+            }
+            
             if let messageNodes = currentNodes {
                 nodes = messageNodes
                 for i in 0 ..< items.count {
                     let itemNode = messageNodes[i]
                     items[i].updateNode(async: { $0() }, node: {
                         return itemNode
-                    }, params: params, previousItem: i == 0 ? nil : items[i - 1], nextItem: i == (items.count - 1) ? nil : items[i + 1], animation: .None, completion: { (layout, apply) in
+                    }, params: params, previousItem: i == 0 ? nil : items[i - 1], nextItem: i == (items.count - 1) ? nil : items[i + 1], animation: .System(duration: 0.2, transition: ControlledTransition(duration: 0.2, curve: .spring, interactive: false)), completion: { (layout, apply) in
                         let nodeFrame = CGRect(origin: itemNode.frame.origin, size: CGSize(width: layout.size.width, height: layout.size.height))
                         
                         itemNode.contentSize = layout.contentSize
@@ -274,7 +287,9 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
                     itemNode!.visibility = .visible(1.0, .infinite)
                     messageNodes.append(itemNode!)
                     
-                    self.initialBubbleHeight = itemNode?.frame.height
+                    if itemNode!.frame.height > 44.0 {
+                        self.initialBubbleHeight = itemNode!.frame.height
+                    }
                 }
                 nodes = messageNodes
             }
@@ -301,19 +316,30 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: contentSize)
                                         
                     strongSelf.messageNodes = nodes
-                    //var topOffset: CGFloat = 4.0
+                    var totalHeight: CGFloat = 0.0
+                    for node in nodes {
+                        let bubbleHeight: CGFloat
+                        if node.frame.height > 44.0, let initialBubbleHeight = strongSelf.initialBubbleHeight {
+                            bubbleHeight = max(node.frame.height, initialBubbleHeight)
+                        } else {
+                            bubbleHeight = node.frame.height
+                        }
+                        totalHeight += bubbleHeight
+                    }
+                    
+                    var originY: CGFloat = floor((contentSize.height - totalHeight) / 2.0)
                     for node in nodes {
                         if node.supernode == nil {
                             strongSelf.containerNode.addSubnode(node)
                         }
                         let bubbleHeight: CGFloat
-                        if let initialBubbleHeight = strongSelf.initialBubbleHeight {
+                        if node.frame.height > 44.0, let initialBubbleHeight = strongSelf.initialBubbleHeight {
                             bubbleHeight = max(node.frame.height, initialBubbleHeight)
                         } else {
                             bubbleHeight = node.frame.height
                         }
-                        node.updateFrame(CGRect(origin: CGPoint(x: 0.0, y: floor((contentSize.height - bubbleHeight) / 2.0)), size: node.frame.size), within: layoutSize)
-                        //topOffset += node.frame.size.height
+                        node.updateFrame(CGRect(origin: CGPoint(x: 0.0, y: originY), size: node.frame.size), within: layoutSize)
+                        originY += bubbleHeight
                     }
                     
                     if let currentBackgroundNode = currentBackgroundNode, strongSelf.backgroundNode !== currentBackgroundNode {

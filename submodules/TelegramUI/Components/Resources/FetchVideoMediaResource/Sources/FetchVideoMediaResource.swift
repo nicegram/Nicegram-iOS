@@ -913,6 +913,7 @@ private extension MediaEditorValues {
             audioTrackSamples: nil,
             collageTrackSamples: nil,
             coverImageTimestamp: nil,
+            coverDimensions: nil,
             qualityPreset: qualityPreset
         )
     }
@@ -1084,6 +1085,7 @@ private extension MediaEditorValues {
             audioTrackSamples: nil,
             collageTrackSamples: nil,
             coverImageTimestamp: nil,
+            coverDimensions: nil,
             qualityPreset: qualityPreset
         )
     }

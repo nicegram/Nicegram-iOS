@@ -26,16 +26,41 @@ private func FFMpegFileReader_readPacketCallback(userData: UnsafeMutableRawPoint
         return Int32(result)
     case let .resource(resource):
         let readCount = min(256 * 1024, Int64(bufferSize))
-        let requestRange: Range<Int64> = resource.readingPosition ..< (resource.readingPosition + readCount)
         
-        //TODO:improve thread safe read if incomplete
-        if let (file, readSize) = resource.mediaBox.internal_resourceData(id: resource.resource.id, size: resource.size, in: requestRange) {
-            let result = file.read(buffer, readSize)
-            if result == 0 {
-                return FFMPEG_CONSTANT_AVERROR_EOF
+        var bufferOffset = 0
+        let doRead: (Range<Int64>) -> Void = { range in
+            //TODO:improve thread safe read if incomplete
+            if let (file, readSize) = resource.mediaBox.internal_resourceData(id: resource.resource.id, size: resource.resourceSize, in: range) {
+                let effectiveReadSize = max(0, min(Int(readCount) - bufferOffset, readSize))
+                let count = file.read(buffer.advanced(by: bufferOffset), effectiveReadSize)
+                bufferOffset += count
+                resource.readingPosition += Int64(count)
             }
-            resource.readingPosition += Int64(result)
-            return Int32(result)
+        }
+        
+        var mappedRangePosition: Int64 = 0
+        for mappedRange in resource.mappedRanges {
+            let bytesToRead = readCount - Int64(bufferOffset)
+            if bytesToRead <= 0 {
+                break
+            }
+            
+            let mappedRangeSize = mappedRange.upperBound - mappedRange.lowerBound
+            let mappedRangeReadingPosition = resource.readingPosition - mappedRangePosition
+            
+            if mappedRangeReadingPosition >= 0 && mappedRangeReadingPosition < mappedRangeSize {
+                let mappedRangeAvailableBytesToRead = mappedRangeSize - mappedRangeReadingPosition
+                let mappedRangeBytesToRead = min(bytesToRead, mappedRangeAvailableBytesToRead)
+                if mappedRangeBytesToRead > 0 {
+                    let mappedReadRange = (mappedRange.lowerBound + mappedRangeReadingPosition) ..< (mappedRange.lowerBound + mappedRangeReadingPosition + mappedRangeBytesToRead)
+                    doRead(mappedReadRange)
+                }
+            }
+            
+            mappedRangePosition += mappedRangeSize
+        }
+        if bufferOffset != 0 {
+            return Int32(bufferOffset)
         } else {
             return FFMPEG_CONSTANT_AVERROR_EOF
         }
@@ -62,22 +87,22 @@ private func FFMpegFileReader_seekCallback(userData: UnsafeMutableRawPointer?, o
     }
 }
 
-final class FFMpegFileReader {
-    enum SourceDescription {
+public final class FFMpegFileReader {
+    public enum SourceDescription {
         case file(String)
-        case resource(mediaBox: MediaBox, resource: MediaResource, size: Int64)
+        case resource(mediaBox: MediaBox, resource: MediaResource, resourceSize: Int64, mappedRanges: [Range<Int64>])
     }
     
-    final class StreamInfo: Equatable {
-        let index: Int
-        let codecId: Int32
-        let startTime: CMTime
-        let duration: CMTime
-        let timeBase: CMTimeValue
-        let timeScale: CMTimeScale
-        let fps: CMTime
+    public final class StreamInfo: Equatable {
+        public let index: Int
+        public let codecId: Int32
+        public let startTime: CMTime
+        public let duration: CMTime
+        public let timeBase: CMTimeValue
+        public let timeScale: CMTimeScale
+        public let fps: CMTime
         
-        init(index: Int, codecId: Int32, startTime: CMTime, duration: CMTime, timeBase: CMTimeValue, timeScale: CMTimeScale, fps: CMTime) {
+        public init(index: Int, codecId: Int32, startTime: CMTime, duration: CMTime, timeBase: CMTimeValue, timeScale: CMTimeScale, fps: CMTime) {
             self.index = index
             self.codecId = codecId
             self.startTime = startTime
@@ -87,7 +112,7 @@ final class FFMpegFileReader {
             self.fps = fps
         }
         
-        static func ==(lhs: StreamInfo, rhs: StreamInfo) -> Bool {
+        public static func ==(lhs: StreamInfo, rhs: StreamInfo) -> Bool {
             if lhs.index != rhs.index {
                 return false
             }
@@ -117,12 +142,21 @@ final class FFMpegFileReader {
         final class Resource {
             let mediaBox: MediaBox
             let resource: MediaResource
+            let resourceSize: Int64
+            let mappedRanges: [Range<Int64>]
             let size: Int64
             var readingPosition: Int64 = 0
             
-            init(mediaBox: MediaBox, resource: MediaResource, size: Int64) {
+            init(mediaBox: MediaBox, resource: MediaResource, resourceSize: Int64, mappedRanges: [Range<Int64>]) {
                 self.mediaBox = mediaBox
                 self.resource = resource
+                self.resourceSize = resourceSize
+                self.mappedRanges = mappedRanges
+                
+                var size: Int64 = 0
+                for range in mappedRanges {
+                    size += range.upperBound - range.lowerBound
+                }
                 self.size = size
             }
         }
@@ -169,8 +203,8 @@ final class FFMpegFileReader {
         }
     }
     
-    enum SelectedStream {
-        enum MediaType {
+    public  enum SelectedStream {
+        public enum MediaType {
             case audio
             case video
         }
@@ -179,7 +213,12 @@ final class FFMpegFileReader {
         case index(Int)
     }
     
-    enum ReadFrameResult {
+    public enum Seek {
+        case stream(streamIndex: Int, pts: Int64)
+        case direct(position: Double)
+    }
+    
+    public enum ReadFrameResult {
         case frame(MediaTrackFrame)
         case waitingForMoreData
         case endOfStream
@@ -200,7 +239,7 @@ final class FFMpegFileReader {
     private var lastReadPts: (streamIndex: Int, pts: Int64)?
     private var isWaitingForMoreData: Bool = false
     
-    public init?(source: SourceDescription, passthroughDecoder: Bool = false, useHardwareAcceleration: Bool, selectedStream: SelectedStream, seek: (streamIndex: Int, pts: Int64)?, maxReadablePts: (streamIndex: Int, pts: Int64, isEnded: Bool)?) {
+    public init?(source: SourceDescription, passthroughDecoder: Bool = false, useHardwareAcceleration: Bool, selectedStream: SelectedStream, seek: Seek?, maxReadablePts: (streamIndex: Int, pts: Int64, isEnded: Bool)?) {
         let _ = FFMpegMediaFrameSourceContextHelpers.registerFFMpegGlobals
         
         switch source {
@@ -209,8 +248,8 @@ final class FFMpegFileReader {
                 return nil
             }
             self.source = .file(file)
-        case let .resource(mediaBox, resource, size):
-            self.source = .resource(Source.Resource(mediaBox: mediaBox, resource: resource, size: size))
+        case let .resource(mediaBox, resource, resourceSize, mappedRanges):
+            self.source = .resource(Source.Resource(mediaBox: mediaBox, resource: resource, resourceSize: resourceSize, mappedRanges: mappedRanges))
         }
         
         self.maxReadablePts = maxReadablePts
@@ -350,7 +389,12 @@ final class FFMpegFileReader {
         self.stream = stream
         
         if let seek {
-            avFormatContext.seekFrame(forStreamIndex: Int32(seek.streamIndex), pts: seek.pts, positionOnKeyframe: true)
+            switch seek {
+            case let .stream(streamIndex, pts):
+                avFormatContext.seekFrame(forStreamIndex: Int32(streamIndex), pts: pts, positionOnKeyframe: true)
+            case let .direct(position):
+                avFormatContext.seekFrame(forStreamIndex: Int32(stream.info.index), pts: CMTimeMakeWithSeconds(Float64(position), preferredTimescale: stream.info.timeScale).value, positionOnKeyframe: true)
+            }
         } else {
             avFormatContext.seekFrame(forStreamIndex: Int32(stream.info.index), pts: 0, positionOnKeyframe: true)
         }
@@ -385,10 +429,6 @@ final class FFMpegFileReader {
                 if let stream = self.stream, Int(packet.streamIndex) == stream.info.index {
                     let packetPts = packet.pts
                     
-                    /*if let focusedPart = self.focusedPart, packetPts >= focusedPart.endPts.value {
-                        self.hasReadToEnd = true
-                    }*/
-                    
                     let pts = CMTimeMake(value: packetPts, timescale: stream.info.timeScale)
                     let dts = CMTimeMake(value: packet.dts, timescale: stream.info.timeScale)
                     
@@ -398,7 +438,7 @@ final class FFMpegFileReader {
                     if frameDuration != 0 {
                         duration = CMTimeMake(value: frameDuration * stream.info.timeBase, timescale: stream.info.timeScale)
                     } else {
-                        duration = stream.info.fps
+                        duration = CMTimeConvertScale(CMTimeMakeWithSeconds(1.0 / stream.info.fps.seconds, preferredTimescale: stream.info.timeScale), timescale: stream.info.timeScale, method: .quickTime)
                     }
                     
                     let frame = MediaTrackDecodableFrame(type: .video, packet: packet, pts: pts, dts: dts, duration: duration)

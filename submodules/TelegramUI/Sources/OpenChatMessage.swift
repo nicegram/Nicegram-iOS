@@ -227,7 +227,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 params.dismissInput()
                 let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
                 if immediateShare {
-                    let controller = ShareController(context: params.context, subject: .media(.standalone(media: file)), immediateExternalShare: true)
+                    let controller = ShareController(context: params.context, subject: .media(.standalone(media: file), nil), immediateExternalShare: true)
                     params.present(controller, nil, .window(.root))
                 } else if let rootController = params.navigationController?.view.window?.rootViewController {
                     let proceed = {
@@ -318,8 +318,17 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 })
             case let .gallery(gallery):
                 params.dismissInput()
+            
+                if GalleryController.maybeExpandPIP(context: params.context, messageId: params.message.id) {
+                    return true
+                }
+            
+                params.blockInteraction.set(.single(true))
+            
                 let _ = (gallery
                 |> deliverOnMainQueue).startStandalone(next: { gallery in
+                    params.blockInteraction.set(.single(false))
+                    
                     gallery.centralItemUpdated = { messageId in
                         params.centralItemUpdated?(messageId)
                     }

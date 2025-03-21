@@ -190,6 +190,7 @@ public enum ResolvedUrlSettingsSection {
     case autoremoveMessages
     case twoStepAuth
     case enableLog
+    case phonePrivacy
 }
 
 public struct ResolvedBotChoosePeerTypes: OptionSet {
@@ -318,6 +319,7 @@ public enum ResolvedUrl {
     case boost(peerId: PeerId?, status: ChannelBoostStatus?, myBoostStatus: MyBoostStatus?)
     case premiumGiftCode(slug: String)
     case premiumMultiGift(reference: String?)
+    case collectible(gift: StarGift.UniqueGift?)
     case messageLink(link: TelegramResolvedMessageLink?)
 }
 
@@ -589,7 +591,9 @@ public enum PeerInfoControllerMode {
     case forumTopic(thread: ChatReplyThreadMessage)
     case recommendedChannels
     case myProfile
+    case gifts
     case myProfileGifts
+    case groupsInCommon
 }
 
 public enum ContactListActionItemInlineIconPosition {
@@ -809,7 +813,8 @@ public protocol TelegramRootControllerInterface: NavigationController {
     func getPrivacySettings() -> Promise<AccountPrivacySettings?>?
     func openSettings()
     func openBirthdaySetup()
-    func openPhotoSetup()
+    func openPhotoSetup(completedWithUploadingImage: @escaping (UIImage, Signal<PeerInfoAvatarUploadStatus, NoError>) -> UIView?)
+    func openAvatars()
 }
 
 public protocol QuickReplySetupScreenInitialData: AnyObject {
@@ -1059,7 +1064,7 @@ public protocol SharedAccountContext: AnyObject {
     
     func makeStarsGiftController(context: AccountContext, birthdays: [EnginePeer.Id: TelegramBirthday]?, completion: @escaping (([EnginePeer.Id]) -> Void)) -> ViewController
     func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource, completion: (([EnginePeer.Id]) -> Void)?) -> ViewController
-    func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption], hasBirthday: Bool) -> ViewController
+    func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption], hasBirthday: Bool, completion: (() -> Void)?) -> ViewController
     func makePremiumPrivacyControllerController(context: AccountContext, subject: PremiumPrivacySubject, peerId: EnginePeer.Id) -> ViewController
     func makePremiumBoostLevelsController(context: AccountContext, peerId: EnginePeer.Id, subject: BoostSubject, boostStatus: ChannelBoostStatus, myBoostStatus: MyBoostStatus, forceDark: Bool, openStats: (() -> Void)?) -> ViewController
     
@@ -1102,15 +1107,24 @@ public protocol SharedAccountContext: AnyObject {
     func makeStarsStatisticsScreen(context: AccountContext, peerId: EnginePeer.Id, revenueContext: StarsRevenueStatsContext) -> ViewController
     func makeStarsAmountScreen(context: AccountContext, initialValue: Int64?, completion: @escaping (Int64) -> Void) -> ViewController
     func makeStarsWithdrawalScreen(context: AccountContext, stats: StarsRevenueStats, completion: @escaping (Int64) -> Void) -> ViewController
+    func makeStarsWithdrawalScreen(context: AccountContext, completion: @escaping (Int64) -> Void) -> ViewController
     func makeStarsGiftScreen(context: AccountContext, message: EngineMessage) -> ViewController
     func makeStarsGiveawayBoostScreen(context: AccountContext, peerId: EnginePeer.Id, boost: ChannelBoostersContext.State.Boost) -> ViewController
     func makeStarsIntroScreen(context: AccountContext) -> ViewController
-    func makeGiftViewScreen(context: AccountContext, message: EngineMessage) -> ViewController
+    func makeGiftViewScreen(context: AccountContext, message: EngineMessage, shareStory: ((StarGift.UniqueGift) -> Void)?) -> ViewController
+    func makeGiftViewScreen(context: AccountContext, gift: StarGift.UniqueGift, shareStory: ((StarGift.UniqueGift) -> Void)?, dismissed: (() -> Void)?) -> ViewController
+    func makeGiftWearPreviewScreen(context: AccountContext, gift: StarGift.UniqueGift) -> ViewController
+    
+    func makeStorySharingScreen(context: AccountContext, subject: StorySharingSubject, parentController: ViewController) -> ViewController
     
     func makeContentReportScreen(context: AccountContext, subject: ReportContentSubject, forceDark: Bool, present: @escaping (ViewController) -> Void, completion: @escaping () -> Void, requestSelectMessages: ((String, Data, String?) -> Void)?)
     
+    func makeShareController(context: AccountContext, subject: ShareControllerSubject, forceExternal: Bool, shareStory: (() -> Void)?, enqueued: (([PeerId], [Int64]) -> Void)?, actionCompleted: (() -> Void)?) -> ViewController
+    
     func makeMiniAppListScreenInitialData(context: AccountContext) -> Signal<MiniAppListScreenInitialData, NoError>
     func makeMiniAppListScreen(context: AccountContext, initialData: MiniAppListScreenInitialData) -> ViewController
+    
+    func makeIncomingMessagePrivacyScreen(context: AccountContext, value: GlobalPrivacySettings.NonContactChatsPrivacy, exceptions: SelectivePrivacySettings, update: @escaping (GlobalPrivacySettings.NonContactChatsPrivacy) -> Void) -> ViewController
     
     func openWebApp(context: AccountContext, parentController: ViewController, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, botPeer: EnginePeer, chatPeer: EnginePeer?, threadId: Int64?, buttonText: String, url: String, simple: Bool, source: ChatOpenWebViewSource, skipTermsOfService: Bool, payload: String?)
     
@@ -1349,27 +1363,54 @@ public struct StickersSearchConfiguration {
     }
 }
 
-public protocol ShareControllerAccountContext: AnyObject {
-    var accountId: AccountRecordId { get }
-    var accountPeerId: EnginePeer.Id { get }
-    var stateManager: AccountStateManager { get }
-    var engineData: TelegramEngine.EngineData { get }
-    var animationCache: AnimationCache { get }
-    var animationRenderer: MultiAnimationRenderer { get }
-    var contentSettings: ContentSettings { get }
-    var appConfiguration: AppConfiguration { get }
+public struct StarsSubscriptionConfiguration {
+    static var defaultValue: StarsSubscriptionConfiguration {
+        return StarsSubscriptionConfiguration(
+            maxFee: 2500,
+            usdWithdrawRate: 1200,
+            paidMessageMaxAmount: 10000,
+            paidMessageCommissionPermille: 850,
+            paidMessagesAvailable: false
+        )
+    }
+        
+    public let maxFee: Int64
+    public let usdWithdrawRate: Int64
+    public let paidMessageMaxAmount: Int64
+    public let paidMessageCommissionPermille: Int32
+    public let paidMessagesAvailable: Bool
     
-    func resolveInlineStickers(fileIds: [Int64]) -> Signal<[Int64: TelegramMediaFile], NoError>
-}
-
-public protocol ShareControllerEnvironment: AnyObject {
-    var presentationData: PresentationData { get }
-    var updatedPresentationData: Signal<PresentationData, NoError> { get }
-    var isMainApp: Bool { get }
-    var energyUsageSettings: EnergyUsageSettings { get }
+    fileprivate init(
+        maxFee: Int64,
+        usdWithdrawRate: Int64,
+        paidMessageMaxAmount: Int64,
+        paidMessageCommissionPermille: Int32,
+        paidMessagesAvailable: Bool
+    ) {
+        self.maxFee = maxFee
+        self.usdWithdrawRate = usdWithdrawRate
+        self.paidMessageMaxAmount = paidMessageMaxAmount
+        self.paidMessageCommissionPermille = paidMessageCommissionPermille
+        self.paidMessagesAvailable = paidMessagesAvailable
+    }
     
-    var mediaManager: MediaManager? { get }
-    
-    func setAccountUserInterfaceInUse(id: AccountRecordId) -> Disposable
-    func donateSendMessageIntent(account: ShareControllerAccountContext, peerIds: [EnginePeer.Id])
+    public static func with(appConfiguration: AppConfiguration) -> StarsSubscriptionConfiguration {
+        if let data = appConfiguration.data {
+            let maxFee = (data["stars_subscription_amount_max"] as? Double).flatMap(Int64.init) ?? StarsSubscriptionConfiguration.defaultValue.maxFee
+            let usdWithdrawRate = (data["stars_usd_withdraw_rate_x1000"] as? Double).flatMap(Int64.init) ?? StarsSubscriptionConfiguration.defaultValue.usdWithdrawRate
+            let paidMessageMaxAmount = (data["stars_paid_message_amount_max"] as? Double).flatMap(Int64.init) ?? StarsSubscriptionConfiguration.defaultValue.paidMessageMaxAmount
+            let paidMessageCommissionPermille = (data["stars_paid_message_commission_permille"] as? Double).flatMap(Int32.init) ?? StarsSubscriptionConfiguration.defaultValue.paidMessageCommissionPermille
+            let paidMessagesAvailable = (data["stars_paid_messages_available"] as? Bool) ?? StarsSubscriptionConfiguration.defaultValue.paidMessagesAvailable
+            
+            return StarsSubscriptionConfiguration(
+                maxFee: maxFee,
+                usdWithdrawRate: usdWithdrawRate,
+                paidMessageMaxAmount: paidMessageMaxAmount,
+                paidMessageCommissionPermille: paidMessageCommissionPermille,
+                paidMessagesAvailable: paidMessagesAvailable
+            )
+        } else {
+            return .defaultValue
+        }
+    }
 }

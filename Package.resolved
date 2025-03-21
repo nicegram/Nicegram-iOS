@@ -24,7 +24,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "5791b36ee8d27cbd4b9532d050dd878c6f2ffa90"
+        "revision" : "f2f671902ff52d1cec8006191762f86052ca3b30"
       }
     },
     {
@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "b8b849b8630edb2255049330344e68578257e09c"
+        "revision" : "1d1f219b62a9eeb341b61a7c0d068f7964db7648"
       }
     },
     {
@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "master",
-        "revision" : "5ce1c5b0dc2a4690bfa48e6beebd287ecd87f0a4"
+        "revision" : "7ebe147c10fde6ebf05a93272d42c9474ce78302"
       }
     },
     {
@@ -356,8 +356,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "37dd7eda5a3efaafce4aeaa06c7b86732d7a263b",
-        "version" : "4.2.14"
+        "revision" : "6f9366071c226b900cf6ab37d730dd9ae417e994",
+        "version" : "4.2.15"
       }
     },
     {
@@ -374,8 +374,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tomlokhorst/XcodeEdit",
       "state" : {
-        "revision" : "9bc684439d16c07d7bede66ae43bb577a25d6bb1",
-        "version" : "2.12.0"
+        "revision" : "0e550cdee72844b35431afc3a1e176042be6d0f0",
+        "version" : "2.13.0"
       }
     }
   ],

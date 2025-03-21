@@ -245,7 +245,7 @@ public class DrawingReactionEntityView: DrawingStickerEntityView {
                     var animation: TelegramMediaFile?
                     for reaction in availableReactions.reactions {
                         if reaction.value == updateReaction.reaction {
-                            animation = reaction.selectAnimation
+                            animation = reaction.selectAnimation._parse()
                             break
                         }
                     }
@@ -274,7 +274,7 @@ public class DrawingReactionEntityView: DrawingStickerEntityView {
                     var animation: TelegramMediaFile?
                     for reaction in availableReactions.reactions {
                         if reaction.value == updateReaction.reaction {
-                            animation = reaction.selectAnimation
+                            animation = reaction.selectAnimation._parse()
                             break
                         }
                     }
@@ -294,7 +294,7 @@ public class DrawingReactionEntityView: DrawingStickerEntityView {
                 let context = self.context
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 
-                let controller = UndoOverlayController(presentationData: presentationData, content: .sticker(context: context, file: file, loop: true, title: nil, text: presentationData.strings.Story_Editor_TooltipPremiumReaction, undoText: nil, customAction: nil), elevatedLayout: true, animateInAsReplacement: false, blurred: true, action: { [weak self] action in
+                let controller = UndoOverlayController(presentationData: presentationData, content: .sticker(context: context, file: file, loop: true, title: nil, text: presentationData.strings.Story_Editor_TooltipPremiumReaction, undoText: nil, customAction: nil), elevatedLayout: true, animateInAsReplacement: false, appearance: UndoOverlayController.Appearance(isBlurred: true), action: { [weak self] action in
                     if case .info = action, let self {
                         let controller = context.sharedContext.makePremiumIntroController(context: context, source: .storiesExpirationDurations, forceDark: true, dismissed: nil)
                         self.containerView?.push(controller)

@@ -608,8 +608,7 @@ final class AuthorizedApplicationContext {
                             if case .modal = config.contacts {
                                 modal = true
                             }
-                            // MARK: Nicegram, temp fix: removed 'contactsTimestamp != 0'
-                            if case .requestable = required.0.status {
+                            if case .requestable = required.0.status, contactsTimestamp != 0 {
                                 requestedPermissions.append((required.0, modal))
                             }
                         case .notifications:

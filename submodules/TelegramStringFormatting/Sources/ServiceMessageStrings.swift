@@ -79,7 +79,7 @@ private func peerDisplayTitles(_ peers: [Peer], strings: PresentationStrings, na
     }
 }
 
-public func universalServiceMessageString(presentationData: (PresentationTheme, TelegramWallpaper)?, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, message: EngineMessage, accountPeerId: EnginePeer.Id, forChatList: Bool, forForumOverview: Bool, forAdditionalServiceMessage: Bool = false) -> NSAttributedString? {
+public func universalServiceMessageString(presentationData: (PresentationTheme, TelegramWallpaper)?, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, message: EngineMessage, messageCount: Int? = nil, accountPeerId: EnginePeer.Id, forChatList: Bool, forForumOverview: Bool, forAdditionalServiceMessage: Bool = false) -> NSAttributedString? {
     var attributedString: NSAttributedString?
     
     let primaryTextColor: UIColor
@@ -91,6 +91,33 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
     
     let bodyAttributes = MarkdownAttributeSet(font: titleFont, textColor: primaryTextColor, additionalAttributes: [:])
     let boldAttributes = MarkdownAttributeSet(font: titleBoldFont, textColor: primaryTextColor, additionalAttributes: [:])
+    
+    if !forAdditionalServiceMessage {
+        for attribute in message.attributes {
+            if let attribute = attribute as? PaidStarsMessageAttribute {
+                let messageCount = Int32(messageCount ?? 1)
+                let price = strings.Notification_PaidMessage_Stars(Int32(attribute.stars.value) * messageCount)
+                if message.author?.id == accountPeerId {
+                    if messageCount > 1 {
+                        let messagesString = strings.Notification_PaidMessage_Messages(messageCount)
+                        return addAttributesToStringWithRanges(strings.Notification_PaidMessageYouMany(price, messagesString)._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes, 1: boldAttributes])
+                    } else {
+                        return addAttributesToStringWithRanges(strings.Notification_PaidMessageYou(price)._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
+                    }
+                } else {
+                    let compactAuthorName = message.author?.compactDisplayTitle ?? ""
+                    var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: [(0, message.author?.id)])
+                    attributes[1] = boldAttributes
+                    if messageCount > 1 {
+                        let messagesString = strings.Notification_PaidMessage_Messages(messageCount)
+                        return addAttributesToStringWithRanges(strings.Notification_PaidMessageMany(compactAuthorName, price, messagesString)._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                    } else {
+                        return addAttributesToStringWithRanges(strings.Notification_PaidMessage(compactAuthorName, price)._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                    }
+                }
+            }
+        }
+    }
     
     for media in message.media {
         if let action = media as? TelegramMediaAction {
@@ -739,7 +766,12 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                 if !forAdditionalServiceMessage {
                     attributedString = NSAttributedString(string: strings.Notification_Gift, font: titleFont, textColor: primaryTextColor)
                 } else {
-                    let price = formatCurrencyAmount(amount, currency: currency)
+                    let price: String
+                    if currency == "XTR" {
+                        price = "\(amount) Stars"
+                    } else {
+                        price = formatCurrencyAmount(amount, currency: currency)
+                    }
                     if message.author?.id == accountPeerId {
                         attributedString = addAttributesToStringWithRanges(strings.Notification_PremiumGift_SentYou(price)._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
                     } else {
@@ -1066,7 +1098,7 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                 attributedString = mutableString
             case .prizeStars:
                 attributedString = NSAttributedString(string: strings.Notification_StarsPrize, font: titleFont, textColor: primaryTextColor)
-            case let .starGift(gift, _, text, entities, _, _, _, _, _, upgradeStars, _, _):
+            case let .starGift(gift, _, text, entities, _, _, _, _, _, upgradeStars, _, _, peerId, senderId, _):
                 if !forAdditionalServiceMessage {
                     if let text {
                         let mutableAttributedString = NSMutableAttributedString(attributedString: stringWithAppliedEntities(text, entities: entities ?? [], baseColor: primaryTextColor, linkColor: primaryTextColor, baseFont: titleFont, linkFont: titleBoldFont, boldFont: titleBoldFont, italicFont: titleFont, boldItalicFont: titleBoldFont, fixedFont: titleFont, blockQuoteFont: titleFont, underlineLinks: false, message: message._asMessage()))
@@ -1086,25 +1118,44 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                         authorName = strings.Notification_StarsGift_UnknownUser
                         peerIds = []
                     }
-                    if message.id.peerId == accountPeerId {
+                    if message.id.peerId.isTelegramNotifications && senderId == nil {
+                        attributedString = NSAttributedString(string: strings.Notification_StarsGift_SentSomeone, font: titleFont, textColor: primaryTextColor)
+                    } else if message.id.peerId == accountPeerId {
                         attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_Self_Bought(starsPrice)._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
                     } else if message.author?.id == accountPeerId {
                         attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_SentYou(starsPrice)._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
+                    } else if let peerId {
+                        peerIds = [(1, peerId)]
+                        var peerName = ""
+                        if let name = message.peers[peerId].flatMap(EnginePeer.init)?.compactDisplayTitle {
+                            peerName = name
+                        }
+                        if let senderId {
+                            peerIds.insert((0, senderId), at: 0)
+                            if let name = message.peers[senderId].flatMap(EnginePeer.init)?.compactDisplayTitle {
+                                authorName = name
+                            }
+                        }
+                        var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
+                        attributes[2] = boldAttributes
+                        attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_Channel_Sent(authorName, peerName, starsPrice)._tuple, body: bodyAttributes, argumentAttributes: attributes)
                     } else {
                         var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
                         attributes[1] = boldAttributes
                         attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_Sent(authorName, starsPrice)._tuple, body: bodyAttributes, argumentAttributes: attributes)
                     }
                 }
-            case let .starGiftUnique(gift, isUpgrade, _, _, _, _, _):
+            case let .starGiftUnique(gift, isUpgrade, _, _, _, _, _, peerId, senderId, _):
                 if case let .unique(gift) = gift {
-                    if !forAdditionalServiceMessage {
-                        attributedString = NSAttributedString(string: "\(gift.title) #\(gift.number)", font: titleFont, textColor: primaryTextColor)
+                    if !forAdditionalServiceMessage && !"".isEmpty {
+                        attributedString = NSAttributedString(string: "\(gift.title) #\(presentationStringsFormattedNumber(gift.number, dateTimeFormat.groupingSeparator))", font: titleFont, textColor: primaryTextColor)
                     } else if let messagePeer = message.peers[message.id.peerId] {
-                        let peerName = EnginePeer(messagePeer).compactDisplayTitle
-                        let peerIds: [(Int, EnginePeer.Id?)] = [(0, messagePeer.id)]
+                        var peerName = EnginePeer(messagePeer).compactDisplayTitle
+                        var peerIds: [(Int, EnginePeer.Id?)] = [(0, messagePeer.id)]
                         if isUpgrade {
-                            if message.id.peerId == accountPeerId {
+                            if message.id.peerId.isTelegramNotifications {
+                                attributedString = NSAttributedString(string: strings.Notification_StarsGift_UpgradeChannel, font: titleFont, textColor: primaryTextColor)
+                            } else if message.id.peerId == accountPeerId {
                                 attributedString = NSAttributedString(string: strings.Notification_StarsGift_UpgradeSelf, font: titleFont, textColor: primaryTextColor)
                             } else if message.author?.id == accountPeerId {
                                 let attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
@@ -1114,8 +1165,30 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                                 attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_Upgrade(peerName)._tuple, body: bodyAttributes, argumentAttributes: attributes)
                             }
                         } else {
-                            if message.author?.id == accountPeerId {
+                            if message.id.peerId.isTelegramNotifications && senderId == nil {
+                                attributedString = NSAttributedString(string: strings.Notification_StarsGift_SentSomeone, font: titleFont, textColor: primaryTextColor)
+                            } else if message.author?.id == accountPeerId {
                                 attributedString = NSAttributedString(string: strings.Notification_StarsGift_TransferYou, font: titleFont, textColor: primaryTextColor)
+                            } else if let senderId, let peer = message.peers[senderId] {
+                                if let peerId, let targetPeer = message.peers[peerId] {
+                                    if senderId == accountPeerId {
+                                        peerName = EnginePeer(targetPeer).compactDisplayTitle
+                                        peerIds = [(0, peerId)]
+                                        let attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
+                                        attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_TransferToChannelYou(peerName)._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                                    } else {
+                                        let targetPeerName = EnginePeer(targetPeer).compactDisplayTitle
+                                        peerName = EnginePeer(peer).compactDisplayTitle
+                                        peerIds = [(0, peer.id), (1, targetPeer.id)]
+                                        let attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
+                                        attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_TransferToChannel(peerName, targetPeerName)._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                                    }
+                                } else {
+                                    peerName = EnginePeer(peer).compactDisplayTitle
+                                    peerIds = [(0, senderId)]
+                                    let attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
+                                    attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_Transfer(peerName)._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                                }
                             } else {
                                 let attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
                                 attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_Transfer(peerName)._tuple, body: bodyAttributes, argumentAttributes: attributes)

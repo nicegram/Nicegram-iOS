@@ -8,6 +8,12 @@ import AccountContext
 import UndoUI
 
 open class GalleryControllerNode: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDelegate {
+    public enum CustomDismissType {
+        case `default`
+        case simpleAnimation
+        case pip
+    }
+    
     private let context: AccountContext
     
     public var statusBar: StatusBar?
@@ -27,7 +33,7 @@ open class GalleryControllerNode: ASDisplayNode, ASScrollViewDelegate, ASGesture
     public var scrollView: UIScrollView
     public var pager: GalleryPagerNode
     
-    public var beginCustomDismiss: (Bool) -> Void = { _ in }
+    public var beginCustomDismiss: (GalleryControllerNode.CustomDismissType) -> Void = { _ in }
     public var completeCustomDismiss: (Bool) -> Void = { _ in }
     public var baseNavigationController: () -> NavigationController? = { return nil }
     public var galleryController: () -> ViewController? = { return nil }
@@ -83,6 +89,13 @@ open class GalleryControllerNode: ASDisplayNode, ASScrollViewDelegate, ASGesture
             }
         }
         
+        self.pager.controlsVisibility = { [weak self] in
+            guard let self else {
+                return true
+            }
+            return !self.areControlsHidden && self.footerNode.alpha != 0.0
+        }
+        
         self.pager.updateOrientation = { [weak self] orientation in
             if let strongSelf = self {
                 strongSelf.updateOrientation?(orientation)
@@ -121,9 +134,9 @@ open class GalleryControllerNode: ASDisplayNode, ASScrollViewDelegate, ASGesture
             }
         }
                 
-        self.pager.beginCustomDismiss = { [weak self] simpleAnimation in
+        self.pager.beginCustomDismiss = { [weak self] animationType in
             if let strongSelf = self {
-                strongSelf.beginCustomDismiss(simpleAnimation)
+                strongSelf.beginCustomDismiss(animationType)
             }
         }
         
@@ -364,10 +377,14 @@ open class GalleryControllerNode: ASDisplayNode, ASScrollViewDelegate, ASGesture
             if !self.areControlsHidden {
                 self.statusBar?.alpha = 1.0
                 self.navigationBar?.alpha = 1.0
-                self.footerNode.alpha = 1.0
                 self.updateThumbnailContainerNodeAlpha(.immediate)
             }
         })
+        
+        if !self.areControlsHidden {
+            self.footerNode.alpha = 1.0
+            self.footerNode.animateIn(transition: .animated(duration: 0.15, curve: .linear))
+        }
         
         if animateContent {
             self.scrollView.layer.animateBounds(from: self.scrollView.layer.bounds.offsetBy(dx: 0.0, dy: -self.scrollView.layer.bounds.size.height), to: self.scrollView.layer.bounds, duration: 0.4, timingFunction: kCAMediaTimingFunctionSpring)
@@ -402,12 +419,13 @@ open class GalleryControllerNode: ASDisplayNode, ASScrollViewDelegate, ASGesture
         UIView.animate(withDuration: 0.1, animations: {
             self.statusBar?.alpha = 0.0
             self.navigationBar?.alpha = 0.0
-            self.footerNode.alpha = 0.0
             self.currentThumbnailContainerNode?.alpha = 0.0
         }, completion: { _ in
             interfaceAnimationCompleted = true
             intermediateCompletion()
         })
+        
+        self.footerNode.animateOut(transition: .animated(duration: 0.1, curve: .easeInOut))
         
         if animateContent {
             contentAnimationCompleted = false

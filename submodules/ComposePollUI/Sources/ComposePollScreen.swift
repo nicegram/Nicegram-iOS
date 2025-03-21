@@ -364,7 +364,8 @@ final class ComposePollScreenComponent: Component {
                     isGeneralThreadClosed: nil,
                     replyMessage: nil,
                     accountPeerColor: nil,
-                    businessIntro: nil
+                    businessIntro: nil,
+                    starGiftsAvailable: false
                 )
                 
                 self.inputMediaNodeBackground.backgroundColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor.cgColor
@@ -1283,7 +1284,7 @@ final class ComposePollScreenComponent: Component {
                     component: AnyComponent(EmojiSuggestionsComponent(
                         context: component.context,
                         userLocation: .other,
-                        theme: EmojiSuggestionsComponent.Theme(theme: environment.theme),
+                        theme: EmojiSuggestionsComponent.Theme(theme: environment.theme, backgroundColor: environment.theme.list.itemBlocksBackgroundColor),
                         animationCache: component.context.animationCache,
                         animationRenderer: component.context.animationRenderer,
                         files: value,

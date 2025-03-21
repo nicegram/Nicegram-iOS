@@ -165,6 +165,7 @@ private func extractPayload(
         gigagroup: channel.flags.contains(.isGigagroup),
         title: channel.title,
         username: channel.username,
+        usernames: channel.usernames.compactMap { $0.isActive ? $0.username : nil },
         date: channel.creationDate,
         restrictions: extractRestrictions(restrictionInfo: channel.restrictionInfo),
         participantsCount: cachedData?.participantsSummary.memberCount,
