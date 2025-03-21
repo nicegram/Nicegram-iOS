@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/update-ads-list-logic",
-        "revision" : "92364869ec9b8ecfc20ccd0a5c2f680ae1ac9b0e"
+        "branch" : "develop",
+        "revision" : "1216acad02c69cae1588b2268f84b55d2034d12e"
       }
     },
     {
