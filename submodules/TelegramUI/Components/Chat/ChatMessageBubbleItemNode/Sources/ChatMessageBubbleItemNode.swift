@@ -4463,8 +4463,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 
                 let gesture = ContextGesture()
                 trButtonNode.view.addGestureRecognizer(gesture)
-                gesture.activated = { _, _ in
-                    if let item = strongSelf.item {
+                gesture.activated = { [weak strongSelf] _, _ in
+                    if let item = strongSelf?.item {
                         item.controllerInteraction.onTranslateButtonLongTap()
                     }
                 }

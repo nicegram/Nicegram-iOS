@@ -1,5 +1,6 @@
 import ChatListUI
 import Combine
+import class Dispatch.DispatchQueue
 import MemberwiseInit
 import NGUtils
 import TelegramBridge
@@ -51,7 +52,7 @@ extension ChatListPeersProviderImpl: ChatListPeersProvider {
                     }
                     .eraseToAnyPublisher()
             }
-            .switchToLatest()
+            .switchToLatestThreadSafe()
             .removeDuplicates()
             .eraseToAnyPublisher()
     }
@@ -75,5 +76,20 @@ private extension Set<ChatListPeersProvider.Category> {
             }
         }
         return result
+    }
+}
+
+private extension Publisher
+where Self.Failure == Never, Self.Output : Publisher, Self.Output.Failure == Never {
+    func switchToLatestThreadSafe() -> AnyPublisher<Self.Output.Output, Never> {
+        let queue = DispatchQueue(label: "")
+        
+        return self
+            .map { publisher in
+                publisher.receive(on: queue)
+            }
+            .receive(on: queue)
+            .switchToLatest()
+            .eraseToAnyPublisher()
     }
 }

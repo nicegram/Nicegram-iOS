@@ -33,12 +33,9 @@ private class SignalPublisherSubscription<S: Combine.Subscriber>: Combine.Subscr
     private var disposable: Disposable?
     
     init<Output, Failure>(signal: Signal<Output, Failure>, subscriber: S) where S.Input == Output, S.Failure == Failure {
-        let lock = NSRecursiveLock()
-        self.disposable = signal.start(
+        self.disposable = (signal |> deliverOn(Queue())).start(
             next: {
-                lock.lock()
                 _ = subscriber.receive($0)
-                lock.unlock()
             },
             error: {
                 subscriber.receive(completion: .failure($0))
