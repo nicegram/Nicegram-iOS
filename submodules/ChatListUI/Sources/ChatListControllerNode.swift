@@ -4,6 +4,8 @@ import NGData
 // MARK: Nicegram ColorAlign
 import NGUtils
 import NGLogging
+import FeatKeywords
+import TelegramStringFormatting
 //
 import Foundation
 import UIKit
@@ -1167,7 +1169,35 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.controller = controller
         
         super.init()
-        
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.inlineTabContainerNode.openKeywords = {
+            if #available(iOS 15.0, *) {
+                let locale = localeWithStrings(presentationData.strings)
+                let primaryColor = presentationData.theme.list.blocksBackgroundColor
+                let secondaryColor = presentationData.theme.list.plainBackgroundColor
+                let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.backgroundColor
+                let accentColor = presentationData.theme.list.itemAccentColor
+
+                Task { @MainActor in
+                    KeywordsPresenter().present(
+                        with: KeywordsPresenter.Theme(
+                            primaryColor: primaryColor,
+                            secondaryColor: secondaryColor,
+                            tertiaryColor: tertiaryColor,
+                            accentColor: accentColor
+                        ),
+                        locale: locale,
+                        openMessage: { id, peerId in
+                            controller.openMessage(with: id, peerId: peerId)
+                        },
+                        openSettings: {
+                            controller.openSettings()
+                        }
+                    )
+                }
+            }
+        }
+        //
         self.setViewBlock({
             return UITracingLayerView()
         })

@@ -481,8 +481,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramThemeProvider: {
                 TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
-            peerImageProvider: {
-                PeerImageProviderImpl(contextProvider: contextProvider)
+            telegramMessagesProvider: {
+                TelegramMessagesProviderImpl(contextProvider: contextProvider)
+            },
+            telegramPeerImageProvider: {
+                TelegramPeerImageProviderImpl(contextProvider: contextProvider)
             },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)

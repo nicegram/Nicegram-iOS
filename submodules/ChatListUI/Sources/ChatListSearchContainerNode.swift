@@ -36,10 +36,13 @@ import MultiAnimationRenderer
 import PremiumUI
 import AvatarNode
 import StoryContainerScreen
-
-// MARK: Nicegram downloading feature
+// MARK: Nicegram imports
 import SaveToCameraRoll
-
+import NGStrings
+import FeatKeywords
+import NGData
+import NGUtils
+//
 private enum ChatListTokenId: Int32 {
     case archive
     case forum
@@ -95,7 +98,9 @@ private struct ChatListSearchContainerNodeSearchState: Equatable {
         return ChatListSearchContainerNodeSearchState(selectedMessageIds: selectedMessageIds)
     }
 }
-
+// MARK: Nicegram NCG-7581 Folder for keywords
+let searchMessagesUseCase = KeywordsModule.shared.searchMessagesUseCase()
+//
 public final class ChatListSearchContainerNode: SearchDisplayControllerContentNode {
     private let context: AccountContext
     private let peersFilter: ChatListNodePeersFilter
@@ -160,7 +165,12 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     
     private let sharedOpenStoryDisposable = MetaDisposable()
     private var recentAppsDisposable: Disposable?
-    
+    // MARK: Nicegram NCG-7581 Folder for keywords
+    private let addKeywordButtonNode: KeywordButtonNode
+    private let addKeywordButtonTransition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .linear)
+    private var keyboardHeight: CGFloat = 0.0
+    private var addKeywordButtonNodeFrame: CGRect = .zero
+    //
     public init(context: AccountContext, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, filter: ChatListNodePeersFilter, requestPeerType: [ReplyMarkupButtonRequestPeerType]?, location: ChatListControllerLocation, displaySearchFilters: Bool, hasDownloads: Bool, initialFilter: ChatListSearchFilter = .chats, openPeer originalOpenPeer: @escaping (EnginePeer, EnginePeer?, Int64?, Bool) -> Void, openDisabledPeer: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void, openRecentPeerOptions: @escaping (EnginePeer) -> Void, openMessage originalOpenMessage: @escaping (EnginePeer, Int64?, EngineMessage.Id, Bool) -> Void, addContact: ((String) -> Void)?, peerContextAction: ((EnginePeer, ChatListSearchContextActionSource, ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?, present: @escaping (ViewController, Any?) -> Void, presentInGlobalOverlay: @escaping (ViewController, Any?) -> Void, navigationController: NavigationController?, parentController: @escaping () -> ViewController?) {
         var initialFilter = initialFilter
         if case .chats = initialFilter, case .forum = location {
@@ -189,14 +199,23 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         self.filterContainerNode = ChatListSearchFiltersContainerNode()
         self.paneContainerNode = ChatListSearchPaneContainerNode(context: context, animationCache: animationCache, animationRenderer: animationRenderer, updatedPresentationData: updatedPresentationData, peersFilter: self.peersFilter, requestPeerType: self.requestPeerType, location: location, searchQuery: self.searchQuery.get(), searchOptions: self.searchOptions.get(), navigationController: navigationController, parentController: parentController())
         self.paneContainerNode.clipsToBounds = true
-        
-        super.init()
-                
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.addKeywordButtonNode = KeywordButtonNode()
+        self.addKeywordButtonNode.displaysAsynchronously = false
+        self.addKeywordButtonNode.titleNode.maximumNumberOfLines = 1
+        self.addKeywordButtonNode.titleNode.truncationMode = .byTruncatingTail
+        self.addKeywordButtonNode.alpha = 0
+        //
+        super.init()        
         self.backgroundColor = filter.contains(.excludeRecent) ? nil : self.presentationData.theme.chatList.backgroundColor
         
 //        self.addSubnode(self.dimNode)
         self.addSubnode(self.paneContainerNode)
-                
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.addSubnode(addKeywordButtonNode)
+        self.addKeywordButtonNode.addTarget(self, action: #selector(self.addKeywordPressed), forControlEvents: .touchUpInside)
+        //
+
         let interaction = ChatListSearchInteraction(openPeer: { peer, chatPeer, threadId, value in
             originalOpenPeer(peer, chatPeer, threadId, value)
             if peer.id.namespace != Namespaces.Peer.SecretChat {
@@ -551,6 +570,9 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         
         
         self.dimNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.addKeywordButtonNode.frame = CGRect(origin: CGPoint(x: frame.midX, y: frame.height), size: .zero)
+        //
     }
     
     public override var hasDim: Bool {
@@ -657,8 +679,11 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         self.searchQueryValue = searchQuery
         
         self.suggestedDates.set(.single(suggestDates(for: text, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat)))
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        updateAddKeywordButton()
+        //
     }
-    
+
     private func currentPaneUpdated(_ key: ChatListSearchPaneKey, transitionFraction: CGFloat = 0.0, transition: ContainedViewLayoutTransition) {
         var filterKey: ChatListSearchFilter
         switch key {
@@ -950,6 +975,18 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         }
 
         self.paneContainerNode.update(size: CGSize(width: layout.size.width, height: layout.size.height - topInset), sideInset: layout.safeInsets.left, bottomInset: bottomInset, visibleHeight: layout.size.height - topInset, presentationData: self.presentationData, availablePanes: availablePanes, transition: transition)
+        
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        let rect = CGRect(origin: CGPoint(x: layout.size.width / 2, y: layout.size.height), size: .init(width: 150, height: 24))
+        keyboardHeight = layout.inputHeight ?? 0
+        transition.updateAlpha(node: addKeywordButtonNode, alpha: layout.inputHeight == nil ? 0 : 1)
+        if addKeywordButtonNode.view.frame == .zero {
+            transition.updateFrame(
+                node: addKeywordButtonNode,
+                frame: rect
+            )
+        }
+        //
     }
     
     private var currentMessages: ([EnginePeer.Id: EnginePeer], [EngineMessage.Id: EngineMessage]) {
@@ -1662,8 +1699,95 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     private func dismissInput() {
         self.view.window?.endEditing(true)
     }
-}
+    // MARK: Nicegram NCG-7581 Folder for keywords
+    private func updateAddKeywordButton(isEnabledState: Bool = false) {
+        addKeywordButtonTransition.updateAlpha(node: addKeywordButtonNode, alpha: (searchQueryValue?.count ?? 0) > 1 ? 1 : 0)
+        if let keywordQuery {
+            let font = UIFont.mainFont(ofSize: 12, weight: .medium)
+            let title = isEnabledState ? l("NicegramKeywords.TrackEnabled", with: keywordQuery) : l("NicegramKeywords.TrackUpdates", with: keywordQuery)
 
+            let titleRect = title.boundingRect(
+                with: CGSize(width: 1000, height: CGFloat.greatestFiniteMagnitude),
+                options: .usesLineFragmentOrigin,
+                attributes: [.font: font],
+                context: nil
+            )
+            addKeywordButtonNode.contentEdgeInsets = .vertical(5).horizontal(12)
+            addKeywordButtonNode.contentSpacing = 4
+            addKeywordButtonNode.contentHorizontalAlignment = .right
+
+            let image = isEnabledState ? UIImage(bundleImageName: "GreenCircleCheckmark") : UIImage(bundleImageName: "FolderPlus")
+            addKeywordButtonNode.setImage(image, for: .normal)
+
+            let width = titleRect.width + addKeywordButtonNode.contentEdgeInsets.left + addKeywordButtonNode.contentEdgeInsets.right + addKeywordButtonNode.contentSpacing + (image?.size.width ?? 0)
+            let buttonSize = CGSize(width: width, height: 24)
+            
+            let color = isEnabledState ? presentationData.theme.list.plainBackgroundColor : presentationData.theme.rootController.navigationSearchBar.backgroundColor
+            let backgroundImage = generateFilledRoundedRectImage(
+                size: buttonSize,
+                cornerRadius: 12,
+                color: color
+            )
+            
+            let titleColor = isEnabledState ? UIColor.baseWhite : presentationData.theme.list.itemAccentColor
+            addKeywordButtonNode.setBackgroundImage(backgroundImage, for: .normal)
+            addKeywordButtonNode.setTitle(title, with: font, with: titleColor, for: .normal)
+            
+            let buttonFrame = CGRect(
+                origin: CGPoint(
+                    x: self.frame.width / 2 - buttonSize.width / 2,
+                    y: self.frame.height - keyboardHeight - buttonSize.height - 12
+                ),
+                size: CGSize(
+                    width: buttonSize.width ,
+                    height: buttonSize.height
+                )
+            )
+            addKeywordButtonTransition.updateFrame(node: addKeywordButtonNode, frame: buttonFrame)
+        }
+    }
+    
+    var keywordQuery: String? {
+        if let searchQueryValue, searchQueryValue.count > 1 {
+            return searchQueryValue.components(separatedBy: .whitespacesAndNewlines).first
+        }
+        
+        return nil
+    }
+    
+    @objc private func addKeywordPressed() {
+        updateAddKeywordButton(isEnabledState: true)
+        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+            self?.updateAddKeywordButton()
+        }
+        if let keywordQuery {
+            let settings = getNicegramSettings()
+            if !settings.keywords.show {
+                updateNicegramSettings { settings in
+                    settings.keywords.show = true
+                }
+            }
+            
+            Task {
+                searchMessagesUseCase(with: [keywordQuery])
+            }
+            
+            sendKeywordsAnalytics(with: .addedFromSearch)
+        }
+    }
+    //
+}
+// MARK: Nicegram NCG-7581 Folder for keywords
+private final class KeywordButtonNode: ASButtonNode {
+    private let expandedTapArea: CGFloat = 20
+    
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        let largerFrame = self.bounds.insetBy(dx: -expandedTapArea, dy: -expandedTapArea)
+        
+        return largerFrame.contains(point) ? self.view : nil
+    }
+}
+//
 private final class MessageContextExtractedContentSource: ContextExtractedContentSource {
     let keepInPlace: Bool = false
     let ignoreContentTouches: Bool = true

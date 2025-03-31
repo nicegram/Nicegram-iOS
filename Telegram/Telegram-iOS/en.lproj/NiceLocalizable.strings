@@ -171,6 +171,7 @@
 "NicegramSettings.EnableGrayscaleInChatList" = "Grayscale in chat list";
 "NicegramSettings.EnableGrayscaleInChat" = "Grayscale in chat";
 "NicegramSettings.EnableAppleSpeech2Text" = "Enable Apple Speech2Text";
+"NicegramSettings.ShowKeywords" = "Show Folder for Keywords";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Older than";
@@ -247,3 +248,9 @@
 
 /*God’s Eye*/
 "GodsEye.Title" = "God’s Eye";
+
+/*Keywords*/
+"NicegramKeywords.Title" = "✨ Keywords ✨";
+"NicegramKeywords.Tooltip" = "Monitor incoming messages for specific keywords";
+"NicegramKeywords.TrackUpdates" = "Track \"%@\" updates";
+"NicegramKeywords.TrackEnabled" = "Tracking enabled for \"%@\" updates!";

@@ -35,7 +35,7 @@
 "NiceFeatures.InstantLock" = "立即";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "轉傳到儲存的訊息";
+"Chat.SaveToCloud" = "儲存";
 
 /*Open Pin*/
 "Chat.OpenPin" = "顯示置頂";
@@ -171,6 +171,7 @@
 "NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰階";
 "NicegramSettings.EnableGrayscaleInChat" = "灰階在聊天中";
 "NicegramSettings.EnableAppleSpeech2Text" = "啟用Apple Speech2Text";
+"NicegramSettings.ShowKeywords" = "顯示關鍵詞資料夾";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "早於";
@@ -247,3 +248,9 @@
 
 /*God’s Eye*/
 "GodsEye.Title" = "God's Eye";
+
+/*Keywords*/
+"NicegramKeywords.Title" = "✨關鍵詞✨";
+"NicegramKeywords.Tooltip" = "監控包含特定關鍵詞的傳入訊息";
+"NicegramKeywords.TrackUpdates" = "跟蹤“%@”的更新";
+"NicegramKeywords.TrackEnabled" = "已啟用對“%@”更新的跟蹤！";

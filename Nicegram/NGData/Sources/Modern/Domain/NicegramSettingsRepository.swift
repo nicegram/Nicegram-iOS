@@ -6,13 +6,20 @@ public struct NicegramSettings: Withable {
         public var useOpenAI: [Int64: Bool?]
         public var appleRecognizerState: [Int64: Bool?]
     }
-    
+
+    public struct Keywords: Withable {
+        public var show: Bool
+        public var showTooltip: Bool
+    }
+
     public var disableAnimationsInChatList: Bool
     public var grayscaleAll: Bool
     public var grayscaleInChat: Bool
     public var grayscaleInChatList: Bool
     public var trackDigitalFootprint: Bool
+    
     public var speechToText: SpeechToText
+    public var keywords: Keywords
 }
 
 public protocol NicegramSettingsRepository {
