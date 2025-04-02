@@ -253,6 +253,7 @@
 
 /*Keywords*/
 "NicegramKeywords.Title" = "✨الكلمات المفتاحية✨";
+"NicegramKeywords.TitleNoEmoji" = "الكلمات المفتاحية";
 "NicegramKeywords.Tooltip" = "راقب الرسائل الواردة لكلمات مفتاحية محددة";
 "NicegramKeywords.TrackUpdates" = "تعقب تحديثات \"%@\"";
 "NicegramKeywords.TrackEnabled" = "تم تفعيل التعقب لتحديثات \"%@\"!";

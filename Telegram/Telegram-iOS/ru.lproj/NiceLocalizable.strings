@@ -251,6 +251,7 @@
 
 /*Keywords*/
 "NicegramKeywords.Title" = "✨ Ключевые слова ✨";
+"NicegramKeywords.TitleNoEmoji" = "Ключевые слова";
 "NicegramKeywords.Tooltip" = "Следите за ключевыми словами во входящих сообщениях";
 "NicegramKeywords.TrackUpdates" = "Отслеживать обновления «%@»";
 "NicegramKeywords.TrackEnabled" = "Теперь вы отслеживаете обновления «%@»!";

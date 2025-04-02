@@ -741,7 +741,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
         let showKeywordButton = getNicegramSettings().keywords.show
         self.keywordsButtonNode.isHidden = !showKeywordButton
         let keywordButtonOriginX: CGFloat = 16
-        let title = l("NicegramKeywords.Title")
+        let title = getNicegramSettings().keywords.showTooltip ? l("NicegramKeywords.Title") : l("NicegramKeywords.TitleNoEmoji")
         let font = UIFont.mainFont(ofSize: 16, weight: .medium)
         let titleRect = title.boundingRect(
             with: CGSize(width: 1000, height: CGFloat.greatestFiniteMagnitude),
@@ -749,8 +749,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             attributes: [.font: font],
             context: nil
         )
-        self.keywordsButtonNode.setTitle(title, with: font, with: .white, for: .normal)
-        self.keywordsButtonNode.setTitle(title, with: font, with: .gray, for: .selected)
+        self.keywordsButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemSecondaryTextColor, for: .normal)
         transition.updateFrame(
             node: self.keywordsButtonNode,
             frame: CGRect(
@@ -758,7 +757,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
                 size: CGSize(width: titleRect.width, height: self.scrollNode.view.contentSize.height)
             )
         )
-        let keywordButtonOffsetX: CGFloat = showKeywordButton ? keywordButtonOriginX + titleRect.width : 0
+        let keywordButtonOffsetX: CGFloat = 0//showKeywordButton ? keywordButtonOriginX + titleRect.width : 0
         //
         var tabSizes: [(ChatListFilterTabEntryId, CGSize, CGSize, ItemNodePair, Bool)] = []
         var totalRawTabSize: CGFloat = 0.0

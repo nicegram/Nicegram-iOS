@@ -251,6 +251,7 @@
 
 /*Keywords*/
 "NicegramKeywords.Title" = "✨Stichwörter✨";
+"NicegramKeywords.TitleNoEmoji" = "Stichwörter";
 "NicegramKeywords.Tooltip" = "Eingehende Nachrichten auf bestimmte Stichwörter überwachen";
 "NicegramKeywords.TrackUpdates" = "Verfolgen Sie die Updates von \"%@\"";
 "NicegramKeywords.TrackEnabled" = "Verfolgung für Updates von \"%@\" aktiviert!";

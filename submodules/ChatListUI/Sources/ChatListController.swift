@@ -177,7 +177,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private var tabContainerData: ([ChatListFilterTabEntry], Bool, Int32?)?
     var hasTabs: Bool {
         if let tabContainerData = self.tabContainerData {
-            let isEmpty = tabContainerData.0.count <= 1 || tabContainerData.1
+            // MARK: Nicegram NCG-7581 Folder for keywords, (getNicegramSettings().keywords.show ? 0 : 1)
+            let isEmpty = tabContainerData.0.count <= (getNicegramSettings().keywords.show ? 0 : 1) || tabContainerData.1
             return !isEmpty
         } else {
             return false
@@ -290,13 +291,15 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 let secondaryColor = presentationData.theme.list.plainBackgroundColor
                 let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.backgroundColor
                 let accentColor = presentationData.theme.list.itemAccentColor
+                let overallDarkAppearance = presentationData.theme.overallDarkAppearance
                 
                 KeywordsPresenter().present(
                     with: KeywordsPresenter.Theme(
                         primaryColor: primaryColor,
                         secondaryColor: secondaryColor,
                         tertiaryColor: tertiaryColor,
-                        accentColor: accentColor
+                        accentColor: accentColor,
+                        overallDarkAppearance: overallDarkAppearance
                     ),
                     locale: locale,
                     openMessage: { id, peerId in
@@ -3555,7 +3558,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         // MARK: Nicegram FoldersAtBottom
         let showFoldersAtBottom: Bool
         if let tabContainerData = self.tabContainerData {
-            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > 1
+            // MARK: Nicegram NCG-7581 Folder for keywords, (getNicegramSettings().keywords.show ? 0 : 1)
+            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > (getNicegramSettings().keywords.show ? 0 : 1)
         } else {
             showFoldersAtBottom = false
         }
@@ -4026,7 +4030,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
-                wasEmpty = tabContainerData.0.count <= 1 || tabContainerData.1
+                // MARK: Nicegram NCG-7581 Folder for keywords, (getNicegramSettings().keywords.show ? 0 : 1)
+                wasEmpty = tabContainerData.0.count <= (getNicegramSettings().keywords.show ? 0 : 1) || tabContainerData.1
             } else {
                 wasEmpty = true
             }
@@ -4117,8 +4122,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 strongSelf.initializedFilters = true
             }
             
-            // MARK: Nicegram (|| displayTabsAtBottom)
-            let isEmpty = resolvedItems.count <= 1 || displayTabsAtBottom
+            // MARK: Nicegram (|| displayTabsAtBottom), (getNicegramSettings().keywords.show ? 0 : 1)
+            let isEmpty = resolvedItems.count <= (getNicegramSettings().keywords.show ? 0 : 1) || displayTabsAtBottom
             
             let animated = strongSelf.didSetupTabs
             strongSelf.didSetupTabs = true

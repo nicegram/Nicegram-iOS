@@ -252,6 +252,7 @@
 
 /*Keywords*/
 "NicegramKeywords.Title" = "✨Anahtar kelimeler✨";
+"NicegramKeywords.TitleNoEmoji" = "Anahtar kelimeler";
 "NicegramKeywords.Tooltip" = "Belirli anahtar kelimeler için gelen mesajları izleyin";
 "NicegramKeywords.TrackUpdates" = "\"%@\" güncellemelerini takip et";
 "NicegramKeywords.TrackEnabled" = "\"%@\" güncellemeleri için takip etkinleştirildi!";

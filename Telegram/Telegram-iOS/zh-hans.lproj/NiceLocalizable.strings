@@ -251,6 +251,7 @@
 
 /*Keywords*/
 "NicegramKeywords.Title" = "✨关键词✨";
+"NicegramKeywords.TitleNoEmoji" = "关键词";
 "NicegramKeywords.Tooltip" = "监控包含特定关键词的传入消息";
 "NicegramKeywords.TrackUpdates" = "跟踪%@的更新";
 "NicegramKeywords.TrackEnabled" = "已启用对“%@”更新的跟踪！";

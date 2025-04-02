@@ -12,15 +12,12 @@ import Postbox
 import TelegramBridge
 
 public final class KeywordsContext {
-    private var disposable: Disposable?
-    private let messagesSubject = CurrentValueSubject<[TelegramMessage], Never>([])
-    
     private var context: AccountContext?
     private var cancellables = Set<AnyCancellable>()
-    private var searchContexts: [SearchContext] = []
+    private var keywordContexts: [String: KeywordContext] = [:]
 
-    public var messagesPublisher: AnyPublisher<[TelegramMessage], Never> {
-        messagesSubject.eraseToAnyPublisher()
+    public var messages: AnyPublisher<[TelegramMessage], Never> {
+        Publishers.MergeMany(keywordContexts.map(\.value.messages)).eraseToAnyPublisher()
     }
 
     public init(publisher: AnyPublisher<AccountContext?, Never>) {
@@ -32,46 +29,88 @@ public final class KeywordsContext {
     }
     
     deinit {
-        self.disposable?.dispose()
+        keywordContexts.forEach { $0.value.stop() }
+        keywordContexts.removeAll()
     }
     
-    public func searchMessages(from keywords: [String], minDate: Int32? = nil) {
-        guard let context,
-              !keywords.isEmpty else { return }
+    public func start(
+        with id: String,
+        keywords: [String],
+        minDate: Int32? = nil
+    ) {
+        guard let context else { return }
 
-        searchContexts = keywords.map {
-            let searchContext = SearchContext(context: context)
-            searchContext.start(from: $0, minDate: minDate)
-            
-            return searchContext
-        }
+        let keywordContext = KeywordContext(context: context)
+        keywordContext.start(with: id, keywords: keywords, minDate: minDate)
         
-        _ = combineLatest(searchContexts.map(\.messagesPublisher))
-            .start { [weak self] result in
-                self?.messagesSubject.send(result.flatMap { $0 })
-                sendKeywordsAnalytics(with: .apiPreloadedSuccess)
-            }
+        keywordContexts[id] = keywordContext
     }
 
+    public func stop(with id: String) {
+        let context = keywordContexts[id]
+        context?.stop()
+        keywordContexts.removeValue(forKey: id)
+    }
 }
 
-private final class SearchContext {
+final class KeywordContext {
     private let context: AccountContext
+
+    private var searchContexts: [SearchContext] = []
     
-    private let searchState = ValuePromise<SearchMessagesState?>(nil)
-    private let messagesSubject = ValuePromise<[TelegramMessage]>([])
-    
-    public var messagesPublisher: Signal<[TelegramMessage], NoError> {
-        messagesSubject.get()
+    public var messages: AnyPublisher<[TelegramMessage], Never> {
+        Publishers.MergeMany(searchContexts.map(\.messages)).eraseToAnyPublisher()
     }
 
     init(context: AccountContext) {
         self.context = context
     }
     
-    var searchDisposable: Disposable?
+    deinit {
+        stop()
+    }
+    
+    public func start(
+        with id: String,
+        keywords: [String],
+        minDate: Int32? = nil
+    ) {
+        guard !keywords.isEmpty else { return }
 
-    func start(from keyword: String, minDate: Int32? = nil) {
+        
+        searchContexts = keywords.map {
+            let searchContext = SearchContext(context: context)
+            searchContext.start(with: id, keyword: $0, minDate: minDate)
+            
+            return searchContext
+        }
+    }
+    
+    public func stop() {
+        searchContexts.forEach { $0.stop() }
+        searchContexts.removeAll()
+    }
+}
+
+private final class SearchContext {
+    private let context: AccountContext
+    private let internalMessages = PassthroughSubject<[TelegramMessage], Never>()
+    
+    private var searchDisposable: Disposable?
+
+    public var messages: AnyPublisher<[TelegramMessage], Never> {
+        internalMessages.eraseToAnyPublisher()
+    }
+
+    init(context: AccountContext) {
+        self.context = context
+    }
+
+    deinit {
+        searchDisposable?.dispose()
+    }
+    
+    func start(with id: String, keyword: String, minDate: Int32? = nil) {
         let location: SearchMessagesLocation = .general(
             scope: .everywhere,
             tags: nil,
@@ -81,40 +120,49 @@ private final class SearchContext {
 
         let context = self.context
         
-        searchDisposable = (searchState.get()
-        |> mapToSignal { state in
-            context.engine.messages.searchMessages(location: location, query: keyword, state: state)
-        }).start(next: { [weak self] (updatedResult, updatedState) in
-            if updatedResult.completed {
-                self?.messagesSubject.set(
-                    updatedResult.messages.compactMap { self?.convert(from: $0, keyword: keyword) }
-                )
-                self?.searchDisposable?.dispose()
-                self?.searchState.set(nil)
-            } else {
-                self?.searchState.set(updatedState)
-            }
-        })
+        searchDisposable = context.engine.messages.searchMessages(
+            location: location,
+            query: keyword.lowercased(),
+            state: nil,
+            limit: 20
+        )
+        .start { [weak self] (updatedResult, updatedState) in
+            self?.internalMessages.send(
+                updatedResult.messages.compactMap { self?.convert(from: $0, keywordId: id) }
+            )            
+        }
     }
     
-    private func convert(from message: Message, keyword: String) -> TelegramMessage? {
+    func stop() {
+        searchDisposable?.dispose()
+    }
+    
+    private func convert(from message: Message, keywordId: String) -> TelegramMessage? {
         guard let author = message.author,
               author.id != context.account.peerId else { return nil }
-        
-        let username: String? = switch EnginePeer(author) {
-        case let .channel(channel): channel.username
-        case let .user(user): user.username
-        case let .legacyGroup(group): group.title
-        default: nil
-        }
         
         return TelegramMessage(
             peerId: message.id.peerId.toInt64(),
             messageId: message.id.id,
             timestamp: message.timestamp,
-            author: author.addressName ?? username,
+            author: author.authorName,
             text: message.text,
-            keyword: keyword
+            keywordId: keywordId
         )
+    }
+}
+
+private extension Peer {
+    var authorName: String? {
+        switch self {
+        case let user as TelegramUser:
+            return user.firstName ?? user.username
+        case let group as TelegramGroup:
+            return group.title
+        case let channel as TelegramChannel:
+            return channel.username ?? channel.title
+        default:
+            return nil
+        }
     }
 }

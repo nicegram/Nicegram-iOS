@@ -253,6 +253,7 @@
 
 /*Keywords*/
 "NicegramKeywords.Title" = "✨키워드✨";
+"NicegramKeywords.TitleNoEmoji" = "키워드";
 "NicegramKeywords.Tooltip" = "특정 키워드에 대한 수신 메시지 모니터링";
 "NicegramKeywords.TrackUpdates" = "\"%@\" 업데이트 추적";
 "NicegramKeywords.TrackEnabled" = "\"%@\" 업데이트에 대한 추적이 활성화되었습니다!";

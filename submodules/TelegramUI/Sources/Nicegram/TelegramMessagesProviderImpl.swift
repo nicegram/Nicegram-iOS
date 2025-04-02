@@ -5,19 +5,23 @@ import TelegramBridge
 import NGKeywords
 
 final class TelegramMessagesProviderImpl {
-    private let folderForKeywordsContext: KeywordsContext
+    private let keywordsContext: KeywordsContext
     
     init(contextProvider: ContextProvider) {
-        self.folderForKeywordsContext = KeywordsContext(publisher: contextProvider.contextPublisher())
+        self.keywordsContext = KeywordsContext(publisher: contextProvider.contextPublisher())
     }
 }
 
 extension TelegramMessagesProviderImpl: TelegramMessagesProvider {
     var messages: AnyPublisher<[TelegramMessage], Never> {
-        folderForKeywordsContext.messagesPublisher
+        keywordsContext.messages
     }
 
-    func searchMessages(for keywords: [String], minDate: Int32? = nil) {
-        folderForKeywordsContext.searchMessages(from: keywords, minDate: minDate)
+    func startSearchMessages(with id: String, keywords: [String], minDate: Int32?) {
+        keywordsContext.start(with: id, keywords: keywords, minDate: minDate)
+    }
+    
+    func stopSearchMessages(with id: String) {
+        keywordsContext.stop(with: id)
     }
 }

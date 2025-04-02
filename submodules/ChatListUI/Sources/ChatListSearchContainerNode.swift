@@ -170,6 +170,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     private let addKeywordButtonTransition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .linear)
     private var keyboardHeight: CGFloat = 0.0
     private var addKeywordButtonNodeFrame: CGRect = .zero
+    private var keywordLastQuery: String?
     //
     public init(context: AccountContext, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, filter: ChatListNodePeersFilter, requestPeerType: [ReplyMarkupButtonRequestPeerType]?, location: ChatListControllerLocation, displaySearchFilters: Bool, hasDownloads: Bool, initialFilter: ChatListSearchFilter = .chats, openPeer originalOpenPeer: @escaping (EnginePeer, EnginePeer?, Int64?, Bool) -> Void, openDisabledPeer: @escaping (EnginePeer, Int64?, ChatListDisabledPeerReason) -> Void, openRecentPeerOptions: @escaping (EnginePeer) -> Void, openMessage originalOpenMessage: @escaping (EnginePeer, Int64?, EngineMessage.Id, Bool) -> Void, addContact: ((String) -> Void)?, peerContextAction: ((EnginePeer, ChatListSearchContextActionSource, ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?, present: @escaping (ViewController, Any?) -> Void, presentInGlobalOverlay: @escaping (ViewController, Any?) -> Void, navigationController: NavigationController?, parentController: @escaping () -> ViewController?) {
         var initialFilter = initialFilter
@@ -204,7 +205,6 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         self.addKeywordButtonNode.displaysAsynchronously = false
         self.addKeywordButtonNode.titleNode.maximumNumberOfLines = 1
         self.addKeywordButtonNode.titleNode.truncationMode = .byTruncatingTail
-        self.addKeywordButtonNode.alpha = 0
         //
         super.init()        
         self.backgroundColor = filter.contains(.excludeRecent) ? nil : self.presentationData.theme.chatList.backgroundColor
@@ -680,7 +680,12 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         
         self.suggestedDates.set(.single(suggestDates(for: text, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat)))
         // MARK: Nicegram NCG-7581 Folder for keywords
-        updateAddKeywordButton()
+        let isEnabledState = if let keywordLastQuery {
+            keywordLastQuery == searchQuery
+        } else {
+            false
+        }
+        updateAddKeywordButton(isEnabledState: isEnabledState)
         //
     }
 
@@ -977,15 +982,18 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         self.paneContainerNode.update(size: CGSize(width: layout.size.width, height: layout.size.height - topInset), sideInset: layout.safeInsets.left, bottomInset: bottomInset, visibleHeight: layout.size.height - topInset, presentationData: self.presentationData, availablePanes: availablePanes, transition: transition)
         
         // MARK: Nicegram NCG-7581 Folder for keywords
-        let rect = CGRect(origin: CGPoint(x: layout.size.width / 2, y: layout.size.height), size: .init(width: 150, height: 24))
-        keyboardHeight = layout.inputHeight ?? 0
-        transition.updateAlpha(node: addKeywordButtonNode, alpha: layout.inputHeight == nil ? 0 : 1)
-        if addKeywordButtonNode.view.frame == .zero {
+        if layout.inputHeight == nil {
+            let frame = addKeywordButtonNode.frame
+            let rect = CGRect(origin: CGPoint(x: frame.origin.x, y: layout.size.height - frame.size.height - 30), size: frame.size)
             transition.updateFrame(
                 node: addKeywordButtonNode,
                 frame: rect
             )
+        } else if keyboardHeight == 0 {
+            keyboardHeight = layout.inputHeight ?? 0
+            updateAddKeywordButton()
         }
+        keyboardHeight = layout.inputHeight ?? 0
         //
     }
     
@@ -1701,7 +1709,6 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     }
     // MARK: Nicegram NCG-7581 Folder for keywords
     private func updateAddKeywordButton(isEnabledState: Bool = false) {
-        addKeywordButtonTransition.updateAlpha(node: addKeywordButtonNode, alpha: (searchQueryValue?.count ?? 0) > 1 ? 1 : 0)
         if let keywordQuery {
             let font = UIFont.mainFont(ofSize: 12, weight: .medium)
             let title = isEnabledState ? l("NicegramKeywords.TrackEnabled", with: keywordQuery) : l("NicegramKeywords.TrackUpdates", with: keywordQuery)
@@ -1729,7 +1736,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                 color: color
             )
             
-            let titleColor = isEnabledState ? UIColor.baseWhite : presentationData.theme.list.itemAccentColor
+            let titleColor = isEnabledState ? UIColor.white : presentationData.theme.list.itemAccentColor
             addKeywordButtonNode.setBackgroundImage(backgroundImage, for: .normal)
             addKeywordButtonNode.setTitle(title, with: font, with: titleColor, for: .normal)
             
@@ -1749,7 +1756,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     
     var keywordQuery: String? {
         if let searchQueryValue, searchQueryValue.count > 1 {
-            return searchQueryValue.components(separatedBy: .whitespacesAndNewlines).first
+            return searchQueryValue
         }
         
         return nil
@@ -1757,10 +1764,9 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     
     @objc private func addKeywordPressed() {
         updateAddKeywordButton(isEnabledState: true)
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-            self?.updateAddKeywordButton()
-        }
+
         if let keywordQuery {
+            keywordLastQuery = keywordQuery
             let settings = getNicegramSettings()
             if !settings.keywords.show {
                 updateNicegramSettings { settings in
@@ -1769,7 +1775,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             }
             
             Task {
-                searchMessagesUseCase(with: [keywordQuery])
+                searchMessagesUseCase.start(with: UUID().uuidString, keywords: [keywordQuery])
             }
             
             sendKeywordsAnalytics(with: .addedFromSearch)

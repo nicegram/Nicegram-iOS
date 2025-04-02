@@ -1177,14 +1177,16 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 let secondaryColor = presentationData.theme.list.plainBackgroundColor
                 let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.backgroundColor
                 let accentColor = presentationData.theme.list.itemAccentColor
-
+                let overallDarkAppearance = presentationData.theme.overallDarkAppearance
+                
                 Task { @MainActor in
                     KeywordsPresenter().present(
                         with: KeywordsPresenter.Theme(
                             primaryColor: primaryColor,
                             secondaryColor: secondaryColor,
                             tertiaryColor: tertiaryColor,
-                            accentColor: accentColor
+                            accentColor: accentColor,
+                            overallDarkAppearance: overallDarkAppearance
                         ),
                         locale: locale,
                         openMessage: { id, peerId in
