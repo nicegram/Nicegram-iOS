@@ -16,6 +16,10 @@ extension TelegramMessagesProviderImpl: TelegramMessagesProvider {
     var messages: AnyPublisher<[TelegramMessage], Never> {
         keywordsContext.messages
     }
+    
+    var updateMessages: AnyPublisher<[TelegramMessage], Never> {
+        keywordsContext.updateMessages
+    }
 
     func startSearchMessages(with id: String, keywords: [String], minDate: Int32?) {
         keywordsContext.start(with: id, keywords: keywords, minDate: minDate)

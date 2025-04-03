@@ -1162,8 +1162,8 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             openArchiveSettings?()
         })
         
-        // MARK: Nicegram FoldersAtBottom
-        self.inlineTabContainerNode = ChatListFilterTabInlineContainerNode()
+        // MARK: Nicegram FoldersAtBottom, userId
+        self.inlineTabContainerNode = ChatListFilterTabInlineContainerNode(userId: context.account.peerId.toInt64())
         //
         
         self.controller = controller
@@ -1175,13 +1175,14 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 let locale = localeWithStrings(presentationData.strings)
                 let primaryColor = presentationData.theme.list.blocksBackgroundColor
                 let secondaryColor = presentationData.theme.list.plainBackgroundColor
-                let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.backgroundColor
+                let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.inputFillColor
                 let accentColor = presentationData.theme.list.itemAccentColor
                 let overallDarkAppearance = presentationData.theme.overallDarkAppearance
                 
                 Task { @MainActor in
                     KeywordsPresenter().present(
-                        with: KeywordsPresenter.Theme(
+                        with: context.account.peerId.toInt64(),
+                        theme: KeywordsPresenter.Theme(
                             primaryColor: primaryColor,
                             secondaryColor: secondaryColor,
                             tertiaryColor: tertiaryColor,

@@ -12,18 +12,27 @@ import Postbox
 import TelegramBridge
 
 public final class KeywordsContext {
+    private let queue = Queue(name: "keywords_context")
+    private let updateServiceDisposable = MetaDisposable()
+    private let internalUpdateMessages = PassthroughSubject<[TelegramMessage], Never>()
+    
     private var context: AccountContext?
+    private var updateService: UpdateMessageService?
     private var cancellables = Set<AnyCancellable>()
     private var keywordContexts: [String: KeywordContext] = [:]
 
     public var messages: AnyPublisher<[TelegramMessage], Never> {
         Publishers.MergeMany(keywordContexts.map(\.value.messages)).eraseToAnyPublisher()
     }
+    public var updateMessages: AnyPublisher<[TelegramMessage], Never> {
+        internalUpdateMessages.eraseToAnyPublisher()
+    }
 
     public init(publisher: AnyPublisher<AccountContext?, Never>) {
         publisher.sink { [weak self] accountContext in
             if let accountContext {
                 self?.context = accountContext
+                self?.startUpdate(with: accountContext)
             }
         }.store(in: &cancellables)
     }
@@ -50,6 +59,48 @@ public final class KeywordsContext {
         let context = keywordContexts[id]
         context?.stop()
         keywordContexts.removeValue(forKey: id)
+    }
+    
+    private func startUpdate(with accountContext: AccountContext) {
+        self.queue.async {
+            if self.updateService == nil {
+                self.updateService = UpdateMessageService(peerId: accountContext.account.peerId)
+
+                if let updateService = self.updateService {
+                    self.updateServiceDisposable.set(
+                        self.updateService!.pipe.signal()
+                            .start(next: { [weak self] messages in
+                                if let self {
+                                    let convertedMessages = messages.compactMap {
+                                        switch $0 {
+                                        case let .message(_, _, id, _, _, peerId, _, _, _, _, _, date, message, _, _, _, _, _, _, _, postAuthor, _, _, _, _, _, _, _, _, _):
+                                            let peerId: Int64 = switch peerId {
+                                            case let .peerChannel(channelId): channelId
+                                            case let .peerChat(chatId): chatId
+                                            case let .peerUser(userId): userId
+                                            }
+                                           
+                                            return TelegramMessage(
+                                                peerId: peerId,
+                                                messageId: id,
+                                                timestamp: date,
+                                                author: postAuthor,
+                                                text: message,
+                                                keywordId: ""
+                                            )
+
+                                        default: return nil
+                                        }
+                                    }
+                                    
+                                    internalUpdateMessages.send(convertedMessages)
+                            }
+                        })
+                    )
+                    accountContext.account.network.addMessageService(with: updateService)
+                }
+            }
+        }
     }
 }
 
@@ -163,6 +214,69 @@ private extension Peer {
             return channel.username ?? channel.title
         default:
             return nil
+        }
+    }
+}
+
+private class UpdateMessageService: NSObject, MTMessageService {
+    var peerId: PeerId!
+    var mtProto: MTProto?
+    let pipe: ValuePipe<[Api.Message]> = ValuePipe()
+    
+    override init() {
+        super.init()
+    }
+    
+    convenience init(peerId: PeerId) {
+        self.init()
+        self.peerId = peerId
+    }
+    
+    func mtProtoWillAdd(_ mtProto: MTProto!) {
+        self.mtProto = mtProto
+    }
+    
+    func mtProto(
+        _ mtProto: MTProto!,
+        receivedMessage message: MTIncomingMessage!,
+        authInfoSelector: MTDatacenterAuthInfoSelector,
+        networkType: Int32
+    ) {
+        if let updates = (message.body as? BoxedMessage)?.body as? Api.Updates {
+            self.addUpdates(updates)
+        }
+    }
+    
+    func addUpdates(_ updates: Api.Updates) {
+        switch updates {
+        case let .updates(updates, _, _, _, _):
+            let messages = updates.compactMap { update in
+                switch update {
+                case let .updateNewChannelMessage(message, _, _):
+                    return message
+                default: return nil
+                }
+            }
+            if messages.count > 0 {
+                pipe.putNext(messages)
+            }
+        case let .updateShort(update, _):
+            switch update {
+            case let .updateNewChannelMessage(message, _, _):
+                pipe.putNext([message])
+            default: break
+            }
+
+        case let .updatesCombined(updates, _, _, _, _, _):
+            let messages = updates.compactMap { update in
+                switch update {
+                case let .updateNewChannelMessage(message, _, _):
+                    return message
+                default: return nil
+                }
+            }
+            pipe.putNext(messages)
+        default: break
         }
     }
 }

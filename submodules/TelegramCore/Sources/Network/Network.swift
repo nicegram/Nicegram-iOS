@@ -1223,6 +1223,10 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
         mtProto.simulateDisconnection()
         mtProto.resume()
     }
+    
+    public func addMessageService(with service: MTMessageService) {
+        mtProto.add(service)
+    }
     //
 }
 

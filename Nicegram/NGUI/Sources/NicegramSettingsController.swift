@@ -115,7 +115,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     }
 
     case FoldersHeader(String)
-    case foldersKeywords(String, Bool)
+    case foldersKeywords(String, Int64, Bool)
     case foldersAtBottom(String, Bool)
     case foldersAtBottomNotice(String)
 
@@ -314,8 +314,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 return false
             }
             
-        case let .foldersKeywords(lhsText, lhsVar0Bool):
-            if case let .foldersKeywords(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+        case let .foldersKeywords(lhsText, _, lhsVar0Bool):
+            if case let .foldersKeywords(rhsText, _, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
                 return true
             } else {
                 return false
@@ -520,13 +520,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 }).start()
             })
             
-        case let .foldersKeywords(text, value):
+        case let .foldersKeywords(text, id, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 updateNicegramSettings {
                     if !value {
                         sendKeywordsAnalytics(with: .folderDisabled)
                     }
-                    $0.keywords.show = value
+                    $0.keywords.show[id] = value
                 }
             })
             
@@ -729,9 +729,11 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     ))
 
     entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header")))
+    let peerId = context.account.peerId.toInt64()
     entries.append(.foldersKeywords(
         l("NicegramSettings.ShowKeywords"),
-        nicegramSettings.keywords.show
+        peerId,
+        nicegramSettings.keywords.show[peerId] ?? true
     ))
     entries.append(.foldersAtBottom(
         l("NiceFeatures.Folders.TgFolders"),

@@ -1722,21 +1722,23 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             addKeywordButtonNode.contentEdgeInsets = .vertical(5).horizontal(12)
             addKeywordButtonNode.contentSpacing = 4
             addKeywordButtonNode.contentHorizontalAlignment = .right
+            
+            let image = isEnabledState ? UIImage(bundleImageName: "GreenCircleCheckmark") : UIImage(bundleImageName: "FolderPlus")?.withColor(presentationData.theme.list.itemAccentColor)
 
-            let image = isEnabledState ? UIImage(bundleImageName: "GreenCircleCheckmark") : UIImage(bundleImageName: "FolderPlus")
             addKeywordButtonNode.setImage(image, for: .normal)
-
+            
             let width = titleRect.width + addKeywordButtonNode.contentEdgeInsets.left + addKeywordButtonNode.contentEdgeInsets.right + addKeywordButtonNode.contentSpacing + (image?.size.width ?? 0)
             let buttonSize = CGSize(width: width, height: 24)
             
-            let color = isEnabledState ? presentationData.theme.list.plainBackgroundColor : presentationData.theme.rootController.navigationSearchBar.backgroundColor
+            let color = presentationData.theme.rootController.navigationBar.segmentedDividerColor
             let backgroundImage = generateFilledRoundedRectImage(
                 size: buttonSize,
                 cornerRadius: 12,
                 color: color
             )
             
-            let titleColor = isEnabledState ? UIColor.white : presentationData.theme.list.itemAccentColor
+            
+            let titleColor = isEnabledState ? presentationData.theme.rootController.navigationSearchBar.inputTextColor : presentationData.theme.list.itemAccentColor
             addKeywordButtonNode.setBackgroundImage(backgroundImage, for: .normal)
             addKeywordButtonNode.setTitle(title, with: font, with: titleColor, for: .normal)
             
@@ -1764,18 +1766,23 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     
     @objc private func addKeywordPressed() {
         updateAddKeywordButton(isEnabledState: true)
-
+        let id = self.context.account.peerId.toInt64()
+        
         if let keywordQuery {
             keywordLastQuery = keywordQuery
-            let settings = getNicegramSettings()
-            if !settings.keywords.show {
+            let hasShow = (getNicegramSettings().keywords.show[id] ?? true)
+            if !hasShow {
                 updateNicegramSettings { settings in
-                    settings.keywords.show = true
+                    settings.keywords.show[id] = true
                 }
             }
             
             Task {
-                searchMessagesUseCase.start(with: UUID().uuidString, keywords: [keywordQuery])
+                searchMessagesUseCase.start(
+                    with: UUID().uuidString,
+                    userId: context.account.peerId.toInt64(),
+                    keywords: [keywordQuery]
+                )
             }
             
             sendKeywordsAnalytics(with: .addedFromSearch)
@@ -1791,6 +1798,23 @@ private final class KeywordButtonNode: ASButtonNode {
         let largerFrame = self.bounds.insetBy(dx: -expandedTapArea, dy: -expandedTapArea)
         
         return largerFrame.contains(point) ? self.view : nil
+    }
+}
+
+extension UIImage {
+    func withColor(_ color: UIColor) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(size, false, scale)
+
+        let drawRect = CGRect(x: 0,y: 0,width: size.width,height: size.height)
+        
+        color.setFill()
+        UIRectFill(drawRect)
+        
+        draw(in: drawRect, blendMode: .destinationIn, alpha: 1)
+
+        let tintedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return tintedImage!
     }
 }
 //

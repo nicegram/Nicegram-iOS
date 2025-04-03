@@ -898,10 +898,11 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
             }
         }
         // MARK: Nicegram NCG-7581 Folder for keywords
-        let showKeywordButton = getNicegramSettings().keywords.show
+        let id = self.context.account.peerId.toInt64()
+        let showKeywordButton = getNicegramSettings().keywords.show[id] ?? true
         self.keywordsButtonNode.isHidden = !showKeywordButton
         let keywordButtonOriginX: CGFloat = 16
-        let title = getNicegramSettings().keywords.showTooltip ? l("NicegramKeywords.Title") : l("NicegramKeywords.TitleNoEmoji")
+        let title = (getNicegramSettings().keywords.showTooltip[id] ?? true) ? l("NicegramKeywords.Title") : l("NicegramKeywords.TitleNoEmoji")
         let font = UIFont.mainFont(ofSize: 16, weight: .medium)
         let titleRect = title.boundingRect(
             with: CGSize(width: 200, height: CGFloat.greatestFiniteMagnitude),

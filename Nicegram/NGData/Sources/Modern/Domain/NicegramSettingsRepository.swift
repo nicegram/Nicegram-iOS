@@ -8,8 +8,8 @@ public struct NicegramSettings: Withable {
     }
 
     public struct Keywords: Withable {
-        public var show: Bool
-        public var showTooltip: Bool
+        public var show: [Int64: Bool]
+        public var showTooltip: [Int64: Bool]
     }
 
     public var disableAnimationsInChatList: Bool

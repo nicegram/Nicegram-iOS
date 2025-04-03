@@ -114,7 +114,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/NCG-7581_folder_for_keywords",
-        "revision" : "5a244ee9fa341e835ce9131e6029426187ade78e"
+        "revision" : "dbf52db00c1c58d432c6aae9ce04f8d5c7d9cec0"
       }
     },
     {

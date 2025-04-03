@@ -387,6 +387,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
     private var reorderedItemIds: [ChatListFilterTabEntryId]?
     private lazy var hapticFeedback = { HapticFeedback() }()
     // MARK: Nicegram NCG-7581 Folder for keywords
+    private let userId: Int64
     public let keywordsButtonNode: ASButtonNode
     var openKeywords: (() -> Void)?
     //
@@ -404,8 +405,11 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             }
         }
     }
-
-    override init() {
+    // MARK: Nicegram NCG-7581 Folder for keywords, userId
+    init(userId: Int64) {
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.userId = userId
+        //
         self.scrollNode = ASScrollNode()
         
         self.itemsBackgroundView = UIVisualEffectView()
@@ -737,28 +741,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
                 transition.updateTransformScale(node: highlighted, scale: 0.1)
             }
         }
-        // MARK: Nicegram NCG-7581 Folder for keywords
-        let showKeywordButton = getNicegramSettings().keywords.show
-        self.keywordsButtonNode.isHidden = !showKeywordButton
-        let keywordButtonOriginX: CGFloat = 16
-        let title = getNicegramSettings().keywords.showTooltip ? l("NicegramKeywords.Title") : l("NicegramKeywords.TitleNoEmoji")
-        let font = UIFont.mainFont(ofSize: 16, weight: .medium)
-        let titleRect = title.boundingRect(
-            with: CGSize(width: 1000, height: CGFloat.greatestFiniteMagnitude),
-            options: .usesLineFragmentOrigin,
-            attributes: [.font: font],
-            context: nil
-        )
-        self.keywordsButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemSecondaryTextColor, for: .normal)
-        transition.updateFrame(
-            node: self.keywordsButtonNode,
-            frame: CGRect(
-                origin: CGPoint(x: keywordButtonOriginX, y: 0),
-                size: CGSize(width: titleRect.width, height: self.scrollNode.view.contentSize.height)
-            )
-        )
-        let keywordButtonOffsetX: CGFloat = 0//showKeywordButton ? keywordButtonOriginX + titleRect.width : 0
-        //
+
         var tabSizes: [(ChatListFilterTabEntryId, CGSize, CGSize, ItemNodePair, Bool)] = []
         var totalRawTabSize: CGFloat = 0.0
         var selectionFrames: [CGRect] = []
@@ -813,9 +796,32 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
         let resolvedSideInset = max(resolvedInitialSideInset, floor((size.width - rawContentWidth) / 2.0))
         
         var leftOffset: CGFloat = resolvedSideInset
-        
-        let itemsBackgroundLeftX = leftOffset - 14.0 - 4.0
-        
+        // MARK: Nicegram NCG-7581 Folder for keywords, var itemsBackgroundLeftX
+        var itemsBackgroundLeftX = leftOffset - 14.0 - 4.0
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        let showKeywordButton = getNicegramSettings().keywords.show[userId] ?? true
+        self.keywordsButtonNode.isHidden = !showKeywordButton
+        let title = (getNicegramSettings().keywords.showTooltip[userId] ?? true) ? l("NicegramKeywords.Title") : l("NicegramKeywords.TitleNoEmoji")
+        let font = UIFont.mainFont(ofSize: 16, weight: .medium)
+        let titleRect = title.boundingRect(
+            with: CGSize(width: 1000, height: CGFloat.greatestFiniteMagnitude),
+            options: .usesLineFragmentOrigin,
+            attributes: [.font: font],
+            context: nil
+        )
+        self.keywordsButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemSecondaryTextColor, for: .normal)
+        let keywordButtonLeftInset: CGFloat = 16
+        let keywordButtonWidth = showKeywordButton ? titleRect.width + 8 + keywordButtonLeftInset : 0
+        itemsBackgroundLeftX -= keywordButtonWidth / 2
+        leftOffset += keywordButtonWidth / 2
+        transition.updateFrame(
+            node: self.keywordsButtonNode,
+            frame: CGRect(
+                origin: CGPoint(x: itemsBackgroundLeftX + keywordButtonLeftInset, y: 0),
+                size: CGSize(width: titleRect.width, height: self.scrollNode.view.contentSize.height)
+            )
+        )
+        //
         for i in 0 ..< tabSizes.count {
             let (itemId, paneNodeLongSize, paneNodeShortSize, itemNodePair, wasAdded) = tabSizes[i]
             var itemNodeTransition = transition
@@ -864,16 +870,16 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             leftOffset += paneNodeSize.width + minSpacing
         }
         leftOffset -= minSpacing
-        // MARK: Nicegram NCG-7581 Folder for keywords, keywordButtonOffsetX
-        let itemsBackgroundRightX = leftOffset + 14.0 + 4.0 + keywordButtonOffsetX
+
+        let itemsBackgroundRightX = leftOffset + 14.0 + 4.0
         
         leftOffset += resolvedSideInset
         
         let backgroundFrame = CGRect(origin: CGPoint(x: itemsBackgroundLeftX, y: 0.0), size: CGSize(width: itemsBackgroundRightX - itemsBackgroundLeftX, height: size.height))
         transition.updateFrame(view: self.itemsBackgroundView, frame: backgroundFrame)
         transition.updateFrame(node: self.itemsBackgroundTintNode, frame: backgroundFrame)
-        
-        self.scrollNode.view.contentSize = CGSize(width: itemsBackgroundRightX + 8.0, height: size.height)
+        // MARK: Nicegram NCG-7581 Folder for keywords, keywordButtonWidth
+        self.scrollNode.view.contentSize = CGSize(width: itemsBackgroundRightX + 8.0 + keywordButtonWidth, height: size.height)
 
         var selectedFrame: CGRect?
         if let selectedFilter = selectedFilter, let currentIndex = reorderedFilters.firstIndex(where: { $0.id == selectedFilter }) {
@@ -894,13 +900,11 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             }
         }
         
-        // MARK: Nicegram NCG-7581 Folder for keywords, keywordButtonOffsetX
-        transition.updateFrame(node: self.itemsContainer, frame: CGRect(origin: CGPoint(x: keywordButtonOffsetX, y: 0), size: self.scrollNode.view.contentSize))
+        transition.updateFrame(node: self.itemsContainer, frame: CGRect(origin: CGPoint(), size: self.scrollNode.view.contentSize))
         if let selectedFrame = selectedFrame {
             let wasAdded = self.selectedBackgroundNode.isHidden
             self.selectedBackgroundNode.isHidden = false
-            // MARK: Nicegram NCG-7581 Folder for keywords, keywordButtonOffsetX
-            let lineFrame = CGRect(origin: CGPoint(x: selectedFrame.minX - 14.0 + keywordButtonOffsetX, y: floor((size.height - 32.0) / 2.0)), size: CGSize(width: selectedFrame.width + 14.0 * 2.0, height: 32.0))
+            let lineFrame = CGRect(origin: CGPoint(x: selectedFrame.minX - 14.0, y: floor((size.height - 32.0) / 2.0)), size: CGSize(width: selectedFrame.width + 14.0 * 2.0, height: 32.0))
             if wasAdded {
                 self.selectedBackgroundNode.frame = lineFrame
                 self.selectedBackgroundNode.alpha = 0.0
@@ -908,8 +912,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
                 transition.updateFrame(node: self.selectedBackgroundNode, frame: lineFrame)
             }
             transition.updateFrame(node: self.highlightedItemsClippingContainer, frame: lineFrame)
-            // MARK: Nicegram NCG-7581 Folder for keywords, keywordButtonOffsetX
-            transition.updateFrame(node: self.highlightedItemsContainer, frame: CGRect(origin: CGPoint(x: -lineFrame.minX + keywordButtonOffsetX, y: -lineFrame.minY), size: self.scrollNode.view.contentSize))
+            transition.updateFrame(node: self.highlightedItemsContainer, frame: CGRect(origin: CGPoint(x: -lineFrame.minX, y: -lineFrame.minY), size: self.scrollNode.view.contentSize))
             transition.updateAlpha(node: self.selectedBackgroundNode, alpha: isReordering ? 0.0 : 1.0)
             transition.updateAlpha(node: self.highlightedItemsClippingContainer, alpha: isReordering ? 0.0 : 1.0)
             

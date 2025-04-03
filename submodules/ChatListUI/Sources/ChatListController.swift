@@ -177,8 +177,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private var tabContainerData: ([ChatListFilterTabEntry], Bool, Int32?)?
     var hasTabs: Bool {
         if let tabContainerData = self.tabContainerData {
-            // MARK: Nicegram NCG-7581 Folder for keywords, (getNicegramSettings().keywords.show ? 0 : 1)
-            let isEmpty = tabContainerData.0.count <= (getNicegramSettings().keywords.show ? 0 : 1) || tabContainerData.1
+            // MARK: Nicegram NCG-7581 Folder for keywords
+            let id = self.context.account.peerId.toInt64()
+            let count = ((getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1)
+            // MARK: Nicegram NCG-7581 Folder for keywords, count
+            let isEmpty = tabContainerData.0.count <= count || tabContainerData.1
             return !isEmpty
         } else {
             return false
@@ -289,12 +292,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
 
                 let primaryColor = presentationData.theme.list.blocksBackgroundColor
                 let secondaryColor = presentationData.theme.list.plainBackgroundColor
-                let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.backgroundColor
+                let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.inputFillColor
                 let accentColor = presentationData.theme.list.itemAccentColor
                 let overallDarkAppearance = presentationData.theme.overallDarkAppearance
                 
                 KeywordsPresenter().present(
-                    with: KeywordsPresenter.Theme(
+                    with: context.account.peerId.toInt64(),
+                    theme: KeywordsPresenter.Theme(
                         primaryColor: primaryColor,
                         secondaryColor: secondaryColor,
                         tertiaryColor: tertiaryColor,
@@ -2403,11 +2407,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         // MARK: Nicegram PinnedChats
         updateChatListNode(isVisible: true)
         // MARK: Nicegram NCG-7581 Folder for keywords
-        if getNicegramSettings().keywords.showTooltip {
+        let id = self.context.account.peerId.toInt64()
+        if (getNicegramSettings().keywords.showTooltip[id] ?? true) {
             showTooltip()
-            updateNicegramSettings {
-                $0.keywords.showTooltip = false
-            }
         }
         //
                 
@@ -3558,8 +3560,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         // MARK: Nicegram FoldersAtBottom
         let showFoldersAtBottom: Bool
         if let tabContainerData = self.tabContainerData {
-            // MARK: Nicegram NCG-7581 Folder for keywords, (getNicegramSettings().keywords.show ? 0 : 1)
-            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > (getNicegramSettings().keywords.show ? 0 : 1)
+            // MARK: Nicegram NCG-7581 Folder for keywords
+            let id = self.context.account.peerId.toInt64()
+            let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
+            // MARK: Nicegram NCG-7581 Folder for keywords, count
+            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > count
         } else {
             showFoldersAtBottom = false
         }
@@ -4030,8 +4035,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
-                // MARK: Nicegram NCG-7581 Folder for keywords, (getNicegramSettings().keywords.show ? 0 : 1)
-                wasEmpty = tabContainerData.0.count <= (getNicegramSettings().keywords.show ? 0 : 1) || tabContainerData.1
+                // MARK: Nicegram NCG-7581 Folder for keywords
+                let id = self?.context.account.peerId.toInt64() ?? 0
+                let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
+                // MARK: Nicegram NCG-7581 Folder for keywords, count
+                wasEmpty = tabContainerData.0.count <= count || tabContainerData.1
             } else {
                 wasEmpty = true
             }
@@ -4122,8 +4130,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 strongSelf.initializedFilters = true
             }
             
-            // MARK: Nicegram (|| displayTabsAtBottom), (getNicegramSettings().keywords.show ? 0 : 1)
-            let isEmpty = resolvedItems.count <= (getNicegramSettings().keywords.show ? 0 : 1) || displayTabsAtBottom
+            // MARK: Nicegram NCG-7581 Folder for keywords
+            let id = self?.context.account.peerId.toInt64() ?? 0
+            let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
+            // MARK: Nicegram (|| displayTabsAtBottom), count
+            let isEmpty = resolvedItems.count <= count || displayTabsAtBottom
             
             let animated = strongSelf.didSetupTabs
             strongSelf.didSetupTabs = true
@@ -6567,33 +6578,46 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     // MARK: Nicegram NCG-7581 Folder for keywords
     private func showTooltip() {
-        sendKeywordsAnalytics(with: .tooltipShown)
-        let showFoldersAtBottom: Bool
-        if let tabContainerData = self.tabContainerData {
-            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > 1
-        } else {
-            showFoldersAtBottom = false
+        let experimentalUISettingsKey: ValueBoxKey = ApplicationSpecificSharedDataKeys.experimentalUISettings
+        let signal = self.context.sharedContext.accountManager.sharedData(keys: Set([experimentalUISettingsKey]))
+        |> map { sharedData -> Bool in
+            let settings: ExperimentalUISettings = sharedData.entries[experimentalUISettingsKey]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
+            return settings.foldersTabAtBottom
         }
-        let view = showFoldersAtBottom ?
-            self.chatListDisplayNode.inlineTabContainerNode.keywordsButtonNode.view :
-            self.tabContainerNode.keywordsButtonNode.view
+                
+        _ = (signal |> deliverOnMainQueue).startStandalone { [weak self] showFoldersAtBottom in
+            guard let self else { return }
 
-        let absoluteFrame = view.convert(view.bounds, to: self.view)
-        let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: absoluteFrame.maxY - 2.0), size: CGSize())
-        
-        let tooltip = TooltipScreen(
-            account: context.account,
-            sharedContext: context.sharedContext,
-            text: .plain(text: l("NicegramKeywords.Tooltip")),
-            balancedTextLayout: true,
-            style: .default,
-            location: .point(location, showFoldersAtBottom ? .bottom : .top),
-            displayDuration: .infinite,
-            shouldDismissOnTouch: { _, _ in
-                .dismiss(consume: false)
-            }
-        )
-        self.present(tooltip, in: .current)
+            sendKeywordsAnalytics(with: .tooltipShown)
+            let view = showFoldersAtBottom ?
+                self.chatListDisplayNode.inlineTabContainerNode.keywordsButtonNode.view :
+                self.tabContainerNode.keywordsButtonNode.view
+
+            let absoluteFrame = view.convert(view.bounds, to: self.view)
+            let y = showFoldersAtBottom ? absoluteFrame.minY : absoluteFrame.maxY - 2.0
+            let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: y), size: CGSize())
+            
+            let tooltip = TooltipScreen(
+                account: context.account,
+                sharedContext: context.sharedContext,
+                text: .plain(text: l("NicegramKeywords.Tooltip")),
+                balancedTextLayout: true,
+                style: .default,
+                location: .point(location, showFoldersAtBottom ? .bottom : .top),
+                displayDuration: .infinite,
+                shouldDismissOnTouch: { [weak self] _, _ in
+                    guard let self else { return .dismiss(consume: false) }
+
+                    let id = self.context.account.peerId.toInt64()
+                    updateNicegramSettings {
+                        $0.keywords.showTooltip[id] = false
+                    }
+
+                    return .dismiss(consume: false)
+                }
+            )
+            self.present(tooltip, in: .current)
+        }
     }
     
     public func openSettings() {
