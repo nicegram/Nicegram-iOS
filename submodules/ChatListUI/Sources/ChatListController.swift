@@ -2408,7 +2408,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         updateChatListNode(isVisible: true)
         // MARK: Nicegram NCG-7581 Folder for keywords
         let id = self.context.account.peerId.toInt64()
-        if (getNicegramSettings().keywords.showTooltip[id] ?? true) {
+        if (getNicegramSettings().keywords.showTooltip[id] ?? true) && !isShowTooltip {
             showTooltip()
         }
         //
@@ -6577,7 +6577,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
     }
     // MARK: Nicegram NCG-7581 Folder for keywords
+    private var isShowTooltip = false
     private func showTooltip() {
+        isShowTooltip = true
         let experimentalUISettingsKey: ValueBoxKey = ApplicationSpecificSharedDataKeys.experimentalUISettings
         let signal = self.context.sharedContext.accountManager.sharedData(keys: Set([experimentalUISettingsKey]))
         |> map { sharedData -> Bool in
@@ -6605,6 +6607,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 style: .default,
                 location: .point(location, showFoldersAtBottom ? .bottom : .top),
                 displayDuration: .infinite,
+                backgroundColor: UIColor.black.withAlphaComponent(0.36),
                 shouldDismissOnTouch: { [weak self] _, _ in
                     guard let self else { return .dismiss(consume: false) }
 
@@ -6616,7 +6619,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     return .dismiss(consume: false)
                 }
             )
-            self.present(tooltip, in: .current)
+
+            self.presentInGlobalOverlay(tooltip)
         }
     }
     

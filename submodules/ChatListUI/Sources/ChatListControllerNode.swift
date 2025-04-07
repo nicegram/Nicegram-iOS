@@ -1172,6 +1172,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         // MARK: Nicegram NCG-7581 Folder for keywords
         self.inlineTabContainerNode.openKeywords = {
             if #available(iOS 15.0, *) {
+                let presentationData = (context.sharedContext.currentPresentationData.with { $0 })
                 let locale = localeWithStrings(presentationData.strings)
                 let primaryColor = presentationData.theme.list.blocksBackgroundColor
                 let secondaryColor = presentationData.theme.list.plainBackgroundColor

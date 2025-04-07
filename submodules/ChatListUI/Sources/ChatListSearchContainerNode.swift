@@ -1730,13 +1730,12 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             let width = titleRect.width + addKeywordButtonNode.contentEdgeInsets.left + addKeywordButtonNode.contentEdgeInsets.right + addKeywordButtonNode.contentSpacing + (image?.size.width ?? 0)
             let buttonSize = CGSize(width: width, height: 24)
             
-            let color = presentationData.theme.rootController.navigationBar.segmentedDividerColor
+            let color = presentationData.theme.overallDarkAppearance ? UIColor("0F0F0F") : UIColor("EFEEF3")
             let backgroundImage = generateFilledRoundedRectImage(
                 size: buttonSize,
                 cornerRadius: 12,
                 color: color
             )
-            
             
             let titleColor = isEnabledState ? presentationData.theme.rootController.navigationSearchBar.inputTextColor : presentationData.theme.list.itemAccentColor
             addKeywordButtonNode.setBackgroundImage(backgroundImage, for: .normal)
