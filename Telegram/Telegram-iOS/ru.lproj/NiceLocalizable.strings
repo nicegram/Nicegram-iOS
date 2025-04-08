@@ -35,7 +35,7 @@
 "NiceFeatures.InstantLock" = "Немедленно";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Сохранить";
+"Chat.SaveToCloud" = "Сохранить в Избранное";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Показать Пин";
@@ -171,7 +171,6 @@
 "NicegramSettings.EnableGrayscaleInChatList" = "Оттенки серого в списке чата";
 "NicegramSettings.EnableGrayscaleInChat" = "Оттенки серого в чате";
 "NicegramSettings.EnableAppleSpeech2Text" = "Включить Apple Speech2Text";
-"NicegramSettings.ShowKeywords" = "Показать Папку для ключевых слов";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Старше, чем";
@@ -248,10 +247,3 @@
 
 /*God’s Eye*/
 "GodsEye.Title" = "God’s Eye";
-
-/*Keywords*/
-"NicegramKeywords.Title" = "✨ Ключевые слова ✨";
-"NicegramKeywords.TitleNoEmoji" = "Ключевые слова";
-"NicegramKeywords.Tooltip" = "Следите за ключевыми словами во входящих сообщениях";
-"NicegramKeywords.TrackUpdates" = "Отслеживать обновления «%@»";
-"NicegramKeywords.TrackEnabled" = "Теперь вы отслеживаете обновления «%@»!";

@@ -601,9 +601,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             if strongSelf.peerSelectionNode.mainContainerNode?.currentItemNode.chatListFilter?.id == updatedFilter?.id {
                 strongSelf.scrollToTop?()
             } else {
-                strongSelf.peerSelectionNode.mainContainerNode?.switchToFilter(
-                    id: updatedFilter.flatMap { .filter($0.id) } ?? .all
-                )
+                strongSelf.peerSelectionNode.mainContainerNode?.switchToFilter(id: updatedFilter.flatMap { .filter($0.id) } ?? .all)
             }
         })
     }

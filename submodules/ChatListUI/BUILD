@@ -7,10 +7,8 @@ NGDEPS = [
     "//Nicegram/NGEnv:NGEnv",
     "//Nicegram/NGTranslate:NGTranslate",
     "//Nicegram/NGCollectInformation:NGCollectInformation",
-    "//Nicegram/NGUtils:NGUtils",
     # Nicegram downloading feature
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
-    "//submodules/AccountUtils:AccountUtils",
     "@FirebaseSDK//:FirebaseCrashlytics",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",
     "@swiftpkg_nicegram_assistant_ios//:FeatChatListWidget",
@@ -19,8 +17,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:NGAiChat",
     "@swiftpkg_nicegram_assistant_ios//:NGRepoUser",
     "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer",
-    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
-    "@swiftpkg_nicegram_assistant_ios//:FeatKeywords"
+    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts"
 ]
 
 swift_library(

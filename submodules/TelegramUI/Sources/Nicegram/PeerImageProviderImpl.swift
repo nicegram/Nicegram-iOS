@@ -4,16 +4,16 @@ import NGUtils
 import Postbox
 import TelegramCore
 import UIKit
+import FeatGodsEye
 import SwiftSignalKit
 import AvatarNode
-import TelegramBridge
 
 @MemberwiseInit
-class TelegramPeerImageProviderImpl {
+class PeerImageProviderImpl {
     @Init(.internal) private let contextProvider: ContextProvider
 }
 
-extension TelegramPeerImageProviderImpl: TelegramPeerImageProvider {
+extension PeerImageProviderImpl: PeerImageProvider {
     func image(for id: Int64) async -> UIImage? {
         guard let context = contextProvider.context() else {
             return nil

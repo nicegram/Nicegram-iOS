@@ -1154,10 +1154,7 @@ public final class TooltipScreen: ViewController {
     private var dismissTimer: Foundation.Timer?
     
     public var alwaysVisible = false
-    // MARK: Nicegram NCG-7581 Folder for keywords
-    private let backgroundColor: UIColor?
-    //
-    // MARK: Nicegram NCG-7581 Folder for keywords, backgroundColor
+    
     public init(
         context: AccountContext? = nil,
         account: Account,
@@ -1175,7 +1172,6 @@ public final class TooltipScreen: ViewController {
         isShimmering: Bool = false,
         inset: CGFloat = 12.0,
         cornerRadius: CGFloat? = nil,
-        backgroundColor: UIColor? = nil,
         shouldDismissOnTouch: @escaping (CGPoint, CGRect) -> TooltipScreen.DismissOnTouch,
         openActiveTextItem: ((TooltipActiveTextItem, TooltipActiveTextAction) -> Void)? = nil
     ) {
@@ -1197,9 +1193,7 @@ public final class TooltipScreen: ViewController {
         self.cornerRadius = cornerRadius
         self.shouldDismissOnTouch = shouldDismissOnTouch
         self.openActiveTextItem = openActiveTextItem
-        // MARK: Nicegram NCG-7581 Folder for keywords
-        self.backgroundColor = backgroundColor
-        //
+        
         super.init(navigationBarPresentationData: nil)
         
         self.statusBar.statusBarStyle = .Ignore
@@ -1215,9 +1209,7 @@ public final class TooltipScreen: ViewController {
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // MARK: Nicegram NCG-7581 Folder for keywords
-        self.view.backgroundColor = backgroundColor
-        //
+        
         self.controllerNode.animateIn()
         self.resetDismissTimeout(duration: self.displayDuration)
     }

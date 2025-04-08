@@ -639,8 +639,8 @@
         "bzlTransitiveDigest": "DYtJwFqalhbNx5qiU4Xl0XnVU1L2Jlj5v0BwCw7H9VA=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "ec20fa5de03be9e5fcea5b8900517976379d08aa9c850ac0e88372e6a36811db",
-          "@@//Package.swift": "3e8012f631b21069e37abe7035015ecac36da27413ad68af50220d23248541da"
+          "@@//Package.resolved": "63349cfba892d4528000b552ae75025d34408a7ef754c9c6c8be2d1bf5f49805",
+          "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -802,9 +802,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_factory",
-              "commit": "c8110886836ab4dd1136dbac0c04f0f36cd68540",
+              "commit": "fb04a8918848e413d3921d346a23bae7f81088d9",
               "remote": "https://github.com/hmlongco/Factory.git",
-              "version": "2.4.5",
+              "version": "2.4.3",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1144,7 +1144,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "191e867d1fce12c99b98f2eb0f60ba3671d2386b",
+              "commit": "4c8e7a099773f9fd730f5627c5fcaf2e7861ae7e",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1201,9 +1201,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_http_types",
-              "commit": "a0a57e949a8903563aba4615869310c0ebf14c03",
+              "commit": "ef18d829e8b92d731ad27bb81583edd2094d1ce3",
               "remote": "https://github.com/apple/swift-http-types",
-              "version": "1.4.0",
+              "version": "1.3.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1258,9 +1258,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_floatingpanel",
-              "commit": "a1f20cedb14bd1ddc63e30a8dd10c85e8f1fa011",
+              "commit": "b6e8928b1a3ad909e6db6a0278d286c33cfd0dc3",
               "remote": "https://github.com/scenee/FloatingPanel",
-              "version": "2.8.7",
+              "version": "2.8.6",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1334,9 +1334,9 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "16f5cc53015044d06ea812bdebd971343c625f7e",
+              "commit": "17a9e63867395df19f2b45a0cf27b0825b38e009",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.2.21",
+              "version": "4.2.18",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

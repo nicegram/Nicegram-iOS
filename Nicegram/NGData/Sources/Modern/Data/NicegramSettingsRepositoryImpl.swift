@@ -14,10 +14,6 @@ class NicegramSettingsRepositoryImpl {
             speechToText: .init(
                 useOpenAI: [:],
                 appleRecognizerState: [:]
-            ),
-            keywords: .init(
-                show: [:],
-                showTooltip: [:]
             )
         ),
         toDomain: \.toDomain,
@@ -44,11 +40,6 @@ private struct NicegramSettingsDto: Codable {
         let useOpenAI: [Int64: Bool?]
         let appleRecognizerState: [Int64: Bool?]
     }
-    
-    struct KeywordsDto: Codable {
-        public var show: [Int64: Bool]
-        public var showTooltip: [Int64: Bool]
-    }
 
     let disableAnimationsInChatList: Bool
     let grayscaleAll: Bool
@@ -56,7 +47,6 @@ private struct NicegramSettingsDto: Codable {
     let grayscaleInChatList: Bool
     let trackDigitalFootprint: Bool
     let speechToText: SpeechToTextDto
-    let keywords: KeywordsDto
     
     var toDomain: NicegramSettings {
         NicegramSettings(
@@ -65,8 +55,7 @@ private struct NicegramSettingsDto: Codable {
             grayscaleInChat: grayscaleInChat,
             grayscaleInChatList: grayscaleInChatList,
             trackDigitalFootprint: trackDigitalFootprint,
-            speechToText: speechToText.toDomain,
-            keywords: keywords.toDomain
+            speechToText: speechToText.toDomain
         )
     }
 }
@@ -80,15 +69,6 @@ private extension NicegramSettingsDto.SpeechToTextDto {
     }
 }
 
-private extension NicegramSettingsDto.KeywordsDto {
-    var toDomain: NicegramSettings.Keywords {
-        NicegramSettings.Keywords(
-            show: show,
-            showTooltip: showTooltip
-        )
-    }
-}
-
 private extension NicegramSettings {
     var toDto: NicegramSettingsDto {
         NicegramSettingsDto(
@@ -97,8 +77,7 @@ private extension NicegramSettings {
             grayscaleInChat: grayscaleInChat,
             grayscaleInChatList: grayscaleInChatList,
             trackDigitalFootprint: trackDigitalFootprint,
-            speechToText: speechToText.toDto,
-            keywords: keywords.toDto
+            speechToText: speechToText.toDto
         )
     }
 }
@@ -108,15 +87,6 @@ private extension NicegramSettings.SpeechToText {
         NicegramSettingsDto.SpeechToTextDto(
             useOpenAI: useOpenAI,
             appleRecognizerState: appleRecognizerState
-        )
-    }
-}
-
-private extension NicegramSettings.Keywords {
-    var toDto: NicegramSettingsDto.KeywordsDto {
-        NicegramSettingsDto.KeywordsDto(
-            show: show,
-            showTooltip: showTooltip
         )
     }
 }
