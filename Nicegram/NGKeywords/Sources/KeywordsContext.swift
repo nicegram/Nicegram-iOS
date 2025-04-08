@@ -74,21 +74,25 @@ public final class KeywordsContext {
                                     let convertedMessages = messages.compactMap {
                                         switch $0 {
                                         case let .message(_, _, id, _, _, peerId, _, _, _, _, _, date, message, _, _, _, _, _, _, _, postAuthor, _, _, _, _, _, _, _, _, _):
+                                            
                                             let peerId: Int64 = switch peerId {
                                             case let .peerChannel(channelId): channelId
                                             case let .peerChat(chatId): chatId
                                             case let .peerUser(userId): userId
+                                            }                            
+                                            
+                                            if peerId != accountContext.account.peerId.toInt64() {
+                                                return TelegramMessage(
+                                                    peerId: peerId,
+                                                    messageId: id,
+                                                    timestamp: date,
+                                                    author: postAuthor,
+                                                    text: message,
+                                                    keywordId: ""
+                                                )
+                                            } else {
+                                                return nil
                                             }
-                                           
-                                            return TelegramMessage(
-                                                peerId: peerId,
-                                                messageId: id,
-                                                timestamp: date,
-                                                author: postAuthor,
-                                                text: message,
-                                                keywordId: ""
-                                            )
-
                                         default: return nil
                                         }
                                     }

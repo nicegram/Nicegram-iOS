@@ -2406,13 +2406,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
 
         // MARK: Nicegram PinnedChats
         updateChatListNode(isVisible: true)
-        // MARK: Nicegram NCG-7581 Folder for keywords
-        let id = self.context.account.peerId.toInt64()
-        if (getNicegramSettings().keywords.showTooltip[id] ?? true) && !isShowTooltip {
-            showTooltip()
-        }
         //
-                
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
             |> mapToSignal { settings -> Signal<Bool, NoError> in
@@ -2766,6 +2760,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     return
                 }
                 
+                // MARK: Nicegram NCG-7581 Folder for keywords
+                Foundation.Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
+                    self?.showKeywordTooltip()
+                }
+                //
                 strongSelf.processedFeaturedFilters = true
                 if hasFeatured {
                     if let _ = strongSelf.validLayout, let _ = strongSelf.parent as? TabBarController {
@@ -6578,7 +6577,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     // MARK: Nicegram NCG-7581 Folder for keywords
     private var isShowTooltip = false
-    private func showTooltip() {
+    private func showKeywordTooltip() {
+        let id = context.account.peerId.toInt64()
+        let showTooltip = getNicegramSettings().keywords.showTooltip[id] ?? true
+        guard showTooltip && !isShowTooltip else { return }
+        
         isShowTooltip = true
         let experimentalUISettingsKey: ValueBoxKey = ApplicationSpecificSharedDataKeys.experimentalUISettings
         let signal = self.context.sharedContext.accountManager.sharedData(keys: Set([experimentalUISettingsKey]))
@@ -6589,16 +6592,16 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 
         _ = (signal |> deliverOnMainQueue).startStandalone { [weak self] showFoldersAtBottom in
             guard let self else { return }
-
-            sendKeywordsAnalytics(with: .tooltipShown)
+            
+            sendKeywordsAnalytics(with: .tooltipShow)
             let view = showFoldersAtBottom ?
                 self.chatListDisplayNode.inlineTabContainerNode.keywordsButtonNode.view :
                 self.tabContainerNode.keywordsButtonNode.view
-
+            let navigationBarView = self.chatListDisplayNode.navigationBarView.view?.frame ?? CGRect(x: 0, y: 0, width: 0, height: 155)
             let absoluteFrame = view.convert(view.bounds, to: self.view)
-            let y = showFoldersAtBottom ? absoluteFrame.minY : absoluteFrame.maxY - 2.0
+            let y = showFoldersAtBottom ? absoluteFrame.minY : (absoluteFrame.maxY < 100 ? navigationBarView.height + absoluteFrame.height - 5.0 : absoluteFrame.maxY)
             let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: y), size: CGSize())
-            
+
             let tooltip = TooltipScreen(
                 account: context.account,
                 sharedContext: context.sharedContext,
@@ -6607,7 +6610,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 style: .default,
                 location: .point(location, showFoldersAtBottom ? .bottom : .top),
                 displayDuration: .infinite,
-                backgroundColor: UIColor.black.withAlphaComponent(0.36),
+                backgroundColor: UIColor.black.withAlphaComponent(0.45),
                 shouldDismissOnTouch: { [weak self] _, _ in
                     guard let self else { return .dismiss(consume: false) }
 
