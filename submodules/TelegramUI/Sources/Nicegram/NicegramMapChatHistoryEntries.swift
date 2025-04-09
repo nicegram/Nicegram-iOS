@@ -64,6 +64,9 @@ func nicegramMapChatHistoryEntries(
         chatPresentationData: chatPresentationData,
         attConfig: attConfig
     )
+    result = removeNeighboringAds(
+        result: result
+    )
     
     return result
 }
@@ -231,6 +234,27 @@ private func insertNewAdEntries(
     }
     
     return result
+}
+
+private func removeNeighboringAds(
+    result: [ChatHistoryEntry]
+) -> [ChatHistoryEntry] {
+    var filteredResult: [ChatHistoryEntry] = []
+    
+    var lastAdIndex = -100
+    for entry in result {
+        if case .NicegramAdEntry = entry {
+            let currentIndex = filteredResult.count
+            if currentIndex - lastAdIndex > 5 {
+                filteredResult.append(entry)
+                lastAdIndex = currentIndex
+            }
+        } else {
+            filteredResult.append(entry)
+        }
+    }
+    
+    return filteredResult
 }
 
 private extension Array {

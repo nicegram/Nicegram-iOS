@@ -35,7 +35,7 @@
 "NiceFeatures.InstantLock" = "즉시";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "클라우드에 저장";
+"Chat.SaveToCloud" = "저장";
 
 /*Open Pin*/
 "Chat.OpenPin" = "핀 표시";
@@ -173,6 +173,7 @@
 "NicegramSettings.EnableGrayscaleInChatList" = "채팅 목록의 그레이스케일";
 "NicegramSettings.EnableGrayscaleInChat" = "채팅에서의 그레이스케일";
 "NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text 활성화";
+"NicegramSettings.ShowKeywords" = "키워드 폴더 보기";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "이전의";
@@ -249,3 +250,10 @@
 
 /*God’s Eye*/
 "GodsEye.Title" = "God’s Eye";
+
+/*Keywords*/
+"NicegramKeywords.Title" = "✨키워드✨";
+"NicegramKeywords.TitleNoEmoji" = "키워드";
+"NicegramKeywords.Tooltip" = "특정 키워드에 대한 수신 메시지 모니터링";
+"NicegramKeywords.TrackUpdates" = "\"%@\" 업데이트 추적";
+"NicegramKeywords.TrackEnabled" = "\"%@\" 업데이트에 대한 추적이 활성화되었습니다!";

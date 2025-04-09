@@ -35,7 +35,7 @@
 "NiceFeatures.InstantLock" = "Hemen";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Buluta Kaydet";
+"Chat.SaveToCloud" = "Kaydet";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Sabiti Göster";
@@ -172,6 +172,7 @@
 "NicegramSettings.EnableGrayscaleInChatList" = "Sohbet listesinde gri tonlama";
 "NicegramSettings.EnableGrayscaleInChat" = "Sohbette gri tonlama";
 "NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text'i Etkinleştir";
+"NicegramSettings.ShowKeywords" = "Anahtar kelimeler için klasörü göster";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Şundan daha eski:";
@@ -248,3 +249,10 @@
 
 /*God’s Eye*/
 "GodsEye.Title" = "God’s Eye";
+
+/*Keywords*/
+"NicegramKeywords.Title" = "✨Anahtar kelimeler✨";
+"NicegramKeywords.TitleNoEmoji" = "Anahtar kelimeler";
+"NicegramKeywords.Tooltip" = "Belirli anahtar kelimeler için gelen mesajları izleyin";
+"NicegramKeywords.TrackUpdates" = "\"%@\" güncellemelerini takip et";
+"NicegramKeywords.TrackEnabled" = "\"%@\" güncellemeleri için takip etkinleştirildi!";

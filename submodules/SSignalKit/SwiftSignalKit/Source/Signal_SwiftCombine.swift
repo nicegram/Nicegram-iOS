@@ -30,10 +30,20 @@ public struct SignalPublisher<Output, Failure: Error>: Combine.Publisher {
 }
 
 private class SignalPublisherSubscription<S: Combine.Subscriber>: Combine.Subscription {
+    private let signal: Signal<S.Input, S.Failure>
+    private var subscriber: S?
     private var disposable: Disposable?
     
-    init<Output, Failure>(signal: Signal<Output, Failure>, subscriber: S) where S.Input == Output, S.Failure == Failure {
-        self.disposable = (signal |> deliverOn(Queue())).start(
+    init(signal: Signal<S.Input, S.Failure>, subscriber: S) {
+        self.signal = signal
+        self.subscriber = subscriber
+    }
+    
+    func request(_ demand: Combine.Subscribers.Demand) {
+        guard self.disposable == nil else { return }
+        
+        guard let subscriber else { return }
+        self.disposable = signal.start(
             next: {
                 _ = subscriber.receive($0)
             },
@@ -46,11 +56,11 @@ private class SignalPublisherSubscription<S: Combine.Subscriber>: Combine.Subscr
         )
     }
     
-    func request(_ demand: Combine.Subscribers.Demand) {}
-    
     func cancel() {
         disposable?.dispose()
         disposable = nil
+        
+        subscriber = nil
     }
 }
 

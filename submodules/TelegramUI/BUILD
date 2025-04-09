@@ -18,6 +18,7 @@ NGDEPS = [
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGWrap:NGWrap",
     "//Nicegram/NGCollectInformation:NGCollectInformation",
+    "//Nicegram/NGKeywords:NGKeywords",
     "@FirebaseSDK//:FirebaseCrashlytics",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",
     "@swiftpkg_nicegram_assistant_ios//:FeatAuth",

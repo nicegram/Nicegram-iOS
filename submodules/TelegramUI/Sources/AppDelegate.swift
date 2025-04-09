@@ -418,6 +418,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 context.get().toPublisher()
                     .map { $0?.context }
                     .eraseToAnyPublisher()
+            },
+            contextSignal: { [self] in
+                context.get()
+                |> map { $0?.context }
             }
         )
         
@@ -481,8 +485,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramThemeProvider: {
                 TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
-            peerImageProvider: {
-                PeerImageProviderImpl(contextProvider: contextProvider)
+            telegramMessagesProvider: {
+                TelegramMessagesProviderImpl(contextProvider: contextProvider)
+            },
+            telegramPeerImageProvider: {
+                TelegramPeerImageProviderImpl(contextProvider: contextProvider)
             },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)

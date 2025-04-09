@@ -6,6 +6,10 @@ import TelegramCore
 import TelegramPresentationData
 import TextNodeWithEntities
 import AccountContext
+// MARK: Nicegram NCG-7581 Folder for keywords
+import NGStrings
+import NGData
+//
 
 private final class ItemNodeDeleteButtonNode: HighlightableButtonNode {
     private let pressed: () -> Void
@@ -548,7 +552,10 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
     private var initialReorderedItemIds: [ChatListFilterTabEntryId]?
     private var reorderedItemIds: [ChatListFilterTabEntryId]?
     private lazy var hapticFeedback = { HapticFeedback() }()
-    
+    // MARK: Nicegram NCG-7581 Folder for keywords
+    public let keywordsButtonNode: ASButtonNode
+    var openKeywords: (() -> Void)?
+    //
     private var currentParams: (size: CGSize, sideInset: CGFloat, filters: [ChatListFilterTabEntry], selectedFilter: ChatListFilterTabEntryId?, isReordering: Bool, isEditing: Bool, canReorderAllChats: Bool, filtersLimit: Int32?, transitionFraction: CGFloat, presentationData: PresentationData)?
     
     var reorderedFilterIds: [Int32]? {
@@ -578,7 +585,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
             return 0
         }
     }
-    
+
     public init(context: AccountContext) {
         self.context = context
         self.scrollNode = ASScrollNode()
@@ -586,9 +593,16 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         self.selectedLineNode = ASImageNode()
         self.selectedLineNode.displaysAsynchronously = false
         self.selectedLineNode.displayWithoutProcessing = true
-        
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.keywordsButtonNode = ASButtonNode()
+        self.keywordsButtonNode.displaysAsynchronously = false
+        self.keywordsButtonNode.titleNode.maximumNumberOfLines = 1
+        self.keywordsButtonNode.titleNode.truncationMode = .byTruncatingTail
+        //
         super.init()
-        
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.keywordsButtonNode.addTarget(self, action: #selector(self.keywordsPressed), forControlEvents: .touchUpInside)
+        //
         self.scrollNode.view.showsHorizontalScrollIndicator = false
         self.scrollNode.view.showsVerticalScrollIndicator = false
         self.scrollNode.view.scrollsToTop = false
@@ -600,7 +614,9 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         
         self.addSubnode(self.scrollNode)
         self.scrollNode.addSubnode(self.selectedLineNode)
-        
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.scrollNode.addSubnode(self.keywordsButtonNode)
+        //
         let reorderingGesture = ReorderingGestureRecognizer(shouldBegin: { [weak self] point in
             guard let strongSelf = self else {
                 return false
@@ -881,7 +897,29 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
                 transition.updateTransformScale(node: itemNode, scale: 0.1)
             }
         }
-        
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        let id = self.context.account.peerId.toInt64()
+        let showKeywordButton = getNicegramSettings().keywords.show[id] ?? true
+        self.keywordsButtonNode.isHidden = !showKeywordButton
+        let keywordButtonOriginX: CGFloat = 16
+        let title = (getNicegramSettings().keywords.showTooltip[id] ?? true) ? l("NicegramKeywords.Title") : l("NicegramKeywords.TitleNoEmoji")
+        let font = UIFont.mainFont(ofSize: 16, weight: .medium)
+        let titleRect = title.boundingRect(
+            with: CGSize(width: 200, height: CGFloat.greatestFiniteMagnitude),
+            options: .usesLineFragmentOrigin,
+            attributes: [.font: font],
+            context: nil
+        )
+        self.keywordsButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemSecondaryTextColor, for: .normal)
+        transition.updateFrame(
+            node: self.keywordsButtonNode,
+            frame: CGRect(
+                origin: CGPoint(x: keywordButtonOriginX, y: 0),
+                size: CGSize(width: titleRect.width, height: self.scrollNode.view.contentSize.height)
+            )
+        )
+        let keywordButtonOffsetX: CGFloat = showKeywordButton ? keywordButtonOriginX + titleRect.width : 0
+        //
         var tabSizes: [(ChatListFilterTabEntryId, CGSize, CGSize, ItemNode, Bool)] = []
         var totalRawTabSize: CGFloat = 0.0
         var selectionFrames: [CGRect] = []
@@ -913,8 +951,8 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         }
         
         let minSpacing: CGFloat = 26.0
-        
-        let resolvedSideInset: CGFloat = 16.0 + sideInset
+        // MARK: Nicegram NCG-7581 Folder for keywords, keywordButtonOffsetX
+        let resolvedSideInset: CGFloat = 16.0 + sideInset + keywordButtonOffsetX
         var leftOffset: CGFloat = resolvedSideInset
         
         var longTitlesWidth: CGFloat = resolvedSideInset
@@ -1027,6 +1065,11 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
             self.previousSelectedFrame = nil
         }
     }
+    // MARK: Nicegram NCG-7581 Folder for keywords
+    @objc func keywordsPressed() {
+        openKeywords?()
+    }
+    //
 }
 
 private class ReorderingGestureRecognizerTimerTarget: NSObject {

@@ -20,7 +20,12 @@ import NGTranslate
 import NGEnv
 import NGCollectInformation
 import NGLogging
-
+import FeatKeywords
+import NGStrings
+import AccountUtils
+import NGUI
+import NGUtils
+//
 import SwiftSignalKit
 import AsyncDisplayKit
 import Display
@@ -172,7 +177,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private var tabContainerData: ([ChatListFilterTabEntry], Bool, Int32?)?
     var hasTabs: Bool {
         if let tabContainerData = self.tabContainerData {
-            let isEmpty = tabContainerData.0.count <= 1 || tabContainerData.1
+            // MARK: Nicegram NCG-7581 Folder for keywords
+            let id = self.context.account.peerId.toInt64()
+            let count = ((getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1)
+            // MARK: Nicegram NCG-7581 Folder for keywords, count
+            let isEmpty = tabContainerData.0.count <= count || tabContainerData.1
             return !isEmpty
         } else {
             return false
@@ -269,11 +278,43 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
         
         self.tabsNode = SparseNode()
+        
         self.tabContainerNode = ChatListFilterTabContainerNode(context: context)
         self.tabsNode.addSubnode(self.tabContainerNode)
                 
         super.init(context: context, navigationBarPresentationData: nil, mediaAccessoryPanelVisibility: .always, locationBroadcastPanelSource: .summary, groupCallPanelSource: groupCallPanelSource)
         
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.tabContainerNode.openKeywords = { [weak self] in
+            if #available(iOS 15.0, *) {
+                let presentationData = (context.sharedContext.currentPresentationData.with { $0 })
+                let locale = localeWithStrings(presentationData.strings)                
+                let primaryColor = presentationData.theme.rootController.navigationBar.blurredBackgroundColor
+                let secondaryColor = presentationData.theme.list.plainBackgroundColor
+                let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.inputFillColor
+                let accentColor = presentationData.theme.list.itemAccentColor
+                let overallDarkAppearance = presentationData.theme.overallDarkAppearance
+                
+                KeywordsPresenter().present(
+                    with: context.account.peerId.toInt64(),
+                    theme: KeywordsPresenter.Theme(
+                        primaryColor: primaryColor,
+                        secondaryColor: secondaryColor,
+                        tertiaryColor: tertiaryColor,
+                        accentColor: accentColor,
+                        overallDarkAppearance: overallDarkAppearance
+                    ),
+                    locale: locale,
+                    openMessage: { id, peerId in
+                        self?.openMessage(with: id, peerId: peerId)
+                    },
+                    openSettings: { [weak self] in
+                        self?.openSettings()
+                    }
+                )
+            }
+        }
+        //
         self.accessoryPanelContainer = ASDisplayNode()
         
         self.tabBarItemContextActionType = .always
@@ -2358,14 +2399,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     public static var sharedPreviousPowerSavingEnabled: Bool?
-    
+
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
         // MARK: Nicegram PinnedChats
         updateChatListNode(isVisible: true)
         //
-                
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
             |> mapToSignal { settings -> Signal<Bool, NoError> in
@@ -2719,6 +2759,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     return
                 }
                 
+                // MARK: Nicegram NCG-7581 Folder for keywords
+                Foundation.Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
+                    self?.showKeywordTooltip()
+                }
+                //
                 strongSelf.processedFeaturedFilters = true
                 if hasFeatured {
                     if let _ = strongSelf.validLayout, let _ = strongSelf.parent as? TabBarController {
@@ -3513,7 +3558,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         // MARK: Nicegram FoldersAtBottom
         let showFoldersAtBottom: Bool
         if let tabContainerData = self.tabContainerData {
-            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > 1
+            // MARK: Nicegram NCG-7581 Folder for keywords
+            let id = self.context.account.peerId.toInt64()
+            let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
+            // MARK: Nicegram NCG-7581 Folder for keywords, count
+            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > count
         } else {
             showFoldersAtBottom = false
         }
@@ -3984,7 +4033,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
-                wasEmpty = tabContainerData.0.count <= 1 || tabContainerData.1
+                // MARK: Nicegram NCG-7581 Folder for keywords
+                let id = self?.context.account.peerId.toInt64() ?? 0
+                let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
+                // MARK: Nicegram NCG-7581 Folder for keywords, count
+                wasEmpty = tabContainerData.0.count <= count || tabContainerData.1
             } else {
                 wasEmpty = true
             }
@@ -4075,8 +4128,11 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 strongSelf.initializedFilters = true
             }
             
-            // MARK: Nicegram (|| displayTabsAtBottom)
-            let isEmpty = resolvedItems.count <= 1 || displayTabsAtBottom
+            // MARK: Nicegram NCG-7581 Folder for keywords
+            let id = self?.context.account.peerId.toInt64() ?? 0
+            let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
+            // MARK: Nicegram (|| displayTabsAtBottom), count
+            let isEmpty = resolvedItems.count <= count || displayTabsAtBottom
             
             let animated = strongSelf.didSetupTabs
             strongSelf.didSetupTabs = true
@@ -4151,8 +4207,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 if strongSelf.chatListDisplayNode.inlineStackContainerNode != nil {
                     strongSelf.setInlineChatList(location: nil)
                 }
+                
                 // MARK: Nicegram NCG-7102 bottom folders fix, preselected
-                strongSelf.chatListDisplayNode.mainContainerNode.switchToFilter(id: updatedFilter.flatMap { .filter($0.id) } ?? .all, preselected: preselected)
+                strongSelf.chatListDisplayNode.mainContainerNode.switchToFilter(
+                    id: updatedFilter.flatMap { .filter($0.id) } ?? .all,
+                    preselected: preselected
+                )
             }
         })
     }
@@ -6514,6 +6574,97 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             return false
         }
     }
+    // MARK: Nicegram NCG-7581 Folder for keywords
+    private var isShowTooltip = false
+    private func showKeywordTooltip() {
+        let id = context.account.peerId.toInt64()
+        let showTooltip = getNicegramSettings().keywords.showTooltip[id] ?? true
+        guard showTooltip && !isShowTooltip else { return }
+        
+        isShowTooltip = true
+        let experimentalUISettingsKey: ValueBoxKey = ApplicationSpecificSharedDataKeys.experimentalUISettings
+        let signal = self.context.sharedContext.accountManager.sharedData(keys: Set([experimentalUISettingsKey]))
+        |> map { sharedData -> Bool in
+            let settings: ExperimentalUISettings = sharedData.entries[experimentalUISettingsKey]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
+            return settings.foldersTabAtBottom
+        }
+                
+        _ = (signal |> deliverOnMainQueue).startStandalone { [weak self] showFoldersAtBottom in
+            guard let self else { return }
+            
+            sendKeywordsAnalytics(with: .tooltipShow)
+            let view = showFoldersAtBottom ?
+                self.chatListDisplayNode.inlineTabContainerNode.keywordsButtonNode.view :
+                self.tabContainerNode.keywordsButtonNode.view
+            let navigationBarView = self.chatListDisplayNode.navigationBarView.view?.frame ?? CGRect(x: 0, y: 0, width: 0, height: 155)
+            let absoluteFrame = view.convert(view.bounds, to: self.view)
+            let y = showFoldersAtBottom ? absoluteFrame.minY : (absoluteFrame.maxY < 100 ? navigationBarView.height + absoluteFrame.height - 5.0 : absoluteFrame.maxY)
+            let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: y), size: CGSize())
+
+            let tooltip = TooltipScreen(
+                account: context.account,
+                sharedContext: context.sharedContext,
+                text: .plain(text: l("NicegramKeywords.Tooltip")),
+                balancedTextLayout: true,
+                style: .default,
+                location: .point(location, showFoldersAtBottom ? .bottom : .top),
+                displayDuration: .infinite,
+                backgroundColor: UIColor.black.withAlphaComponent(0.45),
+                shouldDismissOnTouch: { [weak self] _, _ in
+                    guard let self else { return .dismiss(consume: false) }
+
+                    let id = self.context.account.peerId.toInt64()
+                    updateNicegramSettings {
+                        $0.keywords.showTooltip[id] = false
+                    }
+
+                    return .dismiss(consume: false)
+                }
+            )
+
+            self.presentInGlobalOverlay(tooltip)
+        }
+    }
+    
+    public func openSettings() {
+        let _ = (activeAccountsAndPeers(context: context)
+        |> take(1)
+        |> deliverOnMainQueue
+        ).start(next: { [weak self] accountAndPeer, accountsAndPeers in
+            guard let self else { return }
+            
+            self.push(nicegramSettingsController(
+                context: self.context,
+                accountsContexts: accountsAndPeers.map { ($0.0, $0.1) }
+            ))
+        })
+    }
+    
+    public func openMessage(
+        with id: Int32,
+        peerId: Int64
+    ) {
+        guard let navigationController = self.context.sharedContext.mainWindow?.viewController as? NavigationController else { return }
+        
+        _ = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: PeerId(peerId)))
+            .start { [weak self] result in
+                if let result, let self {
+                    self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(
+                        navigationController: navigationController,
+                        context: self.context,
+                        chatLocation: .peer(EnginePeer(result._asPeer())),
+                        subject: .message(
+                            id: .id(EngineMessage.Id(peerId: result.id, namespace: 0, id: id)),
+                            highlight: ChatControllerSubject.MessageHighlight(quote: nil),
+                            timecode: nil,
+                            setupReply: false
+                        ),
+                        keepStack: .always
+                    ))
+                }
+            }
+    }
+    //
 }
 
 private final class ChatListTabBarContextExtractedContentSource: ContextExtractedContentSource {
