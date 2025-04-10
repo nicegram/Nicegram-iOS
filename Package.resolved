@@ -46,6 +46,15 @@
       }
     },
     {
+      "identity" : "devicekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/devicekit/DeviceKit.git",
+      "state" : {
+        "revision" : "513b9d7e7a1bd46504a1009bbab943b75ce2f195",
+        "version" : "5.6.0"
+      }
+    },
+    {
       "identity" : "factory",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
@@ -113,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "7a6005940d3baae9013e0f42ae15d70f8b942093"
+        "branch" : "feat/account-backup",
+        "revision" : "c5ded459cea7ff4af4b20ec309a3e24c4d457cb8"
       }
     },
     {

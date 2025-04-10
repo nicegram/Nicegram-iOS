@@ -76,6 +76,9 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
         case loggedOut
         case hiddenDoubleBottom
         case supportUserInfo
+        // MARK: Nicegram
+        case nicegram
+        //
         case legacyRootObject = "_"
     }
 
@@ -85,6 +88,9 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
     case loggedOut(LoggedOutAccountAttribute)
     case supportUserInfo(AccountSupportUserInfo)
     case hiddenDoubleBottom(HiddenAccountAttribute)
+    // MARK: Nicegram
+    case nicegram(AccountNicegramAttribute)
+    //
     
     // MARK: Nicegram DB Changes
     public var isHiddenAccountAttribute: Bool {
@@ -108,6 +114,13 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // MARK: Nicegram
+        if let nicegram = try? container.decodeIfPresent(AccountNicegramAttribute.self, forKey: .nicegram) {
+            self = .nicegram(nicegram)
+            return
+        }
+        //
 
         if let backupData = try? container.decodeIfPresent(AccountBackupDataAttribute.self, forKey: .backupData) {
             self = .backupData(backupData)
@@ -124,6 +137,14 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
             self = .supportUserInfo(supportUserInfo)
         } else {
             let legacyRootObjectData = try! container.decode(AdaptedPostboxDecoder.RawObjectData.self, forKey: .legacyRootObject)
+            
+            // MARK: Nicegram
+            if legacyRootObjectData.typeHash == postboxEncodableTypeHash(AccountNicegramAttribute.self) {
+                self = .nicegram(try! AdaptedPostboxDecoder().decode(AccountNicegramAttribute.self, from: legacyRootObjectData.data))
+                return
+            }
+            //
+            
             if legacyRootObjectData.typeHash == postboxEncodableTypeHash(AccountBackupDataAttribute.self) {
                 self = .backupData(try! AdaptedPostboxDecoder().decode(AccountBackupDataAttribute.self, from: legacyRootObjectData.data))
             } else if legacyRootObjectData.typeHash == postboxEncodableTypeHash(AccountEnvironmentAttribute.self) {
@@ -159,6 +180,10 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
             try container.encode(hiddenDoubleBottom, forKey: .hiddenDoubleBottom)
         case let .supportUserInfo(supportUserInfo):
             try container.encode(supportUserInfo, forKey: .supportUserInfo)
+        // MARK: Nicegram
+        case let .nicegram(nicegram):
+            try container.encode(nicegram, forKey: .nicegram)
+        //
         }
     }
 
@@ -594,6 +619,14 @@ private func cleanupAccount(networkArguments: NetworkInitializationArguments, ac
             case .unauthorized:
                 return .complete()
             case let .authorized(account):
+                // MARK: Nicegram AccountBackup
+                if attributes.nicegramAttribute().skipRemoteLogout {
+                    return accountManager.transaction { transaction -> Void in
+                        transaction.updateRecord(id) { _ in nil }
+                    }
+                }
+                //
+            
                 account.shouldBeServiceTaskMaster.set(.single(.always))
                 return account.network.request(Api.functions.auth.logOut())
                 |> map(Optional.init)

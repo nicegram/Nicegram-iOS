@@ -2389,6 +2389,16 @@ plist_fragment(
     <true/>
     <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
     <true/>
+    <key>NSUbiquitousContainers</key>
+    <dict>
+        <key>iCloud.{telegram_bundle_id}</key>
+        <dict>
+            <key>NSUbiquitousContainerName</key>
+            <string>Nicegram</string>
+            <key>NSUbiquitousContainerSupportedFolderLevels</key>
+            <string>ANY</string>
+        </dict>
+    </dict>
     """.format(
         nicegram_queries_schemes = nicegram_queries_schemes,
         nicegram_skad_network_items = nicegram_skad_network_items,
