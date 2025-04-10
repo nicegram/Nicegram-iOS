@@ -123,7 +123,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/account-backup",
-        "revision" : "c5ded459cea7ff4af4b20ec309a3e24c4d457cb8"
+        "revision" : "a79df90d88b01347981d15c75559161388e29f6a"
       }
     },
     {

@@ -639,8 +639,8 @@
         "bzlTransitiveDigest": "DYtJwFqalhbNx5qiU4Xl0XnVU1L2Jlj5v0BwCw7H9VA=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "a4138261fd38ea1bf684f219a4d2014a8c9d1431012182b3b9dfd7c5817f82bd",
-          "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
+          "@@//Package.resolved": "30cc4aae02231a1d2b2502dad884bbbcd65f9a013db7f436864b5cb050d5f833",
+          "@@//Package.swift": "fe0ce5698d47e382b4b57677b0c61da672e7fdd906037bdb527b9854c34738c0"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -748,6 +748,25 @@
               "commit": "3086a602b98155eec28b4be79210d6cb1a43e339",
               "remote": "https://github.com/denis15yo/SwiftUI-Flow.git",
               "version": "",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
+            }
+          },
+          "swiftpkg_devicekit": {
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_devicekit",
+              "commit": "513b9d7e7a1bd46504a1009bbab943b75ce2f195",
+              "remote": "https://github.com/devicekit/DeviceKit.git",
+              "version": "5.6.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1144,7 +1163,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "7a6005940d3baae9013e0f42ae15d70f8b942093",
+              "commit": "a79df90d88b01347981d15c75559161388e29f6a",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,

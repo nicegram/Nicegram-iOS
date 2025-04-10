@@ -547,6 +547,10 @@ icloud_fragment = "" if not telegram_enable_icloud else """
 <array>
     <string>iCloud.{telegram_bundle_id}</string>
 </array>
+<key>com.apple.developer.ubiquity-container-identifiers</key>
+<array>
+    <string>iCloud.{telegram_bundle_id}</string>
+</array>
 <key>com.apple.developer.ubiquity-kvstore-identifier</key>
 <string>{telegram_team_id}.*</string>
 <key>com.apple.developer.icloud-container-environment</key>
