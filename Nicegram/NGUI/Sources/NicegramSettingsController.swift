@@ -115,6 +115,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     }
 
     case FoldersHeader(String)
+    case foldersKeywords(String, Int64, Bool)
     case foldersAtBottom(String, Bool)
     case foldersAtBottomNotice(String)
 
@@ -150,7 +151,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         switch self {
         case .TabsHeader, .showContactsTab, .showCallsTab, .showTabNames, .showFeedTab:
             return NicegramSettingsControllerSection.Tabs.rawValue
-        case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice:
+        case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice, .foldersKeywords:
             return NicegramSettingsControllerSection.Folders.rawValue
         case .RoundVideosHeader, .startWithRearCam, .shouldDownloadVideo:
             return NicegramSettingsControllerSection.RoundVideos.rawValue
@@ -198,6 +199,9 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case .FoldersHeader:
             return 1700
+
+        case .foldersKeywords:
+            return 1750
 
         case .foldersAtBottom:
             return 1800
@@ -305,6 +309,13 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
         case let .foldersAtBottom(lhsText, lhsVar0Bool):
             if case let .foldersAtBottom(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .foldersKeywords(lhsText, _, lhsVar0Bool):
+            if case let .foldersKeywords(rhsText, _, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
                 return true
             } else {
                 return false
@@ -509,6 +520,16 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 }).start()
             })
             
+        case let .foldersKeywords(text, id, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
+                updateNicegramSettings {
+                    if !value {
+                        sendKeywordsAnalytics(with: .folderDisabled)
+                    }
+                    $0.keywords.show[id] = value
+                }
+            })
+            
         case let .foldersAtBottomNotice(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
             
@@ -708,6 +729,12 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     ))
 
     entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header")))
+    let peerId = context.account.peerId.toInt64()
+    entries.append(.foldersKeywords(
+        l("NicegramSettings.ShowKeywords"),
+        peerId,
+        nicegramSettings.keywords.show[peerId] ?? true
+    ))
     entries.append(.foldersAtBottom(
         l("NiceFeatures.Folders.TgFolders"),
         experimentalSettings.foldersTabAtBottom

@@ -1721,7 +1721,6 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
     
     return entries
 }
-
 public func debugController(sharedContext: SharedAccountContext, context: AccountContext?, modal: Bool = false) -> ViewController {
     var presentControllerImpl: ((ViewController, ViewControllerPresentationArguments?) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?

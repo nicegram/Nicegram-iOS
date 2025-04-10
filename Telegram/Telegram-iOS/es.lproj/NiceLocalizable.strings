@@ -35,7 +35,7 @@
 "NiceFeatures.InstantLock" = "Inmediatamente";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "Guardar en la nube";
+"Chat.SaveToCloud" = "Guardar";
 
 /*Open Pin*/
 "Chat.OpenPin" = "Mostrar anclado";
@@ -171,6 +171,7 @@
 "NicegramSettings.EnableGrayscaleInChatList" = "Escala de grises en la lista de chat";
 "NicegramSettings.EnableGrayscaleInChat" = "Escala de grises en el chat";
 "NicegramSettings.EnableAppleSpeech2Text" = "Activar Apple Speech2Text";
+"NicegramSettings.ShowKeywords" = "Mostrar carpeta para palabras clave";
 
 /*Registration Date*/
 "NiceFeatures.RegDate.OlderThan" = "Mayor que";
@@ -247,3 +248,10 @@
 
 /*God’s Eye*/
 "GodsEye.Title" = "God’s Eye";
+
+/*Keywords*/
+"NicegramKeywords.Title" = "✨Palabras clave✨";
+"NicegramKeywords.TitleNoEmoji" = "Palabras clave";
+"NicegramKeywords.Tooltip" = "Monitorea mensajes entrantes para palabras clave específicas";
+"NicegramKeywords.TrackUpdates" = "Rastrear actualizaciones de \"%@\"";
+"NicegramKeywords.TrackEnabled" = "¡Rastreo habilitado para actualizaciones de \"%@\"!";

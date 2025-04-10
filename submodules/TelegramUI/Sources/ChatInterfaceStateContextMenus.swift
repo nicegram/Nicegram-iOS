@@ -1,6 +1,7 @@
 // MARK: Nicegram MessageMetadata
 import CoreSwiftUI
 import NGWrap
+import WatchBridgeAudio
 //
 import Foundation
 import UIKit
@@ -1556,21 +1557,15 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                                 |> runOn(Queue.mainQueue())
                                 |> delay(0.15, queue: Queue.mainQueue())
                                 let progressDisposable = progressSignal.startStrict()
-                                
-                                signal = signal
-                                |> afterDisposed {
-                                    Queue.mainQueue().async {
-                                        progressDisposable.dispose()
-                                    }
-                                }
+
                                 cancelImpl = { [weak disposable] in
                                     disposable?.set(nil)
                                 }
-                                disposable.set((signal
-                                |> deliverOnMainQueue).startStrict(next: { state, _ in
+                                
+                                disposable.set((signal |> mapToSignal { state, _ in
                                     switch state {
                                     case .progress:
-                                        break
+                                        return .single("")
                                     case let .data(data):
                                         if data.complete {
                                             var symlinkPath = data.path + ".ogg"
@@ -1580,7 +1575,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                                             let _ = try? FileManager.default.linkItem(atPath: data.path, toPath: symlinkPath)
                                             
                                             let audioUrl = URL(fileURLWithPath: symlinkPath)
-                                            let audioAsset = AVURLAsset(url: audioUrl)
                                             
                                             var fileExtension = "ogg"
 
@@ -1603,12 +1597,27 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                                                 let _ = try? FileManager.default.linkItem(atPath: data.path, toPath: symlinkPath)
                                             }
                                             
-                                            let url = URL(fileURLWithPath: symlinkPath)
-
-                                            let activityController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-                                            context.sharedContext.applicationBindings.presentNativeController(activityController)
+                                            let outputPath = NSTemporaryDirectory() + "/\(title).m4a"
+                                                                                        
+                                            return legacyDecodeOpusAudio(path: symlinkPath, outputPath: outputPath)
+                                        } else {
+                                            return .single("")
                                         }
                                     }
+                                } |> deliverOnMainQueue)
+                                .startStrict(next: { path in
+                                    guard !path.isEmpty else { return }
+
+                                    Queue.mainQueue().async {
+                                        progressDisposable.dispose()
+                                    }
+                                    
+                                    let url = URL(fileURLWithPath: path)
+                                    let activityController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                                    activityController.completionWithItemsHandler = { _, _, _, _ in
+                                        try? FileManager.default.removeItem(atPath: path)
+                                    }
+                                    context.sharedContext.applicationBindings.presentNativeController(activityController)
                                 }))
                             })
                             f(.default)

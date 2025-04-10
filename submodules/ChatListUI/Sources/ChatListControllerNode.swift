@@ -4,6 +4,8 @@ import NGData
 // MARK: Nicegram ColorAlign
 import NGUtils
 import NGLogging
+import FeatKeywords
+import TelegramStringFormatting
 //
 import Foundation
 import UIKit
@@ -1160,14 +1162,46 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             openArchiveSettings?()
         })
         
-        // MARK: Nicegram FoldersAtBottom
-        self.inlineTabContainerNode = ChatListFilterTabInlineContainerNode()
+        // MARK: Nicegram FoldersAtBottom, userId
+        self.inlineTabContainerNode = ChatListFilterTabInlineContainerNode(userId: context.account.peerId.toInt64())
         //
         
         self.controller = controller
         
         super.init()
-        
+        // MARK: Nicegram NCG-7581 Folder for keywords
+        self.inlineTabContainerNode.openKeywords = {
+            if #available(iOS 15.0, *) {
+                let presentationData = (context.sharedContext.currentPresentationData.with { $0 })
+                let locale = localeWithStrings(presentationData.strings)
+                let primaryColor = presentationData.theme.rootController.navigationBar.blurredBackgroundColor
+                let secondaryColor = presentationData.theme.list.plainBackgroundColor
+                let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.inputFillColor
+                let accentColor = presentationData.theme.list.itemAccentColor
+                let overallDarkAppearance = presentationData.theme.overallDarkAppearance
+                
+                Task { @MainActor in
+                    KeywordsPresenter().present(
+                        with: context.account.peerId.toInt64(),
+                        theme: KeywordsPresenter.Theme(
+                            primaryColor: primaryColor,
+                            secondaryColor: secondaryColor,
+                            tertiaryColor: tertiaryColor,
+                            accentColor: accentColor,
+                            overallDarkAppearance: overallDarkAppearance
+                        ),
+                        locale: locale,
+                        openMessage: { id, peerId in
+                            controller.openMessage(with: id, peerId: peerId)
+                        },
+                        openSettings: {
+                            controller.openSettings()
+                        }
+                    )
+                }
+            }
+        }
+        //
         self.setViewBlock({
             return UITracingLayerView()
         })
