@@ -5,6 +5,7 @@ import NGUtils
 import Postbox
 import SwiftSignalKit
 import TelegramCore
+import TelegramApi
 
 @available(iOS 13.0, *)
 public func sharePeerData(
@@ -36,8 +37,10 @@ private func sharePeerData(
     let peerId = extractPeerId(peer: peer)
     
     let type: PeerType
+    var accessHash: Int64?
     switch EnginePeer(peer) {
     case let .channel(channel):
+        accessHash = channel.accessHash?.value
         switch channel.info {
         case .group:
             type = .group
@@ -69,11 +72,13 @@ private func sharePeerData(
             await withCheckedContinuation { continuation in
                 let avatarImageSignal = fetchAvatarImage(peer: peer, context: context)
                 let inviteLinksSignal = context.engine.peers.direct_peerExportedInvitations(peerId: peer.id, revoked: false)
-                let interlocutorLanguageSignal = wrapped_detectInterlocutorLanguage(forChatWith: peer.id, context: context)
+                let interlocutorLanguageSignal = detectInterlocutorLanguage(forChatWith: peer.id, context: context)
                 let recommendedChannels = context.engine.peers.recommendedChannels(peerId: peer.id)
+                let lastMessages = context.account.network.request(Api.functions.messages.getHistory(peer: .inputPeerChannel(channelId: peer.id.id._internalGetInt64Value(), accessHash: accessHash ?? 0), offsetId: 0, offsetDate: 0, addOffset: 0, limit: 10, maxId: 0, minId: 0, hash: 0))
+                    .skipError()
                 
-                _ = (combineLatest(avatarImageSignal, inviteLinksSignal, interlocutorLanguageSignal, recommendedChannels)
-                     |> take(1)).start(next: { avatarImageData, inviteLinks, interlocutorLanguage, recommendedChannels in
+                _ = (combineLatest(avatarImageSignal, inviteLinksSignal, interlocutorLanguageSignal, recommendedChannels, lastMessages)
+                     |> take(1)).start(next: { avatarImageData, inviteLinks, interlocutorLanguage, recommendedChannels, lastMessages in
                     let peerData = PeerData(
                         avatarImageData: avatarImageData?.base64EncodedString(),
                         id: peerId,
@@ -82,7 +87,8 @@ private func sharePeerData(
                             peer: peer,
                             cachedData: cachedData,
                             interlocutorLanguage: interlocutorLanguage,
-                            similarChannels: extractSimilarChannels(from: recommendedChannels)
+                            similarChannels: extractSimilarChannels(from: recommendedChannels),
+                            lastMessages: lastMessages
                         ),
                         type: type
                     )
@@ -97,7 +103,8 @@ private func extractPayload(
     peer: Peer,
     cachedData: CachedPeerData?,
     interlocutorLanguage: String?,
-    similarChannels: [SimilarChannel]
+    similarChannels: [SimilarChannel],
+    lastMessages: Api.messages.Messages
 ) -> PeerPayload? {
     switch EnginePeer(peer) {
     case let .legacyGroup(group):
@@ -113,7 +120,8 @@ private func extractPayload(
             extractPayload(
                 channel: channel,
                 cachedData: cachedData as? CachedChannelData,
-                lastMessageLanguageCode: interlocutorLanguage
+                lastMessageLanguageCode: interlocutorLanguage,
+                lastMessages: lastMessages
             ),
             similarChannels
         )
@@ -155,7 +163,8 @@ private func extractPayload(
 private func extractPayload(
     channel: TelegramChannel,
     cachedData: CachedChannelData?,
-    lastMessageLanguageCode: String?
+    lastMessageLanguageCode: String?,
+    lastMessages: Api.messages.Messages?
 ) -> ChannelPayload {
     ChannelPayload(
         verified: channel.isVerified,
@@ -174,8 +183,22 @@ private func extractPayload(
         about: cachedData?.about,
         geoLocation: cachedData?.peerGeoLocation.map {
             extractGeoLocation($0)
-        }
+        },
+        messages: convertMessages(lastMessages)
     )
+}
+
+private func convertMessages(_ messages: Api.messages.Messages?) -> [MessageInformation]? {
+    switch messages {
+    case let .channelMessages(_, _, _, _, messages, _, _, _):
+        return messages.compactMap(\.messageInformation)
+    case let .messages(messages, _, _):
+        return messages.compactMap(\.messageInformation)
+    case let .messagesSlice(_, _, _, _, messages, _, _):
+        return messages.compactMap(\.messageInformation)
+    default:
+        return nil
+    }
 }
 
 private func extractPayload(
@@ -267,9 +290,9 @@ func extractParticipantsCount(peer: Peer, cachedData: CachedPeerData?) -> Int {
 
 private func extractRestrictions(
     restrictionInfo: PeerAccessRestrictionInfo?
-) -> [FeatNicegramHub.RestrictionRule] {
+) -> [RestrictionPolicy] {
     restrictionInfo?.rules.map {
-        FeatNicegramHub.RestrictionRule(
+        RestrictionPolicy(
             platform: $0.platform,
             reason: $0.reason,
             text: $0.text
@@ -307,7 +330,8 @@ private func extractSimilarChannels(
             let channelPayload = extractPayload(
                 channel: telegramChannel,
                 cachedData: nil,
-                lastMessageLanguageCode: nil
+                lastMessageLanguageCode: nil,
+                lastMessages: nil
             )
 
             return SimilarChannel(

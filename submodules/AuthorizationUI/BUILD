@@ -1,7 +1,6 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAuth",
     "@swiftpkg_nicegram_assistant_ios//:FeatPhoneEntryBanner",
     "@swiftpkg_nicegram_assistant_ios//:FeatOnboarding"

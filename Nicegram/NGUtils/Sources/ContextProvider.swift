@@ -7,7 +7,6 @@ import SwiftSignalKit
 public struct SharedContextProvider {
     public let sharedContext: () async throws -> SharedAccountContext
     public let sharedContextPublisher: () -> AnyPublisher<SharedAccountContext, Never>
-    public let sharedContextSignal: () -> Signal<SharedAccountContext, NoError>
 }
 
 @MemberwiseInit(.public)

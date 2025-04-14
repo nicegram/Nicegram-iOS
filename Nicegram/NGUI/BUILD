@@ -33,7 +33,6 @@ swift_library(
         "//Nicegram/NGRemoteConfig:NGRemoteConfig",
         "//Nicegram/NGStats:NGStats",
         "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
-        "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
         "@swiftpkg_nicegram_assistant_ios//:FeatImagesHubUI",
         "@swiftpkg_nicegram_assistant_ios//:FeatNicegramHub",
         "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",

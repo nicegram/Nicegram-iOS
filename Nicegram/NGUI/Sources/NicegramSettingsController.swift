@@ -10,7 +10,6 @@
 
 import AccountContext
 import Display
-import FeatAccountBackup
 import FeatAiShortcuts
 import FeatImagesHubUI
 import FeatNicegramHub
@@ -76,7 +75,6 @@ private enum NicegramSettingsControllerSection: Int32 {
     case ShareData
     case PinnedChats
     case Tools
-    case AccountsBackup
 }
 
 
@@ -146,12 +144,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case shareChannelsData(String, Bool)
     case shareStickersData(String, Bool)
     case shareDataNote(String)
-    
-    case accountsBackupHeader
-    case importFromBackup
-    case importFromFile
-    case exportToFile
-    case deleteSessions
 
     // MARK: Section
 
@@ -177,8 +169,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.PinnedChats.rawValue
         case .enableAppleSpeech2Text, .onetaptr:
             return NicegramSettingsControllerSection.Tools.rawValue
-        case .accountsBackupHeader, .importFromBackup, .importFromFile, .exportToFile, .deleteSessions:
-            return NicegramSettingsControllerSection.AccountsBackup.rawValue
         }
     }
 
@@ -194,28 +184,28 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .TabsHeader:
             return 1300
-            
+
         case .showContactsTab:
             return 1400
-            
+
         case .showCallsTab:
             return 1500
             
         case .showTabNames:
             return 1600
-            
+
         case .showFeedTab:
             return 1650
-            
+
         case .FoldersHeader:
             return 1700
-            
+
         case .foldersKeywords:
             return 1750
-            
+
         case .foldersAtBottom:
             return 1800
-            
+
         case .foldersAtBottomNotice:
             return 1900
             
@@ -224,10 +214,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case let .pinnedChat(chat):
             return 1911 + chat.index
-            
+
         case .RoundVideosHeader:
             return 2000
-            
+
         case .startWithRearCam:
             return 2100
             
@@ -236,32 +226,21 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .OtherHeader:
             return 2200
-            
+
         case .hidePhoneInSettings:
             return 2300
-            
+
         case .hidePhoneInSettingsNotice:
             return 2400
-            
+
         case .quickReplies:
             return 2450
-            
+
         case .Account:
             return 2500
             
         case .doubleBottom:
             return 2700
-            
-        case .accountsBackupHeader:
-            return 3000
-        case .importFromBackup:
-            return 3001
-        case .importFromFile:
-            return 3002
-        case .exportToFile:
-            return 3003
-        case .deleteSessions:
-            return 3004
             
         case let .easyToggle(index, _, _, _):
             return 5000 + Int32(index)
@@ -270,7 +249,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 5900
         case .enableAppleSpeech2Text:
             return 5950
-            
+
         case .shareBotsData:
             return 6000
         case .shareChannelsData:
@@ -279,6 +258,202 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 6002
         case .shareDataNote:
             return 6010
+        }
+    }
+
+    // MARK: == overload
+
+    static func == (lhs: NicegramSettingsControllerEntry, rhs: NicegramSettingsControllerEntry) -> Bool {
+        switch lhs {
+        case let .TabsHeader(lhsText):
+            if case let .TabsHeader(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+
+        case let .showContactsTab(lhsText, lhsVar0Bool):
+            if case let .showContactsTab(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+
+        case let .showCallsTab(lhsText, lhsVar0Bool):
+            if case let .showCallsTab(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+
+        case let .showTabNames(lhsText, lhsVar0Bool):
+            if case let .showTabNames(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .showFeedTab(lhsText, lhsVar0Bool):
+            if case let .showFeedTab(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+
+        case let .FoldersHeader(lhsText):
+            if case let .FoldersHeader(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+
+        case let .foldersAtBottom(lhsText, lhsVar0Bool):
+            if case let .foldersAtBottom(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .foldersKeywords(lhsText, _, lhsVar0Bool):
+            if case let .foldersKeywords(rhsText, _, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+
+        case let .foldersAtBottomNotice(lhsText):
+            if case let .foldersAtBottomNotice(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+
+        case let .RoundVideosHeader(lhsText):
+            if case let .RoundVideosHeader(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+
+        case let .startWithRearCam(lhsText, lhsVar0Bool):
+            if case let .startWithRearCam(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+        
+        case let .shouldDownloadVideo(lhsText, lhsVar0Bool):
+            if case let .shouldDownloadVideo(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+            
+        case let .OtherHeader(lhsText):
+            if case let .OtherHeader(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+
+        case let .hidePhoneInSettings(lhsText, lhsVar0Bool):
+            if case let .hidePhoneInSettings(rhsText, rhsVar0Bool) = rhs, lhsText == rhsText, lhsVar0Bool == rhsVar0Bool {
+                return true
+            } else {
+                return false
+            }
+
+        case let .hidePhoneInSettingsNotice(lhsText):
+            if case let .hidePhoneInSettingsNotice(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .easyToggle(lhsIndex, _, lhsText, lhsValue):
+            if case let .easyToggle(rhsIndex, _, rhsText, rhsValue) = rhs, lhsIndex == rhsIndex, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .unblockHeader(lhsText):
+            if case let .unblockHeader(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .unblock(lhsText, lhsUrl):
+            if case let .unblock(rhsText, rhsUrl) = rhs, lhsText == rhsText, lhsUrl == rhsUrl {
+                return true
+            } else {
+                return false
+            }
+        case let .Account(lhsText):
+            if case let .Account(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .doubleBottom(lhsText):
+            if case let .doubleBottom(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .quickReplies(lhsText):
+            if case let .quickReplies(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case let .shareBotsData(lhsText, lhsValue):
+            if case let .shareBotsData(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .shareChannelsData(lhsText, lhsValue):
+            if case let .shareChannelsData(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .shareStickersData(lhsText, lhsValue):
+            if case let .shareStickersData(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .shareDataNote(lhsText):
+            if case let .shareDataNote(rhsText) = rhs, lhsText == rhsText {
+                return true
+            } else {
+                return false
+            }
+        case .pinnedChatsHeader:
+            if case .pinnedChatsHeader = rhs {
+                return true
+            } else {
+                return false
+            }
+        case let .pinnedChat(lhsChat):
+            if case let .pinnedChat(rhsChat) = rhs,
+               lhsChat == rhsChat {
+                return true
+            } else {
+                return false
+            }
+        case let .enableAppleSpeech2Text(lhsText, _, lhsValue):
+            if case let .enableAppleSpeech2Text(rhsText, _, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
+        case let .onetaptr(lhsText, lhsValue):
+            if case let .onetaptr(rhsText, rhsValue) = rhs, lhsText == rhsText, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         }
     }
 
@@ -519,44 +694,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 NGSettings.oneTapTr = value
             })
-        case .accountsBackupHeader:
-            return ItemListSectionHeaderItem(
-                presentationData: presentationData,
-                text: l("AccountsBackup.SectionHeader").localizedUppercase,
-                sectionId: section
-            )
-        case .importFromBackup:
-            return ItemListActionItem(presentationData: presentationData, title: l("AccountsBackup.ImportFromICloud"), kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
-                if #available(iOS 15.0, *) {
-                    Task { @MainActor in
-                        ImportAccountsPresenter().presentImportFromBackup()
-                    }
-                }
-            })
-        case .importFromFile:
-            return ItemListActionItem(presentationData: presentationData, title: l("AccountsBackup.ImportFromFile"), kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
-                if #available(iOS 15.0, *) {
-                    Task { @MainActor in
-                        ImportAccountsPresenter().presentImportFromExternalFile()
-                    }
-                }
-            })
-        case .exportToFile:
-            return ItemListActionItem(presentationData: presentationData, title: l("AccountsBackup.ExportAsFile"), kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
-                if #available(iOS 15.0, *) {
-                    Task { @MainActor in
-                        ExportAccountsPresenter().present()
-                    }
-                }
-            })
-        case .deleteSessions:
-            return ItemListActionItem(presentationData: presentationData, title: l("AccountsBackup.DeleteSessions"), kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
-                if #available(iOS 15.0, *) {
-                    Task { @MainActor in
-                        ResolveNotMainAccountsPresenter().presentAllActiveAccounts()
-                    }
-                }
-            })
         }
     }
 }
@@ -638,17 +775,9 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     }
 
     
-    entries.append(.Account(l("NiceFeatures.Account.Header").localizedUppercase))
+    entries.append(.Account(l("NiceFeatures.Account.Header")))
     if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
         entries.append(.doubleBottom(l("DoubleBottom.Title")))
-    }
-    
-    if #available(iOS 15.0, *) {
-        entries.append(.accountsBackupHeader)
-        entries.append(.importFromBackup)
-        entries.append(.importFromFile)
-        entries.append(.exportToFile)
-        entries.append(.deleteSessions)
     }
     
     var toggleIndex: Int32 = 1

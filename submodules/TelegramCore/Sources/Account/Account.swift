@@ -1027,10 +1027,6 @@ public class Account {
     public let filteredStorySubscriptionsContext: StorySubscriptionsContext?
     public let hiddenStorySubscriptionsContext: StorySubscriptionsContext?
     
-    // MARK: Nicegram AccountExporter
-    public var shouldKeepConnection = Signal<Bool, NoError>.single(true)
-    //
-    
     // MARK: Nicegram DB Changes, isHidden
     public init(accountManager: AccountManager<TelegramAccountManagerTypes>, id: AccountRecordId, basePath: String, testingEnvironment: Bool, postbox: Postbox, network: Network, networkArguments: NetworkInitializationArguments, peerId: PeerId, auxiliaryMethods: AccountAuxiliaryMethods, supplementary: Bool, isSupportUser: Bool, isHidden: Bool) {
         self.accountManager = accountManager
@@ -1190,9 +1186,6 @@ public class Account {
         }
         |> distinctUntilChanged
         
-        // MARK: Nicegram AccountExporter, save signal before set to network.shouldKeepConnection
-        self.shouldKeepConnection = shouldBeMaster
-        //
         self.network.shouldKeepConnection.set(shouldBeMaster)
         self.network.shouldExplicitelyKeepWorkerConnections.set(self.shouldExplicitelyKeepWorkerConnections.get())
         self.network.shouldKeepBackgroundDownloadConnections.set(self.shouldKeepBackgroundDownloadConnections.get())

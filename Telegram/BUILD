@@ -547,10 +547,6 @@ icloud_fragment = "" if not telegram_enable_icloud else """
 <array>
     <string>iCloud.{telegram_bundle_id}</string>
 </array>
-<key>com.apple.developer.ubiquity-container-identifiers</key>
-<array>
-    <string>iCloud.{telegram_bundle_id}</string>
-</array>
 <key>com.apple.developer.ubiquity-kvstore-identifier</key>
 <string>{telegram_team_id}.*</string>
 <key>com.apple.developer.icloud-container-environment</key>
@@ -2393,16 +2389,6 @@ plist_fragment(
     <true/>
     <key>GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS</key>
     <true/>
-    <key>NSUbiquitousContainers</key>
-    <dict>
-        <key>iCloud.{telegram_bundle_id}</key>
-        <dict>
-            <key>NSUbiquitousContainerName</key>
-            <string>Nicegram</string>
-            <key>NSUbiquitousContainerSupportedFolderLevels</key>
-            <string>ANY</string>
-        </dict>
-    </dict>
     """.format(
         nicegram_queries_schemes = nicegram_queries_schemes,
         nicegram_skad_network_items = nicegram_skad_network_items,

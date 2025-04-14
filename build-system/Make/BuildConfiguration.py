@@ -59,7 +59,7 @@ class BuildConfiguration:
         string += 'telegram_premium_iap_product_id = "{}"\n'.format(self.premium_iap_product_id)
         string += 'telegram_aps_environment = "{}"\n'.format(aps_environment)
         string += 'telegram_enable_siri = {}\n'.format(self.enable_siri)
-        string += 'telegram_enable_icloud = {}\n'.format(True)
+        string += 'telegram_enable_icloud = {}\n'.format(self.enable_icloud)
         # MARK: Nicegram BuildConfig
         string += 'google_client_scheme = "{}"\n'.format(self.google_client_scheme)
         string += 'ng_env = "{}"\n'.format(self.ng_env)

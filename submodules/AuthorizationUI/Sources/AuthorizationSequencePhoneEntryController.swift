@@ -1,6 +1,3 @@
-// MARK: Nicegram AccountBackup
-import FeatAccountBackup
-//
 // MARK: Nicegram PhoneEntryBanner
 import FeatPhoneEntryBanner
 //
@@ -256,23 +253,12 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
     private var sawDailyLoginLimitPopup = false
     //
     
-    // MARK: Nicegram AccountBackup
-    private var sawImportAccounts = false
-    //
-    
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
         if !self.animatingIn {
             self.controllerNode.activateInput()
         }
-        
-        // MARK: Nicegram AccountBackup
-        if #available(iOS 15.0, *), !self.sawImportAccounts {
-            self.sawImportAccounts = true
-            ImportAccountsPresenter().presentImportFromBackupOnFirstSession()
-        }
-        //
         
         // MARK: Nicegram AppReviewLogin
         if AppReviewLogin.isActive {

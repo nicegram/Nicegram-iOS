@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "Use Rear camera (Round Videos)";
 
 "NiceFeatures.Folders.Header" = "FOLDERS";
-"NiceFeatures.Account.Header" = "Privacy settings";
+"NiceFeatures.Account.Header" = "ACCOUNT SETTINGS";
 "NiceFeatures.Folders.TgFolders" = "Folders at bottom";
 "NiceFeatures.Folders.TgFolders.Notice" = "iOS-styled folder list";
 
@@ -255,10 +255,3 @@
 "NicegramKeywords.Tooltip" = "Monitor incoming messages for specific keywords";
 "NicegramKeywords.TrackUpdates" = "Track \"%@\" updates";
 "NicegramKeywords.TrackEnabled" = "Tracking enabled for \"%@\" updates!";
-
-/*Accounts Backup*/
-"AccountsBackup.SectionHeader" = "Accounts";
-"AccountsBackup.ImportFromICloud" = "Import from iCloud";
-"AccountsBackup.ImportFromFile" = "Import from File";
-"AccountsBackup.ExportAsFile" = "Export as File";
-"AccountsBackup.DeleteSessions" = "Delete Sessions";

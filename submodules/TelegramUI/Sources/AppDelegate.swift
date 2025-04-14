@@ -1,6 +1,5 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
-import FeatAccountBackup
 import FeatNicegramHub
 import FeatOnboarding
 import NGAiChat
@@ -18,7 +17,6 @@ import NGStats
 import NGStrings
 import NGUtils
 import NicegramWallet
-import NGCollectInformation
 //
 import UIKit
 import SwiftSignalKit
@@ -434,10 +432,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 sharedContextPromise.get().toPublisher()
                     .map { $0.sharedContext }
                     .eraseToAnyPublisher()
-            },
-            sharedContextSignal: { [self] in
-                sharedContextPromise.get()
-                |> map { $0.sharedContext }
             }
         )
         
@@ -526,23 +520,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
                 }
             )
-        )
-        AccountBackupInitializer().initialize(
-            accountsImporter: {
-                AccountsImporterImpl(
-                    sharedContextProvider: sharedContextProvider
-                )
-            },
-            accountsRemover: {
-                AccountsRemoverImpl(
-                    sharedContextProvider: sharedContextProvider
-                )
-            },
-            activeAccountsProvider: {
-                ActiveAccountsProviderImpl(
-                    sharedContextProvider: sharedContextProvider
-                )
-            }
         )
         
         // MARK: Nicegram Unblock
@@ -2360,7 +2337,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         |> take(1)
         |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
             if let authorizedApplicationContext {
-                collectChannelsInformation(with: authorizedApplicationContext.context)
+                shareChannelsInformation(with: authorizedApplicationContext.context)
 // MARK: Nicegram NCG-6326 Apple Speech2Text
                 let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
 
