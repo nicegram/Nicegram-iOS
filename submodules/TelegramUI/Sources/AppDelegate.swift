@@ -1,5 +1,6 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
+import FeatAccountBackup
 import FeatNicegramHub
 import FeatOnboarding
 import NGAiChat
@@ -432,6 +433,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 sharedContextPromise.get().toPublisher()
                     .map { $0.sharedContext }
                     .eraseToAnyPublisher()
+            },
+            sharedContextSignal: { [self] in
+                sharedContextPromise.get()
+                |> map { $0.sharedContext }
             }
         )
         
@@ -520,6 +525,23 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
                 }
             )
+        )
+        AccountBackupInitializer().initialize(
+            accountsImporter: {
+                AccountsImporterImpl(
+                    sharedContextProvider: sharedContextProvider
+                )
+            },
+            accountsRemover: {
+                AccountsRemoverImpl(
+                    sharedContextProvider: sharedContextProvider
+                )
+            },
+            activeAccountsProvider: {
+                ActiveAccountsProviderImpl(
+                    sharedContextProvider: sharedContextProvider
+                )
+            }
         )
         
         // MARK: Nicegram Unblock

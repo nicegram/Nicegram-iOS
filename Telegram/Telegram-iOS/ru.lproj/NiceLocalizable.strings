@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "Задняя камера (Видеосообщения)";
 
 "NiceFeatures.Folders.Header" = "ПАПКИ";
-"NiceFeatures.Account.Header" = "НАСТРОЙКИ АККАУНТА";
+"NiceFeatures.Account.Header" = "Настройки конфиденциальности";
 "NiceFeatures.Folders.TgFolders" = "Папки снизу";
 "NiceFeatures.Folders.TgFolders.Notice" = "Список папок в стиле iOS";
 
@@ -88,7 +88,7 @@
 "Common.SupportChatUsername" = "nicegram_ru";
 "Common.FAQUrl" = "https://nicegram.app/ru/faq/";
 "Common.FAQ.Button" = "Вопросы о Nicegram";
-"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Title" = "Премиум";
 "IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
 "IAP.Premium.Activated" = "Премиум Активирован!";
 "IAP.Common.Restore" = "Восстановить Покупки";
@@ -255,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "Следите за ключевыми словами во входящих сообщениях";
 "NicegramKeywords.TrackUpdates" = "Отслеживать обновления «%@»";
 "NicegramKeywords.TrackEnabled" = "Теперь вы отслеживаете обновления «%@»!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "Аккаунты";
+"AccountsBackup.ImportFromICloud" = "Импортировать из iCloud";
+"AccountsBackup.ImportFromFile" = "Импортировать из файла";
+"AccountsBackup.ExportAsFile" = "Экспортировать как файл";
+"AccountsBackup.DeleteSessions" = "Удалить сеансы";
