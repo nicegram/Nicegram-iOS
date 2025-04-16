@@ -639,7 +639,7 @@
         "bzlTransitiveDigest": "DYtJwFqalhbNx5qiU4Xl0XnVU1L2Jlj5v0BwCw7H9VA=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "9c7ae9b442a847928366b369fc7501a17d79fe96fb6c8248ed911ce68daef59a",
+          "@@//Package.resolved": "7916a9c9369bba8933cfe145e74f9b772217b4926ca47b3879f567bce41abcc3",
           "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
@@ -748,6 +748,25 @@
               "commit": "3086a602b98155eec28b4be79210d6cb1a43e339",
               "remote": "https://github.com/denis15yo/SwiftUI-Flow.git",
               "version": "",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
+            }
+          },
+          "swiftpkg_devicekit": {
+            "bzlFile": "@@rules_swift_package_manager~//swiftpkg/internal:swift_package.bzl",
+            "ruleClassName": "swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_devicekit",
+              "commit": "513b9d7e7a1bd46504a1009bbab943b75ce2f195",
+              "remote": "https://github.com/devicekit/DeviceKit.git",
+              "version": "5.6.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1144,7 +1163,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "9015313c1cf7052aef3e7267dcbe39705b98aff0",
+              "commit": "238a65b273340ec6aad4ec5906144b8cb94ac583",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,

@@ -809,7 +809,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             attributes: [.font: font],
             context: nil
         )
-        self.keywordsButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemSecondaryTextColor, for: .normal)
+        
         let keywordButtonLeftInset: CGFloat = 16
         let keywordButtonWidth = showKeywordButton ? titleRect.width + 8 + keywordButtonLeftInset : 0
         
@@ -823,9 +823,10 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             node: self.keywordsButtonNode,
             frame: CGRect(
                 origin: CGPoint(x: itemsBackgroundLeftX + keywordButtonLeftInset, y: 0),
-                size: CGSize(width: titleRect.width, height: self.scrollNode.view.contentSize.height)
+                size: CGSize(width: titleRect.width, height: max(self.scrollNode.view.contentSize.height, 40))
             )
         )
+        self.keywordsButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemSecondaryTextColor, for: .normal)
         //
         for i in 0 ..< tabSizes.count {
             let (itemId, paneNodeLongSize, paneNodeShortSize, itemNodePair, wasAdded) = tabSizes[i]
