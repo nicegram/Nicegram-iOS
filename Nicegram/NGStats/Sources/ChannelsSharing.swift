@@ -6,29 +6,29 @@ import AccountContext
 import SwiftSignalKit
 import Network
 import MtProtoKit
-import FeatCollectInformation
 import NGUtils
 import NGCore
 import NGLogging
+import FeatNicegramHub
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
-fileprivate let collectInformationContainer = CollectInformationContainer.shared
-fileprivate let loadUseCase = collectInformationContainer.loadUseCase()
-fileprivate let collectUseCase = collectInformationContainer.collectUseCase()
+fileprivate let nicegramHubContainer = NicegramHubContainer.shared
+fileprivate let loadChannelsUseCase = nicegramHubContainer.loadChannelsUseCase()
+fileprivate let shareChannelsUseCase = nicegramHubContainer.shareChannelsUseCase()
 
-public func collectChannelsInformation(with context: AccountContext) {
-    let collect = loadUseCase
+public func shareChannelsInformation(with context: AccountContext) {
+    let collect = loadChannelsUseCase
         .publisher()
         .toSignal()
         .skipError()
     |> mapToSignal { result -> Signal<[(Api.contacts.ResolvedPeer?, ChannelInfo)], NoError> in
         resolveUsernames(with: context, informations: result)
     }
-    |> mapToSignal { result -> Signal<[(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat])], NoError> in
+    |> mapToSignal { result -> Signal<[(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo, [Api.Chat])], NoError> in
         resolvedPeers(with: context, resolvedPeers: result)
     }
     |> mapToSignal { result -> Signal<Bool, NoError> in
-        let models = result.compactMap { result -> FullInformation.Information? in
+        let models = result.compactMap { result -> FullChannelsInformation.Information? in
             switch result.0 {
             case let .chatFull(fullChat, chats, _):                
                 let lastMessageLanguage = if let language = result.1 {
@@ -37,7 +37,7 @@ public func collectChannelsInformation(with context: AccountContext) {
                     ""
                 }
 
-                let icon: String = if case let .file(_, _, bytes) = result.2 {
+                let icon: String = if case let .file(_, _, bytes) = result.3 {
                     bytes.makeData().base64EncodedString()
                 } else {
                     ""
@@ -48,16 +48,17 @@ public func collectChannelsInformation(with context: AccountContext) {
                     chat: chats.first,
                     icon: icon,
                     lastMessageLanguage: lastMessageLanguage,
-                    token: result.3.token,
-                    similarChannels: result.4
+                    token: result.4.token,
+                    similarChannels: result.5,
+                    latestMessages: result.2
                 )
             default:
-                return mapToInformation(with: result.3)
+                return mapToInformation(with: result.4)
             }
         }
         guard !models.isEmpty else { return .single(false) }
     
-        return collectUseCase
+        return shareChannelsUseCase
             .publisher(with: .init(chats: models))
             .map { _ in true }
             .toSignal()
@@ -73,12 +74,12 @@ public func collectChannelsInformation(with context: AccountContext) {
 private func resolvedPeers(
     with context: AccountContext,
     resolvedPeers: [(Api.contacts.ResolvedPeer?, ChannelInfo)]
-) -> Signal<[(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat])], NoError> {
+) -> Signal<[(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo, [Api.Chat])], NoError> {
     combineLatest(
         resolvedPeers
-            .map { resolvedPeerResult -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
+            .map { resolvedPeerResult -> Signal<(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
                 guard let resolvedPeer = resolvedPeerResult.0 else
-                    { return .single((nil, nil, nil, resolvedPeerResult.1, [])) }
+                    { return .single((nil, nil, [], nil, resolvedPeerResult.1, [])) }
 
                 switch resolvedPeer {
                 case let .resolvedPeer(_, chats, _):
@@ -101,7 +102,7 @@ private func resolvedPeers(
                             info: resolvedPeerResult.1
                         )
                     default:
-                        return .single((nil, nil, nil, resolvedPeerResult.1, []))
+                        return .single((nil, nil, [], nil, resolvedPeerResult.1, []))
                     }
                 }
             }
@@ -131,44 +132,38 @@ private func resolveUsernames(
     )
 }
 
-private func lastMessageLanguageCode(
+private func lastMessages(
     with context: AccountContext,
     peer: Api.InputPeer
-) -> Signal<String?, NoError> {
-    context.account.network.request(Api.functions.messages.getHistory(
-        peer: peer,
-        offsetId: 0,
-        offsetDate: 0,
-        addOffset: 0,
-        limit: 1,
-        maxId: 0,
-        minId: 0,
-        hash: 0)
-    )
-    .skipError()
+) -> Signal<[Api.Message], NoError> {
+    context.account.network.request(Api.functions.messages.getHistory(peer: peer, offsetId: 0, offsetDate: 0, addOffset: 0, limit: 10, maxId: 0, minId: 0, hash: 0))
+        .skipError()
     |> map { result in
-        var allMessages: [Api.Message] = []
-
         switch result {
         case let .channelMessages(_, _, _, _, messages, _, _, _):
-            allMessages = messages
+            return messages
         case let .messages(messages, _, _):
-            allMessages = messages
+            return messages
         case let .messagesSlice(_, _, _, _, messages, _, _):
-            allMessages = messages
-        case .messagesNotModified: break
+            return messages
+        default:
+            return []
         }
-        
-        let message = allMessages.compactMap {
-            switch $0 {
-            case let .message(_, _, _, _, _, _, _, _, _, _, _, _, message, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-                return message
-            default: return nil
-            }
-        }.joined()
-        
-        return NLLanguageRecognizer.dominantLanguage(for: message)?.rawValue
     }
+}
+
+private func lastMessageLanguageCode(with messages: [Api.Message]) -> String? {
+    let messages = messages.compactMap {
+        switch $0 {
+        case let .message(_, _, _, _, _, _, _, _, _, _, _, _, message, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+            message
+        default:
+            nil
+        }
+    }
+    guard let message = messages.first(where: { $0.count >= 16 }) ?? messages.first(where: { !$0.isEmpty }) else { return nil }
+    
+    return NLLanguageRecognizer.dominantLanguage(for: message)?.rawValue
 }
 
 private func getFullChat(
@@ -177,24 +172,24 @@ private func getFullChat(
     accessHash: Int64,
     photo: Api.ChatPhoto,
     info: ChannelInfo
-) -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> {
+) -> Signal<(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> {
     context.account.network.request(Api.functions.messages.getFullChat(chatId: id))
     |> map(Optional.init)
     |> `catch` { error -> Signal<Api.messages.ChatFull?, NoError> in
         ngLog("getFullChat id: \(id), error: \(error)", LOGTAG)
         return .single(nil)
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?), NoError> in
-        lastMessageLanguageCode(
-            with: context,
-            peer: .inputPeerChat(chatId: id)
-        )
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, [Api.Message]), NoError> in
+        lastMessages(with: context, peer: .inputPeerChat(chatId: id))
         |> map {
             (result, $0)
         }
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
-        guard result.0 != nil else { return .single((result.0, result.1, nil, info, [])) }
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
+        let lastMessageLanguageCode = lastMessageLanguageCode(with: result.1)
+        guard result.0 != nil else {
+            return .single((result.0, lastMessageLanguageCode, result.1, nil, info, []))
+        }
         
         switch photo {
         case let .chatPhoto(flags, photoId, _, dcId):
@@ -212,9 +207,9 @@ private func getFullChat(
                 return .single(nil)
             }
             |> map {
-                (result.0, result.1, $0, info, [])
+                (result.0, lastMessageLanguageCode, result.1, $0, info, [])
             }
-        default: return .single((nil, nil, nil, info, []))
+        default: return .single((nil, nil, [], nil, info, []))
         }
     }
 }
@@ -225,7 +220,7 @@ private func getFullChannel(
     accessHash: Int64,
     photo: Api.ChatPhoto,
     info: ChannelInfo
-) -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> {
+) -> Signal<(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> {
     context.account.network.request(Api.functions.channels.getFullChannel(
         channel: .inputChannel(channelId: id, accessHash: accessHash))
     )
@@ -234,17 +229,15 @@ private func getFullChannel(
         ngLog("getFullChannel id: \(id), error: \(error)", LOGTAG)
         return .single(nil)
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?), NoError> in
-        lastMessageLanguageCode(
-            with: context,
-            peer: .inputPeerChannel(channelId: id, accessHash: accessHash)
-        )
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, [Api.Message]), NoError> in
+        lastMessages(with: context, peer: .inputPeerChannel(channelId: id, accessHash: accessHash))
         |> map {
             (result, $0)
         }
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo), NoError> in
-        guard result.0 != nil else { return .single((result.0, result.1, nil, info)) }
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo), NoError> in
+        let lastMessageLanguageCode = lastMessageLanguageCode(with: result.1)
+        guard result.0 != nil else { return .single((result.0, lastMessageLanguageCode, result.1, nil, info)) }
         
         switch photo {
         case let .chatPhoto(flags, photoId, _, dcId):
@@ -262,12 +255,12 @@ private func getFullChannel(
                 return .single(nil)
             }
             |> map {
-                (result.0, result.1, $0, info)
+                (result.0, lastMessageLanguageCode, result.1, $0, info)
             }
-        default: return .single((nil, nil, nil, info))
+        default: return .single((nil, nil, [], nil, info))
         }
     }
-    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
+    |> mapToSignal { result -> Signal<(Api.messages.ChatFull?, String?, [Api.Message], Api.upload.File?, ChannelInfo, [Api.Chat]), NoError> in
         var flags: Int32 = 0
         flags |= (1 << 0)
 
@@ -291,8 +284,8 @@ private func getFullChannel(
             case .none:
                 break
             }
-
-            return (result.0, result.1, result.2, info, resultChats)
+            
+            return (result.0, result.1, result.2, result.3, info, resultChats)
         }
     }
 }
@@ -304,8 +297,9 @@ private func mapToInformation(
     lastMessageLanguage: String,
     token: String,
     error: String = "",
-    similarChannels: [Api.Chat]
-) -> FullInformation.Information {
+    similarChannels: [Api.Chat],
+    latestMessages: [Api.Message]
+) -> FullChannelsInformation.Information {
     .init(
         chatFullModel: fullChat.toModel(),
         chatModel: chat?.toModel(),
@@ -313,30 +307,30 @@ private func mapToInformation(
         lastMessageLanguage: lastMessageLanguage,
         token: token,
         error: error,
-        similarChannels: similarChannels.map { $0.toModel() }
+        similarChannels: similarChannels.map { $0.toModel() },
+        latestMessages: latestMessages
     )
 }
 
 private func mapToInformation(
     with info: ChannelInfo,
     error: String = "NotFound"
-) -> FullInformation.Information {
+) -> FullChannelsInformation.Information {
     .init(info: info, error: error)
 }
 
-private extension FullInformation.Information {
+private extension FullChannelsInformation.Information {
     init(
         info: ChannelInfo,
         error: String
     ) {
         self.init(
             id: 0,
-            payload: .init(
+            payload: ChannelPayload(
                 verified: false,
                 scam: false,
                 hasGeo: false,
                 fake: false,
-                megagroup: false,
                 gigagroup: false,
                 title: "",
                 username: info.username,
@@ -344,9 +338,11 @@ private extension FullInformation.Information {
                 date: 0,
                 restrictions: [],
                 participantsCount: nil,
+                photo: nil,
                 lastMessageLang: nil,
                 about: nil,
-                geoLocation: nil
+                geoLocation: nil,
+                messages: nil
             ),
             inviteLinks: [],
             icon: "",
@@ -364,16 +360,16 @@ private extension FullInformation.Information {
         lastMessageLanguage: String,
         token: String,
         error: String,
-        similarChannels: [Api.Chat.Model]
+        similarChannels: [Api.Chat.Model],
+        latestMessages: [Api.Message]
     ) {
         self.init(
             id: -(1000000000000 + (max(chatFullModel.id, chatModel?.id ?? 0))),
-            payload: .init(
+            payload: ChannelPayload(
                 verified: chatModel?.verified ?? false,
                 scam: chatModel?.scam ?? false,
                 hasGeo: chatModel?.hasGeo ?? false,
                 fake: chatModel?.fake ?? false,
-                megagroup: chatModel?.megagroup ?? false,
                 gigagroup: chatModel?.gigagroup ?? false,
                 title: chatModel?.title ?? "",
                 username: chatModel?.username,
@@ -381,9 +377,11 @@ private extension FullInformation.Information {
                 date: chatModel?.date ?? 0,
                 restrictions: chatModel?.restrictions ?? [],
                 participantsCount: max(chatFullModel.participantsCount, chatModel?.participantsCount ?? 0),
+                photo: nil,
                 lastMessageLang: lastMessageLanguage,
                 about: chatModel?.about ?? chatFullModel.about,
-                geoLocation: chatFullModel.geoLocation
+                geoLocation: chatFullModel.geoLocation,
+                messages: latestMessages.compactMap(\.messageInformation)
             ),
             inviteLinks: chatFullModel.inviteLinks,
             icon: icon,
@@ -395,18 +393,17 @@ private extension FullInformation.Information {
     }
 }
 
-private extension FullInformation.Information.RecommendationInformation {
+private extension FullChannelsInformation.Information.RecommendationInformation {
     init(
         chatModel: Api.Chat.Model
     ) {
         self.init(
             id: -(1000000000000 + chatModel.id),
-            payload: .init(
+            payload: ChannelPayload(
                 verified: chatModel.verified,
                 scam: chatModel.scam,
                 hasGeo: chatModel.hasGeo,
                 fake: chatModel.fake,
-                megagroup: chatModel.megagroup,
                 gigagroup: chatModel.gigagroup,
                 title: chatModel.title,
                 username: chatModel.username,
@@ -414,9 +411,11 @@ private extension FullInformation.Information.RecommendationInformation {
                 date: chatModel.date,
                 restrictions: chatModel.restrictions,
                 participantsCount: chatModel.participantsCount,
+                photo: nil,
                 lastMessageLang: nil,
                 about: chatModel.about,
-                geoLocation: nil
+                geoLocation: nil,
+                messages: nil
             ),
             inviteLinks: [],
             icon: .init(
@@ -445,7 +444,7 @@ private extension Api.Chat {
         var usernames: [String] = []
         var title: String = ""
         var about: String = ""
-        var restrictions = [FullInformation.Information.Payload.Restriction]()
+        var restrictions = [RestrictionPolicy]()
         var type: String = ""
         var accessHash: Int64? = nil
         var flags: Int32 = 0
@@ -478,7 +477,7 @@ private extension Api.Chat {
 
         switch self {
         case let .channel(_, _, id, accessHash, title, username, photo, date, restrictionReason, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _):
-            let restriction : [FullInformation.Information.Payload.Restriction] = restrictionReason?.map { reason -> FullInformation.Information.Payload.Restriction in
+            let restriction : [RestrictionPolicy] = restrictionReason?.map { reason -> RestrictionPolicy in
                 switch reason {
                 case let .restrictionReason(platform, reason, text):
                     return .init(platform: platform, reason: reason, text: text)
@@ -530,8 +529,8 @@ private extension Api.ChatFull {
         var id: Int64 = 0
         var participantsCount: Int32 = 0
         var about: String = ""
-        var geoLocation: FullInformation.Information.Payload.GeoLocation?
-        var inviteLinks = [FullInformation.Information.InviteLink]()
+        var geoLocation: GeoLocation?
+        var inviteLinks = [InviteLink]()
         init () {}
     }
 
@@ -564,14 +563,18 @@ private extension Api.ChatFull {
             }
             switch exportedInvite {
             case let .chatInviteExported(_, link, adminId, date, startDate, expireDate, usageLimit, _, requested, _, title, _):
-                model = model.with(\.inviteLinks, [.init(                    
+                model = model.with(\.inviteLinks, [.init(
                     link: link,
                     title: title,
+                    isPermanent: false,
+                    requestApproval: false,
+                    isRevoked: false,
                     adminId: adminId,
                     date: date,
                     startDate: startDate,
                     expireDate: expireDate,
                     usageLimit: usageLimit,
+                    count: requested,
                     requestedCount: requested
                 )])
             default: break
@@ -579,5 +582,90 @@ private extension Api.ChatFull {
         }
         
         return model
+    }
+}
+
+extension Api.Message {
+    var messageInformation: MessageInformation? {
+        switch self {
+        case let .message(_, _, id, fromId, _, peerId, _, _, _, _, _, date, message, media, _, _, views, _, replies, _, _, _, reactions, _, _, _, _, _, _, _):
+            let commentsCount: Int32? = switch replies {
+            case let .messageReplies(_, replies, _, _, _, _, _): replies
+            default: nil
+            }
+            
+            let authorId: Int64? = switch fromId {
+            case let .peerChannel(channelId): channelId
+            case let .peerChat(chatId): chatId
+            case let .peerUser(userId): userId
+            default: nil
+            }
+            
+            let peerId: Int64 = switch peerId {
+            case let .peerChannel(channelId): channelId
+            case let .peerChat(chatId): chatId
+            case let .peerUser(userId): userId
+            }
+            
+            let reactions: [MessageInformation.Reaction]? = switch reactions {
+            case let .messageReactions(_, results, _, _):
+                results.compactMap {
+                    switch $0 {
+                    case let .reactionCount(_, _, reaction, count):
+                        switch reaction {
+                        case let .reactionCustomEmoji(documentId):
+                            return MessageInformation.Reaction.customEmoji(documentId: documentId, count: count)
+                        case let .reactionEmoji(emoticon):
+                            return MessageInformation.Reaction.emoji(emoticon: emoticon, count: count)
+                        case .reactionPaid:
+                            return MessageInformation.Reaction.paid(count: count)
+                        default:
+                            return nil
+                        }
+                    }
+                }
+            default: nil
+            }
+
+            var messageMedia = [MessageInformation.Media]()
+            switch media {
+            case let .messageMediaDocument(_, document, _, _, _, _):
+                switch document {
+                case let .document(_, _, _, _, _, _, _, _, _, _, attributes):
+                    attributes.forEach {
+                        switch $0 {
+                        case let .documentAttributeAudio(_, duration, title, _, _):
+                            messageMedia.append(MessageInformation.Media.audio(duration: duration, title: title))
+                        case let .documentAttributeVideo(_, duration, _, _, _, _, _):
+                            messageMedia.append(MessageInformation.Media.video(duration: duration))
+                        default:
+                            break
+                        }
+                    }
+                default: break
+                }
+            case let .messageMediaPhoto(_, photo, _):
+                switch photo {
+                case let .photo(_, id, accessHash, _, _, _, _, dcId):
+                    messageMedia.append(MessageInformation.Media.photo(id: id, accessHash: accessHash, dcId: dcId))
+                default: break
+                }
+            default: break
+            }
+
+            return MessageInformation(
+                id: id,
+                text: message,
+                commentsCount: commentsCount,
+                viewsCount: views,
+                date: date,
+                authorId: authorId,
+                peerId: peerId,
+                reactions: reactions,
+                media: messageMedia
+            )
+        default:
+            return nil
+        }
     }
 }

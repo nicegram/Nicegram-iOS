@@ -5,8 +5,7 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
-";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -26,7 +25,7 @@
 "NiceFeatures.useBackCam" = "استخدام الكاميرا الخلفية (فيديوهات دائرية)";
 
 "NiceFeatures.Folders.Header" = "المجلدات";
-"NiceFeatures.Account.Header" = "إعدادات الحساب";
+"NiceFeatures.Account.Header" = "إعدادات الخصوصية";
 "NiceFeatures.Folders.TgFolders" = "المجلدات في الأسفل";
 "NiceFeatures.Folders.TgFolders.Notice" = "قائمة مجلدات بأسلوب iOS";
 
@@ -36,8 +35,7 @@
 "NiceFeatures.InstantLock" = "فوراً ";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "حفظ
-";
+"Chat.SaveToCloud" = "حفظ\n";
 
 /*Open Pin*/
 "Chat.OpenPin" = "عرض المثبت";
@@ -257,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "راقب الرسائل الواردة لكلمات مفتاحية محددة";
 "NicegramKeywords.TrackUpdates" = "تعقب تحديثات \"%@\"";
 "NicegramKeywords.TrackEnabled" = "تم تفعيل التعقب لتحديثات \"%@\"!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "الحسابات";
+"AccountsBackup.ImportFromICloud" = "استيراد من iCloud";
+"AccountsBackup.ImportFromFile" = "استيراد من ملف";
+"AccountsBackup.ExportAsFile" = "تصدير كملف";
+"AccountsBackup.DeleteSessions" = "حذف الجلسات";

@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "후면 카메라 사용 (라운드 비디오)";
 
 "NiceFeatures.Folders.Header" = "폴더";
-"NiceFeatures.Account.Header" = "계정 설정";
+"NiceFeatures.Account.Header" = "프라이버시 설정";
 "NiceFeatures.Folders.TgFolders" = "폴더를 하단에 표시";
 "NiceFeatures.Folders.TgFolders.Notice" = "iOS 스타일 폴더 목록";
 
@@ -109,9 +109,7 @@
 "Messages.Translate" = "번역";
 "Messages.UndoTranslate" = "번역 취소";
 "Messages.TranslateError" = "죄송합니다. 번역 할 수 없습니다.";
-"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 
-
-";
+"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 \n\n";
 "Messages.ToLanguage" = "언어";
 "Messages.ToLanguage.WithCode" = "언어: %@";
 "Messages.TranslateError.ToLanguageNotFound" = "텍스트를 번역할 언어를 결정할 수 없습니다. 수동으로 선택하고 다시 시도하십시오.";
@@ -257,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "특정 키워드에 대한 수신 메시지 모니터링";
 "NicegramKeywords.TrackUpdates" = "\"%@\" 업데이트 추적";
 "NicegramKeywords.TrackEnabled" = "\"%@\" 업데이트에 대한 추적이 활성화되었습니다!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "계정";
+"AccountsBackup.ImportFromICloud" = "iCloud에서 가져오기";
+"AccountsBackup.ImportFromFile" = "파일에서 가져오기";
+"AccountsBackup.ExportAsFile" = "파일로 내보내기";
+"AccountsBackup.DeleteSessions" = "세션 삭제";

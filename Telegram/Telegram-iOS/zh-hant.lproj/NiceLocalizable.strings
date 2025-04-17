@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "使用後置鏡頭 (圓形影片)";
 
 "NiceFeatures.Folders.Header" = "資料夾";
-"NiceFeatures.Account.Header" = "帳戶設定";
+"NiceFeatures.Account.Header" = "隱私設定";
 "NiceFeatures.Folders.TgFolders" = "底部資料夾";
 "NiceFeatures.Folders.TgFolders.Notice" = "iOS 風格資料夾列表";
 
@@ -88,7 +88,7 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
-"IAP.Premium.Title" = "進階版功能";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
@@ -255,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "監控包含特定關鍵詞的傳入訊息";
 "NicegramKeywords.TrackUpdates" = "跟蹤“%@”的更新";
 "NicegramKeywords.TrackEnabled" = "已啟用對“%@”更新的跟蹤！";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "帳戶";
+"AccountsBackup.ImportFromICloud" = "從 iCloud 導入";
+"AccountsBackup.ImportFromFile" = "從文件導入";
+"AccountsBackup.ExportAsFile" = "導出為文件";
+"AccountsBackup.DeleteSessions" = "刪除會話";

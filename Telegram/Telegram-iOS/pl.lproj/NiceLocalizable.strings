@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "Użyj tylnej kamery (okrągłe wideo)";
 
 "NiceFeatures.Folders.Header" = "FOLDERY";
-"NiceFeatures.Account.Header" = "USTAWIENIA KONTA";
+"NiceFeatures.Account.Header" = "Ustawienia prywatności";
 "NiceFeatures.Folders.TgFolders" = "Foldery na dole";
 "NiceFeatures.Folders.TgFolders.Notice" = "Lista folderów w stylu iOS";
 
@@ -255,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "Monitoruj przychodzące wiadomości pod kątem określonych słów kluczowych";
 "NicegramKeywords.TrackUpdates" = "Śledź aktualizacje \"%@\"";
 "NicegramKeywords.TrackEnabled" = "Śledzenie aktualizacji \"%@\" włączone!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "Konta";
+"AccountsBackup.ImportFromICloud" = "Importuj z iCloud";
+"AccountsBackup.ImportFromFile" = "Importuj z pliku";
+"AccountsBackup.ExportAsFile" = "Eksportuj jako plik";
+"AccountsBackup.DeleteSessions" = "Usuń sesje";

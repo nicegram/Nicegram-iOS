@@ -18,7 +18,6 @@ import NGRepoUser
 import NGSpecialOffer
 import NGTranslate
 import NGEnv
-import NGCollectInformation
 import NGLogging
 import FeatKeywords
 import NGStrings

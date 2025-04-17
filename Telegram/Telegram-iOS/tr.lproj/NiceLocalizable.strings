@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "Arka kamerayı kullan (Yuvarlak Videolar)";
 
 "NiceFeatures.Folders.Header" = "KLASÖRLER";
-"NiceFeatures.Account.Header" = "HESAP AYARLARI";
+"NiceFeatures.Account.Header" = "Gizlilik ayarları";
 "NiceFeatures.Folders.TgFolders" = "Alttaki Klasörler";
 "NiceFeatures.Folders.TgFolders.Notice" = "iOS tarzı klasör listesi";
 
@@ -112,8 +112,7 @@
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
-";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -256,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "Belirli anahtar kelimeler için gelen mesajları izleyin";
 "NicegramKeywords.TrackUpdates" = "\"%@\" güncellemelerini takip et";
 "NicegramKeywords.TrackEnabled" = "\"%@\" güncellemeleri için takip etkinleştirildi!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "Hesaplar";
+"AccountsBackup.ImportFromICloud" = "iCloud'dan İçe Aktar";
+"AccountsBackup.ImportFromFile" = "Dosyadan İçe Aktar";
+"AccountsBackup.ExportAsFile" = "Dosya Olarak Dışa Aktar";
+"AccountsBackup.DeleteSessions" = "Oturumları Sil";

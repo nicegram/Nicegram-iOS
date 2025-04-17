@@ -1,0 +1,264 @@
+"AppName" = "Nicegram";
+
+"ViewAuditReport" = "Xem Báo cáo CertiK";
+"Wallet" = "Wallet";
+
+/*Common*/
+"Nicegram.PrivacyPolicy" = "Chính sách quyền riêng tư";
+"Nicegram.EULA" = "EULA";
+
+/*ChatFilter*/
+"ChatFilter.Bots" = "Bots";
+"ChatFilter.Channels" = "Kênh";
+"ChatFilter.Private" = "Người dùng";
+"ChatFilter.Groups" = "Nhóm";
+"ChatFilter.Unread" = "Chưa đọc";
+"ChatFilter.Unmuted" = "Không tắt âm";
+"ChatFilter.Favourites" = "Yêu thích";
+
+/*Nice Features*/
+"NiceFeatures.Title" = "Nicegram";
+"NiceFeatures.Tabs.Header" = "THẺ";
+"NiceFeatures.Tabs.ShowContacts" = "Hiển thị Thẻ Danh bạ";
+"NiceFeatures.ChatScreen.Header" = "MÀN HÌNH CHAT";
+"NiceFeatures.ChatScreen.AnimatedStickers" = "Nhãn dán Động";
+"NiceFeatures.useBackCam" = "Sử dụng camera sau (Video Tròn)";
+
+"NiceFeatures.Folders.Header" = "THƯ MỤC";
+"NiceFeatures.Account.Header" = "Cài đặt quyền riêng tư";
+"NiceFeatures.Folders.TgFolders" = "Thư mục ở dưới cùng";
+"NiceFeatures.Folders.TgFolders.Notice" = "Danh sách thư mục kiểu iOS";
+
+"NiceFeatures.RoundVideos.Header" = "VIDEO TRÒN";
+"NiceFeatures.RoundVideos.UseRearCamera" = "Bắt đầu với camera sau";
+
+"NiceFeatures.InstantLock" = "Ngay lập tức";
+
+/*Save to Cloud*/
+"Chat.SaveToCloud" = "Lưu";
+
+/*Open Pin*/
+"Chat.OpenPin" = "Hiển thị Pin";
+"ChatFilter.Admin" = "Quản trị viên";
+"NiceFeatures.Notifications.Fix" = "Tắt thông báo không mong muốn";
+"NiceFeatures.Filters.Header" = "BỘ LỌC (THẺ)";
+"NiceFeatures.Filters.ShowBadge" = "Hiển thị Huy hiệu (Bộ lọc)";
+"NiceFeatures.UseClassicInfoUi" = "Sử dụng giao diện thông tin Chat cổ điển";
+
+/*Common*/
+"Common.ExitNow" = "Thoát ngay";
+"Common.Later" = "Sau";
+"Common.RestartRequired" = "Cần khởi động lại!";
+"NiceFeatures.Tabs.ShowNames" = "Hiển thị tên thẻ";
+"Chat.ForwardAsCopy" = "Chuyển tiếp dưới dạng sao chép";
+
+/*Folder*/
+"Folder.DefaultName" = "Thư mục";
+"Folder.New" = "Thư mục Mới";
+"Folder.Created" = "Thư mục đã được tạo";
+"Folder.AddToExisting" = "Thêm vào Thư mục hiện có";
+"Folder.Updated" = "Thư mục đã được cập nhật";
+"Folder.Create" = "Tạo Thư mục...";
+"Folder.Create.Name" = "Tên Thư mục";
+"Folder.Create.Placeholder" = "Thư mục...";
+"NiceFeatures.HideNumber" = "Ẩn số điện thoại trong cài đặt";
+
+/*NGWeb*/
+"NGWeb.Blocked" = "Không khả dụng trong Nicegram do Hướng dẫn của App Store";
+
+/*Browser*/
+/*Please, Go to «Data & Storage» to configure default browser*/
+"NiceFeatures.Use.DataStorage" = "Vui lòng sử dụng «%1» để cấu hình trình duyệt mặc định";
+"NiceFeatures.Browser.Header" = "URL";
+"NiceFeatures.Browser.UseBrowser" = "Mở liên kết trong trình duyệt";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram sẽ mở liên kết trong trình duyệt ngoài thay vì trong ứng dụng. Trình duyệt đã chọn phải được cài đặt.";
+"ChatFilter.Missed" = "Bỏ lỡ";
+
+/*Premium*/
+"Premium.Title" = "Premium";
+"Premium.UnlimitedPins.Header" = "GHIM CHAT KHÔNG GIỚI HẠN";
+"Premium.SyncPins" = "Đồng bộ Ghim Chat";
+"Premium.SyncPins.Notice.ON" = "Nếu bạn thay đổi ghim chat trong ứng dụng khác, chúng SẼ THAY ĐỔI trong Nicegram.";
+"Premium.SyncPins.Notice.OFF" = "Nếu bạn thay đổi ghim chat trong ứng dụng khác, chúng SẼ KHÔNG THAY ĐỔI trong Nicegram.";
+"Premium.Missed.Header" = "Tin nhắn bị bỏ lỡ";
+"Premium.Missed" = "Thông báo về tin nhắn bỏ lỡ";
+"Premium.Missed.Notice" = "Khi bạn mở ứng dụng sau một khoảng thời gian dài (ngủ, đang học, v.v.), Nicegram sẽ thông báo cho bạn về các tin nhắn cá nhân chưa đọc và các thông báo nhắc.";
+"Folder.DeleteAsk" = "Xóa Thư mục";
+"Folder.NeedPremium" = "Thư mục này chỉ khả dụng với Premium. Bạn có thể nhận Premium hoặc xóa Thư mục bằng cách vuốt.";
+"Common.SupportChatUsername" = "nicegramchat";
+"Common.FAQUrl" = "https://nicegram.app/faq/";
+"Common.FAQ.Button" = "Câu hỏi Thường gặp Nicegram";
+"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Subtitle" = "Các tính năng độc nhất mà bạn không thể từ chối!";
+"IAP.Premium.Activated" = "Premium đã kích hoạt!";
+"IAP.Common.Restore" = "Khôi phục Mua sắm";
+"IAP.Common.CantPay" = "Xin lỗi, bạn không thể thực hiện mua hàng do hạn chế của thiết bị hoặc tài khoản.";
+"IAP.Common.ErrorFetch" = "Xin lỗi, không thể truy xuất mua hàng từ App Store.";
+"IAP.Common.Congrats" = "Chúc mừng!";
+"IAP.Common.ValidateError" = "Xin lỗi, không thể xác nhận mua hàng của bạn.";
+"IAP.Common.Connecting" = "Kết nối đến AppStore...";
+"Premium.OnetapTranslate" = "Nút dịch nhanh";
+"Premium.IgnoreTranslate.Title" = "Ngôn ngữ bị bỏ qua";
+"Premium.IgnoreTranslate.Header" = "Nút dịch nhanh sẽ BỊ TẮT cho các ngôn ngữ bạn chọn bên dưới.";
+"Premium.RecordAllCalls" = "Ghi lại tất cả cuộc gọi";
+
+/*Manage Filters*/
+"ManageFilters.Title" = "Quản lý Thẻ";
+"ManageFilters.Header" = "CẤU HÌNH BỘ LỌC KHẢ DỤNG";
+
+"Messages.Translate" = "Dịch";
+"Messages.UndoTranslate" = "Hoàn tác Dịch";
+"Messages.TranslateError" = "Xin lỗi, không thể dịch.";
+"Messages.SelectAllFromUser" = "Chọn Tất cả từ Người dùng này";
+"Messages.ToLanguage" = "Sang Ngôn ngữ";
+"Messages.ToLanguage.WithCode" = "Sang Ngôn ngữ: %@";
+"Messages.TranslateError.ToLanguageNotFound" = "Không thể xác định ngôn ngữ bạn muốn dịch văn bản thành. Vui lòng chọn thủ công và thử lại.";
+"Messages.ReplyPrivately" = "Phản hồi Riêng tư";
+"Messages.DeleteAllSystemMessages" = "Xóa Tất cả";
+
+/*NG Lab Registration Date*/
+"NGLab.RegDate.Btn" = "Nhận Ngày Đăng ký";
+"NGLab.RegDate.Title" = "Ngày Đăng ký";
+"NGLab.RegDate.Notice" = "Đây là ngày gần đúng";
+"NGLab.RegDate.MenuItem" = "đã đăng ký";
+"NGLab.RegDate.FetchError" = "Xin lỗi, không thể lấy ngày đăng ký.";
+"NGLab.BadDeviceToken" = "[iOS 11 +] Không thể xác minh thiết bị.";
+
+/*Backup Settings*/
+"NiceFeatures.BackupIcloud" = "Đồng bộ Cài đặt & Thư mục với iCloud";
+"NiceFeatures.BackupSettings" = "Sao lưu Cài đặt & Thư mục";
+"NiceFeatures.BackupSettings.Notice" = "Tạo tệp sao lưu. Nhấn vào tệp để khôi phục.";
+"NiceFeatures.BackupSettings.Done" = "Sao lưu đã gửi vào Tin nhắn đã lưu";
+"NiceFeatures.BackupSettings.Error" = "Lỗi khi tạo sao lưu";
+
+"NiceFeatures.RestoreSettings.Done" = "Thư mục & Cài đặt đã được khôi phục thành công";
+"NiceFeatures.RestoreSettings.Error" = "Lỗi khôi phục cài đặt. Tệp có thể bị hỏng";
+
+/*Preview Mode*/
+"Gmod.Restricted" = "Bạn không thể gửi tin nhắn trong Chế độ Xem trước.";
+"Gmod.Unavailable" = "Chế độ Xem trước Không khả dụng";
+"Gmod.Disable.Notice" = "Khả năng nhìn thấy lần cuối của bạn sẽ được đặt thành «%1»";
+"Gmod" = "Chế độ Xem trước";
+"Gmod.Enable" = "Bật Chế độ Xem trước?";
+"Gmod.Disable" = "Tắt Chế độ Xem trước?";
+
+"ShowNicegramButtonInChat" = "Hiển thị nút Nicegram trong chat";
+"ShowAIShortcutsInChat" = "Hiển thị Phím tắt AI trong Chat";
+"SendWithKb" = "Gửi bằng phím «Xuống dòng»";
+"NiceFeatures.ShowGmodIcon" = "Hiển thị biểu tượng Chế độ Xem trước";
+"Gmod.OpenChatQ" = "Mở chat?";
+"Gmod.OpenChatNotice" = "Chat sẽ được đánh dấu là \"đã đọc\", nhưng bạn có thể xem trước chat bằng cách nhấn giữ (force-touch)";
+"Gmod.OpenChatBtn" = "Có, mở chat";
+"Gmod.DisableBtn" = "Tắt cảnh báo";
+
+"NicegramSettings.Other.hidePhoneInSettingsNotice" = "Số của bạn sẽ chỉ ẩn trong giao diện. Để ẩn số với người khác, vui lòng sử dụng cài đặt Quyền riêng tư.";
+"NicegramSettings.Other.showProfileId" = "Hiển thị ID Hồ sơ";
+"NicegramSettings.Other.showRegDate" = "Hiển thị Ngày Đăng ký";
+"NicegramSettings.Unblock.Header" = "Bỏ Chặn";
+"NicegramSettings.Unblock.Button" = "Hướng dẫn Bỏ Chặn";
+"NicegramSettings.Other.hideReactions" = "Ẩn Phản hồi";
+"NicegramSettings.Other.hideReactionsToYourMessages" = "Ẩn phản hồi tới tin nhắn của bạn";
+"NicegramSettings.RoundVideos.DownloadVideos" = "Tải video về Thư viện";
+"Premium.OnetapTranslate.UseIgnoreLanguages" = "Bỏ qua Ngôn ngữ";
+"Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Ứng dụng phát hiện ngôn ngữ của từng tin nhắn trên thiết bị của bạn. Đây là một tác vụ hiệu suất cao có thể ảnh hưởng đến tuổi thọ pin của bạn.";
+"Premium.rememberFolderOnExit" = "Ghi nhớ thư mục hiện tại khi thoát";
+"NicegramSettings.HideStories" = "Ẩn Câu chuyện";
+"NicegramSettings.HideBadgeCounters" = "Ẩn thông báo Phản hồi";
+"NicegramSettings.HideUnreadCounters" = "Ẩn thông báo Chưa đọc";
+"NicegramSettings.HideMentionNotification" = "Ẩn thông báo Nhắc đến";
+"NicegramSettings.EnableAnimationsInChatList" = "Hoạt hình trong danh sách chat";
+"NicegramSettings.EnableGrayscaleAll" = "Độ xám Toàn màn hình";
+"NicegramSettings.EnableGrayscaleInChatList" = "Độ xám trong danh sách chat";
+"NicegramSettings.EnableGrayscaleInChat" = "Độ xám trong chat";
+"NicegramSettings.EnableAppleSpeech2Text" = "Kích hoạt Apple Speech2Text";
+"NicegramSettings.ShowKeywords" = "Hiển thị Thư mục cho Từ khóa";
+
+/*Registration Date*/
+"NiceFeatures.RegDate.OlderThan" = "Cũ hơn";
+"NiceFeatures.RegDate.Approximately" = "Xấp xỉ";
+"NiceFeatures.RegDate.NewerThan" = "Mới hơn";
+
+/*Quick Replies*/
+"NiceFeatures.QuickReplies" = "Phản hồi Nhanh";
+"NiceFeatures.QuickReplies.Description" = "Bạn có thể thêm số lượng phản hồi không giới hạn bằng cách sử dụng nút bên dưới. Để sử dụng phản hồi nhanh, nhập **ký hiệu \"&\"** vào trường nhập tin nhắn.";
+"NiceFeatures.QuickReplies.AddNew" = "Thêm Mới";
+"NiceFeatures.QuickReplies.Placeholder" = "Nhập văn bản";
+
+/*Telegram Premium*/
+"TelegramPremium.Description" = "Rất tiếc, bạn không thể nhận các Tính năng Telegram Premium khi đang đăng nhập vào ứng dụng Nicegram. Vui lòng chuyển đến ứng dụng chính thức của Telegram và đăng ký Telegram Premium. Khi bạn quay lại Nicegram, tất cả các Tính năng Premium sẽ khả dụng để sử dụng.";
+
+/*Double Bottom*/
+"DoubleBottom.Title" = "Đáy đôi";
+"DoubleBottom.Description" = "Để kích hoạt tính năng này, bạn nên có nhiều hơn một tài khoản và bật Mã khóa (đi tới Cài đặt → Quyền riêng tư & Bảo mật → Mã khóa)";
+"DoubleBottom.Enabled.Title" = "Double Bottom đã được kích hoạt";
+"DoubleBottom.Enabled.Description" = "Vui lòng nhớ mã khóa bạn vừa thiết lập và khởi động lại ứng dụng để Double Bottom hoạt động tốt";
+"DoubleBottom.Enabled.OK" = "OK";
+"DoubleBottom.Passcode.Error" = "Vui lòng đặt mã khóa khác với mã bạn sử dụng cho Mã khóa";
+
+/*Rounded Videos*/
+"RoundedVideos.ButtonTitle" = "Gửi dưới dạng Video Tròn";
+"RoundedVideos.MoreButtonTooltip" = "Chuyển đổi video vuông để gửi dưới dạng vòng tròn chỉ với một lần nhấn.";
+"RoundedVideos.SendButtonTooltip" = "Nhấn giữ để gửi video của bạn dưới dạng vòng tròn phong cách.";
+
+/*Speech to text*/
+"SpeechToText.UseOpenAi" = "OpenAI Speech2Text";
+"SpeechToText.Toast" = "[Đăng ký Nicegram Premium]() cho công nghệ OpenAI Speech2Text nhanh hơn và tốt hơn!";
+
+/*Confirm Call*/
+"ConfirmCall.Desc" = "Bạn có chắc chắn muốn thực hiện cuộc gọi không?";
+
+/*Hidden Chats*/
+"ChatContextMenu.Hide" = "Ẩn";
+"ChatContextMenu.Unhide" = "Bỏ ẩn";
+"HiddenChatsTooltip" = "Nhấn giữ nút này để tiết lộ các cuộc chat bí mật bị ẩn";
+
+/*Data Sharing*/
+"NicegramSettings.ShareBotsToggle" = "Chia sẻ thông tin bots";
+"NicegramSettings.ShareChannelsToggle" = "Chia sẻ thông tin kênh";
+"NicegramSettings.ShareStickersToggle" = "Chia sẻ thông tin nhãn dán";
+"NicegramSettings.ShareData.Note" = "Tham gia đóng góp vào wikipedia toàn diện nhất về các kênh và nhóm Telegram bằng cách tự động gửi thông tin kênh và liên kết vào cơ sở dữ liệu của chúng tôi. Chúng tôi không kết nối hồ sơ telegram của bạn và kênh và không chia sẻ dữ liệu cá nhân của bạn.";
+
+/*Call Record*/
+"NicegramCallRecord.Title" = "ghi";
+"NicegramCallRecord.StopAlertTitle" = "Dừng ghi âm";
+"NicegramCallRecord.StopAlertDescription" = "Bạn có muốn dừng ghi âm cuộc gọi này không?";
+"NicegramCallRecord.StopAlertButtonStop" = "Dừng";
+"NicegramCallRecord.StopAlertButtonCancel" = "Hủy";
+"NicegramCallRecord.SavedMessage" = "Cuộc gọi đã ghi được lưu vào **Tin nhắn đã lưu**.";
+
+/*Feed*/
+"NicegramFeed.Title" = "Nguồn cấp";
+"NicegramFeed.Add" = "Thêm vào Nguồn cấp";
+"NicegramFeed.Remove" = "Xóa khỏi Nguồn cấp";
+
+/*SpeechToText*/
+"NicegramSpeechToText.Language.Title" = "Nói thành Văn bản";
+"NicegramSpeechToText.Language.Whisper" = "⚠️ Chọn ngôn ngữ của tin nhắn thoại của bạn để cải thiện độ chính xác hoặc [kích hoạt Whisper](https://my.nicegram.app/) để nhận diện tự động dễ dàng";
+"NicegramSpeechToText.Language.Choose" = "Chọn ngôn ngữ để nhận diện";
+"NicegramSpeechToText.SelectLanguage" = "Chọn Ngôn ngữ";
+"NicegramSpeechToText.NotAvailable" = "Nhận diện nói thành văn bản hiện không khả dụng";
+"NicegramSpeechToText.AuthorisationError" = "Nhận diện nói thành văn bản không khả dụng do cài đặt quyền. Hãy cho phép truy cập cho Nicegram trong Cài đặt thiết bị → Quyền riêng tư & Bảo mật → Nhận diện Giọng nói";
+
+/*Stars Purchase*/
+"StarsPurchase.GetOnFragment" = "Lấy trên Fragment";
+"StarsPurchase.GetOnTelegram" = "Lấy trên Telegram";
+
+/*Spy On Friends*/
+"SpyOnFriends.Title" = "Hoạt động";
+
+/*God’s Eye*/
+"GodsEye.Title" = "God’s Eye";
+
+/*Keywords*/
+"NicegramKeywords.Title" = "✨Từ khóa✨";
+"NicegramKeywords.TitleNoEmoji" = "Từ khóa";
+"NicegramKeywords.Tooltip" = "Giám sát tin nhắn đến cho các từ khóa cụ thể";
+"NicegramKeywords.TrackUpdates" = "Theo dõi cập nhật \"%@\"";
+"NicegramKeywords.TrackEnabled" = "Theo dõi đã được kích hoạt cho cập nhật \"%@\"!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "Tài khoản";
+"AccountsBackup.ImportFromICloud" = "Nhập từ iCloud";
+"AccountsBackup.ImportFromFile" = "Nhập từ tệp";
+"AccountsBackup.ExportAsFile" = "Xuất dưới dạng tệp";
+"AccountsBackup.DeleteSessions" = "Xóa các phiên";

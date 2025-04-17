@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "Usa camera posteriore (Videomessaggi)";
 
 "NiceFeatures.Folders.Header" = "CARTELLE";
-"NiceFeatures.Account.Header" = "IMPOSTAZIONI ACCOUNT";
+"NiceFeatures.Account.Header" = "Impostazioni sulla privacy";
 "NiceFeatures.Folders.TgFolders" = "Cartelle in basso";
 "NiceFeatures.Folders.TgFolders.Notice" = "lista cartelle stile iOS";
 
@@ -71,8 +71,7 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.
-Il browser selezionato deve essere installato.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
 "ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
@@ -256,3 +255,10 @@ Il browser selezionato deve essere installato.";
 "NicegramKeywords.Tooltip" = "Monitora i messaggi in arrivo per parole chiave specifiche";
 "NicegramKeywords.TrackUpdates" = "Traccia gli aggiornamenti di \"%@\"";
 "NicegramKeywords.TrackEnabled" = "Tracciamento abilitato per gli aggiornamenti di \"%@\"!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "Account";
+"AccountsBackup.ImportFromICloud" = "Importa da iCloud";
+"AccountsBackup.ImportFromFile" = "Importa da file";
+"AccountsBackup.ExportAsFile" = "Esporta come file";
+"AccountsBackup.DeleteSessions" = "Elimina sessioni";

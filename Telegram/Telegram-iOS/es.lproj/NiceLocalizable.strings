@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "Usar cámara trasera (Videomensajes)";
 
 "NiceFeatures.Folders.Header" = "CARPETAS";
-"NiceFeatures.Account.Header" = "CONFIGURACIONES DE LA CUENTA";
+"NiceFeatures.Account.Header" = "Configuración de privacidad";
 "NiceFeatures.Folders.TgFolders" = "Carpetas al fondo";
 "NiceFeatures.Folders.TgFolders.Notice" = "Lista de carpetas en el estilo de iOS";
 
@@ -255,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "Monitorea mensajes entrantes para palabras clave específicas";
 "NicegramKeywords.TrackUpdates" = "Rastrear actualizaciones de \"%@\"";
 "NicegramKeywords.TrackEnabled" = "¡Rastreo habilitado para actualizaciones de \"%@\"!";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "Cuentas";
+"AccountsBackup.ImportFromICloud" = "Importar desde iCloud";
+"AccountsBackup.ImportFromFile" = "Importar desde archivo";
+"AccountsBackup.ExportAsFile" = "Exportar como archivo";
+"AccountsBackup.DeleteSessions" = "Eliminar sesiones";

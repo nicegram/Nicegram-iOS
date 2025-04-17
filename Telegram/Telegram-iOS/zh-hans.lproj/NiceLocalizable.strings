@@ -25,7 +25,7 @@
 "NiceFeatures.useBackCam" = "使用后置摄像头(圆形视频)";
 
 "NiceFeatures.Folders.Header" = "分组";
-"NiceFeatures.Account.Header" = "账户设置";
+"NiceFeatures.Account.Header" = "隐私设置";
 "NiceFeatures.Folders.TgFolders" = "分组显示在底部";
 "NiceFeatures.Folders.TgFolders.Notice" = "iOS 风格分组列表";
 
@@ -255,3 +255,10 @@
 "NicegramKeywords.Tooltip" = "监控包含特定关键词的传入消息";
 "NicegramKeywords.TrackUpdates" = "跟踪%@的更新";
 "NicegramKeywords.TrackEnabled" = "已启用对“%@”更新的跟踪！";
+
+/*Accounts Backup*/
+"AccountsBackup.SectionHeader" = "帐户";
+"AccountsBackup.ImportFromICloud" = "从 iCloud 导入";
+"AccountsBackup.ImportFromFile" = "从文件导入";
+"AccountsBackup.ExportAsFile" = "导出为文件";
+"AccountsBackup.DeleteSessions" = "删除会话";

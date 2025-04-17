@@ -51,7 +51,7 @@ public func getLanguageCode(forChatWith id: PeerId?, context: AccountContext) ->
     if let code = getCachedLanguageCode(forChatWith: id) {
         return .single(code)
     } else {
-        return wrapped_detectInterlocutorLanguage(forChatWith: id, context: context)
+        return detectInterlocutorLanguage(forChatWith: id, context: context)
         |> map { code -> String? in
             if let code {
                 setLanguageCode(code, forChatWith: id)

@@ -1,5 +1,6 @@
 // MARK: Nicegram Assistant
 import CoreSwiftUI
+import FeatAccountBackup
 import FeatAssistant
 import FeatOnboarding
 import let NGCoreUI.images
@@ -217,6 +218,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 try await Task.sleep(seconds: 0.5)
                 TosPopupPresenter().presentIfNeeded()
             }
+            
+            ResolveNotMainAccountsPresenter().presentNotMainAccountsIfNeeded()
         }
         
         didAppear = true

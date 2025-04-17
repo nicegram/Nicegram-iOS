@@ -1795,28 +1795,50 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         |> distinctUntilChanged
         
         // MARK: Nicegram ATT
-        let getPlacementAdsUseCase = AttCoreModule.shared.getPlacementAdsUseCase()
-        let getSettingsUseCase = AttCoreModule.shared.getSettingsUseCase()
-        let nicegramAd = getPlacementAdsUseCase
-            .publisher(placementId: .chat)
-            .combineLatestThreadSafe(
-                getSettingsUseCase.publisher()
-            )
-            .map { ad, settings in
-                let forceRemove = !settings.shouldShowAds(placementId: .chat)
-                return NicegramAdInChat(
-                    ad: ad,
-                    forceRemove: forceRemove
+        let areAdsAllowed: Bool
+        let allowedNamespaces = [
+            Namespaces.Peer.CloudChannel,
+            Namespaces.Peer.CloudGroup
+        ]
+        if let peerId = chatLocation.peerId,
+           allowedNamespaces.contains(peerId.namespace) {
+            areAdsAllowed = true
+        } else {
+            areAdsAllowed = false
+        }
+        
+        let nicegramAd: Signal<NicegramAdInChat, NoError>
+        if areAdsAllowed {
+            let getPlacementAdsUseCase = AttCoreModule.shared.getPlacementAdsUseCase()
+            let getSettingsUseCase = AttCoreModule.shared.getSettingsUseCase()
+            nicegramAd = getPlacementAdsUseCase
+                .publisher(placementId: .chat)
+                .combineLatestThreadSafe(
+                    getSettingsUseCase.publisher()
                 )
-            }
-            .prepend(
+                .map { ad, settings in
+                    let forceRemove = !settings.shouldShowAds(placementId: .chat)
+                    return NicegramAdInChat(
+                        ad: ad,
+                        forceRemove: forceRemove
+                    )
+                }
+                .prepend(
+                    NicegramAdInChat(
+                        ad: nil,
+                        forceRemove: false
+                    )
+                )
+                .toSignal()
+                .skipError()
+        } else {
+            nicegramAd = .single(
                 NicegramAdInChat(
                     ad: nil,
-                    forceRemove: false
+                    forceRemove: true
                 )
             )
-            .toSignal()
-            .skipError()
+        }
         
         let getAttConfigUseCase = AttCoreModule.shared.getAttConfigUseCase()
         let attConfig = getAttConfigUseCase()
