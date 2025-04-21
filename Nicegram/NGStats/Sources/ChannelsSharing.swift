@@ -377,7 +377,15 @@ private extension FullChannelsInformation.Information {
                 date: chatModel?.date ?? 0,
                 restrictions: chatModel?.restrictions ?? [],
                 participantsCount: max(chatFullModel.participantsCount, chatModel?.participantsCount ?? 0),
-                photo: nil,
+                photo: .init(
+                    mediaResourceId: nil,
+                    datacenterId: Int(chatModel?.datacenterId ?? 0),
+                    photoId: chatModel?.photoId,
+                    volumeId: nil,
+                    localId: nil,
+                    sizeSpec: nil,
+                    accessHash: chatModel?.accessHash
+                ),
                 lastMessageLang: lastMessageLanguage,
                 about: chatModel?.about ?? chatFullModel.about,
                 geoLocation: chatFullModel.geoLocation,
@@ -411,19 +419,21 @@ private extension FullChannelsInformation.Information.RecommendationInformation 
                 date: chatModel.date,
                 restrictions: chatModel.restrictions,
                 participantsCount: chatModel.participantsCount,
-                photo: nil,
+                photo: .init(
+                    mediaResourceId: nil,
+                    datacenterId: Int(chatModel.datacenterId),
+                    photoId: chatModel.photoId,
+                    volumeId: nil,
+                    localId: nil,
+                    sizeSpec: nil,
+                    accessHash: chatModel.accessHash
+                ),
                 lastMessageLang: nil,
                 about: chatModel.about,
                 geoLocation: nil,
                 messages: nil
             ),
             inviteLinks: [],
-            icon: .init(
-                id: chatModel.photoId,
-                accessHash: chatModel.accessHash,
-                flags: chatModel.flags,
-                datacenterId: chatModel.datacenterId
-            ),
             type: chatModel.type
         )
     }

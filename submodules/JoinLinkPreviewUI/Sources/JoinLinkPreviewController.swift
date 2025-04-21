@@ -1,3 +1,6 @@
+// MARK: Nicegram
+import FeatAttentionEconomy
+//
 import Foundation
 import UIKit
 import Display
@@ -82,10 +85,12 @@ public final class JoinLinkPreviewController: ViewController {
                         if invite.flags.requestNeeded {
                             strongSelf.isRequest = true
                             strongSelf.isGroup = !invite.flags.isBroadcast
-                            strongSelf.controllerNode.setRequestPeer(image: invite.photoRepresentation, title: invite.title, about: invite.about, memberCount: invite.participantsCount, isGroup: !invite.flags.isBroadcast, isVerified: invite.flags.isVerified, isFake: invite.flags.isFake, isScam: invite.flags.isScam)
+                            // MARK: Nicegram ATT, inviteHash added
+                            strongSelf.controllerNode.setRequestPeer(inviteHash: strongSelf.link, image: invite.photoRepresentation, title: invite.title, about: invite.about, memberCount: invite.participantsCount, isGroup: !invite.flags.isBroadcast, isVerified: invite.flags.isVerified, isFake: invite.flags.isFake, isScam: invite.flags.isScam)
                         } else {
                             let data = JoinLinkPreviewData(isGroup: !invite.flags.isBroadcast, isJoined: false)
-                            strongSelf.controllerNode.setInvitePeer(image: invite.photoRepresentation, title: invite.title, about: invite.about, memberCount: invite.participantsCount, members: invite.participants?.map({ $0 }) ?? [], data: data)
+                            // MARK: Nicegram ATT, inviteHash added
+                            strongSelf.controllerNode.setInvitePeer(inviteHash: strongSelf.link, image: invite.photoRepresentation, title: invite.title, about: invite.about, memberCount: invite.participantsCount, members: invite.participants?.map({ $0 }) ?? [], data: data)
                         }
                     case let .alreadyJoined(peer):
                         strongSelf.navigateToPeer(peer, nil)
@@ -141,6 +146,16 @@ public final class JoinLinkPreviewController: ViewController {
     private func join() {
         self.disposable.set((self.context.engine.peers.joinChatInteractively(with: self.link) |> deliverOnMainQueue).start(next: { [weak self] peer in
             if let strongSelf = self {
+                // MARK: Nicegram ATT
+                Task {
+                    await AttCoreModule.shared.claimOngoingActionUseCase()
+                        .claimSubscribeIfNeeded(
+                            chatId: peer?.id.ng_toInt64(),
+                            inviteHash: strongSelf.link
+                        )
+                }
+                //
+                
                 if strongSelf.isRequest {
                     strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .inviteRequestSent(title: strongSelf.presentationData.strings.MemberRequests_RequestToJoinSent, text: strongSelf.isGroup ? strongSelf.presentationData.strings.MemberRequests_RequestToJoinSentDescriptionGroup : strongSelf.presentationData.strings.MemberRequests_RequestToJoinSentDescriptionChannel ), elevatedLayout: true, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
                 } else {

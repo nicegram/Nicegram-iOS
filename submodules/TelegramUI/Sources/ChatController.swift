@@ -10147,7 +10147,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 await AttCoreModule.shared.claimOngoingActionUseCase()
                     .claimSubscribeIfNeeded(
                         chatId: peer.id.ng_toInt64(),
-                        username: peer.addressName ?? ""
+                        inviteHash: nil
                     )
             }
             //

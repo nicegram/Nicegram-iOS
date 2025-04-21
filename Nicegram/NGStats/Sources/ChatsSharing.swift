@@ -253,7 +253,15 @@ private func extractChatPhoto(
         return nil
     }
     
-    return ChatPhoto(mediaResourceId: resource.id.stringRepresentation, datacenterId: resource.datacenterId, photoId: resource.photoId, volumeId: resource.volumeId, localId: resource.localId, sizeSpec: resource.sizeSpec.rawValue)
+    return ChatPhoto(
+        mediaResourceId: resource.id.stringRepresentation,
+        datacenterId: resource.datacenterId,
+        photoId: resource.photoId,
+        volumeId: resource.volumeId,
+        localId: resource.localId,
+        sizeSpec: resource.sizeSpec.rawValue,
+        accessHash: nil
+    )
 }
 
 private func extractUserProfilePhoto(

@@ -301,7 +301,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                     await AttCoreModule.shared.claimOngoingActionUseCase()
                         .claimSubscribeIfNeeded(
                             chatId: peer.id.ng_toInt64(),
-                            username: peer.addressName ?? ""
+                            inviteHash: nil
                         )
                 }
                 //
@@ -491,7 +491,8 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             buttonNode: self.button,
             titleNode: self.button.titleNode,
             apply: isJoinAction,
-            interfaceState: interfaceState
+            chatId: interfaceState.chatLocation.peerId,
+            inviteHash: nil
         )
         //
         

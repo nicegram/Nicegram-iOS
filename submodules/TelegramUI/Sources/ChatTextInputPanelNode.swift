@@ -1,3 +1,6 @@
+// MARK: Nicegram
+import NGUtils
+//
 import Foundation
 import UIKit
 import Display
@@ -3000,7 +3003,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
             buttonNode: self.startButton,
             titleNode: self.startButton.titleNode,
             apply: true,
-            interfaceState: interfaceState
+            chatId: interfaceState.chatLocation.peerId,
+            inviteHash: nil
         )
         //
         

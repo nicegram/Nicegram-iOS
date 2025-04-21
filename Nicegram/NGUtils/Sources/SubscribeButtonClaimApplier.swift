@@ -2,6 +2,7 @@ import AsyncDisplayKit
 import Combine
 import Factory
 import FeatAttentionEconomy
+import Postbox
 
 public class SubscribeButtonClaimApplier {
     
@@ -15,7 +16,8 @@ public class SubscribeButtonClaimApplier {
     private let claimView = AttClaimAnimationView()
     
     @Published private var apply = true
-    @Published private var username = ""
+    @Published private var chatId: PeerId? = nil
+    @Published private var inviteHash: String? = nil
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -23,18 +25,23 @@ public class SubscribeButtonClaimApplier {
     
     public init() {
         getOngoingActionsUseCase.publisher()
-            .combineLatestThreadSafe($apply, $username)
-            .map { actions, apply, username in
+            .combineLatestThreadSafe($apply, $chatId, $inviteHash)
+            .map { actions, apply, chatId, inviteHash in
                 guard apply else {
                     return false
                 }
                 
                 let hasOngoingAction = actions.contains { action in
-                    if case let .subscribe(subscribe) = action.type,
-                       subscribe.username == username {
-                        true
+                    if case let .subscribe(subscribe) = action.type {
+                        if let chatId, subscribe.chatId == chatId.ng_toInt64() {
+                            return true
+                        }
+                        if let inviteHash, subscribe.inviteHash == inviteHash {
+                            return true
+                        }
+                        return false
                     } else {
-                        false
+                        return false
                     }
                 }
                 return hasOngoingAction
@@ -52,7 +59,8 @@ public extension SubscribeButtonClaimApplier {
         buttonNode: ASDisplayNode,
         titleNode: ASDisplayNode,
         apply: Bool,
-        interfaceState: ChatPresentationInterfaceState
+        chatId: PeerId?,
+        inviteHash: String?
     ) {
         if claimView.superview == nil {
             buttonNode.view.addSubview(claimView)
@@ -71,9 +79,12 @@ public extension SubscribeButtonClaimApplier {
             self.apply = apply
         }
         
-        let username = interfaceState.renderedPeer?.peer?.addressName ?? ""
-        if self.username != username {
-            self.username = username
+        if self.chatId != chatId {
+            self.chatId = chatId
+        }
+        
+        if self.inviteHash != inviteHash {
+            self.inviteHash = inviteHash
         }
     }
 }
