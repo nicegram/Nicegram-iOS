@@ -8,7 +8,7 @@ import FeatPhoneEntryBanner
 import FeatAuth
 //
 // MARK: Nicegram DailyLoginLimit
-import CoreSwiftUI
+import class CoreSwiftUI.DailyLoginLimitPopupPresenter
 //
 // MARK: Nicegram Onboarding
 import FeatOnboarding

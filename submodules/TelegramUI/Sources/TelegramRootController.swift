@@ -1,5 +1,6 @@
 // MARK: Nicegram Assistant
-import CoreSwiftUI
+import struct CoreSwiftUI.Popover
+import class CoreSwiftUI.TosPopupPresenter
 import FeatAccountBackup
 import FeatAssistant
 import FeatOnboarding

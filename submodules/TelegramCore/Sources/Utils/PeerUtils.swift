@@ -75,6 +75,12 @@ public extension Peer {
         }
     }
     
+    // MARK: Nicegram
+    var usernameWithAtSign: String {
+        addressName.flatMap { "@\($0)" } ?? ""
+    }
+    //
+    
     var usernames: [TelegramPeerUsername] {
         switch self {
         case let user as TelegramUser:
