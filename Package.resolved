@@ -132,7 +132,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/ai-chat-analysis",
-        "revision" : "7165d89ff033f1b84e118828df39f2053832df7e"
+        "revision" : "a84d1e8e498a2dd12eb1edb2d1be3c504fe1947b"
       }
     },
     {
