@@ -1,10 +1,11 @@
-// MARK: Nicegram HiddenChats
+// MARK: Nicegram
+import FeatAiChatAnalysis
 import FeatHiddenChats
-import NGStrings
-//
-// MARK: Nicegram NCG-6373 Feed tab
+import NGCoreUI
 import NGData
+import NGStrings
 import NGUI
+import NGUtils
 //
 import Foundation
 import UIKit
@@ -393,6 +394,34 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                 items.append(.separator)
                             }
                         }
+                        
+                        // MARK: Nicegram AiChatAnalysis
+                        let getAiChatAnalysisConfigUseCase = AiChatAnalysisModule.shared.getConfigUseCase()
+                        let aiChatAnalysisAvailable = getAiChatAnalysisConfigUseCase().availability.chatContextMenu
+                        if aiChatAnalysisAvailable {
+                            if case .separator = items.last {} else {
+                                items.append(.separator)
+                            }
+                            
+                            items.append(.action(ContextMenuActionItem(
+                                text: FeatAiChatAnalysis.strings.aiChatAnalysis(),
+                                icon: { theme in
+                                    generateTintedImage(
+                                        image: NGCoreUI.images.aiChatAnalysis(),
+                                        color: theme.contextMenu.primaryColor
+                                    )
+                                },
+                                action: { _, f in
+                                    AiChatAnalysisHelper(context: context).presentSession(
+                                        peerId: peerId
+                                    )
+                                    f(.default)
+                                }
+                            )))
+                            
+                            items.append(.separator)
+                        }
+                        //
                         
                         if isUnread {
                             items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_MarkAsRead, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/MarkAsRead"), color: theme.contextMenu.primaryColor) }, action: { _, f in

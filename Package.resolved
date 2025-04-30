@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "a1f20cedb14bd1ddc63e30a8dd10c85e8f1fa011",
-        "version" : "2.8.7"
+        "revision" : "1d2e3a0304d5d56bae7d0c0bb861921374390bb0",
+        "version" : "2.8.8"
       }
     },
     {
@@ -118,12 +118,21 @@
       }
     },
     {
+      "identity" : "networkimage",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gonzalezreal/NetworkImage",
+      "state" : {
+        "revision" : "2849f5323265386e200484b0d0f896e73c3411b9",
+        "version" : "6.0.1"
+      }
+    },
+    {
       "identity" : "nicegram-assistant-ios",
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "b07e366a846be1ef382f05856e2ec743332e19c1"
+        "revision" : "31e81d0897c9b6c4d15286c6fc57f3d2f3f303d1"
       }
     },
     {
@@ -217,6 +226,24 @@
       }
     },
     {
+      "identity" : "swift-case-paths",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/swift-case-paths.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "a2f9f1eba577968f85fa839d61794e0af22f2bee"
+      }
+    },
+    {
+      "identity" : "swift-cmark",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-cmark",
+      "state" : {
+        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
+        "version" : "0.6.0"
+      }
+    },
+    {
       "identity" : "swift-collections",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
@@ -232,6 +259,15 @@
       "state" : {
         "revision" : "a0a57e949a8903563aba4615869310c0ebf14c03",
         "version" : "1.4.0"
+      }
+    },
+    {
+      "identity" : "swift-markdown-ui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/swift-markdown-ui.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "3cdcc4cd26432b08e9bf0fdf0f1ea5d4b34f0550"
       }
     },
     {
@@ -385,6 +421,15 @@
       "state" : {
         "revision" : "0e550cdee72844b35431afc3a1e176042be6d0f0",
         "version" : "2.13.0"
+      }
+    },
+    {
+      "identity" : "xctest-dynamic-overlay",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
+      "state" : {
+        "revision" : "39de59b2d47f7ef3ca88a039dff3084688fe27f4",
+        "version" : "1.5.2"
       }
     }
   ],

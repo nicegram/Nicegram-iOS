@@ -93,7 +93,7 @@ private extension ActiveAccountsProviderImpl {
                 isImported: nicegramAttribute.imported,
                 peerId: peerId.ng_toInt64(),
                 telegramData: telegramData,
-                username: peer.addressName.flatMap { "@\($0)" } ?? ""
+                username: peer.usernameWithAtSign
             )
         }
     }

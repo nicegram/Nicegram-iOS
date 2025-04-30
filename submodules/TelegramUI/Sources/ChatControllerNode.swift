@@ -979,6 +979,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     )
                 }
             }
+            nicegramOverlayView.openAiChatAnalysis = { [weak self] in
+                guard let self else { return }
+                AiChatAnalysisHelper(context: self.context).presentSession(
+                    peerId: chatLocation.peerId
+                )
+            }
             nicegramOverlayView.openWallet = { [weak self] in
                 self?.openNicegramWallet()
             }

@@ -10,6 +10,7 @@ swift_library(
         "//submodules/AccountContext:AccountContext",
         "//submodules/ItemListUI:ItemListUI",
         "@FirebaseSDK//:FirebaseAnalytics",
+        "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
         "@swiftpkg_nicegram_assistant_ios//:NGAnalytics",
         "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",

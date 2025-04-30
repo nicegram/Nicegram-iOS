@@ -392,16 +392,24 @@ final class JoinLinkPreviewControllerNode: ViewControllerTracingNode, ASScrollVi
         self.setNeedsLayout()
     }
     
-    func setInvitePeer(image: TelegramMediaImageRepresentation?, title: String, about: String?, memberCount: Int32, members: [EnginePeer], data: JoinLinkPreviewData) {
+    // MARK: Nicegram ATT, inviteHash added
+    func setInvitePeer(inviteHash: String, image: TelegramMediaImageRepresentation?, title: String, about: String?, memberCount: Int32, members: [EnginePeer], data: JoinLinkPreviewData) {
         let contentNode = JoinLinkPreviewPeerContentNode(context: self.context, theme: self.presentationData.theme, strings: self.presentationData.strings, content: .invite(isGroup: data.isGroup, image: image, title: title, about: about, memberCount: memberCount, members: members))
+        // MARK: Nicegram ATT
+        contentNode.inviteHash = inviteHash
+        //
         contentNode.join = { [weak self] in
             self?.join?()
         }
         self.transitionToContentNode(contentNode)
     }
     
-    func setRequestPeer(image: TelegramMediaImageRepresentation?, title: String, about: String?, memberCount: Int32, isGroup: Bool, isVerified: Bool, isFake: Bool, isScam: Bool) {
+    // MARK: Nicegram ATT, inviteHash added
+    func setRequestPeer(inviteHash: String, image: TelegramMediaImageRepresentation?, title: String, about: String?, memberCount: Int32, isGroup: Bool, isVerified: Bool, isFake: Bool, isScam: Bool) {
         let contentNode = JoinLinkPreviewPeerContentNode(context: self.context, theme: self.presentationData.theme, strings: self.presentationData.strings, content: .request(isGroup: isGroup, image: image, title: title, about: about, memberCount: memberCount, isVerified: isVerified, isFake: isFake, isScam: isScam))
+        // MARK: Nicegram ATT
+        contentNode.inviteHash = inviteHash
+        //
         contentNode.join = { [weak self] in
             self?.join?()
         }

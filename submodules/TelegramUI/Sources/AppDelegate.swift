@@ -480,20 +480,26 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             stickersDataProvider: {
                 StickersDataProviderImpl(contextProvider: contextProvider)
             },
+            telegramChatInviteChecker: {
+                TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
+            },
             telegramIdProvider: {
                 TelegramIdProviderImpl(contextProvider: contextProvider)
             },
+            telegramLinkResolver: {
+                TelegramLinkResolverImpl(contextProvider: contextProvider)
+            },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
-            },
-            telegramThemeProvider: {
-                TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
             telegramMessagesProvider: {
                 TelegramMessagesProviderImpl(contextProvider: contextProvider)
             },
             telegramPeerImageProvider: {
                 TelegramPeerImageProviderImpl(contextProvider: contextProvider)
+            },
+            telegramThemeProvider: {
+                TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
