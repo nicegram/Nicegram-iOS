@@ -1,12 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 
-# Workaround for telegram build_configuration mechanism
-# (passing --override_repository option when running project build script).
-# This mechanism does not work when bzlmod is enabled 
-# ('common --enable_bzlmod' inside .bazelrc file). 
-# When Telegram itself migrates to Bzlmod, we can remove this line.
-http_archive(name = "build_configuration")
-
 http_archive(
     name = "bazel_skylib",
     sha256 = "f24ab666394232f834f74d19e2ff142b0af17466ea0c69a3f4c276ee75f6efce",
@@ -100,6 +93,11 @@ bazel_skylib_workspace()
 load("@build_bazel_rules_apple//apple:apple.bzl", "provisioning_profile_repository")
 provisioning_profile_repository(
     name = "local_provisioning_profiles",
+)
+
+local_repository(
+    name = "build_configuration",
+    path = "build-input/configuration-repository",
 )
 
 http_archive(

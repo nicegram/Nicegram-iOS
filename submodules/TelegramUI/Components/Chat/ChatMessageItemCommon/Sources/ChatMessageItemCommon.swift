@@ -313,8 +313,6 @@ public func canAddMessageReactions(message: Message, account: Account) -> Bool {
             if story.isMention {
                 return false
             }
-        } else if let _ = media as? TelegramMediaExpiredContent {
-            return false
         }
     }
     return true

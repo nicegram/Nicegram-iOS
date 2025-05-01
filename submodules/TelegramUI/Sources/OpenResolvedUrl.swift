@@ -339,21 +339,83 @@ func openResolvedUrlImpl(
                                 navigationController?.pushViewController(controller)
                             })
                         } else {
-                            present(JoinLinkPreviewController(context: context, link: link, navigateToPeer: { peer, peekData in
+                            let joinLinkPreviewController = JoinLinkPreviewController(context: context, link: link, navigateToPeer: { peer, peekData in
                                 openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: peekData))
-                            }, parentNavigationController: navigationController, resolvedState: resolvedState), nil)
+                            }, parentNavigationController: navigationController, resolvedState: resolvedState)
+                            if joinLinkPreviewController.navigationPresentation == .flatModal {
+                                navigationController?.pushViewController(joinLinkPreviewController)
+                            } else {
+                                present(joinLinkPreviewController, nil)
+                            }
                         }
                     default:
-                        present(JoinLinkPreviewController(context: context, link: link, navigateToPeer: { peer, peekData in
+                        let joinLinkPreviewController = JoinLinkPreviewController(context: context, link: link, navigateToPeer: { peer, peekData in
                             openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: peekData))
-                        }, parentNavigationController: navigationController, resolvedState: resolvedState), nil)
+                        }, parentNavigationController: navigationController, resolvedState: resolvedState)
+                        if joinLinkPreviewController.navigationPresentation == .flatModal {
+                            navigationController?.pushViewController(joinLinkPreviewController)
+                        } else {
+                            present(joinLinkPreviewController, nil)
+                        }
                     }
                 })
             } else {
-                present(JoinLinkPreviewController(context: context, link: link, navigateToPeer: { peer, peekData in
+                let joinLinkPreviewController = JoinLinkPreviewController(context: context, link: link, navigateToPeer: { peer, peekData in
                     openPeer(peer, .chat(textInputState: nil, subject: nil, peekData: peekData))
-                }, parentNavigationController: navigationController), nil)
+                }, parentNavigationController: navigationController, resolvedState: nil)
+                if joinLinkPreviewController.navigationPresentation == .flatModal {
+                    navigationController?.pushViewController(joinLinkPreviewController)
+                } else {
+                    present(joinLinkPreviewController, nil)
+                }
             }
+        case let .joinCall(link):
+            dismissInput()
+        
+            let progressSignal = Signal<Never, NoError> { subscriber in
+                progress?.set(.single(true))
+                return ActionDisposable {
+                    Queue.mainQueue().async() {
+                        progress?.set(.single(false))
+                    }
+                }
+            }
+            |> runOn(Queue.mainQueue())
+            |> delay(0.1, queue: Queue.mainQueue())
+            let progressDisposable = progressSignal.startStrict()
+            
+            var signal = context.engine.peers.joinCallLinkInformation(link)
+            signal = signal
+            |> afterDisposed {
+                Queue.mainQueue().async {
+                    progressDisposable.dispose()
+                }
+            }
+        
+            let _ = (signal
+            |> deliverOnMainQueue).startStandalone(next: { [weak navigationController] resolvedCallLink in
+                if let currentGroupCallController = context.sharedContext.currentGroupCallController as? VoiceChatController, case let .group(groupCall) = currentGroupCallController.call, let currentCallId = groupCall.callId, currentCallId == resolvedCallLink.id {
+                    context.sharedContext.navigateToCurrentCall()
+                    return
+                }
+                
+                navigationController?.pushViewController(context.sharedContext.makeJoinSubjectScreen(context: context, mode: JoinSubjectScreenMode.groupCall(JoinSubjectScreenMode.GroupCall(
+                    id: resolvedCallLink.id,
+                    accessHash: resolvedCallLink.accessHash,
+                    slug: link,
+                    inviter: resolvedCallLink.inviter,
+                    members: resolvedCallLink.members,
+                    totalMemberCount: resolvedCallLink.totalMemberCount
+                ))))
+            }, error: { _ in
+                var elevatedLayout = true
+                if case .chat = urlContext {
+                    elevatedLayout = false
+                }
+                present(UndoOverlayController(presentationData: presentationData, content: .linkRevoked(text: presentationData.strings.Chat_ToastCallLinkExpired_Text), elevatedLayout: elevatedLayout, animateInAsReplacement: false, action: { _ in
+                    return true
+                }), nil)
+            })
         case let .localization(identifier):
             dismissInput()
             present(LanguageLinkPreviewController(context: context, identifier: identifier), nil)
@@ -739,6 +801,7 @@ func openResolvedUrlImpl(
                 }
                 if let currentState = starsContext.currentState, currentState.balance >= StarsAmount(value: amount, nanos: 0) {
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                    //TODO:localize
                     let controller = UndoOverlayController(
                         presentationData: presentationData,
                         content: .universal(

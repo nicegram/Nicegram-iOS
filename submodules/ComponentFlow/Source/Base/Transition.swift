@@ -490,9 +490,9 @@ public struct ComponentTransition {
         self.setScaleWithSpring(layer: view.layer, scale: scale, delay: delay, completion: completion)
     }
     
-    public func setScale(layer: CALayer, scale: CGFloat, delay: Double = 0.0, completion: ((Bool) -> Void)? = nil) {
+    public func setScale(layer: CALayer, scale: CGFloat, delay: Double = 0.0, beginWithCurrentState: Bool = false, completion: ((Bool) -> Void)? = nil) {
         let currentTransform: CATransform3D
-        if layer.animation(forKey: "transform") != nil || layer.animation(forKey: "transform.scale") != nil {
+        if beginWithCurrentState, layer.animation(forKey: "transform") != nil || layer.animation(forKey: "transform.scale") != nil {
             currentTransform = layer.presentation()?.transform ?? layer.transform
         } else {
             currentTransform = layer.transform
@@ -954,6 +954,33 @@ public struct ComponentTransition {
             )
         }
     }
+    
+    public func setShadowPath(layer: CALayer, path: CGPath, completion: ((Bool) -> Void)? = nil) {
+        switch self.animation {
+        case .none:
+            layer.shadowPath = path
+            completion?(true)
+        case let .curve(duration, curve):
+            if let previousPath = layer.shadowPath, previousPath != path {
+                layer.animate(
+                    from: previousPath,
+                    to: path,
+                    keyPath: "shadowPath",
+                    duration: duration,
+                    delay: 0.0,
+                    curve: curve,
+                    removeOnCompletion: true,
+                    additive: false,
+                    completion: completion
+                )
+                layer.shadowPath = path
+            } else {
+                layer.shadowPath = path
+                completion?(true)
+            }
+        }
+    }
+    
     
     public func setShapeLayerPath(layer: CAShapeLayer, path: CGPath, completion: ((Bool) -> Void)? = nil) {
         switch self.animation {

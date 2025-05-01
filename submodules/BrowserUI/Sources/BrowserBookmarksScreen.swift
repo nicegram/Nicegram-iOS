@@ -99,6 +99,7 @@ public final class BrowserBookmarksScreen: ViewController {
                 return nil
             }, presentGlobalOverlayController: { _, _ in
             }, callPeer: { _, _ in
+            }, openConferenceCall: { _ in                
             }, longTap: { _, _ in
             }, openCheckoutOrReceipt: { _, _ in
             }, openSearch: {
@@ -173,6 +174,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, attemptedNavigationToPrivateQuote: { _ in
             }, forceUpdateWarpContents: {
             }, playShakeAnimation: {
+            }, displayQuickShare: { _, _ ,_ in
             }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings, pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
             
             

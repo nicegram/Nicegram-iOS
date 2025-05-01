@@ -69,11 +69,19 @@ public final class GiftItemComponent: Component {
                 }
             }
         }
+        
+        public enum Font {
+            case generic
+            case monospaced
+        }
+        
         public let text: String
+        public let font: Font
         public let color: Color
         
-        public init(text: String, color: Color) {
+        public init(text: String, font: Font = .generic, color: Color) {
             self.text = text
+            self.font = font
             self.color = color
         }
     }
@@ -227,6 +235,8 @@ public final class GiftItemComponent: Component {
         private var animationLayer: InlineStickerItemLayer?
         private var selectionLayer: SimpleShapeLayer?
         
+        private var animationFile: TelegramMediaFile?
+        
         private var disposables = DisposableSet()
         private var fetchedFiles = Set<Int64>()
         
@@ -272,7 +282,7 @@ public final class GiftItemComponent: Component {
             let previousComponent = self.component
             self.component = component
             self.componentState = state
-            
+                        
             self.isGestureEnabled = component.contextAction != nil
             
             var themeUpdated = false
@@ -293,7 +303,8 @@ public final class GiftItemComponent: Component {
                 cornerRadius = 10.0
             case .profile:
                 size = availableSize
-                iconSize = CGSize(width: 88.0, height: 88.0)
+                let side = floor(88.0 * availableSize.height / 116.0)
+                iconSize = CGSize(width: side, height: side)
                 cornerRadius = 10.0
             case .thumbnail:
                 size = CGSize(width: availableSize.width, height: availableSize.width)
@@ -307,6 +318,10 @@ public final class GiftItemComponent: Component {
                 size = availableSize
                 iconSize = CGSize(width: floor(size.width * 0.6), height: floor(size.width * 0.6))
                 cornerRadius = 4.0
+            }
+            var backgroundSize = size
+            if case .grid = component.mode {
+                backgroundSize = CGSize(width: backgroundSize.width - 4.0, height: backgroundSize.height - 4.0)
             }
             
             self.backgroundLayer.cornerRadius = cornerRadius
@@ -404,7 +419,14 @@ public final class GiftItemComponent: Component {
                 }
             }
             
-            if self.animationLayer == nil, let emoji {
+            var animationTransition = transition
+            if self.animationLayer == nil || self.animationFile?.fileId != animationFile?.fileId, let emoji {
+                animationTransition = .immediate
+                self.animationFile = animationFile
+                if let animationLayer = self.animationLayer {
+                    self.animationLayer = nil
+                    animationLayer.removeFromSuperlayer()
+                }
                 let animationLayer = InlineStickerItemLayer(
                     context: .account(component.context),
                     userLocation: .other,
@@ -420,12 +442,17 @@ public final class GiftItemComponent: Component {
                 )
                 animationLayer.isVisibleForAnimations = true
                 self.animationLayer = animationLayer
-                self.layer.addSublayer(animationLayer)
+                
+                if let patternView = self.patternView.view {
+                    self.layer.insertSublayer(animationLayer, above: patternView.layer)
+                } else {
+                    self.layer.insertSublayer(animationLayer, above: self.backgroundLayer)
+                }
             }
             
             let animationFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - iconSize.width) / 2.0), y: component.mode == .generic ? animationOffset : floorToScreenPixels((size.height - iconSize.height) / 2.0)), size: iconSize)
             if let animationLayer = self.animationLayer {
-                transition.setFrame(layer: animationLayer, frame: animationFrame)
+                animationTransition.setFrame(layer: animationLayer, frame: animationFrame)
             }
             
             if let backgroundColor {
@@ -436,14 +463,14 @@ public final class GiftItemComponent: Component {
                         subject: .custom(backgroundColor, secondBackgroundColor, patternColor, patternFile?.fileId.id),
                         files: files,
                         isDark: false,
-                        avatarCenter: CGPoint(x: size.width / 2.0, y: animationFrame.midY),
+                        avatarCenter: CGPoint(x: backgroundSize.width / 2.0, y: animationFrame.midY),
                         avatarScale: 1.0,
-                        defaultHeight: size.height,
+                        defaultHeight: backgroundSize.height,
                         avatarTransitionFraction: 0.0,
                         patternTransitionFraction: 0.0
                     )),
                     environment: {},
-                    containerSize: availableSize
+                    containerSize: backgroundSize
                 )
                 if let backgroundView = self.patternView.view {
                     if backgroundView.superview == nil {
@@ -454,7 +481,7 @@ public final class GiftItemComponent: Component {
                         backgroundView.clipsToBounds = true
                         self.insertSubview(backgroundView, at: 1)
                     }
-                    backgroundView.frame = CGRect(origin: .zero, size: size)
+                    backgroundView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - backgroundSize.width) / 2.0), y: floorToScreenPixels((size.height - backgroundSize.height) / 2.0)), size: backgroundSize)
                 }
             }
             
@@ -592,11 +619,19 @@ public final class GiftItemComponent: Component {
                 } else {
                     ribbonFontSize = 10.0
                 }
+                let ribbonFont: UIFont
+                switch ribbon.font {
+                case .generic:
+                    ribbonFont = Font.semibold(ribbonFontSize)
+                case .monospaced:
+                    ribbonFont = Font.with(size: 10.0, design: .monospace, weight: .semibold)
+                }
+                
                 let ribbonTextSize = self.ribbonText.update(
                     transition: transition,
                     component: AnyComponent(
                         MultilineTextComponent(
-                            text: .plain(NSAttributedString(string: ribbon.text, font: Font.semibold(ribbonFontSize), textColor: .white)),
+                            text: .plain(NSAttributedString(string: ribbon.text, font: ribbonFont, textColor: .white)),
                             horizontalAlignment: .center
                         )
                     ),
@@ -617,11 +652,17 @@ public final class GiftItemComponent: Component {
                         }
                         self.ribbon.image = generateGradientTintedImage(image: UIImage(bundleImageName: "Premium/GiftRibbon"), colors: ribbon.color.colors(theme: component.theme), direction: direction)
                     }
+                    
+                    var ribbonOffset: CGPoint = CGPoint(x: 2.0, y: -2.0)
+                    if case .grid = component.mode {
+                        ribbonOffset = .zero
+                    }
+                    
                     if let ribbonImage = self.ribbon.image {
-                        self.ribbon.frame = CGRect(origin: CGPoint(x: size.width - ribbonImage.size.width + 2.0, y: -2.0), size: ribbonImage.size)
+                        self.ribbon.frame = CGRect(origin: CGPoint(x: size.width - ribbonImage.size.width + ribbonOffset.x, y: ribbonOffset.y), size: ribbonImage.size)
                     }
                     ribbonTextView.transform = CGAffineTransform(rotationAngle: .pi / 4.0)
-                    ribbonTextView.center = CGPoint(x: size.width - 20.0, y: 20.0)
+                    ribbonTextView.center = CGPoint(x: size.width - 22.0 + ribbonOffset.x, y: 22.0 + ribbonOffset.y)
                 }
             } else {
                 if self.ribbonText.view?.superview != nil {
@@ -659,7 +700,8 @@ public final class GiftItemComponent: Component {
                 self.backgroundLayer.backgroundColor = component.theme.list.itemBlocksBackgroundColor.cgColor
             }
             
-            transition.setFrame(layer: self.backgroundLayer, frame: CGRect(origin: .zero, size: size))
+            let backgroundFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - backgroundSize.width) / 2.0), y: floorToScreenPixels((size.height - backgroundSize.height) / 2.0)), size: backgroundSize)
+            transition.setFrame(layer: self.backgroundLayer, frame: backgroundFrame)
             transition.setFrame(view: self.containerButton, frame: CGRect(origin: .zero, size: size))
             
             var iconBackgroundSize: CGSize?
@@ -768,7 +810,7 @@ public final class GiftItemComponent: Component {
             
             if case .grid = component.mode {
                 let lineWidth: CGFloat = 2.0
-                let selectionFrame = CGRect(origin: .zero, size: size).insetBy(dx: 3.0, dy: 3.0)
+                let selectionFrame = backgroundFrame.insetBy(dx: 3.0, dy: 3.0)
                 
                 if component.isSelected {
                     let selectionLayer: SimpleShapeLayer
@@ -777,7 +819,11 @@ public final class GiftItemComponent: Component {
                     } else {
                         selectionLayer = SimpleShapeLayer()
                         self.selectionLayer = selectionLayer
-                        self.layer.addSublayer(selectionLayer)
+                        if self.ribbon.layer.superlayer != nil {
+                            self.layer.insertSublayer(selectionLayer, below: self.ribbon.layer)
+                        } else {
+                            self.layer.addSublayer(selectionLayer)
+                        }
                         
                         selectionLayer.fillColor = UIColor.clear.cgColor
                         selectionLayer.strokeColor = UIColor.white.cgColor

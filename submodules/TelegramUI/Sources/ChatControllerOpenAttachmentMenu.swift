@@ -212,13 +212,17 @@ extension ChatControllerImpl {
         let premiumGiftOptions: [CachedPremiumGiftOption]
         
         var showPremiumGift = false
-        if !premiumConfiguration.isPremiumDisabled {
-            if premiumConfiguration.showPremiumGiftInAttachMenu || self.presentationInterfaceState.hasBirthdayToday {
+        if !premiumConfiguration.isPremiumDisabled && self.presentationInterfaceState.disallowedGifts != TelegramDisallowedGifts.All {
+            if self.presentationInterfaceState.alwaysShowGiftButton {
+                showPremiumGift = true
+            } else if self.presentationInterfaceState.hasBirthdayToday {
+                showPremiumGift = true
+            } else if premiumConfiguration.showPremiumGiftInAttachMenu || premiumConfiguration.showPremiumGiftInTextField {
                 showPremiumGift = true
             }
         }
         
-        if let peer = self.presentationInterfaceState.renderedPeer?.peer, showPremiumGift, let user = peer as? TelegramUser, !user.isPremium && !user.isDeleted && user.botInfo == nil && !user.flags.contains(.isSupport) {
+        if let peer = self.presentationInterfaceState.renderedPeer?.peer, showPremiumGift, let user = peer as? TelegramUser, !user.isDeleted && user.botInfo == nil && !user.flags.contains(.isSupport) {
             premiumGiftOptions = self.presentationInterfaceState.premiumGiftOptions
         } else {
             premiumGiftOptions = []
@@ -420,7 +424,7 @@ extension ChatControllerImpl {
                         let _ = currentLocationController.swap(controller)
                     })
                 case .contact:
-                    let contactsController = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: true, requirePhoneNumbers: true))
+                    let contactsController = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: .always, requirePhoneNumbers: true))
                     contactsController.presentScheduleTimePicker = { [weak self] completion in
                         if let strongSelf = self {
                             strongSelf.presentScheduleTimePicker(completion: completion)
@@ -1616,7 +1620,7 @@ extension ChatControllerImpl {
     }
     
     func presentContactPicker() {
-        let contactsController = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: self.context, updatedPresentationData: self.updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: true))
+        let contactsController = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: self.context, updatedPresentationData: self.updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: .always))
         contactsController.navigationPresentation = .modal
         self.chatDisplayNode.dismissInput()
         self.effectiveNavigationController?.pushViewController(contactsController)

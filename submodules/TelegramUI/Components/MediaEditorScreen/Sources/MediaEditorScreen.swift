@@ -1249,8 +1249,7 @@ final class MediaEditorScreenComponent: Component {
                     isGeneralThreadClosed: nil,
                     replyMessage: nil,
                     accountPeerColor: nil,
-                    businessIntro: nil,
-                    starGiftsAvailable: false
+                    businessIntro: nil
                 )
                 
                 let availableInputMediaWidth = previewSize.width

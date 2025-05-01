@@ -6,6 +6,9 @@ import SwiftSignalKit
 import PeerInfoUI
 import OverlayStatusController
 import PresentationDataUtils
+import InviteLinksUI
+import UndoUI
+import TelegramPresentationData
 
 extension VideoChatScreenComponent.View {
     func openInviteMembers() {
@@ -18,18 +21,26 @@ extension VideoChatScreenComponent.View {
             disablePeerIds.append(groupCall.accountContext.account.peerId)
             if let members = self.members {
                 for participant in members.participants {
-                    if !disablePeerIds.contains(participant.peer.id) {
-                        disablePeerIds.append(participant.peer.id)
+                    if let participantPeer = participant.peer, !disablePeerIds.contains(participantPeer.id) {
+                        disablePeerIds.append(participantPeer.id)
                     }
                 }
             }
-            let controller = CallController.openConferenceAddParticipant(context: groupCall.accountContext, disablePeerIds: disablePeerIds, completion: { [weak self] peerIds in
+            let controller = CallController.openConferenceAddParticipant(context: groupCall.accountContext, disablePeerIds: disablePeerIds, shareLink: { [weak self] in
+                guard let self else {
+                    return
+                }
+                guard let inviteLinks = self.inviteLinks else {
+                    return
+                }
+                self.presentShare(inviteLinks)
+            }, completion: { [weak self] peerIds in
                 guard let self, case let .group(groupCall) = self.currentCall else {
                     return
                 }
                 
                 for peerId in peerIds {
-                    let _ = groupCall.invitePeer(peerId)
+                    let _ = groupCall.invitePeer(peerId.id, isVideo: peerId.isVideo)
                 }
             })
             self.environment?.controller()?.push(controller)
@@ -52,7 +63,7 @@ extension VideoChatScreenComponent.View {
                 if inviteIsLink {
                     inviteType = .shareLink
                 } else {
-                    inviteType = .invite
+                    inviteType = .invite(isMultipleUsers: true)
                 }
             }
             
@@ -88,7 +99,7 @@ extension VideoChatScreenComponent.View {
                     
                     var filters: [ChannelMembersSearchFilter] = []
                     if let members = self.members {
-                        filters.append(.disable(Array(members.participants.map { $0.peer.id })))
+                        filters.append(.disable(Array(members.participants.compactMap { $0.peer?.id })))
                     }
                     if case let .channel(groupPeer) = groupPeer {
                         if !groupPeer.hasPermission(.inviteMembers) && inviteLinks?.listenerLink == nil {
@@ -118,7 +129,7 @@ extension VideoChatScreenComponent.View {
                         if let participant {
                             dismissController?()
                             
-                            if groupCall.invitePeer(participant.peer.id) {
+                            if groupCall.invitePeer(participant.peer.id, isVideo: false) {
                                 let text: String
                                 if case let .channel(channel) = self.peer, case .broadcast = channel.info {
                                     text = environment.strings.LiveStream_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
@@ -230,7 +241,7 @@ extension VideoChatScreenComponent.View {
                                             }
                                             dismissController?()
                                             
-                                            if groupCall.invitePeer(peer.id) {
+                                            if groupCall.invitePeer(peer.id, isVideo: false) {
                                                 let text: String
                                                 if case let .channel(channel) = self.peer, case .broadcast = channel.info {
                                                     text = environment.strings.LiveStream_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string
@@ -302,7 +313,7 @@ extension VideoChatScreenComponent.View {
                                             }
                                             dismissController?()
                                             
-                                            if groupCall.invitePeer(peer.id) {
+                                            if groupCall.invitePeer(peer.id, isVideo: false) {
                                                 let text: String
                                                 if case let .channel(channel) = self.peer, case .broadcast = channel.info {
                                                     text = environment.strings.LiveStream_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: presentationData.nameDisplayOrder)).string

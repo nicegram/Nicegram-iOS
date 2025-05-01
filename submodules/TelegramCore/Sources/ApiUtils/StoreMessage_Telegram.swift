@@ -93,13 +93,18 @@ public func tagsForStoreMessage(incoming: Bool, attributes: [MessageAttribute], 
             tags.insert(.webPage)
         } else if let action = attachment as? TelegramMediaAction {
             switch action.action {
-                case let .phoneCall(_, discardReason, _, _):
-                    globalTags.insert(.Calls)
-                    if incoming, let discardReason = discardReason, case .missed = discardReason {
-                        globalTags.insert(.MissedCalls)
-                    }
-                default:
-                    break
+            case let .phoneCall(_, discardReason, _, _):
+                globalTags.insert(.Calls)
+                if incoming, let discardReason = discardReason, case .missed = discardReason {
+                    globalTags.insert(.MissedCalls)
+                }
+            case let .conferenceCall(conferenceCall):
+                globalTags.insert(.Calls)
+                if incoming, conferenceCall.flags.contains(.isMissed) {
+                    globalTags.insert(.MissedCalls)
+                }
+            default:
+                break
             }
         } else if let location = attachment as? TelegramMediaMap, location.liveBroadcastingTimeout != nil {
             tags.insert(.liveLocation)
@@ -118,9 +123,6 @@ public func tagsForStoreMessage(incoming: Bool, attributes: [MessageAttribute], 
         }
     }
     
-    if !incoming {
-        assert(true)
-    }
     return (tags, globalTags)
 }
 
@@ -227,7 +229,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             }
             
             switch action {
-            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique:
+            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice:
                     break
                 case let .messageActionChannelMigrateFrom(_, chatId):
                     result.append(PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatId)))
@@ -262,6 +264,10 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
                     result.append(boostPeer.peerId)
                 case let .messageActionPaymentRefunded(_, peer, _, _, _, _):
                     result.append(peer.peerId)
+                case let .messageActionConferenceCall(_, _, _, otherParticipants):
+                    if let otherParticipants {
+                        result.append(contentsOf: otherParticipants.map(\.peerId))
+                    }
             }
         
             return result

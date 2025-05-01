@@ -301,6 +301,7 @@ public enum ResolvedUrl {
     case instantView(TelegramMediaWebpage, String?)
     case proxy(host: String, port: Int32, username: String?, password: String?, secret: Data?)
     case join(String)
+    case joinCall(String)
     case localization(String)
     case confirmationCode(Int)
     case cancelAccountReset(phone: String, hash: String)
@@ -727,15 +728,18 @@ public struct StoryCameraTransitionIn {
     public weak var sourceView: UIView?
     public let sourceRect: CGRect
     public let sourceCornerRadius: CGFloat
+    public let useFillAnimation: Bool
     
     public init(
         sourceView: UIView,
         sourceRect: CGRect,
-        sourceCornerRadius: CGFloat
+        sourceCornerRadius: CGFloat,
+        useFillAnimation: Bool
     ) {
         self.sourceView = sourceView
         self.sourceRect = sourceRect
         self.sourceCornerRadius = sourceCornerRadius
+        self.useFillAnimation = useFillAnimation
     }
 }
 
@@ -924,6 +928,72 @@ public enum JoinAffiliateProgramScreenMode {
     case active(Active)
 }
 
+public enum JoinSubjectScreenMode {
+    public final class Group {
+        public enum VerificationStatus {
+            case fake
+            case scam
+            case verified
+        }
+
+        public let link: String
+        public let isGroup: Bool
+        public let isPublic: Bool
+        public let isRequest: Bool
+        public let verificationStatus: VerificationStatus?
+        public let image: TelegramMediaImageRepresentation?
+        public let title: String
+        public let about: String?
+        public let memberCount: Int32
+        public let members: [EnginePeer]
+        
+        public init(link: String, isGroup: Bool, isPublic: Bool, isRequest: Bool, verificationStatus: VerificationStatus?, image: TelegramMediaImageRepresentation?, title: String, about: String?, memberCount: Int32, members: [EnginePeer]) {
+            self.link = link
+            self.isGroup = isGroup
+            self.isPublic = isPublic
+            self.isRequest = isRequest
+            self.verificationStatus = verificationStatus
+            self.image = image
+            self.title = title
+            self.about = about
+            self.memberCount = memberCount
+            self.members = members
+        }
+    }
+    
+    public final class GroupCall {
+        public let id: Int64
+        public let accessHash: Int64
+        public let slug: String
+        public let inviter: EnginePeer?
+        public let members: [EnginePeer]
+        public let totalMemberCount: Int
+        
+        public init(id: Int64, accessHash: Int64, slug: String, inviter: EnginePeer?, members: [EnginePeer], totalMemberCount: Int) {
+            self.id = id
+            self.accessHash = accessHash
+            self.slug = slug
+            self.inviter = inviter
+            self.members = members
+            self.totalMemberCount = totalMemberCount
+        }
+    }
+    
+    case group(Group)
+    case groupCall(GroupCall)
+}
+
+public enum OldChannelsControllerIntent {
+    case join
+    case create
+    case upgrade
+}
+
+public enum SendInviteLinkScreenSubject {
+    case chat(peer: EnginePeer, link: String?)
+    case groupCall(link: String)
+}
+
 public protocol SharedAccountContext: AnyObject {
     var sharedContainerPath: String { get }
     var basePath: String { get }
@@ -1059,11 +1129,13 @@ public protocol SharedAccountContext: AnyObject {
     func makeChatQrCodeScreen(context: AccountContext, peer: Peer, threadId: Int64?, temporary: Bool) -> ViewController
     
     func makePremiumIntroController(context: AccountContext, source: PremiumIntroSource, forceDark: Bool, dismissed: (() -> Void)?) -> ViewController
+    func makePremiumIntroController(sharedContext: SharedAccountContext, engine: TelegramEngineUnauthorized, inAppPurchaseManager: InAppPurchaseManager, source: PremiumIntroSource, proceed: (() -> Void)?) -> ViewController
+    
     func makePremiumDemoController(context: AccountContext, subject: PremiumDemoSubject, forceDark: Bool, action: @escaping () -> Void, dismissed: (() -> Void)?) -> ViewController
     func makePremiumLimitController(context: AccountContext, subject: PremiumLimitSubject, count: Int32, forceDark: Bool, cancel: @escaping () -> Void, action: @escaping () -> Bool) -> ViewController
     
     func makeStarsGiftController(context: AccountContext, birthdays: [EnginePeer.Id: TelegramBirthday]?, completion: @escaping (([EnginePeer.Id]) -> Void)) -> ViewController
-    func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource, completion: (([EnginePeer.Id]) -> Void)?) -> ViewController
+    func makePremiumGiftController(context: AccountContext, source: PremiumGiftSource, completion: (([EnginePeer.Id]) -> Signal<Never, TransferStarGiftError>)?) -> ViewController
     func makeGiftOptionsController(context: AccountContext, peerId: EnginePeer.Id, premiumOptions: [CachedPremiumGiftOption], hasBirthday: Bool, completion: (() -> Void)?) -> ViewController
     func makePremiumPrivacyControllerController(context: AccountContext, subject: PremiumPrivacySubject, peerId: EnginePeer.Id) -> ViewController
     func makePremiumBoostLevelsController(context: AccountContext, peerId: EnginePeer.Id, subject: BoostSubject, boostStatus: ChannelBoostStatus, myBoostStatus: MyBoostStatus, forceDark: Bool, openStats: (() -> Void)?) -> ViewController
@@ -1130,12 +1202,21 @@ public protocol SharedAccountContext: AnyObject {
     
     func makeAffiliateProgramSetupScreenInitialData(context: AccountContext, peerId: EnginePeer.Id, mode: AffiliateProgramSetupScreenMode) -> Signal<AffiliateProgramSetupScreenInitialData, NoError>
     func makeAffiliateProgramSetupScreen(context: AccountContext, initialData: AffiliateProgramSetupScreenInitialData) -> ViewController
-    
     func makeAffiliateProgramJoinScreen(context: AccountContext, sourcePeer: EnginePeer, commissionPermille: Int32, programDuration: Int32?, revenuePerUser: Double, mode: JoinAffiliateProgramScreenMode) -> ViewController
+    
+    func makeJoinSubjectScreen(context: AccountContext, mode: JoinSubjectScreenMode) -> ViewController
+    
+    func makeOldChannelsController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, intent: OldChannelsControllerIntent, completed: @escaping (Bool) -> Void) -> ViewController
     
     func makeGalleryController(context: AccountContext, source: GalleryControllerItemSource, streamSingleVideo: Bool, isPreview: Bool) -> ViewController
     
+    func makeAccountFreezeInfoScreen(context: AccountContext) -> ViewController
+    
+    func makeSendInviteLinkScreen(context: AccountContext, subject: SendInviteLinkScreenSubject, peers: [TelegramForbiddenInvitePeer], theme: PresentationTheme?) -> ViewController
+    
     func makeDebugSettingsController(context: AccountContext?) -> ViewController?
+    
+    func openCreateGroupCallUI(context: AccountContext, peerIds: [EnginePeer.Id], parentController: ViewController)
     
     func navigateToCurrentCall()
     var hasOngoingCall: ValuePromise<Bool> { get }
@@ -1234,6 +1315,7 @@ public protocol AccountContext: AnyObject {
     var availableMessageEffects: Signal<AvailableMessageEffects?, NoError> { get }
     
     var isPremium: Bool { get }
+    var isFrozen: Bool { get }
     var userLimits: EngineConfiguration.UserLimits { get }
     var peerNameColors: PeerNameColors { get }
     

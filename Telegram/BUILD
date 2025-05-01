@@ -2275,6 +2275,7 @@ plist_fragment(
         <string>ucbrowser</string>
         <string>dolphin</string>
         <string>instagram-stories</string>
+        <string>yangomaps</string>
     </array>
     <key>LSRequiresIPhoneOS</key>
     <true/>

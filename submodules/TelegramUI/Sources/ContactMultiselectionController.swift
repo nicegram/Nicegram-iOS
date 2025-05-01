@@ -86,6 +86,13 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
     private let onlyWriteable: Bool
     private let isGroupInvitation: Bool
     private let limit: Int32?
+
+    public var isCallVideoOptionSelected: Bool {
+        guard self.displayNode.isNodeLoaded, let displayNode = self.displayNode as? ContactMultiselectionControllerNode else {
+            return false
+        }
+        return displayNode.isCallVideoOptionSelected
+    }
     
     init(_ params: ContactMultiselectionControllerParams) {
         self.params = params
@@ -241,8 +248,13 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
         }
         
         switch self.mode {
-        case .groupCreation:
-            let maxCount: Int32 = self.limitsConfiguration?.maxSupergroupMemberCount ?? 5000
+        case let .groupCreation(isCall):
+            let maxCount: Int32
+            if isCall {
+                maxCount = self.context.userLimits.maxConferenceParticipantCount
+            } else {
+                maxCount = self.limitsConfiguration?.maxSupergroupMemberCount ?? 5000
+            }
             let count: Int
             switch self.contactsNode.contentNode {
             case let .contacts(contactsNode):
@@ -250,8 +262,16 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
             case let .chats(chatsNode):
                 count = chatsNode.currentState.selectedPeerIds.count
             }
-            self.titleView.title = CounterControllerTitle(title: self.params.title ?? self.presentationData.strings.Compose_NewGroupTitle, counter: "\(count)/\(maxCount)")
-            if self.rightNavigationButton == nil {
+            if isCall && count <= 1 {
+                self.titleView.title = CounterControllerTitle(title: self.params.title ?? self.presentationData.strings.Compose_NewGroupTitle, counter: nil)
+            } else {
+                var count = count
+                if isCall {
+                    count += 1
+                }
+                self.titleView.title = CounterControllerTitle(title: self.params.title ?? self.presentationData.strings.Compose_NewGroupTitle, counter: "\(count)/\(maxCount)")
+            }
+            if self.rightNavigationButton == nil && !isCall {
                 let rightNavigationButton = UIBarButtonItem(title: self.presentationData.strings.Common_Next, style: .done, target: self, action: #selector(self.rightNavigationButtonPressed))
                 self.rightNavigationButton = rightNavigationButton
                 self.navigationItem.rightBarButtonItem = self.rightNavigationButton
@@ -328,7 +348,12 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                 var addedToken: EditableTokenListToken?
                 var removedTokenId: AnyHashable?
                 
-                let maxRegularCount: Int32 = strongSelf.limitsConfiguration?.maxGroupMemberCount ?? 200
+                let maxRegularCount: Int32
+                if case .groupCreation(true) = strongSelf.mode {
+                    maxRegularCount = strongSelf.context.userLimits.maxConferenceParticipantCount
+                } else {
+                    maxRegularCount = strongSelf.limitsConfiguration?.maxGroupMemberCount ?? 200
+                }
                 var displayCountAlert = false
                 
                 var selectionState: ContactListNodeGroupSelectionState?
@@ -349,6 +374,10 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                             if updatedState.selectedPeerIndices[.peer(peer.id)] == nil {
                                 removedTokenId = peer.id
                             } else {
+                                var selectedPeerMap = updatedState.selectedPeerMap
+                                selectedPeerMap[.peer(peer.id)] = .peer(peer: peer, isGlobal: false, participantCount: nil)
+                                updatedState = updatedState.withSelectedPeerMap(selectedPeerMap)
+                                
                                 if updatedState.selectedPeerIndices.count >= maxRegularCount {
                                     displayCountAlert = true
                                     updatedState = updatedState.withToggledPeerId(.peer(peer.id))
@@ -414,6 +443,24 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                     strongSelf.present(textAlertController(context: strongSelf.context, title: nil, text: strongSelf.presentationData.strings.CreateGroup_SoftUserLimitAlert, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                 }
             }
+        }
+
+        if !self.params.initialSelectedPeers.isEmpty {
+            for peer in self.params.initialSelectedPeers {
+                self.contactsNode.openPeer?(.peer(peer: peer._asPeer(), isGlobal: false, participantCount: nil))
+            }
+            /*if case let .contacts(contactsNode) = self.contactsNode.contentNode {
+                contactsNode.updateSelectionState { state in
+                    var updatedState = state ?? ContactListNodeGroupSelectionState()
+                    var selectedPeerMap = updatedState.selectedPeerMap
+                    for peer in self.params.initialSelectedPeers {
+                        updatedState = updatedState.withToggledPeerId(.peer(peer.id))
+                        selectedPeerMap[.peer(peer.id)] = .peer(peer: peer._asPeer(), isGlobal: false, participantCount: nil)
+                    }
+                    updatedState = updatedState.withSelectedPeerMap(selectedPeerMap)
+                    return updatedState
+                }
+            }*/
         }
         
         self.contactsNode.openPeerMore  = { [weak self] peer, node, gesture in
@@ -538,8 +585,13 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                             break
                     }
                     switch strongSelf.mode {
-                        case .groupCreation:
-                            let maxCount: Int32 = strongSelf.limitsConfiguration?.maxSupergroupMemberCount ?? 5000
+                        case let .groupCreation(isCall):
+                            let maxCount: Int32
+                            if isCall {
+                                maxCount = strongSelf.context.userLimits.maxConferenceParticipantCount
+                            } else {
+                                maxCount = strongSelf.limitsConfiguration?.maxSupergroupMemberCount ?? 5000
+                            }
                             strongSelf.titleView.title = CounterControllerTitle(title: strongSelf.presentationData.strings.Compose_NewGroupTitle, counter: "\(updatedCount)/\(maxCount)")
                         case .premiumGifting:
                             let maxCount: Int32 = strongSelf.limit ?? 10

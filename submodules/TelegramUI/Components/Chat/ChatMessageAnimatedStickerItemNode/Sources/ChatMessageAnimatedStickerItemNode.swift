@@ -1044,6 +1044,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             var edited = false
             var viewCount: Int? = nil
             var dateReplies = 0
+            var starsCount: Int64?
             var dateReactionsAndPeers = mergedMessageReactionsAndPeers(accountPeerId: item.context.account.peerId, accountPeer: item.associatedData.accountPeer, message: item.message)
             if item.message.isRestricted(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }) {
                 dateReactionsAndPeers = ([], [])
@@ -1057,6 +1058,8 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     if let channel = item.message.peers[item.message.id.peerId] as? TelegramChannel, case .group = channel.info {
                         dateReplies = Int(attribute.count)
                     }
+                } else if let attribute = attribute as? PaidStarsMessageAttribute, item.message.id.peerId.namespace == Namespaces.Peer.CloudChannel {
+                    starsCount = attribute.stars.value
                 }
             }
             
@@ -1086,6 +1089,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 areReactionsTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId),
                 messageEffect: messageEffect,
                 replyCount: dateReplies,
+                starsCount: starsCount,
                 isPinned: item.message.tags.contains(.pinned) && !item.associatedData.isInPinnedListMode && !isReplyThread,
                 hasAutoremove: item.message.isSelfExpiring,
                 canViewReactionList: canViewMessageReactionList(message: item.message),
@@ -1475,6 +1479,9 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                             strongSelf.addSubnode(updatedShareButtonNode)
                             updatedShareButtonNode.pressed = { [weak strongSelf] in
                                 strongSelf?.shareButtonPressed()
+                            }
+                            updatedShareButtonNode.longPressAction = { [weak strongSelf] node, gesture in
+                                strongSelf?.openQuickShare(node: node, gesture: gesture)
                             }
                         }
                         let buttonSize = updatedShareButtonNode.update(presentationData: item.presentationData, controllerInteraction: item.controllerInteraction, chatLocation: item.chatLocation, subject: item.associatedData.subject, message: item.message, account: item.context.account)
@@ -2424,6 +2431,12 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             } else {
                 item.controllerInteraction.openMessageShareMenu(item.message.id)
             }
+        }
+    }
+    
+    private func openQuickShare(node: ASDisplayNode, gesture: ContextGesture) {
+        if let item = self.item {
+            item.controllerInteraction.displayQuickShare(item.message.id, node, gesture)
         }
     }
     

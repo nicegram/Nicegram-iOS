@@ -371,7 +371,7 @@ final class GiftSetupScreenComponent: Component {
                 } else {
                     fatalError()
                 }
-            case let .starGift(starGift):
+            case let .starGift(starGift, _):
                 finalPrice = starGift.price
                 if self.includeUpgrade, let upgradeStars = starGift.upgradeStars  {
                     finalPrice += upgradeStars
@@ -390,8 +390,13 @@ final class GiftSetupScreenComponent: Component {
                 let completion = component.completion
                 
                 let signal = BotCheckoutController.InputData.fetch(context: component.context, source: source)
-                |> `catch` { _ -> Signal<BotCheckoutController.InputData, SendBotPaymentFormError> in
-                    return .fail(.generic)
+                |> `catch` { error -> Signal<BotCheckoutController.InputData, SendBotPaymentFormError> in
+                    switch error {
+                    case .disallowedStarGifts:
+                        return .fail(.disallowedStarGift)
+                    default:
+                        return .fail(.generic)
+                    }
                 }
                 |> mapToSignal { inputData -> Signal<SendBotPaymentResult, SendBotPaymentFormError> in
                     return component.context.engine.payments.sendStarsPaymentForm(formId: inputData.form.id, source: source)
@@ -403,7 +408,7 @@ final class GiftSetupScreenComponent: Component {
                         return
                     }
 
-                    if peerId.namespace == Namespaces.Peer.CloudChannel, case let .starGift(starGift) = component.subject {
+                    if peerId.namespace == Namespaces.Peer.CloudChannel, case let .starGift(starGift, _) = component.subject {
                         var controllers = navigationController.viewControllers
                         controllers = controllers.filter { !($0 is GiftSetupScreen) && !($0 is GiftOptionsScreenProtocol) }
                         navigationController.setViewControllers(controllers, animated: true)
@@ -465,12 +470,14 @@ final class GiftSetupScreenComponent: Component {
                     switch error {
                     case .starGiftOutOfStock:
                         errorText = presentationData.strings.Gift_Send_ErrorOutOfStock
+                    case .disallowedStarGift:
+                        errorText = presentationData.strings.Gift_Send_ErrorDisallowed(self.peerMap[peerId]?.compactDisplayTitle ?? "").string
                     default:
                         errorText = presentationData.strings.Gift_Send_ErrorUnknown
                     }
                     
                     if let errorText = errorText {
-                        let alertController = textAlertController(context: component.context, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
+                        let alertController = textAlertController(context: component.context, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})], parseMarkdown: true)
                         controller.present(alertController, in: .window(.root))
                     }
                 })
@@ -497,17 +504,8 @@ final class GiftSetupScreenComponent: Component {
                             self.state?.updated()
                             
                             starsContext.add(balance: StarsAmount(value: stars, nanos: 0))
-                            
-                            let _ = (starsContext.state
-                            |> take(until: { value in
-                                if let value {
-                                    if !value.flags.contains(.isPendingBalance) {
-                                        return SignalTakeAction(passthrough: true, complete: true)
-                                    }
-                                }
-                                return SignalTakeAction(passthrough: false, complete: false)
-                            })
-                            |> deliverOnMainQueue).start(next: { _ in
+                            let _ = (starsContext.onUpdate
+                            |> deliverOnMainQueue).start(next: {
                                 proceed()
                             })
                         }
@@ -559,6 +557,10 @@ final class GiftSetupScreenComponent: Component {
             if self.component == nil {
                 if isSelfGift {
                     self.hideName = true
+                }
+                
+                if case let .starGift(gift, true) = component.subject, gift.upgradeStars != nil {
+                    self.includeUpgrade = true
                 }
                 
                 let _ = (component.context.engine.data.get(
@@ -690,7 +692,7 @@ final class GiftSetupScreenComponent: Component {
                     self.options = options
                 })
                 
-                if case let .starGift(gift) = component.subject {
+                if case let .starGift(gift, _) = component.subject {
                     if let _ = gift.upgradeStars {
                         self.previewPromise.set(
                             component.context.engine.payments.starGiftUpgradePreview(giftId: gift.id)
@@ -748,7 +750,7 @@ final class GiftSetupScreenComponent: Component {
             contentHeight += environment.navigationHeight
             contentHeight += 26.0
             
-            if case let .starGift(starGift) = component.subject, let availability = starGift.availability {
+            if case let .starGift(starGift, _) = component.subject, let availability = starGift.availability {
                 let remains: Int32 = availability.remains
                 let total: Int32 = availability.total
                 let position = CGFloat(remains) / CGFloat(total)
@@ -915,7 +917,7 @@ final class GiftSetupScreenComponent: Component {
                         let (currency, amount) = product.storeProduct?.priceCurrencyAndAmount ?? ("USD", 1)
                         subject = .premium(months: product.months, amount: amount, currency: currency)
                     }
-                case let .starGift(gift):
+                case let .starGift(gift, _):
                     subject = .starGift(gift: gift)
                     upgradeStars = gift.upgradeStars
                 }
@@ -1067,13 +1069,17 @@ final class GiftSetupScreenComponent: Component {
                     contentHeight += starsSectionSize.height
                     contentHeight += sectionSpacing
                 }
-            case let .starGift(gift):
+            case let .starGift(gift, forceUnique):
                 if let upgradeStars = gift.upgradeStars, component.peerId != component.context.account.peerId {
                     let upgradeFooterRawString: String
                     if isChannelGift {
                         upgradeFooterRawString = environment.strings.Gift_SendChannel_Upgrade_Info(peerName).string
                     } else {
-                        upgradeFooterRawString = environment.strings.Gift_Send_Upgrade_Info(peerName).string
+                        if forceUnique {
+                            upgradeFooterRawString = environment.strings.Gift_Send_Upgrade_ForcedInfo(peerName).string
+                        } else {
+                            upgradeFooterRawString = environment.strings.Gift_Send_Upgrade_Info(peerName).string
+                        }
                     }
                     let parsedString = parseMarkdownIntoAttributedString(upgradeFooterRawString, attributes: footerAttributes)
                     
@@ -1142,8 +1148,8 @@ final class GiftSetupScreenComponent: Component {
                                             )
                                         )),
                                     ], alignment: .left, spacing: 2.0)),
-                                    accessory: .toggle(ListActionItemComponent.Toggle(style: .regular, isOn: self.includeUpgrade, action: { [weak self] _ in
-                                        guard let self else {
+                                    accessory: .toggle(ListActionItemComponent.Toggle(style: .regular, isOn: self.includeUpgrade, isEnabled: !forceUnique, action: { [weak self] _ in
+                                        guard let self, !forceUnique else {
                                             return
                                         }
                                         self.includeUpgrade = !self.includeUpgrade
@@ -1269,7 +1275,7 @@ final class GiftSetupScreenComponent: Component {
                     let amountString = product.price
                     buttonString = "\(environment.strings.Gift_Send_Send) \(amountString)"
                 }
-            case let .starGift(starGift):
+            case let .starGift(starGift, _):
                 var finalPrice: Int64 = starGift.price
                 if self.includeUpgrade, let upgradePrice = starGift.upgradeStars {
                     finalPrice += upgradePrice
@@ -1601,8 +1607,7 @@ final class GiftSetupScreenComponent: Component {
                     isGeneralThreadClosed: nil,
                     replyMessage: nil,
                     accountPeerColor: nil,
-                    businessIntro: nil,
-                    starGiftsAvailable: false
+                    businessIntro: nil
                 )
                 
                 self.inputMediaNodeBackground.backgroundColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor.cgColor
@@ -1690,7 +1695,7 @@ final class GiftSetupScreenComponent: Component {
 public final class GiftSetupScreen: ViewControllerComponentContainer {
     public enum Subject: Equatable {
         case premium(PremiumGiftProduct)
-        case starGift(StarGift.Gift)
+        case starGift(StarGift.Gift, Bool)
     }
     
     private let context: AccountContext

@@ -655,7 +655,6 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         return self.actionButtons.micButton
     }
     
-    private let startingBotDisposable = MetaDisposable()
     private let statusDisposable = MetaDisposable()
     override var interfaceInteraction: ChatPanelInterfaceInteraction? {
         didSet {
@@ -666,25 +665,6 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
                     self?.updateIsProcessingInlineRequest(value)
                 }).strict())
             }
-            if let startingBot = self.interfaceInteraction?.statuses?.startingBot {
-                self.startingBotDisposable.set((startingBot |> deliverOnMainQueue).startStrict(next: { [weak self] value in
-                    if let strongSelf = self {
-                        strongSelf.startingBotProgress = value
-                    }
-                }).strict())
-            }
-        }
-    }
-    
-    private var startingBotProgress = false {
-        didSet {
-//            if self.startingBotProgress != oldValue {
-//                if self.startingBotProgress {
-//                    self.startButton.transitionToProgress()
-//                } else {
-//                    self.startButton.transitionFromProgress()
-//                }
-//            }
         }
     }
     
@@ -1185,7 +1165,6 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
     
     deinit {
         self.statusDisposable.dispose()
-        self.startingBotDisposable.dispose()
         self.tooltipController?.dismiss()
         self.currentEmojiSuggestion?.disposable.dispose()
     }

@@ -928,8 +928,19 @@ private final class NotificationServiceHandler {
                         var peer: EnginePeer?
                         var localContactId: String?
                     }
+                    
+                    struct GroupCallData {
+                        var id: Int64
+                        var fromId: PeerId
+                        var fromTitle: String
+                        var memberCount: Int
+                        var isVideo: Bool
+                        var messageId: Int32
+                        var accountId: Int64
+                    }
 
                     var callData: CallData?
+                    var groupCallData: GroupCallData?
 
                     if let messageIdString = payloadJson["msg_id"] as? String {
                         messageId = Int32(messageIdString)
@@ -955,8 +966,33 @@ private final class NotificationServiceHandler {
                             peerId = PeerId(namespace: Namespaces.Peer.SecretChat, id: PeerId.Id._internalFromInt64Value(encryptionIdValue))
                         }
                     }
+                    
+                    #if DEBUG
+                    if let locKey = payloadJson["loc-key"] as? String, locKey == "CONF_CALL_REQUEST" {
+                    }
+                    #endif
 
-                    if let callIdString = payloadJson["call_id"] as? String, let callAccessHashString = payloadJson["call_ah"] as? String, let peerId = peerId, let updates = payloadJson["updates"] as? String {
+                    if let peerId, let locKey = payloadJson["loc-key"] as? String, (locKey == "CONF_CALL_REQUEST" || locKey == "CONF_VIDEOCALL_REQUEST"), let callIdString = payloadJson["call_id"] as? String, let messageIdString = payloadJson["msg_id"] as? String {
+                        if let callId = Int64(callIdString), let messageId = Int32(messageIdString) {
+                            if let fromTitle = payloadJson["call_conference_from"] as? String {
+                                let isVideo = locKey == "CONF_VIDEOCALL_REQUEST"
+                                var memberCount = 0
+                                if let callParticipantsCountString = payloadJson["call_participants_cnt"] as? String, let callParticipantsCount = Int(callParticipantsCountString) {
+                                    memberCount = callParticipantsCount
+                                }
+                                
+                                groupCallData = GroupCallData(
+                                    id: callId,
+                                    fromId: peerId,
+                                    fromTitle: fromTitle,
+                                    memberCount: memberCount,
+                                    isVideo: isVideo,
+                                    messageId: messageId,
+                                    accountId: recordId.int64
+                                )
+                            }
+                        }
+                    } else if let callIdString = payloadJson["call_id"] as? String, let callAccessHashString = payloadJson["call_ah"] as? String, let peerId = peerId, let updates = payloadJson["updates"] as? String {
                         if let callId = Int64(callIdString), let callAccessHash = Int64(callAccessHashString) {
                             var peer: EnginePeer?
                             
@@ -992,12 +1028,15 @@ private final class NotificationServiceHandler {
                         case readMessage(MessageId)
                         case readStories(peerId: PeerId, maxId: Int32)
                         case call(CallData)
+                        case groupCall(GroupCallData)
                     }
 
                     var action: Action?
 
                     if let callData = callData {
                         action = .call(callData)
+                    } else if let groupCallData {
+                        action = .groupCall(groupCallData)
                     } else if let locKey = payloadJson["loc-key"] as? String {
                         switch locKey {
                         case "SESSION_REVOKE":
@@ -1240,6 +1279,51 @@ private final class NotificationServiceHandler {
                                     } else {
                                         var content = NotificationContent(isLockedMessage: nil)
                                         if let peer = callData.peer {
+                                            content.title = peer.debugDisplayTitle
+                                            content.body = incomingCallMessage
+                                        } else {
+                                            content.body = "Incoming Call"
+                                        }
+                                        
+                                        updateCurrentContent(content)
+                                        completed()
+                                    }
+                                })
+                            }
+                        case let .groupCall(groupCallData):
+                            if let stateManager = strongSelf.stateManager {
+                                let content = NotificationContent(isLockedMessage: nil)
+                                updateCurrentContent(content)
+                                
+                                let _ = (stateManager.postbox.transaction { transaction -> TelegramUser? in
+                                    return transaction.getPeer(groupCallData.fromId) as? TelegramUser
+                                }).start(next: { fromPeer in
+                                    var voipPayload: [AnyHashable: Any] = [
+                                        "group_call_id": "\(groupCallData.id)",
+                                        "msg_id": "\(groupCallData.messageId)",
+                                        "video": "\(groupCallData.isVideo ? 1 : 0)",
+                                        "member_count": "\(groupCallData.memberCount)",
+                                        "from_id": "\(groupCallData.fromId.id._internalGetInt64Value())",
+                                        "from_title": groupCallData.fromTitle,
+                                        "accountId": "\(groupCallData.accountId)"
+                                    ]
+                                    if let phoneNumber = fromPeer?.phone {
+                                        voipPayload["phoneNumber"] = phoneNumber
+                                    }
+
+                                    if #available(iOS 14.5, *), voiceCallSettings.enableSystemIntegration {
+                                        Logger.shared.log("NotificationService \(episode)", "Will report voip notification")
+                                        let content = NotificationContent(isLockedMessage: nil)
+                                        updateCurrentContent(content)
+                                        
+                                        CXProvider.reportNewIncomingVoIPPushPayload(voipPayload, completion: { error in
+                                            Logger.shared.log("NotificationService \(episode)", "Did report voip notification, error: \(String(describing: error))")
+
+                                            completed()
+                                        })
+                                    } else {
+                                        var content = NotificationContent(isLockedMessage: nil)
+                                        if let peer = fromPeer {
                                             content.title = peer.debugDisplayTitle
                                             content.body = incomingCallMessage
                                         } else {

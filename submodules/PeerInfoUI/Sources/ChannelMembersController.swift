@@ -560,7 +560,7 @@ public func channelMembersController(context: AccountContext, updatedPresentatio
                         if !failedPeers.isEmpty, let contactsController, let navigationController = contactsController.navigationController as? NavigationController {
                             var viewControllers = navigationController.viewControllers
                             if let index = viewControllers.firstIndex(where: { $0 === contactsController }) {
-                                let inviteScreen = SendInviteLinkScreen(context: context, peer: chatPeer, link: exportedInvitation?.link, peers: failedPeers)
+                                let inviteScreen = SendInviteLinkScreen(context: context, subject: .chat(peer: chatPeer, link: exportedInvitation?.link), peers: failedPeers)
                                 viewControllers.remove(at: index)
                                 viewControllers.append(inviteScreen)
                                 navigationController.setViewControllers(viewControllers, animated: true)
@@ -655,7 +655,7 @@ public func channelMembersController(context: AccountContext, updatedPresentatio
     }, inviteViaLink: {
         if let controller = getControllerImpl?() {
             dismissInputImpl?()
-            presentControllerImpl?(InviteLinkInviteController(context: context, updatedPresentationData: updatedPresentationData, peerId: peerId, parentNavigationController: controller.navigationController as? NavigationController), nil)
+            presentControllerImpl?(InviteLinkInviteController(context: context, updatedPresentationData: updatedPresentationData, mode: .groupOrChannel(peerId: peerId), initialInvite: nil, parentNavigationController: controller.navigationController as? NavigationController), nil)
         }
     }, updateHideMembers: { value in
         let _ = context.engine.peers.updateChannelMembersHidden(peerId: peerId, value: value).start()

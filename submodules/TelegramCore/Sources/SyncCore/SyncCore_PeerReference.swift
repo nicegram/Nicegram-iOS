@@ -80,21 +80,21 @@ public enum PeerReference: PostboxCoding, Hashable, Equatable {
         switch flatBuffersObject.valueType {
         case .peerreferenceUser:
             guard let value = flatBuffersObject.value(type: TelegramCore_PeerReference_User.self) else {
-                throw FlatBuffersError.missingRequiredField(file: #file, line: #line)
+                throw FlatBuffersError.missingRequiredField()
             }
             self = .user(id: value.id, accessHash: value.accessHash)
         case .peerreferenceGroup:
             guard let value = flatBuffersObject.value(type: TelegramCore_PeerReference_Group.self) else {
-                throw FlatBuffersError.missingRequiredField(file: #file, line: #line)
+                throw FlatBuffersError.missingRequiredField()
             }
             self = .group(id: value.id)
         case .peerreferenceChannel:
             guard let value = flatBuffersObject.value(type: TelegramCore_PeerReference_Channel.self) else {
-                throw FlatBuffersError.missingRequiredField(file: #file, line: #line)
+                throw FlatBuffersError.missingRequiredField()
             }
             self = .channel(id: value.id, accessHash: value.accessHash)
         case .none_:
-            throw FlatBuffersError.missingRequiredField(file: #file, line: #line)
+            throw FlatBuffersError.missingRequiredField()
         }
     }
     
@@ -110,13 +110,13 @@ public enum PeerReference: PostboxCoding, Hashable, Equatable {
             let start = TelegramCore_PeerReference.startPeerReference(&builder)
             TelegramCore_PeerReference_Group.add(id: id, &builder)
             let offset = TelegramCore_PeerReference_Group.endPeerReference_Group(&builder, start: start)
-            return TelegramCore_PeerReference.createPeerReference(&builder, valueType: .peerreferenceUser, valueOffset: offset)
+            return TelegramCore_PeerReference.createPeerReference(&builder, valueType: .peerreferenceGroup, valueOffset: offset)
         case let .channel(id, accessHash):
             let start = TelegramCore_PeerReference.startPeerReference(&builder)
             TelegramCore_PeerReference_Channel.add(id: id, &builder)
             TelegramCore_PeerReference_Channel.add(accessHash: accessHash, &builder)
             let offset = TelegramCore_PeerReference_Channel.endPeerReference_Channel(&builder, start: start)
-            return TelegramCore_PeerReference.createPeerReference(&builder, valueType: .peerreferenceUser, valueOffset: offset)
+            return TelegramCore_PeerReference.createPeerReference(&builder, valueType: .peerreferenceChannel, valueOffset: offset)
         }
     }
 }

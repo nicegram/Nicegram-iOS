@@ -481,7 +481,7 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         self.backgroundNode.updateColor(color: presentationData.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
         self.separatorNode.backgroundColor = presentationData.theme.rootController.navigationBar.separatorColor
         
-        let interfaceState = ChatPresentationInterfaceState(chatWallpaper: .color(0), theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, limitsConfiguration: .defaultValue, fontSize: .regular, bubbleCorners: PresentationChatBubbleCorners(mainRadius: 16.0, auxiliaryRadius: 8.0, mergeBubbleCorners: true), accountPeerId: self.context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: self.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil, starGiftsAvailable: false)
+        let interfaceState = ChatPresentationInterfaceState(chatWallpaper: .color(0), theme: presentationData.theme, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, limitsConfiguration: .defaultValue, fontSize: .regular, bubbleCorners: PresentationChatBubbleCorners(mainRadius: 16.0, auxiliaryRadius: 8.0, mergeBubbleCorners: true), accountPeerId: self.context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: self.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
         let panelHeight = self.selectionPanel.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: layout.intrinsicInsets.bottom, additionalSideInsets: UIEdgeInsets(), maxHeight: layout.size.height, isSecondary: false, transition: transition, interfaceState: interfaceState, metrics: layout.metrics, isMediaInputExpanded: false)
         
         transition.updateFrame(node: self.selectionPanel, frame: CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: panelHeight)))
@@ -1129,9 +1129,9 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
         }))
     }
     if let starsState = data.starsState {
-        if !isPremiumDisabled || starsState.balance > StarsAmount.zero {
+        if !isPremiumDisabled || abs(starsState.balance.value) > 0 {
             let balanceText: NSAttributedString
-            if starsState.balance > StarsAmount.zero {
+            if abs(starsState.balance.value) > 0 {
                 let formattedLabel = formatStarsAmountText(starsState.balance, dateTimeFormat: presentationData.dateTimeFormat)
                 let smallLabelFont = Font.regular(floor(presentationData.listsFontSize.itemListBaseFontSize / 17.0 * 13.0))
                 let labelFont = Font.regular(presentationData.listsFontSize.itemListBaseFontSize)
@@ -1511,7 +1511,7 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
                     birthdayAction = { node, _ in
                         birthdayContextAction(node, nil, nil)
                     }
-                } else if hasBirthdayToday {
+                } else if hasBirthdayToday && cachedData.disallowedGifts != TelegramDisallowedGifts.All {
                     birthdayAction = { _, _ in
                         interaction.openPremiumGift()
                     }
@@ -3900,6 +3900,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, chatControllerNode: {
             return nil
         }, presentGlobalOverlayController: { _, _ in }, callPeer: { _, _ in
+        }, openConferenceCall: { _ in
         }, longTap: { [weak self] content, _ in
             guard let strongSelf = self else {
                 return
@@ -4026,6 +4027,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, attemptedNavigationToPrivateQuote: { _ in
         }, forceUpdateWarpContents: {
         }, playShakeAnimation: {
+        }, displayQuickShare: { _, _ ,_ in
         }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
         pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
         self.hiddenMediaDisposable = context.sharedContext.mediaManager.galleryHiddenMediaManager.hiddenIds().startStrict(next: { [weak self] ids in
@@ -5144,9 +5146,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                             },
                             transferGift: { [weak profileGifts] prepaid, peerId in
                                 guard let profileGifts, let reference = gift.reference else {
-                                    return
+                                    return .complete()
                                 }
-                                profileGifts.transferStarGift(prepaid: prepaid, reference: reference, peerId: peerId)
+                                return profileGifts.transferStarGift(prepaid: prepaid, reference: reference, peerId: peerId)
                             },
                             upgradeGift: { [weak profileGifts] formId, keepOriginalInfo in
                                 guard let profileGifts, let reference = gift.reference else {
@@ -5719,7 +5721,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, openPeer: { [weak self] peer, navigation in
             self?.openPeer(peerId: peer.id, navigation: navigation)
         }, callPeer: { peerId, isVideo in
-            //self?.controllerInteraction?.callPeer(peerId)
+        }, openConferenceCall: { _ in
         }, enqueueMessage: { _ in
         }, sendSticker: nil, sendEmoji: nil, setupTemporaryHiddenMedia: { _, _, _ in }, chatAvatarHiddenMedia: { _, _ in }, actionInteraction: GalleryControllerActionInteraction(openUrl: { [weak self] url, concealed in
             if let strongSelf = self {
@@ -6759,15 +6761,18 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     }
                     
                     if strongSelf.peerId.namespace == Namespaces.Peer.CloudUser, !user.isDeleted && user.botInfo == nil && !user.flags.contains(.isSupport) {
-                        items.append(.action(ContextMenuActionItem(text: presentationData.strings.Profile_SendGift, icon: { theme in
-                            generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Gift"), color: theme.contextMenu.primaryColor)
-                        }, action: { [weak self] _, f in
-                            f(.dismissWithoutContent)
-                            
-                            if let self {
-                                self.openPremiumGift()
-                            }
-                        })))
+                        if let cachedData = data.cachedData as? CachedUserData, cachedData.disallowedGifts == .All {
+                        } else {
+                            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Profile_SendGift, icon: { theme in
+                                generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Gift"), color: theme.contextMenu.primaryColor)
+                            }, action: { [weak self] _, f in
+                                f(.dismissWithoutContent)
+                                
+                                if let self {
+                                    self.openPremiumGift()
+                                }
+                            })))
+                        }
                     }
                     
                     if let cachedData = data.cachedData as? CachedUserData, cachedData.flags.contains(.translationHidden) {
@@ -7459,6 +7464,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     }
     
     private func openStartSecretChat() {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
         let peerId = self.peerId
         
         let _ = (combineLatest(
@@ -7721,6 +7729,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     }
     
     private func requestCall(isVideo: Bool, gesture: ContextGesture? = nil, contextController: ContextControllerProtocol? = nil, result: ((ContextMenuActionResult) -> Void)? = nil, backAction: ((ContextControllerProtocol) -> Void)? = nil) {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
         let peerId = self.peerId
         let requestCall: (PeerId?, EngineGroupCallDescription?) -> Void = { [weak self] defaultJoinAsPeerId, activeCall in
             if let activeCall = activeCall {
@@ -7759,17 +7770,23 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     }
     
     private func scheduleGroupCall() {
-        guard let controller = self.controller else {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
             return
         }
         self.context.scheduleGroupCall(peerId: self.peerId, parentController: controller)
     }
     
     private func createExternalStream(credentialsPromise: Promise<GroupCallStreamCredentials>?) {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
         self.controller?.push(CreateExternalMediaStreamScreen(context: self.context, peerId: self.peerId, credentialsPromise: credentialsPromise, mode: .create))
     }
     
     private func createAndJoinGroupCall(peerId: PeerId, joinAsPeerId: PeerId?) {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
         if let _ = self.context.sharedContext.callManager {
             let startCall: (Bool) -> Void = { [weak self] endCurrentIfAny in
                 guard let strongSelf = self else {
@@ -9387,11 +9404,13 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     }
     
     private func editingOpenNameColorSetup() {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
         if self.peerId == self.context.account.peerId {
-            let controller = UserAppearanceScreen(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData)
-            self.controller?.push(controller)
+            controller.push(UserAppearanceScreen(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData))
         } else if let peer = self.data?.peer, peer is TelegramChannel {
-            self.controller?.push(ChannelAppearanceScreen(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, peerId: self.peerId, boostStatus: self.boostStatus))
+            controller.push(ChannelAppearanceScreen(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, peerId: self.peerId, boostStatus: self.boostStatus))
         }
     }
     
@@ -10310,7 +10329,10 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     }
     
     private func openAddMember() {
-        guard let data = self.data, let groupPeer = data.peer, let controller = self.controller else {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
+        guard let data = self.data, let groupPeer = data.peer else {
             return
         }
         
@@ -10335,6 +10357,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     }
     
     private func openPremiumGift() {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
         let premiumGiftOptions = self.data?.premiumGiftOptions ?? []
         let premiumOptions = premiumGiftOptions.filter { $0.users == 1 }.map { CachedPremiumGiftOption(months: $0.months, currency: $0.currency, amount: $0.amount, botUrl: "", storeProductId: $0.storeProductId) }
     
@@ -10343,7 +10368,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             hasBirthday = hasBirthdayToday(cachedData: cachedUserData)
         }
         
-        let controller = self.context.sharedContext.makeGiftOptionsController(
+        let giftsController = self.context.sharedContext.makeGiftOptionsController(
             context: self.context,
             peerId: self.peerId,
             premiumOptions: premiumOptions,
@@ -10357,7 +10382,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 }
             }
         )
-        self.controller?.push(controller)
+        controller.push(giftsController)
     }
     
     private func openBotPreviewEditor(target: Stories.PendingTarget, source: Any, transitionIn: (UIView, CGRect, UIImage?)?) {
@@ -10409,13 +10434,16 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     }
     
     private func openPostStory(sourceFrame: CGRect?) {
+        guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+            return
+        }
         self.postingAvailabilityDisposable?.dispose()
         
         if let data = self.data, let user = data.peer as? TelegramUser, let botInfo = user.botInfo {
             if !botInfo.flags.contains(.canEdit) {
                 return
             }
-            let controller = self.context.sharedContext.makeStoryMediaPickerScreen(
+            let storyController = self.context.sharedContext.makeStoryMediaPickerScreen(
                 context: self.context,
                 isDark: false,
                 forCollage: false,
@@ -10436,7 +10464,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 dismissed: {},
                 groupsPresented: {}
             )
-            self.controller?.push(controller)
+            controller.push(storyController)
         } else {
             let canPostStatus: Signal<StoriesUploadAvailability, NoError>
             canPostStatus = self.context.engine.messages.checkStoriesUploadAvailability(target: .peer(self.peerId))
@@ -10453,7 +10481,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                         cameraTransitionIn = StoryCameraTransitionIn(
                             sourceView: rightButton.view,
                             sourceRect: rightButton.view.bounds,
-                            sourceCornerRadius: rightButton.view.bounds.height * 0.5
+                            sourceCornerRadius: rightButton.view.bounds.height * 0.5,
+                            useFillAnimation: false
                         )
                     }
                     
@@ -10690,14 +10719,17 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             let controller = self.context.sharedContext.makePremiumIntroController(context: self.context, source: .settings, forceDark: false, dismissed: nil)
             self.controller?.push(controller)
         case .premiumGift:
+            guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+                return
+            }
             let _ = (self.context.account.stateManager.contactBirthdays
             |> take(1)
             |> deliverOnMainQueue).start(next: { [weak self] birthdays in
                 guard let self else {
                     return
                 }
-                let controller = self.context.sharedContext.makePremiumGiftController(context: self.context, source: .settings(birthdays), completion: nil)
-                self.controller?.push(controller)
+                let giftsController = self.context.sharedContext.makePremiumGiftController(context: self.context, source: .settings(birthdays), completion: nil)
+                self.controller?.push(giftsController)
             })
         case .stickers:
             if let settings = self.data?.globalSettings {
@@ -10731,6 +10763,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         case .tips:
             self.openTips()
         case .phoneNumber:
+            guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+                return
+            }
             if let user = self.data?.peer as? TelegramUser, let phoneNumber = user.phone {
                 let introController = PrivacyIntroController(context: self.context, mode: .changePhoneNumber(phoneNumber), proceedAction: { [weak self] in
                     if let strongSelf = self, let navigationController = strongSelf.controller?.navigationController as? NavigationController {
@@ -10740,6 +10775,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 push(introController)
             }
         case .username:
+            guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+                return
+            }
             push(usernameSetupController(context: self.context))
         case .addAccount:
             let _ = (activeAccountsAndPeers(context: context)
@@ -10827,6 +10865,9 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         case .powerSaving:
             push(energySavingSettingsScreen(context: self.context))
         case .businessSetup:
+            guard let controller = self.controller, !controller.presentAccountFrozenInfoIfNeeded() else {
+                return
+            }
             push(self.context.sharedContext.makeBusinessSetupScreen(context: self.context))
         case .premiumManagement:
             guard let controller = self.controller else {
@@ -14558,7 +14599,7 @@ public func presentAddMembersImpl(context: AccountContext, updatedPresentationDa
         
         createInviteLinkImpl = { [weak contactsController] in
             contactsController?.view.window?.endEditing(true)
-            contactsController?.present(InviteLinkInviteController(context: context, updatedPresentationData: updatedPresentationData, peerId: groupPeer.id, parentNavigationController: contactsController?.navigationController as? NavigationController), in: .window(.root))
+            contactsController?.present(InviteLinkInviteController(context: context, updatedPresentationData: updatedPresentationData, mode: .groupOrChannel(peerId: groupPeer.id), initialInvite: nil, parentNavigationController: contactsController?.navigationController as? NavigationController), in: .window(.root))
         }
 
         parentController?.push(contactsController)
@@ -14615,7 +14656,7 @@ public func presentAddMembersImpl(context: AccountContext, updatedPresentationDa
                         if !failedPeers.isEmpty, let contactsController, let navigationController = contactsController.navigationController as? NavigationController {
                             var viewControllers = navigationController.viewControllers
                             if let index = viewControllers.firstIndex(where: { $0 === contactsController }) {
-                                let inviteScreen = SendInviteLinkScreen(context: context, peer: EnginePeer(groupPeer), link: exportedInvitation?.link, peers: failedPeers)
+                                let inviteScreen = SendInviteLinkScreen(context: context, subject: .chat(peer: EnginePeer(groupPeer), link: exportedInvitation?.link), peers: failedPeers)
                                 viewControllers.remove(at: index)
                                 viewControllers.append(inviteScreen)
                                 navigationController.setViewControllers(viewControllers, animated: true)
@@ -14834,7 +14875,7 @@ private final class AccountPeerContextItemNode: ASDisplayNode, ContextMenuCustom
                         action: nil
                     )),
                     environment: {},
-                    containerSize: CGSize(width: 28.0, height: 28.0)
+                    containerSize: CGSize(width: 24.0, height: 24.0)
                 )
                 if let view = self.emojiStatusView.view {
                     if view.superview == nil {

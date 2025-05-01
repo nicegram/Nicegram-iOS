@@ -83,13 +83,15 @@ public struct PresentationCallState: Equatable {
     public var remoteVideoState: RemoteVideoState
     public var remoteAudioState: RemoteAudioState
     public var remoteBatteryLevel: RemoteBatteryLevel
+    public var supportsConferenceCalls: Bool
     
-    public init(state: State, videoState: VideoState, remoteVideoState: RemoteVideoState, remoteAudioState: RemoteAudioState, remoteBatteryLevel: RemoteBatteryLevel) {
+    public init(state: State, videoState: VideoState, remoteVideoState: RemoteVideoState, remoteAudioState: RemoteAudioState, remoteBatteryLevel: RemoteBatteryLevel, supportsConferenceCalls: Bool) {
         self.state = state
         self.videoState = videoState
         self.remoteVideoState = remoteVideoState
         self.remoteAudioState = remoteAudioState
         self.remoteBatteryLevel = remoteBatteryLevel
+        self.supportsConferenceCalls = supportsConferenceCalls
     }
 }
 
@@ -174,7 +176,7 @@ public protocol PresentationCall: AnyObject {
     func setCurrentAudioOutput(_ output: AudioSessionOutput)
     func debugInfo() -> Signal<(String, String), NoError>
     
-    func upgradeToConference(invitePeerIds: [EnginePeer.Id], completion: @escaping (PresentationGroupCall) -> Void) -> Disposable
+    func upgradeToConference(invitePeers: [(id: EnginePeer.Id, isVideo: Bool)], completion: @escaping (PresentationGroupCall) -> Void) -> Disposable
     
     func makeOutgoingVideoView(completion: @escaping (PresentationCallVideoView?) -> Void)
 }
@@ -223,6 +225,7 @@ public struct PresentationGroupCallState: Equatable {
     public var subscribedToScheduled: Bool
     public var isVideoEnabled: Bool
     public var isVideoWatchersLimitReached: Bool
+    public var isMyVideoActive: Bool
     
     public init(
         myPeerId: EnginePeer.Id,
@@ -237,7 +240,8 @@ public struct PresentationGroupCallState: Equatable {
         scheduleTimestamp: Int32?,
         subscribedToScheduled: Bool,
         isVideoEnabled: Bool,
-        isVideoWatchersLimitReached: Bool
+        isVideoWatchersLimitReached: Bool,
+        isMyVideoActive: Bool
     ) {
         self.myPeerId = myPeerId
         self.networkState = networkState
@@ -252,6 +256,7 @@ public struct PresentationGroupCallState: Equatable {
         self.subscribedToScheduled = subscribedToScheduled
         self.isVideoEnabled = isVideoEnabled
         self.isVideoWatchersLimitReached = isVideoWatchersLimitReached
+        self.isMyVideoActive = isMyVideoActive
     }
 }
 
@@ -360,6 +365,7 @@ public struct PresentationGroupCallRequestedVideo: Equatable {
     }
 
     public var audioSsrc: UInt32
+    public var peerId: Int64
     public var endpointId: String
     public var ssrcGroups: [SsrcGroup]
     public var minQuality: Quality
@@ -384,7 +390,10 @@ public extension GroupCallParticipantsContext.Participant {
         guard let videoDescription = self.videoDescription else {
             return nil
         }
-        return PresentationGroupCallRequestedVideo(audioSsrc: audioSsrc, endpointId: videoDescription.endpointId, ssrcGroups: videoDescription.ssrcGroups.map { group in
+        guard let peer = self.peer else {
+            return nil
+        }
+        return PresentationGroupCallRequestedVideo(audioSsrc: audioSsrc, peerId: peer.id.id._internalGetInt64Value(), endpointId: videoDescription.endpointId, ssrcGroups: videoDescription.ssrcGroups.map { group in
             PresentationGroupCallRequestedVideo.SsrcGroup(semantics: group.semantics, ssrcs: group.ssrcs)
         }, minQuality: minQuality, maxQuality: maxQuality)
     }
@@ -396,7 +405,10 @@ public extension GroupCallParticipantsContext.Participant {
         guard let presentationDescription = self.presentationDescription else {
             return nil
         }
-        return PresentationGroupCallRequestedVideo(audioSsrc: audioSsrc, endpointId: presentationDescription.endpointId, ssrcGroups: presentationDescription.ssrcGroups.map { group in
+        guard let peer = self.peer else {
+            return nil
+        }
+        return PresentationGroupCallRequestedVideo(audioSsrc: audioSsrc, peerId: peer.id.id._internalGetInt64Value(), endpointId: presentationDescription.endpointId, ssrcGroups: presentationDescription.ssrcGroups.map { group in
             PresentationGroupCallRequestedVideo.SsrcGroup(semantics: group.semantics, ssrcs: group.ssrcs)
         }, minQuality: minQuality, maxQuality: maxQuality)
     }
@@ -423,6 +435,8 @@ public protocol PresentationGroupCall: AnyObject {
     var accountContext: AccountContext { get }
     var internalId: CallSessionInternalId { get }
     var peerId: EnginePeer.Id? { get }
+    var callId: Int64? { get }
+    var currentReference: InternalGroupCallReference? { get }
     
     var hasVideo: Bool { get }
     var hasScreencast: Bool { get }
@@ -432,7 +446,6 @@ public protocol PresentationGroupCall: AnyObject {
     var isStream: Bool { get }
     var isConference: Bool { get }
     var conferenceSource: CallSessionInternalId? { get }
-    var encryptionKeyValue: Data? { get }
     
     var audioOutputState: Signal<([AudioSessionOutput], AudioSessionOutput?), NoError> { get }
     
@@ -447,6 +460,8 @@ public protocol PresentationGroupCall: AnyObject {
     var myAudioLevelAndSpeaking: Signal<(Float, Bool), NoError> { get }
     var isMuted: Signal<Bool, NoError> { get }
     var isNoiseSuppressionEnabled: Signal<Bool, NoError> { get }
+    
+    var e2eEncryptionKeyHash: Signal<Data?, NoError> { get }
     
     var memberEvents: Signal<PresentationGroupCallMemberEvent, NoError> { get }
     var reconnectedAsEvents: Signal<EnginePeer, NoError> { get }
@@ -483,7 +498,8 @@ public protocol PresentationGroupCall: AnyObject {
     
     func updateTitle(_ title: String)
     
-    func invitePeer(_ peerId: EnginePeer.Id) -> Bool
+    func invitePeer(_ peerId: EnginePeer.Id, isVideo: Bool) -> Bool
+    func kickPeer(id: EnginePeer.Id)
     func removedPeer(_ peerId: EnginePeer.Id)
     var invitedPeers: Signal<[PresentationGroupCallInvitedPeer], NoError> { get }
     
@@ -555,15 +571,24 @@ public protocol PresentationCallManager: AnyObject {
     var hasActiveCall: Bool { get }
     var hasActiveGroupCall: Bool { get }
     
-    func requestCall(context: AccountContext, peerId: EnginePeer.Id, isVideo: Bool, endCurrentIfAny: Bool) -> RequestCallResult
-    func joinGroupCall(context: AccountContext, peerId: EnginePeer.Id, invite: String?, requestJoinAsPeerId: ((@escaping (EnginePeer.Id?) -> Void) -> Void)?, initialCall: EngineGroupCallDescription, endCurrentIfAny: Bool) -> JoinGroupCallManagerResult
-    func scheduleGroupCall(context: AccountContext, peerId: PeerId, endCurrentIfAny: Bool, parentController: ViewController) -> RequestScheduleGroupCallResult
-// MARK: Nicegram NCG-5828 call recording
+    // MARK: Nicegram NCG-5828 call recording
     var callCompletion: (() -> Void)? { get set }
     func startRecordCall(with completion: @escaping () -> Void)
     func stopRecordCall(needStopPartTimer: Bool)
     func setupPeer(peer: EnginePeer)
     func showRecordSaveToast()
     func stopPartTimer()
-//
+    //
+    
+    func requestCall(context: AccountContext, peerId: EnginePeer.Id, isVideo: Bool, endCurrentIfAny: Bool) -> RequestCallResult
+    func joinGroupCall(context: AccountContext, peerId: EnginePeer.Id, invite: String?, requestJoinAsPeerId: ((@escaping (EnginePeer.Id?) -> Void) -> Void)?, initialCall: EngineGroupCallDescription, endCurrentIfAny: Bool) -> JoinGroupCallManagerResult
+    func scheduleGroupCall(context: AccountContext, peerId: EnginePeer.Id, endCurrentIfAny: Bool, parentController: ViewController) -> RequestScheduleGroupCallResult
+    
+    func joinConferenceCall(
+        accountContext: AccountContext,
+        initialCall: EngineGroupCallDescription,
+        reference: InternalGroupCallReference,
+        beginWithVideo: Bool,
+        invitePeerIds: [EnginePeer.Id]
+    )
 }

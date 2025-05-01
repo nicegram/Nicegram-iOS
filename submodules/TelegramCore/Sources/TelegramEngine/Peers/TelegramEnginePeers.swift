@@ -466,8 +466,8 @@ public extension TelegramEngine {
             return _internal_createChannel(account: self.account, title: title, description: description, username: username)
         }
 
-        public func createSupergroup(title: String, description: String?, username: String? = nil, isForum: Bool = false, location: (latitude: Double, longitude: Double, address: String)? = nil, isForHistoryImport: Bool = false) -> Signal<PeerId, CreateChannelError> {
-            return _internal_createSupergroup(postbox: self.account.postbox, network: self.account.network, stateManager: account.stateManager, title: title, description: description, username: username, isForum: isForum, location: location, isForHistoryImport: isForHistoryImport)
+        public func createSupergroup(title: String, description: String?, username: String? = nil, isForum: Bool = false, location: (latitude: Double, longitude: Double, address: String)? = nil, isForHistoryImport: Bool = false, ttlPeriod: Int32? = nil) -> Signal<PeerId, CreateChannelError> {
+            return _internal_createSupergroup(postbox: self.account.postbox, network: self.account.network, stateManager: account.stateManager, title: title, description: description, username: username, isForum: isForum, location: location, isForHistoryImport: isForHistoryImport, ttlPeriod: ttlPeriod)
         }
 
         public func deleteChannel(peerId: PeerId) -> Signal<Void, DeleteChannelError> {
@@ -836,6 +836,14 @@ public extension TelegramEngine {
 
         public func joinLinkInformation(_ hash: String) -> Signal<ExternalJoiningChatState, JoinLinkInfoError> {
             return _internal_joinLinkInformation(hash, account: self.account)
+        }
+        
+        public func joinCallLinkInformation(_ hash: String) -> Signal<JoinCallLinkInformation, JoinLinkInfoError> {
+            return _internal_joinCallLinkInformation(hash, account: self.account)
+        }
+        
+        public func joinCallInvitationInformation(messageId: EngineMessage.Id) -> Signal<JoinCallLinkInformation, JoinCallLinkInfoError> {
+            return _internal_joinCallInvitationInformation(account: self.account, messageId: messageId)
         }
 
         public func updatePeerTitle(peerId: PeerId, title: String) -> Signal<Void, UpdatePeerTitleError> {
@@ -1522,6 +1530,10 @@ public extension TelegramEngine {
             return _internal_requestRecommendedBots(account: self.account, peerId: peerId, forceUpdate: forceUpdate)
         }
                 
+        public func searchAdPeers(query: String) -> Signal<[AdPeer], NoError> {
+            return _internal_searchAdPeers(account: self.account, query: query)
+        }
+                
         public func isPremiumRequiredToContact(_ peerIds: [EnginePeer.Id]) -> Signal<[EnginePeer.Id: RequirementToContact], NoError> {
             return _internal_updateIsPremiumRequiredToContact(account: self.account, peerIds: peerIds)
         }
@@ -1659,6 +1671,18 @@ public extension TelegramEngine {
         
         public func botsWithBiometricState() -> Signal<Set<EnginePeer.Id>, NoError> {
             return _internal_botsWithBiometricState(account: self.account)
+        }
+        
+        public func secureBotStorageUuid() -> Signal<String, NoError> {
+            return _internal_secureBotStorageUuid(account: self.account)
+        }
+        
+        public func setBotStorageValue(peerId: EnginePeer.Id, key: String, value: String?) -> Signal<Never, BotStorageError> {
+            return _internal_setBotStorageValue(account: self.account, peerId: peerId, key: key, value: value)
+        }
+
+        public func clearBotStorage(peerId: EnginePeer.Id) -> Signal<Never, BotStorageError> {
+            return _internal_clearBotStorage(account: self.account, peerId: peerId)
         }
         
         public func toggleChatManagingBotIsPaused(chatId: EnginePeer.Id) {

@@ -212,7 +212,9 @@ final class GreetingMessageListItemComponent: Component {
                     },
                     openPhotoSetup: {
                     },
-                    openAdInfo: { _ in
+                    openAdInfo: { _, _ in
+                    },
+                    openAccountFreezeInfo: {
                     }
                 )
                 self.chatListNodeInteraction = chatListNodeInteraction

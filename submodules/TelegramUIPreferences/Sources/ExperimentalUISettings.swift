@@ -38,7 +38,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
     public var experimentalCompatibility: Bool
     public var enableDebugDataDisplay: Bool
     public var rippleEffect: Bool
-    public var inlineStickers: Bool
+    public var compressedEmojiCache: Bool
     public var localTranscription: Bool
     public var enableReactionOverrides: Bool
     public var browserExperiment: Bool
@@ -65,6 +65,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
     public var devRequests: Bool
     public var fakeAds: Bool
     public var conferenceDebug: Bool
+    public var checkSerializedData: Bool
     
     public static var defaultSettings: ExperimentalUISettings {
         return ExperimentalUISettings(
@@ -82,7 +83,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
             experimentalCompatibility: false,
             enableDebugDataDisplay: false,
             rippleEffect: false,
-            inlineStickers: false,
+            compressedEmojiCache: false,
             localTranscription: false,
             enableReactionOverrides: false,
             browserExperiment: false,
@@ -108,7 +109,8 @@ public struct ExperimentalUISettings: Codable, Equatable {
             playerV2: false,
             devRequests: false,
             fakeAds: false,
-            conferenceDebug: false
+            conferenceDebug: false,
+            checkSerializedData: false
         )
     }
     
@@ -126,7 +128,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
         experimentalCompatibility: Bool,
         enableDebugDataDisplay: Bool,
         rippleEffect: Bool,
-        inlineStickers: Bool,
+        compressedEmojiCache: Bool,
         localTranscription: Bool,
         enableReactionOverrides: Bool,
         browserExperiment: Bool,
@@ -152,7 +154,8 @@ public struct ExperimentalUISettings: Codable, Equatable {
         playerV2: Bool,
         devRequests: Bool,
         fakeAds: Bool,
-        conferenceDebug: Bool
+        conferenceDebug: Bool,
+        checkSerializedData: Bool
     ) {
         self.keepChatNavigationStack = keepChatNavigationStack
         self.skipReadHistory = skipReadHistory
@@ -167,7 +170,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.experimentalCompatibility = experimentalCompatibility
         self.enableDebugDataDisplay = enableDebugDataDisplay
         self.rippleEffect = rippleEffect
-        self.inlineStickers = inlineStickers
+        self.compressedEmojiCache = compressedEmojiCache
         self.localTranscription = localTranscription
         self.enableReactionOverrides = enableReactionOverrides
         self.browserExperiment = browserExperiment
@@ -194,6 +197,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.devRequests = devRequests
         self.fakeAds = fakeAds
         self.conferenceDebug = conferenceDebug
+        self.checkSerializedData = checkSerializedData
     }
     
     public init(from decoder: Decoder) throws {
@@ -212,7 +216,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.experimentalCompatibility = (try container.decodeIfPresent(Int32.self, forKey: "experimentalCompatibility") ?? 0) != 0
         self.enableDebugDataDisplay = (try container.decodeIfPresent(Int32.self, forKey: "enableDebugDataDisplay") ?? 0) != 0
         self.rippleEffect = (try container.decodeIfPresent(Int32.self, forKey: "rippleEffect") ?? 0) != 0
-        self.inlineStickers = (try container.decodeIfPresent(Int32.self, forKey: "inlineStickers") ?? 0) != 0
+        self.compressedEmojiCache = (try container.decodeIfPresent(Int32.self, forKey: "compressedEmojiCache") ?? 0) != 0
         self.localTranscription = (try container.decodeIfPresent(Int32.self, forKey: "localTranscription") ?? 0) != 0
         self.enableReactionOverrides = try container.decodeIfPresent(Bool.self, forKey: "enableReactionOverrides") ?? false
         self.browserExperiment = try container.decodeIfPresent(Bool.self, forKey: "browserExperiment") ?? false
@@ -239,6 +243,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.devRequests = try container.decodeIfPresent(Bool.self, forKey: "devRequests") ?? false
         self.fakeAds = try container.decodeIfPresent(Bool.self, forKey: "fakeAds") ?? false
         self.conferenceDebug = try container.decodeIfPresent(Bool.self, forKey: "conferenceDebug") ?? false
+        self.checkSerializedData = try container.decodeIfPresent(Bool.self, forKey: "checkSerializedData") ?? false
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -257,7 +262,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
         try container.encode((self.experimentalCompatibility ? 1 : 0) as Int32, forKey: "experimentalCompatibility")
         try container.encode((self.enableDebugDataDisplay ? 1 : 0) as Int32, forKey: "enableDebugDataDisplay")
         try container.encode((self.rippleEffect ? 1 : 0) as Int32, forKey: "rippleEffect")
-        try container.encode((self.inlineStickers ? 1 : 0) as Int32, forKey: "inlineStickers")
+        try container.encode((self.compressedEmojiCache ? 1 : 0) as Int32, forKey: "compressedEmojiCache")
         try container.encode((self.localTranscription ? 1 : 0) as Int32, forKey: "localTranscription")
         try container.encode(self.enableReactionOverrides, forKey: "enableReactionOverrides")
         try container.encode(self.browserExperiment, forKey: "browserExperiment")
@@ -284,6 +289,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
         try container.encodeIfPresent(self.devRequests, forKey: "devRequests")
         try container.encodeIfPresent(self.fakeAds, forKey: "fakeAds")
         try container.encodeIfPresent(self.conferenceDebug, forKey: "conferenceDebug")
+        try container.encodeIfPresent(self.checkSerializedData, forKey: "checkSerializedData")
     }
 }
 
