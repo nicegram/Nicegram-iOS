@@ -396,7 +396,8 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                         }
                         
                         // MARK: Nicegram AiChatAnalysis
-                        let getAiChatAnalysisConfigUseCase = AiChatAnalysisModule.shared.getConfigUseCase()
+                        let aiChatAnalysisModule = AiChatAnalysisModule.shared
+                        let getAiChatAnalysisConfigUseCase = aiChatAnalysisModule.getConfigUseCase()
                         let aiChatAnalysisAvailable = getAiChatAnalysisConfigUseCase().availability.chatContextMenu
                         if aiChatAnalysisAvailable {
                             if case .separator = items.last {} else {
@@ -412,12 +413,66 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                     )
                                 },
                                 action: { _, f in
-                                    AiChatAnalysisHelper(context: context).presentSession(
+                                    AiChatAnalysisHelper(context: context).presentFromChatContextMenu(
                                         peerId: peerId
                                     )
                                     f(.default)
                                 }
                             )))
+                            
+                            func copySourceMessages(_ count: Int) {
+                                Task {
+                                    let messages = try await context.engine.messages
+                                        .allMessages(
+                                            peerId: peerId,
+                                            namespace: Namespaces.Message.Cloud
+                                        )
+                                        .awaitForFirstValue()
+                                        .sorted { $0.timestamp < $1.timestamp }
+                                        .suffix(count)
+                                        .toSourceMessages(context: context)
+                                    
+                                    let sourceDataEncoder = aiChatAnalysisModule.sourceDataEncoder()
+                                    let sourceMessagesString = sourceDataEncoder.toString(messages: messages)
+                                    
+                                    Task { @MainActor in
+                                        UIPasteboard.general.string = sourceMessagesString
+                                        
+                                        try await Task.sleep(seconds: 0.2)
+                                        
+                                        let toastController = UndoOverlayController(
+                                            presentationData: presentationData,
+                                            content: .copy(
+                                                text: presentationData.strings.Conversation_TextCopied
+                                            ),
+                                            action: { _ in true }
+                                        )
+                                        chatListController?.present(toastController, in: .current)
+                                    }
+                                }
+                            }
+                            
+                            let messagesCount = 100
+                            items.append(.action(ContextMenuActionItem(
+                                text: FeatAiChatAnalysis.strings.copyLastMessages(messagesCount),
+                                icon: { _ in nil },
+                                action: { _, f in
+                                    copySourceMessages(messagesCount)
+                                    f(.default)
+                                }
+                            )))
+                            
+                            let unreadCount = Int(readCounters.count)
+                            if unreadCount > 0 {
+                                items.append(.action(ContextMenuActionItem(
+                                    text: FeatAiChatAnalysis.strings.copyUnreadMessages(),
+                                    icon: { _ in nil },
+                                    action: { _, f in
+                                        copySourceMessages(unreadCount)
+                                        f(.default)
+                                    }
+                                )))
+                            }
                             
                             items.append(.separator)
                         }
