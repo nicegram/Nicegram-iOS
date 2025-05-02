@@ -19,10 +19,12 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "TAB";
+"NiceFeatures.Tabs.ShowCalls" = "Mostra Scheda Chiamate";
 "NiceFeatures.Tabs.ShowContacts" = "Mostra tab contatti";
 "NiceFeatures.ChatScreen.Header" = "SCHERMATA DELLE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Adesivi animati";
 "NiceFeatures.useBackCam" = "Usa camera posteriore (Videomessaggi)";
+"NiceFeatures.Other" = "Altro";
 
 "NiceFeatures.Folders.Header" = "CARTELLE";
 "NiceFeatures.Account.Header" = "Impostazioni sulla privacy";

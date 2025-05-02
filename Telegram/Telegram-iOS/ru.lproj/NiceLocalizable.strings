@@ -19,10 +19,12 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "ВКЛАДКИ";
+"NiceFeatures.Tabs.ShowCalls" = "Показать вкладку «Звонки»";
 "NiceFeatures.Tabs.ShowContacts" = "Вкладка «Контакты»";
 "NiceFeatures.ChatScreen.Header" = "ЧАТ";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Анимированные Стикеры";
 "NiceFeatures.useBackCam" = "Задняя камера (Видеосообщения)";
+"NiceFeatures.Other" = "Другое";
 
 "NiceFeatures.Folders.Header" = "ПАПКИ";
 "NiceFeatures.Account.Header" = "Настройки конфиденциальности";

@@ -19,10 +19,12 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "ONGLETS";
+"NiceFeatures.Tabs.ShowCalls" = "Afficher l'onglet des appels";
 "NiceFeatures.Tabs.ShowContacts" = "Afficher l'onglet « Contacts »";
 "NiceFeatures.ChatScreen.Header" = "ÉCRAN DE CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Autocollants animés";
 "NiceFeatures.useBackCam" = "Utiliser la caméra arrière (vidéos rondes)";
+"NiceFeatures.Other" = "Autre";
 
 "NiceFeatures.Folders.Header" = "DOSSIERS";
 "NiceFeatures.Account.Header" = "Paramètres de confidentialité";

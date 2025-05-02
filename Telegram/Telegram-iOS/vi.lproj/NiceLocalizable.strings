@@ -19,10 +19,12 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "THẺ";
+"NiceFeatures.Tabs.ShowCalls" = "Hiển Thị Tab Cuộc Gọi";
 "NiceFeatures.Tabs.ShowContacts" = "Hiển thị Thẻ Danh bạ";
 "NiceFeatures.ChatScreen.Header" = "MÀN HÌNH CHAT";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "Nhãn dán Động";
 "NiceFeatures.useBackCam" = "Sử dụng camera sau (Video Tròn)";
+"NiceFeatures.Other" = "Khác";
 
 "NiceFeatures.Folders.Header" = "THƯ MỤC";
 "NiceFeatures.Account.Header" = "Cài đặt quyền riêng tư";
