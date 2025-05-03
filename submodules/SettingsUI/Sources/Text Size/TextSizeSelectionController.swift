@@ -232,7 +232,8 @@ private final class TextSizeSelectionControllerNode: ASDisplayNode, ASScrollView
         }, editPeer: { _ in
         }, openWebApp: { _ in
         }, openPhotoSetup: {
-        }, openAdInfo: { _ in
+        }, openAdInfo: { _, _ in
+        }, openAccountFreezeInfo: {
         })
 
         let chatListPresentationData = ChatListPresentationData(theme: self.presentationData.theme, fontSize: self.presentationData.listsFontSize, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameSortOrder: self.presentationData.nameSortOrder, nameDisplayOrder: self.presentationData.nameDisplayOrder, disableAnimations: true)

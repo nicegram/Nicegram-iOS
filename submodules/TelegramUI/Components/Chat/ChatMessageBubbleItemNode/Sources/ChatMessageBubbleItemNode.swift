@@ -153,7 +153,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                     needReactions = false
                     break outer
                 }
-            } else if let _ = attribute as? PaidStarsMessageAttribute, !addedPriceInfo {
+            } else if let _ = attribute as? PaidStarsMessageAttribute, !addedPriceInfo, message.id.peerId.namespace == Namespaces.Peer.CloudUser {
                 result.append((message, ChatMessageActionBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 addedPriceInfo = true
             }
@@ -236,6 +236,8 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                 isAction = true
                 if case .phoneCall = action.action {
                     result.append((message, ChatMessageCallBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
+                } else if case .conferenceCall = action.action {
+                    result.append((message, ChatMessageCallBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else if case .giftPremium = action.action {
                     result.append((message, ChatMessageGiftBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else if case .giftStars = action.action {
@@ -285,8 +287,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
             } else if let _ = media as? TelegramMediaExpiredContent {
                 result.removeAll()
                 result.append((message, ChatMessageActionBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
-                needReactions = false
-                return (result, false, false)
+                return (result, false, true)
             } else if let _ = media as? TelegramMediaPoll {
                 result.append((message, ChatMessagePollBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 needReactions = false
@@ -322,7 +323,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                     }
                     
                     if isMediaInverted {
-                        result.insert((message, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: isFile ? .condensed : .default)), at: 0)
+                        result.insert((message, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: isFile ? .condensed : .default)), at: addedPriceInfo ? 1 : 0)
                     } else {
                         result.append((message, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: isFile ? .condensed : .default)))
                         needReactions = false
@@ -350,7 +351,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                     }
                     
                     if let attribute = message.attributes.first(where: { $0 is WebpagePreviewMessageAttribute }) as? WebpagePreviewMessageAttribute, attribute.leadingPreview {
-                        result.insert((message, ChatMessageWebpageBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)), at: 0)
+                        result.insert((message, ChatMessageWebpageBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)), at: addedPriceInfo ? 1 : 0)
                     } else {
                         result.append((message, ChatMessageWebpageBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                     }
@@ -385,7 +386,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
             if result.isEmpty {
                 needReactions = false
             }
-            result.insert((messageWithCaptionToAdd, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)), at: 0)
+            result.insert((messageWithCaptionToAdd, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)), at: addedPriceInfo ? 1 : 0)
         } else {
             result.append((messageWithCaptionToAdd, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
             needReactions = false
@@ -1281,7 +1282,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         break
                     case .ignore:
                         return .fail
-                    case .url, .phone, .peerMention, .textMention, .botCommand, .hashtag, .instantPage, .wallpaper, .theme, .call, .openMessage, .timecode, .bankCard, .tooltip, .openPollResults, .copy, .largeEmoji, .customEmoji, .custom:
+                    case .url, .phone, .peerMention, .textMention, .botCommand, .hashtag, .instantPage, .wallpaper, .theme, .call, .conferenceCall, .openMessage, .timecode, .bankCard, .tooltip, .openPollResults, .copy, .largeEmoji, .customEmoji, .custom:
                         return .waitForSingleTap
                     }
                 }
@@ -1377,7 +1378,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         return false
                     }
                     else if let media = media as? TelegramMediaAction {
-                        if case .phoneCall(_, _, _, _) = media.action {
+                        if case .phoneCall = media.action {
+                        } else if case .conferenceCall = media.action {
                         } else {
                             return false
                         }
@@ -2360,6 +2362,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 }
                 var viewCount: Int?
                 var dateReplies = 0
+                var starsCount: Int64?
                 var dateReactionsAndPeers = mergedMessageReactionsAndPeers(accountPeerId: item.context.account.peerId, accountPeer: item.associatedData.accountPeer, message: message)
                 if message.isRestricted(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }) {
                     dateReactionsAndPeers = ([], [])
@@ -2373,6 +2376,12 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         if let channel = message.peers[message.id.peerId] as? TelegramChannel, case .group = channel.info {
                             dateReplies = Int(attribute.count)
                         }
+                    } else if let attribute = attribute as? PaidStarsMessageAttribute, item.message.id.peerId.namespace == Namespaces.Peer.CloudChannel {
+                        var messageCount: Int = 1
+                        if case let .group(messages) = item.content {
+                            messageCount = messages.count
+                        }
+                        starsCount = attribute.stars.value * Int64(messageCount)
                     }
                 }
                 
@@ -2421,6 +2430,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     areReactionsTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId),
                     messageEffect: item.message.messageEffect(availableMessageEffects: item.associatedData.availableMessageEffects),
                     replyCount: dateReplies,
+                    starsCount: starsCount,
                     isPinned: message.tags.contains(.pinned) && !item.associatedData.isInPinnedListMode && !isReplyThread,
                     hasAutoremove: message.isSelfExpiring,
                     canViewReactionList: canViewMessageReactionList(message: message),
@@ -2803,9 +2813,13 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     switch action.action {
                     case .phoneCall:
                         break
+                    case .conferenceCall:
+                        break
                     default:
                         centerAligned = true
                     }
+                } else if let _ = media as? TelegramMediaExpiredContent {
+                    centerAligned = true
                 }
                 break
             }
@@ -4441,6 +4455,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 shareButtonNode.morePressed = { [weak strongSelf] in
                     strongSelf?.openMessageContextMenu()
                 }
+                shareButtonNode.longPressAction = { [weak strongSelf] node, gesture in
+                    strongSelf?.openQuickShare(node: node, gesture: gesture)
+                }
             }
         } else if let shareButtonNode = strongSelf.shareButtonNode {
             strongSelf.shareButtonNode = nil
@@ -5221,6 +5238,10 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         return .optionalAction({
                             self.item?.controllerInteraction.callPeer(peerId, isVideo)
                         })
+                    case let .conferenceCall(message):
+                        return .optionalAction({
+                            self.item?.controllerInteraction.openConferenceCall(message)
+                        })
                     case .openMessage:
                         if let item = self.item {
                             if let type = self.backgroundNode.type, case .none = type {
@@ -5407,6 +5428,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         case .theme:
                             break
                         case .call:
+                            break
+                        case .conferenceCall:
                             break
                         case .openMessage:
                             break
@@ -5707,6 +5730,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 for media in message.media {
                     if let action = media as? TelegramMediaAction {
                         if case .phoneCall = action.action {
+                        } else if case .conferenceCall = action.action {
                         } else {
                             canHaveSelection = false
                             break
@@ -5971,6 +5995,12 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 }
                 item.controllerInteraction.openMessageShareMenu(item.message.id)
             }
+        }
+    }
+                                               
+    private func openQuickShare(node: ASDisplayNode, gesture: ContextGesture) {
+        if let item = self.item {
+            item.controllerInteraction.displayQuickShare(item.message.id, node, gesture)
         }
     }
     

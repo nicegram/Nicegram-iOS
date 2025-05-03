@@ -141,3 +141,69 @@ func _internal_joinLinkInformation(_ hash: String, account: Account) -> Signal<E
         }
     }
 }
+
+public final class JoinCallLinkInformation {
+    public let id: Int64
+    public let accessHash: Int64
+    public let inviter: EnginePeer?
+    public let members: [EnginePeer]
+    public let totalMemberCount: Int
+    
+    public init(id: Int64, accessHash: Int64, inviter: EnginePeer?, members: [EnginePeer], totalMemberCount: Int) {
+        self.id = id
+        self.accessHash = accessHash
+        self.inviter = inviter
+        self.members = members
+        self.totalMemberCount = totalMemberCount
+    }
+}
+
+func _internal_joinCallLinkInformation(_ hash: String, account: Account) -> Signal<JoinCallLinkInformation, JoinLinkInfoError> {
+    return _internal_getCurrentGroupCall(account: account, reference: .link(slug: hash))
+    |> mapError { error -> JoinLinkInfoError in
+        switch error {
+        case .generic:
+            return .generic
+        }
+    }
+    |> mapToSignal { call -> Signal<JoinCallLinkInformation, JoinLinkInfoError> in
+        guard let call = call else {
+            return .fail(.generic)
+        }
+        var members: [EnginePeer] = []
+        for participant in call.topParticipants {
+            if let peer = participant.peer {
+                members.append(peer)
+            }
+        }
+        return .single(JoinCallLinkInformation(id: call.info.id, accessHash: call.info.accessHash, inviter: nil, members: members, totalMemberCount: call.info.participantCount))
+    }
+}
+
+public enum JoinCallLinkInfoError {
+    case generic
+    case flood
+    case doesNotExist
+}
+
+func _internal_joinCallInvitationInformation(account: Account, messageId: MessageId) -> Signal<JoinCallLinkInformation, JoinCallLinkInfoError> {
+    return _internal_getCurrentGroupCall(account: account, reference: .message(id: messageId))
+    |> mapError { error -> JoinCallLinkInfoError in
+        switch error {
+        case .generic:
+            return .generic
+        }
+    }
+    |> mapToSignal { call -> Signal<JoinCallLinkInformation, JoinCallLinkInfoError> in
+        guard let call else {
+            return .fail(.doesNotExist)
+        }
+        var members: [EnginePeer] = []
+        for participant in call.topParticipants {
+            if let peer = participant.peer, peer.id != account.peerId {
+                members.append(peer)
+            }
+        }
+        return .single(JoinCallLinkInformation(id: call.info.id, accessHash: call.info.accessHash, inviter: nil, members: members, totalMemberCount: call.info.participantCount))
+    }
+}

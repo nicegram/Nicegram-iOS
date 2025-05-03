@@ -349,6 +349,7 @@ public extension Api {
         case messageActionChatJoinedByLink(inviterId: Int64)
         case messageActionChatJoinedByRequest
         case messageActionChatMigrateTo(channelId: Int64)
+        case messageActionConferenceCall(flags: Int32, callId: Int64, duration: Int32?, otherParticipants: [Api.Peer]?)
         case messageActionContactSignUp
         case messageActionCustomAction(message: String)
         case messageActionEmpty
@@ -363,6 +364,8 @@ public extension Api {
         case messageActionGroupCallScheduled(call: Api.InputGroupCall, scheduleDate: Int32)
         case messageActionHistoryClear
         case messageActionInviteToGroupCall(call: Api.InputGroupCall, users: [Int64])
+        case messageActionPaidMessagesPrice(stars: Int64)
+        case messageActionPaidMessagesRefunded(count: Int32, stars: Int64)
         case messageActionPaymentRefunded(flags: Int32, peer: Api.Peer, currency: String, totalAmount: Int64, payload: Buffer?, charge: Api.PaymentCharge)
         case messageActionPaymentSent(flags: Int32, currency: String, totalAmount: Int64, invoiceSlug: String?, subscriptionUntilDate: Int32?)
         case messageActionPaymentSentMe(flags: Int32, currency: String, totalAmount: Int64, payload: Buffer, info: Api.PaymentRequestedInfo?, shippingOptionId: String?, charge: Api.PaymentCharge, subscriptionUntilDate: Int32?)
@@ -476,6 +479,19 @@ public extension Api {
                         buffer.appendInt32(-519864430)
                     }
                     serializeInt64(channelId, buffer: buffer, boxed: false)
+                    break
+                case .messageActionConferenceCall(let flags, let callId, let duration, let otherParticipants):
+                    if boxed {
+                        buffer.appendInt32(805187450)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeInt64(callId, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 2) != 0 {serializeInt32(duration!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 3) != 0 {buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(otherParticipants!.count))
+                    for item in otherParticipants! {
+                        item.serialize(buffer, true)
+                    }}
                     break
                 case .messageActionContactSignUp:
                     if boxed {
@@ -594,6 +610,19 @@ public extension Api {
                     for item in users {
                         serializeInt64(item, buffer: buffer, boxed: false)
                     }
+                    break
+                case .messageActionPaidMessagesPrice(let stars):
+                    if boxed {
+                        buffer.appendInt32(-1126755303)
+                    }
+                    serializeInt64(stars, buffer: buffer, boxed: false)
+                    break
+                case .messageActionPaidMessagesRefunded(let count, let stars):
+                    if boxed {
+                        buffer.appendInt32(-1407246387)
+                    }
+                    serializeInt32(count, buffer: buffer, boxed: false)
+                    serializeInt64(stars, buffer: buffer, boxed: false)
                     break
                 case .messageActionPaymentRefunded(let flags, let peer, let currency, let totalAmount, let payload, let charge):
                     if boxed {
@@ -819,6 +848,8 @@ public extension Api {
                 return ("messageActionChatJoinedByRequest", [])
                 case .messageActionChatMigrateTo(let channelId):
                 return ("messageActionChatMigrateTo", [("channelId", channelId as Any)])
+                case .messageActionConferenceCall(let flags, let callId, let duration, let otherParticipants):
+                return ("messageActionConferenceCall", [("flags", flags as Any), ("callId", callId as Any), ("duration", duration as Any), ("otherParticipants", otherParticipants as Any)])
                 case .messageActionContactSignUp:
                 return ("messageActionContactSignUp", [])
                 case .messageActionCustomAction(let message):
@@ -847,6 +878,10 @@ public extension Api {
                 return ("messageActionHistoryClear", [])
                 case .messageActionInviteToGroupCall(let call, let users):
                 return ("messageActionInviteToGroupCall", [("call", call as Any), ("users", users as Any)])
+                case .messageActionPaidMessagesPrice(let stars):
+                return ("messageActionPaidMessagesPrice", [("stars", stars as Any)])
+                case .messageActionPaidMessagesRefunded(let count, let stars):
+                return ("messageActionPaidMessagesRefunded", [("count", count as Any), ("stars", stars as Any)])
                 case .messageActionPaymentRefunded(let flags, let peer, let currency, let totalAmount, let payload, let charge):
                 return ("messageActionPaymentRefunded", [("flags", flags as Any), ("peer", peer as Any), ("currency", currency as Any), ("totalAmount", totalAmount as Any), ("payload", payload as Any), ("charge", charge as Any)])
                 case .messageActionPaymentSent(let flags, let currency, let totalAmount, let invoiceSlug, let subscriptionUntilDate):
@@ -1034,6 +1069,28 @@ public extension Api {
             let _c1 = _1 != nil
             if _c1 {
                 return Api.MessageAction.messageActionChatMigrateTo(channelId: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_messageActionConferenceCall(_ reader: BufferReader) -> MessageAction? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Int32?
+            if Int(_1!) & Int(1 << 2) != 0 {_3 = reader.readInt32() }
+            var _4: [Api.Peer]?
+            if Int(_1!) & Int(1 << 3) != 0 {if let _ = reader.readInt32() {
+                _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Peer.self)
+            } }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 2) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 3) == 0) || _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.MessageAction.messageActionConferenceCall(flags: _1!, callId: _2!, duration: _3, otherParticipants: _4)
             }
             else {
                 return nil
@@ -1272,6 +1329,31 @@ public extension Api {
             let _c2 = _2 != nil
             if _c1 && _c2 {
                 return Api.MessageAction.messageActionInviteToGroupCall(call: _1!, users: _2!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_messageActionPaidMessagesPrice(_ reader: BufferReader) -> MessageAction? {
+            var _1: Int64?
+            _1 = reader.readInt64()
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.MessageAction.messageActionPaidMessagesPrice(stars: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_messageActionPaidMessagesRefunded(_ reader: BufferReader) -> MessageAction? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.MessageAction.messageActionPaidMessagesRefunded(count: _1!, stars: _2!)
             }
             else {
                 return nil

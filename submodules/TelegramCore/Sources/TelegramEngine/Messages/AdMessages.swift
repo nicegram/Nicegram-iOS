@@ -517,24 +517,16 @@ private class AdMessagesHistoryContextImpl {
     }
 
     func markAsSeen(opaqueId: Data) {
-        let signal: Signal<Never, NoError> = account.postbox.transaction { transaction -> Api.InputPeer? in
-            return transaction.getPeer(self.peerId).flatMap(apiInputPeer)
+        let signal: Signal<Never, NoError> = self.account.network.request(Api.functions.messages.viewSponsoredMessage(randomId: Buffer(data: opaqueId)))
+        |> `catch` { _ -> Signal<Api.Bool, NoError> in
+            return .single(.boolFalse)
         }
-        |> mapToSignal { inputPeer -> Signal<Never, NoError> in
-            guard let inputPeer else {
-                return .complete()
-            }
-            return self.account.network.request(Api.functions.messages.viewSponsoredMessage(peer: inputPeer, randomId: Buffer(data: opaqueId)))
-            |> `catch` { _ -> Signal<Api.Bool, NoError> in
-                return .single(.boolFalse)
-            }
-            |> ignoreValues
-        }
+        |> ignoreValues
         self.maskAsSeenDisposables.set(signal.start(), forKey: opaqueId)
     }
     
     func markAction(opaqueId: Data, media: Bool, fullscreen: Bool) {
-        _internal_markAdAction(account: self.account, peerId: self.peerId, opaqueId: opaqueId, media: media, fullscreen: fullscreen)
+        _internal_markAdAction(account: self.account, opaqueId: opaqueId, media: media, fullscreen: fullscreen)
     }
     
     func remove(opaqueId: Data) {
@@ -609,26 +601,27 @@ public class AdMessagesHistoryContext {
 }
 
 
-func _internal_markAdAction(account: Account, peerId: EnginePeer.Id, opaqueId: Data, media: Bool, fullscreen: Bool) {
-    let signal: Signal<Never, NoError> = account.postbox.transaction { transaction -> Api.InputPeer? in
-        return transaction.getPeer(peerId).flatMap(apiInputPeer)
+func _internal_markAdAction(account: Account, opaqueId: Data, media: Bool, fullscreen: Bool) {
+    var flags: Int32 = 0
+    if media {
+        flags |= (1 << 0)
     }
-    |> mapToSignal { inputPeer -> Signal<Never, NoError> in
-        guard let inputPeer else {
-            return .complete()
-        }
-        var flags: Int32 = 0
-        if media {
-            flags |= (1 << 0)
-        }
-        if fullscreen {
-            flags |= (1 << 1)
-        }
-        return account.network.request(Api.functions.messages.clickSponsoredMessage(flags: flags, peer: inputPeer, randomId: Buffer(data: opaqueId)))
-        |> `catch` { _ -> Signal<Api.Bool, NoError> in
-            return .single(.boolFalse)
-        }
-        |> ignoreValues
+    if fullscreen {
+        flags |= (1 << 1)
     }
+    let signal = account.network.request(Api.functions.messages.clickSponsoredMessage(flags: flags, randomId: Buffer(data: opaqueId)))
+    |> `catch` { _ -> Signal<Api.Bool, NoError> in
+        return .single(.boolFalse)
+    }
+    |> ignoreValues
+    let _ = signal.start()
+}
+
+func _internal_markAdAsSeen(account: Account, opaqueId: Data) {
+    let signal = account.network.request(Api.functions.messages.viewSponsoredMessage(randomId: Buffer(data: opaqueId)))
+    |> `catch` { _ -> Signal<Api.Bool, NoError> in
+        return .single(.boolFalse)
+    }
+    |> ignoreValues
     let _ = signal.start()
 }

@@ -1048,6 +1048,7 @@ public extension Api {
         case updateFolderPeers(folderPeers: [Api.FolderPeer], pts: Int32, ptsCount: Int32)
         case updateGeoLiveViewed(peer: Api.Peer, msgId: Int32)
         case updateGroupCall(flags: Int32, chatId: Int64?, call: Api.GroupCall)
+        case updateGroupCallChainBlocks(call: Api.InputGroupCall, subChainId: Int32, blocks: [Buffer], nextOffset: Int32)
         case updateGroupCallConnection(flags: Int32, params: Api.DataJSON)
         case updateGroupCallParticipants(call: Api.InputGroupCall, participants: [Api.GroupCallParticipant], version: Int32)
         case updateInlineBotCallbackQuery(flags: Int32, queryId: Int64, userId: Int64, msgId: Api.InputBotInlineMessageID, chatInstance: Int64, data: Buffer?, gameShortName: String?)
@@ -1103,6 +1104,7 @@ public extension Api {
         case updateSavedGifs
         case updateSavedReactionTags
         case updateSavedRingtones
+        case updateSentPhoneCode(sentCode: Api.auth.SentCode)
         case updateSentStoryReaction(peer: Api.Peer, storyId: Int32, reaction: Api.Reaction)
         case updateServiceNotification(flags: Int32, inboxDate: Int32?, type: String, message: String, media: Api.MessageMedia, entities: [Api.MessageEntity])
         case updateSmsJob(jobId: String)
@@ -1737,6 +1739,19 @@ public extension Api {
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt64(chatId!, buffer: buffer, boxed: false)}
                     call.serialize(buffer, true)
                     break
+                case .updateGroupCallChainBlocks(let call, let subChainId, let blocks, let nextOffset):
+                    if boxed {
+                        buffer.appendInt32(-1535694705)
+                    }
+                    call.serialize(buffer, true)
+                    serializeInt32(subChainId, buffer: buffer, boxed: false)
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(blocks.count))
+                    for item in blocks {
+                        serializeBytes(item, buffer: buffer, boxed: false)
+                    }
+                    serializeInt32(nextOffset, buffer: buffer, boxed: false)
+                    break
                 case .updateGroupCallConnection(let flags, let params):
                     if boxed {
                         buffer.appendInt32(192428418)
@@ -2199,6 +2214,12 @@ public extension Api {
                     }
                     
                     break
+                case .updateSentPhoneCode(let sentCode):
+                    if boxed {
+                        buffer.appendInt32(1347068303)
+                    }
+                    sentCode.serialize(buffer, true)
+                    break
                 case .updateSentStoryReaction(let peer, let storyId, let reaction):
                     if boxed {
                         buffer.appendInt32(2103604867)
@@ -2492,6 +2513,8 @@ public extension Api {
                 return ("updateGeoLiveViewed", [("peer", peer as Any), ("msgId", msgId as Any)])
                 case .updateGroupCall(let flags, let chatId, let call):
                 return ("updateGroupCall", [("flags", flags as Any), ("chatId", chatId as Any), ("call", call as Any)])
+                case .updateGroupCallChainBlocks(let call, let subChainId, let blocks, let nextOffset):
+                return ("updateGroupCallChainBlocks", [("call", call as Any), ("subChainId", subChainId as Any), ("blocks", blocks as Any), ("nextOffset", nextOffset as Any)])
                 case .updateGroupCallConnection(let flags, let params):
                 return ("updateGroupCallConnection", [("flags", flags as Any), ("params", params as Any)])
                 case .updateGroupCallParticipants(let call, let participants, let version):
@@ -2602,6 +2625,8 @@ public extension Api {
                 return ("updateSavedReactionTags", [])
                 case .updateSavedRingtones:
                 return ("updateSavedRingtones", [])
+                case .updateSentPhoneCode(let sentCode):
+                return ("updateSentPhoneCode", [("sentCode", sentCode as Any)])
                 case .updateSentStoryReaction(let peer, let storyId, let reaction):
                 return ("updateSentStoryReaction", [("peer", peer as Any), ("storyId", storyId as Any), ("reaction", reaction as Any)])
                 case .updateServiceNotification(let flags, let inboxDate, let type, let message, let media, let entities):
@@ -3930,6 +3955,30 @@ public extension Api {
                 return nil
             }
         }
+        public static func parse_updateGroupCallChainBlocks(_ reader: BufferReader) -> Update? {
+            var _1: Api.InputGroupCall?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.InputGroupCall
+            }
+            var _2: Int32?
+            _2 = reader.readInt32()
+            var _3: [Buffer]?
+            if let _ = reader.readInt32() {
+                _3 = Api.parseVector(reader, elementSignature: -1255641564, elementType: Buffer.self)
+            }
+            var _4: Int32?
+            _4 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.Update.updateGroupCallChainBlocks(call: _1!, subChainId: _2!, blocks: _3!, nextOffset: _4!)
+            }
+            else {
+                return nil
+            }
+        }
         public static func parse_updateGroupCallConnection(_ reader: BufferReader) -> Update? {
             var _1: Int32?
             _1 = reader.readInt32()
@@ -4802,6 +4851,19 @@ public extension Api {
         }
         public static func parse_updateSavedRingtones(_ reader: BufferReader) -> Update? {
             return Api.Update.updateSavedRingtones
+        }
+        public static func parse_updateSentPhoneCode(_ reader: BufferReader) -> Update? {
+            var _1: Api.auth.SentCode?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.auth.SentCode
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.Update.updateSentPhoneCode(sentCode: _1!)
+            }
+            else {
+                return nil
+            }
         }
         public static func parse_updateSentStoryReaction(_ reader: BufferReader) -> Update? {
             var _1: Api.Peer?

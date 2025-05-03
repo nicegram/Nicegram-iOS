@@ -160,13 +160,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                     if case let .search(search) = source {
                         switch search {
                         case .recentPeers:
-                            items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_RemoveFromRecents, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Clear"), color: theme.contextMenu.destructiveColor) }, action: { _, f in
-                                let _ = (context.engine.peers.removeRecentPeer(peerId: peerId)
-                                |> deliverOnMainQueue).startStandalone(completed: {
-                                    f(.default)
-                                })
-                            })))
-                            items.append(.separator)
+                            break
                         case .recentSearch:
                             items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_RemoveFromRecents, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Clear"), color: theme.contextMenu.destructiveColor) }, action: { _, f in
                                 let _ = (context.engine.peers.removeRecentlySearchedPeer(peerId: peerId)
@@ -396,7 +390,8 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                         }
                         
                         // MARK: Nicegram AiChatAnalysis
-                        let getAiChatAnalysisConfigUseCase = AiChatAnalysisModule.shared.getConfigUseCase()
+                        let aiChatAnalysisModule = AiChatAnalysisModule.shared
+                        let getAiChatAnalysisConfigUseCase = aiChatAnalysisModule.getConfigUseCase()
                         let aiChatAnalysisAvailable = getAiChatAnalysisConfigUseCase().availability.chatContextMenu
                         if aiChatAnalysisAvailable {
                             if case .separator = items.last {} else {
@@ -412,12 +407,66 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                     )
                                 },
                                 action: { _, f in
-                                    AiChatAnalysisHelper(context: context).presentSession(
+                                    AiChatAnalysisHelper(context: context).presentFromChatContextMenu(
                                         peerId: peerId
                                     )
                                     f(.default)
                                 }
                             )))
+                            
+                            func copySourceMessages(_ count: Int) {
+                                Task {
+                                    let messages = try await context.engine.messages
+                                        .allMessages(
+                                            peerId: peerId,
+                                            namespace: Namespaces.Message.Cloud
+                                        )
+                                        .awaitForFirstValue()
+                                        .sorted { $0.timestamp < $1.timestamp }
+                                        .suffix(count)
+                                        .toSourceMessages(context: context)
+                                    
+                                    let sourceDataEncoder = aiChatAnalysisModule.sourceDataEncoder()
+                                    let sourceMessagesString = sourceDataEncoder.toString(messages: messages)
+                                    
+                                    Task { @MainActor in
+                                        UIPasteboard.general.string = sourceMessagesString
+                                        
+                                        try await Task.sleep(seconds: 0.2)
+                                        
+                                        let toastController = UndoOverlayController(
+                                            presentationData: presentationData,
+                                            content: .copy(
+                                                text: presentationData.strings.Conversation_TextCopied
+                                            ),
+                                            action: { _ in true }
+                                        )
+                                        chatListController?.present(toastController, in: .current)
+                                    }
+                                }
+                            }
+                            
+                            let messagesCount = 100
+                            items.append(.action(ContextMenuActionItem(
+                                text: FeatAiChatAnalysis.strings.copyLastMessages(messagesCount),
+                                icon: { _ in nil },
+                                action: { _, f in
+                                    copySourceMessages(messagesCount)
+                                    f(.default)
+                                }
+                            )))
+                            
+                            let unreadCount = Int(readCounters.count)
+                            if unreadCount > 0 {
+                                items.append(.action(ContextMenuActionItem(
+                                    text: FeatAiChatAnalysis.strings.copyUnreadMessages(),
+                                    icon: { _ in nil },
+                                    action: { _, f in
+                                        copySourceMessages(unreadCount)
+                                        f(.default)
+                                    }
+                                )))
+                            }
                             
                             items.append(.separator)
                         }
@@ -672,6 +721,44 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                 }
                                 f(.default)
                             })))
+                        } else if case let .search(search) = source {
+                            switch search {
+                            case .recentPeers, .search:
+                                var addedSeparator = false
+                                if case let .recentPeers(isTopPeer) = search {
+                                    if isTopPeer {
+                                        if !items.isEmpty {
+                                            if !addedSeparator {
+                                                items.append(.separator)
+                                                addedSeparator = true
+                                            }
+                                        }
+                                        items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_RemoveFromRecents, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Clear"), color: theme.contextMenu.destructiveColor) }, action: { _, f in
+                                            let _ = (context.engine.peers.removeRecentPeer(peerId: peerId)
+                                            |> deliverOnMainQueue).startStandalone(completed: {
+                                                f(.default)
+                                            })
+                                        })))
+                                    }
+                                }
+                                
+                                if peerGroup != nil {
+                                    if !items.isEmpty {
+                                        if !addedSeparator {
+                                            items.append(.separator)
+                                            addedSeparator = true
+                                        }
+                                    }
+                                    items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_Delete, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.contextMenu.destructiveColor) }, action: { _, f in
+                                        if let chatListController = chatListController {
+                                            chatListController.deletePeerChat(peerId: peerId, joined: joined)
+                                        }
+                                        f(.default)
+                                    })))
+                                }
+                            default:
+                                 break
+                            }
                         }
                     }
 

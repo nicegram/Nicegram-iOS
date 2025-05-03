@@ -59,7 +59,7 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
     
     init(context: AccountContext) {
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: context.account.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil, starGiftsAvailable: false)
+        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: context.account.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
         
         self.wallpaperBackgroundNode = createWallpaperBackgroundNode(context: context, forChatDisplay: true, useSharedAnimationPhase: true)
         self.emptyNode = ChatEmptyNode(context: context, interaction: nil)
@@ -72,7 +72,7 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
     
     func updatePresentationData(_ presentationData: PresentationData) {
         self.presentationData = presentationData
-        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.presentationInterfaceState.limitsConfiguration, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.presentationInterfaceState.accountPeerId, mode: .standard(.default), chatLocation: self.presentationInterfaceState.chatLocation, subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil, starGiftsAvailable: false)
+        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.presentationInterfaceState.limitsConfiguration, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.presentationInterfaceState.accountPeerId, mode: .standard(.default), chatLocation: self.presentationInterfaceState.chatLocation, subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
         
         self.wallpaperBackgroundNode.update(wallpaper: presentationData.chatWallpaper, animated: false)
     }
@@ -539,7 +539,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     return CameraScreenImpl.TransitionIn(
                         sourceView: sourceView,
                         sourceRect: $0.sourceRect,
-                        sourceCornerRadius: $0.sourceCornerRadius
+                        sourceCornerRadius: $0.sourceCornerRadius,
+                        useFillAnimation: $0.useFillAnimation
                     )
                 } else {
                     return nil
@@ -739,8 +740,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         return StoryCameraTransitionInCoordinator(
             animateIn: { [weak cameraController] in
                 if let cameraController {
-                    cameraController.updateTransitionProgress(0.0, transition: .immediate)
-                    cameraController.completeWithTransitionProgress(1.0, velocity: 0.0, dismissing: false)
+                    if transitionIn?.useFillAnimation == true {
+                        cameraController.animateIn()
+                    } else {
+                        cameraController.updateTransitionProgress(0.0, transition: .immediate)
+                        cameraController.completeWithTransitionProgress(1.0, velocity: 0.0, dismissing: false)
+                    }
                 }
             },
             updateTransitionProgress: { [weak cameraController] transitionFraction in

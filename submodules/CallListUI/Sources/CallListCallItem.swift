@@ -11,6 +11,7 @@ import AvatarNode
 import TelegramStringFormatting
 import AccountContext
 import ChatListSearchItemHeader
+import AnimatedAvatarSetNode
 
 private func callDurationString(strings: PresentationStrings, duration: Int32) -> String {
     if duration < 60 {
@@ -138,16 +139,7 @@ class CallListCallItem: ListViewItem {
     
     func selected(listView: ListView) {
         listView.clearHighlightAnimated(true)
-        var isVideo = false
-        for media in self.topMessage.media {
-            if let action = media as? TelegramMediaAction {
-                if case let .phoneCall(_, _, _, isVideoValue) = action.action {
-                    isVideo = isVideoValue
-                    break
-                }
-            }
-        }
-        self.interaction.call(self.topMessage.id.peerId, isVideo)
+        self.interaction.call(self.topMessage)
     }
     
     static func mergeType(item: CallListCallItem, previousItem: ListViewItem?, nextItem: ListViewItem?) -> (first: Bool, last: Bool, firstWithHeader: Bool) {
@@ -182,6 +174,7 @@ class CallListCallItem: ListViewItem {
 }
 
 private let avatarFont = avatarPlaceholderFont(size: 16.0)
+private let multipleAvatarFont = avatarPlaceholderFont(size: 12.0)
 
 class CallListCallItemNode: ItemListRevealOptionsItemNode {
     private let backgroundNode: ASDisplayNode
@@ -196,6 +189,10 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
     }
     
     private let avatarNode: AvatarNode
+    
+    private var conferenceAvatarListContext: AnimatedAvatarSetContext?
+    private var conferenceAvatarListNode: AnimatedAvatarSetNode?
+
     private let titleNode: TextNode
     private var credibilityIconNode: ASImageNode?
     private let statusNode: TextNode
@@ -262,15 +259,7 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             guard let item = self?.layoutParams?.0 else {
                 return false
             }
-            var isVideo = false
-            for media in item.topMessage.media {
-                if let action = media as? TelegramMediaAction {
-                    if case let .phoneCall(_, _, _, isVideoValue) = action.action {
-                        isVideo = isVideoValue
-                    }
-                }
-            }
-            item.interaction.call(item.topMessage.id.peerId, isVideo)
+            item.interaction.call(item.topMessage)
             return true
         }
     }
@@ -338,6 +327,7 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             let statusFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 14.0 / 17.0))
             let dateFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 15.0 / 17.0))
             let avatarDiameter = min(40.0, floor(item.presentationData.fontSize.itemListBaseFontSize * 40.0 / 17.0))
+            let multipleAvatarDiameter = min(30.0, floor(item.presentationData.fontSize.itemListBaseFontSize * 30.0 / 17.0))
             
             let editingOffset: CGFloat
             var editableControlSizeAndApply: (CGFloat, (CGFloat) -> ItemListEditableControlNode)?
@@ -390,6 +380,14 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             var hadDuration = false
             var callDuration: Int32?
             
+            var isConference = false
+            var conferenceIsDeclined = false
+            
+            let _ = isConference
+            let _ = conferenceIsDeclined
+
+            var conferenceAvatars: [EnginePeer] = []
+            
             for message in item.messages {
                 inner: for media in message.media {
                     if let action = media as? TelegramMediaAction {
@@ -411,6 +409,45 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
                             } else {
                                 callDuration = nil
                             }
+                        } else if case let .conferenceCall(conferenceCall) = action.action {
+                            isConference = true
+
+                            if let peer = message.peers[message.id.peerId], !conferenceAvatars.contains(where: { $0.id == peer.id }) {
+                                conferenceAvatars.append(EnginePeer(peer))
+                            }
+
+                            for id in conferenceCall.otherParticipants {
+                                if let peer = message.peers[id], !conferenceAvatars.contains(where: { $0.id == peer.id }) {
+                                    conferenceAvatars.append(EnginePeer(peer))
+                                }
+                            }
+                            
+                            isVideo = conferenceCall.flags.contains(.isVideo)
+                            if message.flags.contains(.Incoming) {
+                                hasIncoming = true
+                                let missedTimeout: Int32
+                                #if DEBUG && false
+                                missedTimeout = 5
+                                #else
+                                missedTimeout = 30
+                                #endif
+                                let currentTime = Int32(Date().timeIntervalSince1970)
+                                if conferenceCall.flags.contains(.isMissed) {
+                                    titleColor = item.presentationData.theme.list.itemDestructiveColor
+                                    conferenceIsDeclined = true
+                                } else if message.timestamp < currentTime - missedTimeout {
+                                    titleColor = item.presentationData.theme.list.itemDestructiveColor
+                                    hasMissed = true
+                                }
+                            } else {
+                                hasOutgoing = true
+                            }
+                            if callDuration == nil && !hadDuration {
+                                hadDuration = true
+                                callDuration = conferenceCall.duration
+                            } else {
+                                callDuration = nil
+                            }
                         }
                         break inner
                     }
@@ -418,7 +455,20 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             }
             
             if let peer = item.topMessage.peers[item.topMessage.id.peerId] {
-                if let user = peer as? TelegramUser {
+                if conferenceAvatars.count > 1 {
+                    var peersString = ""
+                    for peer in conferenceAvatars {
+                        if !peersString.isEmpty {
+                            peersString.append(", ")
+                        }
+                        if peer.id == item.context.account.peerId {
+                            peersString += item.presentationData.strings.DialogList_You
+                        } else {
+                            peersString += peer.compactDisplayTitle
+                        }
+                    }
+                    titleAttributedString = NSAttributedString(string: peersString, font: titleFont, textColor: titleColor)
+                } else if let user = peer as? TelegramUser {
                     if let firstName = user.firstName, let lastName = user.lastName, !firstName.isEmpty, !lastName.isEmpty {
                         let string = NSMutableAttributedString()
                         string.append(NSAttributedString(string: firstName, font: titleFont, textColor: titleColor))
@@ -631,7 +681,39 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
                             }
                             
                     
-                            transition.updateFrameAdditive(node: strongSelf.avatarNode, frame: CGRect(origin: CGPoint(x: revealOffset + leftInset - 52.0, y: floor((contentSize.height - avatarDiameter) / 2.0)), size: CGSize(width: avatarDiameter, height: avatarDiameter)))
+                            let avatarFrame = CGRect(origin: CGPoint(x: revealOffset + leftInset - 52.0, y: floor((contentSize.height - avatarDiameter) / 2.0)), size: CGSize(width: avatarDiameter, height: avatarDiameter))
+                            transition.updateFrameAdditive(node: strongSelf.avatarNode, frame: avatarFrame)
+
+                            if conferenceAvatars.count > 1 {
+                                strongSelf.avatarNode.isHidden = true
+
+                                let conferenceAvatarListContext: AnimatedAvatarSetContext
+                                if let current = strongSelf.conferenceAvatarListContext {
+                                    conferenceAvatarListContext = current
+                                } else {
+                                    conferenceAvatarListContext = AnimatedAvatarSetContext()
+                                    strongSelf.conferenceAvatarListContext = conferenceAvatarListContext
+                                }
+                                let conferenceAvatarListNode: AnimatedAvatarSetNode
+                                if let current = strongSelf.conferenceAvatarListNode {
+                                    conferenceAvatarListNode = current
+                                } else {
+                                    conferenceAvatarListNode = AnimatedAvatarSetNode()
+                                    strongSelf.conferenceAvatarListNode = conferenceAvatarListNode
+                                    strongSelf.containerNode.addSubnode(conferenceAvatarListNode)
+                                }
+                                let avatarListContents = conferenceAvatarListContext.update(peers: Array(conferenceAvatars.prefix(3)), animated: false)
+                                let avatarListSize = conferenceAvatarListNode.update(context: item.context, content: avatarListContents, itemSize: CGSize(width: CGFloat(multipleAvatarDiameter), height: CGFloat(multipleAvatarDiameter)), customSpacing: multipleAvatarDiameter - 8.0, font: multipleAvatarFont, animated: false, synchronousLoad: synchronousLoads)
+                                conferenceAvatarListNode.frame = CGRect(origin: CGPoint(x: avatarFrame.minX + floor((avatarFrame.width - avatarListSize.width) / 2.0), y: avatarFrame.minY + floor((avatarFrame.height - avatarListSize.height) / 2.0)), size: avatarListSize)
+                            } else {
+                                strongSelf.avatarNode.isHidden = false
+                                
+                                strongSelf.conferenceAvatarListContext = nil
+                                if let conferenceAvatarListNode = strongSelf.conferenceAvatarListNode {
+                                    strongSelf.conferenceAvatarListNode = nil
+                                    conferenceAvatarListNode.removeFromSupernode()
+                                }
+                            }
                             
                             let _ = titleApply()
                             let titleFrame = CGRect(origin: CGPoint(x: revealOffset + leftInset, y: verticalInset), size: titleLayout.size)

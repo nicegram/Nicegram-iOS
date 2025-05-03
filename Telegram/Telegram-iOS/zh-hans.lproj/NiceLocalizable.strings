@@ -19,10 +19,12 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "标签";
+"NiceFeatures.Tabs.ShowCalls" = "显示通话选项卡";
 "NiceFeatures.Tabs.ShowContacts" = "显示<联系人>标签";
 "NiceFeatures.ChatScreen.Header" = "对话界面";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "动态贴纸";
 "NiceFeatures.useBackCam" = "使用后置摄像头(圆形视频)";
+"NiceFeatures.Other" = "其他";
 
 "NiceFeatures.Folders.Header" = "分组";
 "NiceFeatures.Account.Header" = "隐私设置";

@@ -658,6 +658,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
     private let translationProcessingManager = ChatMessageThrottledProcessingManager(submitInterval: 1.0)
     private let refreshStoriesProcessingManager = ChatMessageThrottledProcessingManager()
     private let factCheckProcessingManager = ChatMessageThrottledProcessingManager(submitInterval: 1.0)
+    private let inlineGroupCallsProcessingManager = ChatMessageThrottledProcessingManager(submitInterval: 1.0)
     
     let prefetchManager: InChatPrefetchManager
     private var currentEarlierPrefetchMessages: [(Message, Media)] = []
@@ -1053,6 +1054,10 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 return
             }
             strongSelf.context.account.viewTracker.updatedExtendedMediaForMessageIds(messageIds: Set(messageIds.map(\.messageId)))
+        }
+        
+        self.inlineGroupCallsProcessingManager.process = { [weak context] messageIds in
+            context?.account.viewTracker.refreshInlineGroupCallsForMessageIds(messageIds: Set(messageIds.map(\.messageId)))
         }
         
         self.preloadPages = false

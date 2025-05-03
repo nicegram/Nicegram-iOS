@@ -18,12 +18,14 @@ public final class ListActionItemComponent: Component {
         public var style: ToggleStyle
         public var isOn: Bool
         public var isInteractive: Bool
+        public var isEnabled: Bool
         public var action: ((Bool) -> Void)?
         
-        public init(style: ToggleStyle, isOn: Bool, isInteractive: Bool = true, action: ((Bool) -> Void)? = nil) {
+        public init(style: ToggleStyle, isOn: Bool, isInteractive: Bool = true, isEnabled: Bool = true, action: ((Bool) -> Void)? = nil) {
             self.style = style
             self.isOn = isOn
             self.isInteractive = isInteractive
+            self.isEnabled = isEnabled
             self.action = action
         }
         
@@ -35,6 +37,9 @@ public final class ListActionItemComponent: Component {
                 return false
             }
             if lhs.isInteractive != rhs.isInteractive {
+                return false
+            }
+            if lhs.isEnabled != rhs.isEnabled {
                 return false
             }
             if (lhs.action == nil) != (rhs.action == nil) {
@@ -83,10 +88,16 @@ public final class ListActionItemComponent: Component {
     public enum LeftIcon: Equatable {
         public final class Check: Equatable {
             public let isSelected: Bool
+            public let isEnabled: Bool
             public let toggle: (() -> Void)?
             
-            public init(isSelected: Bool, toggle: (() -> Void)?) {
+            public init(
+                isSelected: Bool,
+                isEnabled: Bool = true,
+                toggle: (() -> Void)?
+            ) {
                 self.isSelected = isSelected
+                self.isEnabled = isEnabled
                 self.toggle = toggle
             }
             
@@ -95,6 +106,9 @@ public final class ListActionItemComponent: Component {
                     return true
                 }
                 if lhs.isSelected != rhs.isSelected {
+                    return false
+                }
+                if lhs.isEnabled != rhs.isEnabled {
                     return false
                 }
                 if (lhs.toggle == nil) != (rhs.toggle == nil) {
@@ -491,6 +505,7 @@ public final class ListActionItemComponent: Component {
                     }
                     
                     leftCheckView.isUserInteractionEnabled = check.toggle != nil
+                    leftCheckView.alpha = check.isEnabled ? 1.0 : 0.3
                     
                     let checkSize = CGSize(width: 22.0, height: 22.0)
                     let checkFrame = CGRect(origin: CGPoint(x: floor((contentLeftInset - checkSize.width) * 0.5), y: floor((contentHeight - checkSize.height) * 0.5)), size: checkSize)
@@ -638,7 +653,9 @@ public final class ListActionItemComponent: Component {
                         }
                     }
                     
-                    switchNode.isUserInteractionEnabled = toggle.isInteractive
+                    switchNode.isUserInteractionEnabled = toggle.isInteractive && toggle.isEnabled
+                    switchNode.alpha = toggle.isEnabled ? 1.0 : 0.3
+                    switchNode.layer.allowsGroupOpacity = !toggle.isEnabled
                     
                     if updateSwitchTheme {
                         switchNode.frameColor = component.theme.list.itemSwitchColors.frameColor

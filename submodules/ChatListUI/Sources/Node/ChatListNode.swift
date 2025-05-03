@@ -134,7 +134,8 @@ public final class ChatListNodeInteraction {
     let editPeer: (ChatListItem) -> Void
     let openWebApp: (TelegramUser) -> Void
     let openPhotoSetup: () -> Void
-    let openAdInfo: (ASDisplayNode) -> Void
+    let openAdInfo: (ASDisplayNode, AdPeer) -> Void
+    let openAccountFreezeInfo: () -> Void
     
     public var searchTextHighightState: String?
     var highlightedChatLocation: ChatListHighlightedLocation?
@@ -198,7 +199,8 @@ public final class ChatListNodeInteraction {
         editPeer: @escaping (ChatListItem) -> Void,
         openWebApp: @escaping (TelegramUser) -> Void,
         openPhotoSetup: @escaping () -> Void,
-        openAdInfo: @escaping (ASDisplayNode) -> Void
+        openAdInfo: @escaping (ASDisplayNode, AdPeer) -> Void,
+        openAccountFreezeInfo: @escaping () -> Void
     ) {
         self.activateSearch = activateSearch
         // MARK: Nicegram PinnedChats
@@ -250,6 +252,7 @@ public final class ChatListNodeInteraction {
         self.openWebApp = openWebApp
         self.openPhotoSetup = openPhotoSetup
         self.openAdInfo = openAdInfo
+        self.openAccountFreezeInfo = openAccountFreezeInfo
     }
 }
 
@@ -811,6 +814,8 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                             nodeInteraction?.openStarsTopup(amount.value)
                         case .setupPhoto:
                             nodeInteraction?.openPhotoSetup()
+                        case .accountFreeze:
+                            nodeInteraction?.openAccountFreezeInfo()
                         }
                     case .hide:
                         nodeInteraction?.dismissNotice(notice)
@@ -1168,6 +1173,8 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                             nodeInteraction?.openStarsTopup(amount.value)
                         case .setupPhoto:
                             nodeInteraction?.openPhotoSetup()
+                        case .accountFreeze:
+                            nodeInteraction?.openAccountFreezeInfo()
                         }
                     case .hide:
                         nodeInteraction?.dismissNotice(notice)
@@ -1299,7 +1306,8 @@ public final class ChatListNode: ListView {
     public var openStarsTopup: ((Int64?) -> Void)?
     public var openWebApp: ((TelegramUser) -> Void)?
     public var openPhotoSetup: (() -> Void)?
-    public var openAdInfo: ((ASDisplayNode) -> Void)?
+    public var openAdInfo: ((ASDisplayNode, AdPeer) -> Void)?
+    public var openAccountFreezeInfo: (() -> Void)?
     
     private var theme: PresentationTheme
     
@@ -1527,7 +1535,6 @@ public final class ChatListNode: ListView {
                 return
             }
             var didBeginSelecting = false
-            var count = 0
             strongSelf.updateState { [weak self] state in
                 var state = state
                 if state.selectedPeerIds.contains(peer.id) {
@@ -1543,10 +1550,8 @@ public final class ChatListNode: ListView {
                         self?.reachedSelectionLimit?(Int32(state.selectedPeerIds.count))
                     }
                 }
-                count = state.selectedPeerIds.count
                 return state
             }
-            strongSelf.selectionCountChanged?(count)
             if didBeginSelecting {
                 strongSelf.didBeginSelectingChats?()
             }
@@ -1991,8 +1996,10 @@ public final class ChatListNode: ListView {
                 return
             }
             self.openPhotoSetup?()
-        }, openAdInfo: { [weak self] node in
-            self?.openAdInfo?(node)
+        }, openAdInfo: { [weak self] node, adPeer in
+            self?.openAdInfo?(node, adPeer)
+        }, openAccountFreezeInfo: { [weak self] in
+            self?.openAccountFreezeInfo?()
         })
         nodeInteraction.isInlineMode = isInlineMode
         
@@ -2082,6 +2089,16 @@ public final class ChatListNode: ListView {
             
             let twoStepData: Signal<TwoStepVerificationConfiguration?, NoError> = .single(nil) |> then(context.engine.auth.twoStepVerificationConfiguration() |> map(Optional.init))
             
+            let accountFreezeConfiguration = (context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
+            |> map { view -> AppConfiguration in
+                let appConfiguration: AppConfiguration = view.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
+                return appConfiguration
+            }
+            |> distinctUntilChanged
+            |> map { appConfiguration -> AccountFreezeConfiguration in
+                return AccountFreezeConfiguration.with(appConfiguration: appConfiguration)
+            })
+            
             let suggestedChatListNoticeSignal: Signal<ChatListNotice?, NoError> = combineLatest(
                 context.engine.notices.getServerProvidedSuggestions(),
                 context.engine.notices.getServerDismissedSuggestions(),
@@ -2092,11 +2109,12 @@ public final class ChatListNode: ListView {
                     TelegramEngine.EngineData.Item.Peer.Birthday(id: context.account.peerId)
                 ),
                 context.account.stateManager.contactBirthdays,
-                starsSubscriptionsContextPromise.get()
+                starsSubscriptionsContextPromise.get(),
+                accountFreezeConfiguration
             )
-            |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, data, birthdays, starsSubscriptionsContext -> Signal<ChatListNotice?, NoError> in                
+            |> mapToSignal { suggestions, dismissedSuggestions, configuration, newSessionReviews, data, birthdays, starsSubscriptionsContext, accountFreezeConfiguration -> Signal<ChatListNotice?, NoError> in
                 let (accountPeer, birthday) = data
-                
+                                
                 if let newSessionReview = newSessionReviews.first {
                     return .single(.reviewLogin(newSessionReview: newSessionReview, totalCount: newSessionReviews.count))
                 }
@@ -2129,8 +2147,10 @@ public final class ChatListNode: ListView {
                 if dismissedSuggestions.contains(.todayBirthdays) {
                     todayBirthdayPeerIds = []
                 }
-                
-                if suggestions.contains(.starsSubscriptionLowBalance) {
+                     
+                if let _ = accountFreezeConfiguration.freezeUntilDate {
+                    return .single(.accountFreeze)
+                } else if suggestions.contains(.starsSubscriptionLowBalance) {
                     if let starsSubscriptionsContext {
                         return starsSubscriptionsContext.state
                         |> map { state in
@@ -3593,6 +3613,7 @@ public final class ChatListNode: ListView {
         if state != self.currentState {
             self.currentState = state
             self.statePromise.set(state)
+            self.selectionCountChanged?(state.selectedPeerIds.count)
         }
     }
     

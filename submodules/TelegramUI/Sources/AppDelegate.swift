@@ -498,6 +498,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramPeerImageProvider: {
                 TelegramPeerImageProviderImpl(contextProvider: contextProvider)
             },
+            telegramPeerInfoProvider: {
+                TelegramPeerInfoProviderImpl(contextProvider: contextProvider)
+            },
             telegramThemeProvider: {
                 TelegramThemeProviderImpl(sharedContextProvider: sharedContextProvider)
             },
@@ -2360,6 +2363,22 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         SharedDisplayLinkDriver.shared.updateForegroundState(self.isActiveValue)
         
+        func cancelWindowPanGestures(view: UIView) {
+            if let gestureRecognizers = view.gestureRecognizers {
+                for recognizer in gestureRecognizers {
+                    if let recognizer = recognizer as? WindowPanRecognizer {
+                        recognizer.cancel()
+                    }
+                }
+            }
+            
+            for subview in view.subviews {
+                cancelWindowPanGestures(view: subview)
+            }
+        }
+        
+        //cancelWindowPanGestures(view: self.mainWindow.hostView.containerView)
+        
 // MARK: Nicegram NCG-6554 channels info
         let _ = (self.context.get()
         |> take(1)
@@ -2464,12 +2483,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }) |> deliverOnMainQueue).start()
         })
     }
-    
-    /*func application(_ application: UIApplication, didReceive notification: UILocalNotification) {
-        if (application.applicationState == .inactive) {
-            Logger.shared.log("App \(self.episodeId)", "tap local notification \(String(describing: notification.userInfo)), applicationState \(application.applicationState)")
-        }
-    }*/
 
     public func pushRegistry(_ registry: PKPushRegistry, didUpdate credentials: PKPushCredentials, for type: PKPushType) {
         if #available(iOS 9.0, *) {
@@ -2563,102 +2576,198 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             return
         }
         
-        guard var updateString = payloadJson["updates"] as? String else {
-            Logger.shared.log("App \(self.episodeId) PushRegistry", "updates is nil")
-            completion()
-            return
-        }
-
-        updateString = updateString.replacingOccurrences(of: "-", with: "+")
-        updateString = updateString.replacingOccurrences(of: "_", with: "/")
-        while updateString.count % 4 != 0 {
-            updateString.append("=")
-        }
-        guard let updateData = Data(base64Encoded: updateString) else {
-            Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't decode updateData")
-            completion()
-            return
-        }
-        guard let callUpdate = AccountStateManager.extractIncomingCallUpdate(data: updateData) else {
-            Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't extract call update")
-            completion()
-            return
-        }
-        guard let callKitIntegration = CallKitIntegration.shared else {
-            Logger.shared.log("App \(self.episodeId) PushRegistry", "CallKitIntegration is not available")
-            completion()
-            return
-        }
-        
         let phoneNumber = payloadJson["phoneNumber"] as? String
-
-        callKitIntegration.reportIncomingCall(
-            uuid: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId),
-            stableId: callUpdate.callId,
-            handle: "\(callUpdate.peer.id.id._internalGetInt64Value())",
-            phoneNumber: phoneNumber.flatMap(formatPhoneNumber),
-            isVideo: callUpdate.isVideo,
-            displayTitle: callUpdate.peer.debugDisplayTitle,
-            completion: { error in
-                if let error = error {
-                    if error.domain == "com.apple.CallKit.error.incomingcall" && (error.code == -3 || error.code == 3) {
-                        Logger.shared.log("PresentationCall", "reportIncomingCall device in DND mode")
-                    } else {
-                        Logger.shared.log("PresentationCall", "reportIncomingCall error \(error)")
-                        /*Queue.mainQueue().async {
-                            if let strongSelf = self {
-                                strongSelf.callSessionManager.drop(internalId: strongSelf.internalId, reason: .hangUp, debugLog: .single(nil))
-                            }
-                        }*/
-                    }
-                }
-            }
-        )
         
-        let _ = (self.sharedContextPromise.get()
-        |> take(1)
-        |> deliverOnMainQueue).start(next: { sharedApplicationContext in
-            let _ = (sharedApplicationContext.sharedContext.activeAccountContexts
+        if let fromIdString = payloadJson["from_id"] as? String, let fromId = Int64(fromIdString), let groupCallIdString = payloadJson["group_call_id"] as? String, let groupCallId = Int64(groupCallIdString), let messageIdString = payloadJson["msg_id"] as? String, let messageId = Int32(messageIdString), let fromTitle = payloadJson["from_title"] as? String {
+            guard let callKitIntegration = CallKitIntegration.shared else {
+                Logger.shared.log("App \(self.episodeId) PushRegistry", "CallKitIntegration is not available")
+                completion()
+                return
+            }
+            
+            var isVideo = false
+            if let isVideoString = payloadJson["video"] as? String, let isVideoValue = Int32(isVideoString) {
+                isVideo = isVideoValue != 0
+            } else if let isVideoString = payloadJson["video"] as? String, let isVideoValue = Bool(isVideoString) {
+                isVideo = isVideoValue
+            }
+
+            let fromPeerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(fromId))
+            let messageId = MessageId(peerId: fromPeerId, namespace: Namespaces.Message.Cloud, id: messageId)
+            
+            let internalId = CallSessionManager.getStableIncomingUUID(peerId: fromPeerId.id._internalGetInt64Value(), messageId: messageId.id)
+            
+            var strings: PresentationStrings = defaultPresentationStrings
+            let _ = (self.sharedContextPromise.get()
             |> take(1)
-            |> deliverOnMainQueue).start(next: { activeAccounts in
-                var processed = false
-                for (_, context, _) in activeAccounts.accounts {
-                    if context.account.id == accountId {
-                        context.account.stateManager.processIncomingCallUpdate(data: updateData, completion: { _ in
-                        })
-                        
-                        //callUpdate.callId
-                        let disposable = MetaDisposable()
-                        self.watchedCallsDisposables.add(disposable)
-                        
-                        disposable.set((context.account.callSessionManager.callState(internalId: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId))
-                        |> deliverOnMainQueue).start(next: { state in
-                            switch state.state {
-                            case .terminated:
-                                callKitIntegration.dropCall(uuid: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId))
-                            default:
-                                break
-                            }
-                        }))
-                        
-                        processed = true
-                        
-                        break
+            |> deliverOnMainQueue).start(next: { sharedApplicationContext in
+                strings = sharedApplicationContext.sharedContext.currentPresentationData.with { $0.strings }
+            })
+
+            let displayTitle: String
+            if let memberCountString = payloadJson["member_count"] as? String, let memberCount = Int(memberCountString) {
+                displayTitle = strings.Call_IncomingGroupCallTitle_Multiple(Int32(memberCount)).replacingOccurrences(of: "{}", with: fromTitle)
+            } else {
+                displayTitle = strings.Call_IncomingGroupCallTitle_Single(fromTitle).string
+            }
+            
+            callKitIntegration.reportIncomingCall(
+                uuid: internalId,
+                stableId: groupCallId,
+                handle: "\(fromPeerId.id._internalGetInt64Value())",
+                phoneNumber: phoneNumber.flatMap(formatPhoneNumber),
+                isVideo: isVideo,
+                displayTitle: displayTitle,
+                completion: { error in
+                    if let error = error {
+                        if error.domain == "com.apple.CallKit.error.incomingcall" && (error.code == -3 || error.code == 3) {
+                            Logger.shared.log("PresentationCall", "reportIncomingCall device in DND mode")
+                        } else {
+                            Logger.shared.log("PresentationCall", "reportIncomingCall error \(error)")
+                            /*Queue.mainQueue().async {
+                             if let strongSelf = self {
+                             strongSelf.callSessionManager.drop(internalId: strongSelf.internalId, reason: .hangUp, debugLog: .single(nil))
+                             }
+                             }*/
+                        }
                     }
                 }
+            )
+            
+            let _ = (self.sharedContextPromise.get()
+            |> take(1)
+            |> deliverOnMainQueue).start(next: { sharedApplicationContext in
+                let _ = (sharedApplicationContext.sharedContext.activeAccountContexts
+                |> take(1)
+                |> deliverOnMainQueue).start(next: { activeAccounts in
+                    var processed = false
+                    for (_, context, _) in activeAccounts.accounts {
+                        if context.account.id == accountId {
+                            context.account.callSessionManager.addConferenceInvitationMessages(ids: [(messageId, IncomingConferenceTermporaryExternalInfo(callId: groupCallId, isVideo: isVideo))])
+                            
+                            /*disposable.set((context.account.callSessionManager.callState(internalId: internalId)
+                            |> deliverOnMainQueue).start(next: { state in
+                                switch state.state {
+                                case .terminated:
+                                    callKitIntegration.dropCall(uuid: internalId)
+                                default:
+                                    break
+                                }
+                            }))*/
+                            
+                            processed = true
+                            
+                            break
+                        }
+                    }
+                    
+                    if !processed {
+                        callKitIntegration.dropCall(uuid: internalId)
+                    }
+                })
                 
-                if !processed {
-                    callKitIntegration.dropCall(uuid: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId))
+                sharedApplicationContext.wakeupManager.allowBackgroundTimeExtension(timeout: 2.0)
+                
+                if case PKPushType.voIP = type {
+                    Logger.shared.log("App \(self.episodeId) PushRegistry", "pushRegistry payload: \(payload.dictionaryPayload)")
+                    sharedApplicationContext.notificationManager.addNotification(payload.dictionaryPayload)
                 }
             })
-            
-            sharedApplicationContext.wakeupManager.allowBackgroundTimeExtension(timeout: 2.0)
-
-            if case PKPushType.voIP = type {
-                Logger.shared.log("App \(self.episodeId) PushRegistry", "pushRegistry payload: \(payload.dictionaryPayload)")
-                sharedApplicationContext.notificationManager.addNotification(payload.dictionaryPayload)
+        } else {
+            guard var updateString = payloadJson["updates"] as? String else {
+                Logger.shared.log("App \(self.episodeId) PushRegistry", "updates is nil")
+                completion()
+                return
             }
-        })
+            
+            updateString = updateString.replacingOccurrences(of: "-", with: "+")
+            updateString = updateString.replacingOccurrences(of: "_", with: "/")
+            while updateString.count % 4 != 0 {
+                updateString.append("=")
+            }
+            guard let updateData = Data(base64Encoded: updateString) else {
+                Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't decode updateData")
+                completion()
+                return
+            }
+            guard let callUpdate = AccountStateManager.extractIncomingCallUpdate(data: updateData) else {
+                Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't extract call update")
+                completion()
+                return
+            }
+            guard let callKitIntegration = CallKitIntegration.shared else {
+                Logger.shared.log("App \(self.episodeId) PushRegistry", "CallKitIntegration is not available")
+                completion()
+                return
+            }
+            
+            callKitIntegration.reportIncomingCall(
+                uuid: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId),
+                stableId: callUpdate.callId,
+                handle: "\(callUpdate.peer.id.id._internalGetInt64Value())",
+                phoneNumber: phoneNumber.flatMap(formatPhoneNumber),
+                isVideo: callUpdate.isVideo,
+                displayTitle: callUpdate.peer.debugDisplayTitle,
+                completion: { error in
+                    if let error = error {
+                        if error.domain == "com.apple.CallKit.error.incomingcall" && (error.code == -3 || error.code == 3) {
+                            Logger.shared.log("PresentationCall", "reportIncomingCall device in DND mode")
+                        } else {
+                            Logger.shared.log("PresentationCall", "reportIncomingCall error \(error)")
+                            /*Queue.mainQueue().async {
+                             if let strongSelf = self {
+                             strongSelf.callSessionManager.drop(internalId: strongSelf.internalId, reason: .hangUp, debugLog: .single(nil))
+                             }
+                             }*/
+                        }
+                    }
+                }
+            )
+            
+            let _ = (self.sharedContextPromise.get()
+            |> take(1)
+            |> deliverOnMainQueue).start(next: { sharedApplicationContext in
+                let _ = (sharedApplicationContext.sharedContext.activeAccountContexts
+                |> take(1)
+                |> deliverOnMainQueue).start(next: { activeAccounts in
+                    var processed = false
+                    for (_, context, _) in activeAccounts.accounts {
+                        if context.account.id == accountId {
+                            context.account.stateManager.processIncomingCallUpdate(data: updateData, completion: { _ in
+                            })
+                            
+                            let disposable = MetaDisposable()
+                            self.watchedCallsDisposables.add(disposable)
+                            
+                            disposable.set((context.account.callSessionManager.callState(internalId: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId))
+                            |> deliverOnMainQueue).start(next: { state in
+                                switch state.state {
+                                case .terminated:
+                                    callKitIntegration.dropCall(uuid: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId))
+                                default:
+                                    break
+                                }
+                            }))
+                            
+                            processed = true
+                            
+                            break
+                        }
+                    }
+                    
+                    if !processed {
+                        callKitIntegration.dropCall(uuid: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId))
+                    }
+                })
+                
+                sharedApplicationContext.wakeupManager.allowBackgroundTimeExtension(timeout: 2.0)
+                
+                if case PKPushType.voIP = type {
+                    Logger.shared.log("App \(self.episodeId) PushRegistry", "pushRegistry payload: \(payload.dictionaryPayload)")
+                    sharedApplicationContext.notificationManager.addNotification(payload.dictionaryPayload)
+                }
+            })
+        }
         
         Logger.shared.log("App \(self.episodeId) PushRegistry", "Invoking completion handler")
         

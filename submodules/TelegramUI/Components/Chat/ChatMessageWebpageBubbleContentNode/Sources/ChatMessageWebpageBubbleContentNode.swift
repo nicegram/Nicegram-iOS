@@ -474,6 +474,8 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                             actionTitle = item.presentationData.strings.Conversation_ViewStarGift
                             text = nil
                             entities = nil
+                        case "telegram_call":
+                            actionTitle = item.presentationData.strings.Chat_ViewGroupCall
                         default:
                             break
                     }

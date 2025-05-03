@@ -616,6 +616,26 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                     }
                 }
                 attributedString = NSAttributedString(string: titleString, font: titleFont, textColor: primaryTextColor)
+            case let .conferenceCall(conferenceCall):
+                var titleString: String
+                let incoming = message.flags.contains(.Incoming)
+                
+                let missedTimeout: Int32 = 30
+                let currentTime = Int32(Date().timeIntervalSince1970)
+                
+                if conferenceCall.flags.contains(.isMissed) {
+                    titleString = strings.Chat_CallMessage_DeclinedGroupCall
+                } else if conferenceCall.duration == nil && message.timestamp < currentTime - missedTimeout {
+                    titleString = strings.Chat_CallMessage_MissedGroupCall
+                } else {
+                    if incoming {
+                        titleString = strings.Chat_CallMessage_IncomingGroupCall
+                    } else {
+                        titleString = strings.Chat_CallMessage_OutgoingGroupCall
+                    }
+                }
+
+                attributedString = NSAttributedString(string: titleString, font: titleFont, textColor: primaryTextColor)
             case let .groupPhoneCall(_, _, scheduleDate, duration):
                 if let scheduleDate = scheduleDate {
                     if message.author?.id.namespace == Namespaces.Peer.CloudChannel {
@@ -1195,6 +1215,33 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                             }
                         }
                     }
+                }
+            case let .paidMessagesRefunded(_, stars):
+                let starsString = strings.Notification_PaidMessageRefund_Stars(Int32(stars))
+                if message.author?.id == accountPeerId, let messagePeer = message.peers[message.id.peerId] {
+                    let peerName = EnginePeer(messagePeer).compactDisplayTitle
+                    var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: [(1, messagePeer.id)])
+                    attributes[0] = boldAttributes
+                    let resultString = strings.Notification_PaidMessageRefundYou(starsString, peerName)
+                    attributedString = addAttributesToStringWithRanges(resultString._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                } else {
+                    let peerName = message.author?.compactDisplayTitle ?? ""
+                    var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: [(0, message.author?.id)])
+                    attributes[1] = boldAttributes
+                    let resultString = strings.Notification_PaidMessageRefund(peerName, starsString)
+                    attributedString = addAttributesToStringWithRanges(resultString._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                }
+            case let .paidMessagesPriceEdited(stars):
+                let starsString = strings.Notification_PaidMessagePriceChanged_Stars(Int32(stars))
+                if message.author?.id == accountPeerId {
+                    let resultString = strings.Notification_PaidMessagePriceChangedYou(starsString)
+                    attributedString = addAttributesToStringWithRanges(resultString._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
+                } else {
+                    let peerName = message.author?.compactDisplayTitle ?? ""
+                    var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: [(0, message.author?.id)])
+                    attributes[1] = boldAttributes
+                    let resultString = strings.Notification_PaidMessagePriceChanged(peerName, starsString)
+                    attributedString = addAttributesToStringWithRanges(resultString._tuple, body: bodyAttributes, argumentAttributes: attributes)
                 }
             case .unknown:
                 attributedString = nil

@@ -169,6 +169,8 @@ public extension Api {
 public extension Api {
     enum InputGroupCall: TypeConstructorDescription {
         case inputGroupCall(id: Int64, accessHash: Int64)
+        case inputGroupCallInviteMessage(msgId: Int32)
+        case inputGroupCallSlug(slug: String)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
@@ -179,6 +181,18 @@ public extension Api {
                     serializeInt64(id, buffer: buffer, boxed: false)
                     serializeInt64(accessHash, buffer: buffer, boxed: false)
                     break
+                case .inputGroupCallInviteMessage(let msgId):
+                    if boxed {
+                        buffer.appendInt32(-1945083841)
+                    }
+                    serializeInt32(msgId, buffer: buffer, boxed: false)
+                    break
+                case .inputGroupCallSlug(let slug):
+                    if boxed {
+                        buffer.appendInt32(-33127873)
+                    }
+                    serializeString(slug, buffer: buffer, boxed: false)
+                    break
     }
     }
     
@@ -186,6 +200,10 @@ public extension Api {
         switch self {
                 case .inputGroupCall(let id, let accessHash):
                 return ("inputGroupCall", [("id", id as Any), ("accessHash", accessHash as Any)])
+                case .inputGroupCallInviteMessage(let msgId):
+                return ("inputGroupCallInviteMessage", [("msgId", msgId as Any)])
+                case .inputGroupCallSlug(let slug):
+                return ("inputGroupCallSlug", [("slug", slug as Any)])
     }
     }
     
@@ -203,11 +221,34 @@ public extension Api {
                 return nil
             }
         }
+        public static func parse_inputGroupCallInviteMessage(_ reader: BufferReader) -> InputGroupCall? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.InputGroupCall.inputGroupCallInviteMessage(msgId: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_inputGroupCallSlug(_ reader: BufferReader) -> InputGroupCall? {
+            var _1: String?
+            _1 = parseString(reader)
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.InputGroupCall.inputGroupCallSlug(slug: _1!)
+            }
+            else {
+                return nil
+            }
+        }
     
     }
 }
 public extension Api {
     indirect enum InputInvoice: TypeConstructorDescription {
+        case inputInvoiceBusinessBotTransferStars(bot: Api.InputUser, stars: Int64)
         case inputInvoiceChatInviteSubscription(hash: String)
         case inputInvoiceMessage(peer: Api.InputPeer, msgId: Int32)
         case inputInvoicePremiumGiftCode(purpose: Api.InputStorePaymentPurpose, option: Api.PremiumGiftCodeOption)
@@ -220,6 +261,13 @@ public extension Api {
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
+                case .inputInvoiceBusinessBotTransferStars(let bot, let stars):
+                    if boxed {
+                        buffer.appendInt32(-191267262)
+                    }
+                    bot.serialize(buffer, true)
+                    serializeInt64(stars, buffer: buffer, boxed: false)
+                    break
                 case .inputInvoiceChatInviteSubscription(let hash):
                     if boxed {
                         buffer.appendInt32(887591921)
@@ -289,6 +337,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
+                case .inputInvoiceBusinessBotTransferStars(let bot, let stars):
+                return ("inputInvoiceBusinessBotTransferStars", [("bot", bot as Any), ("stars", stars as Any)])
                 case .inputInvoiceChatInviteSubscription(let hash):
                 return ("inputInvoiceChatInviteSubscription", [("hash", hash as Any)])
                 case .inputInvoiceMessage(let peer, let msgId):
@@ -310,6 +360,22 @@ public extension Api {
     }
     }
     
+        public static func parse_inputInvoiceBusinessBotTransferStars(_ reader: BufferReader) -> InputInvoice? {
+            var _1: Api.InputUser?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.InputUser
+            }
+            var _2: Int64?
+            _2 = reader.readInt64()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.InputInvoice.inputInvoiceBusinessBotTransferStars(bot: _1!, stars: _2!)
+            }
+            else {
+                return nil
+            }
+        }
         public static func parse_inputInvoiceChatInviteSubscription(_ reader: BufferReader) -> InputInvoice? {
             var _1: String?
             _1 = parseString(reader)

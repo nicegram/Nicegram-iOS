@@ -1365,6 +1365,16 @@ final class ContextControllerNode: ViewControllerTracingNode, ASScrollViewDelega
         }
     }
 
+    func animateDismissalIfNeeded() {
+        guard let layout = self.validLayout, layout.metrics.isTablet else {
+            return
+        }
+        if let sourceContainer = self.sourceContainer {
+            sourceContainer.animateOut(result: .dismissWithoutContent, completion: {})
+            return
+        }
+    }
+    
     func getActionsMinHeight() -> ContextController.ActionsHeight? {
         if !self.actionsContainerNode.bounds.height.isZero {
             return ContextController.ActionsHeight(
@@ -2184,6 +2194,7 @@ public protocol ContextExtractedContentSource: AnyObject {
     var adjustContentHorizontally: Bool { get }
     var adjustContentForSideInset: Bool { get }
     var ignoreContentTouches: Bool { get }
+    var keepDefaultContentTouches: Bool { get }
     var blurBackground: Bool { get }
     var shouldBeDismissed: Signal<Bool, NoError> { get }
     
@@ -2216,6 +2227,10 @@ public extension ContextExtractedContentSource {
 
     var shouldBeDismissed: Signal<Bool, NoError> {
         return .single(false)
+    }
+    
+    var keepDefaultContentTouches: Bool {
+        return false
     }
 }
 
@@ -2777,6 +2792,10 @@ public final class ContextController: ViewController, StandalonePresentableContr
             })
             self.dismissed?()
         }
+    }
+    
+    public func animateDismissalIfNeeded() {
+        self.controllerNode.animateDismissalIfNeeded()
     }
     
     public func cancelReactionAnimation() {

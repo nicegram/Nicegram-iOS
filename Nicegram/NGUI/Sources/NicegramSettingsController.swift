@@ -579,7 +579,7 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         NGSettings.showContactsTab
     ))
     entries.append(.showCallsTab(
-        presentationData.strings.CallSettings_TabIcon,
+        l("NiceFeatures.Tabs.ShowCalls"),
         showCalls
     ))
     entries.append(.showTabNames(
@@ -624,7 +624,7 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     ))
 
     entries.append(.OtherHeader(
-        presentationData.strings.ChatSettings_Other.uppercased()))
+        l("NiceFeatures.Other").uppercased()))
     entries.append(.hidePhoneInSettings(
         l("NiceFeatures.HideNumber"),
         NGSettings.hidePhoneSettings
@@ -860,13 +860,13 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
 
         var leftNavigationButton: ItemListNavigationButton?
         if modal {
-            leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Cancel), style: .regular, enabled: true, action: {
+            leftNavigationButton = ItemListNavigationButton(content: .text(strings.cancel()), style: .regular, enabled: true, action: {
                 dismissImpl?()
             })
         }
 
         let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, sharingSettings: sharingSettings, aiShortcutsSettings: aiShortcutsSettings, context: context)
-        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("AppName")), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
+        let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("AppName")), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: strings.back()))
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks)
 
         return (controllerState, (listState, arguments))
@@ -918,7 +918,7 @@ private func showRestartRequiredAlert(
         title: nil,
         text: l("Common.RestartRequired"),
         actions: [
-            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
+            TextAlertAction(type: .genericAction, title: strings.nicegramAlertOk(), action: {})
         ]
     )
 

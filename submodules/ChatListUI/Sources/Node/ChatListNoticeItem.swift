@@ -165,7 +165,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
             
             let sideInset: CGFloat = params.leftInset + 16.0
             let rightInset: CGFloat = sideInset + 24.0
-            var titleRightInset = rightInset
+            var titleRightInset = rightInset - 4.0
             let verticalInset: CGFloat = 9.0
             var spacing: CGFloat = 0.0
             
@@ -288,6 +288,9 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                 titleString = NSAttributedString(string: item.strings.ChatList_AddPhoto_Title, font: titleFont, textColor: item.theme.rootController.navigationBar.primaryTextColor)
                 textString = NSAttributedString(string: item.strings.ChatList_AddPhoto_Text, font: smallTextFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor)
                 avatarPeer = accountPeer
+            case .accountFreeze:
+                titleString = NSAttributedString(string: item.strings.ChatList_FrozenAccount_Title, font: titleFont, textColor: item.theme.list.itemDestructiveColor)
+                textString = NSAttributedString(string: item.strings.ChatList_FrozenAccount_Text, font: smallTextFont, textColor: item.theme.rootController.navigationBar.secondaryTextColor)
             }
             
             var leftInset: CGFloat = sideInset

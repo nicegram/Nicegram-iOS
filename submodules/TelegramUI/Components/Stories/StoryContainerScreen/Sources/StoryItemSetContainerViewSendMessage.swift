@@ -275,8 +275,7 @@ final class StoryItemSetContainerSendMessage {
                 isGeneralThreadClosed: nil,
                 replyMessage: nil,
                 accountPeerColor: nil,
-                businessIntro: nil,
-                starGiftsAvailable: false
+                businessIntro: nil
             )
             
             let heightAndOverflow = inputMediaNode.updateLayout(width: availableSize.width, leftInset: 0.0, rightInset: 0.0, bottomInset: bottomInset, standardInputHeight: deviceMetrics.standardInputHeight(inLandscape: false), inputHeight: inputHeight < 100.0 ? inputHeight - bottomContainerInset : inputHeight, maximumHeight: availableSize.height, inputPanelHeight: 0.0, transition: .immediate, interfaceState: presentationInterfaceState, layoutMetrics: metrics, deviceMetrics: deviceMetrics, isVisible: true, isExpanded: false)
@@ -1723,7 +1722,7 @@ final class StoryItemSetContainerSendMessage {
                     case .contact:
                         let theme = component.theme
                         let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
-                        let contactsController = component.context.sharedContext.makeContactSelectionController(ContactSelectionControllerParams(context: component.context, updatedPresentationData: updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: true))
+                        let contactsController = component.context.sharedContext.makeContactSelectionController(ContactSelectionControllerParams(context: component.context, updatedPresentationData: updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: .always))
                         contactsController.presentScheduleTimePicker = { [weak self, weak view] completion in
                             guard let self, let view else {
                                 return

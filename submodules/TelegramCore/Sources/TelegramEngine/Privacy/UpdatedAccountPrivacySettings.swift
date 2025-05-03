@@ -16,12 +16,13 @@ func _internal_updateGlobalPrivacySettings(account: Account) -> Signal<Never, No
             }
             let globalSettings: GlobalPrivacySettings
             switch result {
-            case let .globalPrivacySettings(flags, nonContactPeersPaidStars):
+            case let .globalPrivacySettings(flags, nonContactPeersPaidStars, disallowedStarGifts):
                 let automaticallyArchiveAndMuteNonContacts = (flags & (1 << 0)) != 0
                 let keepArchivedUnmuted = (flags & (1 << 1)) != 0
                 let keepArchivedFolders = (flags & (1 << 2)) != 0
                 let hideReadTime = (flags & (1 << 3)) != 0
                 let nonContactChatsRequirePremium = (flags & (1 << 4)) != 0
+                let displayGiftButton = (flags & (1 << 7)) != 0
                 
                 let nonContactChatsPrivacy: GlobalPrivacySettings.NonContactChatsPrivacy
                 if let nonContactPeersPaidStars, nonContactPeersPaidStars > 0 {
@@ -32,12 +33,30 @@ func _internal_updateGlobalPrivacySettings(account: Account) -> Signal<Never, No
                     nonContactChatsPrivacy = .everybody
                 }
                 
+                var disallowedGifts: TelegramDisallowedGifts = []
+                if case let .disallowedGiftsSettings(giftFlags) = disallowedStarGifts {
+                    if (giftFlags & (1 << 0)) != 0 {
+                        disallowedGifts.insert(.unlimited)
+                    }
+                    if (giftFlags & (1 << 1)) != 0 {
+                        disallowedGifts.insert(.limited)
+                    }
+                    if (giftFlags & (1 << 2)) != 0 {
+                        disallowedGifts.insert(.unique)
+                    }
+                    if (giftFlags & (1 << 3)) != 0 {
+                        disallowedGifts.insert(.premium)
+                    }
+                }
+                
                 globalSettings = GlobalPrivacySettings(
                     automaticallyArchiveAndMuteNonContacts: automaticallyArchiveAndMuteNonContacts,
                     keepArchivedUnmuted: keepArchivedUnmuted,
                     keepArchivedFolders: keepArchivedFolders,
                     hideReadTime: hideReadTime,
-                    nonContactChatsPrivacy: nonContactChatsPrivacy
+                    nonContactChatsPrivacy: nonContactChatsPrivacy,
+                    disallowedGifts: disallowedGifts,
+                    displayGiftButton: displayGiftButton
                 )
             }
             updateGlobalPrivacySettings(transaction: transaction, { _ in
@@ -222,12 +241,13 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
         
         let globalSettings: GlobalPrivacySettings
         switch globalPrivacySettings {
-        case let .globalPrivacySettings(flags, nonContactPeersPaidStars):
+        case let .globalPrivacySettings(flags, nonContactPeersPaidStars, disallowedStarGifts):
             let automaticallyArchiveAndMuteNonContacts = (flags & (1 << 0)) != 0
             let keepArchivedUnmuted = (flags & (1 << 1)) != 0
             let keepArchivedFolders = (flags & (1 << 2)) != 0
             let hideReadTime = (flags & (1 << 3)) != 0
             let nonContactChatsRequirePremium = (flags & (1 << 4)) != 0
+            let displayGiftButton = (flags & (1 << 7)) != 0
             
             let nonContactChatsPrivacy: GlobalPrivacySettings.NonContactChatsPrivacy
             if let nonContactPeersPaidStars, nonContactPeersPaidStars > 0 {
@@ -238,12 +258,30 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
                 nonContactChatsPrivacy = .everybody
             }
             
+            var disallowedGifts: TelegramDisallowedGifts = []
+            if case let .disallowedGiftsSettings(giftFlags) = disallowedStarGifts {
+                if (giftFlags & (1 << 0)) != 0 {
+                    disallowedGifts.insert(.unlimited)
+                }
+                if (giftFlags & (1 << 1)) != 0 {
+                    disallowedGifts.insert(.limited)
+                }
+                if (giftFlags & (1 << 2)) != 0 {
+                    disallowedGifts.insert(.unique)
+                }
+                if (giftFlags & (1 << 3)) != 0 {
+                    disallowedGifts.insert(.premium)
+                }
+            }
+            
             globalSettings = GlobalPrivacySettings(
                 automaticallyArchiveAndMuteNonContacts: automaticallyArchiveAndMuteNonContacts,
                 keepArchivedUnmuted: keepArchivedUnmuted,
                 keepArchivedFolders: keepArchivedFolders,
                 hideReadTime: hideReadTime,
-                nonContactChatsPrivacy: nonContactChatsPrivacy
+                nonContactChatsPrivacy: nonContactChatsPrivacy,
+                disallowedGifts: disallowedGifts,
+                displayGiftButton: displayGiftButton
             )
         }
         
@@ -348,6 +386,9 @@ func _internal_updateGlobalPrivacySettings(account: Account, settings: GlobalPri
     if settings.hideReadTime {
         flags |= 1 << 3
     }
+    if settings.displayGiftButton {
+        flags |= 1 << 7
+    }
     
     var noncontactPeersPaidStars: Int64?
     switch settings.nonContactChatsPrivacy {
@@ -361,8 +402,26 @@ func _internal_updateGlobalPrivacySettings(account: Account, settings: GlobalPri
         noncontactPeersPaidStars = starsAmount.value
     }
     
+    var giftFlags: Int32 = 0
+    if !settings.disallowedGifts.isEmpty {
+        if settings.disallowedGifts.contains(.unlimited) {
+            giftFlags |= 1 << 0
+        }
+        if settings.disallowedGifts.contains(.limited) {
+            giftFlags |= 1 << 1
+        }
+        if settings.disallowedGifts.contains(.unique) {
+            giftFlags |= 1 << 2
+        }
+        if settings.disallowedGifts.contains(.premium) {
+            giftFlags |= 1 << 3
+        }
+    }
+    flags |= 1 << 6
+    let disallowedStargifts = Api.DisallowedGiftsSettings.disallowedGiftsSettings(flags: giftFlags)
+    
     return account.network.request(Api.functions.account.setGlobalPrivacySettings(
-        settings: .globalPrivacySettings(flags: flags, noncontactPeersPaidStars: noncontactPeersPaidStars)
+        settings: .globalPrivacySettings(flags: flags, noncontactPeersPaidStars: noncontactPeersPaidStars, disallowedGifts: disallowedStargifts)
     ))
     |> retryRequest
     |> ignoreValues

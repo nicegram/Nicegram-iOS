@@ -19,10 +19,12 @@
 /*Nice Features*/
 "NiceFeatures.Title" = "Nicegram";
 "NiceFeatures.Tabs.Header" = "탭";
+"NiceFeatures.Tabs.ShowCalls" = "통화 탭 표시";
 "NiceFeatures.Tabs.ShowContacts" = "연락처 탭 보이기";
 "NiceFeatures.ChatScreen.Header" = "채팅 화면";
 "NiceFeatures.ChatScreen.AnimatedStickers" = "움직이는 스티커";
 "NiceFeatures.useBackCam" = "후면 카메라 사용 (라운드 비디오)";
+"NiceFeatures.Other" = "기타";
 
 "NiceFeatures.Folders.Header" = "폴더";
 "NiceFeatures.Account.Header" = "프라이버시 설정";

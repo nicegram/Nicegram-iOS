@@ -163,13 +163,14 @@ private final class EmbeddedBroadcastUploadImpl: BroadcastUploadImpl {
                             enableNoiseSuppression: false,
                             disableAudioInput: true,
                             enableSystemMute: false,
-                            preferX264: false,
+                            prioritizeVP8: false,
                             logPath: "",
                             onMutedSpeechActivityDetected: { _ in },
-                            encryptionKey: nil,
                             isConference: false,
+                            audioIsActiveByDefault: true,
                             isStream: false,
-                            sharedAudioDevice: nil
+                            sharedAudioDevice: nil,
+                            encryptionContext: nil
                         )
                         self.callContext = callContext
                         self.joinPayloadDisposable = (callContext.joinPayload

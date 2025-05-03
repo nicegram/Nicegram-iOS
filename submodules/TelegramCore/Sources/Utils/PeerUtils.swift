@@ -3,6 +3,24 @@ import Postbox
 
 public let anonymousSavedMessagesId: Int64 = 2666000
 
+// MARK: Nicegram
+public extension CachedPeerData {
+    var aboutText: String {
+        let text: String? = switch self {
+        case let user as CachedUserData:
+            user.about
+        case let group as CachedGroupData:
+            group.about
+        case let channel as CachedChannelData:
+            channel.about
+        default:
+            nil
+        }
+        return text ?? ""
+    }
+}
+//
+
 public extension Peer {
     var debugDisplayTitle: String {
         switch self {

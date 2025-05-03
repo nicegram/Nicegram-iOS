@@ -110,6 +110,34 @@ final class ChatbotSetupScreenComponent: Component {
         }
     }
     
+    final class Permission {
+        var id: String
+        var key: TelegramBusinessBotRights?
+        var title: String
+        var value: Bool?
+        var enabled: Bool
+        var subpermissions: [Permission]?
+        var expanded: Bool?
+        
+        init(
+            id: String,
+            key: TelegramBusinessBotRights? = nil,
+            title: String,
+            value: Bool? = nil,
+            enabled: Bool = true,
+            subpermissions: [Permission]? = nil,
+            expanded: Bool? = nil
+        ) {
+            self.id = id
+            self.key = key
+            self.title = title
+            self.value = value
+            self.enabled = enabled
+            self.subpermissions = subpermissions
+            self.expanded = expanded
+        }
+    }
+    
     final class View: UIView, UIScrollViewDelegate {
         private let topOverscrollLayer = SimpleLayer()
         private let scrollView: ScrollView
@@ -143,7 +171,8 @@ final class ChatbotSetupScreenComponent: Component {
             excludePeers: []
         )
         
-        private var replyToMessages: Bool = true
+        private var permissions: [Permission] = []
+        private var botRights: TelegramBusinessBotRights = []
         
         override init(frame: CGRect) {
             self.scrollView = ScrollView()
@@ -206,7 +235,7 @@ final class ChatbotSetupScreenComponent: Component {
                 let _ = component.context.engine.accountData.setAccountConnectedBot(bot: TelegramAccountConnectedBot(
                     id: peer.id,
                     recipients: recipients,
-                    canReply: self.replyToMessages
+                    rights: self.botRights
                 )).startStandalone()
             } else {
                 let _ = component.context.engine.accountData.setAccountConnectedBot(bot: nil).startStandalone()
@@ -482,13 +511,17 @@ final class ChatbotSetupScreenComponent: Component {
                 self.isUpdating = false
             }
             
+            let environment = environment[EnvironmentType.self].value
+            let themeUpdated = self.environment?.theme !== environment.theme
+            self.environment = environment
+            
             if self.component == nil {
                 if let bot = component.initialData.bot, let botPeer = component.initialData.botPeer, let addressName = botPeer.addressName {
                     self.botResolutionState = BotResolutionState(query: addressName, state: .found(peer: botPeer, isInstalled: true))
                     self.resetQueryText = addressName.lowercased()
                     
-                    self.replyToMessages = bot.canReply
-                    
+                    self.botRights = bot.rights
+                                        
                     let initialRecipients = bot.recipients
                     
                     var mappedCategories = Set<AdditionalPeerList.Category>()
@@ -527,12 +560,32 @@ final class ChatbotSetupScreenComponent: Component {
                     
                     self.hasAccessToAllChatsByDefault = initialRecipients.exclude
                 }
+                
+                self.permissions = [
+                    Permission(id: "message", title: environment.strings.ChatbotSetup_Rights_ManageMessages, subpermissions: [
+                        Permission(id: "read", title: environment.strings.ChatbotSetup_Rights_ReadMessages, value: true, enabled: false),
+                        Permission(id: "reply", key: .reply, title: environment.strings.ChatbotSetup_Rights_ReplyToMessages),
+                        Permission(id: "mark", key: .readMessages, title: environment.strings.ChatbotSetup_Rights_MarkAsRead),
+                        Permission(id: "deleteSent", key: .deleteSentMessages, title: environment.strings.ChatbotSetup_Rights_DeleteSentMessages),
+                        Permission(id: "deleteReceived", key: .deleteReceivedMessages, title: environment.strings.ChatbotSetup_Rights_DeleteReceivedMessages)
+                    ], expanded: false),
+                    Permission(id: "profile", title: environment.strings.ChatbotSetup_Rights_ManageProfile, subpermissions: [
+                        Permission(id: "name", key: .editName, title: environment.strings.ChatbotSetup_Rights_EditName),
+                        Permission(id: "bio", key: .editBio, title: environment.strings.ChatbotSetup_Rights_EditBio),
+                        Permission(id: "avatar", key: .editProfilePhoto, title: environment.strings.ChatbotSetup_Rights_EditProfilePhoto),
+                        Permission(id: "username", key: .editUsername,  title: environment.strings.ChatbotSetup_Rights_EditUsername)
+                    ], expanded: false),
+                    Permission(id: "gifts", title: environment.strings.ChatbotSetup_Rights_ManageGiftsAndStars, subpermissions: [
+                        Permission(id: "view", key: .viewGifts, title: environment.strings.ChatbotSetup_Rights_ViewGifts),
+                        Permission(id: "sell", key: .sellGifts, title: environment.strings.ChatbotSetup_Rights_SellGifts),
+                        Permission(id: "settings", key: .changeGiftSettings, title: environment.strings.ChatbotSetup_Rights_ChangeGiftSettings),
+                        Permission(id: "transfer", key: .transferAndUpgradeGifts, title: environment.strings.ChatbotSetup_Rights_TransferAndUpgradeGifts),
+                        Permission(id: "transferStars", key: .transferStars, title: environment.strings.ChatbotSetup_Rights_TransferStars)
+                    ], expanded: false),
+                    Permission(id: "stories", key: .manageStories, title: environment.strings.ChatbotSetup_Rights_ManageStories)
+                ]
             }
-            
-            let environment = environment[EnvironmentType.self].value
-            let themeUpdated = self.environment?.theme !== environment.theme
-            self.environment = environment
-            
+                        
             self.component = component
             self.state = state
             
@@ -688,6 +741,7 @@ final class ChatbotSetupScreenComponent: Component {
                             if case let .user(user) = peer, let botInfo = user.botInfo, botInfo.flags.contains(.isBusiness) {
                                 botResolutionState.state = .found(peer: peer, isInstalled: true)
                                 self.botResolutionState = botResolutionState
+                                self.botRights = .All
                                 self.state?.updated(transition: .spring(duration: 0.3))
                             } else {
                                 self.environment?.controller()?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.ChatbotSetup_ErrorBotNotBusinessCapable, actions: [
@@ -984,61 +1038,198 @@ final class ChatbotSetupScreenComponent: Component {
                 contentHeight += excludedUsersContentHeight
             }
             
-            let permissionsSectionSize = self.permissionsSection.update(
-                transition: transition,
-                component: AnyComponent(ListSectionComponent(
-                    theme: environment.theme,
-                    header: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: environment.strings.ChatbotSetup_PermissionsSectionHeader,
-                            font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
-                            textColor: environment.theme.list.freeTextColor
-                        )),
-                        maximumNumberOfLines: 0
-                    )),
-                    footer: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: environment.strings.ChatbotSetup_PermissionsSectionFooter,
-                            font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
-                            textColor: environment.theme.list.freeTextColor
-                        )),
-                        maximumNumberOfLines: 0
-                    )),
-                    items: [
-                        AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
+            if case .found(_, true) = self.botResolutionState?.state {
+                var permissionsItems: [AnyComponentWithIdentity<Empty>] = []
+                for permission in self.permissions {
+                    var value: Bool
+                    if let key = permission.key {
+                        value = self.botRights.contains(key)
+                    } else {
+                        value = permission.value == true
+                    }
+                    
+                    var titleItems: [AnyComponentWithIdentity<Empty>] = []
+                    titleItems.append(
+                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: permission.title,
+                                font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                                textColor: environment.theme.list.itemPrimaryTextColor
+                            )),
+                            maximumNumberOfLines: 1
+                        )))
+                    )
+                    
+                    if let subpermissions = permission.subpermissions {
+                        value = true
+                        var selectedCount = 0
+                        for subpermission in subpermissions {
+                            if let key = subpermission.key {
+                                if self.botRights.contains(key) {
+                                    selectedCount += 1
+                                } else {
+                                    value = false
+                                }
+                            } else if subpermission.value == true {
+                                selectedCount += 1
+                            }
+                        }
+                        titleItems.append(
+                            AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(
+                                    string: "\(selectedCount)/\(subpermissions.count)",
+                                    font: Font.with(size: presentationData.listsFontSize.baseDisplaySize / 17.0 * 13.0, design: .round, weight: .semibold),
+                                    textColor: environment.theme.list.itemPrimaryTextColor
+                                )),
+                                maximumNumberOfLines: 1
+                            )))
+                        )
+                        titleItems.append(
+                            AnyComponentWithIdentity(id: AnyHashable(2), component: AnyComponent(BundleIconComponent(
+                                name: "Item List/ExpandingItemVerticalRegularArrow",
+                                tintColor: environment.theme.list.itemPrimaryTextColor,
+                                flipVertically: permission.expanded == true
+                            )))
+                        )
+                    }
+                    permissionsItems.append(
+                        AnyComponentWithIdentity(id: permission.id, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
-                            title: AnyComponent(VStack([
-                                AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                                    text: .plain(NSAttributedString(
-                                        string: environment.strings.ChatbotSetup_Permission_ReplyToMessages,
-                                        font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
-                                        textColor: environment.theme.list.itemPrimaryTextColor
-                                    )),
-                                    maximumNumberOfLines: 1
-                                ))),
-                            ], alignment: .left, spacing: 2.0)),
-                            accessory: .toggle(ListActionItemComponent.Toggle(style: .icons, isOn: self.replyToMessages, action: { [weak self] _ in
+                            title: AnyComponent(HStack(titleItems, spacing: 6.0)),
+                            accessory: .toggle(ListActionItemComponent.Toggle(style: .icons, isOn: value, action: { [weak self] value in
                                 guard let self else {
                                     return
                                 }
-                                self.replyToMessages = !self.replyToMessages
+                                if let subpermissions = permission.subpermissions {
+                                    for subpermission in subpermissions {
+                                        if subpermission.enabled {
+                                            if let key = subpermission.key {
+                                                if value {
+                                                    self.botRights.insert(key)
+                                                } else {
+                                                    self.botRights.remove(key)
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else if let key = permission.key {
+                                    if value {
+                                        self.botRights.insert(key)
+                                    } else {
+                                        self.botRights.remove(key)
+                                    }
+                                }
                                 self.state?.updated(transition: .spring(duration: 0.4))
                             })),
-                            action: nil
-                        ))),
-                    ]
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 10000.0)
-            )
-            let permissionsSectionFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: permissionsSectionSize)
-            if let permissionsSectionView = self.permissionsSection.view {
-                if permissionsSectionView.superview == nil {
-                    self.scrollView.addSubview(permissionsSectionView)
+                            action: permission.subpermissions != nil ? { [weak self] _ in
+                                guard let self else {
+                                    return
+                                }
+                                var scrollToBottom = false
+                                if let expanded = permission.expanded {
+                                    permission.expanded = !expanded
+                                    if !expanded {
+                                        scrollToBottom = true
+                                    }
+                                }
+                                self.state?.updated(transition: .spring(duration: 0.4))
+                                if scrollToBottom {
+                                    self.scrollView.setContentOffset(CGPoint(x: 0.0, y: self.scrollView.contentSize.height - self.scrollView.bounds.height), animated: true)
+                                }
+                            } : nil
+                        )))
+                    )
+                    
+                    if let subpermissions = permission.subpermissions, permission.expanded == true {
+                        for subpermission in subpermissions {
+                            var value = false
+                            if let key = subpermission.key {
+                                value = self.botRights.contains(key)
+                            } else if subpermission.value == true {
+                                value = true
+                            }
+                            
+                            permissionsItems.append(
+                                AnyComponentWithIdentity(id: subpermission.id, component: AnyComponent(ListActionItemComponent(
+                                    theme: environment.theme,
+                                    title: AnyComponent(VStack([
+                                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                                            text: .plain(NSAttributedString(
+                                                string: subpermission.title,
+                                                font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
+                                                textColor: environment.theme.list.itemPrimaryTextColor
+                                            )),
+                                            maximumNumberOfLines: 1
+                                        ))),
+                                    ], alignment: .left, spacing: 2.0)),
+                                    leftIcon: .check(ListActionItemComponent.LeftIcon.Check(isSelected: value, isEnabled: subpermission.enabled, toggle: nil)),
+                                    accessory: nil,
+                                    action: subpermission.enabled ? { [weak self] _ in
+                                        guard let self else {
+                                            return
+                                        }
+                                        if let key = subpermission.key {
+                                            if !value {
+                                                self.botRights.insert(key)
+                                            } else {
+                                                self.botRights.remove(key)
+                                            }
+                                        }
+                                        self.state?.updated(transition: .spring(duration: 0.4))
+                                    } : nil
+                                )))
+                            )
+                        }
+                        //permissionsItems.append(AnyComponentWithIdentity(id: "\(permission.id)_sub", component: AnyComponent(VStack(stackItems, spacing: 0.0))))
+                    }
                 }
-                transition.setFrame(view: permissionsSectionView, frame: permissionsSectionFrame)
+                
+                var permissionsTransition = transition
+                if self.permissionsSection.view?.superview == nil {
+                    permissionsTransition = .immediate
+                }
+                
+                let permissionsSectionSize = self.permissionsSection.update(
+                    transition: permissionsTransition,
+                    component: AnyComponent(ListSectionComponent(
+                        theme: environment.theme,
+                        header: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: environment.strings.ChatbotSetup_PermissionsSectionHeader,
+                                font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
+                                textColor: environment.theme.list.freeTextColor
+                            )),
+                            maximumNumberOfLines: 0
+                        )),
+                        footer: AnyComponent(MultilineTextComponent(
+                            text: .plain(NSAttributedString(
+                                string: environment.strings.ChatbotSetup_PermissionsSectionFooter,
+                                font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
+                                textColor: environment.theme.list.freeTextColor
+                            )),
+                            maximumNumberOfLines: 0
+                        )),
+                        items: permissionsItems
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 10000.0)
+                )
+                let permissionsSectionFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: permissionsSectionSize)
+                if let permissionsSectionView = self.permissionsSection.view {
+                    if permissionsSectionView.superview == nil {
+                        self.scrollView.addSubview(permissionsSectionView)
+                        
+                        permissionsSectionView.alpha = 1.0
+                        transition.animateAlpha(view: permissionsSectionView, from: 0.0, to: 1.0)
+                    }
+                    permissionsTransition.setFrame(view: permissionsSectionView, frame: permissionsSectionFrame)
+                }
+                contentHeight += permissionsSectionSize.height
+            } else if let permissionsSectionView = self.permissionsSection.view {
+                transition.setAlpha(view: permissionsSectionView, alpha: 0.0, completion: { _ in
+                    permissionsSectionView.removeFromSuperview()
+                })
             }
-            contentHeight += permissionsSectionSize.height
             
             contentHeight += bottomContentInset
             contentHeight += environment.safeInsets.bottom

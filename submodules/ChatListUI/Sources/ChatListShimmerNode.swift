@@ -161,7 +161,8 @@ public final class ChatListShimmerNode: ASDisplayNode {
             }, editPeer: { _ in
             }, openWebApp: { _ in
             }, openPhotoSetup: {
-            }, openAdInfo: { _ in
+            }, openAdInfo: { _, _ in
+            }, openAccountFreezeInfo: {
             })
             interaction.isInlineMode = isInlineMode
             

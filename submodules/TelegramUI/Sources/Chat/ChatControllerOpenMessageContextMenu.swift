@@ -296,11 +296,20 @@ extension ChatControllerImpl {
                     }
                 }
                 
+                var keepDefaultContentTouches = false
+                for media in message.media {
+                    if media is TelegramMediaImage {
+                        keepDefaultContentTouches = true
+                    } else if let file = media as? TelegramMediaFile, file.isVideo {
+                        keepDefaultContentTouches = true
+                    }
+                }
+                
                 let source: ContextContentSource
                 if let location = location {
                     source = .location(ChatMessageContextLocationContentSource(controller: self, location: node.view.convert(node.bounds, to: nil).origin.offsetBy(dx: location.x, dy: location.y)))
                 } else {
-                    source = .extracted(ChatMessageContextExtractedContentSource(chatController: self, chatNode: self.chatDisplayNode, engine: self.context.engine, message: message, selectAll: selectAll))
+                    source = .extracted(ChatMessageContextExtractedContentSource(chatController: self, chatNode: self.chatDisplayNode, engine: self.context.engine, message: message, selectAll: selectAll, keepDefaultContentTouches: keepDefaultContentTouches))
                 }
                 
                 self.canReadHistory.set(false)
@@ -310,6 +319,8 @@ extension ChatControllerImpl {
                     if let action = media as? TelegramMediaAction {
                         switch action.action {
                         case .phoneCall:
+                            break
+                        case .conferenceCall:
                             break
                         default:
                             hideReactionPanelTail = true
@@ -337,11 +348,19 @@ extension ChatControllerImpl {
                     }
                     
                     controller?.dismissWithoutContent()
+                    guard !self.presentAccountFrozenInfoIfNeeded(delay: true) else {
+                        return
+                    }
                     self.presentTagPremiumPaywall()
                 }
                 
                 controller.reactionSelected = { [weak self, weak controller] chosenUpdatedReaction, isLarge in
                     guard let self else {
+                        return
+                    }
+                    
+                    guard !self.presentAccountFrozenInfoIfNeeded(delay: true) else {
+                        controller?.dismiss(completion: {})
                         return
                     }
                     

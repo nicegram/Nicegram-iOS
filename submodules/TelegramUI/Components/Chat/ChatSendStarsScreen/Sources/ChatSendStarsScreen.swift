@@ -1171,6 +1171,11 @@ private final class ChatSendStarsScreenComponent: Component {
             if !self.bounds.contains(point) {
                 return nil
             }
+            
+            if let balanceView = self.balanceOverlay.view, let result = balanceView.hitTest(self.convert(point, to: balanceView), with: event) {
+                return result
+            }
+            
             if !self.backgroundLayer.frame.contains(point) {
                 return self.dimView
             }
@@ -1184,7 +1189,7 @@ private final class ChatSendStarsScreenComponent: Component {
                     return hitTestTarget
                 }
             }
-            
+
             let result = super.hitTest(point, with: event)
             return result
         }
@@ -2721,10 +2726,9 @@ private func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor:
         context.setLineCap(.round)
         context.setStrokeColor(foregroundColor.cgColor)
         
+        context.beginPath()
         context.move(to: CGPoint(x: 10.0, y: 10.0))
         context.addLine(to: CGPoint(x: 20.0, y: 20.0))
-        context.strokePath()
-        
         context.move(to: CGPoint(x: 20.0, y: 10.0))
         context.addLine(to: CGPoint(x: 10.0, y: 20.0))
         context.strokePath()

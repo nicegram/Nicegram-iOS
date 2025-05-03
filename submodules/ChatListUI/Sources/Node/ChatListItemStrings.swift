@@ -298,6 +298,23 @@ public func chatListItemStrings(strings: PresentationStrings, nameDisplayOrder: 
                         messageText = invoice.title
                     case let action as TelegramMediaAction:
                         switch action.action {
+                            case let .conferenceCall(conferenceCall):
+                                let incoming = message.flags.contains(.Incoming)
+                                
+                                let missedTimeout: Int32 = 30
+                                let currentTime = Int32(Date().timeIntervalSince1970)
+                                
+                                if conferenceCall.flags.contains(.isMissed) {
+                                    messageText = strings.Chat_CallMessage_DeclinedGroupCall
+                                } else if conferenceCall.duration == nil && message.timestamp < currentTime - missedTimeout {
+                                    messageText = strings.Chat_CallMessage_MissedGroupCall
+                                } else {
+                                    if incoming {
+                                        messageText = strings.Chat_CallMessage_IncomingGroupCall
+                                    } else {
+                                        messageText = strings.Chat_CallMessage_OutgoingGroupCall
+                                    }
+                                }
                             case let .phoneCall(_, discardReason, _, isVideo):
                                 hideAuthor = !isPeerGroup
                                 let incoming = message.flags.contains(.Incoming)

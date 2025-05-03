@@ -71,8 +71,12 @@ extension ChatControllerImpl {
                                     guard let self else {
                                         return
                                     }
-                                    let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: options, purpose: .sendMessage(peerId: peer.id, requiredStars: totalAmount), completion: { _ in
-                                        completion(false)
+                                    let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: options, purpose: .sendMessage(peerId: peer.id, requiredStars: totalAmount), completion: { stars in
+                                        starsContext.add(balance: StarsAmount(value: stars, nanos: 0))
+                                        let _ = (starsContext.onUpdate
+                                        |> deliverOnMainQueue).start(next: {
+                                            completion(false)
+                                        })
                                     })
                                     self.push(controller)
                                 })
