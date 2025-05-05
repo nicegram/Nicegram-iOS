@@ -9,7 +9,6 @@ NGDEPS = [
     # Nicegram downloading feature
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
     "//submodules/AccountUtils:AccountUtils",
-    "@FirebaseSDK//:FirebaseCrashlytics",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",
     "@swiftpkg_nicegram_assistant_ios//:FeatChatListWidget",
     "@swiftpkg_nicegram_assistant_ios//:FeatHiddenChats",

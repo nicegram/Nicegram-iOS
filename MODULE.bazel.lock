@@ -639,7 +639,7 @@
         "bzlTransitiveDigest": "DYtJwFqalhbNx5qiU4Xl0XnVU1L2Jlj5v0BwCw7H9VA=",
         "usagesDigest": "voXBMcSNlo2fnK6JIvInIrncYhBKKG8nBeKvToaUA0Y=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "93d6b63f953417ecc8bdf4de4eeba442ff132b5a37f53a5caa5a888d456af05e",
+          "@@//Package.resolved": "551ebe7fac3ebaa63c4542f910657fa8946ec506883f1166328735d3483450ed",
           "@@//Package.swift": "fb3cb1d48066e64f8bf17fe1a49f689b7a6bf4bfc07aa90b9b80a02188501951"
         },
         "recordedDirentsInputs": {},
@@ -1201,7 +1201,7 @@
             "ruleClassName": "swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "6121d2de6e3ed4cbe5f7ebd3ff452cfab53c6f83",
+              "commit": "40411b4c204624a8ed3c45d6d8b5429750be9217",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,

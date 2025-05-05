@@ -290,7 +290,10 @@ public final class SqliteValueBox: ValueBox {
             }
             do {
                 try FileManager.default.createDirectory(atPath: tempPath, withIntermediateDirectories: true, attributes: nil)
-                let testDatabase = Database(tempPath + "/test_db", readOnly: false)!
+                // MARK: Nicegram, possible crash fix
+                guard let testDatabase = Database(tempPath + "/test_db", readOnly: false) else {
+                    throw TempError.generic
+                }
                 var resultCode = testDatabase.execute("PRAGMA journal_mode=WAL")
                 if !resultCode {
                     throw TempError.generic
@@ -303,14 +306,18 @@ public final class SqliteValueBox: ValueBox {
                 let _ = try? FileManager.default.removeItem(atPath: tempPath)
                 postboxLog("Don't have write access to database folder")
                 postboxLogSync()
-                preconditionFailure("Don't have write access to database folder")
+                // MARK: Nicegram, possible crash fix
+                return nil
+//                preconditionFailure("Don't have write access to database folder")
             }
             
             if self.removeDatabaseOnError {
                 let _ = try? FileManager.default.removeItem(atPath: path)
             }
             postboxLogSync()
-            preconditionFailure("Couldn't open database")
+            // MARK: Nicegram, possible crash fix
+            return nil
+//            preconditionFailure("Couldn't open database")
         }
 
         postboxLog("Did open DB at \(path)")
