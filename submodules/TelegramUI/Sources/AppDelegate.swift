@@ -553,6 +553,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 )
             }
         )
+        accountManagerCallbacks = AccountManagerCallbacks(
+            onRemoteLogout: { id in
+                Task {
+                    let clearAccountBackupsUseCase = AccountBackupModule.shared.clearAccountBackupsUseCase()
+                    await clearAccountBackupsUseCase.clearAllRecords(accountId: id.int64)
+                }
+            }
+        )
         
         // MARK: Nicegram Unblock
         let _ = (self.context.get()
