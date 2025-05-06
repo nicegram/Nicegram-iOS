@@ -1,4 +1,3 @@
-import FirebaseCrashlytics
 // MARK: Nicegram ChatListWidget
 import FeatChatListWidget
 //
@@ -2393,10 +2392,7 @@ public final class ChatListNode: ListView {
         // MARK: Nicegram PinnedChats
         let nicegramItemsSignal = self.nicegramData.pinnedChats
             .removeDuplicates()
-            .map {
-                Crashlytics.crashlytics().log("pins \($0.map(\.id))")
-                return Array($0.reversed())
-            }
+            .map { Array($0.reversed()) }
             .toSignal()
             .skipError()
         //

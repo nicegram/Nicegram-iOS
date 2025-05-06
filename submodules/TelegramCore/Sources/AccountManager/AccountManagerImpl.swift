@@ -76,7 +76,9 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         } catch let e {
             postboxLog("decode atomic state error: \(e)")
             postboxLogSync()
-            preconditionFailure()
+            // MARK: Nicegram, possible crash fix
+            return ([], nil)
+//            preconditionFailure()
         }
     }
     // MARK: Nicegram DB Changes

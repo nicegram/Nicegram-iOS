@@ -17,7 +17,6 @@ import DeviceProximity
 import UndoUI
 import TemporaryCachedPeerDataManager
 import CallsEmoji
-import TdBinding
 
 private extension PresentationGroupCallState {
     static func initialValue(myPeerId: PeerId, title: String?, scheduleTimestamp: Int32?, subscribedToScheduled: Bool) -> PresentationGroupCallState {

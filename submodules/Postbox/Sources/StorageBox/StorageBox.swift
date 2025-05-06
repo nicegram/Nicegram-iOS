@@ -195,7 +195,9 @@ public final class StorageBox {
             guard let valueBox = valueBox else {
                 postboxLog("Giving up on opening value box at \(basePath + "/db")")
                 postboxLogSync()
-                preconditionFailure()
+                // MARK: Nicegram, crash log
+                fatalError("Giving up on opening value box at \(basePath + "/db")")
+//                preconditionFailure()
             }
             self.valueBox = valueBox
             
