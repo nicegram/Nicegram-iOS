@@ -268,11 +268,9 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         
         // MARK: Nicegram AccountBackup
-        if #available(iOS 15.0, *),
-           !self.sawImportAccounts,
-           self.otherAccountPhoneNumbers.1.isEmpty {
+        if #available(iOS 15.0, *), !self.sawImportAccounts {
             self.sawImportAccounts = true
-            ImportAccountsPresenter().presentImportFromBackupOnAddingAccount()
+            ImportAccountsPresenter().presentImportFromBackupOnFirstSession()
         }
         //
         

@@ -124,6 +124,7 @@ swift_library(
         "//submodules/DirectMediaImageCache",
         "//submodules/FastBlur",
         "//submodules/InviteLinksUI",
+        "//third-party/td:TdBinding",
     ],
     visibility = [
         "//visibility:public",
