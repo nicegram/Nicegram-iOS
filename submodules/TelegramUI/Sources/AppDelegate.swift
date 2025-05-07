@@ -2508,17 +2508,23 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
     
     private func pushRegistryImpl(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
+        Logger.shared.log("App \(self.episodeId) PushRegistry", "pushRegistry processing push notification")
+        
+        var decryptedPayloadAndAccountId: ([AnyHashable: Any], AccountRecordId)?
+        
         // MARK: Nicegram, logs for crash
         // https://console.firebase.google.com/u/1/project/nicegram-55d94/crashlytics/app/ios:app.nicegram/issues/8dfd072cec3c6c42189d28a4556a7e2c
         // Delete after fix
         func log(_ message: String) {
-            Crashlytics.crashlytics().log("message=\(message), type=\(type.rawValue), payload=\(payload.dictionaryPayload)")
+            let payloadString: String
+            if let decryptedPayloadAndAccountId {
+                payloadString = "\(decryptedPayloadAndAccountId.0)"
+            } else {
+                payloadString = "\(payload.dictionaryPayload)"
+            }
+            Crashlytics.crashlytics().log("message=\(message), type=\(type.rawValue), payload=\(payloadString)")
         }
         //
-        
-        Logger.shared.log("App \(self.episodeId) PushRegistry", "pushRegistry processing push notification")
-        
-        let decryptedPayloadAndAccountId: ([AnyHashable: Any], AccountRecordId)?
         
         if let accountIdString = payload.dictionaryPayload["accountId"] as? String, let accountId = Int64(accountIdString) {
             decryptedPayloadAndAccountId = (payload.dictionaryPayload, AccountRecordId(rawValue: accountId))

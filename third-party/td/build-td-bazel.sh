@@ -43,9 +43,12 @@ mkdir build
 cd build
 
 touch toolchain.cmake
-echo "set(CMAKE_SYSTEM_NAME Darwin)" >> toolchain.cmake
+# Nicegram, CMAKE_SYSTEM_NAME changed to iOS
+echo "set(CMAKE_SYSTEM_NAME iOS)" >> toolchain.cmake
 echo "set(CMAKE_SYSTEM_PROCESSOR aarch64)" >> toolchain.cmake
 echo "set(CMAKE_C_COMPILER $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang)" >> toolchain.cmake
+# Nicegram, added CMAKE_OSX_DEPLOYMENT_TARGET 12.0
+echo "set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)" >> toolchain.cmake
 
 cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake -DCMAKE_OSX_SYSROOT=${IOS_SYSROOT[0]} ../td $options
 make tde2e -j$(sysctl -n hw.ncpu)
