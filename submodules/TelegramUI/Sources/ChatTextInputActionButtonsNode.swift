@@ -131,10 +131,6 @@ final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessageAction
     private let presentationContext: ChatPresentationContext?
     private let strings: PresentationStrings
     
-    // MARK: Nicegram
-    let ngSendContainerNode: ASDisplayNode
-    //
-    
     let micButton: ChatTextInputMediaRecordingButton
     let sendContainerNode: ASDisplayNode
     let backdropNode: ChatMessageBubbleBackdrop
@@ -171,11 +167,6 @@ final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessageAction
         self.strings = strings
          
         self.micButton = ChatTextInputMediaRecordingButton(context: context, theme: theme, pause: true, strings: strings, presentController: presentController)
-        
-        // MARK: Nicegram
-        self.ngSendContainerNode = ASDisplayNode()
-        self.ngSendContainerNode.layer.allowsGroupOpacity = true
-        //
         
         self.sendContainerNode = ASDisplayNode()
         self.sendContainerNode.layer.allowsGroupOpacity = true
@@ -218,13 +209,8 @@ final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessageAction
         
         self.micButton.layer.allowsGroupOpacity = true
         self.view.addSubview(self.micButton)
-        
-        // MARK: Nicegram
-        self.addSubnode(self.ngSendContainerNode)
-        //
             
-        // MARK: Nicegram, parent node changed to ngSendContainerNode
-        self.ngSendContainerNode.addSubnode(self.sendContainerNode)
+        self.addSubnode(self.sendContainerNode)
         self.sendContainerNode.addSubnode(self.backgroundNode)
         if let presentationContext = presentationContext {
             let graphics = PresentationResourcesChat.principalGraphics(theme: theme, wallpaper: presentationInterfaceState.chatWallpaper, bubbleCorners: presentationInterfaceState.bubbleCorners)
@@ -334,10 +320,6 @@ final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessageAction
     
         transition.updateFrame(layer: self.micButton.layer, frame: CGRect(origin: CGPoint(), size: size))
         self.micButton.layoutItems()
-        
-        // MARK: Nicegram
-        transition.updateFrame(node: self.ngSendContainerNode, frame: CGRect(origin: CGPoint(), size: innerSize))
-        //
         
         transition.updateFrame(layer: self.sendButton.layer, frame: CGRect(origin: CGPoint(), size: innerSize))
         transition.updateFrame(node: self.sendContainerNode, frame: CGRect(origin: CGPoint(), size: innerSize))

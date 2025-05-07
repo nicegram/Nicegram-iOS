@@ -665,7 +665,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     if #available(iOS 15.0, *) {
         entries.append(.accountsBackupHeader)
-        entries.append(.icloudBackupEnabled(accountBackupSettings.icloudBackupEnabled))
         entries.append(.importFromBackup)
         entries.append(.importFromFile)
         entries.append(.exportToFile)

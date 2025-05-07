@@ -260,6 +260,7 @@
 
 /*Accounts Backup*/
 "AccountsBackup.SectionHeader" = "Cuentas";
+"AccountsBackup.ICloudBackupEnabled" = "Copia de seguridad de iCloud";
 "AccountsBackup.ImportFromICloud" = "Importar desde iCloud";
 "AccountsBackup.ImportFromFile" = "Importar desde archivo";
 "AccountsBackup.ExportAsFile" = "Exportar como archivo";

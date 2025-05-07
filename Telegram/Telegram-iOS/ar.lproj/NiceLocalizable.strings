@@ -5,7 +5,8 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
+";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -37,7 +38,8 @@
 "NiceFeatures.InstantLock" = "فوراً ";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "حفظ\n";
+"Chat.SaveToCloud" = "حفظ
+";
 
 /*Open Pin*/
 "Chat.OpenPin" = "عرض المثبت";
@@ -260,6 +262,7 @@
 
 /*Accounts Backup*/
 "AccountsBackup.SectionHeader" = "الحسابات";
+"AccountsBackup.ICloudBackupEnabled" = "نسخة احتياطية على iCloud";
 "AccountsBackup.ImportFromICloud" = "استيراد من iCloud";
 "AccountsBackup.ImportFromFile" = "استيراد من ملف";
 "AccountsBackup.ExportAsFile" = "تصدير كملف";
