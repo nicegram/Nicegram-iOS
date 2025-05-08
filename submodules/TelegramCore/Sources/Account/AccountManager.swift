@@ -596,6 +596,18 @@ public func managedCleanupAccounts(networkArguments: NetworkInitializationArgume
 
 public typealias AccountManagerPreferencesEntry = PreferencesEntry
 
+// MARK: Nicegram
+// Workaround, since TelegramCore module cannot depend on FeatAccountBackup module (build error occurs)
+public struct AccountManagerCallbacks {
+    let onRemoteLogout: (AccountRecordId) -> Void
+    
+    public init(onRemoteLogout: @escaping (AccountRecordId) -> Void) {
+        self.onRemoteLogout = onRemoteLogout
+    }
+}
+public var accountManagerCallbacks: AccountManagerCallbacks? = nil
+//
+
 private func cleanupAccount(networkArguments: NetworkInitializationArguments, accountManager: AccountManager<TelegramAccountManagerTypes>, id: AccountRecordId, encryptionParameters: ValueBoxEncryptionParameters, attributes: [TelegramAccountManagerTypes.Attribute], rootPath: String, auxiliaryMethods: AccountAuxiliaryMethods) -> Signal<Void, NoError> {
     let beginWithTestingEnvironment = attributes.contains(where: { attribute in
         if case let .environment(accountEnvironment) = attribute, case .test = accountEnvironment.environment {
@@ -639,6 +651,10 @@ private func cleanupAccount(networkArguments: NetworkInitializationArguments, ac
                         if let futureAuthToken = futureAuthToken {
                             storeFutureLoginToken(accountManager: accountManager, token: futureAuthToken.makeData())
                         }
+                        
+                        // MARK: Nicegram
+                        accountManagerCallbacks?.onRemoteLogout(id)
+                        //
                     default:
                         break
                     }

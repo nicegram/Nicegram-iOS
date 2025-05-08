@@ -3851,8 +3851,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         
         // MARK: Nicegram AiShortcuts
         let aiShortcutsLoading = self.aiShortcutsLoading
-        self.actionButtons.ngSendContainerNode.isUserInteractionEnabled = !aiShortcutsLoading
-        self.actionButtons.ngSendContainerNode.alpha = aiShortcutsLoading ? 0.3 : 1
+        self.actionButtons.sendButton.isEnabled = !aiShortcutsLoading
+        self.actionButtons.sendContainerNode.alpha = aiShortcutsLoading ? 0.3 : 1
         //
         
         var animateWithBounce = false

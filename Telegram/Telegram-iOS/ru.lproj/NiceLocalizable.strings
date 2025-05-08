@@ -90,7 +90,7 @@
 "Common.SupportChatUsername" = "nicegram_ru";
 "Common.FAQUrl" = "https://nicegram.app/ru/faq/";
 "Common.FAQ.Button" = "Вопросы о Nicegram";
-"IAP.Premium.Title" = "Премиум";
+"IAP.Premium.Title" = "Premium";
 "IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
 "IAP.Premium.Activated" = "Премиум Активирован!";
 "IAP.Common.Restore" = "Восстановить Покупки";
@@ -260,6 +260,7 @@
 
 /*Accounts Backup*/
 "AccountsBackup.SectionHeader" = "Аккаунты";
+"AccountsBackup.ICloudBackupEnabled" = "Резервное копирование в iCloud";
 "AccountsBackup.ImportFromICloud" = "Импортировать из iCloud";
 "AccountsBackup.ImportFromFile" = "Импортировать из файла";
 "AccountsBackup.ExportAsFile" = "Экспортировать как файл";

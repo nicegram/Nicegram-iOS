@@ -260,6 +260,7 @@
 
 /*Accounts Backup*/
 "AccountsBackup.SectionHeader" = "帐户";
+"AccountsBackup.ICloudBackupEnabled" = "iCloud 备份";
 "AccountsBackup.ImportFromICloud" = "从 iCloud 导入";
 "AccountsBackup.ImportFromFile" = "从文件导入";
 "AccountsBackup.ExportAsFile" = "导出为文件";

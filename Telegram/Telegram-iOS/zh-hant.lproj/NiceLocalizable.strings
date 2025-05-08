@@ -90,7 +90,7 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
-"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
@@ -260,6 +260,7 @@
 
 /*Accounts Backup*/
 "AccountsBackup.SectionHeader" = "帳戶";
+"AccountsBackup.ICloudBackupEnabled" = "iCloud 備份";
 "AccountsBackup.ImportFromICloud" = "從 iCloud 導入";
 "AccountsBackup.ImportFromFile" = "從文件導入";
 "AccountsBackup.ExportAsFile" = "導出為文件";

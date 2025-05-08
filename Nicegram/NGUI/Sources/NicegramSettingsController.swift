@@ -148,6 +148,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case shareDataNote(String)
     
     case accountsBackupHeader
+    case icloudBackupEnabled(Bool)
     case importFromBackup
     case importFromFile
     case exportToFile
@@ -177,7 +178,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.PinnedChats.rawValue
         case .enableAppleSpeech2Text, .onetaptr:
             return NicegramSettingsControllerSection.Tools.rawValue
-        case .accountsBackupHeader, .importFromBackup, .importFromFile, .exportToFile, .deleteSessions:
+        case .accountsBackupHeader, .icloudBackupEnabled, .importFromBackup, .importFromFile, .exportToFile, .deleteSessions:
             return NicegramSettingsControllerSection.AccountsBackup.rawValue
         }
     }
@@ -254,14 +255,16 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .accountsBackupHeader:
             return 3000
-        case .importFromBackup:
+        case .icloudBackupEnabled:
             return 3001
-        case .importFromFile:
+        case .importFromBackup:
             return 3002
-        case .exportToFile:
+        case .importFromFile:
             return 3003
-        case .deleteSessions:
+        case .exportToFile:
             return 3004
+        case .deleteSessions:
+            return 3005
             
         case let .easyToggle(index, _, _, _):
             return 5000 + Int32(index)
@@ -525,6 +528,23 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 text: l("AccountsBackup.SectionHeader").localizedUppercase,
                 sectionId: section
             )
+        case let .icloudBackupEnabled(value):
+            return ItemListSwitchItem(
+                presentationData: presentationData,
+                title: l("AccountsBackup.ICloudBackupEnabled"),
+                value: value,
+                enabled: true,
+                sectionId: section,
+                style: .blocks,
+                updated: { value in
+                    Task {
+                        let updateSettingsUseCase = AccountBackupModule.shared.updateSettingsUseCase()
+                        await updateSettingsUseCase {
+                            $0.icloudBackupEnabled = value
+                        }
+                    }
+                }
+            )
         case .importFromBackup:
             return ItemListActionItem(presentationData: presentationData, title: l("AccountsBackup.ImportFromICloud"), kind: .neutral, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 if #available(iOS 15.0, *) {
@@ -563,7 +583,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
 // MARK: Entries list
 
-private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [NicegramSettingsControllerEntry.PinnedChat], sharingSettings: SharingSettings?, aiShortcutsSettings: FeatAiShortcuts.Settings, context: AccountContext) -> [NicegramSettingsControllerEntry] {
+private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [NicegramSettingsControllerEntry.PinnedChat], sharingSettings: SharingSettings?, aiShortcutsSettings: FeatAiShortcuts.Settings, accountBackupSettings: FeatAccountBackup.Settings, context: AccountContext) -> [NicegramSettingsControllerEntry] {
     let nicegramSettings = getNicegramSettings()
     
     var entries: [NicegramSettingsControllerEntry] = []
@@ -853,8 +873,13 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
         .publisher()
         .toSignal()
         .skipError()
+    
+    let accountBackupSettingsSignal = AccountBackupModule.shared.getSettingsUseCase()
+        .publisher()
+        .toSignal()
+        .skipError()
 
-    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab, pinnedChatsSignal, sharingSettingsSignal, aiShortcutsSettingsSignal) |> map { presentationData, sharedData, showCalls, pinnedChats, sharingSettings, aiShortcutsSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    let signal = combineLatest(context.sharedContext.presentationData, sharedDataSignal, showCallsTab, pinnedChatsSignal, sharingSettingsSignal, aiShortcutsSettingsSignal, accountBackupSettingsSignal) |> map { presentationData, sharedData, showCalls, pinnedChats, sharingSettings, aiShortcutsSettings, accountBackupSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
 
         let experimentalSettings: ExperimentalUISettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
 
@@ -865,7 +890,7 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
             })
         }
 
-        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, sharingSettings: sharingSettings, aiShortcutsSettings: aiShortcutsSettings, context: context)
+        let entries = nicegramSettingsControllerEntries(presentationData: presentationData, experimentalSettings: experimentalSettings, showCalls: showCalls, pinnedChats: pinnedChats, sharingSettings: sharingSettings, aiShortcutsSettings: aiShortcutsSettings, accountBackupSettings: accountBackupSettings, context: context)
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("AppName")), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: strings.back()))
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks)
 

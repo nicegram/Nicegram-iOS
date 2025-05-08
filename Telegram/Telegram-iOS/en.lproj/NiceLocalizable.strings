@@ -260,6 +260,7 @@
 
 /*Accounts Backup*/
 "AccountsBackup.SectionHeader" = "Accounts";
+"AccountsBackup.ICloudBackupEnabled" = "iCloud Backup";
 "AccountsBackup.ImportFromICloud" = "Import from iCloud";
 "AccountsBackup.ImportFromFile" = "Import from File";
 "AccountsBackup.ExportAsFile" = "Export as File";

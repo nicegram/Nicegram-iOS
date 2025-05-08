@@ -73,7 +73,8 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.
+Il browser selezionato deve essere installato.";
 "ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
@@ -260,6 +261,7 @@
 
 /*Accounts Backup*/
 "AccountsBackup.SectionHeader" = "Account";
+"AccountsBackup.ICloudBackupEnabled" = "Backup iCloud";
 "AccountsBackup.ImportFromICloud" = "Importa da iCloud";
 "AccountsBackup.ImportFromFile" = "Importa da file";
 "AccountsBackup.ExportAsFile" = "Esporta come file";
