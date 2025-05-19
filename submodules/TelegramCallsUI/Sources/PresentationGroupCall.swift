@@ -335,6 +335,15 @@ private final class ConferenceCallE2EContextStateImpl: ConferenceCallE2EContextS
     func getParticipants() -> [ConferenceCallE2EContext.BlockchainParticipant] {
         return self.call.participants().map { ConferenceCallE2EContext.BlockchainParticipant(userId: $0.userId, internalId: $0.internalId) }
     }
+    
+    func getParticipantLatencies() -> [Int64: Double] {
+        let dict = self.call.participantLatencies()
+        var result: [Int64: Double] = [:]
+        for (k, v) in dict {
+            result[k.int64Value] = v.doubleValue
+        }
+        return result
+    }
 
     func getParticipantIds() -> [Int64] {
         return self.call.participants().map { $0.userId }
@@ -1151,7 +1160,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
             useIPCContext = value != 0.0
         }
         
-        let embeddedBroadcastImplementationTypePath = self.accountContext.sharedContext.basePath + "/broadcast-coordination-type"
+        let embeddedBroadcastImplementationTypePath = self.accountContext.sharedContext.basePath + "/broadcast-coordination-type-v2"
         
         let screencastIPCContext: ScreencastIPCContext
         if useIPCContext {
@@ -1747,7 +1756,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     }
                     
                     var prioritizeVP8 = false
-                    #if DEBUG
+                    #if DEBUG && false
                     prioritizeVP8 = "".isEmpty
                     #endif
                     if let data = self.accountContext.currentAppConfiguration.with({ $0 }).data, let value = data["ios_calls_prioritize_vp8"] as? Double {
@@ -3394,6 +3403,10 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     }
     
     private func updateProximityMonitoring() {
+        if self.sharedAudioContext != nil {
+            return
+        }
+        
         var shouldMonitorProximity = false
         switch self.currentSelectedAudioOutputValue {
         case .builtin:

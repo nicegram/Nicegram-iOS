@@ -89,6 +89,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
         public var isCallRecord: Bool
         //
         public var isConferencePossible: Bool
+        public var enableVideoSharpening: Bool
         
         public init(
             strings: PresentationStrings,
@@ -106,7 +107,8 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             // MARK: Nicegram NCG-5828 call recording
             isCallRecord: Bool,
             //
-            isConferencePossible: Bool
+            isConferencePossible: Bool,
+            enableVideoSharpening: Bool
         ) {
             self.strings = strings
             self.lifecycleState = lifecycleState
@@ -122,6 +124,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             self.isEnergySavingEnabled = isEnergySavingEnabled
             self.isCallRecord = isCallRecord
             self.isConferencePossible = isConferencePossible
+            self.enableVideoSharpening = enableVideoSharpening
         }
         
         public static func ==(lhs: State, rhs: State) -> Bool {
@@ -167,6 +170,9 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             }
 //
             if lhs.isConferencePossible != rhs.isConferencePossible {
+                return false
+            }
+            if lhs.enableVideoSharpening != rhs.enableVideoSharpening {
                 return false
             }
             return true
@@ -1045,7 +1051,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
                 videoContainerView = current
             } else {
                 animateIn = true
-                videoContainerView = VideoContainerView(key: videoContainerKey)
+                videoContainerView = VideoContainerView(key: videoContainerKey, enableSharpening: params.state.enableVideoSharpening)
                 switch videoContainerKey {
                 case .foreground:
                     self.overlayContentsView.layer.addSublayer(videoContainerView.blurredContainerLayer)

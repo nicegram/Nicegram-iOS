@@ -14188,3 +14188,135 @@ Sorry for the inconvenience.";
 "SendInviteLink.TextCallsRestrictedMultipleUsers_1" = "{user_list}, and **%d** more person do not accept calls.";
 "SendInviteLink.TextCallsRestrictedMultipleUsers_any" = "{user_list}, and **%d** more people do not accept calls.";
 "SendInviteLink.TextCallsRestrictedSendInviteLink" = "You can try to send an invite link instead.";
+
+"Call.VoiceChatInProgressConferenceMessage" = "Leave voice chat in %1$@ and start a conference?";
+"Call.LiveStreamInProgressConferenceMessage" = "Leave live stream in %1$@ and start a conference?";
+
+"VoiceChat.RemoveConferencePeerConfirmation" = "Are you sure you want to remove %@ from this call?";
+
+"Story.Privacy.ShareStories" = "Share Stories";
+"Story.Privacy.PostStoriesAsHeader" = "POST STORIES AS";
+"Story.Privacy.WhoCanViewStoriesHeader" = "WHO CAN VIEW THIS STORIES";
+"Story.Privacy.PostStories_1" = "Post %@ Story";
+"Story.Privacy.PostStories_any" = "Post %@ Stories";
+"Story.Privacy.KeepOnMyPageManyInfo" = "Keep these stories on your profile even after they expire in %@. Privacy settings will apply.";
+"Story.Privacy.KeepOnChannelPageManyInfo" = "Keep these stories on the channel profile even after they expire in %@.";
+"Story.Privacy.KeepOnGroupPageManyInfo" = "Keep these stories on the group page even after they expire in %@.";
+
+"Gift.Options.Gift.Filter.Resale" = "Resale";
+"Gift.Options.Gift.Resale" = "resale";
+
+"Stars.Intro.Transaction.GiftPurchase" = "Gift Purchase";
+"Stars.Intro.Transaction.GiftSale" = "Gift Sale";
+
+"Stars.Transaction.GiftPurchase" = "Gift Purchase";
+"Stars.Transaction.GiftSale" = "Gift Sale";
+
+"Channel.Info.AutoTranslate" = "Auto-Translate Messages";
+
+"ChannelBoost.Table.AutoTranslate" = "Autotranslation of Messages";
+"ChannelBoost.AutoTranslate" = "Autotranslation of Messages";
+"ChannelBoost.AutoTranslateLevelText" = "Your channel needs **Level %1$@** to enable autotranslation of messages.";
+
+"Channel.AdminLog.MessageToggleAutoTranslateOn" = "%@ enabled autotranslation of messages";
+"Channel.AdminLog.MessageToggleAutoTranslateOff" = "%@ disabled autotranslation of messages";
+
+"Notification.StarsGift.Bought" = "%1$@ gifted you %2$@ for %3$@";
+"Notification.StarsGift.Bought.Stars_1" = "%@ Star";
+"Notification.StarsGift.Bought.Stars_any" = "%@ Stars";
+"Notification.StarsGift.BoughtYou" = "You gifted %1$@ for %2$@";
+"Notification.StarsGift.BoughtForYouself" = "You bought this gift for %1$@";
+
+"Gift.View.Context.ChangePrice" = "Change Price";
+"Gift.View.Context.ViewInProfile" = "View in Profile";
+
+"Gift.View.Sell" = "sell";
+"Gift.View.Unlist" = "unlist";
+
+"Gift.View.BuyFor" = "Buy for";
+"Gift.View.SellingGiftInfo" = "%@ is selling this gift and you can buy it.";
+
+"Gift.View.Resale.Success.Title" = "Gift Sent";
+"Gift.View.Resale.Success.Text" = "%@ has been notified about your gift.";
+"Gift.View.Resale.SuccessYou.Title" = "Gift Acquired";
+"Gift.View.Resale.SuccessYou.Text" = "%@ is now yours.";
+
+"Gift.View.Resale.Unlist.Title" = "Unlist This Item?";
+"Gift.View.Resale.Unlist.Text" = "It will no longer be for sale.";
+"Gift.View.Resale.Unlist.Unlist" = "Unlist";
+"Gift.View.Resale.Unlist.Success" = "%@ is removed from sale.";
+"Gift.View.Resale.List.Success" = "%@ is now for sale!";
+"Gift.View.Resale.Relist.Success" = "%1$@ is relisted for %2$@.";
+"Gift.View.Resale.Relist.Success.Stars_1" = "%@ Star";
+"Gift.View.Resale.Relist.Success.Stars_any" = "%@ Stars";
+
+"Stars.SellGift.Title" = "Sell Gift";
+"Stars.SellGift.EditTitle" = "Edit Price";
+"Stars.SellGift.AmountTitle" = "PRICE IN STARS";
+"Stars.SellGift.AmountPlaceholder" = "Enter Price";
+"Stars.SellGift.AmountInfo" = "You will receive **%@**.";
+"Stars.SellGift.AmountInfo.Stars_1" = "%@ Star";
+"Stars.SellGift.AmountInfo.Stars_any" = "%@ Stars";
+"Stars.SellGift.Sell" = "Sell";
+"Stars.SellGift.SellFor" = "Sell for";
+
+"PeerInfo.Gifts.Sale" = "sale";
+
+"Gift.Store.ForResaleNoResults" = "no results";
+"Gift.Store.ForResale_1" = "%@ for resale";
+"Gift.Store.ForResale_any" = "%@ for resale";
+"Gift.Store.Sort.Price" = "Price";
+"Gift.Store.Sort.Date" = "Date";
+"Gift.Store.Sort.Number" = "Number";
+"Gift.Store.SortByPrice" = "Sort By Price";
+"Gift.Store.SortByDate" = "Sort By Date";
+"Gift.Store.SortByNumber" = "Sort By Number";
+"Gift.Store.Filter.Model" = "Model";
+"Gift.Store.Filter.Backdrop" = "Backdrop";
+"Gift.Store.Filter.Symbol" = "Symbol";
+"Gift.Store.Filter.Selected.Model_1" = "%@ Model";
+"Gift.Store.Filter.Selected.Model_any" = "%@ Models";
+"Gift.Store.Filter.Selected.Backdrop_1" = "%@ Backdrop";
+"Gift.Store.Filter.Selected.Backdrop_any" = "%@ Backdrops";
+"Gift.Store.Filter.Selected.Symbol_1" = "%@ Symbol";
+"Gift.Store.Filter.Selected.Symbol_any" = "%@ Symbols";
+"Gift.Store.Search" = "Search";
+"Gift.Store.SelectAll" = "Select All";
+"Gift.Store.NoResults" = "No Results";
+"Gift.Store.EmptyResults" = "No Matching Gifts";
+"Gift.Store.ClearFilters" = "Clear Filters";
+
+"Gift.Send.AvailableForResale" = "Available for Resale";
+
+"MediaPicker.CreateStory_1" = "Create %@ Story";
+"MediaPicker.CreateStory_any" = "Create %@ Stories";
+"MediaPicker.CombineIntoCollage" = "Combine into Collage";
+
+"Gift.Resale.Unavailable.Title" = "Try Later";
+"Gift.Resale.Unavailable.Text" = "You will be able to resell this gift on %@.";
+
+"Gift.Transfer.Unavailable.Title" = "Try Later";
+"Gift.Transfer.Unavailable.Text" = "You will be able to transfer this gift on %@.";
+
+"Premium.CreateMultipleStories" = "Create Multiple Stories";
+
+"FrozenAccount.Violation.TextNew" = "Your account was frozen for breaking Telegram's [Terms and Conditions]().";
+"FrozenAccount.Violation.TextNew_URL" = "https://telegram.org/tos";
+
+"Stars.Purchase.BuyStarGiftInfo" = "Buy Stars to acquire a unique collectible.";
+
+"Stars.Purchase.EnoughStars" = "You have enough stars at the moment.";
+"Stars.Purchase.BuyAnyway" = "Buy Anyway";
+
+"Gift.Buy.Confirm.Title" = "Confirm Payment";
+"Gift.Buy.Confirm.Text" = "Do you really want to buy **%1$@** for %2$@?";
+"Gift.Buy.Confirm.GiftText" = "Do you really want to buy **%1$@** for %2$@ and gift it to **%3$@**?";
+"Gift.Buy.Confirm.Text.Stars_1" = "**%@** Star";
+"Gift.Buy.Confirm.Text.Stars_any" = "**%@** Stars";
+"Gift.Buy.Confirm.BuyFor_1" = "Buy for %@ Star";
+"Gift.Buy.Confirm.BuyFor_any" = "Buy for %@ Stars";
+
+"Calls.HideCallsTab" = "Hide Calls Tab";
+
+"Story.Editor.TooltipSelection_1" = "Tap here to view your %@ story";
+"Story.Editor.TooltipSelection_any" = "Tap here to view your %@ stories";

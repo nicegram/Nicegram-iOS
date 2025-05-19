@@ -148,6 +148,7 @@ import AdUI
 import ChatMessagePaymentAlertController
 import TelegramCallsUI
 import QuickShareScreen
+import PostSuggestionsSettingsScreen
 
 public enum ChatControllerPeekActions {
     case standard
@@ -801,6 +802,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 }
             case .hashTagSearch:
                 break
+            case .postSuggestions:
+                break
             }
         }
         
@@ -907,6 +910,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                         
                         return false
                     }
+                case .postSuggestions:
+                    break
                 }
             }
             
@@ -2928,54 +2933,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 return
             }
             
-            var action: TelegramMediaAction?
-            for media in message.media {
-                if let media = media as? TelegramMediaAction {
-                    action = media
-                    break
-                }
-            }
-            guard case let .conferenceCall(conferenceCall) = action?.action else {
-                return
-            }
-            
-            if let currentGroupCallController = self.context.sharedContext.currentGroupCallController as? VoiceChatController, case let .group(groupCall) = currentGroupCallController.call, let currentCallId = groupCall.callId, currentCallId == conferenceCall.callId {
-                self.context.sharedContext.navigateToCurrentCall()
-                return
-            }
-            
-            let signal = self.context.engine.peers.joinCallInvitationInformation(messageId: message.id)
-            let _ = (signal
-            |> deliverOnMainQueue).startStandalone(next: { [weak self] resolvedCallLink in
-                guard let self else {
-                    return
-                }
-                self.context.sharedContext.callManager?.joinConferenceCall(
-                    accountContext: self.context,
-                    initialCall: EngineGroupCallDescription(
-                        id: resolvedCallLink.id,
-                        accessHash: resolvedCallLink.accessHash,
-                        title: nil,
-                        scheduleTimestamp: nil,
-                        subscribedToScheduled: false,
-                        isStream: false
-                    ),
-                    reference: .message(id: message.id),
-                    beginWithVideo: conferenceCall.flags.contains(.isVideo),
-                    invitePeerIds: []
-                )
-            }, error: { [weak self] error in
-                guard let self else {
-                    return
-                }
-                switch error {
-                case .doesNotExist:
-                    self.context.sharedContext.openCreateGroupCallUI(context: self.context, peerIds: conferenceCall.otherParticipants, parentController: self)
-                default:
-                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-                    self.present(textAlertController(context: self.context, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-                }
-            })
+            self.joinConferenceCall(message: EngineMessage(message))
         }, longTap: { [weak self] action, params in
             if let self {
                 self.openLinkLongTap(action, params: params)
@@ -5331,7 +5289,14 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             chatInfoButtonItem = UIBarButtonItem(customDisplayNode: avatarNode)!
             self.avatarNode = avatarNode
         case .customChatContents:
-            chatInfoButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
+            if case let .customChatContents(customChatContents) = self.subject, case .postSuggestions = customChatContents.kind {
+                let avatarNode = ChatAvatarNavigationNode()
+                chatInfoButtonItem = UIBarButtonItem(customDisplayNode: avatarNode)!
+                chatInfoButtonItem.isEnabled = false
+                self.avatarNode = avatarNode
+            } else {
+                chatInfoButtonItem = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
+            }
         }
         chatInfoButtonItem.target = self
         chatInfoButtonItem.action = #selector(self.rightNavigationButtonAction)
@@ -6914,6 +6879,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 self.reportIrrelvantGeoNoticePromise.set(.single(nil))
                 self.titleDisposable.set(nil)
                 
+                var peerView: Signal<PeerView?, NoError> = .single(nil)
+                
                 if case let .customChatContents(customChatContents) = self.subject {
                     switch customChatContents.kind {
                     case .hashTagSearch:
@@ -6936,15 +6903,56 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                         }
                         
                         self.chatTitleView?.titleContent = .custom(link.title ?? self.presentationData.strings.Business_Links_EditLinkTitle, linkUrl, false)
+                    case .postSuggestions:
+                        if let customChatContents = customChatContents as? PostSuggestionsChatContents {
+                            peerView = context.account.viewTracker.peerView(customChatContents.peerId) |> map(Optional.init)
+                        }
+                        
+                        //TODO:localize
+                        self.chatTitleView?.titleContent = .custom("Message Suggestions", nil, false)
                     }
                 } else {
                     self.chatTitleView?.titleContent = .custom(" ", nil, false)
                 }
                 
-                if !self.didSetChatLocationInfoReady {
-                    self.didSetChatLocationInfoReady = true
-                    self._chatLocationInfoReady.set(.single(true))
-                }
+                self.peerDisposable.set((peerView
+                |> deliverOnMainQueue).startStrict(next: { [weak self] peerView in
+                    guard let self else {
+                        return
+                    }
+                        
+                    var renderedPeer: RenderedPeer?
+                    if let peerView, let peer = peerView.peers[peerView.peerId] {
+                        var peers = SimpleDictionary<PeerId, Peer>()
+                        peers[peer.id] = peer
+                        if let associatedPeerId = peer.associatedPeerId, let associatedPeer = peerView.peers[associatedPeerId] {
+                            peers[associatedPeer.id] = associatedPeer
+                        }
+                        renderedPeer = RenderedPeer(peerId: peer.id, peers: peers, associatedMedia: peerView.media)
+                        
+                        (self.chatInfoNavigationButton?.buttonItem.customDisplayNode as? ChatAvatarNavigationNode)?.setPeer(context: self.context, theme: self.presentationData.theme, peer: EnginePeer(peer), overrideImage: nil)
+                    }
+                
+                    self.peerView = peerView
+                    
+                    if self.isNodeLoaded {
+                        self.chatDisplayNode.overlayTitle = self.overlayTitle
+                    }
+                    (self.chatInfoNavigationButton?.buttonItem.customDisplayNode as? ChatAvatarNavigationNode)?.contextActionIsEnabled = false
+                    
+                    self.updateChatPresentationInterfaceState(animated: false, interactive: false, {
+                        return $0.updatedPeer { _ in
+                            return renderedPeer
+                        }.updatedInterfaceState { interfaceState in
+                            return interfaceState
+                        }
+                    })
+                    
+                    if !self.didSetChatLocationInfoReady {
+                        self.didSetChatLocationInfoReady = true
+                        self._chatLocationInfoReady.set(.single(true))
+                    }
+                }))
             }
         }
         

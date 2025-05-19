@@ -126,6 +126,8 @@ import PeerNameColorScreen
 import ChatEmptyNode
 import ChatMediaInputStickerGridItem
 import AdsInfoScreen
+import PostSuggestionsSettingsScreen
+import ChatSendStarsScreen
 
 extension ChatControllerImpl {
     func loadDisplayNodeImpl() {
@@ -678,18 +680,24 @@ extension ChatControllerImpl {
                 
                 let isHidden = self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.TranslationHidden(id: peerId))
                 |> distinctUntilChanged
+                
+                let hasAutoTranslate = self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.AutoTranslateEnabled(id: peerId))
+                |> distinctUntilChanged
+                
+                let chatLocation = self.chatLocation
                 self.translationStateDisposable = (combineLatest(
                     queue: .concurrentDefaultQueue(),
                     isPremium,
                     isHidden,
+                    hasAutoTranslate,
                     ApplicationSpecificNotice.translationSuggestion(accountManager: self.context.sharedContext.accountManager)
-                ) |> mapToSignal { isPremium, isHidden, counterAndTimestamp -> Signal<ChatPresentationTranslationState?, NoError> in
+                ) |> mapToSignal { isPremium, isHidden, hasAutoTranslate, counterAndTimestamp -> Signal<ChatPresentationTranslationState?, NoError> in
                     var maybeSuggestPremium = false
                     if counterAndTimestamp.0 >= 3 {
                         maybeSuggestPremium = true
                     }
-                    if (isPremium || maybeSuggestPremium) && !isHidden {
-                        return chatTranslationState(context: context, peerId: peerId)
+                    if (isPremium || maybeSuggestPremium || hasAutoTranslate) && !isHidden {
+                        return chatTranslationState(context: context, peerId: peerId, threadId: chatLocation.threadId)
                         |> map { translationState -> ChatPresentationTranslationState? in
                             if let translationState, !translationState.fromLang.isEmpty && (translationState.fromLang != baseLanguageCode || translationState.isEnabled) {
                                 return ChatPresentationTranslationState(isEnabled: translationState.isEnabled, fromLang: translationState.fromLang, toLang: translationState.toLang ?? baseLanguageCode)
@@ -1430,6 +1438,46 @@ extension ChatControllerImpl {
                     }
                     
                     strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .succeed(text: strongSelf.presentationData.strings.Business_Links_EditLinkToastSaved, timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), in: .current)
+                case let .postSuggestions(postSuggestions):
+                    if let customChatContents = customChatContents as? PostSuggestionsChatContents {
+                        //TODO:release
+                        strongSelf.chatDisplayNode.dismissInput()
+                        
+                        let _ = (ChatSendStarsScreen.initialData(context: strongSelf.context, peerId: customChatContents.peerId, suggestMessageAmount: postSuggestions, completion: { [weak strongSelf] amount, timestamp in
+                            guard let strongSelf else {
+                                return
+                            }
+                            guard case let .customChatContents(customChatContents) = strongSelf.subject else {
+                                return
+                            }
+                            if amount == 0 {
+                                return
+                            }
+                            let messages = messages.map { message in
+                                return message.withUpdatedAttributes { attributes in
+                                    var attributes = attributes
+                                    attributes.removeAll(where: { $0 is OutgoingSuggestedPostMessageAttribute })
+                                    attributes.append(OutgoingSuggestedPostMessageAttribute(
+                                        price: StarsAmount(value: amount, nanos: 0),
+                                        timestamp: timestamp
+                                    ))
+                                    return attributes
+                                }
+                            }
+                            customChatContents.enqueueMessages(messages: messages)
+                            strongSelf.chatDisplayNode.historyNode.scrollToEndOfHistory()
+                        })
+                        |> deliverOnMainQueue).startStandalone(next: { [weak strongSelf] initialData in
+                            guard let strongSelf, let initialData else {
+                                return
+                            }
+                            let sendStarsScreen = ChatSendStarsScreen(
+                                context: strongSelf.context,
+                                initialData: initialData
+                            )
+                            strongSelf.push(sendStarsScreen)
+                        })
+                    }
                 }
             }
             strongSelf.updateChatPresentationInterfaceState(interactive: true, { $0.updatedShowCommands(false) })
@@ -4179,6 +4227,30 @@ extension ChatControllerImpl {
             if let strongSelf = self {
                 strongSelf.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .info(title: nil, text: strongSelf.presentationData.strings.Conversation_GigagroupDescription, timeout: nil, customUndoText: nil), elevatedLayout: false, action: { _ in return true }), in: .current)
             }
+        }, openSuggestPost: { [weak self] in
+            let _ = self
+             /*guard let self else {
+                return
+             }
+             guard let peerId = self.chatLocation.peerId else {
+                return
+             }
+
+             let contents = PostSuggestionsChatContents(
+                context: self.context,
+                peerId: peerId
+            )
+            let chatController = self.context.sharedContext.makeChatController(
+                context: self.context,
+                chatLocation: .customChatContents,
+                subject: .customChatContents(contents: contents),
+                botStart: nil,
+                mode: .standard(.default),
+                params: nil
+            )
+            chatController.navigationPresentation = .modal
+            
+            self.push(chatController)*/
         }, editMessageMedia: { [weak self] messageId, draw in
             if let strongSelf = self {
                 strongSelf.controllerInteraction?.editMessageMedia(messageId, draw)
@@ -4384,32 +4456,32 @@ extension ChatControllerImpl {
             }
             let _ = strongSelf.context.engine.peers.setForumChannelTopicClosed(id: peerId, threadId: threadId, isClosed: false).startStandalone()
         }, toggleTranslation: { [weak self] type in
-            guard let strongSelf = self, let peerId = strongSelf.chatLocation.peerId else {
+            guard let self, let peerId = self.chatLocation.peerId else {
                 return
             }
-            let _ = (updateChatTranslationStateInteractively(engine: strongSelf.context.engine, peerId: peerId, { current in
+            let _ = (updateChatTranslationStateInteractively(engine: self.context.engine, peerId: peerId, threadId: self.chatLocation.threadId,  { current in
                 return current?.withIsEnabled(type == .translated)
             })
             |> deliverOnMainQueue).startStandalone(completed: { [weak self] in
-                if let strongSelf = self, type == .translated {
+                if let self, type == .translated {
                     Queue.mainQueue().after(0.15) {
-                        strongSelf.chatDisplayNode.historyNode.refreshPollActionsForVisibleMessages()
+                        self.chatDisplayNode.historyNode.refreshPollActionsForVisibleMessages()
                     }
                 }
             })
         }, changeTranslationLanguage: { [weak self] langCode in
-            guard let strongSelf = self, let peerId = strongSelf.chatLocation.peerId else {
+            guard let self, let peerId = self.chatLocation.peerId else {
                 return
             }
             let langCode = normalizeTranslationLanguage(langCode)
-            let _ = updateChatTranslationStateInteractively(engine: strongSelf.context.engine, peerId: peerId, { current in
+            let _ = updateChatTranslationStateInteractively(engine: self.context.engine, peerId: peerId, threadId: self.chatLocation.threadId, { current in
                 return current?.withToLang(langCode).withIsEnabled(true)
             }).startStandalone()
         }, addDoNotTranslateLanguage: { [weak self] langCode in
-            guard let strongSelf = self, let peerId = strongSelf.chatLocation.peerId else {
+            guard let self, let peerId = self.chatLocation.peerId else {
                 return
             }
-            let _ = updateTranslationSettingsInteractively(accountManager: strongSelf.context.sharedContext.accountManager, { current in
+            let _ = updateTranslationSettingsInteractively(accountManager: self.context.sharedContext.accountManager, { current in
                 var updated = current
                 if var ignoredLanguages = updated.ignoredLanguages {
                     if !ignoredLanguages.contains(langCode) {
@@ -4418,7 +4490,7 @@ extension ChatControllerImpl {
                     updated.ignoredLanguages = ignoredLanguages
                 } else {
                     var ignoredLanguages = Set<String>()
-                    ignoredLanguages.insert(strongSelf.presentationData.strings.baseLanguageCode)
+                    ignoredLanguages.insert(self.presentationData.strings.baseLanguageCode)
                     for language in systemLanguageCodes() {
                         ignoredLanguages.insert(language)
                     }
@@ -4427,11 +4499,11 @@ extension ChatControllerImpl {
                 }
                 return updated
             }).startStandalone()
-            let _ = updateChatTranslationStateInteractively(engine: strongSelf.context.engine, peerId: peerId, { current in
+            let _ = updateChatTranslationStateInteractively(engine: self.context.engine, peerId: peerId, threadId: self.chatLocation.threadId, { current in
                 return nil
             }).startStandalone()
             
-            let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
+            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
             var languageCode = presentationData.strings.baseLanguageCode
             let rawSuffix = "-raw"
             if languageCode.hasSuffix(rawSuffix) {
@@ -4440,11 +4512,11 @@ extension ChatControllerImpl {
             let locale = Locale(identifier: languageCode)
             let fromLanguage: String = locale.localizedString(forLanguageCode: langCode) ?? ""
             
-            strongSelf.present(UndoOverlayController(presentationData: presentationData, content: .image(image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/Translate"), color: .white)!, title: nil, text: presentationData.strings.Conversation_Translation_AddedToDoNotTranslateText(fromLanguage).string, round: false, undoText: presentationData.strings.Conversation_Translation_Settings), elevatedLayout: false, animateInAsReplacement: false, action: { [weak self] action in
-                if case .undo = action, let strongSelf = self {
-                    let controller = translationSettingsController(context: strongSelf.context)
+            self.present(UndoOverlayController(presentationData: presentationData, content: .image(image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/Translate"), color: .white)!, title: nil, text: presentationData.strings.Conversation_Translation_AddedToDoNotTranslateText(fromLanguage).string, round: false, undoText: presentationData.strings.Conversation_Translation_Settings), elevatedLayout: false, animateInAsReplacement: false, action: { [weak self] action in
+                if case .undo = action, let self {
+                    let controller = translationSettingsController(context: self.context)
                     controller.navigationPresentation = .modal
-                    strongSelf.push(controller)
+                    self.push(controller)
                 }
                 return true
             }), in: .current)
@@ -4848,7 +4920,7 @@ extension ChatControllerImpl {
                             self?.displayChecksTooltip()
                         }
                         self.shouldDisplayChecksTooltip = false
-                        self.checksTooltipDisposable.set(self.context.engine.notices.dismissServerProvidedSuggestion(suggestion: .newcomerTicks).startStrict())
+                        self.checksTooltipDisposable.set(self.context.engine.notices.dismissServerProvidedSuggestion(suggestion: ServerProvidedSuggestion.newcomerTicks.id).startStrict())
                     }
                     
                     if let shouldDisplayProcessingVideoTooltip = self.shouldDisplayProcessingVideoTooltip {

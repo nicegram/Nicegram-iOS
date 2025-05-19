@@ -3,7 +3,6 @@ import AppLovinAdProvider
 import FeatAccountBackup
 import FeatNicegramHub
 import FeatOnboarding
-import FirebaseCrashlytics
 import NGAiChat
 import NGAnalytics
 import NGAppCache
@@ -1225,8 +1224,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             var setPresentationCall: ((PresentationCall?) -> Void)?
             let sharedContext = SharedAccountContextImpl(mainWindow: self.mainWindow, sharedContainerPath: legacyBasePath, basePath: rootPath, encryptionParameters: encryptionParameters, accountManager: accountManager, appLockContext: appLockContext, notificationController: nil, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings, networkArguments: networkArguments, hasInAppPurchases: buildConfig.isAppStoreBuild && buildConfig.apiId == 1, rootPath: rootPath, legacyBasePath: legacyBasePath, apsNotificationToken: self.notificationTokenPromise.get() |> map(Optional.init), voipNotificationToken: self.voipTokenPromise.get() |> map(Optional.init), firebaseSecretStream: self.firebaseSecretStream.get(), setNotificationCall: { call in
                 setPresentationCall?(call)
-            }, navigateToChat: { accountId, peerId, messageId in
-                self.openChatWhenReady(accountId: accountId, peerId: peerId, threadId: nil, messageId: messageId, storyId: nil)
+            }, navigateToChat: { accountId, peerId, messageId, alwaysKeepMessageId in
+                self.openChatWhenReady(accountId: accountId, peerId: peerId, threadId: nil, messageId: messageId, storyId: nil, alwaysKeepMessageId: alwaysKeepMessageId)
             }, displayUpgradeProgress: { progress in
                 if let progress = progress {
                     if self.dataImportSplash == nil {
@@ -2520,26 +2519,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         var decryptedPayloadAndAccountId: ([AnyHashable: Any], AccountRecordId)?
         
-        // MARK: Nicegram, logs for crash
-        // https://console.firebase.google.com/u/1/project/nicegram-55d94/crashlytics/app/ios:app.nicegram/issues/8dfd072cec3c6c42189d28a4556a7e2c
-        // Delete after fix
-        func log(_ message: String) {
-            let payloadString: String
-            if let decryptedPayloadAndAccountId {
-                payloadString = "\(decryptedPayloadAndAccountId.0)"
-            } else {
-                payloadString = "\(payload.dictionaryPayload)"
-            }
-            Crashlytics.crashlytics().log("message=\(message), type=\(type.rawValue), payload=\(payloadString)")
-        }
-        //
-        
         if let accountIdString = payload.dictionaryPayload["accountId"] as? String, let accountId = Int64(accountIdString) {
             decryptedPayloadAndAccountId = (payload.dictionaryPayload, AccountRecordId(rawValue: accountId))
         } else {
             guard var encryptedPayload = payload.dictionaryPayload["p"] as? String else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "encryptedPayload is nil")
-                log("encryptedPayload is nil")
                 completion()
                 return
             }
@@ -2550,19 +2534,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
             guard let payloadData = Data(base64Encoded: encryptedPayload) else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't decode encryptedPayload")
-                log("Couldn't decode encryptedPayload")
                 completion()
                 return
             }
             guard let keyId = notificationPayloadKeyId(data: payloadData) else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't parse payload key id")
-                log("Couldn't parse payload key id")
                 completion()
                 return
             }
             guard let accountManagerState = self.accountManagerState else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "accountManagerState is nil")
-                log("accountManagerState is nil")
                 completion()
                 return
             }
@@ -2580,19 +2561,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 
             guard let accountId = maybeAccountId, let notificationKey = maybeNotificationKey else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "accountId or notificationKey is nil")
-                log("accountId or notificationKey is nil")
                 completion()
                 return
             }
             guard let decryptedPayload = decryptedNotificationPayload(key: notificationKey, data: payloadData) else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't decrypt payload")
-                log("Couldn't decrypt payload")
                 completion()
                 return
             }
             guard let payloadJson = try? JSONSerialization.jsonObject(with: decryptedPayload, options: []) as? [AnyHashable: Any] else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't decode payload json")
-                log("Couldn't decode payload json")
                 completion()
                 return
             }
@@ -2602,7 +2580,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         guard let (payloadJson, accountId) = decryptedPayloadAndAccountId else {
             Logger.shared.log("App \(self.episodeId) PushRegistry", "decryptedPayloadAndAccountId is nil")
-            log("decryptedPayloadAndAccountId is nil")
             completion()
             return
         }
@@ -2612,7 +2589,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         if let fromIdString = payloadJson["from_id"] as? String, let fromId = Int64(fromIdString), let groupCallIdString = payloadJson["group_call_id"] as? String, let groupCallId = Int64(groupCallIdString), let messageIdString = payloadJson["msg_id"] as? String, let messageId = Int32(messageIdString), let fromTitle = payloadJson["from_title"] as? String {
             guard let callKitIntegration = CallKitIntegration.shared else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "CallKitIntegration is not available")
-                log("CallKitIntegration is not available")
                 completion()
                 return
             }
@@ -2643,7 +2619,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 displayTitle = strings.Call_IncomingGroupCallTitle_Single(fromTitle).string
             }
             
-            log("reportIncomingCall")
             callKitIntegration.reportIncomingCall(
                 uuid: internalId,
                 stableId: groupCallId,
@@ -2652,7 +2627,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 isVideo: isVideo,
                 displayTitle: displayTitle,
                 completion: { error in
-                    log("reportIncomingCall, error=\(error)")
                     if let error = error {
                         if error.domain == "com.apple.CallKit.error.incomingcall" && (error.code == -3 || error.code == 3) {
                             Logger.shared.log("PresentationCall", "reportIncomingCall device in DND mode")
@@ -2679,15 +2653,43 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         if context.account.id == accountId {
                             context.account.callSessionManager.addConferenceInvitationMessages(ids: [(messageId, IncomingConferenceTermporaryExternalInfo(callId: groupCallId, isVideo: isVideo))])
                             
-                            /*disposable.set((context.account.callSessionManager.callState(internalId: internalId)
-                            |> deliverOnMainQueue).start(next: { state in
-                                switch state.state {
-                                case .terminated:
-                                    callKitIntegration.dropCall(uuid: internalId)
-                                default:
-                                    break
+                            let disposable = MetaDisposable()
+                            self.watchedCallsDisposables.add(disposable)
+                            
+                            if let callManager = context.sharedContext.callManager {
+                                let signal = combineLatest(queue: .mainQueue(), context.account.callSessionManager.ringingStates()
+                                    |> map { ringingStates -> Bool in
+                                        for state in ringingStates {
+                                            if state.id == internalId {
+                                                return true
+                                            }
+                                        }
+                                        return false
+                                    },
+                                    callManager.currentGroupCallSignal
+                                    |> map { currentGroupCall -> Bool in
+                                        if case let .group(groupCall) = currentGroupCall {
+                                            if groupCall.internalId == internalId {
+                                                return true
+                                            }
+                                        }
+                                        return false
+                                    }
+                                )
+                                |> mapToSignal { exists0, exists1 -> Signal<Void, NoError> in
+                                    if !(exists0 || exists1) {
+                                        return .single(Void())
+                                        |> delay(1.0, queue: .mainQueue())
+                                    }
+                                    return .never()
                                 }
-                            }))*/
+                                
+                                disposable.set((signal
+                                |> take(1)
+                                |> deliverOnMainQueue).startStrict(next: { _ in
+                                    callKitIntegration.dropCall(uuid: internalId)
+                                }))
+                            }
                             
                             processed = true
                             
@@ -2710,7 +2712,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             guard var updateString = payloadJson["updates"] as? String else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "updates is nil")
-                log("updates is nil")
+                self.reportFailedIncomingCallKitCall()
                 completion()
                 return
             }
@@ -2722,24 +2724,22 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
             guard let updateData = Data(base64Encoded: updateString) else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't decode updateData")
-                log("Couldn't decode updateData")
+                self.reportFailedIncomingCallKitCall()
                 completion()
                 return
             }
             guard let callUpdate = AccountStateManager.extractIncomingCallUpdate(data: updateData) else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "Couldn't extract call update")
-                log("Couldn't extract call update")
+                self.reportFailedIncomingCallKitCall()
                 completion()
                 return
             }
             guard let callKitIntegration = CallKitIntegration.shared else {
                 Logger.shared.log("App \(self.episodeId) PushRegistry", "CallKitIntegration is not available")
-                log("CallKitIntegration is not available")
                 completion()
                 return
             }
             
-            log("reportIncomingCall")
             callKitIntegration.reportIncomingCall(
                 uuid: CallSessionManager.getStableIncomingUUID(stableId: callUpdate.callId),
                 stableId: callUpdate.callId,
@@ -2748,7 +2748,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 isVideo: callUpdate.isVideo,
                 displayTitle: callUpdate.peer.debugDisplayTitle,
                 completion: { error in
-                    log("reportIncomingCall, error=\(error)")
                     if let error = error {
                         if error.domain == "com.apple.CallKit.error.incomingcall" && (error.code == -3 || error.code == 3) {
                             Logger.shared.log("PresentationCall", "reportIncomingCall device in DND mode")
@@ -2810,13 +2809,39 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         Logger.shared.log("App \(self.episodeId) PushRegistry", "Invoking completion handler")
-        log("Invoking completion handler")
         
         completion()
     }
     
     public func pushRegistry(_ registry: PKPushRegistry, didInvalidatePushTokenFor type: PKPushType) {
         Logger.shared.log("App \(self.episodeId)", "invalidated token for \(type)")
+    }
+    
+    private func reportFailedIncomingCallKitCall() {
+        guard let callKitIntegration = CallKitIntegration.shared else {
+            return
+        }
+        let uuid = CallSessionInternalId()
+        callKitIntegration.reportIncomingCall(
+            uuid: uuid,
+            stableId: Int64.random(in: Int64.min ... Int64.max),
+            handle: "Unknown",
+            phoneNumber: nil,
+            isVideo: false,
+            displayTitle: "Unknown",
+            completion: { error in
+                if let error = error {
+                    if error.domain == "com.apple.CallKit.error.incomingcall" && (error.code == -3 || error.code == 3) {
+                        Logger.shared.log("PresentationCall", "reportFailedIncomingCallKitCall device in DND mode")
+                    } else {
+                        Logger.shared.log("PresentationCall", "reportFailedIncomingCallKitCall error \(error)")
+                    }
+                }
+            }
+        )
+        Queue.mainQueue().after(1.0, {
+            callKitIntegration.dropCall(uuid: uuid)
+        })
     }
     
     private func authorizedContext() -> Signal<AuthorizedApplicationContext, NoError> {
@@ -3156,7 +3181,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }))
     }
     
-    private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false, storyId: StoryId?, openAppIfAny: Bool = false) {
+    private func openChatWhenReady(accountId: AccountRecordId?, peerId: PeerId, threadId: Int64?, messageId: MessageId? = nil, activateInput: Bool = false, storyId: StoryId?, openAppIfAny: Bool = false, alwaysKeepMessageId: Bool = false) {
         let signal = self.sharedContextPromise.get()
         |> take(1)
         |> deliverOnMainQueue
@@ -3175,7 +3200,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         self.openChatWhenReadyDisposable.set((signal
         |> deliverOnMainQueue).start(next: { context in
-            context.openChatWithPeerId(peerId: peerId, threadId: threadId, messageId: messageId, activateInput: activateInput, storyId: storyId, openAppIfAny: openAppIfAny)
+            context.openChatWithPeerId(peerId: peerId, threadId: threadId, messageId: messageId, activateInput: activateInput, storyId: storyId, openAppIfAny: openAppIfAny, alwaysKeepMessageId: alwaysKeepMessageId)
         }))
     }
     

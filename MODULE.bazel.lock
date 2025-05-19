@@ -1748,7 +1748,7 @@
     },
     "@@rules_xcodeproj~//xcodeproj:extensions.bzl%internal": {
       "general": {
-        "bzlTransitiveDigest": "hLIQlNwmeIh1hiSFgOy6bAluh+3cnOtYQJNuVU83Cdk=",
+        "bzlTransitiveDigest": "cf4d2cMC25R07UiVVrGoXz6ATT58L0RVKcN1yjjkBr4=",
         "usagesDigest": "Fd0LbToHfzE3orok9aNu+QUYZnwlS1nePXhR6NSO+A4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1771,7 +1771,7 @@
     },
     "@@rules_xcodeproj~//xcodeproj:extensions.bzl%non_module_deps": {
       "general": {
-        "bzlTransitiveDigest": "hLIQlNwmeIh1hiSFgOy6bAluh+3cnOtYQJNuVU83Cdk=",
+        "bzlTransitiveDigest": "cf4d2cMC25R07UiVVrGoXz6ATT58L0RVKcN1yjjkBr4=",
         "usagesDigest": "jrpYdEGEUypUrIJLOkwRaCYJA1OEeJci9vZWdoWxgvs=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1782,8 +1782,9 @@
             "ruleClassName": "http_archive",
             "attributes": {
               "build_file_content": "load(\"@bazel_skylib//rules:native_binary.bzl\", \"native_binary\")\n\nnative_binary(\n    name = \"index_import\",\n    src = \"index-import\",\n    out = \"index-import\",\n    visibility = [\"//visibility:public\"],\n)\n",
-              "sha256": "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
-              "url": "https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"
+              "canonical_id": "index-import-6.1.0",
+              "sha256": "54d0477526bba0dc1560189dfc4f02d90aea536e9cb329e911f32b2a564b66f1",
+              "url": "https://github.com/MobileNativeFoundation/index-import/releases/download/6.1.0/index-import.tar.gz"
             }
           },
           "com_github_tadija_aexml": {
@@ -1860,6 +1861,16 @@
               "sha256": "4a10bbef290a2167c5cc340b39f1f7ff6a8cf4e1b5433b68548bf5f1e542e908",
               "strip_prefix": "swift-argument-parser-1.2.3",
               "url": "https://github.com/apple/swift-argument-parser/archive/refs/tags/1.2.3.tar.gz"
+            }
+          },
+          "rules_xcodeproj_legacy_index_import": {
+            "bzlFile": "@@bazel_tools//tools/build_defs/repo:http.bzl",
+            "ruleClassName": "http_archive",
+            "attributes": {
+              "build_file_content": "load(\"@bazel_skylib//rules:native_binary.bzl\", \"native_binary\")\n\nnative_binary(\n    name = \"index_import\",\n    src = \"index-import\",\n    out = \"index-import\",\n    visibility = [\"//visibility:public\"],\n)\n",
+              "canonical_id": "index-import-5.8.0.1",
+              "sha256": "28c1ffa39d99e74ed70623899b207b41f79214c498c603915aef55972a851a15",
+              "url": "https://github.com/MobileNativeFoundation/index-import/releases/download/5.8.0.1/index-import.tar.gz"
             }
           },
           "com_github_apple_swift_collections": {

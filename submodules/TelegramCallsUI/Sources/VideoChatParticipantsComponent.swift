@@ -25,12 +25,16 @@ final class VideoChatParticipantsComponent: Component {
             }
         }
         
+        var leftInset: CGFloat
+        var rightInset: CGFloat
         var videoColumn: Column?
         var mainColumn: Column
         var columnSpacing: CGFloat
         var isMainColumnHidden: Bool
         
-        init(videoColumn: Column?, mainColumn: Column, columnSpacing: CGFloat, isMainColumnHidden: Bool) {
+        init(leftInset: CGFloat, rightInset: CGFloat, videoColumn: Column?, mainColumn: Column, columnSpacing: CGFloat, isMainColumnHidden: Bool) {
+            self.leftInset = leftInset
+            self.rightInset = rightInset
             self.videoColumn = videoColumn
             self.mainColumn = mainColumn
             self.columnSpacing = columnSpacing
@@ -148,6 +152,7 @@ final class VideoChatParticipantsComponent: Component {
     let expandedInsets: UIEdgeInsets
     let safeInsets: UIEdgeInsets
     let interfaceOrientation: UIInterfaceOrientation
+    let enableVideoSharpening: Bool
     let openParticipantContextMenu: (EnginePeer.Id, ContextExtractedContentContainingView, ContextGesture?) -> Void
     let openInvitedParticipantContextMenu: (EnginePeer.Id, ContextExtractedContentContainingView, ContextGesture?) -> Void
     let updateMainParticipant: (VideoParticipantKey?, Bool?) -> Void
@@ -169,6 +174,7 @@ final class VideoChatParticipantsComponent: Component {
         expandedInsets: UIEdgeInsets,
         safeInsets: UIEdgeInsets,
         interfaceOrientation: UIInterfaceOrientation,
+        enableVideoSharpening: Bool,
         openParticipantContextMenu: @escaping (EnginePeer.Id, ContextExtractedContentContainingView, ContextGesture?) -> Void,
         openInvitedParticipantContextMenu: @escaping (EnginePeer.Id, ContextExtractedContentContainingView, ContextGesture?) -> Void,
         updateMainParticipant: @escaping (VideoParticipantKey?, Bool?) -> Void,
@@ -189,6 +195,7 @@ final class VideoChatParticipantsComponent: Component {
         self.expandedInsets = expandedInsets
         self.safeInsets = safeInsets
         self.interfaceOrientation = interfaceOrientation
+        self.enableVideoSharpening = enableVideoSharpening
         self.openParticipantContextMenu = openParticipantContextMenu
         self.openInvitedParticipantContextMenu = openInvitedParticipantContextMenu
         self.updateMainParticipant = updateMainParticipant
@@ -233,6 +240,9 @@ final class VideoChatParticipantsComponent: Component {
             return false
         }
         if lhs.interfaceOrientation != rhs.interfaceOrientation {
+            return false
+        }
+        if lhs.enableVideoSharpening != rhs.enableVideoSharpening {
             return false
         }
         return true
@@ -509,13 +519,13 @@ final class VideoChatParticipantsComponent: Component {
             
             if let videoColumn = layout.videoColumn {
                 let columnsWidth: CGFloat = videoColumn.width + layout.columnSpacing + layout.mainColumn.width
-                let columnsSideInset: CGFloat = floorToScreenPixels((containerSize.width - columnsWidth) * 0.5)
+                let columnsLeftInset: CGFloat = layout.leftInset
                 
-                var separateVideoGridFrame = CGRect(origin: CGPoint(x: floor((containerSize.width - columnsWidth) * 0.5), y: 0.0), size: CGSize(width: gridWidth, height: containerSize.height))
+                var separateVideoGridFrame = CGRect(origin: CGPoint(x: columnsLeftInset, y: 0.0), size: CGSize(width: gridWidth, height: containerSize.height))
                 
                 var listFrame = CGRect(origin: CGPoint(x: separateVideoGridFrame.maxX + layout.columnSpacing, y: 0.0), size: CGSize(width: listWidth, height: containerSize.height))
                 if isUIHidden || layout.isMainColumnHidden {
-                    listFrame.origin.x = containerSize.width + columnsSideInset
+                    listFrame.origin.x = containerSize.width + columnsLeftInset
                     separateVideoGridFrame = CGRect(origin: CGPoint(x: floor((containerSize.width - columnsWidth) * 0.5), y: 0.0), size: CGSize(width: columnsWidth, height: containerSize.height))
                 }
                 
@@ -1070,6 +1080,7 @@ final class VideoChatParticipantsComponent: Component {
                         contentInsets: itemContentInsets,
                         controlInsets: itemControlInsets,
                         interfaceOrientation: component.interfaceOrientation,
+                        enableVideoSharpening: component.enableVideoSharpening,
                         action: { [weak self] in
                             guard let self, let component = self.component else {
                                 return

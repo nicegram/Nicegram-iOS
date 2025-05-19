@@ -149,7 +149,7 @@ struct SqlitePreparedStatement {
     }
 }
 
-private let dabaseFileNames: [String] = [
+private let databaseFileNames: [String] = [
     "db_sqlite",
     "db_sqlite-shm",
     "db_sqlite-wal"
@@ -194,7 +194,6 @@ public final class SqliteValueBox: ValueBox {
     private var insertOrIgnorePrimaryKeyStatements: [Int32 : SqlitePreparedStatement] = [:]
     private var insertOrIgnoreIndexKeyStatements: [Int32 : SqlitePreparedStatement] = [:]
     private var deleteStatements: [Int32 : SqlitePreparedStatement] = [:]
-    private var moveStatements: [Int32 : SqlitePreparedStatement] = [:]
     private var copyStatements: [TablePairKey : SqlitePreparedStatement] = [:]
     private var fullTextInsertStatements: [Int32 : SqlitePreparedStatement] = [:]
     private var fullTextDeleteStatements: [Int32 : SqlitePreparedStatement] = [:]
@@ -354,7 +353,7 @@ public final class SqliteValueBox: ValueBox {
                         return nil
                     }
                     
-                    for fileName in dabaseFileNames {
+                    for fileName in databaseFileNames {
                         let _ = try? FileManager.default.removeItem(atPath: basePath + "/\(fileName)")
                     }
                     database = Database(path, readOnly: false)!
@@ -374,7 +373,7 @@ public final class SqliteValueBox: ValueBox {
                 }
                 
                 assert(false)
-                for fileName in dabaseFileNames {
+                for fileName in databaseFileNames {
                     let _ = try? FileManager.default.removeItem(atPath: basePath + "/\(fileName)")
                 }
                 
@@ -407,7 +406,7 @@ public final class SqliteValueBox: ValueBox {
                 if self.isEncrypted(database) {
                     postboxLog("Reencryption failed")
                     
-                    for fileName in dabaseFileNames {
+                    for fileName in databaseFileNames {
                         let _ = try? FileManager.default.removeItem(atPath: basePath + "/\(fileName)")
                     }
                     database = Database(path, readOnly: false)!
@@ -434,7 +433,7 @@ public final class SqliteValueBox: ValueBox {
                         return nil
                     }
                     
-                    for fileName in dabaseFileNames {
+                    for fileName in databaseFileNames {
                         let _ = try? FileManager.default.removeItem(atPath: basePath + "/\(fileName)")
                     }
                     database = Database(path, readOnly: false)!
@@ -1231,7 +1230,7 @@ public final class SqliteValueBox: ValueBox {
                     preconditionFailure(errorText)
                 }
                 let preparedStatement = SqlitePreparedStatement(statement: statement)
-                self.insertOrReplacePrimaryKeyStatements[table.table.id] = preparedStatement
+                self.insertOrReplaceIndexKeyStatements[table.table.id] = preparedStatement
                 resultStatement = preparedStatement
             }
         }
@@ -1286,7 +1285,7 @@ public final class SqliteValueBox: ValueBox {
                     preconditionFailure(errorText)
                 }
                 let preparedStatement = SqlitePreparedStatement(statement: statement)
-                self.insertOrIgnorePrimaryKeyStatements[table.table.id] = preparedStatement
+                self.insertOrIgnoreIndexKeyStatements[table.table.id] = preparedStatement
                 resultStatement = preparedStatement
             }
         }
@@ -1332,38 +1331,6 @@ public final class SqliteValueBox: ValueBox {
                 resultStatement.bind(1, data: key.memory, length: key.length)
             case .int64:
                 resultStatement.bind(1, number: key.getInt64(0))
-        }
-        
-        return resultStatement
-    }
-    
-    private func moveStatement(_ table: ValueBoxTable, from previousKey: ValueBoxKey, to updatedKey: ValueBoxKey) -> SqlitePreparedStatement {
-        precondition(self.queue.isCurrent())
-        checkTableKey(table, previousKey)
-        checkTableKey(table, updatedKey)
-        
-        let resultStatement: SqlitePreparedStatement
-        
-        if let statement = self.moveStatements[table.id] {
-            resultStatement = statement
-        } else {
-            var statement: OpaquePointer? = nil
-            let status = sqlite3_prepare_v3(self.database.handle, "UPDATE t\(table.id) SET key=? WHERE key=?", -1, SQLITE_PREPARE_PERSISTENT, &statement, nil)
-            precondition(status == SQLITE_OK)
-            let preparedStatement = SqlitePreparedStatement(statement: statement)
-            self.moveStatements[table.id] = preparedStatement
-            resultStatement = preparedStatement
-        }
-        
-        resultStatement.reset()
-        
-        switch table.keyType {
-            case .binary:
-                resultStatement.bind(1, data: previousKey.memory, length: previousKey.length)
-                resultStatement.bind(2, data: updatedKey.memory, length: updatedKey.length)
-            case .int64:
-                resultStatement.bind(1, number: previousKey.getInt64(0))
-                resultStatement.bind(2, number: updatedKey.getInt64(0))
         }
         
         return resultStatement
@@ -1450,6 +1417,8 @@ public final class SqliteValueBox: ValueBox {
     }
     
     private func fullTextDeleteStatement(_ table: ValueBoxFullTextTable, itemId: Data) -> SqlitePreparedStatement {
+        precondition(self.queue.isCurrent())
+        
         let resultStatement: SqlitePreparedStatement
         
         if let statement = self.fullTextDeleteStatements[table.id] {
@@ -2011,16 +1980,6 @@ public final class SqliteValueBox: ValueBox {
         }
     }
     
-    public func move(_ table: ValueBoxTable, from previousKey: ValueBoxKey, to updatedKey: ValueBoxKey) {
-        precondition(self.queue.isCurrent())
-        if let _ = self.tables[table.id] {
-            let statement = self.moveStatement(table, from: previousKey, to: updatedKey)
-            while statement.step(handle: self.database.handle, pathToRemoveOnError: self.removeDatabaseOnError ? self.databasePath : nil) {
-            }
-            statement.reset()
-        }
-    }
-    
     public func copy(fromTable: ValueBoxTable, fromKey: ValueBoxKey, toTable: ValueBoxTable, toKey: ValueBoxKey) {
         precondition(self.queue.isCurrent())
         if let _ = self.tables[fromTable.id] {
@@ -2261,11 +2220,6 @@ public final class SqliteValueBox: ValueBox {
         }
         self.deleteStatements.removeAll()
         
-        for (_, statement) in self.moveStatements {
-            statement.destroy()
-        }
-        self.moveStatements.removeAll()
-        
         for (_, statement) in self.copyStatements {
             statement.destroy()
         }
@@ -2326,7 +2280,7 @@ public final class SqliteValueBox: ValueBox {
         
         postboxLog("dropping DB")
         
-        for fileName in dabaseFileNames {
+        for fileName in databaseFileNames {
             let _ = try? FileManager.default.removeItem(atPath: self.basePath + "/\(fileName)")
         }
         
@@ -2375,7 +2329,7 @@ public final class SqliteValueBox: ValueBox {
         
         self.exportEncrypted(database: database, to: targetPath, encryptionParameters: encryptionParameters)
         
-        for name in dabaseFileNames {
+        for name in databaseFileNames {
             let _ = try? FileManager.default.removeItem(atPath: self.basePath + "/\(name)")
             let _ = try? FileManager.default.moveItem(atPath: targetPath + "/\(name)", toPath: self.basePath + "/\(name)")
         }

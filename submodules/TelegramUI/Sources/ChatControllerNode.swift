@@ -4660,6 +4660,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
                 
                 var postEmptyMessages = false
+                var isPostSuggestions = false
                 if case let .customChatContents(customChatContents) = self.chatPresentationInterfaceState.subject {
                     switch customChatContents.kind {
                     case .hashTagSearch:
@@ -4668,8 +4669,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         break
                     case .businessLinkSetup:
                         postEmptyMessages = true
+                    case .postSuggestions:
+                        isPostSuggestions = true
                     }
                 }
+                let _ = isPostSuggestions
                 
                 if !messages.isEmpty, let messageEffect {
                     messages[0] = messages[0].withUpdatedAttributes { attributes in
