@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
       "state" : {
-        "revision" : "d5ed8a16bc13fef498cd0b0c72e58a5a513e3f84",
-        "version" : "2.5.1"
+        "revision" : "56129530a97d89d03f610685d348d333af4989bb",
+        "version" : "2.5.2"
       }
     },
     {
@@ -141,7 +141,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "e6251b314e34616d1ba5f3f15c69c47ee96c3a7c"
+        "revision" : "65cb45af0158bd0ca7fe33c591815e2ab206e9e3"
       }
     },
     {
