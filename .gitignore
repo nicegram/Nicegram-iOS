@@ -84,3 +84,5 @@ submodules/TelegramCore/FlatSerialization/Sources/*
 buildServer.json
 .build/**
 Telegram.LSP.json
+**/.build/**
+spm-files

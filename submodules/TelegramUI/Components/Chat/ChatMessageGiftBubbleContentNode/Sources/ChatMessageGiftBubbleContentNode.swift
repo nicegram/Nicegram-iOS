@@ -560,7 +560,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                     buttonTitle = item.presentationData.strings.Notification_StarGift_View
                                 }
                             }
-                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _):
+                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _, _, _, _):
                             if case let .unique(uniqueGift) = gift {
                                 isStarGift = true
                                 
@@ -594,7 +594,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                     case let .model(name, file, _):
                                         modelValue = name
                                         animationFile = file
-                                    case let .backdrop(name, innerColor, outerColor, patternColor, _, _):
+                                    case let .backdrop(name, _, innerColor, outerColor, patternColor, _, _):
                                         uniqueBackgroundColor = UIColor(rgb: UInt32(bitPattern: outerColor))
                                         uniqueSecondBackgroundColor = UIColor(rgb: UInt32(bitPattern: innerColor))
                                         uniquePatternColor = UIColor(rgb: UInt32(bitPattern: patternColor))
@@ -780,7 +780,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                             
                             let overlayColor = item.presentationData.theme.theme.overallDarkAppearance && uniquePatternFile == nil ? UIColor(rgb: 0xffffff, alpha: 0.12) : UIColor(rgb: 0x000000, alpha: 0.12)
                             
-                            let imageFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((backgroundSize.width - giftSize.width) / 2.0), y: hasServiceMessage ? labelLayout.size.height + 12.0 : 0.0), size: giftSize)
+                            let imageFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((boundingWidth - giftSize.width) / 2.0), y: hasServiceMessage ? labelLayout.size.height + 12.0 : 0.0), size: giftSize)
                             let mediaBackgroundFrame = imageFrame.insetBy(dx: -2.0, dy: -2.0)
                             
                             var iconSize = CGSize(width: 160.0, height: 160.0)
@@ -852,7 +852,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                             let _ = ribbonTextApply()
                             let _ = moreApply()
                                                         
-                            let labelFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((backgroundSize.width - labelLayout.size.width) / 2.0), y: 2.0), size: labelLayout.size)
+                            let labelFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((boundingWidth - labelLayout.size.width) / 2.0), y: 2.0), size: labelLayout.size)
                             strongSelf.labelNode.frame = labelFrame
                             
                             let titleFrame = CGRect(origin: CGPoint(x: mediaBackgroundFrame.minX + floorToScreenPixels((mediaBackgroundFrame.width - titleLayout.size.width) / 2.0) , y: mediaBackgroundFrame.minY + 151.0), size: titleLayout.size)

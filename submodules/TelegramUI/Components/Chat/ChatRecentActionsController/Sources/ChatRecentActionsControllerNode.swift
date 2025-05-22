@@ -1392,7 +1392,8 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                                 slug: link,
                                 inviter: resolvedCallLink.inviter,
                                 members: resolvedCallLink.members,
-                                totalMemberCount: resolvedCallLink.totalMemberCount
+                                totalMemberCount: resolvedCallLink.totalMemberCount,
+                                info: resolvedCallLink
                             ))))
                         })
                     case let .localization(identifier):
@@ -1439,6 +1440,8 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                     case .collectible:
                         break
                     case .messageLink:
+                        break
+                    case .stars:
                         break
                 }
             }

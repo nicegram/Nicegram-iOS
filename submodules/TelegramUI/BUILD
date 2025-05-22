@@ -83,6 +83,7 @@ swift_library(
         #"-warnings-as-errors",
     ],
     deps = NGDEPS + [
+        "//third-party/recaptcha:RecaptchaEnterprise",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/SSignalKit/SSignalKit:SSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
@@ -103,6 +104,7 @@ swift_library(
         "//submodules/MediaPlayer:UniversalMediaPlayer",
         "//submodules/TelegramVoip:TelegramVoip",
         "//submodules/DeviceAccess:DeviceAccess",
+        "//submodules/Utils/DeviceModel",
         "//submodules/WatchCommon/Host:WatchCommon",
         "//submodules/BuildConfig:BuildConfig",
         "//submodules/BuildConfigExtra:BuildConfigExtra",
@@ -498,6 +500,7 @@ swift_library(
         "//submodules/TelegramUI/Components/MiniAppListScreen",
         "//submodules/TelegramUI/Components/Stars/StarsIntroScreen",
         "//submodules/TelegramUI/Components/Gifts/GiftOptionsScreen",
+        "//submodules/TelegramUI/Components/Gifts/GiftStoreScreen",
         "//submodules/TelegramUI/Components/ContentReportScreen",
         "//submodules/TelegramUI/Components/PeerInfo/AffiliateProgramSetupScreen",
         "//submodules/TelegramUI/Components/Stars/StarsBalanceOverlayComponent",
@@ -507,7 +510,8 @@ swift_library(
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/Components/BlurredBackgroundComponent",
         "//submodules/TelegramUI/Components/CheckComponent",
-        "//third-party/recaptcha:RecaptchaEnterprise",
+        "//submodules/TelegramUI/Components/MarqueeComponent",
+        "//submodules/TelegramUI/Components/PeerInfo/PostSuggestionsSettingsScreen",
     ] + select({
         "@build_bazel_rules_apple//apple:ios_arm64": appcenter_targets,
         "//build-system:ios_sim_arm64": [],

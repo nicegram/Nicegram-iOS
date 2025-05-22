@@ -1651,6 +1651,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
         case videoCollage(VideoCollage)
         case asset(PHAsset)
         case draft(MediaEditorDraft)
+        case assets([PHAsset])
         
         func withPIPPosition(_ position: CameraScreenImpl.PIPPosition) -> Result {
             switch self {
@@ -1958,6 +1959,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
                                         }
                                     },
                                     nil,
+                                    1,
                                     {}
                                 )
                             } else {
@@ -1994,6 +1996,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
                                 }
                             },
                             nil,
+                            self.controller?.remainingStoryCount,
                             {}
                         )
                     }
@@ -2550,6 +2553,8 @@ public class CameraScreenImpl: ViewController, CameraScreen {
                     transitionCircleLayer.animateScale(from: sourceLocalFrame.width / 320.0, to: 6.0, duration: 0.6, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
                         self.view.mask = nil
                         colorFillView.removeFromSuperview()
+                        
+                        self.requestUpdateLayout(hasAppeared: true, transition: .immediate)
                     })
                 } else {
                     if case .story = controller.mode {
@@ -2726,9 +2731,13 @@ public class CameraScreenImpl: ViewController, CameraScreen {
             self.additionalPreviewView.isEnabled = false
             self.collageView?.isEnabled = false
             
+            #if targetEnvironment(simulator)
+            
+            #else
             Queue.mainQueue().after(0.3) {
                 self.previewBlurPromise.set(true)
             }
+            #endif
             self.camera?.stopCapture()
             
             self.cameraIsActive = false
@@ -3369,7 +3378,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
             self.transitionOut = transitionOut
         }
     }
-    fileprivate let completion: (Signal<CameraScreenImpl.Result, NoError>, ResultTransition?, @escaping () -> Void) -> Void
+    fileprivate let completion: (Signal<CameraScreenImpl.Result, NoError>, ResultTransition?, Int32?, @escaping () -> Void) -> Void
     public var transitionedIn: () -> Void = {}
     public var transitionedOut: () -> Void = {}
     
@@ -3377,6 +3386,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
     
     private let postingAvailabilityPromise = Promise<StoriesUploadAvailability>()
     private var postingAvailabilityDisposable: Disposable?
+    private var remainingStoryCount: Int32?
     
     private var codeDisposable: Disposable?
     private var resolveCodeDisposable: Disposable?
@@ -3414,7 +3424,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
         holder: CameraHolder? = nil,
         transitionIn: TransitionIn?,
         transitionOut: @escaping (Bool) -> TransitionOut?,
-        completion: @escaping (Signal<CameraScreenImpl.Result, NoError>, ResultTransition?, @escaping () -> Void) -> Void
+        completion: @escaping (Signal<CameraScreenImpl.Result, NoError>, ResultTransition?, Int32?, @escaping () -> Void) -> Void
     ) {
         self.context = context
         self.mode = mode
@@ -3464,7 +3474,11 @@ public class CameraScreenImpl: ViewController, CameraScreen {
             }
             self.postingAvailabilityDisposable = (self.postingAvailabilityPromise.get()
             |> deliverOnMainQueue).start(next: { [weak self] availability in
-                guard let self, availability != .available else {
+                guard let self else {
+                    return
+                }
+                if case let .available(remainingCount) = availability {
+                    self.remainingStoryCount = remainingCount
                     return
                 }
                 self.node.postingAvailable = false
@@ -3618,7 +3632,13 @@ public class CameraScreenImpl: ViewController, CameraScreen {
             self.node.resumeCameraCapture(fromGallery: true)
         }
         
-        var dismissControllerImpl: (() -> Void)?
+        class DismissArgs {
+            var resumeOnDismiss = true
+        }
+        
+        var dismissControllerImpl: ((Bool) -> Void)?
+        let dismissArgs = DismissArgs()
+        
         let controller: ViewController
         if let current = self.galleryController {
             controller = current
@@ -3627,7 +3647,15 @@ public class CameraScreenImpl: ViewController, CameraScreen {
             if self.cameraState.isCollageEnabled, let collage = self.node.collage {
                 selectionLimit = collage.grid.count - collage.results.count
             } else {
-                selectionLimit = 6
+                if self.cameraState.isCollageEnabled {
+                    selectionLimit = 6
+                } else {
+                    if let remainingStoryCount = self.remainingStoryCount {
+                        selectionLimit = min(Int(remainingStoryCount), 10)
+                    } else {
+                        selectionLimit = 10
+                    }
+                }
             }
             controller = self.context.sharedContext.makeStoryMediaPickerScreen(
                 context: self.context,
@@ -3666,7 +3694,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
                                 }
                             }
 
-                            dismissControllerImpl?()
+                            dismissControllerImpl?(true)
                         } else {
                             stopCameraCapture()
                             
@@ -3691,57 +3719,67 @@ public class CameraScreenImpl: ViewController, CameraScreen {
                                     )
                                     self.present(alertController, in: .window(.root))
                                 } else {
-                                    self.completion(.single(.asset(asset)), resultTransition, dismissed)
+                                    self.completion(.single(.asset(asset)), resultTransition, self.remainingStoryCount, dismissed)
                                 }
                             } else if let draft = result as? MediaEditorDraft {
-                                self.completion(.single(.draft(draft)), resultTransition, dismissed)
+                                self.completion(.single(.draft(draft)), resultTransition, self.remainingStoryCount, dismissed)
                             }
                         }
                     }
-                }, multipleCompletion: { [weak self] results in
+                }, multipleCompletion: { [weak self] results, collage in
                     guard let self else {
                         return
                     }
-                                        
-                    if !self.cameraState.isCollageEnabled {
-                        var selectedGrid: Camera.CollageGrid = collageGrids.first!
-                        for grid in collageGrids {
-                            if grid.count == results.count {
-                                selectedGrid = grid
-                                break
+                            
+                    if collage {
+                        if !self.cameraState.isCollageEnabled {
+                            var selectedGrid: Camera.CollageGrid = collageGrids.first!
+                            for grid in collageGrids {
+                                if grid.count == results.count {
+                                    selectedGrid = grid
+                                    break
+                                }
                             }
+                            self.updateCameraState({
+                                $0.updatedIsCollageEnabled(true).updatedCollageProgress(0.0).updatedIsDualCameraEnabled(false).updatedCollageGrid(selectedGrid)
+                            }, transition: .spring(duration: 0.3))
                         }
-                        self.updateCameraState({
-                            $0.updatedIsCollageEnabled(true).updatedCollageProgress(0.0).updatedIsDualCameraEnabled(false).updatedCollageGrid(selectedGrid)
-                        }, transition: .spring(duration: 0.3))
-                    }
-                    
-                    if let assets = results as? [PHAsset] {
-                        var results: [Signal<CameraScreenImpl.Result, NoError>] = []
-                        for asset in assets {
-                            if asset.mediaType == .video && asset.duration > 1.0 {
-                                results.append(.single(.asset(asset)))
-                            } else {
-                                results.append(
-                                    assetImage(asset: asset, targetSize: CGSize(width: 1080, height: 1080), exact: false, deliveryMode: .highQualityFormat)
-                                    |> runOn(Queue.concurrentDefaultQueue())
-                                    |> mapToSignal { image -> Signal<CameraScreenImpl.Result, NoError> in
-                                        if let image {
-                                            return .single(.image(Result.Image(image: image, additionalImage: nil, additionalImagePosition: .topLeft)))
-                                        } else {
-                                            return .complete()
+                        
+                        if let assets = results as? [PHAsset] {
+                            var results: [Signal<CameraScreenImpl.Result, NoError>] = []
+                            for asset in assets {
+                                if asset.mediaType == .video && asset.duration > 1.0 {
+                                    results.append(.single(.asset(asset)))
+                                } else {
+                                    results.append(
+                                        assetImage(asset: asset, targetSize: CGSize(width: 1080, height: 1080), exact: false, deliveryMode: .highQualityFormat)
+                                        |> runOn(Queue.concurrentDefaultQueue())
+                                        |> mapToSignal { image -> Signal<CameraScreenImpl.Result, NoError> in
+                                            if let image {
+                                                return .single(.image(Result.Image(image: image, additionalImage: nil, additionalImagePosition: .topLeft)))
+                                            } else {
+                                                return .complete()
+                                            }
                                         }
-                                    }
-                                )
+                                    )
+                                }
                             }
+                            self.node.collage?.addResults(signals: results)
                         }
-                        self.node.collage?.addResults(signals: results)
+                    } else {
+                        self.node.animateOutToEditor()
+                        if let assets = results as? [PHAsset] {
+                            self.completion(.single(.assets(assets)), nil, self.remainingStoryCount, {
+                            })
+                        }
                     }
                     self.galleryController = nil
                     
-                    dismissControllerImpl?()
+                    dismissControllerImpl?(false)
                 }, dismissed: { [weak self] in
-                    resumeCameraCapture()
+                    if dismissArgs.resumeOnDismiss {
+                        resumeCameraCapture()
+                    }
                     if let self {
                         self.node.hasGallery = false
                         self.node.requestUpdateLayout(transition: .immediate)
@@ -3752,7 +3790,8 @@ public class CameraScreenImpl: ViewController, CameraScreen {
             )
             self.galleryController = controller
             
-            dismissControllerImpl = { [weak controller] in
+            dismissControllerImpl = { [weak controller] resume in
+                dismissArgs.resumeOnDismiss = resume
                 controller?.dismiss(animated: true)
             }
         }

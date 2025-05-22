@@ -45,7 +45,7 @@ swift_library(
     module_name = "FlatSerialization",
     srcs = generated_models,
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/TelegramCore/FlatBuffers",

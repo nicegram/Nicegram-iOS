@@ -79,6 +79,7 @@ final class GiftOptionsScreenComponent: Component {
         case all
         case limited
         case inStock
+        case resale
         case stars(Int64)
         case transfer
         
@@ -92,6 +93,8 @@ final class GiftOptionsScreenComponent: Component {
                 self = .inStock
             case -3:
                 self = .transfer
+            case -4:
+                self = .resale
             default:
                 self = .stars(rawValue)
             }
@@ -107,6 +110,8 @@ final class GiftOptionsScreenComponent: Component {
                 return -2
             case .transfer:
                 return -3
+            case .resale:
+                return -4
             case let .stars(stars):
                 return stars
             }
@@ -136,6 +141,7 @@ final class GiftOptionsScreenComponent: Component {
         private var starsItems: [AnyHashable: ComponentView<Empty>] = [:]
         private let tabSelector = ComponentView<Empty>()
         private var starsFilter: StarsFilter = .all
+        private var switchingFilter = false
         
         private var _effectiveStarGifts: ([StarGift], StarsFilter)?
         private var effectiveStarGifts: [StarGift]? {
@@ -191,6 +197,12 @@ final class GiftOptionsScreenComponent: Component {
                                         return true
                                     }
                                 }
+                            case .resale:
+                                if case let .generic(gift) = $0 {
+                                    if let availability = gift.availability, availability.resale > 0 {
+                                        return true
+                                    }
+                                }
                             case .transfer:
                                 break
                             }
@@ -216,11 +228,14 @@ final class GiftOptionsScreenComponent: Component {
         private(set) weak var state: State?
         private var environment: EnvironmentType?
         
+        private var tabSelectorOrigin: CGFloat = 0.0
         private var starsItemsOrigin: CGFloat = 0.0
         
         private var dismissed = false
         
         private var chevronImage: (UIImage, PresentationTheme)?
+        
+        private var resaleConfiguration: StarsSubscriptionConfiguration?
         
         override init(frame: CGRect) {
             self.scrollView = ScrollView()
@@ -355,12 +370,20 @@ final class GiftOptionsScreenComponent: Component {
                         
                         var ribbon: GiftItemComponent.Ribbon?
                         var isSoldOut = false
-                        if case let .generic(gift) = gift {
+                        switch gift {
+                        case let .generic(gift):
                             if let _ = gift.soldOut {
-                                ribbon = GiftItemComponent.Ribbon(
-                                    text: environment.strings.Gift_Options_Gift_SoldOut,
-                                    color: .red
-                                )
+                                if let availability = gift.availability, availability.resale > 0 {
+                                    ribbon = GiftItemComponent.Ribbon(
+                                        text: environment.strings.Gift_Options_Gift_Resale,
+                                        color: .green
+                                    )
+                                } else {
+                                    ribbon = GiftItemComponent.Ribbon(
+                                        text: environment.strings.Gift_Options_Gift_SoldOut,
+                                        color: .red
+                                    )
+                                }
                                 isSoldOut = true
                             } else if let _ = gift.availability {
                                 ribbon = GiftItemComponent.Ribbon(
@@ -368,14 +391,36 @@ final class GiftOptionsScreenComponent: Component {
                                     color: .blue
                                 )
                             }
+                        case let .unique(gift):
+                            var ribbonColor: GiftItemComponent.Ribbon.Color = .blue
+                            for attribute in gift.attributes {
+                                if case let .backdrop(_, _, innerColor, outerColor, _, _, _) = attribute {
+                                    ribbonColor = .custom(outerColor, innerColor)
+                                    break
+                                }
+                            }
+                            ribbon = GiftItemComponent.Ribbon(
+                                text: "#\(gift.number)",
+                                font: .monospaced,
+                                color: ribbonColor
+                            )
                         }
                         
                         let subject: GiftItemComponent.Subject
                         switch gift {
                         case let .generic(gift):
-                            subject = .starGift(gift: gift, price: "⭐️ \(gift.price)")
+                            if let availability = gift.availability, availability.remains == 0, let minResaleStars = availability.minResaleStars {
+                                let priceString = presentationStringsFormattedNumber(Int32(minResaleStars), environment.dateTimeFormat.groupingSeparator)
+                                if let resaleConfiguration = self.resaleConfiguration, minResaleStars == resaleConfiguration.starGiftResaleMaxAmount || availability.resale == 1 {
+                                    subject = .starGift(gift: gift, price: "# \(priceString)")
+                                } else {
+                                    subject = .starGift(gift: gift, price: "# \(priceString)+")
+                                }
+                            } else {
+                                subject = .starGift(gift: gift, price: "# \(presentationStringsFormattedNumber(Int32(gift.price), environment.dateTimeFormat.groupingSeparator))")
+                            }
                         case let .unique(gift):
-                            subject = .uniqueGift(gift: gift)
+                            subject = .uniqueGift(gift: gift, price: nil)
                         }
                         
                         let _ = visibleItem.update(
@@ -404,16 +449,29 @@ final class GiftOptionsScreenComponent: Component {
                                                     mainController = controller
                                                 }
                                                 if case let .generic(gift) = gift {
-                                                    if gift.availability?.remains == 0 {
-                                                        let giftController = GiftViewScreen(
-                                                            context: component.context,
-                                                            subject: .soldOutGift(gift)
-                                                        )
-                                                        mainController.push(giftController)
-                                                    } else {
-                                                        var forceUnique = false
-                                                        if let disallowedGifts = self.state?.disallowedGifts, disallowedGifts.contains(.limited) && !disallowedGifts.contains(.unique) {
-                                                            forceUnique = true
+                                                    if let availability = gift.availability, availability.remains == 0 {
+                                                        if availability.resale > 0 {
+                                                            let storeController = component.context.sharedContext.makeGiftStoreController(
+                                                                context: component.context,
+                                                                peerId: component.peerId,
+                                                                gift: gift
+                                                            )
+                                                            mainController.push(storeController)
+                                                        } else {
+                                                            let giftController = GiftViewScreen(
+                                                                context: component.context,
+                                                                subject: .soldOutGift(gift)
+                                                            )
+                                                            mainController.push(giftController)
+                                                        }
+                                                    } else { 
+                                                        var forceUnique: Bool?
+                                                        if let disallowedGifts = self.state?.disallowedGifts {
+                                                            if disallowedGifts.contains(.limited) && !disallowedGifts.contains(.unique) {
+                                                                forceUnique = true
+                                                            } else if !disallowedGifts.contains(.limited) && disallowedGifts.contains(.unique) {
+                                                                forceUnique = false
+                                                            }
                                                         }
                                                         
                                                         let giftController = GiftSetupScreen(
@@ -473,6 +531,53 @@ final class GiftOptionsScreenComponent: Component {
                 for id in removeIds {
                     self.starsItems.removeValue(forKey: id)
                 }
+            }
+            
+            
+            
+            var topPanelHeight = environment.navigationHeight
+            let tabSelectorThreshold = self.tabSelectorOrigin - 8.0
+            if contentOffset > tabSelectorThreshold - environment.navigationHeight {
+                topPanelHeight += 39.0
+            }
+            
+            if let tabSelectorView = self.tabSelector.view {
+                let tabSelectorSize = tabSelectorView.bounds.size
+                transition.setFrame(view: tabSelectorView, frame: CGRect(origin: CGPoint(x: floor((availableWidth - tabSelectorSize.width) / 2.0), y: max(56.0, self.tabSelectorOrigin - contentOffset)), size: tabSelectorSize))
+            }
+            
+            var panelTransition = transition
+            if self.topPanel.view?.superview != nil && !self.switchingFilter {
+                panelTransition = .spring(duration: 0.3)
+            }
+            let topPanelSize = self.topPanel.update(
+                transition: panelTransition,
+                component: AnyComponent(BlurredBackgroundComponent(
+                    color: environment.theme.rootController.navigationBar.blurredBackgroundColor
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableWidth, height: topPanelHeight)
+            )
+            
+            let topSeparatorSize = self.topSeparator.update(
+                transition: panelTransition,
+                component: AnyComponent(Rectangle(
+                    color: environment.theme.rootController.navigationBar.separatorColor
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableWidth, height: UIScreenPixel)
+            )
+            let topPanelFrame = CGRect(origin: .zero, size: CGSize(width: availableWidth, height: topPanelSize.height))
+            let topSeparatorFrame = CGRect(origin: CGPoint(x: 0.0, y: topPanelSize.height), size: CGSize(width: topSeparatorSize.width, height: topSeparatorSize.height))
+            if let topPanelView = self.topPanel.view, let topSeparatorView = self.topSeparator.view {
+                if topPanelView.superview == nil {
+                    if let headerView = self.header.view {
+                        self.insertSubview(topSeparatorView, aboveSubview: headerView)
+                        self.insertSubview(topPanelView, aboveSubview: headerView)
+                    }
+                }
+                panelTransition.setFrame(view: topPanelView, frame: topPanelFrame)
+                panelTransition.setFrame(view: topSeparatorView, frame: topSeparatorFrame)
             }
             
             let bottomContentOffset = max(0.0, self.scrollView.contentSize.height - self.scrollView.contentOffset.y - self.scrollView.frame.height)
@@ -675,6 +780,8 @@ final class GiftOptionsScreenComponent: Component {
                     self.optionsPromise.set(component.context.engine.payments.starsTopUpOptions()
                     |> map(Optional.init))
                 }
+                
+                self.resaleConfiguration = StarsSubscriptionConfiguration.with(appConfiguration: component.context.currentAppConfiguration.with { $0 })
             }
             self.component = component
             
@@ -755,34 +862,34 @@ final class GiftOptionsScreenComponent: Component {
                 }
                 transition.setBounds(view: headerView, bounds: CGRect(origin: .zero, size: headerSize))
             }
-            
-            let topPanelSize = self.topPanel.update(
-                transition: transition,
-                component: AnyComponent(BlurredBackgroundComponent(
-                    color: theme.rootController.navigationBar.blurredBackgroundColor
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: environment.navigationHeight)
-            )
-            
-            let topSeparatorSize = self.topSeparator.update(
-                transition: transition,
-                component: AnyComponent(Rectangle(
-                    color: theme.rootController.navigationBar.separatorColor
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: UIScreenPixel)
-            )
-            let topPanelFrame = CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: topPanelSize.height))
-            let topSeparatorFrame = CGRect(origin: CGPoint(x: 0.0, y: topPanelSize.height), size: CGSize(width: topSeparatorSize.width, height: topSeparatorSize.height))
-            if let topPanelView = self.topPanel.view, let topSeparatorView = self.topSeparator.view {
-                if topPanelView.superview == nil {
-                    self.addSubview(topPanelView)
-                    self.addSubview(topSeparatorView)
-                }
-                transition.setFrame(view: topPanelView, frame: topPanelFrame)
-                transition.setFrame(view: topSeparatorView, frame: topSeparatorFrame)
-            }
+                        
+//            let topPanelSize = self.topPanel.update(
+//                transition: transition,
+//                component: AnyComponent(BlurredBackgroundComponent(
+//                    color: theme.rootController.navigationBar.blurredBackgroundColor
+//                )),
+//                environment: {},
+//                containerSize: CGSize(width: availableSize.width, height: environment.navigationHeight)
+//            )
+//            
+//            let topSeparatorSize = self.topSeparator.update(
+//                transition: transition,
+//                component: AnyComponent(Rectangle(
+//                    color: theme.rootController.navigationBar.separatorColor
+//                )),
+//                environment: {},
+//                containerSize: CGSize(width: availableSize.width, height: UIScreenPixel)
+//            )
+//            let topPanelFrame = CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: topPanelSize.height))
+//            let topSeparatorFrame = CGRect(origin: CGPoint(x: 0.0, y: topPanelSize.height), size: CGSize(width: topSeparatorSize.width, height: topSeparatorSize.height))
+//            if let topPanelView = self.topPanel.view, let topSeparatorView = self.topSeparator.view {
+//                if topPanelView.superview == nil {
+//                    self.addSubview(topPanelView)
+//                    self.addSubview(topSeparatorView)
+//                }
+//                transition.setFrame(view: topPanelView, frame: topPanelFrame)
+//                transition.setFrame(view: topSeparatorView, frame: topSeparatorFrame)
+//            }
             
             let cancelButtonSize = self.cancelButton.update(
                 transition: transition,
@@ -1186,13 +1293,17 @@ final class GiftOptionsScreenComponent: Component {
                 }
                 
                 var hasLimited = false
+                var hasResale = false
                 var starsAmountsSet = Set<Int64>()
                 if let starGifts = self.state?.starGifts {
                     for gift in starGifts {
                         if case let .generic(gift) = gift {
                             starsAmountsSet.insert(gift.price)
-                            if gift.availability != nil {
+                            if let availability = gift.availability {
                                 hasLimited = true
+                                if availability.remains == 0 && availability.resale > 0 {
+                                    hasResale = true
+                                }
                             }
                         }
                     }
@@ -1209,6 +1320,13 @@ final class GiftOptionsScreenComponent: Component {
                     id: AnyHashable(StarsFilter.inStock.rawValue),
                     title: strings.Gift_Options_Gift_Filter_InStock
                 ))
+                
+                if hasResale {
+                    tabSelectorItems.append(TabSelectorComponent.Item(
+                        id: AnyHashable(StarsFilter.resale.rawValue),
+                        title: strings.Gift_Options_Gift_Filter_Resale
+                    ))
+                }
                 
                 let starsAmounts = Array(starsAmountsSet).sorted()
                 for amount in starsAmounts {
@@ -1235,17 +1353,26 @@ final class GiftOptionsScreenComponent: Component {
                             }
                             let starsFilter = StarsFilter(rawValue: idValue)
                             if self.starsFilter != starsFilter {
+                                if self.scrollView.contentOffset.y > self.tabSelectorOrigin - 56.0 {
+                                    self.scrollView.setContentOffset(CGPoint(x: 0.0, y: self.tabSelectorOrigin - 56.0), animated: true)
+                                }
+                                
+                                self.switchingFilter = true
                                 self.starsFilter = starsFilter
                                 self.state?.updated(transition: .easeInOut(duration: 0.25))
+                                Queue.mainQueue().after(0.1, {
+                                    self.switchingFilter = false
+                                })
                             }
                         }
                     )),
                     environment: {},
                     containerSize: CGSize(width: availableSize.width - 10.0 * 2.0, height: 50.0)
                 )
+                self.tabSelectorOrigin = contentHeight
                 if let tabSelectorView = self.tabSelector.view {
                     if tabSelectorView.superview == nil {
-                        self.scrollView.addSubview(tabSelectorView)
+                        self.addSubview(tabSelectorView)
                     }
                     transition.setFrame(view: tabSelectorView, frame: CGRect(origin: CGPoint(x: floor((availableSize.width - tabSelectorSize.width) / 2.0), y: contentHeight), size: tabSelectorSize))
                 }
@@ -1439,6 +1566,9 @@ final class GiftOptionsScreenComponent: Component {
                                         return false
                                     }
                                 }
+                            }
+                            if disallowedGifts.contains(.unique) && gift.availability?.remains == 0 {
+                                return false
                             }
                         }
                         return true

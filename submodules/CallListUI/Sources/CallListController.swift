@@ -16,6 +16,7 @@ import TelegramBaseController
 import InviteLinksUI
 import UndoUI
 import TelegramCallsUI
+import TelegramUIPreferences
 
 public enum CallListControllerMode {
     case tab
@@ -210,7 +211,7 @@ public final class CallListController: TelegramBaseController {
     }
 
     private func createGroupCall(peerIds: [EnginePeer.Id], isVideo: Bool, completion: (() -> Void)? = nil) {
-        self.view.endEditing(true)
+        self.view.window?.endEditing(true)
         
         guard !self.presentAccountFrozenInfoIfNeeded() else {
             return
@@ -264,7 +265,7 @@ public final class CallListController: TelegramBaseController {
                 guard let self else {
                     return
                 }
-                self.context.sharedContext.callManager?.joinConferenceCall(
+                let _ = self.context.sharedContext.callManager?.joinConferenceCall(
                     accountContext: self.context,
                     initialCall: EngineGroupCallDescription(
                         id: call.callInfo.id,
@@ -276,7 +277,8 @@ public final class CallListController: TelegramBaseController {
                     ),
                     reference: .id(id: call.callInfo.id, accessHash: call.callInfo.accessHash),
                     beginWithVideo: isVideo,
-                    invitePeerIds: peerIds
+                    invitePeerIds: peerIds,
+                    endCurrentIfAny: true
                 )
                 completion?()
             }
@@ -712,20 +714,7 @@ public final class CallListController: TelegramBaseController {
             guard let self else {
                 return
             }
-            self.context.sharedContext.callManager?.joinConferenceCall(
-                accountContext: self.context,
-                initialCall: EngineGroupCallDescription(
-                    id: resolvedCallLink.id,
-                    accessHash: resolvedCallLink.accessHash,
-                    title: nil,
-                    scheduleTimestamp: nil,
-                    subscribedToScheduled: false,
-                    isStream: false
-                ),
-                reference: .message(id: message.id),
-                beginWithVideo: conferenceCall.flags.contains(.isVideo),
-                invitePeerIds: []
-            )
+            self.context.joinConferenceCall(call: resolvedCallLink, isVideo: conferenceCall.flags.contains(.isVideo))
         }, error: { [weak self] error in
             guard let self else {
                 return
@@ -746,10 +735,22 @@ public final class CallListController: TelegramBaseController {
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/AddUser"), color: theme.contextMenu.primaryColor)
         }, action: { [weak self] c, f in
             c?.dismiss(completion: { [weak self] in
-                guard let strongSelf = self else {
+                guard let self else {
                     return
                 }
-                strongSelf.callPressed()
+                self.callPressed()
+            })
+        })))
+        items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Calls_HideCallsTab, icon: { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Peer Info/HideIcon"), color: theme.contextMenu.primaryColor)
+        }, action: { [weak self] c, f in
+            c?.dismiss(completion: { [weak self] in
+                guard let self else {
+                    return
+                }
+                let _ = updateCallListSettingsInteractively(accountManager: self.context.sharedContext.accountManager, {
+                    $0.withUpdatedShowTab(false)
+                }).start()
             })
         })))
         

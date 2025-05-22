@@ -763,6 +763,7 @@ final class PeerSelectionControllerNode: ASDisplayNode {
         }, joinGroupCall: { _ in
         }, presentInviteMembers: {
         }, presentGigagroupHelp: {
+        }, openSuggestPost: {
         }, editMessageMedia: { _, _ in
         }, updateShowCommands: { _ in
         }, updateShowSendAsPeers: { _ in

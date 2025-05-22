@@ -184,7 +184,9 @@ public final class PeerInfoGiftsCoverComponent: Component {
             }
         }
         
+        private var scheduledAnimateIn = false
         public func willAnimateIn() {
+            self.scheduledAnimateIn = true
             for (_, layer) in self.iconLayers {
                 layer.opacity = 0.0
             }
@@ -194,6 +196,7 @@ public final class PeerInfoGiftsCoverComponent: Component {
             guard let _ = self.currentSize, let component = self.component else {
                 return
             }
+            self.scheduledAnimateIn = false
             
             for (_, layer) in self.iconLayers {
                 layer.opacity = 1.0
@@ -319,8 +322,12 @@ public final class PeerInfoGiftsCoverComponent: Component {
                     self.iconLayers[id] = iconLayer
                     self.layer.addSublayer(iconLayer)
                     
-                    iconLayer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-                    iconLayer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
+                    if self.scheduledAnimateIn {
+                        iconLayer.opacity = 0.0
+                    } else {
+                        iconLayer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        iconLayer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
+                    }
                     
                     iconLayer.startAnimations(index: index)
                 }
@@ -349,7 +356,10 @@ public final class PeerInfoGiftsCoverComponent: Component {
                 iconTransition.setPosition(layer: iconLayer, position: absolutePosition)
                 iconLayer.updateRotation(effectiveAngle, transition: iconTransition)
                 iconTransition.setScale(layer: iconLayer, scale: iconPosition.scale * (1.0 - itemScaleFraction))
-                iconTransition.setAlpha(layer: iconLayer, alpha: 1.0 - itemScaleFraction)
+                
+                if !self.scheduledAnimateIn {
+                    iconTransition.setAlpha(layer: iconLayer, alpha: 1.0 - itemScaleFraction)
+                }
                 
                 index += 1
             }
@@ -497,7 +507,7 @@ private class GiftIconLayer: SimpleLayer {
             for attribute in gift.attributes {
                 if case let .model(_, fileValue, _) = attribute {
                     file = fileValue
-                } else if case let .backdrop(_, innerColor, _, _, _, _) = attribute {
+                } else if case let .backdrop(_, _, innerColor, _, _, _, _) = attribute {
                     color = UIColor(rgb: UInt32(bitPattern: innerColor))
                 }
             }
@@ -563,7 +573,7 @@ private class GiftIconLayer: SimpleLayer {
             for attribute in gift.attributes {
                 if case let .model(_, fileValue, _) = attribute {
                     file = fileValue
-                } else if case let .backdrop(_, innerColor, _, _, _, _) = attribute {
+                } else if case let .backdrop(_, _, innerColor, _, _, _, _) = attribute {
                     color = UIColor(rgb: UInt32(bitPattern: innerColor))
                 }
             }

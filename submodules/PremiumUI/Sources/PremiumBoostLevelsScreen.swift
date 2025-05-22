@@ -61,6 +61,8 @@ func requiredBoostSubjectLevel(subject: BoostSubject, group: Bool, context: Acco
         return configuration.minChannelRestrictAdsLevel
     case .wearGift:
         return configuration.minChannelWearGiftLevel
+    case .autoTranslate:
+        return configuration.minChannelAutoTranslateLevel
     }
 }
 
@@ -243,6 +245,7 @@ private final class LevelSectionComponent: CombinedComponent {
         case emojiPack
         case noAds
         case wearGift
+        case autoTranslate
         
         func title(strings: PresentationStrings, isGroup: Bool) -> String {
             switch self {
@@ -274,6 +277,8 @@ private final class LevelSectionComponent: CombinedComponent {
                 return strings.ChannelBoost_Table_NoAds
             case .wearGift:
                 return strings.ChannelBoost_Table_WearGift
+            case .autoTranslate:
+                return strings.ChannelBoost_Table_AutoTranslate
             }
         }
         
@@ -307,6 +312,8 @@ private final class LevelSectionComponent: CombinedComponent {
                 return "Premium/BoostPerk/NoAds"
             case .wearGift:
                 return "Premium/BoostPerk/NoAds"
+            case .autoTranslate:
+                return "Chat/Title Panels/Translate"
             }
         }
     }
@@ -647,6 +654,8 @@ private final class SheetContent: CombinedComponent {
                             textString = strings.ChannelBoost_EnableNoAdsLevelText("\(requiredLevel)").string
                         case .wearGift:
                             textString = strings.ChannelBoost_WearGiftLevelText("\(requiredLevel)").string
+                        case .autoTranslate:
+                            textString = strings.ChannelBoost_AutoTranslateLevelText("\(requiredLevel)").string
                         }
                     } else {
                         let boostsString = strings.ChannelBoost_MoreBoostsNeeded_Boosts(Int32(remaining))
@@ -1099,6 +1108,10 @@ private final class SheetContent: CombinedComponent {
             func layoutLevel(_ level: Int32) {
                 var perks: [LevelSectionComponent.Perk] = []
                 
+                if !isGroup && level >= requiredBoostSubjectLevel(subject: .autoTranslate, group: isGroup, context: component.context, configuration: premiumConfiguration) {
+                    perks.append(.autoTranslate)
+                }
+                
                 perks.append(.story(level))
                 
                 if !isGroup {
@@ -1162,9 +1175,6 @@ private final class SheetContent: CombinedComponent {
                 if !isGroup && level >= requiredBoostSubjectLevel(subject: .noAds, group: isGroup, context: component.context, configuration: premiumConfiguration) {
                     perks.append(.noAds)
                 }
-//                if !isGroup && level >= requiredBoostSubjectLevel(subject: .wearGift, group: isGroup, context: component.context, configuration: premiumConfiguration) {
-//                    perks.append(.wearGift)
-//                }
                 
                 levelItems.append(
                     AnyComponentWithIdentity(
@@ -1466,6 +1476,8 @@ private final class BoostLevelsContainerComponent: CombinedComponent {
                             titleString = strings.ChannelBoost_NoAds
                         case .wearGift:
                             titleString = strings.ChannelBoost_WearGift
+                        case .autoTranslate:
+                            titleString = strings.ChannelBoost_AutoTranslate
                         }
                     } else {
                         titleString = isGroup == true ? strings.GroupBoost_Title_Current : strings.ChannelBoost_Title_Current

@@ -84,6 +84,7 @@ public final class MediaScrubberComponent: Component {
     let position: Double
     let minDuration: Double
     let maxDuration: Double
+    let segmentDuration: Double?
     let isPlaying: Bool
     
     let tracks: [Track]
@@ -112,6 +113,7 @@ public final class MediaScrubberComponent: Component {
         position: Double,
         minDuration: Double,
         maxDuration: Double,
+        segmentDuration: Double? = nil,
         isPlaying: Bool,
         tracks: [Track],
         isCollage: Bool,
@@ -135,6 +137,7 @@ public final class MediaScrubberComponent: Component {
         self.position = position
         self.minDuration = minDuration
         self.maxDuration = maxDuration
+        self.segmentDuration = segmentDuration
         self.isPlaying = isPlaying
         self.tracks = tracks
         self.isCollage = isCollage
@@ -169,6 +172,9 @@ public final class MediaScrubberComponent: Component {
             return false
         }
         if lhs.maxDuration != rhs.maxDuration {
+            return false
+        }
+        if lhs.segmentDuration != rhs.segmentDuration {
             return false
         }
         if lhs.isPlaying != rhs.isPlaying {
@@ -624,6 +630,7 @@ public final class MediaScrubberComponent: Component {
                     isSelected: isSelected,
                     availableSize: availableSize,
                     duration: self.duration,
+                    segmentDuration: lowestVideoId == track.id ? component.segmentDuration : nil,
                     transition: trackTransition
                 )
                 trackLayout[id] = (CGRect(origin: CGPoint(x: 0.0, y: totalHeight), size: trackSize), trackTransition, animateTrackIn)
@@ -675,6 +682,7 @@ public final class MediaScrubberComponent: Component {
                     isSelected: false,
                     availableSize: availableSize,
                     duration: self.duration,
+                    segmentDuration: nil,
                     transition: trackTransition
                 )
                 trackTransition.setFrame(view: trackView, frame: CGRect(origin: .zero, size: trackSize))
@@ -817,6 +825,14 @@ public final class MediaScrubberComponent: Component {
                         transition: transition
                     )
                 }
+            } else {
+                for (_ , trackView) in self.trackViews {
+                    trackView.updateTrimEdges(
+                        left: leftHandleFrame.minX,
+                        right: rightHandleFrame.maxX,
+                        transition: transition
+                    )
+                }
             }
             
             let isDraggingTracks = self.trackViews.values.contains(where: { $0.isDragging })
@@ -854,7 +870,6 @@ public final class MediaScrubberComponent: Component {
             }
             
             transition.setFrame(view: self.cursorImageView, frame: CGRect(origin: .zero, size: self.cursorView.frame.size))
-            
             
             if let (coverPosition, coverImage) = component.cover {
                 let imageSize = CGSize(width: 36.0, height: 36.0)
@@ -955,6 +970,10 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
     fileprivate let audioContentMaskView: UIImageView
     fileprivate let audioIconView: UIImageView
     fileprivate let audioTitle = ComponentView<Empty>()
+    
+    fileprivate let segmentsContainerView = UIView()
+    fileprivate var segmentTitles: [Int32: ComponentView<Empty>] = [:]
+    fileprivate var segmentLayers: [Int32: SimpleLayer] = [:]
 
     fileprivate let videoTransparentFramesContainer = UIView()
     fileprivate var videoTransparentFrameLayers: [VideoFrameLayer] = []
@@ -1026,7 +1045,10 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
         self.clippingView.addSubview(self.scrollView)
         self.scrollView.addSubview(self.containerView)
         self.backgroundView.addSubview(self.vibrancyView)
-                                
+        
+        self.segmentsContainerView.clipsToBounds = true
+        self.segmentsContainerView.isUserInteractionEnabled = false
+        
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.handleTap(_:)))
         self.addGestureRecognizer(tapGesture)
         
@@ -1122,6 +1144,25 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
         }
     }
     
+    private var leftTrimEdge: CGFloat?
+    private var rightTrimEdge: CGFloat?
+    func updateTrimEdges(
+        left: CGFloat,
+        right: CGFloat,
+        transition: ComponentTransition
+    ) {
+        self.leftTrimEdge = left
+        self.rightTrimEdge = right
+        
+        if let params = self.params {
+            self.updateSegmentContainer(
+                scrubberSize: CGSize(width: params.availableSize.width, height: trackHeight),
+                availableSize: params.availableSize,
+                transition: transition
+            )
+        }
+    }
+    
     private func updateThumbnailContainers(
         scrubberSize: CGSize,
         availableSize: CGSize,
@@ -1135,6 +1176,17 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
         transition.setBounds(view: self.videoOpaqueFramesContainer, bounds: CGRect(origin: CGPoint(x: containerLeftEdge, y: 0.0), size: CGSize(width: containerRightEdge - containerLeftEdge, height: scrubberSize.height)))
     }
     
+    private func updateSegmentContainer(
+        scrubberSize: CGSize,
+        availableSize: CGSize,
+        transition: ComponentTransition
+    ) {
+        let containerLeftEdge: CGFloat = self.leftTrimEdge ?? 0.0
+        let containerRightEdge: CGFloat = self.rightTrimEdge ?? availableSize.width
+        
+        transition.setFrame(view: self.segmentsContainerView, frame: CGRect(origin: CGPoint(x: containerLeftEdge, y: 0.0), size: CGSize(width: containerRightEdge - containerLeftEdge - 2.0, height: scrubberSize.height)))
+    }
+    
     func update(
         context: AccountContext,
         style: MediaScrubberComponent.Style,
@@ -1142,6 +1194,7 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
         isSelected: Bool,
         availableSize: CGSize,
         duration: Double,
+        segmentDuration: Double?,
         transition: ComponentTransition
     ) -> CGSize {
         let previousParams = self.params
@@ -1269,6 +1322,7 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
             if self.videoTransparentFramesContainer.superview == nil {
                 self.containerView.addSubview(self.videoTransparentFramesContainer)
                 self.containerView.addSubview(self.videoOpaqueFramesContainer)
+                self.containerView.addSubview(self.segmentsContainerView)
             }
             var previousFramesUpdateTimestamp: Double?
             if let previousParams, case let .video(_, previousFramesUpdateTimestampValue) = previousParams.track.content {
@@ -1316,6 +1370,12 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
             }
                         
             self.updateThumbnailContainers(
+                scrubberSize: scrubberSize,
+                availableSize: availableSize,
+                transition: transition
+            )
+            
+            self.updateSegmentContainer(
                 scrubberSize: scrubberSize,
                 availableSize: availableSize,
                 transition: transition
@@ -1476,6 +1536,84 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
         self.backgroundView.update(size: containerFrame.size, transition: transition.containedViewLayoutTransition)
         transition.setFrame(view: self.vibrancyView, frame: CGRect(origin: .zero, size: containerFrame.size))
         transition.setFrame(view: self.vibrancyContainer, frame: CGRect(origin: .zero, size: containerFrame.size))
+                
+        var segmentCount = 0
+        var segmentWidth: CGFloat = 0.0
+        if let segmentDuration {
+            if duration > segmentDuration {
+                let fraction = segmentDuration / duration
+                segmentCount = Int(ceil(duration / segmentDuration)) - 1
+                segmentWidth = floorToScreenPixels(containerFrame.width * fraction)
+            }
+            if let trimRange = track.trimRange {
+                let actualSegmentCount = Int(ceil((trimRange.upperBound - trimRange.lowerBound) / segmentDuration)) - 1
+                segmentCount = min(actualSegmentCount, segmentCount)
+            }
+        }
+        
+        let displaySegmentLabels = segmentWidth >= 30.0
+
+        var validIds = Set<Int32>()
+        var segmentFrame = CGRect(x: segmentWidth, y: 0.0, width: 1.0, height: containerFrame.size.height)
+        for i in 0 ..< min(segmentCount, 2) {
+            let id = Int32(i)
+            validIds.insert(id)
+            
+            let segmentLayer: SimpleLayer
+            let segmentTitle: ComponentView<Empty>
+            
+            var segmentTransition = transition
+            if let currentLayer = self.segmentLayers[id], let currentTitle = self.segmentTitles[id] {
+                segmentLayer = currentLayer
+                segmentTitle = currentTitle
+            } else {
+                segmentTransition = .immediate
+                segmentLayer = SimpleLayer()
+                segmentLayer.backgroundColor = UIColor.white.cgColor
+                segmentTitle = ComponentView<Empty>()
+                
+                self.segmentLayers[id] = segmentLayer
+                self.segmentTitles[id] = segmentTitle
+                
+                self.segmentsContainerView.layer.addSublayer(segmentLayer)
+            }
+            
+            transition.setFrame(layer: segmentLayer, frame: segmentFrame)
+            
+            let segmentTitleSize = segmentTitle.update(
+                transition: .immediate,
+                component: AnyComponent(MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: "#\(i + 2)", font: Font.semibold(11.0), textColor: .white)),
+                    textShadowColor: UIColor(rgb: 0x000000, alpha: 0.4),
+                    textShadowBlur: 1.0
+                )),
+                environment: {},
+                containerSize: containerFrame.size
+            )
+            if let view = segmentTitle.view {
+                view.alpha = displaySegmentLabels ? 1.0 : 0.0
+                if view.superview == nil {
+                    self.segmentsContainerView.addSubview(view)
+                }
+                segmentTransition.setFrame(view: view, frame: CGRect(origin: CGPoint(x: segmentFrame.maxX + 2.0, y: 2.0), size: segmentTitleSize))
+            }
+            segmentFrame.origin.x += segmentWidth
+        }
+
+        var removeIds: [Int32] = []
+        for (id, segmentLayer) in self.segmentLayers {
+            if !validIds.contains(id) {
+                removeIds.append(id)
+                segmentLayer.removeFromSuperlayer()
+                if let segmentTitle = self.segmentTitles[id] {
+                    segmentTitle.view?.removeFromSuperview()
+                }
+            }
+        }
+        for id in removeIds {
+            self.segmentLayers.removeValue(forKey: id)
+            self.segmentTitles.removeValue(forKey: id)
+        }
         
         return scrubberSize
     }
