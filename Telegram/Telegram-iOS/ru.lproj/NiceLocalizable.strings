@@ -90,7 +90,7 @@
 "Common.SupportChatUsername" = "nicegram_ru";
 "Common.FAQUrl" = "https://nicegram.app/ru/faq/";
 "Common.FAQ.Button" = "Вопросы о Nicegram";
-"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Title" = "Премиум";
 "IAP.Premium.Subtitle" = "Уникальные функции, от которых трудно отказаться!";
 "IAP.Premium.Activated" = "Премиум Активирован!";
 "IAP.Common.Restore" = "Восстановить Покупки";

@@ -63,7 +63,7 @@
 "Folder.Create" = "Criar pasta...";
 "Folder.Create.Name" = "Nome da Pasta";
 "Folder.Create.Placeholder" = "Pasta...";
-"NiceFeatures.HideNumber" = "Ocultar telefone nas configurações";
+"NiceFeatures.HideNumber" = "Ocultar número nas configurações";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Indisponível no Nicegram devido às diretrizes da AppStore";

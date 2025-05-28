@@ -63,7 +63,7 @@
 "Folder.Create" = "创建分组...";
 "Folder.Create.Name" = "分组名";
 "Folder.Create.Placeholder" = "分组...";
-"NiceFeatures.HideNumber" = "设置中隐藏手机号码";
+"NiceFeatures.HideNumber" = "在设置中隐藏电话号码";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "依据 App Store 审核指南，在 Nicegram 中不可用";

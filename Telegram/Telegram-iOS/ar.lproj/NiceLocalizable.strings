@@ -5,8 +5,7 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
-";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -38,8 +37,7 @@
 "NiceFeatures.InstantLock" = "فوراً ";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "حفظ
-";
+"Chat.SaveToCloud" = "حفظ\n";
 
 /*Open Pin*/
 "Chat.OpenPin" = "عرض المثبت";
@@ -65,7 +63,7 @@
 "Folder.Create" = "إنشاء مجلد...";
 "Folder.Create.Name" = "إسم المجلد";
 "Folder.Create.Placeholder" = "المجلد...";
-"NiceFeatures.HideNumber" = "إخفاء الرقم من الإعدادات";
+"NiceFeatures.HideNumber" = "إخفاء رقم الهاتف في الإعدادات";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "غير متوفر في Nicegram ويرجع السبب لقواعد AppStore التوجيهية";

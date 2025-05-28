@@ -63,7 +63,7 @@
 "Folder.Create" = "Créer le dossier...";
 "Folder.Create.Name" = "Nom du dossier";
 "Folder.Create.Placeholder" = "Dossier...";
-"NiceFeatures.HideNumber" = "Masquer le téléphone dans les paramètres";
+"NiceFeatures.HideNumber" = "Masquer le numéro dans les paramètres";
 
 /*NGWeb*/
 "NGWeb.Blocked" = "Non disponible dans Nicegram en raison des directives de l'AppStore";
