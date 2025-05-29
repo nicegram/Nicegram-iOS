@@ -854,6 +854,8 @@ public enum TransferStarGiftError {
 
 public enum BuyStarGiftError {
     case generic
+    case priceChanged(Int64)
+    case starGiftResellTooEarly(Int32)
 }
 
 public enum UpdateStarGiftPriceError {
@@ -865,15 +867,21 @@ public enum UpgradeStarGiftError {
     case generic
 }
 
-func _internal_buyStarGift(account: Account, slug: String, peerId: EnginePeer.Id) -> Signal<Never, BuyStarGiftError> {
+func _internal_buyStarGift(account: Account, slug: String, peerId: EnginePeer.Id, price: Int64?) -> Signal<Never, BuyStarGiftError> {
     let source: BotPaymentInvoiceSource = .starGiftResale(slug: slug, toPeerId: peerId)
     return _internal_fetchBotPaymentForm(accountPeerId: account.peerId, postbox: account.postbox, network: account.network, source: source, themeParams: nil)
     |> map(Optional.init)
     |> `catch` { error -> Signal<BotPaymentForm?, BuyStarGiftError> in
+        if case let .starGiftResellTooEarly(timestamp) = error {
+            return .fail(.starGiftResellTooEarly(timestamp))
+        }
         return .fail(.generic)
     }
     |> mapToSignal { paymentForm in
         if let paymentForm {
+            if let paymentPrice = paymentForm.invoice.prices.first?.amount, let price, paymentPrice > price {
+                return .fail(.priceChanged(paymentPrice))
+            }
             return _internal_sendStarsPaymentForm(account: account, formId: paymentForm.id, source: source)
             |> mapError { _ -> BuyStarGiftError in
                 return .generic
@@ -1148,10 +1156,12 @@ private final class ProfileGiftsContextImpl {
             self.filteredGifts = []
             self.filteredCount = nil
         }
+        let isUniqueOnlyFilter = self.filter == [.unique, .displayed, .hidden]
+        
         let dataState = isFiltered ? self.filteredDataState : self.dataState
         
         if case let .ready(true, initialNextOffset) = dataState {
-            if !isFiltered, self.gifts.isEmpty, initialNextOffset == nil, !reload {
+            if !isFiltered || isUniqueOnlyFilter, self.gifts.isEmpty, initialNextOffset == nil, !reload {
                 self.cacheDisposable.set((self.account.postbox.transaction { transaction -> CachedProfileGifts? in
                     let cachedGifts = transaction.retrieveItemCacheEntry(id: entryId(peerId: peerId))?.get(CachedProfileGifts.self)
                     cachedGifts?.render(transaction: transaction)
@@ -1160,7 +1170,22 @@ private final class ProfileGiftsContextImpl {
                     guard let self, let cachedGifts else {
                         return
                     }
-                    if case .loading = self.dataState {
+                    if isUniqueOnlyFilter, case .loading = self.filteredDataState {
+                        var gifts = cachedGifts.gifts
+                        if isUniqueOnlyFilter {
+                            gifts = gifts.filter({ gift in
+                                if case .unique = gift.gift {
+                                    return true
+                                } else {
+                                    return false
+                                }
+                            })
+                        }
+                        self.gifts = gifts
+                        self.count = cachedGifts.count
+                        self.notificationsEnabled = cachedGifts.notificationsEnabled
+                        self.pushState()
+                    } else if case .loading = self.dataState {
                         self.gifts = cachedGifts.gifts
                         self.count = cachedGifts.count
                         self.notificationsEnabled = cachedGifts.notificationsEnabled
@@ -1473,26 +1498,53 @@ private final class ProfileGiftsContextImpl {
         return _internal_transferStarGift(account: self.account, prepaid: prepaid, reference: reference, peerId: peerId)
     }
     
-    func buyStarGift(slug: String, peerId: EnginePeer.Id) -> Signal<Never, BuyStarGiftError> {
-        if let count = self.count {
-            self.count = max(0, count - 1)
+    func buyStarGift(slug: String, peerId: EnginePeer.Id, price: Int64?) -> Signal<Never, BuyStarGiftError> {
+        var listingPrice: Int64?
+        if let gift = self.gifts.first(where: { gift in
+            if case let .unique(uniqueGift) = gift.gift, uniqueGift.slug == slug {
+                return true
+            }
+            return false
+        }), case let .unique(uniqueGift) = gift.gift {
+            listingPrice = uniqueGift.resellStars
         }
-        self.gifts.removeAll(where: { gift in
-            if case let .unique(uniqueGift) = gift.gift, uniqueGift.slug == slug {
-                return true
-            }
-            return false
-        })
-        self.filteredGifts.removeAll(where: { gift in
-            if case let .unique(uniqueGift) = gift.gift, uniqueGift.slug == slug {
-                return true
-            }
-            return false
-        })
-
-        self.pushState()
         
-        return _internal_buyStarGift(account: self.account, slug: slug, peerId: peerId)
+        if listingPrice == nil {
+            if let gift = self.filteredGifts.first(where: { gift in
+                if case let .unique(uniqueGift) = gift.gift, uniqueGift.slug == slug {
+                    return true
+                }
+                return false
+            }), case let .unique(uniqueGift) = gift.gift {
+                listingPrice = uniqueGift.resellStars
+            }
+        }
+                
+        return _internal_buyStarGift(account: self.account, slug: slug, peerId: peerId, price: price ?? listingPrice)
+        |> afterCompleted { [weak self] in
+            guard let self else {
+                return
+            }
+            self.queue.async {
+                if let count = self.count {
+                    self.count = max(0, count - 1)
+                }
+                self.gifts.removeAll(where: { gift in
+                    if case let .unique(uniqueGift) = gift.gift, uniqueGift.slug == slug {
+                        return true
+                    }
+                    return false
+                })
+                self.filteredGifts.removeAll(where: { gift in
+                    if case let .unique(uniqueGift) = gift.gift, uniqueGift.slug == slug {
+                        return true
+                    }
+                    return false
+                })
+
+                self.pushState()
+            }
+        }
     }
     
     func removeStarGift(gift: TelegramCore.StarGift) {
@@ -1975,11 +2027,11 @@ public final class ProfileGiftsContext {
         }
     }
     
-    public func buyStarGift(slug: String, peerId: EnginePeer.Id) -> Signal<Never, BuyStarGiftError> {
+    public func buyStarGift(slug: String, peerId: EnginePeer.Id, price: Int64? = nil) -> Signal<Never, BuyStarGiftError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
             self.impl.with { impl in
-                disposable.set(impl.buyStarGift(slug: slug, peerId: peerId).start(error: { error in
+                disposable.set(impl.buyStarGift(slug: slug, peerId: peerId, price: price).start(error: { error in
                     subscriber.putError(error)
                 }, completed: {
                     subscriber.putCompletion()
@@ -2606,8 +2658,18 @@ private final class ResaleGiftsContextImpl {
         self.loadMore()
     }
     
-    func buyStarGift(slug: String, peerId: EnginePeer.Id) -> Signal<Never, BuyStarGiftError> {
-        return _internal_buyStarGift(account: self.account, slug: slug, peerId: peerId)
+    func buyStarGift(slug: String, peerId: EnginePeer.Id, price: Int64?) -> Signal<Never, BuyStarGiftError> {
+        var listingPrice: Int64?
+        if let gift = self.gifts.first(where: { gift in
+            if case let .unique(uniqueGift) = gift, uniqueGift.slug == slug {
+                return true
+            }
+            return false
+        }), case let .unique(uniqueGift) = gift {
+            listingPrice = uniqueGift.resellStars
+        }
+        
+        return _internal_buyStarGift(account: self.account, slug: slug, peerId: peerId, price: price ?? listingPrice)
         |> afterCompleted { [weak self] in
             guard let self else {
                 return
@@ -2754,11 +2816,11 @@ public final class ResaleGiftsContext {
         }
     }
     
-    public func buyStarGift(slug: String, peerId: EnginePeer.Id) -> Signal<Never, BuyStarGiftError> {
+    public func buyStarGift(slug: String, peerId: EnginePeer.Id, price: Int64? = nil) -> Signal<Never, BuyStarGiftError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
             self.impl.with { impl in
-                disposable.set(impl.buyStarGift(slug: slug, peerId: peerId).start(error: { error in
+                disposable.set(impl.buyStarGift(slug: slug, peerId: peerId, price: price).start(error: { error in
                     subscriber.putError(error)
                 }, completed: {
                     subscriber.putCompletion()

@@ -107,6 +107,7 @@ private final class GiftViewSheetContent: CombinedComponent {
         var buyForm: BotPaymentForm?
         var buyFormDisposable: Disposable?
         var buyDisposable: Disposable?
+        var resellTooEarlyTimestamp: Int32?
         
         var inWearPreview = false
         var pendingWear = false
@@ -180,6 +181,14 @@ private final class GiftViewSheetContent: CombinedComponent {
                             }
                             self.buyForm = paymentForm
                             self.updated()
+                        }, error: { [weak self] error in
+                            guard let self else {
+                                return
+                            }
+                            if case let .starGiftResellTooEarly(remaining) = error {
+                                let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                                self.resellTooEarlyTimestamp = currentTime + remaining
+                            }
                         })
                     }
                 } else if case let .generic(gift) = arguments.gift {
@@ -871,7 +880,7 @@ private final class GiftViewSheetContent: CombinedComponent {
                             title = nil
                             text = presentationData.strings.Gift_Send_ErrorUnknown
                         case let .starGiftResellTooEarly(canResaleDate):
-                            let dateString = stringForFullDate(timestamp: canResaleDate, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat)
+                            let dateString = stringForFullDate(timestamp: currentTime + canResaleDate, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat)
                             title = presentationData.strings.Gift_Resale_Unavailable_Title
                             text = presentationData.strings.Gift_Resale_Unavailable_Text(dateString).string
                         }
@@ -1145,19 +1154,37 @@ private final class GiftViewSheetContent: CombinedComponent {
             }
         }
         
-        func commitBuy(skipConfirmation: Bool = false) {
+        func commitBuy(acceptedPrice: Int64? = nil, skipConfirmation: Bool = false) {
             guard let resellStars = self.subject.arguments?.resellStars, let starsContext = self.context.starsContext, let starsState = starsContext.currentState, case let .unique(uniqueGift) = self.subject.arguments?.gift else {
                 return
             }
             
-            let giftTitle = "\(uniqueGift.title) #\(uniqueGift.number)"
-            
             let context = self.context
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            
+            if let resellTooEarlyTimestamp = self.resellTooEarlyTimestamp {
+                guard let controller = self.getController() else {
+                    return
+                }
+                let dateString = stringForFullDate(timestamp: resellTooEarlyTimestamp, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat)
+                let alertController = textAlertController(
+                    context: context,
+                    title: presentationData.strings.Gift_Buy_ErrorTooEarly_Title,
+                    text: presentationData.strings.Gift_Buy_ErrorTooEarly_Text(dateString).string,
+                    actions: [
+                        TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})
+                    ],
+                    parseMarkdown: true
+                )
+                controller.present(alertController, in: .window(.root))
+                return
+            }
+            
+            let giftTitle = "\(uniqueGift.title) #\(uniqueGift.number)"
             let recipientPeerId = self.recipientPeerId ?? self.context.account.peerId
                         
             let action = {
-                let proceed: (Int64) -> Void = { formId in
+                let proceed: () -> Void = {
                     guard let controller = self.getController() as? GiftViewScreen else {
                         return
                     }
@@ -1165,38 +1192,68 @@ private final class GiftViewSheetContent: CombinedComponent {
                     self.inProgress = true
                     self.updated()
                     
-                    let buyGiftImpl: ((String, EnginePeer.Id) -> Signal<Never, BuyStarGiftError>)
+                    let buyGiftImpl: ((String, EnginePeer.Id, Int64?) -> Signal<Never, BuyStarGiftError>)
                     if let buyGift = controller.buyGift {
-                        buyGiftImpl = { slug, peerId in
-                            return buyGift(slug, peerId)
+                        buyGiftImpl = { slug, peerId, price in
+                            return buyGift(slug, peerId, price)
                             |> afterCompleted {
                                 context.starsContext?.load(force: true)
                             }
                         }
                     } else {
-                        buyGiftImpl = { slug, peerId in
-                            return self.context.engine.payments.buyStarGift(slug: slug, peerId: peerId)
+                        buyGiftImpl = { slug, peerId, price in
+                            return self.context.engine.payments.buyStarGift(slug: slug, peerId: peerId, price: price)
                             |> afterCompleted {
                                 context.starsContext?.load(force: true)
                             }
                         }
                     }
                     
-                    self.buyDisposable = (buyGiftImpl(uniqueGift.slug, recipientPeerId)
-                    |> deliverOnMainQueue).start(error: { [weak self] error in
-                        guard let self, let controller = self.getController() else {
-                            return
-                        }
-                        
-                        self.inProgress = false
-                        self.updated()
-                        
-                        let errorText = presentationData.strings.Gift_Send_ErrorUnknown
-                        
-                        let alertController = textAlertController(context: context, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})], parseMarkdown: true)
-                        controller.present(alertController, in: .window(.root))
-                    }, completed: { [weak self, weak starsContext] in
-                        guard let self, let controller = self.getController() as? GiftViewScreen else {
+                    self.buyDisposable = (buyGiftImpl(uniqueGift.slug, recipientPeerId, acceptedPrice ?? resellStars)
+                    |> deliverOnMainQueue).start(
+                        error: { [weak self] error in
+                            guard let self, let controller = self.getController() else {
+                                return
+                            }
+                            
+                            self.inProgress = false
+                            self.updated()
+                            
+                            switch error {
+                            case let .priceChanged(newPrice):
+                                let errorTitle = presentationData.strings.Gift_Buy_ErrorPriceChanged_Title
+                                let originalPriceString = presentationData.strings.Gift_Buy_ErrorPriceChanged_Text_Stars(Int32(resellStars))
+                                let newPriceString = presentationData.strings.Gift_Buy_ErrorPriceChanged_Text_Stars(Int32(newPrice))
+                                let errorText = presentationData.strings.Gift_Buy_ErrorPriceChanged_Text(originalPriceString, newPriceString).string
+                                
+                                let alertController = textAlertController(
+                                    context: context,
+                                    title: errorTitle,
+                                    text: errorText,
+                                    actions: [
+                                        TextAlertAction(type: .defaultAction, title: presentationData.strings.Gift_Buy_Confirm_BuyFor(Int32(newPrice)), action: { [weak self] in
+                                            guard let self else {
+                                                return
+                                            }
+                                            self.commitBuy(acceptedPrice: newPrice, skipConfirmation: true)
+                                        }),
+                                        TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
+                                        })
+                                    ],
+                                    actionLayout: .vertical,
+                                    parseMarkdown: true
+                                )
+                                controller.present(alertController, in: .window(.root))
+
+                                HapticFeedback().error()
+                            default:
+                                let alertController = textAlertController(context: context, title: nil, text: presentationData.strings.Gift_Buy_ErrorUnknown, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})], parseMarkdown: true)
+                                controller.present(alertController, in: .window(.root))
+                            }
+                        },
+                        completed: { [weak self, weak starsContext] in
+                            guard let self,
+                                  let controller = self.getController() as? GiftViewScreen else {
                             return
                         }
                         self.inProgress = false
@@ -1303,7 +1360,7 @@ private final class GiftViewSheetContent: CombinedComponent {
                                                 
                                                 self.commitBuy(skipConfirmation: true)
                                             } else {
-                                                proceed(buyForm.id)
+                                                proceed()
                                             }
                                         });
                                     })
@@ -1312,8 +1369,14 @@ private final class GiftViewSheetContent: CombinedComponent {
                             controller.push(purchaseController)
                         })
                     } else {
-                        proceed(buyForm.id)
+                        proceed()
                     }
+                } else {
+                    guard let controller = self.getController() else {
+                        return
+                    }
+                    let alertController = textAlertController(context: context, title: nil, text: presentationData.strings.Gift_Buy_ErrorUnknown, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})], parseMarkdown: true)
+                    controller.present(alertController, in: .window(.root))
                 }
             }
             
@@ -1321,7 +1384,7 @@ private final class GiftViewSheetContent: CombinedComponent {
                 action()
             } else {
                 let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: recipientPeerId))
-                         |> deliverOnMainQueue).start(next: { [weak self] peer in
+                |> deliverOnMainQueue).start(next: { [weak self] peer in
                     guard let self, let peer else {
                         return
                     }
@@ -3565,7 +3628,7 @@ public class GiftViewScreen: ViewControllerComponentContainer {
     fileprivate let convertToStars: (() -> Void)?
     fileprivate let transferGift: ((Bool, EnginePeer.Id) -> Signal<Never, TransferStarGiftError>)?
     fileprivate let upgradeGift: ((Int64?, Bool) -> Signal<ProfileGiftsContext.State.StarGift, UpgradeStarGiftError>)?
-    fileprivate let buyGift: ((String, EnginePeer.Id) -> Signal<Never, BuyStarGiftError>)?
+    fileprivate let buyGift: ((String, EnginePeer.Id, Int64?) -> Signal<Never, BuyStarGiftError>)?
     fileprivate let updateResellStars: ((Int64?) -> Signal<Never, UpdateStarGiftPriceError>)?
     fileprivate let togglePinnedToTop: ((Bool) -> Bool)?
     fileprivate let shareStory: ((StarGift.UniqueGift) -> Void)?
@@ -3582,7 +3645,7 @@ public class GiftViewScreen: ViewControllerComponentContainer {
         convertToStars: (() -> Void)? = nil,
         transferGift: ((Bool, EnginePeer.Id) -> Signal<Never, TransferStarGiftError>)? = nil,
         upgradeGift: ((Int64?, Bool) -> Signal<ProfileGiftsContext.State.StarGift, UpgradeStarGiftError>)? = nil,
-        buyGift: ((String, EnginePeer.Id) -> Signal<Never, BuyStarGiftError>)? = nil,
+        buyGift: ((String, EnginePeer.Id, Int64?) -> Signal<Never, BuyStarGiftError>)? = nil,
         updateResellStars: ((Int64?) -> Signal<Never, UpdateStarGiftPriceError>)? = nil,
         togglePinnedToTop: ((Bool) -> Bool)? = nil,
         shareStory: ((StarGift.UniqueGift) -> Void)? = nil
