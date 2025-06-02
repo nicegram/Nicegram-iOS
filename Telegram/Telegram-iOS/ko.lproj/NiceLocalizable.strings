@@ -111,9 +111,7 @@
 "Messages.Translate" = "번역";
 "Messages.UndoTranslate" = "번역 취소";
 "Messages.TranslateError" = "죄송합니다. 번역 할 수 없습니다.";
-"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 
-
-";
+"Messages.SelectAllFromUser" = "이 사용자에게서 온 모든 메시지 선택 \n\n";
 "Messages.ToLanguage" = "언어";
 "Messages.ToLanguage.WithCode" = "언어: %@";
 "Messages.TranslateError.ToLanguageNotFound" = "텍스트를 번역할 언어를 결정할 수 없습니다. 수동으로 선택하고 다시 시도하십시오.";
