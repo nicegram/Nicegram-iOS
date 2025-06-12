@@ -460,6 +460,56 @@ open class BlurredBackgroundView: UIView {
 public protocol NavigationBarHeaderView: UIView {
 }
 
+private final class NavigationBackgroundCutoutView: UIView {
+    private let topLayer: SimpleLayer
+    private let rightLayer: SimpleLayer
+    
+    weak var targetNode: ASDisplayNode?
+    
+    override init(frame: CGRect) {
+        self.topLayer = SimpleLayer()
+        self.topLayer.backgroundColor = UIColor.white.cgColor
+        
+        self.rightLayer = SimpleLayer()
+        self.rightLayer.backgroundColor = UIColor.white.cgColor
+        
+        super.init(frame: frame)
+        
+        self.layer.addSublayer(self.topLayer)
+        self.layer.addSublayer(self.rightLayer)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func update(size: CGSize, cutout: CGSize?, transition: ContainedViewLayoutTransition) {
+        let cutout = cutout ?? CGSize()
+        
+        let topFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: cutout.height))
+        let rightFrame = CGRect(origin: CGPoint(x: cutout.width, y: 0.0), size: CGSize(width: max(0.0, size.width - cutout.width), height: size.height))
+        
+        if self.topLayer.frame != topFrame || self.rightLayer.frame != rightFrame {
+            if cutout.width != 0.0 && cutout.height != 0.0 {
+                self.targetNode?.view.mask = self
+                //self.targetNode?.view.addSubview(self)
+            }
+            
+            transition.updateFrame(layer: self.topLayer, frame: topFrame)
+            transition.updateFrame(layer: self.rightLayer, frame: rightFrame, completion: { [weak self] completed in
+                guard let self, completed else {
+                    return
+                }
+                
+                if !(cutout.width != 0.0 && cutout.height != 0.0) {
+                    self.targetNode?.view.mask = nil
+                    //self.removeFromSuperview()
+                }
+            })
+        }
+    }
+}
+
 open class NavigationBar: ASDisplayNode {
     public static var defaultSecondaryContentHeight: CGFloat {
         return 38.0
@@ -491,7 +541,7 @@ open class NavigationBar: ASDisplayNode {
     
     var presentationData: NavigationBarPresentationData
     
-    private var validLayout: (size: CGSize, defaultHeight: CGFloat, additionalTopHeight: CGFloat, additionalContentHeight: CGFloat, additionalBackgroundHeight: CGFloat, leftInset: CGFloat, rightInset: CGFloat, appearsHidden: Bool, isLandscape: Bool)?
+    private var validLayout: (size: CGSize, defaultHeight: CGFloat, additionalTopHeight: CGFloat, additionalContentHeight: CGFloat, additionalBackgroundHeight: CGFloat, additionalCutout: CGSize?, leftInset: CGFloat, rightInset: CGFloat, appearsHidden: Bool, isLandscape: Bool)?
     private var requestedLayout: Bool = false
     var requestContainerLayout: (ContainedViewLayoutTransition) -> Void = { _ in }
     
@@ -836,16 +886,6 @@ open class NavigationBar: ASDisplayNode {
             
             if needsLeftButton {
                 if animated {
-                    if self.leftButtonNode.view.superview != nil {
-                        if let snapshotView = self.leftButtonNode.view.snapshotContentTree() {
-                            snapshotView.frame = self.leftButtonNode.frame
-                            self.leftButtonNode.view.superview?.insertSubview(snapshotView, aboveSubview: self.leftButtonNode.view)
-                            snapshotView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false, completion: { [weak snapshotView] _ in
-                                snapshotView?.removeFromSuperview()
-                            })
-                        }
-                    }
-                    
                     if self.backButtonNode.view.superview != nil {
                         if let snapshotView = self.backButtonNode.view.snapshotContentTree() {
                             snapshotView.frame = self.backButtonNode.frame
@@ -882,9 +922,11 @@ open class NavigationBar: ASDisplayNode {
                 self.badgeNode.removeFromSupernode()
                 
                 if let leftBarButtonItem = item.leftBarButtonItem {
-                    self.leftButtonNode.updateItems([leftBarButtonItem])
+                    self.leftButtonNode.updateItems([], animated: animated)
+                    self.leftButtonNode.updateItems([leftBarButtonItem], animated: animated)
                 } else {
-                    self.leftButtonNode.updateItems([UIBarButtonItem(title: self.presentationData.strings.close, style: .plain, target: nil, action: nil)])
+                    self.leftButtonNode.updateItems([], animated: animated)
+                    self.leftButtonNode.updateItems([UIBarButtonItem(title: self.presentationData.strings.close, style: .plain, target: nil, action: nil)], animated: animated)
                 }
                 
                 if self.leftButtonNode.supernode == nil {
@@ -949,9 +991,6 @@ open class NavigationBar: ASDisplayNode {
         }
         
         self.updateAccessibilityElements()
-        if animated {
-            self.hintAnimateTitleNodeOnNextLayout = true
-        }
     }
     
     private func updateRightButton(animated: Bool) {
@@ -963,22 +1002,13 @@ open class NavigationBar: ASDisplayNode {
                 items = [rightBarButtonItem]
             }
             
+            self.rightButtonNodeUpdated = true
+            
             if !items.isEmpty {
-                if animated, self.rightButtonNode.view.superview != nil {
-                    if let snapshotView = self.rightButtonNode.view.snapshotContentTree() {
-                        snapshotView.frame = self.rightButtonNode.frame
-                        self.rightButtonNode.view.superview?.insertSubview(snapshotView, aboveSubview: self.rightButtonNode.view)
-                        snapshotView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false, completion: { [weak snapshotView] _ in
-                            snapshotView?.removeFromSuperview()
-                        })
-                    }
-                }
-                self.rightButtonNode.updateItems(items)
+                self.rightButtonNode.updateItems([], animated: animated)
+                self.rightButtonNode.updateItems(items, animated: animated)
                 if self.rightButtonNode.supernode == nil {
                     self.buttonsContainerNode.addSubnode(self.rightButtonNode)
-                }
-                if animated {
-                    self.rightButtonNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
                 }
             } else {
                 if animated, self.rightButtonNode.view.superview != nil {
@@ -1005,9 +1035,6 @@ open class NavigationBar: ASDisplayNode {
             self.rightButtonNode.removeFromSupernode()
         }
         
-        if animated {
-            self.hintAnimateTitleNodeOnNextLayout = true
-        }
         self.updateAccessibilityElements()
     }
 
@@ -1017,7 +1044,10 @@ open class NavigationBar: ASDisplayNode {
     public let backButtonArrow: ASImageNode
     public let leftButtonNode: NavigationButtonNode
     public let rightButtonNode: NavigationButtonNode
+    private var rightButtonNodeUpdated: Bool = false
     public let additionalContentNode: SparseNode
+    
+    private let navigationBackgroundCutoutView: NavigationBackgroundCutoutView
 
     public func reattachAdditionalContentNode() {
         if self.additionalContentNode.supernode !== self {
@@ -1144,6 +1174,9 @@ open class NavigationBar: ASDisplayNode {
         
         self.secondaryContentHeight = NavigationBar.defaultSecondaryContentHeight
         
+        self.navigationBackgroundCutoutView = NavigationBackgroundCutoutView(frame: CGRect())
+        self.navigationBackgroundCutoutView.targetNode = self.backgroundNode
+        
         super.init()
 
         self.addSubnode(self.backgroundNode)
@@ -1251,22 +1284,25 @@ open class NavigationBar: ASDisplayNode {
         
         if let validLayout = self.validLayout, self.requestedLayout {
             self.requestedLayout = false
-            self.updateLayout(size: validLayout.size, defaultHeight: validLayout.defaultHeight, additionalTopHeight: validLayout.additionalTopHeight, additionalContentHeight: validLayout.additionalContentHeight, additionalBackgroundHeight: validLayout.additionalBackgroundHeight, leftInset: validLayout.leftInset, rightInset: validLayout.rightInset, appearsHidden: validLayout.appearsHidden, isLandscape: validLayout.isLandscape, transition: .immediate)
+            self.updateLayout(size: validLayout.size, defaultHeight: validLayout.defaultHeight, additionalTopHeight: validLayout.additionalTopHeight, additionalContentHeight: validLayout.additionalContentHeight, additionalBackgroundHeight: validLayout.additionalBackgroundHeight, additionalCutout: validLayout.additionalCutout, leftInset: validLayout.leftInset, rightInset: validLayout.rightInset, appearsHidden: validLayout.appearsHidden, isLandscape: validLayout.isLandscape, transition: .immediate)
         }
     }
     
-    func updateLayout(size: CGSize, defaultHeight: CGFloat, additionalTopHeight: CGFloat, additionalContentHeight: CGFloat, additionalBackgroundHeight: CGFloat, leftInset: CGFloat, rightInset: CGFloat, appearsHidden: Bool, isLandscape: Bool, transition: ContainedViewLayoutTransition) {
+    func updateLayout(size: CGSize, defaultHeight: CGFloat, additionalTopHeight: CGFloat, additionalContentHeight: CGFloat, additionalBackgroundHeight: CGFloat, additionalCutout: CGSize?, leftInset: CGFloat, rightInset: CGFloat, appearsHidden: Bool, isLandscape: Bool, transition: ContainedViewLayoutTransition) {
         if self.layoutSuspended {
             return
         }
         
-        self.validLayout = (size, defaultHeight, additionalTopHeight, additionalContentHeight, additionalBackgroundHeight, leftInset, rightInset, appearsHidden, isLandscape)
+        self.validLayout = (size, defaultHeight, additionalTopHeight, additionalContentHeight, additionalBackgroundHeight, additionalCutout, leftInset, rightInset, appearsHidden, isLandscape)
 
         let backgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: size.width, height: size.height + additionalBackgroundHeight))
         if self.backgroundNode.frame != backgroundFrame {
             transition.updateFrame(node: self.backgroundNode, frame: backgroundFrame)
             self.backgroundNode.update(size: backgroundFrame.size, transition: transition)
+            
+            transition.updateFrame(view: self.navigationBackgroundCutoutView, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
         }
+        self.navigationBackgroundCutoutView.update(size: backgroundFrame.size, cutout: additionalCutout, transition: transition)
         
         let apparentAdditionalHeight: CGFloat = self.secondaryContentNode != nil ? (self.secondaryContentHeight * self.secondaryContentNodeDisplayFraction) : 0.0
         
@@ -1298,7 +1334,7 @@ open class NavigationBar: ASDisplayNode {
             contentNode.updateLayout(size: contentNodeFrame.size, leftInset: leftInset, rightInset: rightInset, transition: transition)
         }
         
-        transition.updateFrame(node: self.stripeNode, frame: CGRect(x: 0.0, y: size.height + additionalBackgroundHeight, width: size.width, height: UIScreenPixel))
+        transition.updateFrame(node: self.stripeNode, frame: CGRect(x: (additionalCutout?.width ?? 0.0), y: size.height + additionalBackgroundHeight, width: size.width - (additionalCutout?.width ?? 0.0), height: UIScreenPixel))
         
         let nominalHeight: CGFloat = defaultHeight
         let contentVerticalOrigin = additionalTopHeight
@@ -1306,7 +1342,7 @@ open class NavigationBar: ASDisplayNode {
         var leftTitleInset: CGFloat = leftInset + 1.0
         var rightTitleInset: CGFloat = rightInset + 1.0
         if self.backButtonNode.supernode != nil {
-            let backButtonSize = self.backButtonNode.updateLayout(constrainedSize: CGSize(width: size.width, height: nominalHeight), isLandscape: isLandscape)
+            let backButtonSize = self.backButtonNode.updateLayout(constrainedSize: CGSize(width: size.width, height: nominalHeight), isLandscape: isLandscape, isLeftAligned: true)
             leftTitleInset = backButtonSize.width + backButtonInset + 1.0
             
             let topHitTestSlop = (nominalHeight - backButtonSize.height) * 0.5
@@ -1358,7 +1394,7 @@ open class NavigationBar: ASDisplayNode {
                 self.badgeNode.alpha = 1.0
             }
         } else if self.leftButtonNode.supernode != nil {
-            let leftButtonSize = self.leftButtonNode.updateLayout(constrainedSize: CGSize(width: size.width, height: nominalHeight), isLandscape: isLandscape)
+            let leftButtonSize = self.leftButtonNode.updateLayout(constrainedSize: CGSize(width: size.width, height: nominalHeight), isLandscape: isLandscape, isLeftAligned: true)
             leftTitleInset = leftButtonSize.width + leftButtonInset + 1.0
             
             var transition = transition
@@ -1375,16 +1411,18 @@ open class NavigationBar: ASDisplayNode {
         transition.updateFrame(node: self.badgeNode, frame: CGRect(origin: backButtonArrowFrame.origin.offsetBy(dx: 16.0, dy: 2.0), size: badgeSize))
         
         if self.rightButtonNode.supernode != nil {
-            let rightButtonSize = self.rightButtonNode.updateLayout(constrainedSize: (CGSize(width: size.width, height: nominalHeight)), isLandscape: isLandscape)
+            let rightButtonSize = self.rightButtonNode.updateLayout(constrainedSize: (CGSize(width: size.width, height: nominalHeight)), isLandscape: isLandscape, isLeftAligned: false)
             rightTitleInset = rightButtonSize.width + leftButtonInset + 1.0
             self.rightButtonNode.alpha = 1.0
             
             var transition = transition
-            if self.rightButtonNode.frame.width.isZero {
+            if self.rightButtonNode.frame.width.isZero || self.rightButtonNodeUpdated {
                 transition = .immediate
             }
+            
             transition.updateFrame(node: self.rightButtonNode, frame: CGRect(origin: CGPoint(x: size.width - leftButtonInset - rightButtonSize.width, y: contentVerticalOrigin + floor((nominalHeight - rightButtonSize.height) / 2.0)), size: rightButtonSize))
         }
+        self.rightButtonNodeUpdated = false
         
         if let transitionState = self.transitionState {
             let progress = transitionState.progress
@@ -1394,7 +1432,7 @@ open class NavigationBar: ASDisplayNode {
                     break
                 case .bottom:
                     if let transitionBackButtonNode = self.transitionBackButtonNode {
-                        let transitionBackButtonSize = transitionBackButtonNode.updateLayout(constrainedSize: CGSize(width: size.width, height: nominalHeight), isLandscape: isLandscape)
+                        let transitionBackButtonSize = transitionBackButtonNode.updateLayout(constrainedSize: CGSize(width: size.width, height: nominalHeight), isLandscape: isLandscape, isLeftAligned: true)
                         let initialX: CGFloat = backButtonInset + size.width * 0.3
                         let finalX: CGFloat = floor((size.width - transitionBackButtonSize.width) / 2.0)
                         
@@ -1539,7 +1577,7 @@ open class NavigationBar: ASDisplayNode {
             node.updateManualText(self.backButtonNode.manualText)
             node.color = accentColor
             if let validLayout = self.validLayout {
-                let _ = node.updateLayout(constrainedSize: CGSize(width: validLayout.size.width, height: validLayout.defaultHeight), isLandscape: validLayout.isLandscape)
+                let _ = node.updateLayout(constrainedSize: CGSize(width: validLayout.size.width, height: validLayout.defaultHeight), isLandscape: validLayout.isLandscape, isLeftAligned: true)
                 node.frame = self.backButtonNode.frame
             }
             return node
@@ -1555,7 +1593,7 @@ open class NavigationBar: ASDisplayNode {
             node.updateManualText(self.backButtonNode.manualText)
             node.color = accentColor
             if let validLayout = self.validLayout {
-                let _ = node.updateLayout(constrainedSize: CGSize(width: validLayout.size.width, height: validLayout.defaultHeight), isLandscape: validLayout.isLandscape)
+                let _ = node.updateLayout(constrainedSize: CGSize(width: validLayout.size.width, height: validLayout.defaultHeight), isLandscape: validLayout.isLandscape, isLeftAligned: true)
                 node.frame = self.backButtonNode.frame
             }
             return node.view
@@ -1575,10 +1613,10 @@ open class NavigationBar: ASDisplayNode {
                     items = [rightBarButtonItem]
                 }
             }
-            node.updateItems(items)
+            node.updateItems(items, animated: false)
             node.color = accentColor
             if let validLayout = self.validLayout {
-                let _ = node.updateLayout(constrainedSize: CGSize(width: validLayout.size.width, height: validLayout.defaultHeight), isLandscape: validLayout.isLandscape)
+                let _ = node.updateLayout(constrainedSize: CGSize(width: validLayout.size.width, height: validLayout.defaultHeight), isLandscape: validLayout.isLandscape, isLeftAligned: false)
                 node.frame = self.backButtonNode.frame
             }
             return node

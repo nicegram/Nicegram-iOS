@@ -85,7 +85,7 @@ private func resolvedPeers(
                 case let .resolvedPeer(_, chats, _):
                     let chat = chats.first
                     switch chat {
-                    case let .channel(_, _, id, accessHash, _, _, photo, _, _, _, _, _, _, _, _,  _, _, _, _, _, _, _):
+                    case let .channel(_, _, id, accessHash, _, _, photo, _, _, _, _, _, _, _, _,  _, _, _, _, _, _, _, _):
                         return getFullChannel(
                             with: context,
                             id: id,
@@ -486,7 +486,7 @@ private extension Api.Chat {
         }
 
         switch self {
-        case let .channel(_, _, id, accessHash, title, username, photo, date, restrictionReason, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _):
+        case let .channel(_, _, id, accessHash, title, username, photo, date, restrictionReason, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _):
             let restriction : [RestrictionPolicy] = restrictionReason?.map { reason -> RestrictionPolicy in
                 switch reason {
                 case let .restrictionReason(platform, reason, text):

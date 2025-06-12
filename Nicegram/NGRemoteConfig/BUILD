@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "@FirebaseSDK//:FirebaseRemoteConfig",
+        "@swiftpkg_firebase_ios_sdk//:FirebaseRemoteConfig",
         "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig",
         "//Nicegram/NGEnv:NGEnv",
     ],

@@ -960,9 +960,11 @@ public let ChatControllerCount = Atomic<Int32>(value: 0)
 
 public final class PeerInfoNavigationSourceTag {
     public let peerId: EnginePeer.Id
+    public let threadId: Int64?
     
-    public init(peerId: EnginePeer.Id) {
+    public init(peerId: EnginePeer.Id, threadId: Int64?) {
         self.peerId = peerId
+        self.threadId = threadId
     }
 }
 
@@ -1025,6 +1027,13 @@ public protocol ChatControllerCustomNavigationPanelNode: ASDisplayNode {
     typealias LayoutResult = ChatControllerCustomNavigationPanelNodeLayoutResult
     
     func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, chatController: ChatController) -> LayoutResult
+}
+
+public enum ChatControllerAnimateInnerChatSwitchDirection {
+    case up
+    case down
+    case left
+    case right
 }
 
 public protocol ChatController: ViewController {
@@ -1177,7 +1186,6 @@ public enum ChatCustomContentsKind: Equatable {
     case quickReplyMessageInput(shortcut: String, shortcutType: ChatQuickReplyShortcutType)
     case businessLinkSetup(link: TelegramBusinessChatLinks.Link)
     case hashTagSearch(publicPosts: Bool)
-    case postSuggestions(price: StarsAmount)
 }
 
 public protocol ChatCustomContentsProtocol: AnyObject {

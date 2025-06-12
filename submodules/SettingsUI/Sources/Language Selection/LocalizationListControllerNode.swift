@@ -534,6 +534,16 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
                     }
                 }
                 
+                // MARK: Nicegram UnofficialLocalizations
+                for info in niceLocalizations {
+                    if existingIds.contains(info.languageCode) {
+                        continue
+                    }
+                    existingIds.insert(info.languageCode)
+                    entries.append(.localization(index: entries.count, info: info, type: .unofficial, selected: info.languageCode == activeLanguageCode, activity: applyingCode == info.languageCode, revealed: revealedCode == info.languageCode, editing: isEditing))
+                }
+                //
+                
                 let availableSavedLocalizations = localizationListState.availableSavedLocalizations.filter({ info in !localizationListState.availableOfficialLocalizations.contains(where: { $0.languageCode == info.languageCode }) })
                 if availableSavedLocalizations.isEmpty {
                     updateCanStartEditing(nil)
@@ -552,15 +562,6 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
                 } else {
                     entries.append(.localizationTitle(text: presentationData.strings.Localization_InterfaceLanguage.uppercased(), section: LanguageListSection.official.rawValue))
                 }
-                // MARK: Nicegram UnofficialLocalizations
-                for info in niceLocalizations {
-                    if existingIds.contains(info.languageCode) {
-                        continue
-                    }
-                    existingIds.insert(info.languageCode)
-                    entries.append(.localization(index: entries.count, info: info, type: .unofficial, selected: info.languageCode == activeLanguageCode, activity: applyingCode == info.languageCode, revealed: revealedCode == info.languageCode, editing: isEditing))
-                }
-                //
                 for info in localizationListState.availableOfficialLocalizations {
                     if existingIds.contains(info.languageCode) {
                         continue
