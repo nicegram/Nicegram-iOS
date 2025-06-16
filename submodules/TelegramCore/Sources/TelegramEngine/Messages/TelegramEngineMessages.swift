@@ -482,13 +482,16 @@ public extension TelegramEngine {
         public func refreshMessageTagStats(peerId: EnginePeer.Id, threadId: Int64?, tags: [EngineMessage.Tags]) -> Signal<Never, NoError> {
             let account = self.account
             return self.account.postbox.transaction { transaction -> (Api.InputPeer?, Api.InputPeer?) in
+                let chatPeer = transaction.getPeer(peerId)
                 var inputSavedPeer: Api.InputPeer?
-                if let threadId = threadId {
+                if let threadId {
                     if peerId == account.peerId {
+                        inputSavedPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer)
+                    } else if let channel = chatPeer as? TelegramChannel, channel.isMonoForum {
                         inputSavedPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer)
                     }
                 }
-                return (transaction.getPeer(peerId).flatMap(apiInputPeer), inputSavedPeer)
+                return (chatPeer.flatMap(apiInputPeer), inputSavedPeer)
             }
             |> mapToSignal { inputPeer, inputSavedPeer -> Signal<Never, NoError> in
                 guard let inputPeer = inputPeer else {
@@ -503,8 +506,8 @@ public extension TelegramEngine {
                     
                     var flags: Int32 = 0
                     var topMsgId: Int32?
-                    if let threadId = threadId {
-                        if peerId == account.peerId {
+                    if let threadId {
+                        if peerId == account.peerId || inputSavedPeer != nil {
                             if inputSavedPeer != nil {
                                 flags |= (1 << 2)
                             }
@@ -747,6 +750,13 @@ public extension TelegramEngine {
                 for peerId in peerIds {
                     _internal_togglePeerUnreadMarkInteractively(transaction: transaction, network: self.account.network, viewTracker: self.account.viewTracker, peerId: peerId, setToValue: setToValue)
                 }
+            }
+            |> ignoreValues
+        }
+        
+        public func togglePeerUnreadMarkInteractively(peerId: EnginePeer.Id, threadId: Int64, setToValue: Bool?) -> Signal<Never, NoError> {
+            return self.account.postbox.transaction { transaction -> Void in
+                _internal_toggleForumThreadUnreadMarkInteractively(transaction: transaction, network: self.account.network, viewTracker: self.account.viewTracker, peerId: peerId, threadId: threadId, setToValue: setToValue)
             }
             |> ignoreValues
         }
@@ -1578,6 +1588,10 @@ public extension TelegramEngine {
                 
                 return filteredResult
             }
+        }
+        
+        public func requestMessageAuthor(id: EngineMessage.Id) -> Signal<EnginePeer?, NoError> {
+            return _internal_requestMessageAuthor(account: self.account, id: id)
         }
     }
 }

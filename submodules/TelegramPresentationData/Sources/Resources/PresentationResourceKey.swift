@@ -341,6 +341,8 @@ public enum PresentationResourceKey: Int32 {
     case expandSmallDownArrowImage
     
     case callListCallIcon
+    
+    case chatFreeNavigateToThreadButtonIcon
 }
 
 public enum ChatExpiredStoryIndicatorType: Hashable {

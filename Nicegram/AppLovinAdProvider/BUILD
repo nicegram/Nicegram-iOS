@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-        "@AppLovin//:AppLovin",
+        "@swiftpkg_applovin_max_swift_package//:AppLovinSDK",
         "@swiftpkg_nicegram_assistant_ios//:NGAiChat",
     ],
     visibility = ["//visibility:public"],

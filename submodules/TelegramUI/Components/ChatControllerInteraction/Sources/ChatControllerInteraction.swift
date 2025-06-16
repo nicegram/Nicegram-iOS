@@ -275,7 +275,6 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public let sendGift: (EnginePeer.Id) -> Void
     public let openUniqueGift: (String) -> Void
     public let openMessageFeeException: () -> Void
-    
     public let requestMessageUpdate: (MessageId, Bool) -> Void
     public let cancelInteractiveKeyboardGestures: () -> Void
     public let dismissTextInput: () -> Void
@@ -285,6 +284,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public let forceUpdateWarpContents: () -> Void
     public let playShakeAnimation:  () -> Void
     public let displayQuickShare: (MessageId, ASDisplayNode, ContextGesture) -> Void
+    public let updateChatLocationThread: (Int64?, ChatControllerAnimateInnerChatSwitchDirection?) -> Void
     
     public var canPlayMedia: Bool = false
     public var hiddenMedia: [MessageId: [Media]] = [:]
@@ -331,6 +331,8 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
             }
         }
     }
+    
+    public var isSidePanelOpen: Bool = false
     
     public init(
         // MARK: Nicegram Translate
@@ -448,6 +450,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         forceUpdateWarpContents: @escaping () -> Void,
         playShakeAnimation: @escaping () -> Void,
         displayQuickShare: @escaping (MessageId, ASDisplayNode, ContextGesture) -> Void,
+        updateChatLocationThread: @escaping (Int64?, ChatControllerAnimateInnerChatSwitchDirection?) -> Void,
         automaticMediaDownloadSettings: MediaAutoDownloadSettings,
         pollActionState: ChatInterfacePollActionState,
         stickerSettings: ChatInterfaceStickerSettings,
@@ -569,6 +572,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         self.forceUpdateWarpContents = forceUpdateWarpContents
         self.playShakeAnimation = playShakeAnimation
         self.displayQuickShare = displayQuickShare
+        self.updateChatLocationThread = updateChatLocationThread
         
         self.automaticMediaDownloadSettings = automaticMediaDownloadSettings
         

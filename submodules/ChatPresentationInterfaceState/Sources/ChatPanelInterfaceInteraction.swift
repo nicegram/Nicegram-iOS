@@ -144,7 +144,6 @@ public final class ChatPanelInterfaceInteraction {
     public let updateInputLanguage: (@escaping (String?) -> String?) -> Void
     public let unarchiveChat: () -> Void
     public let openLinkEditing: () -> Void
-    public let reportPeerIrrelevantGeoLocation: () -> Void
     public let displaySlowmodeTooltip: (UIView, CGRect) -> Void
     public let displaySendMessageOptions: (ASDisplayNode, ContextGesture) -> Void
     public let openScheduledMessages: () -> Void
@@ -179,9 +178,12 @@ public final class ChatPanelInterfaceInteraction {
     public let openStarsPurchase: (Int64?) -> Void
     public let openMessagePayment: () -> Void
     public let updateHistoryFilter: ((ChatPresentationInterfaceState.HistoryFilter?) -> ChatPresentationInterfaceState.HistoryFilter?) -> Void
+    public let updateChatLocationThread: (Int64?, ChatControllerAnimateInnerChatSwitchDirection?) -> Void
+    public let toggleChatSidebarMode: () -> Void
     public let updateDisplayHistoryFilterAsList: (Bool) -> Void
     public let openBoostToUnrestrict: () -> Void
-    public let updateVideoTrimRange: (Double, Double, Bool, Bool) -> Void
+    public let updateRecordingTrimRange: (Double, Double, Bool, Bool) -> Void
+    public let dismissAllTooltips: () -> Void
     public let requestLayout: (ContainedViewLayoutTransition) -> Void
     public let chatController: () -> ViewController?
     public let statuses: ChatPanelInterfaceInteractionStatuses?
@@ -269,7 +271,6 @@ public final class ChatPanelInterfaceInteraction {
         updateInputLanguage: @escaping ((String?) -> String?) -> Void,
         unarchiveChat: @escaping () -> Void,
         openLinkEditing: @escaping () -> Void,
-        reportPeerIrrelevantGeoLocation: @escaping () -> Void,
         displaySlowmodeTooltip: @escaping (UIView, CGRect) -> Void,
         displaySendMessageOptions: @escaping (ASDisplayNode, ContextGesture) -> Void,
         openScheduledMessages: @escaping () -> Void,
@@ -304,8 +305,11 @@ public final class ChatPanelInterfaceInteraction {
         openStarsPurchase: @escaping (Int64?) -> Void,
         openMessagePayment: @escaping () -> Void,
         openBoostToUnrestrict: @escaping () -> Void,
-        updateVideoTrimRange: @escaping (Double, Double, Bool, Bool) -> Void,
+        updateRecordingTrimRange: @escaping (Double, Double, Bool, Bool) -> Void,
+        dismissAllTooltips: @escaping () -> Void,
         updateHistoryFilter: @escaping ((ChatPresentationInterfaceState.HistoryFilter?) -> ChatPresentationInterfaceState.HistoryFilter?) -> Void,
+        updateChatLocationThread: @escaping (Int64?, ChatControllerAnimateInnerChatSwitchDirection?) -> Void,
+        toggleChatSidebarMode: @escaping () -> Void,
         updateDisplayHistoryFilterAsList: @escaping (Bool) -> Void,
         requestLayout: @escaping (ContainedViewLayoutTransition) -> Void,
         chatController: @escaping () -> ViewController?,
@@ -393,7 +397,6 @@ public final class ChatPanelInterfaceInteraction {
         self.updateInputLanguage = updateInputLanguage
         self.unarchiveChat = unarchiveChat
         self.openLinkEditing = openLinkEditing
-        self.reportPeerIrrelevantGeoLocation = reportPeerIrrelevantGeoLocation
         self.displaySlowmodeTooltip = displaySlowmodeTooltip
         self.displaySendMessageOptions = displaySendMessageOptions
         self.openScheduledMessages = openScheduledMessages
@@ -428,8 +431,11 @@ public final class ChatPanelInterfaceInteraction {
         self.openStarsPurchase = openStarsPurchase
         self.openMessagePayment = openMessagePayment
         self.openBoostToUnrestrict = openBoostToUnrestrict
-        self.updateVideoTrimRange = updateVideoTrimRange
+        self.updateRecordingTrimRange = updateRecordingTrimRange
+        self.dismissAllTooltips = dismissAllTooltips
         self.updateHistoryFilter = updateHistoryFilter
+        self.updateChatLocationThread = updateChatLocationThread
+        self.toggleChatSidebarMode = toggleChatSidebarMode
         self.updateDisplayHistoryFilterAsList = updateDisplayHistoryFilterAsList
         self.requestLayout = requestLayout
 
@@ -522,8 +528,8 @@ public final class ChatPanelInterfaceInteraction {
         }, requestStopPollInMessage: { _ in
         }, updateInputLanguage: { _ in
         }, unarchiveChat: {
-        }, openLinkEditing: openLinkEditing, reportPeerIrrelevantGeoLocation: {
-        }, displaySlowmodeTooltip: { _, _ in
+        }, openLinkEditing: openLinkEditing,
+        displaySlowmodeTooltip: { _, _ in
         }, displaySendMessageOptions: { _, _ in
         }, openScheduledMessages: {
         }, openPeersNearby: {
@@ -557,8 +563,11 @@ public final class ChatPanelInterfaceInteraction {
         }, openStarsPurchase: { _ in
         }, openMessagePayment: {
         }, openBoostToUnrestrict: {
-        }, updateVideoTrimRange: { _, _, _, _ in
+        }, updateRecordingTrimRange: { _, _, _, _ in
+        }, dismissAllTooltips: {
         }, updateHistoryFilter: { _ in
+        }, updateChatLocationThread: { _, _ in
+        }, toggleChatSidebarMode: {
         }, updateDisplayHistoryFilterAsList: { _ in
         }, requestLayout: { _ in
         }, chatController: {

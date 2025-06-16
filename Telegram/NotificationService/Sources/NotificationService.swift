@@ -1715,7 +1715,11 @@ private final class NotificationServiceHandler {
                                         var content = initialContent
                                         
                                         if let interactionAuthorId = interactionAuthorId {
-                                            if inAppNotificationSettings.displayNameOnLockscreen, let peer = transaction.getPeer(interactionAuthorId) {
+                                            if inAppNotificationSettings.displayNameOnLockscreen, var peer = transaction.getPeer(interactionAuthorId) {
+                                                if let channel = peer as? TelegramChannel, channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) {
+                                                    peer = mainChannel
+                                                }
+                                                
                                                 var foundLocalId: String?
                                                 transaction.enumerateDeviceContactImportInfoItems({ _, value in
                                                     if let value = value as? TelegramDeviceContactImportedData {
@@ -1766,7 +1770,7 @@ private final class NotificationServiceHandler {
                                     |> mapToSignal { content, _ -> Signal<(NotificationContent, Media?), NoError> in
                                         return stateManager.postbox.transaction { transaction -> (NotificationContent, Media?) in
                                             var parsedMedia: Media?
-                                            if let messageId, let message = transaction.getMessage(messageId), !message.containsSecretMedia {
+                                            if let messageId, let message = transaction.getMessage(messageId), !message.containsSecretMedia, !message.attributes.contains(where: { $0 is MediaSpoilerMessageAttribute }) {
                                                 if let media = message.media.first {
                                                     parsedMedia = media
                                                 }
@@ -2029,7 +2033,11 @@ private final class NotificationServiceHandler {
                                         var content = initialContent
                                         
                                         if let interactionAuthorId = interactionAuthorId {
-                                            if inAppNotificationSettings.displayNameOnLockscreen, let peer = transaction.getPeer(interactionAuthorId) {
+                                            if inAppNotificationSettings.displayNameOnLockscreen, var peer = transaction.getPeer(interactionAuthorId) {
+                                                if let channel = peer as? TelegramChannel, channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) {
+                                                    peer = mainChannel
+                                                }
+                                                
                                                 var foundLocalId: String?
                                                 transaction.enumerateDeviceContactImportInfoItems({ _, value in
                                                     if let value = value as? TelegramDeviceContactImportedData {

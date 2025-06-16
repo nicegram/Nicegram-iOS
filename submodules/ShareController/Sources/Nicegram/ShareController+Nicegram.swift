@@ -7,7 +7,7 @@ public func shareController(
     text: String,
     context: AccountContext
 ) async -> ShareController {
-    let media = await prepareImage(image: image, context: context)
+    let media = try? await prepareImage(image: image, context: context)
     
     let subject: ShareControllerSubject
     if let media {
@@ -25,7 +25,7 @@ public func shareController(
 private func prepareImage(
     image: UIImage?,
     context: AccountContext
-) async -> AnyMediaReference? {
+) async throws -> AnyMediaReference? {
     guard let image else {
         return nil
     }
@@ -42,7 +42,7 @@ private func prepareImage(
     if let scaledImage = scalePhotoImage(image, dimensions: dimensions),
        let imageData = scaledImage.jpegData(compressionQuality: 0.52) {
         let stream = standaloneUploadedImage(postbox: postbox, network: network, peerId: peerId, text: "", data: imageData, dimensions: PixelDimensions(dimensions)).asyncStream(.bufferingNewest(1))
-        for await event in stream {
+        for try await event in stream {
             if case let .result(result) = event,
                case let .media(media) = result {
                 return media
