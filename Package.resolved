@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/AppLovin/AppLovin-MAX-Swift-Package.git",
       "state" : {
-        "revision" : "cc8053e2a35f74a6780258a6474175488cea63b2",
-        "version" : "13.3.0"
+        "revision" : "c184b428415a05dcad488c6834e0bd02fe1d8f3e",
+        "version" : "13.3.1"
       }
     },
     {
@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "db78a9f1da45726c88178e2fed16b78b14d2d0b1"
+        "branch" : "feat/adsgram",
+        "revision" : "d43967899ee645c4aa1b3b0818a53c7691cbe72e"
       }
     },
     {
@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "664a7ae794277be591cc936bc06071ddfbd46a37"
+        "branch" : "feat/adsgram",
+        "revision" : "3ee3092dc30368cc82208bcb041963528bada31a"
       }
     },
     {

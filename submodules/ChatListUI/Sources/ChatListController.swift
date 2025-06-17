@@ -3,7 +3,10 @@ import UIKit
 import Postbox
 // MARK: Nicegram Imports
 import class Combine.CurrentValueSubject
+import Factory
+import FeatAdsgram
 import FeatAssistant
+import FeatChatListWidget
 import FeatPinnedChats
 import NGAiChat
 import NGAiChatUI
@@ -111,6 +114,15 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
 
 public class ChatListControllerImpl: TelegramBaseController, ChatListController {
     private var validLayout: ContainerViewLayout?
+    
+    // MARK: Nicegram, ChatListWidget
+    @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
+    private var chatListWidgetViewModel
+    
+    private var adsgramPinViewModel: AdsgramPinViewModel {
+        chatListWidgetViewModel.adsgramPinViewModel
+    }
+    //
     
     public let context: AccountContext
     private let controlsHistoryPreload: Bool
@@ -873,7 +885,46 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
 //
+
+        // MARK: Nicegram Adsgram
+        loadAdsgramWebview()
+        //
     }
+    
+    // MARK: Nicegram Adsgram
+    private func loadAdsgramWebview() {
+        Task {
+            let getSettingsUseCase = AdsgramModule.shared.getSettingsUseCase()
+            let settings = await getSettingsUseCase()
+            guard settings.showPin else { return }
+            
+            let getConfigUseCase = AdsgramModule.shared.getConfigUseCase()
+            let config = getConfigUseCase()
+            
+            let botId = PeerId(
+                namespace: Namespaces.Peer.CloudUser,
+                id: ._internalFromInt64Value(config.miniAppBotId)
+            )
+            
+            let result = try await context.engine.messages
+                .requestAppWebView(
+                    peerId: botId,
+                    appReference: .shortName(
+                        peerId: botId,
+                        shortName: config.miniAppShortName
+                    ),
+                    payload: nil,
+                    themeParams: generateWebAppThemeParams(presentationData.theme),
+                    compact: false,
+                    fullscreen: false,
+                    allowWrite: false
+                )
+                .awaitForFirstValue()
+            
+            adsgramPinViewModel.load(url: result.url)
+        }
+    }
+    //
 
     required public init(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -2944,6 +2995,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private func updateChatListNode(isVisible: Bool) {
         let oldIsVisible = self.chatListNicegramData.isChatListVisible.value
         self.chatListNicegramData.isChatListVisible.value = isVisible
+        
+        self.chatListWidgetViewModel.set(isViewVisible: isVisible)
         
         if isVisible, !oldIsVisible {
             chatListDisplayNode.effectiveContainerNode.currentItemNode.forEachItemNode { itemNode in

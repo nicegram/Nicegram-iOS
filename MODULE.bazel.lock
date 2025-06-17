@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "V9tRcQ3AK7P1jDrn2k5EHNBV7xfGu3salKbbaCfjesg=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "3731ccfd79bbee2036be7bfac76ab7dd5a4856d46bf37a8e11539e32b3d0b36d"
+          "@@//Package.resolved": "dd2803fabdc34e4b4bd2f114ea0db630634acb95a48cc83939268130f5570d13"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -515,9 +515,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_applovin_max_swift_package",
-              "commit": "cc8053e2a35f74a6780258a6474175488cea63b2",
+              "commit": "c184b428415a05dcad488c6834e0bd02fe1d8f3e",
               "remote": "https://github.com/AppLovin/AppLovin-MAX-Swift-Package.git",
-              "version": "13.3.0",
+              "version": "13.3.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "db78a9f1da45726c88178e2fed16b78b14d2d0b1",
+              "commit": "d43967899ee645c4aa1b3b0818a53c7691cbe72e",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -569,7 +569,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "664a7ae794277be591cc936bc06071ddfbd46a37",
+              "commit": "3ee3092dc30368cc82208bcb041963528bada31a",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,
