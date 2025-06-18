@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     deps = [
-		"@swiftpkg_firebase_ios_sdk//:FirebaseAnalytics",
+		"@FirebaseSDK//:FirebaseAnalytics",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
         "//submodules/TelegramCore:TelegramCore",
 		"@swiftpkg_nicegram_assistant_ios//:NGAnalytics",

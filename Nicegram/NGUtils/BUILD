@@ -9,7 +9,7 @@ swift_library(
     deps = [
         "//submodules/AccountContext:AccountContext",
         "//submodules/ItemListUI:ItemListUI",
-        "@swiftpkg_firebase_ios_sdk//:FirebaseAnalytics",
+        "@FirebaseSDK//:FirebaseAnalytics",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
         "@swiftpkg_nicegram_assistant_ios//:NGAnalytics",

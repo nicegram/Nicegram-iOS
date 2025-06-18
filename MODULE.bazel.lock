@@ -506,52 +506,16 @@
         "bzlTransitiveDigest": "V9tRcQ3AK7P1jDrn2k5EHNBV7xfGu3salKbbaCfjesg=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "dd2803fabdc34e4b4bd2f114ea0db630634acb95a48cc83939268130f5570d13"
+          "@@//Package.resolved": "0a4d9f8c00c4e3e028bbef961c65162cc0d573346c5cf7c262a082bda3ed6a41"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
         "generatedRepoSpecs": {
-          "swiftpkg_applovin_max_swift_package": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_applovin_max_swift_package",
-              "commit": "c184b428415a05dcad488c6834e0bd02fe1d8f3e",
-              "remote": "https://github.com/AppLovin/AppLovin-MAX-Swift-Package.git",
-              "version": "13.3.1",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_firebase_ios_sdk": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_firebase_ios_sdk",
-              "commit": "45d327fcbe7793747295346c2209ad419bdead74",
-              "remote": "https://github.com/firebase/firebase-ios-sdk.git",
-              "version": "11.14.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_nicegram_assistant_ios": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "d43967899ee645c4aa1b3b0818a53c7691cbe72e",
+              "commit": "db78a9f1da45726c88178e2fed16b78b14d2d0b1",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -569,45 +533,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "3ee3092dc30368cc82208bcb041963528bada31a",
+              "commit": "a6e5c6b150480bb330e2625486ae861c4f8fed1a",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_abseil_cpp_binary": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_abseil_cpp_binary",
-              "commit": "bbe8b69694d7873315fd3a4ad41efe043e1c07c5",
-              "remote": "https://github.com/google/abseil-cpp-binary.git",
-              "version": "1.2024072200.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_app_check": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_app_check",
-              "commit": "61b85103a1aeed8218f17c794687781505fbbef5",
-              "remote": "https://github.com/google/app-check.git",
-              "version": "11.2.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -781,78 +709,6 @@
               "patches": []
             }
           },
-          "swiftpkg_google_ads_on_device_conversion_ios_sdk": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_google_ads_on_device_conversion_ios_sdk",
-              "commit": "70a7857886f065a40486a7607268781c49db04ae",
-              "remote": "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
-              "version": "2.0.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_googleappmeasurement": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_googleappmeasurement",
-              "commit": "406f72d0d5e9445fd1cf782db3e9e338cee2bed4",
-              "remote": "https://github.com/google/GoogleAppMeasurement.git",
-              "version": "11.14.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_googledatatransport": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_googledatatransport",
-              "commit": "617af071af9aa1d6a091d59a202910ac482128f9",
-              "remote": "https://github.com/google/GoogleDataTransport.git",
-              "version": "10.1.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_googleutilities": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_googleutilities",
-              "commit": "60da361632d0de02786f709bdc0c4df340f7613e",
-              "remote": "https://github.com/google/GoogleUtilities.git",
-              "version": "8.1.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_grdb.swift": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -860,60 +716,6 @@
               "commit": "156d630c7a4175ddf4d529244f4672428cc6e2fc",
               "remote": "https://github.com/denis15yo/GRDB.swift.git",
               "version": "",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_grpc_binary": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_grpc_binary",
-              "commit": "cc0001a0cf963aa40501d9c2b181e7fc9fd8ec71",
-              "remote": "https://github.com/google/grpc-binary.git",
-              "version": "1.69.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_gtm_session_fetcher": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_gtm_session_fetcher",
-              "commit": "c756a29784521063b6a1202907e2cc47f41b667c",
-              "remote": "https://github.com/google/gtm-session-fetcher.git",
-              "version": "4.5.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_interop_ios_for_google_sdks": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_interop_ios_for_google_sdks",
-              "commit": "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
-              "remote": "https://github.com/google/interop-ios-for-google-sdks.git",
-              "version": "101.0.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -943,24 +745,6 @@
               "patches": []
             }
           },
-          "swiftpkg_leveldb": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_leveldb",
-              "commit": "a0bc79961d7be727d258d33d5a6b2f1023270ba1",
-              "remote": "https://github.com/firebase/leveldb.git",
-              "version": "1.22.5",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_lnextensionexecutor": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -968,24 +752,6 @@
               "commit": "c0226dcd7d653d4c22dd16ccd72619c86b610c2d",
               "remote": "https://github.com/LeoNatan/LNExtensionExecutor",
               "version": "1.3.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_nanopb": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_nanopb",
-              "commit": "b7e1104502eca3a213b46303391ca4d3bc8ddec1",
-              "remote": "https://github.com/firebase/nanopb.git",
-              "version": "2.30910.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1022,24 +788,6 @@
               "commit": "2849f5323265386e200484b0d0f896e73c3411b9",
               "remote": "https://github.com/gonzalezreal/NetworkImage",
               "version": "6.0.1",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
-          "swiftpkg_promises": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_promises",
-              "commit": "540318ecedd63d883069ae7f1ed811a2df00b6ac",
-              "remote": "https://github.com/google/promises.git",
-              "version": "2.4.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1375,24 +1123,6 @@
               "patches": []
             }
           },
-          "swiftpkg_swift_protobuf": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_swift_protobuf",
-              "commit": "102a647b573f60f73afdce5613a51d71349fe507",
-              "remote": "https://github.com/apple/swift-protobuf.git",
-              "version": "1.30.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_swift_qrcode_generator": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -1648,8 +1378,6 @@
         },
         "moduleExtensionMetadata": {
           "explicitRootModuleDirectDeps": [
-            "swiftpkg_applovin_max_swift_package",
-            "swiftpkg_firebase_ios_sdk",
             "swiftpkg_nicegram_assistant_ios",
             "swiftpkg_nicegram_wallet_ios"
           ],

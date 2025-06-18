@@ -8,7 +8,6 @@ public class AppLovinAdProvider: NSObject {
     
     //  MARK: - Dependencies
     
-    private let apiKey: String
     private let ad: MARewardedAd
     private let sdk: ALSdk
     private let userRepository: UserRepository
@@ -21,12 +20,11 @@ public class AppLovinAdProvider: NSObject {
     //  MARK: - Lifecycle
     
     public init(apiKey: String, adUnitIdentifier: String, userRepository: UserRepository) {
-        self.apiKey = apiKey
-        
-        let sdk = ALSdk.shared()
+        let sdk = ALSdk.shared(withKey: apiKey)!
         
         self.ad = MARewardedAd.shared(
-            withAdUnitIdentifier: adUnitIdentifier
+            withAdUnitIdentifier: adUnitIdentifier,
+            sdk: sdk
         )
         self.sdk = sdk
         self.userRepository = userRepository
@@ -40,10 +38,8 @@ public class AppLovinAdProvider: NSObject {
 @available(iOS 13.0.0, *)
 extension AppLovinAdProvider: AdProvider {
     public func initialize() {
-        let config = ALSdkInitializationConfiguration(sdkKey: apiKey) { builder in
-            builder.mediationProvider = ALMediationProviderMAX
-        }
-        sdk.initialize(with: config)
+        sdk.mediationProvider = "max"
+        sdk.initializeSdk()
     }
     
     public func showAd() async -> ShowAdResult {
@@ -157,5 +153,3 @@ private struct CustomDataDTO: Encodable {
     let ad_view_id: String
     let user_token: String?
 }
-
-
