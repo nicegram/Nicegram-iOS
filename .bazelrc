@@ -21,6 +21,3 @@ build --spawn_strategy=standalone
 
 build --strategy=SwiftCompile=standalone
 build --define RULES_SWIFT_BUILD_DUMMY_WORKER=1
-
-common --enable_workspace
-common --noincompatible_disallow_empty_glob

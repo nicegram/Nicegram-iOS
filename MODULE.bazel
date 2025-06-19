@@ -78,6 +78,8 @@ swift_deps.from_package(
 )
 use_repo(
     swift_deps,
+    "swiftpkg_applovin_max_swift_package",
+    "swiftpkg_firebase_ios_sdk",
     "swiftpkg_nicegram_assistant_ios",
     "swiftpkg_nicegram_wallet_ios",
 )

@@ -5,7 +5,7 @@
 "NSLocationAlwaysAndWhenInUseUsageDescription" = "When you choose to share your Live Location with friends in a chat, Nicegram needs background access to your location to keep them updated for the duration of the live sharing.";
 "NSLocationAlwaysUsageDescription" = "When you choose to share your live location with friends in a chat, Nicegram needs background access to your location to keep them updated for the duration of the live sharing. You also need this to send locations from an Apple Watch.";
 "NSCameraUsageDescription" = "We need this so that you can take and share photos and videos, as well as make video calls.";
-"NSPhotoLibraryUsageDescription" = "We need this so that you can share photos and videos from your photo library.";
+"NSPhotoLibraryUsageDescription" = "We use access to your photo library so you can attach and send photos and videos from your device in chats.";
 "NSPhotoLibraryAddUsageDescription" = "We need this so that you can save photos and videos to your photo library.";
 "NSMicrophoneUsageDescription" = "We need this so that you can record and share voice messages and videos with sound.";
 "NSSiriUsageDescription" = "You can use Siri to send messages.";
