@@ -2027,9 +2027,9 @@ plist_fragment(
     <key>NSMotionUsageDescription</key>
     <string>When you send your location to your friends, Nicegram needs access to show them a map.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>We need this so that you can share photos and videos from your photo library.</string>
+    <string>We use access to your photo library so you can attach and send photos and videos from your device in chats.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>We need this so that you can share photos and videos from your photo library.</string>
+    <string>We use access to your photo library so you can attach and send photos and videos from your device in chats.</string>
     <key>NSSiriUsageDescription</key>
     <string>You can use Siri to send messages.</string>
     <key>NSSpeechRecognitionUsageDescription</key>

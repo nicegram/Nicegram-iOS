@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/AppLovin/AppLovin-MAX-Swift-Package.git",
       "state" : {
-        "revision" : "cc8053e2a35f74a6780258a6474175488cea63b2",
-        "version" : "13.3.0"
+        "revision" : "1939e7903783a0991acf0abab9b16697a08b73ca",
+        "version" : "13.2.0"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
       "state" : {
-        "revision" : "70a7857886f065a40486a7607268781c49db04ae",
-        "version" : "2.0.0"
+        "revision" : "428d8bb138e00f9a3f4f61cc6cd8863607524f65",
+        "version" : "2.1.0"
       }
     },
     {
@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "664a7ae794277be591cc936bc06071ddfbd46a37"
+        "revision" : "a6e5c6b150480bb330e2625486ae861c4f8fed1a"
       }
     },
     {

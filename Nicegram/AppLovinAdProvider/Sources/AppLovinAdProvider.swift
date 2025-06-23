@@ -3,7 +3,6 @@ import NGAiChat
 import NGCore
 import NGRepoUser
 
-@available(iOS 13.0.0, *)
 public class AppLovinAdProvider: NSObject {
     
     //  MARK: - Dependencies
@@ -37,7 +36,6 @@ public class AppLovinAdProvider: NSObject {
     }
 }
 
-@available(iOS 13.0.0, *)
 extension AppLovinAdProvider: AdProvider {
     public func initialize() {
         let config = ALSdkInitializationConfiguration(sdkKey: apiKey) { builder in
@@ -57,7 +55,6 @@ extension AppLovinAdProvider: AdProvider {
 
 //  MARK: - Private Functions
 
-@available(iOS 13.0.0, *)
 private extension AppLovinAdProvider {
     func showAd(completion: @escaping (ShowAdResult) -> Void) {
         self.showAdCompletion = completion
@@ -157,5 +154,3 @@ private struct CustomDataDTO: Encodable {
     let ad_view_id: String
     let user_token: String?
 }
-
-
