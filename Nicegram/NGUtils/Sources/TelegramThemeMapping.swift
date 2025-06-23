@@ -16,6 +16,7 @@ public extension TelegramBridge.TelegramTheme {
                 itemHighlightedBackgroundColor: chatList.itemHighlightedBackgroundColor,
                 messageTextColor: chatList.messageTextColor,
                 messageTextFont: Font.regular(floor(presentationData.listsFontSize.itemListBaseFontSize * 15.0 / 17.0)),
+                pinnedItemBackgroundColor: chatList.pinnedItemBackgroundColor,
                 titleColor: chatList.titleColor,
                 titleFont: Font.medium(floor(presentationData.listsFontSize.itemListBaseFontSize * 16.0 / 17.0))
             ),
