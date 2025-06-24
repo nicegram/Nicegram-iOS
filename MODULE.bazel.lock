@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "V9tRcQ3AK7P1jDrn2k5EHNBV7xfGu3salKbbaCfjesg=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "729c230e4445784d47a82775900199b0deadbc90988323b4b7ebdeab915e62c4"
+          "@@//Package.resolved": "5bbcd4ad39744a4a9a8049203035c7c7e7cbb1336b7319696907b8258e332043"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -533,9 +533,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_firebase_ios_sdk",
-              "commit": "45d327fcbe7793747295346c2209ad419bdead74",
+              "commit": "fdc352fabaf5916e7faa1f96ad02b1957e93e5a5",
               "remote": "https://github.com/firebase/firebase-ios-sdk.git",
-              "version": "11.14.0",
+              "version": "11.15.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "f2f2395b3f9e7f5f3ebf326a5f7aa32c49d0b0bc",
+              "commit": "4c9c19a68010313f4e64377f4e8e3171edd62ab2",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -803,9 +803,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_googleappmeasurement",
-              "commit": "406f72d0d5e9445fd1cf782db3e9e338cee2bed4",
+              "commit": "45ce435e9406d3c674dd249a042b932bee006f60",
               "remote": "https://github.com/google/GoogleAppMeasurement.git",
-              "version": "11.14.0",
+              "version": "11.15.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

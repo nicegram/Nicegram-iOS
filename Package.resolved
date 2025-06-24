@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "45d327fcbe7793747295346c2209ad419bdead74",
-        "version" : "11.14.0"
+        "revision" : "fdc352fabaf5916e7faa1f96ad02b1957e93e5a5",
+        "version" : "11.15.0"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "406f72d0d5e9445fd1cf782db3e9e338cee2bed4",
-        "version" : "11.14.0"
+        "revision" : "45ce435e9406d3c674dd249a042b932bee006f60",
+        "version" : "11.15.0"
       }
     },
     {
@@ -249,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/adsgram",
-        "revision" : "f2f2395b3f9e7f5f3ebf326a5f7aa32c49d0b0bc"
+        "revision" : "4c9c19a68010313f4e64377f4e8e3171edd62ab2"
       }
     },
     {

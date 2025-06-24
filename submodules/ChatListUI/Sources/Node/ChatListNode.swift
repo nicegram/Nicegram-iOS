@@ -2505,13 +2505,15 @@ public final class ChatListNode: ListView {
             // MARK: Nicegram PinnedChats
             var nicegramItems = nicegramItems
             var nicegramWidgetHeight = nicegramWidgetHeight
-            if filter != nil {
-                nicegramItems = nicegramItems.filter { item in
-                    item.chat.showInAllFolders
+            if case let .chatList(group) = location,
+               group == .root {
+                if filter != nil {
+                    nicegramItems = nicegramItems.filter { item in
+                        item.chat.showInAllFolders
+                    }
+                    nicegramWidgetHeight = 0
                 }
-                nicegramWidgetHeight = 0
-            }
-            if case .forum(_) = location {
+            } else {
                 nicegramItems = []
                 nicegramWidgetHeight = 0
             }

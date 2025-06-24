@@ -118,10 +118,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     // MARK: Nicegram, ChatListWidget
     @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
     private var chatListWidgetViewModel
-    
-    private var adsgramPinViewModel: AdsgramPinViewModel {
-        chatListWidgetViewModel.adsgramPinViewModel
-    }
     //
     
     public let context: AccountContext
@@ -885,67 +881,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
 //
-
-        // MARK: Nicegram Adsgram
-        loadAdsgramWebview()
-        //
     }
-    
-    // MARK: Nicegram Adsgram
-    private func loadAdsgramWebview() {
-        Task {
-            let getSettingsUseCase = AdsgramModule.shared.getSettingsUseCase()
-            let settings = await getSettingsUseCase()
-            guard settings.showPin else { return }
-            
-            let getConfigUseCase = AdsgramModule.shared.getConfigUseCase()
-            let config = getConfigUseCase()
-            
-            let botId = PeerId(
-                namespace: Namespaces.Peer.CloudUser,
-                id: ._internalFromInt64Value(config.miniAppBotId)
-            )
-            
-            // 'requestAppWebView' method expects that the peer is already loaded
-            try await loadPeerIfNeeded(
-                username: config.miniAppBotUsername
-            )
-            
-            let result = try await context.engine.messages
-                .requestAppWebView(
-                    peerId: botId,
-                    appReference: .shortName(
-                        peerId: botId,
-                        shortName: config.miniAppShortName
-                    ),
-                    payload: nil,
-                    themeParams: generateWebAppThemeParams(presentationData.theme),
-                    compact: false,
-                    fullscreen: false,
-                    allowWrite: false
-                )
-                .awaitForFirstValue()
-            
-            adsgramPinViewModel.load(url: result.url)
-        }
-    }
-    
-    private func loadPeerIfNeeded(username: String) async throws {
-        let signal = context.engine.peers.resolvePeerByName(
-            name: username,
-            referrer: nil,
-            ageLimit: Int32(30 * .day)
-        )
-        |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
-            guard case let .result(result) = result else {
-                return .complete()
-            }
-            return .single(result)
-        }
-        
-        _ = try await signal.awaitForFirstValue()
-    }
-    //
 
     required public init(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
