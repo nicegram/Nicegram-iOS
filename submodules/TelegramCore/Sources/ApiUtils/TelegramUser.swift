@@ -23,7 +23,7 @@ func parsedTelegramProfilePhoto(_ photo: Api.UserProfilePhoto) -> [TelegramMedia
     return representations
 }
 
-extension TelegramPeerUsername {
+public extension TelegramPeerUsername {
     init(apiUsername: Api.Username) {
         switch apiUsername {
         case let .username(flags, username):
@@ -46,7 +46,7 @@ extension PeerVerification {
 }
 
 
-extension TelegramUser {
+public extension TelegramUser {
     convenience init(user: Api.User) {
         switch user {
         case let .user(flags, flags2, id, accessHash, firstName, lastName, username, phone, photo, _, _, restrictionReason, botInlinePlaceholder, _, emojiStatus, usernames, _, color, profileColor, subscriberCount, verificationIconFileId, _):

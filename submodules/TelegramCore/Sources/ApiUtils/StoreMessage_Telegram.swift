@@ -472,6 +472,15 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
     return (nil, nil, nil, nil, nil, nil)
 }
 
+// MARK: Nicegram NGDataSharing
+public func mediaFromApiMedia(_ media: Api.MessageMedia?) -> Media? {
+    textMediaAndExpirationTimerFromApiMedia(
+        media,
+        .init(namespace: Namespaces.Peer.CloudChannel, id: ._internalFromInt64Value(0))
+    ).media
+}
+//
+
 func mediaAreaFromApiMediaArea(_ mediaArea: Api.MediaArea) -> MediaArea? {
     func coodinatesFromApiMediaAreaCoordinates(_ coordinates: Api.MediaAreaCoordinates) -> MediaArea.Coordinates {
         switch coordinates {

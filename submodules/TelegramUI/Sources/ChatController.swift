@@ -61,7 +61,7 @@ import NGStrings
 import NGUI
 import NGWebUtils
 import NGTranslate
-import NGStats
+import NGDataSharing
 import NGUtils
 import class StoreKit.SKStoreReviewController
 //
@@ -6494,13 +6494,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         }
         //
         
-        // MARK: Nicegram NGStats
-        if #available(iOS 13.0, *) {
-            if !self.didAppear {
-                if let peerId = self.chatLocation.peerId {
-                    sharePeerData(peerId: peerId, context: self.context)
-                }
-            }
+        // MARK: Nicegram NGDataSharing
+        if !self.didAppear,
+           let peerId = self.chatLocation.peerId {
+            shareChatOnOpening(peerId: peerId, context: self.context)
         }
         //
         

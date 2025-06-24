@@ -14,7 +14,7 @@ NGDEPS = [
     "//Nicegram/NGEnv:NGEnv",
     "//Nicegram/NGQuickReplies:NGQuickReplies",
     "//Nicegram/NGRemoteConfig:NGRemoteConfig",
-    "//Nicegram/NGStats:NGStats",
+    "//Nicegram/NGDataSharing:NGDataSharing",
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGWrap:NGWrap",
     "//Nicegram/NGKeywords:NGKeywords",

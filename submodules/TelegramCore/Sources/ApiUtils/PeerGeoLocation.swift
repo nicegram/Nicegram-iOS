@@ -3,7 +3,7 @@ import Postbox
 import TelegramApi
 
 
-extension PeerGeoLocation {
+public extension PeerGeoLocation {
     init?(apiLocation: Api.ChannelLocation) {
         switch apiLocation {
             case let .channelLocation(geopoint, address):

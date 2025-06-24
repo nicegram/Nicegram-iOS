@@ -1,22 +1,18 @@
 import AccountContext
-import FeatNicegramHub
+import FeatDataSharing
 import MemberwiseInit
 import NGUtils
 import TelegramCore
 
 @MemberwiseInit(.public)
-public class StickersDataProviderImpl {
-    @Init(.public) private let contextProvider: ContextProvider
+public class StickersDataProvider {
+    @Init(.public) private let context: AccountContext
 }
 
-extension StickersDataProviderImpl: StickersDataProvider {
-    public func getStickersData() async -> StickersData? {
-        guard let context = contextProvider.context() else {
-            return nil
-        }
-        
-        return await withCheckedContinuation { continuation in
-            _ = context.account.postbox.transaction { transaction in
+extension StickersDataProvider {
+    public func getStickersData() async -> [StickerSet] {
+        do {
+            let signal = context.account.postbox.transaction { transaction in
                 transaction
                     .getItemCollectionsInfos(
                         namespace: Namespaces.ItemCollection.CloudStickerPacks
@@ -44,13 +40,10 @@ extension StickersDataProviderImpl: StickersDataProvider {
                             count: pack.count
                         )
                     }
-            }.start(next: { stickerSets in
-                continuation.resume(
-                    returning: StickersData(
-                        stickerSets: stickerSets
-                    )
-                )
-            })
+            }
+            return try await signal.awaitForFirstValue()
+        } catch {
+            return []
         }
     }
 }

@@ -11,10 +11,9 @@
 import AccountContext
 import Display
 import FeatAccountBackup
-import FeatAdsgram
 import FeatAiShortcuts
+import FeatDataSharing
 import FeatImagesHubUI
-import FeatNicegramHub
 import FeatPinnedChats
 import FeatPumpAds
 import Foundation
@@ -36,10 +35,10 @@ import NGWebUtils
 import NGAppCache
 import NGCore
 import var NGCoreUI.strings
+import NGDataSharing
 import NGDoubleBottom
 import NGQuickReplies
 import NGRemoteConfig
-import NGStats
 import NGUtils
 
 fileprivate let LOGTAG = extractNameFromPath(#file)
@@ -463,10 +462,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 if #available(iOS 13.0, *) {
                     Task {
-                        let updateSharingSettingsUseCase = NicegramHubContainer.shared.updateSharingSettingsUseCase()
+                        let updateSettingsUseCase = DataSharingModule.shared.updateSettingsUseCase()
                         
-                        await updateSharingSettingsUseCase {
-                            $0.with(\.shareBotsData, value)
+                        await updateSettingsUseCase {
+                            $0.shareBotsData = value
                         }
                     }
                 }
@@ -475,10 +474,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 if #available(iOS 13.0, *) {
                     Task {
-                        let updateSharingSettingsUseCase = NicegramHubContainer.shared.updateSharingSettingsUseCase()
+                        let updateSettingsUseCase = DataSharingModule.shared.updateSettingsUseCase()
                         
-                        await updateSharingSettingsUseCase {
-                            $0.with(\.shareChannelsData, value)
+                        await updateSettingsUseCase {
+                            $0.shareChannelsData = value
                         }
                     }
                 }
@@ -487,10 +486,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 if #available(iOS 13.0, *) {
                     Task {
-                        let updateSharingSettingsUseCase = NicegramHubContainer.shared.updateSharingSettingsUseCase()
+                        let updateSettingsUseCase = DataSharingModule.shared.updateSettingsUseCase()
                         
-                        await updateSharingSettingsUseCase {
-                            $0.with(\.shareStickersData, value)
+                        await updateSettingsUseCase {
+                            $0.shareStickersData = value
                         }
                     }
                 }
@@ -584,7 +583,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
 // MARK: Entries list
 
-private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [NicegramSettingsControllerEntry.PinnedChat], sharingSettings: SharingSettings?, aiShortcutsSettings: FeatAiShortcuts.Settings, accountBackupSettings: FeatAccountBackup.Settings, context: AccountContext) -> [NicegramSettingsControllerEntry] {
+private func nicegramSettingsControllerEntries(presentationData: PresentationData, experimentalSettings: ExperimentalUISettings, showCalls: Bool, pinnedChats: [NicegramSettingsControllerEntry.PinnedChat], sharingSettings: FeatDataSharing.Settings, aiShortcutsSettings: FeatAiShortcuts.Settings, accountBackupSettings: FeatAccountBackup.Settings, context: AccountContext) -> [NicegramSettingsControllerEntry] {
     let nicegramSettings = getNicegramSettings()
     
     var entries: [NicegramSettingsControllerEntry] = []
@@ -747,29 +746,27 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
                                )
     )
 
-    if let sharingSettings {
-        entries.append(
-            .shareBotsData(
-                l("NicegramSettings.ShareBotsToggle"),
-                sharingSettings.shareBotsData
-            )
+    entries.append(
+        .shareBotsData(
+            l("NicegramSettings.ShareBotsToggle"),
+            sharingSettings.shareBotsData
         )
-        entries.append(
-            .shareChannelsData(
-                l("NicegramSettings.ShareChannelsToggle"),
-                sharingSettings.shareChannelsData
-            )
+    )
+    entries.append(
+        .shareChannelsData(
+            l("NicegramSettings.ShareChannelsToggle"),
+            sharingSettings.shareChannelsData
         )
-        entries.append(
-            .shareStickersData(
-                l("NicegramSettings.ShareStickersToggle"),
-                sharingSettings.shareStickersData
-            )
+    )
+    entries.append(
+        .shareStickersData(
+            l("NicegramSettings.ShareStickersToggle"),
+            sharingSettings.shareStickersData
         )
-        entries.append(
-            .shareDataNote(l("NicegramSettings.ShareData.Note"))
-        )
-    }
+    )
+    entries.append(
+        .shareDataNote(l("NicegramSettings.ShareData.Note"))
+    )
     
     return entries
 }
@@ -811,26 +808,11 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
     let pinnedChatsSignal = PinnedChatsContainer.shared.getPinnedChatsUseCase()
         .publisher()
         .combineLatestThreadSafe(
-            AdsgramModule.shared.getSettingsUseCase().publisher(),
             PumpAdsModule.shared.getConfigUseCase().publisher(),
             PumpAdsModule.shared.getSettingsUseCase().publisher()
         )
-        .map { pinnedChats, adsgramSettings, pumpConfig, pumpSettings in
+        .map { pinnedChats, pumpConfig, pumpSettings in
             var entries = [NicegramSettingsControllerEntry.PinnedChat]()
-            
-            entries.append(
-                NicegramSettingsControllerEntry.PinnedChat(
-                    index: (entries.last?.index ?? 0) + 1,
-                    title: "adsgram",
-                    enabled: adsgramSettings.showPin,
-                    setEnabled: { value in
-                        Task { @MainActor in
-                            let settingsViewModel = SettingsViewModel()
-                            settingsViewModel.onChange(showPin: value)
-                        }       
-                    }
-                )
-            )
             
             if pumpConfig != nil {
                 entries.append(
@@ -875,16 +857,10 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
         .toSignal()
         .skipError()
     
-    let sharingSettingsSignal: Signal<SharingSettings?, NoError>
-    if #available(iOS 13.0, *) {
-        sharingSettingsSignal = NicegramHubContainer.shared.getSharingSettingsUseCase()
-            .publisher()
-            .map { Optional($0) }
-            .toSignal()
-            .skipError()
-    } else {
-        sharingSettingsSignal = .single(nil)
-    }
+    let sharingSettingsSignal = DataSharingModule.shared.getSettingsUseCase()
+        .publisher()
+        .toSignal()
+        .skipError()
     
     let aiShortcutsSettingsSignal = AiShortcutsModule.shared.getSettingsUseCase()
         .publisher()

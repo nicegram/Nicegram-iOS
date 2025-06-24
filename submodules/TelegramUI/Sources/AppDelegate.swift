@@ -1,20 +1,19 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
 import FeatAccountBackup
-import FeatNicegramHub
 import FeatOnboarding
 import NGAiChat
 import NGAnalytics
 import NGAppCache
 import NGCore
 import NGData
+import NGDataSharing
 import NGEntryPoint
 import NGEnv
 import NGLogging
 import NGLottie
 import NGRemoteConfig
 import NGRepoUser
-import NGStats
 import NGStrings
 import NGUtils
 import NicegramWallet
@@ -477,9 +476,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
             },
-            stickersDataProvider: {
-                StickersDataProviderImpl(contextProvider: contextProvider)
-            },
             telegramChatInviteChecker: {
                 TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
             },
@@ -560,7 +556,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }
             }
         )
-        AdsgramPinWebViewLoader(contextProvider: contextProvider).initialize()
         
         // MARK: Nicegram Unblock
         let _ = (self.context.get()
@@ -1413,15 +1408,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         })
         
-        // MARK: Nicegram
+        // MARK: Nicegram DataSharing
         let _ = self.context.get().start(next: { context in
-            if let context = context {
-                Task {
-                    let shareStickersUseCase = NicegramHubContainer.shared.shareStickersUseCase()
-                    await shareStickersUseCase()
-                }
-            }
+            guard let context = context?.context else { return }
+            
+            getAndParseChannels(context: context)
+            shareStickers(context: context)
         })
+        //
         
         let presentationDataSignal = self.sharedContextPromise.get()
         |> mapToSignal { sharedContext in
@@ -2387,21 +2381,17 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         //cancelWindowPanGestures(view: self.mainWindow.hostView.containerView)
-        
-// MARK: Nicegram NCG-6554 channels info
+// MARK: Nicegram NCG-6326 Apple Speech2Text
         let _ = (self.context.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
             if let authorizedApplicationContext {
-                shareChannelsInformation(with: authorizedApplicationContext.context)
-// MARK: Nicegram NCG-6326 Apple Speech2Text
                 let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
 
                 setDefaultSpeech2TextSettingsUseCase(
                     with: authorizedApplicationContext.context.account.peerId.id._internalGetInt64Value(),
                     isTelegramPremium: authorizedApplicationContext.context.isPremium
                 )
-//
             }
         })
 //
