@@ -1,4 +1,5 @@
 import AccountContext
+import Factory
 import FeatDataSharing
 import Foundation
 import NGCore
@@ -7,6 +8,9 @@ import TelegramCore
 
 class ChannelParserFromApi {
     let context: AccountContext
+
+    @Injected(\DataSharingModule.getConfigUseCase)
+    private var getConfigUseCase
     
     init(context: AccountContext) {
         self.context = context
@@ -81,6 +85,8 @@ private extension ChannelParserFromApi {
     func getLastMessages(
         _ channel: ApiChatWrapped.Channel
     ) async throws -> [Message] {
+        let config = getConfigUseCase()
+
         let result = try await context.account.network
             .request(
                 Api.functions.messages.getHistory(
@@ -91,7 +97,7 @@ private extension ChannelParserFromApi {
                     offsetId: 0,
                     offsetDate: 0,
                     addOffset: 0,
-                    limit: Int32(DataSharingConstants.fetchMessagesCount),
+                    limit: Int32(config.messagesFetchLimit),
                     maxId: 0,
                     minId: 0,
                     hash: 0
@@ -119,7 +125,9 @@ private extension ChannelParserFromApi {
             return []
         }
         
-        return .init(messages: messages, chats: chats, users: users)
+        var resultMessages = [Message](messages: messages, chats: chats, users: users)
+        resultMessages.reverse()
+        return resultMessages
     }
     
     func getChatPhotoData(

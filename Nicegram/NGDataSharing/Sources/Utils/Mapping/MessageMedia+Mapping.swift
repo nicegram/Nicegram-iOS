@@ -1,6 +1,7 @@
 import FeatDataSharing
 import Foundation
 import NGCore
+import NGUtils
 import Postbox
 import TelegramApi
 import TelegramCore
@@ -11,6 +12,9 @@ extension FeatDataSharing.Message.Media {
     init?(_ media: Media?) {
         do {
             let media = try media.unwrap()
+            let mediaId = try media.id.unwrap()
+            
+            var type: FeatDataSharing.Message.MediaType?
             
             switch media {
             case let media as TelegramMediaImage:
@@ -56,7 +60,7 @@ extension FeatDataSharing.Message.Media {
                     )
                 }
                 
-                self = .photo(
+                type = .photo(
                     .init(
                         accessHash: resource.accessHash,
                         date: 0,
@@ -82,28 +86,30 @@ extension FeatDataSharing.Message.Media {
                 for attribute in media.attributes {
                     switch attribute {
                     case let .Audio(_, duration, title, _, _):
-                        self = .audio(
+                        type = .audio(
                             .init(
                                 duration: duration,
                                 title: title
                             )
                         )
-                        return
                     case let .Video(duration, _, _, _, _, _):
-                        self = .video(
+                        type = .video(
                             .init(
                                 duration: duration
                             )
                         )
-                        return
                     default:
                         continue
                     }
                 }
-                return nil
             default:
-                return nil
+                break
             }
+            
+            try self.init(
+                id: .init(mediaId),
+                type: type.unwrap()
+            )
         } catch {
             return nil
         }

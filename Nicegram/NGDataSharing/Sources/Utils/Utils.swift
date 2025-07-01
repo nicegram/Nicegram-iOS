@@ -1,11 +1,6 @@
 import FeatDataSharing
 import NaturalLanguage
 
-struct DataSharingConstants {
-    static let fetchMessagesCount = 100
-    static let shareMessagesCount = 10
-}
-
 func getLanguageCode(messages: [Message]) -> String? {
     let messages = messages
         .sorted { $0.date > $1.date }
@@ -22,6 +17,9 @@ func prepareForSharing(messages: [Message]) -> [Message] {
         let groupedId: Int64?
         var messages: [Message]
     }
+
+    let getConfigUseCase = DataSharingModule.shared.getConfigUseCase()
+    let config = getConfigUseCase()
     
     let messages = messages.sorted { $0.date > $1.date }
     
@@ -39,9 +37,9 @@ func prepareForSharing(messages: [Message]) -> [Message] {
             )
         }
     }
-    
+
     let result = groupedMessages
-        .prefix(DataSharingConstants.shareMessagesCount)
+        .prefix(config.messagesLimit)
         .map(\.messages)
         .reduce([], +)
     return result

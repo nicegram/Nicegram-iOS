@@ -1,13 +1,18 @@
 import AccountContext
+import Factory
 import FeatDataSharing
 import Foundation
 import NGCore
 import NGUtils
 import Postbox
+import SwiftSignalKit
 import TelegramCore
 
 class ChatParserFromLocal {
     let context: AccountContext
+
+    @Injected(\DataSharingModule.getConfigUseCase)
+    private var getConfigUseCase
     
     init(context: AccountContext) {
         self.context = context
@@ -50,23 +55,33 @@ private extension ChatParserFromLocal {
     ) async throws -> Channel {
         let cachedData = cachedData as? CachedChannelData
         
+        async let icon = getIcon(channel)
+        async let inviteLinks = getInviteLinks(channel.id)
+        async let messages = getMessages(channel.id)
+        async let similarChannels = getSimilarChannels(channel.id)
+        
         return try await Channel.build(
             peer: channel,
             channelFull: .init(cachedData),
-            icon: getIcon(channel),
-            inviteLinks: getInviteLinks(channel.id),
-            messages: getMessages(channel.id),
-            similarChannels: getSimilarChannels(channel.id)
+            icon: icon,
+            inviteLinks: inviteLinks,
+            messages: messages,
+            similarChannels: similarChannels
         )
     }
     
     func getInviteLinks(_ id: PeerId) async -> [InviteLink] {
         do {
-            let result = try await context.engine.peers
-                .direct_peerExportedInvitations(
-                    peerId: id,
-                    revoked: false
-                )
+            let signal = context.engine.peers.direct_peerExportedInvitations(
+                peerId: id,
+                revoked: false
+            )
+            |> timeout(
+                10,
+                queue: Queue.concurrentDefaultQueue(),
+                alternate: .single(nil)
+            )
+            let result = try await signal
                 .awaitForFirstValue()
                 .unwrap()
             return try .init(result.list.unwrap())
@@ -123,6 +138,8 @@ private extension ChatParserFromLocal {
     
     func getMessages(_ id: PeerId) async -> [FeatDataSharing.Message] {
         do {
+            let config = getConfigUseCase()
+
             let result = try await context.account.viewTracker
                 .aroundMessageHistoryViewForLocation(
                     .peer(
@@ -131,7 +148,7 @@ private extension ChatParserFromLocal {
                     ),
                     index: .upperBound,
                     anchorIndex: .upperBound,
-                    count: DataSharingConstants.fetchMessagesCount,
+                    count: config.messagesFetchLimit,
                     fixedCombinedReadStates: nil
                 )
                 .awaitForFirstValue()
@@ -144,9 +161,14 @@ private extension ChatParserFromLocal {
     }
     
     func getIcon(_ peer: Peer) async -> String? {
-        try? await fetchAvatarImage(
-            peer: peer,
-            context: context
-        ).awaitForFirstValue().unwrap().base64EncodedString()
+        try? await MediaFetcher(context: context)
+            .getAvatarImage(
+                peer: peer,
+                options: .init(
+                    fetchIfMissing: true,
+                    fetchTimeout: 10
+                )
+            )
+            .base64EncodedString()
     }
 }

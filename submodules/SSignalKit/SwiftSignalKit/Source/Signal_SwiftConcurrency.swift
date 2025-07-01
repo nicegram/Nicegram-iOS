@@ -78,6 +78,13 @@ public extension Signal {
     }
 }
 
+public extension Signal {
+    func awaitForCompletion() async throws {
+        let stream = self.asyncStream(.unbounded)
+        for try await value in stream {}
+    }
+}
+
 public struct ErrorAdapter<E>: Error, LocalizedError {
     let error: E
     
