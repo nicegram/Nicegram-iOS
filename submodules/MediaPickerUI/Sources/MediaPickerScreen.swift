@@ -186,6 +186,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
     private let chatLocation: ChatLocation?
     private let bannedSendPhotos: (Int32, Bool)?
     private let bannedSendVideos: (Int32, Bool)?
+    private let enableMultiselection: Bool
     private let canBoostToUnrestrict: Bool
     fileprivate let paidMediaAllowed: Bool
     fileprivate let subject: Subject
@@ -1849,6 +1850,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         isScheduledMessages: Bool = false,
         bannedSendPhotos: (Int32, Bool)? = nil,
         bannedSendVideos: (Int32, Bool)? = nil,
+        enableMultiselection: Bool = true,
         canBoostToUnrestrict: Bool = false,
         paidMediaAllowed: Bool = false,
         subject: Subject,
@@ -1872,6 +1874,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         self.isScheduledMessages = isScheduledMessages
         self.bannedSendPhotos = bannedSendPhotos
         self.bannedSendVideos = bannedSendVideos
+        self.enableMultiselection = enableMultiselection
         self.canBoostToUnrestrict = canBoostToUnrestrict
         self.paidMediaAllowed = paidMediaAllowed
         self.subject = subject
@@ -1881,7 +1884,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         self.mainButtonAction = mainButtonAction
         self.secondaryButtonAction = secondaryButtonAction
         
-        let selectionContext = selectionContext ?? TGMediaSelectionContext()
+        let selectionContext = selectionContext ?? TGMediaSelectionContext(groupingAllowed: false, selectionLimit: enableMultiselection ? 100 : 1)!
         
         self.titleView = MediaPickerTitleView(theme: self.presentationData.theme, segments: [self.presentationData.strings.Attachment_AllMedia, self.presentationData.strings.Attachment_SelectedMedia(1)], selectedIndex: 0)
         
@@ -1928,11 +1931,12 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData))
         
         self.statusBar.statusBarStyle = .Ignore
-                
+        
         selectionContext.attemptSelectingItem = { [weak self] item in
             guard let self else {
                 return false
             }
+            
             if let _ = item as? TGMediaPickerGalleryPhotoItem {
                 if self.bannedSendPhotos != nil {
                     self.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: self.presentationData.strings.Chat_SendNotAllowedPhoto, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
@@ -2777,7 +2781,6 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
                         })))
                     }
                     if price == nil {
-                        //TODO:localize
                         items.append(.action(ContextMenuActionItem(text: strings.Attachment_SendInHd, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/QualityHd"), color: theme.contextMenu.primaryColor)
                         }, action: { [weak self] _, f in
@@ -2886,7 +2889,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
                                         return
                                     }
                                     if let selectionContext = self.interaction?.selectionState, let editingContext = self.interaction?.editingState {
-                                        selectionContext.selectionLimit = 10
+                                        selectionContext.selectionLimit = self.enableMultiselection ? 10 : 1
                                         for case let item as TGMediaEditableItem in selectionContext.selectedItems() {
                                             editingContext.setPrice(NSNumber(value: amount), for: item)
                                         }

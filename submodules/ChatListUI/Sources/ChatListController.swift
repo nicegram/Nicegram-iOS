@@ -3789,6 +3789,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         return true
     }
     
+    public func resetForumStackIfOpen() {
+        if self.secondaryContext != nil {
+            self.setInlineChatList(location: nil, animated: false)
+        }
+    }
+    
     public func setInlineChatList(location: ChatListControllerLocation?, animated: Bool = true) {
         if let location {
             let inlineNode = self.chatListDisplayNode.makeInlineChatList(location: location)
@@ -3979,6 +3985,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     
                     controller.completion = { [weak controller] title, fileId, iconColor, _ in
                         controller?.isInProgress = true
+                        controller?.view.endEditing(true)
                         
                         let _ = (context.engine.peers.createForumChannelTopic(id: peerId, title: title, iconColor: iconColor, iconFileId: fileId)
                         |> deliverOnMainQueue).startStandalone(next: { topicId in
@@ -6196,7 +6203,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.chatListDisplayNode.effectiveContainerNode.currentItemNode.setCurrentRemovingItemId(nil)
         let statusText: String
         if case let .channel(channel) = chatPeer {
-            if deleteGloballyIfPossible {
+            if channel.isMonoForum {
+                statusText = self.presentationData.strings.Undo_DeletedMonoforum
+            } else if deleteGloballyIfPossible {
                 if case .broadcast = channel.info {
                     statusText = self.presentationData.strings.Undo_DeletedChannel
                 } else {
@@ -7498,7 +7507,7 @@ private final class ChatListLocationContext {
                 strings: presentationData.strings,
                 dateTimeFormat: presentationData.dateTimeFormat,
                 nameDisplayOrder: presentationData.nameDisplayOrder,
-                content: .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: false, isMuted: nil, customMessageCount: nil, isEnabled: true),
+                content: .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: nil, customSubtitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: false, isMuted: nil, customMessageCount: nil, isEnabled: true),
                 tapped: { [weak self] in
                     guard let self else {
                         return

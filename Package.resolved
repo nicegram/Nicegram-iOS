@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/upload-message-images",
-        "revision" : "9e43d3e7aa7d2107b7f426107021567e8fb890ca"
+        "branch" : "feat/disable-tg-notifications-splash",
+        "revision" : "11c9e770e16ab6ede6925f3609cf8b3915692e5c"
       }
     },
     {
@@ -347,8 +347,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "852f74ca63a9fb9903d311ffc5379d42dd52ed5f",
-        "version" : "1.6.0"
+        "revision" : "309a47b2b1d9b5e991f36961c983ecec72275be3",
+        "version" : "1.6.1"
       }
     },
     {

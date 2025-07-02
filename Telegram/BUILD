@@ -2081,7 +2081,7 @@ plist_fragment(
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
     <key>UIViewControllerBasedStatusBarAppearance</key>
-    <false/>
+    <true/>
     <key>UIViewEdgeAntialiasing</key>
     <false/>
     <key>UIViewGroupOpacity</key>
@@ -2254,9 +2254,16 @@ ios_application(
         #"//submodules/Display",
         #"//submodules/TelegramCore",
         #"//submodules/FFMpegBinding",
-        "//third-party/webrtc",
+        #"//third-party/webrtc",
+        #"//third-party/webrtc:webrtc_objc",
         #"//submodules/AsyncDisplayKit",
         #"//submodules/ObjCRuntimeUtils",
+        "//submodules/OpusBinding",
+        #"//third-party/boringssl:ssl",
+        #"//third-party/boringssl:crypto",
+        #"//submodules/TelegramVoip",
+        "//third-party/recaptcha:RecaptchaEnterprise",
+        #"//submodules/TelegramUI",
     ],
 )
 
@@ -2287,7 +2294,8 @@ ios_application(
         ":UrlTypesInfoPlist",
     ],
     deps = [
-        "//third-party/webrtc:webrtc",
+        "//third-party/webrtc",
+        "//third-party/webrtc:webrtc_objc",
     ],
 )
 

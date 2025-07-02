@@ -2,13 +2,13 @@
 #import "NGLegacyComponents.h"
 //
 
-#import "TGMediaPickerSendActionSheetController.h"
+#import <LegacyComponents/TGMediaPickerSendActionSheetController.h>
 #import "LegacyComponentsInternal.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGModernButton.h"
-#import "TGMediaAssetsController.h"
+#import <LegacyComponents/TGFont.h>
+#import <LegacyComponents/TGImageUtils.h>
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGMediaAssetsController.h>
 
 @interface TGMediaPickerSendActionSheetItemView : UIView
 {

@@ -114,7 +114,6 @@ import ChatMessageAnimatedStickerItemNode
 import ChatMessageBubbleItemNode
 import ChatNavigationButton
 import WebsiteType
-import ChatQrCodeScreen
 import PeerInfoScreen
 import MediaEditorScreen
 import WallpaperGalleryScreen
@@ -406,8 +405,22 @@ extension ChatControllerImpl {
                         guard var peer = peerView.peers[peerView.peerId] else {
                             return
                         }
-                        if let channel = peer as? TelegramChannel, channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainPeer = peerView.peers[linkedMonoforumId] {
+                        if let channel = peer as? TelegramChannel, channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainPeer = peerView.peers[linkedMonoforumId] as? TelegramChannel {
                             peer = mainPeer
+                            
+                            guard let navigationController = self.effectiveNavigationController else {
+                                return
+                            }
+                            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(
+                                navigationController: navigationController,
+                                context: self.context,
+                                chatLocation: .peer(.channel(mainPeer)),
+                                chatLocationContextHolder: Atomic(value: nil),
+                                keepStack: .always,
+                                useExisting: false,
+                                animated: true
+                            ))
+                            return
                         }
                                     
                         //  MARK: - Nicegram (open restricted peer info)

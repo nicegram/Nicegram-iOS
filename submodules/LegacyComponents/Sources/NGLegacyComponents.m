@@ -2,7 +2,7 @@
 
 #import "LegacyComponentsInternal.h"
 
-#import "TGLocalization.h"
+#import <LegacyComponents/TGLocalization.h>
 
 NSString *NGLocalized(NSString *key) {
     TGLocalization *localization = [[LegacyComponentsGlobals provider] effectiveLocalization];
