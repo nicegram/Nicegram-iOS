@@ -269,6 +269,8 @@ private func filterMessageAttributesForOutgoingMessage(_ attributes: [MessageAtt
             return true
         case _ as PaidStarsMessageAttribute:
             return true
+        case _ as SuggestedPostMessageAttribute:
+            return true
         default:
             return false
         }

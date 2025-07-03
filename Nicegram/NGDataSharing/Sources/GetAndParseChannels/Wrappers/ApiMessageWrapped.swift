@@ -39,6 +39,7 @@ public enum ApiMessageWrapped {
         public let factcheck: Api.FactCheck?
         public let reportDeliveryUntilDate: Int32?
         public let paidMessageStars: Int64?
+        public let suggestedPost: Api.SuggestedPost?
     }
 
     public struct MessageEmpty {
@@ -52,6 +53,7 @@ public enum ApiMessageWrapped {
         public let id: Int32
         public let fromId: Api.Peer?
         public let peerId: Api.Peer
+        public let savedPeerId: Api.Peer?
         public let replyTo: Api.MessageReplyHeader?
         public let date: Int32
         public let action: Api.MessageAction
@@ -61,7 +63,7 @@ public enum ApiMessageWrapped {
 
     public init(_ apiMessage: Api.Message) {
         switch apiMessage {
-        case let .message(flags, flags2, id, fromId, fromBoostsApplied, peerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupedId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, effect, factcheck, reportDeliveryUntilDate, paidMessageStars):
+        case let .message(flags, flags2, id, fromId, fromBoostsApplied, peerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupedId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, effect, factcheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost):
             self = .message(Message(
                 flags: flags,
                 flags2: flags2,
@@ -92,7 +94,8 @@ public enum ApiMessageWrapped {
                 effect: effect,
                 factcheck: factcheck,
                 reportDeliveryUntilDate: reportDeliveryUntilDate,
-                paidMessageStars: paidMessageStars
+                paidMessageStars: paidMessageStars,
+                suggestedPost: suggestedPost
             ))
         case let .messageEmpty(flags, id, peerId):
             self = .messageEmpty(MessageEmpty(
@@ -100,12 +103,13 @@ public enum ApiMessageWrapped {
                 id: id,
                 peerId: peerId
             ))
-        case let .messageService(flags, id, fromId, peerId, replyTo, date, action, reactions, ttlPeriod):
+        case let .messageService(flags, id, fromId, peerId, savedPeerId, replyTo, date, action, reactions, ttlPeriod):
             self = .messageService(MessageService(
                 flags: flags,
                 id: id,
                 fromId: fromId,
                 peerId: peerId,
+                savedPeerId: savedPeerId,
                 replyTo: replyTo,
                 date: date,
                 action: action,

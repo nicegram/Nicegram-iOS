@@ -83,6 +83,7 @@ extension ChatControllerImpl {
             var filter: ChatListNodePeersFilter = [.onlyWriteable, .excludeDisabled, .doNotSearchMessages]
             var hasPublicPolls = false
             var hasPublicQuiz = false
+            var hasTodo = false
             for message in messages {
                 for media in message.media {
                     if let poll = media as? TelegramMediaPoll, case .public = poll.publicity {
@@ -91,9 +92,10 @@ extension ChatControllerImpl {
                             hasPublicQuiz = true
                         }
                         filter.insert(.excludeChannels)
-                        break
-                    }
-                    if let _ = media as? TelegramMediaPaidContent {
+                    } else if let _ = media as? TelegramMediaTodo {
+                        hasTodo = true
+                        filter.insert(.excludeChannels)
+                    } else if let _ = media as? TelegramMediaPaidContent {
                         filter.insert(.excludeSecretChats)
                     }
                 }
@@ -111,6 +113,11 @@ extension ChatControllerImpl {
                 if hasPublicPolls {
                     if case let .channel(channel) = peer, case .broadcast = channel.info {
                         controller.present(textAlertController(context: context, title: nil, text: hasPublicQuiz ? presentationData.strings.Forward_ErrorPublicQuizDisabledInChannels : presentationData.strings.Forward_ErrorPublicPollDisabledInChannels, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                        return
+                    }
+                } else if hasTodo {
+                    if case let .channel(channel) = peer, case .broadcast = channel.info {
+                        controller.present(textAlertController(context: context, title: nil, text: presentationData.strings.Forward_ErrorTodoDisabledInChannels, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                         return
                     }
                 }

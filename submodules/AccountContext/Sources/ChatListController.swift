@@ -11,6 +11,7 @@ public enum ChatListControllerLocation: Equatable {
 
 public protocol ChatListController: ViewController {
     var context: AccountContext { get }
+    var location: ChatListControllerLocation { get }
     var lockViewFrame: CGRect? { get }
     
     var isSearchActive: Bool { get }
@@ -24,4 +25,6 @@ public protocol ChatListController: ViewController {
     
     func openStories(peerId: EnginePeer.Id)
     func openStoriesFromNotification(peerId: EnginePeer.Id, storyId: Int32)
+    
+    func resetForumStackIfOpen()
 }

@@ -4,6 +4,7 @@ import NGRoundedVideos
 import Foundation
 import UIKit
 import Postbox
+import SSignalKit
 import SwiftSignalKit
 import TelegramCore
 import LegacyComponents
@@ -788,7 +789,7 @@ public func fetchLocalFileGifMediaResource(resource: LocalFileGifMediaResource) 
         
         let disposable = MetaDisposable()
         if let data = try? Data(contentsOf: URL(fileURLWithPath: resource.path), options: Data.ReadingOptions.mappedIfSafe) {
-            let signal = TGGifConverter.convertGif(toMp4: data)!
+            let signal = TGGifConverter.convertGif(toMp4: data)
             let signalDisposable = signal.start(next: { next in
                 if let result = next as? NSDictionary, let path = result["path"] as? String {
                     var value = stat()
