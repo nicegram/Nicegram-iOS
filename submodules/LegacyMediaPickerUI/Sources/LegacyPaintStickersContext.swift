@@ -1,5 +1,4 @@
 import LegacyComponents
-import UIKit
 import Display
 import Postbox
 import SwiftSignalKit
@@ -14,7 +13,6 @@ import MediaEditor
 import DrawingUI
 import TelegramPresentationData
 import AnimatedCountLabelNode
-import CoreMedia
 
 protocol LegacyPaintEntity {
     var position: CGPoint { get }
@@ -725,14 +723,15 @@ private class SendStarsButtonView: HighlightTrackingButton, TGPhotoSendStarsButt
     }
 }
 
-#if SWIFT_PACKAGE
-extension SolidRoundedButtonView: TGPhotoSolidRoundedButtonView {
+//Xcode 16
+#if canImport(ContactProvider)
+extension SolidRoundedButtonView: @retroactive TGPhotoSolidRoundedButtonView {
     public func updateWidth(_ width: CGFloat) {
         let _ = self.updateLayout(width: width, transition: .immediate)
     }
 }
 #else
-extension SolidRoundedButtonView: @retroactive TGPhotoSolidRoundedButtonView {
+extension SolidRoundedButtonView: TGPhotoSolidRoundedButtonView {
     public func updateWidth(_ width: CGFloat) {
         let _ = self.updateLayout(width: width, transition: .immediate)
     }

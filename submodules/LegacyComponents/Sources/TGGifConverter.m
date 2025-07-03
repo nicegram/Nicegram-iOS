@@ -1,7 +1,7 @@
 #import <LegacyComponents/TGGifConverter.h>
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGImageUtils.h"
 
 #import <UIKit/UIKit.h>
 #import <ImageIO/ImageIO.h>
@@ -107,7 +107,7 @@ const CGFloat TGGifConverterMaximumSide = 720.0f;
             
             NSDictionary *videoSettings = @
             {
-                AVVideoCodecKey : AVVideoCodecTypeH264,
+                AVVideoCodecKey : AVVideoCodecH264,
                 AVVideoCompressionPropertiesKey: codecSettings,
                 AVVideoWidthKey : @((NSInteger)targetSize.width),
                 AVVideoHeightKey : @((NSInteger)targetSize.height)
@@ -243,7 +243,7 @@ const CGFloat TGGifConverterMaximumSide = 720.0f;
     CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
     
     CVPixelBufferRef pxBuffer = NULL;
-    __unused CVReturn status = kCVReturnSuccess;
+    CVReturn status = kCVReturnSuccess;
     
     if (pixelBufferPool)
         status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pixelBufferPool, &pxBuffer);

@@ -1,6 +1,5 @@
 import AsyncDisplayKit
 import AVFoundation
-import UIKit
 import Display
 import TelegramCore
 import SwiftSignalKit

@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGHacks.h>
+#import "TGHacks.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGAnimationBlockDelegate.h>
+#import "TGAnimationBlockDelegate.h"
 
-#import <LegacyComponents/FreedomUIKit.h>
+#import "FreedomUIKit.h"
 
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
@@ -11,8 +11,8 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-#import <LegacyComponents/TGViewController.h>
-#import <LegacyComponents/TGNavigationBar.h>
+#import "TGViewController.h"
+#import "TGNavigationBar.h"
 
 static float animationDurationFactor = 1.0f;
 static float secondaryAnimationDurationFactor = 1.0f;

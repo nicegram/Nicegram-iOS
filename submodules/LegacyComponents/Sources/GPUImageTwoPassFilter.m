@@ -1,8 +1,5 @@
 #import "GPUImageTwoPassFilter.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 @implementation GPUImageTwoPassFilter
 
 #pragma mark -
@@ -202,5 +199,3 @@
 }
 
 @end
-
-#pragma clang diagnostic pop

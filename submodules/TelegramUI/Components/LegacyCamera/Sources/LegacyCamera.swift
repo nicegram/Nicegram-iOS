@@ -4,7 +4,6 @@ import LegacyComponents
 import Display
 import TelegramCore
 import Postbox
-import SSignalKit
 import SwiftSignalKit
 import AccountContext
 import ShareController

@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGCameraModeControl.h>
+#import "TGCameraModeControl.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGCameraInterfaceAssets.h>
+#import "TGCameraInterfaceAssets.h"
 
-#import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
+#import "UIControl+HitTestEdgeInsets.h"
 
 const CGFloat TGCameraModeControlVerticalInteritemSpace = 29.0f;
 

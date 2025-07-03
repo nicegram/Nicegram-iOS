@@ -2,9 +2,6 @@
 #import <OpenGLES/EAGLDrawable.h>
 #import <AVFoundation/AVFoundation.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 #define MAXSHADERPROGRAMSALLOWEDINCACHE 40
 
 @interface GPUImageContext()
@@ -314,5 +311,3 @@ static void *openGLESContextQueueKey;
 }
 
 @end
-
-#pragma clang diagnostic pop

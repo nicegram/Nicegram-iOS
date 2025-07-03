@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGPassportOCR.h>
+#import "TGPassportOCR.h"
 
 #import "LegacyComponentsInternal.h"
 #import <Vision/Vision.h>
 
-#import <LegacyComponents/TGPassportMRZ.h>
+#import "TGPassportMRZ.h"
 #import "ocr.h"
 
 @implementation TGPassportOCR

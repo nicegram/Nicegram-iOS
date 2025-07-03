@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGMessageEntityMentionName.h>
+#import "TGMessageEntityMentionName.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGMessageEntityMentionName
 

@@ -1,18 +1,18 @@
-#import <LegacyComponents/TGMediaEditingContext.h>
+#import "TGMediaEditingContext.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGStringUtils.h>
+#import "TGStringUtils.h"
 
 #import <LegacyComponents/UIImage+TG.h>
-#import <LegacyComponents/TGPhotoEditorUtils.h>
-#import <LegacyComponents/PGPhotoEditorValues.h>
-#import <LegacyComponents/TGVideoEditAdjustments.h>
+#import "TGPhotoEditorUtils.h"
+#import "PGPhotoEditorValues.h"
+#import "TGVideoEditAdjustments.h"
 
-#import <LegacyComponents/TGModernCache.h>
-#import <LegacyComponents/TGMemoryImageCache.h>
-#import <LegacyComponents/TGMediaAsset.h>
+#import "TGModernCache.h"
+#import "TGMemoryImageCache.h"
+#import "TGMediaAsset.h"
 
-#import <LegacyComponents/TGPaintingData.h>
+#import "TGPaintingData.h"
 
 @interface TGMediaImageUpdate : NSObject
 

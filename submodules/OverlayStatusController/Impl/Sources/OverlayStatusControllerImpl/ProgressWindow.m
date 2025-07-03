@@ -127,7 +127,7 @@ static bool ProgressWindowIsLight = true;
     [self dismiss:animated completion:nil];
 }
 
-- (void)dismiss:(bool)animated completion:(void (^)(void))completion
+- (void)dismiss:(bool)animated completion:(void (^)())completion
 {
     if (animated)
     {

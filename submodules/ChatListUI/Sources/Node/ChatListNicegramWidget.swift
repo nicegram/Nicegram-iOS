@@ -6,15 +6,15 @@ import SwiftSignalKit
 import TelegramPresentationData
 import UIKit
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
 class ChatListNicegramWidget: ListViewItem {
-    let chatListNodeInteraction: ChatListNodeInteraction
+    let height: Double
     let theme: PresentationTheme
     
     private var widgetView: ChatListNicegramWidgetView?
     
-    init(chatListNodeInteraction: ChatListNodeInteraction, theme: PresentationTheme) {
-        self.chatListNodeInteraction = chatListNodeInteraction
+    init(height: Double, theme: PresentationTheme) {
+        self.height = height
         self.theme = theme
     }
     
@@ -54,6 +54,7 @@ class ChatListNicegramWidget: ListViewItem {
         }
     }
     
+    @preconcurrency @MainActor
     private func prepareWidgetView() -> ChatListNicegramWidgetView {
         if let widgetView {
             widgetView.removeFromSuperview()
@@ -61,8 +62,11 @@ class ChatListNicegramWidget: ListViewItem {
         }
         
         let view = ChatListNicegramWidgetView()
-        if let controller = chatListNodeInteraction.getController() {
-            setupChatListWidget(view: view, controller: controller)
+        
+        let contentView = makeChatListWidgetView()
+        view.addSubview(contentView)
+        contentView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
         
         self.widgetView = view
@@ -72,7 +76,7 @@ class ChatListNicegramWidget: ListViewItem {
 
 final class ChatListNicegramWidgetView: UIView {}
 
-@available(iOS 15.0, *)
+@available(iOS 16.0, *)
 final class ChatListNicegramWidgetNode: ListViewItemNode {
     private var item: ChatListNicegramWidget?
     
@@ -98,7 +102,7 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
         return { [weak self] item, params, last in
             let size = CGSize(
                 width: params.width,
-                height: 110
+                height: item.height
             )
             
             let layout = ListViewItemNodeLayout(

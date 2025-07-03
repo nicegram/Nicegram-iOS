@@ -1,7 +1,7 @@
-#import <LegacyComponents/PGPhotoEditorValues.h>
-#import <LegacyComponents/TGPaintingData.h>
+#import "PGPhotoEditorValues.h"
+#import "TGPaintingData.h"
 
-#import <LegacyComponents/TGPhotoEditorUtils.h>
+#import "TGPhotoEditorUtils.h"
 
 @implementation PGPhotoEditorValues
 

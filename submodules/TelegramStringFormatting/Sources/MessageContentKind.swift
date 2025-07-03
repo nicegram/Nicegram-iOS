@@ -24,7 +24,6 @@ public enum MessageContentKindKey {
     case expiredVoiceMessage
     case expiredVideoMessage
     case poll
-    case todo
     case restricted
     case dice
     case invoice
@@ -51,7 +50,6 @@ public enum MessageContentKind: Equatable {
     case expiredVoiceMessage
     case expiredVideoMessage
     case poll(String)
-    case todo(String)
     case restricted(String)
     case dice(String)
     case invoice(String)
@@ -162,12 +160,6 @@ public enum MessageContentKind: Equatable {
             } else {
                 return false
             }
-        case .todo:
-            if case .todo = other {
-                return true
-            } else {
-                return false
-            }
         case .restricted:
             if case .restricted = other {
                 return true
@@ -237,8 +229,6 @@ public enum MessageContentKind: Equatable {
             return .expiredVideoMessage
         case .poll:
             return .poll
-        case .todo:
-            return .todo
         case .restricted:
             return .restricted
         case .dice:
@@ -379,8 +369,6 @@ public func mediaContentKind(_ media: EngineMedia, message: EngineMessage? = nil
         }
     case let .poll(poll):
         return .poll(poll.text)
-    case let .todo(todo):
-        return .todo(todo.text)
     case let .dice(dice):
         return .dice(dice.emoji)
     case let .invoice(invoice):
@@ -467,8 +455,6 @@ public func stringForMediaKind(_ kind: MessageContentKind, strings: Presentation
         return (NSAttributedString(string: strings.Message_VideoMessageExpired), true)
     case let .poll(text):
         return (NSAttributedString(string: "📊 \(text)"), false)
-    case let .todo(text):
-        return (NSAttributedString(string: "☑️ \(text)"), false)
     case let .restricted(text):
         return (NSAttributedString(string: text), false)
     case let .dice(emoji):

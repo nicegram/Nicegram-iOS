@@ -1,4 +1,4 @@
-#import <LegacyComponents/LegacyComponentsContext.h>
+#import "LegacyComponentsContext.h"
 
 @implementation LegacyComponentsActionSheetAction
 

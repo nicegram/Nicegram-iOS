@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMenuSheetItemView.h>
+#import "TGMenuSheetItemView.h"
 
 @interface TGSecretTimerPickerItemView : TGMenuSheetItemView
 

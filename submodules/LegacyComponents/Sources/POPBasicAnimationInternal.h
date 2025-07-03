@@ -7,7 +7,7 @@
  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#import <LegacyComponents/POPBasicAnimation.h>
+#import "POPBasicAnimation.h"
 #import "POPPropertyAnimationInternal.h"
 
 // default animation duration

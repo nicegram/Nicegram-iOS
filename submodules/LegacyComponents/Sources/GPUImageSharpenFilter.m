@@ -1,8 +1,5 @@
 #import "GPUImageSharpenFilter.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 NSString *const kGPUImageSharpenVertexShaderString = SHADER_STRING
 (
  attribute vec4 position;
@@ -121,4 +118,3 @@ NSString *const kGPUImageSharpenFragmentShaderString = SHADER_STRING
 
 @end
 
-#pragma clang diagnostic pop

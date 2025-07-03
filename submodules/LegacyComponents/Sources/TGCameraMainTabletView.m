@@ -1,21 +1,21 @@
-#import <LegacyComponents/TGCameraMainTabletView.h>
+#import "TGCameraMainTabletView.h"
 
 #import <SSignalKit/SSignalKit.h>
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
+#import "TGFont.h"
 
-#import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
+#import "UIControl+HitTestEdgeInsets.h"
 
-#import <LegacyComponents/TGCameraInterfaceAssets.h>
+#import "TGCameraInterfaceAssets.h"
 
 #import <LegacyComponents/TGModernButton.h>
-#import <LegacyComponents/TGCameraShutterButton.h>
-#import <LegacyComponents/TGCameraModeControl.h>
-#import <LegacyComponents/TGCameraFlipButton.h>
-#import <LegacyComponents/TGCameraTimeCodeView.h>
-#import <LegacyComponents/TGCameraZoomView.h>
+#import "TGCameraShutterButton.h"
+#import "TGCameraModeControl.h"
+#import "TGCameraFlipButton.h"
+#import "TGCameraTimeCodeView.h"
+#import "TGCameraZoomView.h"
 
-#import <LegacyComponents/TGPhotoEditorUtils.h>
+#import "TGPhotoEditorUtils.h"
 
 #import "TGMediaPickerPhotoCounterButton.h"
 #import "TGMediaPickerPhotoStripView.h"

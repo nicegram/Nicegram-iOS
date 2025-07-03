@@ -1,16 +1,16 @@
 #import "TGMediaAssetModernImageSignals.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/TGStringUtils.h>
+#import "TGImageUtils.h"
+#import "TGStringUtils.h"
 
 #import <Photos/Photos.h>
 #import <LegacyComponents/UIImage+TG.h>
 
-#import <LegacyComponents/TGPhotoEditorUtils.h>
+#import "TGPhotoEditorUtils.h"
 #import <LegacyComponents/TGImageBlur.h>
 
-#import <LegacyComponents/TGMediaAsset.h>
+#import "TGMediaAsset.h"
 
 @implementation TGMediaAssetModernImageSignals
 
@@ -273,11 +273,8 @@
                 };
             }
             
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
             PHImageRequestID token = [[self imageManager] requestImageDataForAsset:asset.backingAsset options:options resultHandler:^(NSData *imageData, NSString *dataUTI, __unused UIImageOrientation orientation, NSDictionary *info)
             {
-#pragma clang diagnostic pop
                 bool inCloud = [info[PHImageResultIsInCloudKey] boolValue];
                 if (inCloud && imageData.length == 0)
                 {
@@ -389,11 +386,8 @@
         PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
         options.networkAccessAllowed = false;
         
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         PHContentEditingInputRequestID token = [[self imageManager] requestImageDataForAsset:asset.backingAsset options:options resultHandler:^(NSData *imageData, __unused NSString * dataUTI, __unused UIImageOrientation orientation, __unused NSDictionary *info)
         {
-#pragma clang diagnostic pop
             if (imageData != nil)
             {
                 NSDictionary *metadata = [self metadataWithImageData:imageData];

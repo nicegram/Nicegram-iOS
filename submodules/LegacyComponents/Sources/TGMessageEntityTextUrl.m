@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGMessageEntityTextUrl.h>
+#import "TGMessageEntityTextUrl.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGMessageEntityTextUrl
 

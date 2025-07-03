@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGMessageViewCountContentProperty.h>
+#import "TGMessageViewCountContentProperty.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGMessageViewCountContentProperty
 

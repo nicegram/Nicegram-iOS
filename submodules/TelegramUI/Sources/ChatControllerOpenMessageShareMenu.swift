@@ -10,6 +10,7 @@ import Display
 import UIKit
 import UndoUI
 import ShareController
+import ChatQrCodeScreen
 import ChatShareMessageTagView
 import ReactionSelectionNode
 import TopMessageReactions
@@ -113,7 +114,7 @@ extension ChatControllerImpl {
         shareController.parentNavigationController = self.navigationController as? NavigationController
         
         if let message = messages.first, message.media.contains(where: { media in
-            if media is TelegramMediaContact || media is TelegramMediaPoll || media is TelegramMediaTodo {
+            if media is TelegramMediaContact || media is TelegramMediaPoll {
                 return true
             } else if let file = media as? TelegramMediaFile, file.isSticker || file.isAnimatedSticker || file.isVideoSticker {
                 return true
@@ -137,6 +138,12 @@ extension ChatControllerImpl {
                     self.push(controller)
                 }
             }
+        }
+        shareController.openShareAsImage = { [weak self] messages in
+            guard let self else {
+                return
+            }
+            self.present(ChatQrCodeScreenImpl(context: self.context, subject: .messages(messages)), in: .window(.root))
         }
         shareController.dismissed = { [weak self] shared in
             if shared {

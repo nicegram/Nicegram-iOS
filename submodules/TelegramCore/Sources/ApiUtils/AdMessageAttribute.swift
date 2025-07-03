@@ -15,10 +15,8 @@ public final class AdMessageAttribute: MessageAttribute {
     public let additionalInfo: String?
     public let canReport: Bool
     public let hasContentMedia: Bool
-    public let minDisplayDuration: Int32?
-    public let maxDisplayDuration: Int32?
 
-    public init(opaqueId: Data, messageType: MessageType, url: String, buttonText: String, sponsorInfo: String?, additionalInfo: String?, canReport: Bool, hasContentMedia: Bool, minDisplayDuration: Int32?, maxDisplayDuration: Int32?) {
+    public init(opaqueId: Data, messageType: MessageType, url: String, buttonText: String, sponsorInfo: String?, additionalInfo: String?, canReport: Bool, hasContentMedia: Bool) {
         self.opaqueId = opaqueId
         self.messageType = messageType
         self.url = url
@@ -27,8 +25,6 @@ public final class AdMessageAttribute: MessageAttribute {
         self.additionalInfo = additionalInfo
         self.canReport = canReport
         self.hasContentMedia = hasContentMedia
-        self.minDisplayDuration = minDisplayDuration
-        self.maxDisplayDuration = maxDisplayDuration
     }
 
     public init(decoder: PostboxDecoder) {

@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGActionMediaAttachment.h>
+#import "TGActionMediaAttachment.h"
 
-#import <LegacyComponents/TGImageMediaAttachment.h>
+#import "TGImageMediaAttachment.h"
 
 @implementation TGActionMediaAttachment
 

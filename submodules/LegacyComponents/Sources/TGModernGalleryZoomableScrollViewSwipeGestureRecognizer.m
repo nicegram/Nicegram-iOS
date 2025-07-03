@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h>
+#import "TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h"
 
 #import <UIKit/UIGestureRecognizerSubclass.h>
 

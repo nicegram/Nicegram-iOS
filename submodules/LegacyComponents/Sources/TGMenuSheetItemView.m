@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMenuSheetItemView.h>
+#import "TGMenuSheetItemView.h"
 
 #import "LegacyComponentsInternal.h"
 

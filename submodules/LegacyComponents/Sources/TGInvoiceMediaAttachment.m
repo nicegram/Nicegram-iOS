@@ -1,10 +1,10 @@
-#import <LegacyComponents/TGInvoiceMediaAttachment.h>
+#import "TGInvoiceMediaAttachment.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/NSInputStream+TL.h>
+#import "NSInputStream+TL.h"
 
-#import <LegacyComponents/TGWebPageMediaAttachment.h>
+#import "TGWebPageMediaAttachment.h"
 
 @implementation TGInvoiceMediaAttachment
 
@@ -79,7 +79,7 @@
 
 - (void)serialize:(NSMutableData *)data
 {
-    NSData *serializedData = [NSKeyedArchiver archivedDataWithRootObject:self requiringSecureCoding:false error:nil];
+    NSData *serializedData = [NSKeyedArchiver archivedDataWithRootObject:self];
     int32_t length = (int32_t)serializedData.length;
     [data appendBytes:&length length:4];
     [data appendData:serializedData];
@@ -89,10 +89,7 @@
 {
     int32_t length = [is readInt32];
     NSData *data = [is readData:length];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return [NSKeyedUnarchiver unarchiveObjectWithData:data];
-#pragma clang diagnostic pop
 }
 
 

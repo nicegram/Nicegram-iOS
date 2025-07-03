@@ -1,4 +1,4 @@
-#import <LegacyComponents/UIScrollView+TGHacks.h>
+#import "UIScrollView+TGHacks.h"
 
 #import <objc/message.h>
 

@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGPhotoEditorSparseView.h>
+#import "TGPhotoEditorSparseView.h"
 
 @implementation TGPhotoEditorSparseView
 

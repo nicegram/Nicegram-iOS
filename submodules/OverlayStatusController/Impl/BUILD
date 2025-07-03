@@ -11,9 +11,6 @@ objc_library(
     includes = [
         "Sources",
     ],
-    copts = [
-        "-Werror",
-    ],
     visibility = [
         "//visibility:public",
     ],

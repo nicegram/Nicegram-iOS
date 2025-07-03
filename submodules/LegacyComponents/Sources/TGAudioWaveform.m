@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGAudioWaveform.h>
+#import "TGAudioWaveform.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 static int32_t get_bits(uint8_t const *bytes, unsigned int bitOffset, unsigned int numBits)
 {

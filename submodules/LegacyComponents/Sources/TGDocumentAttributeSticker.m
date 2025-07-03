@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGDocumentAttributeSticker.h>
+#import "TGDocumentAttributeSticker.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGStickerMaskDescription
 

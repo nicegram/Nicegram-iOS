@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMenuSheetCollectionView.h>
+#import "TGMenuSheetCollectionView.h"
 
 @implementation TGMenuSheetCollectionView
 

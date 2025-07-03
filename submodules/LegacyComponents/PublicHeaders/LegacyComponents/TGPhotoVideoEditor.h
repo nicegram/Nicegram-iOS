@@ -1,11 +1,4 @@
-#import <UIKit/UIKit.h>
-
-#import <LegacyComponents/TGPhotoPaintStickersContext.h>
-#import <LegacyComponents/LegacyComponentsContext.h>
-#import <LegacyComponents/TGViewController.h>
-#import <LegacyComponents/TGVideoEditAdjustments.h>
-#import <LegacyComponents/TGMediaEditingContext.h>
-#import <LegacyComponents/TGMediaSelectionContext.h>
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGPhotoVideoEditor : NSObject
 

@@ -10,7 +10,6 @@ import DeviceAccess
 import AccountContext
 import LegacyUI
 import SaveToCameraRoll
-import Photos
 
 public func defaultVideoPresetForContext(_ context: AccountContext) -> TGMediaVideoConversionPreset {
     var networkType: NetworkType = .wifi

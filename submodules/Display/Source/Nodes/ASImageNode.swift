@@ -23,12 +23,6 @@ open class ASImageNode: ASDisplayNode {
             }
         }
     }
-    
-    public var customTintColor: UIColor? {
-        didSet {
-            self.layer.layerTintColor = self.customTintColor?.cgColor
-        }
-    }
 
     public var displayWithoutProcessing: Bool = true
 
@@ -48,7 +42,6 @@ open class ASImageNode: ASDisplayNode {
                 ASDisplayNodeSetResizableContents(self.layer, image)
             }
         }
-        self.layer.layerTintColor = self.customTintColor?.cgColor
     }
     
     override public func calculateSizeThatFits(_ contrainedSize: CGSize) -> CGSize {

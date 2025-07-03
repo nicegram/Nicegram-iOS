@@ -62,7 +62,6 @@ public struct Namespaces {
         public static let CloudIconStatusEmoji: Int32 = 10
         public static let CloudIconTopicEmoji: Int32 = 11
         public static let CloudIconChannelStatusEmoji: Int32 = 12
-        public static let CloudTonGifts: Int32 = 13
     }
     
     public struct OrderedItemList {
@@ -143,7 +142,6 @@ public struct Namespaces {
         public static let recommendedBots: Int8 = 44
         public static let channelsForPublicReaction: Int8 = 45
         public static let cachedGroupsInCommon: Int8 = 46
-        public static let groupCallPersistentSettings: Int8 = 47
     }
     
     public struct UnorderedItemList {

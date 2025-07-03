@@ -53,7 +53,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ManagedDiceAnimationNode",
         "//submodules/TelegramUI/Components/Chat/MessageHaptics",
         "//submodules/TelegramUI/Components/Chat/ChatMessageTransitionNode",
-        "//submodules/TelegramUI/Components/Chat/ChatMessageSuggestedPostInfoNode",
     ],
     visibility = [
         "//visibility:public",

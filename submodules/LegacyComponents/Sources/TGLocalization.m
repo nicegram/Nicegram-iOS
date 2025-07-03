@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGLocalization.h>
+#import "TGLocalization.h"
 
-#import <LegacyComponents/TGPluralization.h>
+#import "TGPluralization.h"
 
 static NSDictionary *fallbackDict(NSString *code) {
     if (code == nil) {

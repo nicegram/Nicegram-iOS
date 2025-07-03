@@ -11,8 +11,6 @@ import UniversalMediaPlayer
 import AccountContext
 import PhotoResources
 import RangeSet
-import CoreMedia
-import AVFoundation
 
 public final class SystemVideoContent: UniversalVideoContent {
     public let id: AnyHashable

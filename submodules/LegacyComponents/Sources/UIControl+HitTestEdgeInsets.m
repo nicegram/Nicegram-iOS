@@ -1,4 +1,4 @@
-#import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
+#import "UIControl+HitTestEdgeInsets.h"
 
 #import <objc/runtime.h>
 

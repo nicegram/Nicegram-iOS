@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGLabel.h>
+#import "TGLabel.h"
 
 @implementation TGLabel
 

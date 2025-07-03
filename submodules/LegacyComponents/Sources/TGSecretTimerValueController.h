@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGViewController.h>
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGSecretTimerValueController : TGViewController
 

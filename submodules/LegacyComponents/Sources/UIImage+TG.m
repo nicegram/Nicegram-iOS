@@ -1,6 +1,6 @@
 
 
-#import <LegacyComponents/UIImage+TG.h>
+#import "UIImage+TG.h"
 
 #import <objc/runtime.h>
 

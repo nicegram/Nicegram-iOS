@@ -323,7 +323,7 @@ private final class ScrollContent: CombinedComponent {
             
             let infoBackground = infoBackground.update(
                 component: RoundedRectangle(
-                    color: theme.overallDarkAppearance ? theme.list.itemModalBlocksBackgroundColor : theme.list.blocksBackgroundColor,
+                    color: theme.list.blocksBackgroundColor,
                     cornerRadius: 10.0
                 ),
                 availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: totalInfoHeight),
@@ -423,13 +423,11 @@ private final class ContainerComponent: CombinedComponent {
             let environment = context.environment[EnvironmentType.self]
             let state = context.state
             
-            let theme = environment.theme
-            
             let openContextMenu = context.component.openContextMenu
             let dismiss = context.component.dismiss
-                        
+            
             let background = background.update(
-                component: Rectangle(color: theme.overallDarkAppearance ? theme.list.modalBlocksBackgroundColor : theme.list.plainBackgroundColor),
+                component: Rectangle(color: environment.theme.list.plainBackgroundColor),
                 environment: {},
                 availableSize: context.availableSize,
                 transition: context.transition
@@ -696,9 +694,9 @@ public class AdsInfoScreen: ViewController {
             self.footerView = ComponentHostView()
             
             super.init()
-                                    
+                        
             self.containerView.clipsToBounds = true
-            self.containerView.backgroundColor = self.presentationData.theme.overallDarkAppearance ? self.presentationData.theme.list.modalBlocksBackgroundColor : self.presentationData.theme.list.plainBackgroundColor
+            self.containerView.backgroundColor = self.presentationData.theme.overallDarkAppearance ? self.presentationData.theme.list.blocksBackgroundColor : self.presentationData.theme.list.plainBackgroundColor
             
             self.addSubnode(self.dim)
             

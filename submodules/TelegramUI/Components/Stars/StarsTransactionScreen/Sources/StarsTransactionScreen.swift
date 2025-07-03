@@ -217,7 +217,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             var statusText: String?
             var statusIsDestructive = false
             
-            let count: CurrencyAmount
+            let count: StarsAmount
             var countIsGeneric = false
             var countOnTop = false
             var transactionId: String?
@@ -257,7 +257,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 titleText = strings.Stars_Transaction_Giveaway_Boost_Stars(Int32(stars))
                 descriptionText = ""
                 boostsText = strings.Stars_Transaction_Giveaway_Boost_Boosts(boosts)
-                count = CurrencyAmount(amount: StarsAmount(value: stars, nanos: 0), currency: .stars)
+                count = StarsAmount(value: stars, nanos: 0)
                 date = boost.date
                 toPeer = state.peerMap[peerId]
                 giveawayMessageId = boost.giveawayMessageId
@@ -266,7 +266,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 let usdValue = formatTonUsdValue(pricing.amount.value, divide: false, rate: usdRate, dateTimeFormat: environment.dateTimeFormat)
                 titleText = strings.Stars_Transaction_Subscription_Title
                 descriptionText = strings.Stars_Transaction_Subscription_PerMonthUsd(usdValue).string
-                count = CurrencyAmount(amount: pricing.amount, currency: .stars)
+                count = pricing.amount
                 countOnTop = true
                 date = importer.date
                 toPeer = importer.peer.peer.flatMap(EnginePeer.init)
@@ -288,7 +288,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 photo = subscription.photo
                 
                 descriptionText = ""
-                count = CurrencyAmount(amount: subscription.pricing.amount, currency: .stars)
+                count = subscription.pricing.amount
                 date = subscription.untilDate
                 if let creationDate = (subscription.peer._asPeer() as? TelegramChannel)?.creationDate, creationDate > 0 {
                     additionalDate = creationDate
@@ -416,14 +416,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     isSubscriptionFee = true
                 } else if transaction.flags.contains(.isGift) {
                     titleText = strings.Stars_Gift_Received_Title
+                    descriptionText = strings.Stars_Gift_Received_Text
                     count = transaction.count
-                    
-                    if count.currency == .ton {
-                        descriptionText = strings.Stars_Gift_Ton_Text
-                    } else {
-                        descriptionText = strings.Stars_Gift_Received_Text
-                    }
-                    
                     countOnTop = true
                     transactionId = transaction.id
                     date = transaction.date
@@ -496,7 +490,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         via = strings.Stars_Transaction_PremiumBotTopUp_Subtitle
                     case .fragment:
                         if parentPeer.id == component.context.account.peerId {
-                            if (transaction.count.amount.value < 0 && !transaction.flags.contains(.isRefund)) || (transaction.count.amount.value > 0 && transaction.flags.contains(.isRefund)) {
+                            if (transaction.count.value < 0 && !transaction.flags.contains(.isRefund)) || (transaction.count.value > 0 && transaction.flags.contains(.isRefund)) {
                                 titleText = strings.Stars_Transaction_FragmentWithdrawal_Title
                                 via = strings.Stars_Transaction_FragmentWithdrawal_Subtitle
                             } else {
@@ -558,7 +552,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         toPeer = peer
                     }
                     transactionPeer = transaction.peer
-                    media = transaction.media.map { AnyMediaReference.starsTransaction(transaction: StarsTransactionReference(peerId: parentPeer.id, ton: false, id: transaction.id, isRefund: transaction.flags.contains(.isRefund)), media: $0) }
+                    media = transaction.media.map { AnyMediaReference.starsTransaction(transaction: StarsTransactionReference(peerId: parentPeer.id, id: transaction.id, isRefund: transaction.flags.contains(.isRefund)), media: $0) }
                     photo = transaction.photo
                     
                     if transaction.flags.contains(.isRefund) {
@@ -570,7 +564,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             case let .receipt(receipt):
                 titleText = receipt.invoiceMedia.title
                 descriptionText = receipt.invoiceMedia.description
-                count = CurrencyAmount(amount: StarsAmount(value: (receipt.invoice.prices.first?.amount ?? receipt.invoiceMedia.totalAmount) * -1, nanos: 0), currency: .stars)
+                count = StarsAmount(value: (receipt.invoice.prices.first?.amount ?? receipt.invoiceMedia.totalAmount) * -1, nanos: 0)
                 transactionId = receipt.transactionId
                 date = receipt.date
                 if let peer = state.peerMap[receipt.botPaymentId] {
@@ -587,7 +581,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     if case let .giftStars(_, _, countValue, _, _, _) = action.action {
                         titleText = incoming ? strings.Stars_Gift_Received_Title : strings.Stars_Gift_Sent_Title
                         
-                        count = CurrencyAmount(amount: StarsAmount(value: countValue, nanos: 0), currency: .stars)
+                        count = StarsAmount(value: countValue, nanos: 0)
                         if !incoming {
                             countIsGeneric = true
                         }
@@ -601,7 +595,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     } else if case let .prizeStars(countValue, _, boostPeerId, _, giveawayMessageIdValue) = action.action {
                         titleText = strings.Stars_Transaction_Giveaway_Title
                         
-                        count = CurrencyAmount(amount: StarsAmount(value: countValue, nanos: 0), currency: .stars)
+                        count = StarsAmount(value: countValue, nanos: 0)
                         countOnTop = true
                         transactionId = nil
                         giveawayMessageId = giveawayMessageIdValue
@@ -654,14 +648,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 headerTextColor = theme.actionSheet.primaryTextColor
             }
             
-            let absCount = StarsAmount(value: abs(count.amount.value), nanos: abs(count.amount.nanos))
-            let formattedAmount: String
-            switch count.currency {
-            case .stars:
-                formattedAmount = formatStarsAmountText(absCount, dateTimeFormat: dateTimeFormat)
-            case .ton:
-                formattedAmount = formatTonAmountText(absCount.value, dateTimeFormat: dateTimeFormat)
-            }
+            let absCount = StarsAmount(value: abs(count.value), nanos: abs(count.nanos))
+            let formattedAmount = formatStarsAmountText(absCount, dateTimeFormat: dateTimeFormat)
             let countColor: UIColor
             var countFont: UIFont = isSubscription || isSubscriber ? Font.regular(17.0) : Font.semibold(17.0)
             var countBackgroundColor: UIColor?
@@ -676,7 +664,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             } else if countIsGeneric {
                 amountText = "\(formattedAmount)"
                 countColor = theme.list.itemPrimaryTextColor
-            } else if count.amount < StarsAmount.zero {
+            } else if count < StarsAmount.zero {
                 amountText = "- \(formattedAmount)"
                 if case .unique = giftAnimationSubject {
                     countColor = .white
@@ -712,19 +700,15 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 transition: .immediate
             )
             
-            if count.currency == .ton {
-                premiumGiftMonths = 1000
-            }
-            
             let imageSubject: StarsImageComponent.Subject
             var imageIcon: StarsImageComponent.Icon?
             if let premiumGiftMonths {
                 imageSubject = .gift(premiumGiftMonths)
             } else if isGift {
                 var value: Int32 = 3
-                if count.amount.value <= 1000 {
+                if count.value <= 1000 {
                     value = 3
-                } else if count.amount.value < 2500 {
+                } else if count.value < 2500 {
                     value = 6
                 } else {
                     value = 12
@@ -742,7 +726,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 imageSubject = .none
             }
             if isSubscription || isSubscriber || isSubscriptionFee || giveawayMessageId != nil {
-                imageIcon = count.currency == .ton ? nil : .star
+                imageIcon = .star
             } else {
                 imageIcon = nil
             }
@@ -827,26 +811,10 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 transition: .immediate
             )
             
-            let amountStarIconName: String
-            var amountStarTintColor: UIColor?
-            var amountStarMaxSize: CGSize?
-            var amountOffset = CGPoint()
-            if boostsText != nil {
-                amountStarIconName = "Premium/BoostButtonIcon"
-            } else if case .ton = count.currency {
-                amountStarIconName = "Ads/TonBig"
-                amountStarTintColor = countColor
-                amountStarMaxSize = CGSize(width: 13.0, height: 13.0)
-                amountOffset.y += 4.0 - UIScreenPixel
-            } else {
-                amountStarIconName = "Premium/Stars/StarMedium"
-            }
-            
             let amountStar = amountStar.update(
                 component: BundleIconComponent(
-                    name: amountStarIconName,
-                    tintColor: amountStarTintColor,
-                    maxSize: amountStarMaxSize
+                    name: boostsText != nil ? "Premium/BoostButtonIcon" : "Premium/Stars/StarMedium",
+                    tintColor: nil
                 ),
                 availableSize: context.availableSize,
                 transition: .immediate
@@ -867,21 +835,11 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     )
                 ))
             } else if case .unique = giftAnimationSubject {
-                let reason: String
-                if count.amount < StarsAmount.zero, case let .transaction(transaction, _) = subject {
-                    if transaction.flags.contains(.isStarGiftResale) {
-                        reason = strings.Stars_Transaction_GiftPurchase
-                    } else {
-                        reason = strings.Stars_Transaction_GiftTransfer
-                    }
-                } else {
-                    reason = strings.Stars_Transaction_GiftSale
-                }
                 tableItems.append(.init(
                     id: "reason",
                     title: strings.Stars_Transaction_Giveaway_Reason,
                     component: AnyComponent(
-                        MultilineTextComponent(text: .plain(NSAttributedString(string: reason, font: tableFont, textColor: tableTextColor)))
+                        MultilineTextComponent(text: .plain(NSAttributedString(string: count < StarsAmount.zero ? strings.Stars_Transaction_GiftPurchase : strings.Stars_Transaction_GiftSale, font: tableFont, textColor: tableTextColor)))
                     )
                 ))
             }
@@ -924,7 +882,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 } else if isSubscriber {
                     title = strings.Stars_Transaction_Subscription_Subscriber
                 } else {
-                    title = count.amount < StarsAmount.zero || countIsGeneric ? strings.Stars_Transaction_To : strings.Stars_Transaction_From
+                    title = count < StarsAmount.zero || countIsGeneric ? strings.Stars_Transaction_To : strings.Stars_Transaction_From
                 }
                 
                 let toComponent: AnyComponent<Empty>
@@ -1029,7 +987,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     id: "prize",
                     title: strings.Stars_Transaction_Giveaway_Prize,
                     component: AnyComponent(
-                        MultilineTextComponent(text: .plain(NSAttributedString(string: strings.Stars_Transaction_Giveaway_Stars(Int32(count.amount.value)), font: tableFont, textColor: tableTextColor)))
+                        MultilineTextComponent(text: .plain(NSAttributedString(string: strings.Stars_Transaction_Giveaway_Stars(Int32(count.value)), font: tableFont, textColor: tableTextColor)))
                     )
                 ))
                 
@@ -1207,9 +1165,9 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     if transaction.flags.contains(.isPaidMessage) || transaction.flags.contains(.isStarGiftResale) {
                         var totalStars = transaction.count
                         if let starrefCount = transaction.starrefAmount {
-                            totalStars = CurrencyAmount(amount: totalStars.amount + starrefCount, currency: .stars)
+                            totalStars = totalStars + starrefCount
                         }
-                        let valueString = "\(presentationStringsFormattedNumber(abs(Int32(totalStars.amount.value)), dateTimeFormat.groupingSeparator))⭐️"
+                        let valueString = "\(presentationStringsFormattedNumber(abs(Int32(totalStars.value)), dateTimeFormat.groupingSeparator))⭐️"
                         let valueAttributedString = NSMutableAttributedString(string: valueString, font: tableBoldFont, textColor: theme.list.itemDisclosureActions.constructive.fillColor)
                         let range = (valueAttributedString.string as NSString).range(of: "⭐️")
                         if range.location != NSNotFound {
@@ -1529,9 +1487,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     .position(CGPoint(x: context.availableSize.width / 2.0, y: amountOrigin + amount.size.height / 2.0 + 1.0))
                 )
                 amountLabelOffsetY = 2.0
-                amountStarOffsetY = 6.0
+                amountStarOffsetY = 5.0
             }
-            amountStarOffsetY += amountOffset.y
             
             context.add(amount
                 .position(CGPoint(x: amountLabelOriginX, y: amountOrigin + amount.size.height / 2.0 + amountLabelOffsetY))

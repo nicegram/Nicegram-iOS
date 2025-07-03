@@ -1,8 +1,4 @@
-#import <LegacyComponents/TGViewController.h>
-#import <LegacyComponents/TGOverlayController.h>
-#import <LegacyComponents/LegacyComponentsContext.h>
-#import <LegacyComponents/TGVideoMessageCaptureController.h>
-#import <LegacyComponents/TGLiveUploadInterface.h>
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGVideoEditAdjustments;
 @class TGModernConversationInputMicPallete;

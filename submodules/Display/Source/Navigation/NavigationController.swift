@@ -276,25 +276,6 @@ open class NavigationController: UINavigationController, ContainableController, 
     
     var updateSupportedOrientations: (() -> Void)?
     
-    var statusBar: (style: UIStatusBarStyle, isHidden: Bool) {
-        let normalStatusBarStyle: UIStatusBarStyle
-        switch self.validStatusBarStyle {
-        case .none:
-            normalStatusBarStyle = .default
-        case .black:
-            if #available(iOS 13.0, *) {
-                normalStatusBarStyle = .darkContent
-            } else {
-                normalStatusBarStyle = .default
-            }
-        case .white:
-            normalStatusBarStyle = .lightContent
-        }
-        
-        return (normalStatusBarStyle, self.validStatusBarHidden ?? false)
-    }
-    var updateStatusBar: ((ContainedViewLayoutTransition) -> Void)?
-    
     public func updateMasterDetailsBlackout(_ blackout: MasterDetailLayoutBlackout?, transition: ContainedViewLayoutTransition) {
         self.masterDetailsBlackout = blackout
         if isViewLoaded {
@@ -1266,15 +1247,25 @@ open class NavigationController: UINavigationController, ContainableController, 
             resolvedStatusBarStyle = .white
         }
         
-        if self.validStatusBarStyle != resolvedStatusBarStyle || self.validStatusBarHidden != statusBarHidden {
+        if self.validStatusBarStyle != resolvedStatusBarStyle {
             self.validStatusBarStyle = resolvedStatusBarStyle
-            self.validStatusBarHidden = statusBarHidden
-            
-            var statusBarTransition = transition
-            if animateStatusBarStyleTransition && !statusBarTransition.isAnimated {
-                statusBarTransition = .animated(duration: 0.2, curve: .easeInOut)
+            let normalStatusBarStyle: UIStatusBarStyle
+            switch resolvedStatusBarStyle {
+            case .black:
+                if #available(iOS 13.0, *) {
+                    normalStatusBarStyle = .darkContent
+                } else {
+                    normalStatusBarStyle = .default
+                }
+            case .white:
+                normalStatusBarStyle = .lightContent
             }
-            self.updateStatusBar?(statusBarTransition)
+            self.statusBarHost?.setStatusBarStyle(normalStatusBarStyle, animated: animateStatusBarStyleTransition)
+        }
+        
+        if self.validStatusBarHidden != statusBarHidden {
+            self.validStatusBarHidden = statusBarHidden
+            self.statusBarHost?.setStatusBarHidden(statusBarHidden, animated: animateStatusBarStyleTransition)
         }
         
         var topHasOpaque = false

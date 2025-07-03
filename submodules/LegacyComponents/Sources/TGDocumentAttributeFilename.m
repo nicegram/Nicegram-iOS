@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGDocumentAttributeFilename.h>
+#import "TGDocumentAttributeFilename.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGDocumentAttributeFilename
 

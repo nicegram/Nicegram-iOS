@@ -2,7 +2,7 @@
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/TGLocalization.h>
+#import "TGLocalization.h"
 
 static id<LegacyComponentsGlobalsProvider> _provider;
 

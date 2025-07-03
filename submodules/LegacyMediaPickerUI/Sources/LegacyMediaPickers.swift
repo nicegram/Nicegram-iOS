@@ -17,7 +17,6 @@ import MimeTypes
 import LocalMediaResources
 import LegacyUI
 import TextFormat
-import Photos
 
 public func guessMimeTypeByFileExtension(_ ext: String) -> String {
     return TGMimeTypeMap.mimeType(forExtension: ext) ?? "application/binary"

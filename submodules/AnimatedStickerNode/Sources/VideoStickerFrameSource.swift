@@ -8,7 +8,6 @@ import ManagedFile
 import Accelerate
 import TelegramCore
 import WebPBinding
-import UIKit
 
 private let sharedStoreQueue = Queue.concurrentDefaultQueue()
 

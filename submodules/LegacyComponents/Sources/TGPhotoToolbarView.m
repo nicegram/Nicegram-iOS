@@ -1,16 +1,16 @@
-#import <LegacyComponents/TGPhotoToolbarView.h>
+#import "TGPhotoToolbarView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGFont.h"
+#import "TGImageUtils.h"
 
-#import <LegacyComponents/TGModernButton.h>
-#import <LegacyComponents/TGPhotoEditorButton.h>
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGModernButton.h"
+#import "TGPhotoEditorButton.h"
+#import "TGPhotoEditorInterfaceAssets.h"
 
-#import <LegacyComponents/TGMediaAssetsController.h>
+#import "TGMediaAssetsController.h"
 
-#import <LegacyComponents/TGPhotoPaintStickersContext.h>
+#import "TGPhotoPaintStickersContext.h"
 
 @interface TGPhotoToolbarView ()
 {

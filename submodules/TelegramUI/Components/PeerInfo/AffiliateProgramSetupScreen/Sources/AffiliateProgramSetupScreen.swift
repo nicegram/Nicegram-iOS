@@ -1554,8 +1554,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
                 self.scrollView.contentSize = contentSize
             }
             let scrollInsets = UIEdgeInsets(top: environment.navigationHeight, left: 0.0, bottom: environment.safeInsets.bottom, right: 0.0)
-            if self.scrollView.verticalScrollIndicatorInsets != scrollInsets {
-                self.scrollView.verticalScrollIndicatorInsets = scrollInsets
+            if self.scrollView.scrollIndicatorInsets != scrollInsets {
+                self.scrollView.scrollIndicatorInsets = scrollInsets
             }
             self.ignoreScrolling = false
             

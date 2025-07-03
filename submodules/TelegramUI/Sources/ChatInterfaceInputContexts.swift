@@ -238,12 +238,6 @@ func inputTextPanelStateForChatPresentationInterfaceState(_ chatPresentationInte
                     }
                 }
                 
-                if let channel = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isMonoForum, let mainChannel = chatPresentationInterfaceState.renderedPeer?.chatOrMonoforumMainPeer as? TelegramChannel, (!mainChannel.hasPermission(.manageDirect) || chatPresentationInterfaceState.chatLocation.threadId != nil) {
-                    if chatPresentationInterfaceState.interfaceState.postSuggestionState == nil {
-                        accessoryItems.append(.suggestPost)
-                    }
-                }
-                
                 if case let .customChatContents(customChatContents) = chatPresentationInterfaceState.subject {
                     switch customChatContents.kind {
                     case .hashTagSearch:

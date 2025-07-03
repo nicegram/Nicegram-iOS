@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGForwardedMessageMediaAttachment.h>
+#import "TGForwardedMessageMediaAttachment.h"
 
 @implementation TGForwardedMessageMediaAttachment
 

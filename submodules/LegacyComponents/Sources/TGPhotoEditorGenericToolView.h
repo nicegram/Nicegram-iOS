@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGPhotoEditorToolView.h>
+#import "TGPhotoEditorToolView.h"
 #import "PGPhotoEditorItem.h"
 
 @interface TGPhotoEditorGenericToolView : UIView <TGPhotoEditorToolView>

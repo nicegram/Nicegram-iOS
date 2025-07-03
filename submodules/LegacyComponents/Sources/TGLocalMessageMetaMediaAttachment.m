@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGLocalMessageMetaMediaAttachment.h>
+#import "TGLocalMessageMetaMediaAttachment.h"
 
-#import <LegacyComponents/TGImageInfo.h>
+#import "TGImageInfo.h"
 
 @implementation TGLocalMessageMetaMediaAttachment
 

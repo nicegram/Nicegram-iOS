@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGImageDataSource.h>
+#import "TGImageDataSource.h"
 
 @implementation TGImageDataSource
 

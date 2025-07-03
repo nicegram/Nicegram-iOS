@@ -341,7 +341,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
                         }
                     } else {
                         if channel.isMonoForum {
-                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = content.firstMessage.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = content.firstMessage.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                 headerSeparableThreadId = content.firstMessage.threadId
                                 
                                 if let threadId = content.firstMessage.threadId, let peer = content.firstMessage.peers[EnginePeer.Id(threadId)] {
@@ -377,7 +377,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
             }
         })
         
-        if let headerSeparableThreadId, let headerDisplayPeer, !(associatedData.subject?.isService ?? false) {
+        if let headerSeparableThreadId, let headerDisplayPeer {
             self.topicHeader = ChatMessageDateHeader(timestamp: content.index.timestamp, separableThreadId: headerSeparableThreadId, scheduled: false, displayHeader: headerDisplayPeer, presentationData: presentationData, controllerInteraction: controllerInteraction, context: context, action: { _, _ in
                 controllerInteraction.updateChatLocationThread(headerSeparableThreadId, nil)
             })

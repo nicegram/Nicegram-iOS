@@ -1,15 +1,15 @@
-#import <LegacyComponents/TGConversation.h>
+#import "TGConversation.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGStringUtils.h>
-#import <LegacyComponents/TGMessage.h>
+#import "TGStringUtils.h"
+#import "TGMessage.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
-#import <LegacyComponents/TGPeerIdAdapter.h>
+#import "TGPeerIdAdapter.h"
 
-#import <LegacyComponents/TGImageInfo.h>
-#import <LegacyComponents/TGMediaOriginInfo.h>
+#import "TGImageInfo.h"
+#import "TGMediaOriginInfo.h"
 
 @implementation TGEncryptedConversationData
 

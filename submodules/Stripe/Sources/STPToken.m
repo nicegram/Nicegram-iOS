@@ -22,13 +22,6 @@
 
 @implementation STPToken
 
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-    }
-    return self;
-}
-
 - (NSString *)description {
     return self.tokenId ?: @"Unknown token";
 }

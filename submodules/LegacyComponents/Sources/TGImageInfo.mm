@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGImageInfo.h>
+#import "TGImageInfo.h"
 
 #import <vector>
 

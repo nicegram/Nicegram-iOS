@@ -1,3 +1,5 @@
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <LegacyComponents/TGOverlayController.h>
 #import <LegacyComponents/LegacyComponentsContext.h>
 

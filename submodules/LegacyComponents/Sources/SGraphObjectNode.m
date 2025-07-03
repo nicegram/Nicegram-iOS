@@ -1,4 +1,4 @@
-#import <LegacyComponents/SGraphObjectNode.h>
+#import "SGraphObjectNode.h"
 
 @implementation SGraphObjectNode
 

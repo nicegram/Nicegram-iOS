@@ -29,8 +29,6 @@ swift_library(
         "//submodules/UndoUI",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/PresentationDataUtils",
-        "//submodules/TelegramUI/Components/CheckComponent",
-        "//submodules/TelegramUI/Components/PlainButtonComponent",
     ],
     visibility = [
         "//visibility:public",

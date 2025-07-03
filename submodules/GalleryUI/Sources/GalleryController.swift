@@ -389,7 +389,7 @@ public func galleryItemForEntry(
                 }
             }
             if content == nil, let webEmbedContent = WebEmbedVideoContent(userLocation: .peer(message.id.peerId), webPage: webpage, webpageContent: webpageContent, forcedTimestamp: timecode.flatMap(Int.init), openUrl: { url in
-                performAction(.url(url: url.absoluteString, concealed: false, dismiss: true))
+                performAction(.url(url: url.absoluteString, concealed: false))
             }) {
                 content = webEmbedContent
             }
@@ -507,7 +507,7 @@ private enum GalleryMessageHistoryView {
 }
 
 public enum GalleryControllerInteractionTapAction {
-    case url(url: String, concealed: Bool, dismiss: Bool)
+    case url(url: String, concealed: Bool)
     case textMention(String)
     case peerMention(PeerId, String)
     case botCommand(String)
@@ -966,13 +966,12 @@ public class GalleryController: ViewController, StandalonePresentableController,
         
         performActionImpl = { [weak self] action in
             if let strongSelf = self {
-                if case let .url(_, _, dismiss) = action, !dismiss {
-                } else if case .timecode = action {
+                if case .timecode = action {
                 } else {
                     strongSelf.dismiss(forceAway: false)
                 }
                 switch action {
-                    case let .url(url, concealed, _):
+                    case let .url(url, concealed):
                         strongSelf.actionInteraction?.openUrl(url, concealed)
                     case let .textMention(mention):
                         strongSelf.actionInteraction?.openPeerMention(mention)
@@ -1002,7 +1001,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
                     presentationData = presentationData.withUpdated(theme: defaultDarkColorPresentationTheme)
                 }
                 switch action {
-                    case let .url(url, _, _):
+                    case let .url(url, _):
                         var cleanUrl = url
                         var canAddToReadingList = true
                         let canOpenIn = availableOpenInOptions(context: strongSelf.context, item: .url(url: url)).count > 1

@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGListsTableView.h>
+#import "TGListsTableView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/POPBasicAnimation.h>
-#import <LegacyComponents/Freedom.h>
+#import "POPBasicAnimation.h"
+#import "Freedom.h"
 
 #import <objc/runtime.h>
 

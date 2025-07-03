@@ -1,4 +1,3 @@
-#import <Foundation/Foundation.h>
 #import <SSignalKit/SDisposable.h>
 
 @interface SSubscriber : NSObject <SDisposable>

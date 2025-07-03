@@ -4,7 +4,6 @@ import Display
 import SwiftSignalKit
 import RangeSet
 import TextFormat
-import UIKit
 
 public enum MediaPlayerScrubbingNodeCap {
     case square

@@ -1,4 +1,3 @@
-#import <LegacyComponents/LegacyComponents.h>
 #import "TGPhotoDrawingController.h"
 
 #import "LegacyComponentsInternal.h"
@@ -8,7 +7,7 @@
 #import <LegacyComponents/TGPaintUtils.h>
 #import <LegacyComponents/TGPhotoEditorUtils.h>
 #import <LegacyComponents/TGPhotoEditorAnimation.h>
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 #import <LegacyComponents/TGObserverProxy.h>
 
 #import <LegacyComponents/TGMenuView.h>
@@ -20,7 +19,7 @@
 #import <LegacyComponents/TGPaintingData.h>
 
 #import "TGPaintingWrapperView.h"
-#import <LegacyComponents/TGPhotoEditorSparseView.h>
+#import "TGPhotoEditorSparseView.h"
 
 #import "PGPhotoEditor.h"
 #import "TGPhotoEditorPreviewView.h"

@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGChannelAdminRights.h>
+#import "TGChannelAdminRights.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGChannelAdminRights
 

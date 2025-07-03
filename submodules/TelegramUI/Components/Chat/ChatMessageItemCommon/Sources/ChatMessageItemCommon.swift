@@ -305,7 +305,7 @@ public func canAddMessageReactions(message: Message, account: Account) -> Bool {
                 return true
             } else {
                 switch action.action {
-                case .unknown, .groupCreated, .channelMigratedFromGroup, .groupMigratedToChannel, .historyCleared, .customText, .botDomainAccessGranted, .botAppAccessGranted, .botSentSecureValues, .phoneNumberRequest, .webViewData, .topicCreated, .attachMenuBotAllowed, .requestedPeer, .giveawayLaunched, .suggestedPostApprovalStatus, .suggestedPostSuccess, .suggestedPostRefund:
+                case .unknown, .groupCreated, .channelMigratedFromGroup, .groupMigratedToChannel, .historyCleared, .customText, .botDomainAccessGranted, .botAppAccessGranted, .botSentSecureValues, .phoneNumberRequest, .webViewData, .topicCreated, .attachMenuBotAllowed, .requestedPeer, .giveawayLaunched:
                     return false
                 default:
                     return true

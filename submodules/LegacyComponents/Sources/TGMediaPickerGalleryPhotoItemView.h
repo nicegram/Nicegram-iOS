@@ -1,6 +1,6 @@
 #import <LegacyComponents/TGModernGalleryZoomableItemView.h>
-#import <LegacyComponents/TGModernGalleryEditableItemView.h>
-#import <LegacyComponents/TGModernGalleryImageItemImageView.h>
+#import "TGModernGalleryEditableItemView.h"
+#import "TGModernGalleryImageItemImageView.h"
 
 @interface TGMediaPickerGalleryPhotoItemView : TGModernGalleryZoomableItemView <TGModernGalleryEditableItemView>
 

@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGPluralization.h>
+#import "TGPluralization.h"
 
 TGPluralFormValue TGPluralForm(unsigned int lc, int n) {
     switch (lc) {

@@ -1,15 +1,15 @@
-#import <LegacyComponents/TGCameraFlashControl.h>
+#import "TGCameraFlashControl.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGImageUtils.h"
 
-#import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
+#import "UIControl+HitTestEdgeInsets.h"
 
-#import <LegacyComponents/TGCameraInterfaceAssets.h>
+#import "TGCameraInterfaceAssets.h"
 #import <LegacyComponents/TGModernButton.h>
 
-#import <LegacyComponents/POPBasicAnimation.h>
+#import "POPBasicAnimation.h"
 
 const CGFloat TGCameraFlashControlHeight = 44.0f;
 

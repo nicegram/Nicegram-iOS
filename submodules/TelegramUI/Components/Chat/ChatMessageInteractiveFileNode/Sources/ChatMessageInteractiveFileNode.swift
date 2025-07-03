@@ -1858,7 +1858,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
         
         if let updatingMedia = arguments.attributes.updatingMedia, case .update = updatingMedia.media {
             let adjustedProgress = max(CGFloat(updatingMedia.progress), 0.027)
-            state = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: nil, animateRotation: true)
+            state = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: nil)
         } else {
             switch resourceStatus.mediaStatus {
             case var .fetchStatus(fetchStatus):
@@ -1881,7 +1881,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         if message.groupingKey != nil, adjustedProgress.isEqual(to: 1.0), (message.flags.contains(.Unsent) || wasCheck) {
                             state = .check(appearance: nil)
                         } else {
-                            state = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: nil, animateRotation: true)
+                            state = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: nil)
                         }
                     }
                 case .Local:
@@ -1925,7 +1925,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 switch resourceStatus.fetchStatus {
                 case let .Fetching(_, progress):
                     let adjustedProgress = max(progress, 0.027)
-                    streamingState = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: .init(inset: 1.0, lineWidth: 2.0), animateRotation: true)
+                    streamingState = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: .init(inset: 1.0, lineWidth: 2.0))
                 case .Local:
                     streamingState = .none
                 case .Remote, .Paused:
@@ -1943,7 +1943,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
             } else if case .check = state {
             } else {
                 let adjustedProgress: CGFloat = 0.027
-                state = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: .init(inset: 1.0, lineWidth: 2.0), animateRotation: true)
+                state = .progress(value: CGFloat(adjustedProgress), cancelEnabled: true, appearance: .init(inset: 1.0, lineWidth: 2.0))
             }
         }
         

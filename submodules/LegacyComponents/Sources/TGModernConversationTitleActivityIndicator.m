@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGModernConversationTitleActivityIndicator.h>
+#import "TGModernConversationTitleActivityIndicator.h"
 
 #import "LegacyComponentsInternal.h"
 #import "TGColor.h"
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/POPBasicAnimation.h>
+#import "TGImageUtils.h"
+#import "POPBasicAnimation.h"
 
 #import <math.h>
 

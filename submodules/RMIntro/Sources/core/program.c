@@ -1,8 +1,7 @@
 #include "program.h"
 #include "platform_gl.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 
 TextureProgram get_texture_program(GLuint program)
 {
@@ -34,5 +33,3 @@ GradientProgram get_gradient_program(GLuint program)
         glGetAttribLocation(program, "a_Color"),
         glGetUniformLocation(program, "u_Alpha")};
 }
-
-#pragma clang diagnostic pop

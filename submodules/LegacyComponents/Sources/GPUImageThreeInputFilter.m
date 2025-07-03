@@ -1,7 +1,5 @@
 #import "GPUImageThreeInputFilter.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 NSString *const kGPUImageThreeInputTextureVertexShaderString = SHADER_STRING
 (
@@ -328,5 +326,3 @@ NSString *const kGPUImageThreeInputTextureVertexShaderString = SHADER_STRING
 }
 
 @end
-
-#pragma clang diagnostic pop

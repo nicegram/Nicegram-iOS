@@ -1,25 +1,24 @@
-#import <LegacyComponents/LegacyComponents.h>
 #import "TGPhotoAvatarPreviewController.h"
 
 #import "LegacyComponentsInternal.h"
 
 #import <LegacyComponents/TGPhotoEditorAnimation.h>
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 
 #import "PGPhotoEditor.h"
 #import "PGPhotoEditorView.h"
 #import <LegacyComponents/TGPhotoEditorUtils.h>
 #import <LegacyComponents/TGPaintUtils.h>
 
-#import <LegacyComponents/TGPhotoEditorController.h>
+#import "TGPhotoEditorController.h"
 #import "TGPhotoEditorPreviewView.h"
-#import <LegacyComponents/TGPhotoAvatarCropView.h>
+#import "TGPhotoAvatarCropView.h"
 
 #import "TGMediaPickerGalleryVideoScrubber.h"
-#import <LegacyComponents/TGModernGalleryVideoView.h>
+#import "TGModernGalleryVideoView.h"
 
 
-#import <LegacyComponents/TGPhotoPaintStickersContext.h>
+#import "TGPhotoPaintStickersContext.h"
 
 #import "TGPhotoDrawingController.h"
 

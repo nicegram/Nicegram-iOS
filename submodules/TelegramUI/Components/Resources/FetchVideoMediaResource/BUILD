@@ -11,7 +11,6 @@ swift_library(
     ],
     deps = [
         "//submodules/Postbox",
-        "//submodules/SSignalKit/SSignalKit",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/TelegramCore",
         "//submodules/LegacyComponents",

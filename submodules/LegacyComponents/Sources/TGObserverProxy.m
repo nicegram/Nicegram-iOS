@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGObserverProxy.h>
+#import "TGObserverProxy.h"
 
 @interface TGObserverProxyScheduledNotification : NSObject
 

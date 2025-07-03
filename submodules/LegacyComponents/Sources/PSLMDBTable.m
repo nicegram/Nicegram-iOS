@@ -1,4 +1,4 @@
-#import <LegacyComponents/PSLMDBTable.h>
+#import "PSLMDBTable.h"
 
 @implementation PSLMDBTable
 

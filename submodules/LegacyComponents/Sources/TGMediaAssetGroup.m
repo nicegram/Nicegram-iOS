@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMediaAssetGroup.h>
+#import "TGMediaAssetGroup.h"
 
 #import "LegacyComponentsInternal.h"
 

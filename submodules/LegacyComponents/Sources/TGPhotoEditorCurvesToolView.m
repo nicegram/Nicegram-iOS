@@ -1,8 +1,8 @@
 #import "TGPhotoEditorCurvesToolView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGFont.h"
+#import "TGImageUtils.h"
 
 typedef enum
 {

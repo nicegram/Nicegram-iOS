@@ -4,7 +4,7 @@
 
 #import "TGPhotoToolCell.h"
 
-#import <LegacyComponents/TGPhotoEditorSliderView.h>
+#import "TGPhotoEditorSliderView.h"
 
 const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
 

@@ -1,12 +1,12 @@
 #import "TGMediaPickerPhotoCounterButton.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/TGFont.h>
-#import <LegacyComponents/TGStringUtils.h>
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGImageUtils.h"
+#import "TGFont.h"
+#import "TGStringUtils.h"
+#import "TGPhotoEditorInterfaceAssets.h"
 
-#import <LegacyComponents/POPSpringAnimation.h>
+#import "POPSpringAnimation.h"
 
 const CGFloat TGPhotoCounterButtonMaskFade = 18;
 

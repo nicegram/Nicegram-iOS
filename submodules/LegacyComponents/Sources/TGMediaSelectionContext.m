@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMediaSelectionContext.h>
+#import "TGMediaSelectionContext.h"
 
 @interface TGMediaSelectionChange ()
 

@@ -1,13 +1,13 @@
-#import <LegacyComponents/FreedomUIKit.h>
+#import "FreedomUIKit.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/Freedom.h>
+#import "Freedom.h"
 
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-#import <LegacyComponents/TGHacks.h>
-#import <LegacyComponents/TGNavigationController.h>
+#import "TGHacks.h"
+#import "TGNavigationController.h"
 
 #define DEBUG_KEYBOARD_QUEUE false
 

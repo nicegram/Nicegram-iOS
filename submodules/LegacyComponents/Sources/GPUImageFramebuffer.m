@@ -1,9 +1,6 @@
 #import "GPUImageFramebuffer.h"
 #import "GPUImageOutput.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 @interface GPUImageFramebuffer()
 {
     GLuint framebuffer;
@@ -496,5 +493,3 @@ void dataProviderUnlockCallback (void *info, __unused const void *data, __unused
 }
 
 @end
-
-#pragma clang diagnostic pop

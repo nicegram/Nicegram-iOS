@@ -11,9 +11,6 @@
 #define LOGGING_ON 0
 #endif
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 static void log_v_fixed_length(const GLchar* source, const GLint length) {
 	if (LOGGING_ON) {
 		char log_buffer[length + 1];
@@ -115,5 +112,3 @@ GLint validate_program(const GLuint program) {
 
 	return 0;
 }
-
-#pragma clang diagnostic pop

@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGInstantPage.h>
+#import "TGInstantPage.h"
 
-#import <LegacyComponents/TGConversation.h>
-#import <LegacyComponents/PSKeyValueEncoder.h>
-#import <LegacyComponents/PSKeyValueDecoder.h>
+#import "TGConversation.h"
+#import "PSKeyValueEncoder.h"
+#import "PSKeyValueDecoder.h"
 
 @implementation TGRichText
 

@@ -1,5 +1,5 @@
 #import "TGMenuSheetDimView.h"
-#import <LegacyComponents/TGMenuSheetView.h>
+#import "TGMenuSheetView.h"
 
 #import "LegacyComponentsInternal.h"
 

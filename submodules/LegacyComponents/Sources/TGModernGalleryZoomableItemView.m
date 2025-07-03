@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGModernGalleryZoomableItemView.h>
+#import "TGModernGalleryZoomableItemView.h"
 
 #import <LegacyComponents/LegacyComponents.h>
 
 #import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
-#import <LegacyComponents/TGModernGalleryImageItemContainerView.h>
+#import "TGModernGalleryImageItemContainerView.h"
 
 @interface TGModernGalleryZoomableItemView () <UIScrollViewDelegate>
 

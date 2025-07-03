@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGBotReplyMarkupButton.h>
+#import "TGBotReplyMarkupButton.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGBotReplyMarkupButtonActionUrl
 

@@ -1,5 +1,4 @@
-#import <LegacyComponents/LegacyComponents.h>
-#import <LegacyComponents/TGCameraController.h>
+#import "TGCameraController.h"
 
 #import "LegacyComponentsInternal.h"
 
@@ -30,7 +29,7 @@
 #import <LegacyComponents/TGMediaPickerGalleryVideoItemView.h>
 #import <LegacyComponents/TGModernGalleryVideoView.h>
 
-#import <LegacyComponents/TGMediaVideoConverter.h>
+#import "TGMediaVideoConverter.h"
 #import <LegacyComponents/TGMediaAssetImageSignals.h>
 #import <LegacyComponents/PGPhotoEditorValues.h>
 #import <LegacyComponents/TGVideoEditAdjustments.h>
@@ -47,9 +46,9 @@
 #import <LegacyComponents/TGMenuSheetController.h>
 #import <LegacyComponents/TGMediaPickerSendActionSheetController.h>
 
-#import <LegacyComponents/TGMediaPickerGallerySelectedItemsModel.h>
-#import <LegacyComponents/TGCameraCapturedPhoto.h>
-#import <LegacyComponents/TGCameraCapturedVideo.h>
+#import "TGMediaPickerGallerySelectedItemsModel.h"
+#import "TGCameraCapturedPhoto.h"
+#import "TGCameraCapturedVideo.h"
 
 #import "PGPhotoEditor.h"
 #import "PGRectangleDetector.h"
@@ -1722,7 +1721,9 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             };
             
             id<LegacyComponentsOverlayWindowManager> windowManager = nil;
+            id<LegacyComponentsContext> windowContext = nil;
             windowManager = [strongSelf->_context makeOverlayWindowManager];
+            windowContext = [windowManager context];
             
             TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:windowManager parentController:strongSelf contentController:(TGOverlayController *)controller];
             controllerWindow.hidden = false;
@@ -1884,7 +1885,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             return nil;
         };
         
-        __unused void (^dismissGalleryImpl)() = nil;
+        void (^dismissGalleryImpl)() = nil;
 
         galleryController.completedTransitionOut = ^
         {
@@ -2925,7 +2926,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     }
     
     static dispatch_once_t onceToken;
-    __unused static UIImage *blankImage;
+    static UIImage *blankImage;
     dispatch_once(&onceToken, ^
     {
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(1, 1), true, 0.0f);

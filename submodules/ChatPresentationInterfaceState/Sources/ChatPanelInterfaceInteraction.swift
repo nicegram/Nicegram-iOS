@@ -62,13 +62,6 @@ public enum ChatTranslationDisplayType {
 }
 
 public final class ChatPanelInterfaceInteraction {
-    public enum OpenSuggestPostMode {
-        case `default`
-        case editMessage
-        case editTime
-        case editPrice
-    }
-    
     // MARK: Nicegram
     public let cloudMessages: ([Message]?) -> Void
     public let copyForwardMessages:  ([Message]?) -> Void
@@ -76,7 +69,6 @@ public final class ChatPanelInterfaceInteraction {
     public let openGifs: () -> Void
     public let replyPrivately: (Message) -> Void
     //
-    
     public let setupReplyMessage: (MessageId?, @escaping (ContainedViewLayoutTransition, @escaping () -> Void) -> Void) -> Void
     public let setupEditMessage: (MessageId?, @escaping (ContainedViewLayoutTransition) -> Void) -> Void
     public let beginMessageSelection: ([MessageId], @escaping (ContainedViewLayoutTransition) -> Void) -> Void
@@ -93,7 +85,6 @@ public final class ChatPanelInterfaceInteraction {
     public let presentForwardOptions: (ASDisplayNode) -> Void
     public let presentReplyOptions: (ASDisplayNode) -> Void
     public let presentLinkOptions: (ASDisplayNode) -> Void
-    public let presentSuggestPostOptions: () -> Void
     public let shareSelectedMessages: () -> Void
     public let updateTextInputStateAndMode: (@escaping (ChatTextInputState, ChatInputMode) -> (ChatTextInputState, ChatInputMode)) -> Void
     public let updateInputModeAndDismissedButtonKeyboardMessageId: ((ChatPresentationInterfaceState) -> (ChatInputMode, MessageId?)) -> Void
@@ -166,7 +157,7 @@ public final class ChatPanelInterfaceInteraction {
     public let joinGroupCall: (CachedChannelData.ActiveCall) -> Void
     public let presentInviteMembers: () -> Void
     public let presentGigagroupHelp: () -> Void
-    public let openMonoforum: () -> Void
+    public let openSuggestPost: () -> Void
     public let updateShowCommands: ((Bool) -> Bool) -> Void
     public let updateShowSendAsPeers: ((Bool) -> Bool) -> Void
     public let openInviteRequests: () -> Void
@@ -183,7 +174,6 @@ public final class ChatPanelInterfaceInteraction {
     public let addDoNotTranslateLanguage: (String) -> Void
     public let hideTranslationPanel: () -> Void
     public let openPremiumGift: () -> Void
-    public let openSuggestPost: (Message?, OpenSuggestPostMode) -> Void
     public let openPremiumRequiredForMessaging: () -> Void
     public let openStarsPurchase: (Int64?) -> Void
     public let openMessagePayment: () -> Void
@@ -194,7 +184,6 @@ public final class ChatPanelInterfaceInteraction {
     public let openBoostToUnrestrict: () -> Void
     public let updateRecordingTrimRange: (Double, Double, Bool, Bool) -> Void
     public let dismissAllTooltips: () -> Void
-    public let editTodoMessage: (MessageId, Int32?, Bool) -> Void
     public let requestLayout: (ContainedViewLayoutTransition) -> Void
     public let chatController: () -> ViewController?
     public let statuses: ChatPanelInterfaceInteractionStatuses?
@@ -223,7 +212,6 @@ public final class ChatPanelInterfaceInteraction {
         presentForwardOptions: @escaping (ASDisplayNode) -> Void,
         presentReplyOptions: @escaping (ASDisplayNode) -> Void,
         presentLinkOptions: @escaping (ASDisplayNode) -> Void,
-        presentSuggestPostOptions: @escaping () -> Void,
         shareSelectedMessages: @escaping () -> Void,
         updateTextInputStateAndMode: @escaping ((ChatTextInputState, ChatInputMode) -> (ChatTextInputState, ChatInputMode)) -> Void,
         updateInputModeAndDismissedButtonKeyboardMessageId: @escaping ((ChatPresentationInterfaceState) -> (ChatInputMode, MessageId?)) -> Void,
@@ -295,7 +283,7 @@ public final class ChatPanelInterfaceInteraction {
         joinGroupCall: @escaping (CachedChannelData.ActiveCall) -> Void,
         presentInviteMembers: @escaping () -> Void,
         presentGigagroupHelp: @escaping () -> Void,
-        openMonoforum: @escaping () -> Void,
+        openSuggestPost: @escaping () -> Void,
         editMessageMedia: @escaping (MessageId, Bool) -> Void,
         updateShowCommands: @escaping ((Bool) -> Bool) -> Void,
         updateShowSendAsPeers: @escaping ((Bool) -> Bool) -> Void,
@@ -313,14 +301,12 @@ public final class ChatPanelInterfaceInteraction {
         addDoNotTranslateLanguage:  @escaping (String) -> Void,
         hideTranslationPanel:  @escaping () -> Void,
         openPremiumGift: @escaping () -> Void,
-        openSuggestPost: @escaping (Message?, OpenSuggestPostMode) -> Void,
         openPremiumRequiredForMessaging: @escaping () -> Void,
         openStarsPurchase: @escaping (Int64?) -> Void,
         openMessagePayment: @escaping () -> Void,
         openBoostToUnrestrict: @escaping () -> Void,
         updateRecordingTrimRange: @escaping (Double, Double, Bool, Bool) -> Void,
         dismissAllTooltips: @escaping () -> Void,
-        editTodoMessage: @escaping (MessageId, Int32?, Bool) -> Void,
         updateHistoryFilter: @escaping ((ChatPresentationInterfaceState.HistoryFilter?) -> ChatPresentationInterfaceState.HistoryFilter?) -> Void,
         updateChatLocationThread: @escaping (Int64?, ChatControllerAnimateInnerChatSwitchDirection?) -> Void,
         toggleChatSidebarMode: @escaping () -> Void,
@@ -352,7 +338,6 @@ public final class ChatPanelInterfaceInteraction {
         self.presentForwardOptions = presentForwardOptions
         self.presentReplyOptions = presentReplyOptions
         self.presentLinkOptions = presentLinkOptions
-        self.presentSuggestPostOptions = presentSuggestPostOptions
         self.shareSelectedMessages = shareSelectedMessages
         self.updateTextInputStateAndMode = updateTextInputStateAndMode
         self.updateInputModeAndDismissedButtonKeyboardMessageId = updateInputModeAndDismissedButtonKeyboardMessageId
@@ -425,7 +410,7 @@ public final class ChatPanelInterfaceInteraction {
         self.joinGroupCall = joinGroupCall
         self.presentInviteMembers = presentInviteMembers
         self.presentGigagroupHelp = presentGigagroupHelp
-        self.openMonoforum = openMonoforum
+        self.openSuggestPost = openSuggestPost
         self.updateShowCommands = updateShowCommands
         self.updateShowSendAsPeers = updateShowSendAsPeers
         self.openInviteRequests = openInviteRequests
@@ -442,14 +427,12 @@ public final class ChatPanelInterfaceInteraction {
         self.addDoNotTranslateLanguage = addDoNotTranslateLanguage
         self.hideTranslationPanel = hideTranslationPanel
         self.openPremiumGift = openPremiumGift
-        self.openSuggestPost = openSuggestPost
         self.openPremiumRequiredForMessaging = openPremiumRequiredForMessaging
         self.openStarsPurchase = openStarsPurchase
         self.openMessagePayment = openMessagePayment
         self.openBoostToUnrestrict = openBoostToUnrestrict
         self.updateRecordingTrimRange = updateRecordingTrimRange
         self.dismissAllTooltips = dismissAllTooltips
-        self.editTodoMessage = editTodoMessage
         self.updateHistoryFilter = updateHistoryFilter
         self.updateChatLocationThread = updateChatLocationThread
         self.toggleChatSidebarMode = toggleChatSidebarMode
@@ -486,7 +469,6 @@ public final class ChatPanelInterfaceInteraction {
         }, presentForwardOptions: { _ in
         }, presentReplyOptions: { _ in
         }, presentLinkOptions: { _ in
-        }, presentSuggestPostOptions: {
         }, shareSelectedMessages: {
         }, updateTextInputStateAndMode: updateTextInputStateAndMode, updateInputModeAndDismissedButtonKeyboardMessageId: updateInputModeAndDismissedButtonKeyboardMessageId, openStickers: {
         }, editMessage: {
@@ -559,7 +541,7 @@ public final class ChatPanelInterfaceInteraction {
         }, joinGroupCall: { _ in
         }, presentInviteMembers: {
         }, presentGigagroupHelp: {
-        }, openMonoforum: {
+        }, openSuggestPost: {
         }, editMessageMedia: { _, _ in
         }, updateShowCommands: { _ in
         }, updateShowSendAsPeers: { _ in
@@ -577,14 +559,12 @@ public final class ChatPanelInterfaceInteraction {
         }, addDoNotTranslateLanguage: { _ in
         }, hideTranslationPanel: {
         }, openPremiumGift: {
-        }, openSuggestPost: { _, _ in
         }, openPremiumRequiredForMessaging: {
         }, openStarsPurchase: { _ in
         }, openMessagePayment: {
         }, openBoostToUnrestrict: {
         }, updateRecordingTrimRange: { _, _, _, _ in
         }, dismissAllTooltips: {
-        }, editTodoMessage: { _, _, _ in
         }, updateHistoryFilter: { _ in
         }, updateChatLocationThread: { _, _ in
         }, toggleChatSidebarMode: {

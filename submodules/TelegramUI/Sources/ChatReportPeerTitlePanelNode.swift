@@ -411,11 +411,10 @@ final class ChatReportPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
     }
     
     private func openPremiumEmojiStatusDemo() {
-        guard let navigationController = self.interfaceInteraction?.getNavigationController(), let peerId = self.presentationInterfaceState?.chatLocation.peerId, let emojiStatus = self.presentationInterfaceState?.renderedPeer?.peer?.emojiStatus else {
+        guard let navigationController = self.interfaceInteraction?.getNavigationController(), let peerId = self.presentationInterfaceState?.chatLocation.peerId, let emojiStatus = self.presentationInterfaceState?.renderedPeer?.peer?.emojiStatus, case let .emoji(fileId) = emojiStatus.content else {
             return
         }
         
-        let fileId = emojiStatus.fileId
         let source: Signal<PremiumSource, NoError> = self.emojiStatusFileAndPackTitle.get()
         |> take(1)
         |> mapToSignal { emojiStatusFileAndPack -> Signal<PremiumSource, NoError> in

@@ -1,4 +1,4 @@
-#import <LegacyComponents/NSInputStream+TL.h>
+#import "NSInputStream+TL.h"
 
 #import "LegacyComponentsInternal.h"
 

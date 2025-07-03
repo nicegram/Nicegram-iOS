@@ -1,22 +1,22 @@
 #import "TGMediaPickerPhotoStripCell.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
+#import "TGFont.h"
 
-#import <LegacyComponents/TGModernButton.h>
-#import <LegacyComponents/TGCheckButtonView.h>
+#import "TGModernButton.h"
+#import "TGCheckButtonView.h"
 #import <LegacyComponents/TGImageView.h>
 
 #import <LegacyComponents/TGPhotoEditorUtils.h>
 
-#import <LegacyComponents/TGMediaPickerGallerySelectedItemsModel.h>
+#import "TGMediaPickerGallerySelectedItemsModel.h"
 #import <LegacyComponents/TGMediaSelectionContext.h>
 #import <LegacyComponents/TGMediaEditingContext.h>
 
 #import <LegacyComponents/TGVideoEditAdjustments.h>
 
-#import <LegacyComponents/TGCameraCapturedVideo.h>
-#import <LegacyComponents/TGMediaAsset+TGMediaEditableItem.h>
+#import "TGCameraCapturedVideo.h"
+#import "TGMediaAsset+TGMediaEditableItem.h"
 
 NSString *const TGMediaPickerPhotoStripCellKind = @"PhotoStripCell";
 

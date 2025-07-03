@@ -1,12 +1,12 @@
 #import "TGPhotoEditorToolButtonsView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGFont.h"
+#import "TGImageUtils.h"
 
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 
-#import <LegacyComponents/TGModernButton.h>
+#import "TGModernButton.h"
 
 const CGFloat TGPhotoEditorToolButtonsViewSize = 53;
 

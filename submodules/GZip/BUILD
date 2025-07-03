@@ -9,9 +9,6 @@ objc_library(
     hdrs = glob([
         "Sources/**/*.h",
     ]),
-    includes = [
-        "Sources",
-    ],
     sdk_dylibs = [
         "libz",
     ],

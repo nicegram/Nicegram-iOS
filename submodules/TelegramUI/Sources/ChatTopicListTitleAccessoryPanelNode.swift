@@ -119,12 +119,6 @@ final class ChatTopicListTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode, C
                         return
                     }
                     self.interfaceInteraction?.updateChatLocationThread(topicId, direction ? .right : .left)
-                },
-                openDeletePeer: { [weak self] threadId in
-                    guard let controller = self?.interfaceInteraction?.chatController() as? ChatControllerImpl else {
-                        return
-                    }
-                    controller.openDeleteMonoforumPeer(peerId: PeerId(threadId))
                 }
             )),
             environment: {

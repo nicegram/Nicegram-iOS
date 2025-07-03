@@ -505,11 +505,12 @@ public func dataWithHexString(_ string: String) -> Data {
         let subIndex = hex.index(hex.startIndex, offsetBy: 2)
         let c = String(hex[..<subIndex])
         hex = String(hex[subIndex...])
-        
-        guard let byte = UInt8(c, radix: 16) else {
+        var ch: UInt32 = 0
+        if !Scanner(string: c).scanHexInt32(&ch) {
             return Data()
         }
-        data.append(byte)
+        var char = UInt8(ch)
+        data.append(&char, count: 1)
     }
     return data
 }

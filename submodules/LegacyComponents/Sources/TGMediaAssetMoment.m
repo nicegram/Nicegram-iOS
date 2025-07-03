@@ -1,5 +1,5 @@
-#import <LegacyComponents/TGMediaAssetMoment.h>
-#import <LegacyComponents/TGMediaAssetFetchResult.h>
+#import "TGMediaAssetMoment.h"
+#import "TGMediaAssetFetchResult.h"
 
 @interface TGMediaAssetMoment ()
 {

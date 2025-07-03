@@ -1,8 +1,8 @@
-#import <LegacyComponents/ASHandle.h>
+#import "ASHandle.h"
 
 #import <LegacyComponents/LegacyComponents.h>
 
-#import <LegacyComponents/ASWatcher.h>
+#import "ASWatcher.h"
 
 @interface ASHandle ()
 {

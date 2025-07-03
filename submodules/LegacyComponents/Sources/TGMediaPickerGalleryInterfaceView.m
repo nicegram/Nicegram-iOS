@@ -1,9 +1,8 @@
-#import <LegacyComponents/LegacyComponents.h>
-#import <LegacyComponents/TGMediaPickerGalleryInterfaceView.h>
+#import "TGMediaPickerGalleryInterfaceView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/TGFont.h>
+#import "TGImageUtils.h"
+#import "TGFont.h"
 
 #import <SSignalKit/SSignalKit.h>
 
@@ -17,26 +16,26 @@
 #import <LegacyComponents/TGMediaEditingContext.h>
 #import <LegacyComponents/TGVideoEditAdjustments.h>
 #import <LegacyComponents/TGMediaVideoConverter.h>
-#import <LegacyComponents/TGMediaPickerGallerySelectedItemsModel.h>
+#import "TGMediaPickerGallerySelectedItemsModel.h"
 
-#import <LegacyComponents/TGModernGallerySelectableItem.h>
-#import <LegacyComponents/TGModernGalleryEditableItem.h>
-#import <LegacyComponents/TGMediaPickerGalleryPhotoItem.h>
-#import <LegacyComponents/TGMediaPickerGalleryVideoItem.h>
+#import "TGModernGallerySelectableItem.h"
+#import "TGModernGalleryEditableItem.h"
+#import "TGMediaPickerGalleryPhotoItem.h"
+#import "TGMediaPickerGalleryVideoItem.h"
 #import "TGMediaPickerGalleryPhotoItemView.h"
-#import <LegacyComponents/TGMediaPickerGalleryVideoItemView.h>
+#import "TGMediaPickerGalleryVideoItemView.h"
 
 #import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
 #import <LegacyComponents/TGPhotoEditorTabController.h>
 #import <LegacyComponents/TGPhotoToolbarView.h>
 #import <LegacyComponents/TGPhotoEditorButton.h>
-#import <LegacyComponents/TGCheckButtonView.h>
+#import "TGCheckButtonView.h"
 #import "TGMediaPickerPhotoCounterButton.h"
 #import "TGMediaPickerPhotoStripView.h"
 
 #import "TGMediaPickerScrubberHeaderView.h"
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 
 #import <LegacyComponents/TGMenuView.h>
 #import <LegacyComponents/TGTooltipView.h>

@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGModernGalleryImageItem.h>
+#import "TGModernGalleryImageItem.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/TGModernGalleryImageItemView.h>
+#import "TGModernGalleryImageItemView.h"
 
 #import <LegacyComponents/TGImageView.h>
 

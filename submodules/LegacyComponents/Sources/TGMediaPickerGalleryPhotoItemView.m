@@ -1,9 +1,8 @@
-#import <LegacyComponents/LegacyComponents.h>
 #import "TGMediaPickerGalleryPhotoItemView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
-#import <LegacyComponents/TGStringUtils.h>
+#import "TGFont.h"
+#import "TGStringUtils.h"
 
 #import <LegacyComponents/TGMediaAsset.h>
 #import <LegacyComponents/TGMediaAssetImageSignals.h>
@@ -19,7 +18,7 @@
 
 #import <LegacyComponents/TGMediaPickerGalleryVideoItem.h>
 
-#import <LegacyComponents/TGMediaPickerGalleryPhotoItem.h>
+#import "TGMediaPickerGalleryPhotoItem.h"
 
 #import "TGPhotoDrawingController.h"
 

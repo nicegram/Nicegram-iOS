@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: Signal to SwiftConcurrency
+// MARK: Nicegram
 
 public class SignalAsyncStream<T, E: Error>: AsyncSequence {
     public typealias Element = T
@@ -90,36 +90,5 @@ public struct ErrorAdapter<E>: Error, LocalizedError {
     
     public var errorDescription: String? {
         "\(error)"
-    }
-}
-
-// MARK: SwiftConcurrency to Signal
-
-public extension Signal {
-    static func awaitOperation(
-        operation: @escaping () async -> T
-    ) -> Signal<T, NoError> where E == NoError {
-        Signal<T, Error>.awaitThrowingOperation(operation: operation)
-        |> `catch` { _ in .complete() }
-    }
-    
-    static func awaitThrowingOperation(
-        operation: @escaping () async throws -> T
-    ) -> Self where E == Error {
-        Self { subscriber in
-            let task = Task {
-                do {
-                    let result = try await operation()
-                    subscriber.putNext(result)
-                    subscriber.putCompletion()
-                } catch {
-                    subscriber.putError(error)
-                }
-            }
-            
-            return ActionDisposable {
-                task.cancel()
-            }
-        }
     }
 }

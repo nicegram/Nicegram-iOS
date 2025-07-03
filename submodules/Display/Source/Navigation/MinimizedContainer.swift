@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 import AsyncDisplayKit
 
 public protocol MinimizedContainer: ASDisplayNode {

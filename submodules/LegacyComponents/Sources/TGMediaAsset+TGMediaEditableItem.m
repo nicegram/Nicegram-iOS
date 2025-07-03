@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMediaAsset+TGMediaEditableItem.h>
+#import "TGMediaAsset+TGMediaEditableItem.h"
 #import <LegacyComponents/TGMediaAssetImageSignals.h>
 
 #import <LegacyComponents/LegacyComponents.h>

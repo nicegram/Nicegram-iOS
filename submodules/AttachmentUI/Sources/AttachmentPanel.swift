@@ -195,9 +195,6 @@ private final class AttachButtonComponent: CombinedComponent {
             case .location:
                 name = strings.Attachment_Location
                 imageName = "Chat/Attach Menu/Location"
-            case .todo:
-                name = strings.Attachment_Todo
-                imageName = "Chat/Attach Menu/Todo"
             case .contact:
                 name = strings.Attachment_Contact
                 imageName = "Chat/Attach Menu/Contact"
@@ -837,7 +834,7 @@ private final class MainButtonNode: HighlightTrackingButtonNode {
         transition.updateFrame(node: self.statusNode, frame: CGRect(origin: CGPoint(x: size.width - statusSize.width - 15.0, y: floorToScreenPixels((size.height - statusSize.height) / 2.0)), size: statusSize))
         
         self.statusNode.foregroundNodeColor = state.textColor
-        self.statusNode.transitionToState(state.progress == .side ? .progress(value: nil, cancelEnabled: false, appearance: SemanticStatusNodeState.ProgressAppearance(inset: 0.0, lineWidth: 2.0), animateRotation: true) : .none)
+        self.statusNode.transitionToState(state.progress == .side ? .progress(value: nil, cancelEnabled: false, appearance: SemanticStatusNodeState.ProgressAppearance(inset: 0.0, lineWidth: 2.0)) : .none)
     }
 }
 
@@ -964,7 +961,6 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
         }, presentForwardOptions: { _ in
         }, presentReplyOptions: { _ in
         }, presentLinkOptions: { _ in
-        }, presentSuggestPostOptions: {
         }, shareSelectedMessages: {
         }, updateTextInputStateAndMode: { [weak self] f in
             if let strongSelf = self {
@@ -1250,7 +1246,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
         }, joinGroupCall: { _ in
         }, presentInviteMembers: {
         }, presentGigagroupHelp: {
-        }, openMonoforum: {
+        }, openSuggestPost: {
         }, editMessageMedia: { _, _ in
         }, updateShowCommands: { _ in
         }, updateShowSendAsPeers: { _ in
@@ -1268,14 +1264,12 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
         }, addDoNotTranslateLanguage: { _ in
         }, hideTranslationPanel: {
         }, openPremiumGift: {
-        }, openSuggestPost: { _, _ in
         }, openPremiumRequiredForMessaging: {
         }, openStarsPurchase: { _ in
         }, openMessagePayment: {
         }, openBoostToUnrestrict: {
         }, updateRecordingTrimRange: { _, _, _, _ in
         }, dismissAllTooltips: {  
-        }, editTodoMessage: { _, _, _ in
         }, updateHistoryFilter: { _ in
         }, updateChatLocationThread: { _, _ in
         }, toggleChatSidebarMode: {
@@ -1307,7 +1301,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
                 if let data = view.cachedData as? CachedUserData {
                     return data.sendPaidMessageStars
                 } else if let channel = peerViewMainPeer(view) as? TelegramChannel {
-                    if channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = view.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                    if channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = view.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                         return nil
                     } else {
                         return channel.sendPaidMessageStars
@@ -1499,8 +1493,6 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
                 accessibilityTitle = self.presentationData.strings.Attachment_File
             case .location:
                 accessibilityTitle = self.presentationData.strings.Attachment_Location
-            case .todo:
-                accessibilityTitle = self.presentationData.strings.Attachment_Todo
             case .contact:
                 accessibilityTitle = self.presentationData.strings.Attachment_Contact
             case .poll:

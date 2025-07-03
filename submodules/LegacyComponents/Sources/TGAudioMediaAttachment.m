@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGAudioMediaAttachment.h>
+#import "TGAudioMediaAttachment.h"
 
 @implementation TGAudioMediaAttachment
 

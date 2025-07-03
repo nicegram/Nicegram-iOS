@@ -128,7 +128,7 @@ swift_library(
         "//submodules/TelegramUI/Components/PeerManagement/OldChannelsController",
         "//submodules/TelegramUI/Components/TextFieldComponent",
         "//submodules/TelegramUI/Components/ChatEntityKeyboardInputNode",
-        "//submodules/TelegramUI/Components/ListComposePollOptionComponent",
+        "//submodules/ComposePollUI",
         "//submodules/ChatPresentationInterfaceState",
         "//submodules/ShimmerEffect:ShimmerEffect",
         "//submodules/TelegramUI/Components/LottieComponent",

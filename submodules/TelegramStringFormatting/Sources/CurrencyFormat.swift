@@ -63,17 +63,6 @@ private func loadCurrencyFormatterEntries() -> [String: CurrencyFormatterEntry] 
         }
     }
     
-    let tonEntry = CurrencyFormatterEntry(
-        symbol: "TON",
-        thousandsSeparator: ".",
-        decimalSeparator: ",",
-        symbolOnLeft: true,
-        spaceBetweenAmountAndSymbol: false,
-        decimalDigits: 9
-    )
-    result["TON"] = tonEntry
-    result["ton"] = tonEntry
-    
     return result
 }
 

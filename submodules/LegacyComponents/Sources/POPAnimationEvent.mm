@@ -7,7 +7,7 @@
  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#import <LegacyComponents/POPAnimationEvent.h>
+#import "POPAnimationEvent.h"
 #import "POPAnimationEventInternal.h"
 
 static NSString *stringFromType(POPAnimationEventType aType)

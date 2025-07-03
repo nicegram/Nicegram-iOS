@@ -1,8 +1,8 @@
-#import <LegacyComponents/PSLMDBKeyValueCursor.h>
+#import "PSLMDBKeyValueCursor.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/PSLMDBTable.h>
+#import "PSLMDBTable.h"
 
 @interface PSLMDBKeyValueCursor ()
 {

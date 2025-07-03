@@ -1,4 +1,4 @@
-#import <LegacyComponents/PGCameraDeviceAngleSampler.h>
+#import "PGCameraDeviceAngleSampler.h"
 
 #import <CoreMotion/CoreMotion.h>
 

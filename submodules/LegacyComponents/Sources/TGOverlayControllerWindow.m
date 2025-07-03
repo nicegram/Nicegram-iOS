@@ -1,10 +1,10 @@
-#import <LegacyComponents/TGOverlayControllerWindow.h>
+#import "TGOverlayControllerWindow.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGHacks.h>
+#import "TGHacks.h"
 
-#import <LegacyComponents/TGViewController.h>
-#import <LegacyComponents/TGOverlayController.h>
+#import "TGViewController.h"
+#import "TGOverlayController.h"
 
 @implementation TGOverlayWindowViewController
 

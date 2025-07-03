@@ -158,7 +158,22 @@ public final class GiftAvatarComponent: Component {
             self.sceneView.scene = scene
             self.sceneView.delegate = self
             
-            if let color = self.component?.color {                
+            if let color = self.component?.color {
+//                let names: [String] = [
+//                    "particles_left",
+//                    "particles_right",
+//                    "particles_left_bottom",
+//                    "particles_right_bottom",
+//                    "particles_center"
+//                ]
+//                
+//                for name in names {
+//                    if let node = scene.rootNode.childNode(withName: name, recursively: false), let particleSystem = node.particleSystems?.first {
+//                        particleSystem.particleColor = color
+//                        particleSystem.particleColorVariation = SCNVector4Make(0, 0, 0, 0)
+//                    }
+//                }
+                
                 let names: [String] = [
                     "particles_left",
                     "particles_right",

@@ -42,7 +42,6 @@ import DeviceLocationManager
 import LegacyMediaPickerUI
 import GenerateStickerPlaceholderImage
 import PassKit
-import Photos
 
 private let durgerKingBotIds: [Int64] = [5104055776, 2200339955]
 
@@ -889,8 +888,7 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 
                 if webView.scrollView.contentInset != scrollInset {
                     webView.scrollView.contentInset = scrollInset
-                    webView.scrollView.horizontalScrollIndicatorInsets = scrollInset
-                    webView.scrollView.verticalScrollIndicatorInsets = scrollInset
+                    webView.scrollView.scrollIndicatorInsets = scrollInset
                 }
                 
                 if previousLayout != nil && (previousLayout?.inputHeight ?? 0.0).isZero, let inputHeight = layout.inputHeight, inputHeight > 44.0, transition.isAnimated {
@@ -1788,8 +1786,6 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         self?.webView?.sendEvent(name: "secure_storage_cleared", data: data.string)
                     })
                 }
-            case "web_app_hide_keyboard":
-                self.view.window?.endEditing(true)
             default:
                 break
             }

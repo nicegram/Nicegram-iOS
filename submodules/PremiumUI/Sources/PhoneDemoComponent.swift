@@ -372,7 +372,6 @@ final class PhoneDemoComponent: Component {
         case hello
         case tag
         case business
-        case todo
     }
     
     enum Model {
@@ -490,29 +489,29 @@ final class PhoneDemoComponent: Component {
                 case .dataRain:
                     if #available(iOS 10.0, *) {
                         if let _ = self.decorationView as? MatrixView {
-                        } else if let decorationView = MatrixView(test: true) {
-                            decorationView.frame = self.decorationContainerView.bounds.insetBy(dx: availableSize.width * 0.5, dy: 0.0)
-                            self.decorationView = decorationView
-                            self.decorationContainerView.addSubview(decorationView)
+                        } else if let rainView = MatrixView(test: true) {
+                            rainView.frame = self.decorationContainerView.bounds.insetBy(dx: availableSize.width * 0.5, dy: 0.0)
+                            self.decorationView = rainView
+                            self.decorationContainerView.addSubview(rainView)
                         }
                     }
                 case .swirlStars:
                     if let _ = self.decorationView as? SwirlStarsView {
                     } else {
-                        let decorationView = SwirlStarsView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
+                        let starsView = SwirlStarsView(frame: self.decorationContainerView.bounds)
+                        self.decorationView = starsView
+                        self.decorationContainerView.addSubview(starsView)
                     }
                 case .fasterStars:
                     if let _ = self.decorationView as? FasterStarsView {
                     } else {
-                        let decorationView = FasterStarsView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
+                        let starsView = FasterStarsView(frame: self.decorationContainerView.bounds)
+                        self.decorationView = starsView
+                        self.decorationContainerView.addSubview(starsView)
                         
                         self.playbackStatusDisposable = (self.phoneView.playbackStatus
-                        |> deliverOnMainQueue).start(next: { [weak decorationView] status in
-                            if let starsView = decorationView, let status = status {
+                        |> deliverOnMainQueue).start(next: { [weak starsView] status in
+                            if let starsView = starsView, let status = status {
                                 if status.timestamp > 8.0 {
                                     starsView.resetAnimation()
                                 } else if status.timestamp > 0.85 {
@@ -524,44 +523,37 @@ final class PhoneDemoComponent: Component {
                 case .badgeStars:
                     if let _ = self.decorationView as? BadgeStarsView {
                     } else {
-                        let decorationView = BadgeStarsView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
+                        let starsView = BadgeStarsView(frame: self.decorationContainerView.bounds)
+                        self.decorationView = starsView
+                        self.decorationContainerView.addSubview(starsView)
                     }
                 case .emoji:
                     if let _ = self.decorationView as? EmojiStarsView {
                     } else {
-                        let decorationView = EmojiStarsView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
+                        let starsView = EmojiStarsView(frame: self.decorationContainerView.bounds)
+                        self.decorationView = starsView
+                        self.decorationContainerView.addSubview(starsView)
                     }
                 case .hello:
                     if let _ = self.decorationView as? HelloView {
                     } else {
-                        let decorationView = HelloView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
+                        let starsView = HelloView(frame: self.decorationContainerView.bounds)
+                        self.decorationView = starsView
+                        self.decorationContainerView.addSubview(starsView)
                     }
                 case .tag:
                     if let _ = self.decorationView as? TagStarsView {
                     } else {
-                        let decorationView = TagStarsView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
+                        let starsView = TagStarsView(frame: self.decorationContainerView.bounds)
+                        self.decorationView = starsView
+                        self.decorationContainerView.addSubview(starsView)
                     }
                 case .business:
                     if let _ = self.decorationView as? BadgeBusinessView {
                     } else {
-                        let decorationView = BadgeBusinessView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
-                    }
-                case .todo:
-                    if let _ = self.decorationView as? TodoChecksView {
-                    } else {
-                        let decorationView = TodoChecksView(frame: self.decorationContainerView.bounds)
-                        self.decorationView = decorationView
-                        self.decorationContainerView.addSubview(decorationView)
+                        let starsView = BadgeBusinessView(frame: self.decorationContainerView.bounds)
+                        self.decorationView = starsView
+                        self.decorationContainerView.addSubview(starsView)
                     }
             }
         

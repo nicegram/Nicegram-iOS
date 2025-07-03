@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGDocumentAttributeImageSize.h>
+#import "TGDocumentAttributeImageSize.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGDocumentAttributeImageSize
 

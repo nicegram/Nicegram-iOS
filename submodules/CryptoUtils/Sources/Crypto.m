@@ -3,12 +3,9 @@
 #import <CommonCrypto/CommonCrypto.h>
 
 NSData * _Nonnull CryptoMD5(const void * _Nonnull bytes, int count) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     NSMutableData *result = [[NSMutableData alloc] initWithLength:(NSUInteger)CC_MD5_DIGEST_LENGTH];
     CC_MD5(bytes, (CC_LONG)count, result.mutableBytes);
     return result;
-#pragma clang diagnostic pop
 }
 
 NSData * _Nonnull CryptoSHA1(const void * _Nonnull bytes, int count) {
@@ -35,9 +32,6 @@ NSData * _Nonnull CryptoSHA512(const void * _Nonnull bytes, int count) {
 
 @end
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 @implementation IncrementalMD5
 
 - (instancetype _Nonnull)init {
@@ -61,8 +55,6 @@ NSData * _Nonnull CryptoSHA512(const void * _Nonnull bytes, int count) {
     CC_MD5_Final(result.mutableBytes, &_ctx);
     return result;
 }
-
-#pragma clang diagnostic pop
 
 @end
 

@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageEntityCashtag.h>
+#import "TGMessageEntityCashtag.h"
 
 @implementation TGMessageEntityCashtag
 

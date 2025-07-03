@@ -1,6 +1,6 @@
 #import "TGPhotoEditorBlurTypeButton.h"
 
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 
 @interface TGPhotoEditorBlurTypeButton ()
 {

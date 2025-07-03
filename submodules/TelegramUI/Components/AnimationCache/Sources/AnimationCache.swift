@@ -1380,20 +1380,22 @@ private func findHigherResolutionFileForAdaptation(itemDirectoryPath: String, ba
             let fileName = url.lastPathComponent
             if fileName.hasPrefix(baseName) {
                 let scanner = Scanner(string: fileName)
-                guard scanner.scanString(baseName) != nil else {
+                guard scanner.scanString(baseName, into: nil) else {
                     continue
                 }
-                guard let itemWidth = scanner.scanInt() else {
+                var itemWidth: Int = 0
+                guard scanner.scanInt(&itemWidth) else {
                     continue
                 }
-                guard scanner.scanString("x") != nil else {
+                guard scanner.scanString("x", into: nil) else {
                     continue
                 }
-                guard let itemHeight = scanner.scanInt() else {
+                var itemHeight: Int = 0
+                guard scanner.scanInt(&itemHeight) else {
                     continue
                 }
                 if !baseSuffix.isEmpty {
-                    guard scanner.scanString(baseSuffix) != nil else {
+                    guard scanner.scanString(baseSuffix, into: nil) else {
                         continue
                     }
                 }

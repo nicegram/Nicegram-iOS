@@ -860,7 +860,6 @@ public final class PendingMessageManager {
                 var quickReply: OutgoingQuickReplyMessageAttribute?
                 var messageEffect: EffectMessageAttribute?
                 var allowPaidStars: Int64?
-                var suggestedPost: Api.SuggestedPost?
                 
                 var flags: Int32 = 0
                 
@@ -899,8 +898,6 @@ public final class PendingMessageManager {
                         videoTimestamp = attribute.timestamp
                     } else if let attribute = attribute as? PaidStarsMessageAttribute {
                         allowPaidStars = attribute.stars.value * Int64(messages.count)
-                    } else if let attribute = attribute as? SuggestedPostMessageAttribute {
-                        suggestedPost = attribute.apiSuggestedPost(fixMinTime: Int32(Date().timeIntervalSince1970 + 10))
                     }
                 }
                                 
@@ -952,7 +949,7 @@ public final class PendingMessageManager {
                     var monoforumPeerId: Api.InputPeer?
                     if let threadId = messages[0].0.threadId {
                         if let channel = peer as? TelegramChannel, channel.flags.contains(.isMonoforum) {
-                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                 monoforumPeerId = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer)
                             }
                         } else {
@@ -981,10 +978,6 @@ public final class PendingMessageManager {
                         flags |= 1 << 22
                     }
                     
-                    if suggestedPost != nil {
-                        flags |= 1 << 23
-                    }
-                    
                     let forwardPeerIds = Set(forwardIds.map { $0.0.peerId })
                     if forwardPeerIds.count != 1 {
                         assertionFailure()
@@ -992,7 +985,7 @@ public final class PendingMessageManager {
                     } else if let inputSourcePeerId = forwardPeerIds.first, let inputSourcePeer = transaction.getPeer(inputSourcePeerId).flatMap(apiInputPeer) {
                         let dependencyTag = PendingMessageRequestDependencyTag(messageId: messages[0].0.id)
 
-                        sendMessageRequest = network.request(Api.functions.messages.forwardMessages(flags: flags, fromPeer: inputSourcePeer, id: forwardIds.map { $0.0.id }, randomId: forwardIds.map { $0.1 }, toPeer: inputPeer, topMsgId: topMsgId, replyTo: replyTo, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, videoTimestamp: videoTimestamp, allowPaidStars: allowPaidStars, suggestedPost: suggestedPost), tag: dependencyTag)
+                        sendMessageRequest = network.request(Api.functions.messages.forwardMessages(flags: flags, fromPeer: inputSourcePeer, id: forwardIds.map { $0.0.id }, randomId: forwardIds.map { $0.1 }, toPeer: inputPeer, topMsgId: topMsgId, replyTo: replyTo, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, videoTimestamp: videoTimestamp, allowPaidStars: allowPaidStars), tag: dependencyTag)
                     } else {
                         assertionFailure()
                         sendMessageRequest = .fail(MTRpcError(errorCode: 400, errorDescription: "Invalid forward source"))
@@ -1052,7 +1045,7 @@ public final class PendingMessageManager {
                     var monoforumPeerId: Api.InputPeer?
                     if let threadId = messages[0].0.threadId {
                         if let channel = peer as? TelegramChannel, channel.flags.contains(.isMonoforum) {
-                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                 monoforumPeerId = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer)
                             }
                         } else {
@@ -1356,7 +1349,6 @@ public final class PendingMessageManager {
                 var quickReply: OutgoingQuickReplyMessageAttribute?
                 var messageEffect: EffectMessageAttribute?
                 var allowPaidStars: Int64?
-                var suggestedPost: Api.SuggestedPost?
                 
                 var flags: Int32 = 0
                 
@@ -1364,7 +1356,7 @@ public final class PendingMessageManager {
                 var monoforumPeerId: Api.InputPeer?
                 if let threadId = message.threadId {
                     if let channel = peer as? TelegramChannel, channel.flags.contains(.isMonoforum) {
-                        if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                        if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                             monoforumPeerId = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer)
                         }
                     } else {
@@ -1411,8 +1403,6 @@ public final class PendingMessageManager {
                         videoTimestamp = attribute.timestamp
                     } else if let attribute = attribute as? PaidStarsMessageAttribute {
                         allowPaidStars = attribute.stars.value
-                    } else if let attribute = attribute as? SuggestedPostMessageAttribute {
-                        suggestedPost = attribute.apiSuggestedPost(fixMinTime: Int32(Date().timeIntervalSince1970 + 10))
                     }
                 }
                 
@@ -1530,11 +1520,8 @@ public final class PendingMessageManager {
                         if let _ = allowPaidStars {
                             flags |= 1 << 21
                         }
-                        if let _ = suggestedPost {
-                            flags |= 1 << 22
-                        }
                     
-                        sendMessageRequest = network.requestWithAdditionalInfo(Api.functions.messages.sendMessage(flags: flags, peer: inputPeer, replyTo: replyTo, message: message.text, randomId: uniqueId, replyMarkup: nil, entities: messageEntities, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, effect: messageEffectId, allowPaidStars: allowPaidStars, suggestedPost: suggestedPost), info: .acknowledgement, tag: dependencyTag)
+                        sendMessageRequest = network.requestWithAdditionalInfo(Api.functions.messages.sendMessage(flags: flags, peer: inputPeer, replyTo: replyTo, message: message.text, randomId: uniqueId, replyMarkup: nil, entities: messageEntities, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, effect: messageEffectId, allowPaidStars: allowPaidStars), info: .acknowledgement, tag: dependencyTag)
                     case let .media(inputMedia, text):
                         if bubbleUpEmojiOrStickersets {
                             flags |= Int32(1 << 15)
@@ -1626,18 +1613,15 @@ public final class PendingMessageManager {
                         if let _ = allowPaidStars {
                             flags |= 1 << 21
                         }
-                        if let _ = suggestedPost {
-                            flags |= 1 << 22
-                        }
                     
-                        sendMessageRequest = network.request(Api.functions.messages.sendMedia(flags: flags, peer: inputPeer, replyTo: replyTo, media: inputMedia, message: text, randomId: uniqueId, replyMarkup: nil, entities: messageEntities, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, effect: messageEffectId, allowPaidStars: allowPaidStars, suggestedPost: suggestedPost), tag: dependencyTag)
+                        sendMessageRequest = network.request(Api.functions.messages.sendMedia(flags: flags, peer: inputPeer, replyTo: replyTo, media: inputMedia, message: text, randomId: uniqueId, replyMarkup: nil, entities: messageEntities, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, effect: messageEffectId, allowPaidStars: allowPaidStars), tag: dependencyTag)
                         |> map(NetworkRequestResult.result)
                     case let .forward(sourceInfo):
                         var topMsgId: Int32?
                         var monoforumPeerId: Api.InputPeer?
                         if let threadId = message.threadId {
                             if let channel = peer as? TelegramChannel, channel.flags.contains(.isMonoforum) {
-                                if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                                if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = transaction.getPeer(linkedMonoforumId) as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                     monoforumPeerId = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer)
                                 }
                             } else {
@@ -1670,12 +1654,8 @@ public final class PendingMessageManager {
                             flags |= 1 << 22
                         }
                     
-                        if suggestedPost != nil {
-                            flags |= 1 << 23
-                        }
-                    
                         if let forwardSourceInfoAttribute = forwardSourceInfoAttribute, let sourcePeer = transaction.getPeer(forwardSourceInfoAttribute.messageId.peerId), let sourceInputPeer = apiInputPeer(sourcePeer) {
-                            sendMessageRequest = network.request(Api.functions.messages.forwardMessages(flags: flags, fromPeer: sourceInputPeer, id: [sourceInfo.messageId.id], randomId: [uniqueId], toPeer: inputPeer, topMsgId: topMsgId, replyTo: replyTo, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, videoTimestamp: videoTimestamp, allowPaidStars: allowPaidStars, suggestedPost: suggestedPost), tag: dependencyTag)
+                            sendMessageRequest = network.request(Api.functions.messages.forwardMessages(flags: flags, fromPeer: sourceInputPeer, id: [sourceInfo.messageId.id], randomId: [uniqueId], toPeer: inputPeer, topMsgId: topMsgId, replyTo: replyTo, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: quickReplyShortcut, videoTimestamp: videoTimestamp, allowPaidStars: allowPaidStars), tag: dependencyTag)
                             |> map(NetworkRequestResult.result)
                         } else {
                             sendMessageRequest = .fail(MTRpcError(errorCode: 400, errorDescription: "internal"))
@@ -1917,7 +1897,7 @@ public final class PendingMessageManager {
             if message.scheduleTime != nil && message.scheduleTime == apiMessage.timestamp {
                 isScheduled = true
             }
-            if case let .message(_, flags2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = apiMessage {
+            if case let .message(_, flags2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = apiMessage {
                 if (flags2 & (1 << 4)) != 0 {
                     isScheduled = true
                 }
@@ -1961,7 +1941,7 @@ public final class PendingMessageManager {
                 namespace = Namespaces.Message.QuickReplyCloud
             } else if let apiMessage = result.messages.first, message.scheduleTime != nil && message.scheduleTime == apiMessage.timestamp {
                 namespace = Namespaces.Message.ScheduledCloud
-            } else if let apiMessage = result.messages.first, case let .message(_, flags2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = apiMessage, (flags2 & (1 << 4)) != 0 {
+            } else if let apiMessage = result.messages.first, case let .message(_, flags2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = apiMessage, (flags2 & (1 << 4)) != 0 {
                 namespace = Namespaces.Message.ScheduledCloud
             }
         }

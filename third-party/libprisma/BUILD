@@ -61,6 +61,7 @@ objc_library(
         ":LibprismaBundle",
     ],
     copts = [
+        "-Ithird-party/libprisma/include/libprisma",
     ],
     deps = [
         "//third-party/boost_regex",

@@ -16,7 +16,6 @@ import HexColor
 import PresentationDataUtils
 import MediaPickerUI
 import WallpaperGalleryScreen
-import Photos
 
 public enum WallpaperSelectionResult {
     case remove

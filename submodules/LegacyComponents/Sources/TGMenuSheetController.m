@@ -1,19 +1,19 @@
-#import <LegacyComponents/TGMenuSheetController.h>
+#import "TGMenuSheetController.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/LegacyComponentsGlobals.h>
-#import <LegacyComponents/TGNavigationController.h>
-#import <LegacyComponents/TGOverlayController.h>
-#import <LegacyComponents/TGOverlayControllerWindow.h>
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/TGHacks.h>
+#import "LegacyComponentsGlobals.h"
+#import "TGNavigationController.h"
+#import "TGOverlayController.h"
+#import "TGOverlayControllerWindow.h"
+#import "TGImageUtils.h"
+#import "TGHacks.h"
 
 #import <SSignalKit/SSignalKit.h>
 
-#import <LegacyComponents/TGMenuSheetView.h>
+#import "TGMenuSheetView.h"
 #import "TGMenuSheetDimView.h"
-#import <LegacyComponents/TGMenuSheetItemView.h>
-#import <LegacyComponents/TGMenuSheetCollectionView.h>
+#import "TGMenuSheetItemView.h"
+#import "TGMenuSheetCollectionView.h"
 
 #import <LegacyComponents/TGObserverProxy.h>
 #import <UIKit/UIGestureRecognizerSubclass.h>
@@ -1120,6 +1120,14 @@ typedef enum
 
 - (void)setup3DTouch
 {
+    if (iosMajorVersion() >= 9 && self.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable)
+    {
+        for (TGMenuSheetItemView *itemView in _sheetView.itemViews)
+        {
+            if (itemView.previewSourceView != nil)
+                [self registerForPreviewingWithDelegate:itemView sourceView:itemView.previewSourceView];
+        }
+    }
 }
 
 - (void)popoverPresentationControllerDidDismissPopover:(UIPopoverPresentationController *)__unused popoverPresentationController {

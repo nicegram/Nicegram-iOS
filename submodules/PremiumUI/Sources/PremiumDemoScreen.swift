@@ -1098,21 +1098,20 @@ private final class DemoSheetContent: CombinedComponent {
                         )
                     )
                 )
-                                
-                availableItems[.todo] = DemoPagerComponent.Item(
+                
+                availableItems[.paidMessages] = DemoPagerComponent.Item(
                     AnyComponentWithIdentity(
-                        id: PremiumDemoScreen.Subject.todo,
+                        id: PremiumDemoScreen.Subject.paidMessages,
                         component: AnyComponent(
                             PageComponent(
                                 content: AnyComponent(PhoneDemoComponent(
                                     context: component.context,
                                     position: .top,
-                                    model: .island,
-                                    videoFile: configuration.videos["todo"],
-                                    decoration: .todo
+                                    videoFile: configuration.videos["paid_messages"],
+                                    decoration: .badgeStars
                                 )),
-                                title: strings.Premium_Todo,
-                                text: strings.Premium_TodoInfo,
+                                title: strings.Premium_PaidMessages,
+                                text: strings.Premium_PaidMessagesInfo,
                                 textColor: textColor
                             )
                         )
@@ -1215,8 +1214,8 @@ private final class DemoSheetContent: CombinedComponent {
                 text = strings.Premium_FolderTagsStandaloneInfo
             case .messageEffects:
                 text = strings.Premium_MessageEffectsInfo
-            case .todo:
-                text = strings.Premium_TodoInfo
+            case .paidMessages:
+                text = strings.Premium_PaidMessagesInfo
             default:
                 text = ""
             }
@@ -1301,7 +1300,7 @@ private final class DemoSheetContent: CombinedComponent {
                         case .emojiStatus:
                             buttonText = strings.Premium_EmojiStatus_Proceed
                             buttonAnimationName = "premium_unlock"
-                        case .todo:
+                        case .paidMessages:
                             buttonText = strings.Premium_PaidMessages_Proceed
                         default:
                             buttonText = strings.Common_OK
@@ -1492,7 +1491,7 @@ public class PremiumDemoScreen: ViewControllerComponentContainer {
         case business
         case folderTags
         case messageEffects
-        case todo
+        case paidMessages
         
         case businessLocation
         case businessHours
@@ -1551,8 +1550,8 @@ public class PremiumDemoScreen: ViewControllerComponentContainer {
                 return .folderTags
             case .messageEffects:
                 return .messageEffects
-            case .todo:
-                return .todo
+            case .paidMessages:
+                return .paidMessages
             case .businessLocation:
                 return .businessLocation
             case .businessHours:

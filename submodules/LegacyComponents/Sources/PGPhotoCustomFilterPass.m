@@ -4,9 +4,6 @@
 
 #import "LegacyComponentsInternal.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 NSString *const PGPhotoFilterDefinitionsShaderString = PGShaderString
 (
  precision highp float;
@@ -425,5 +422,3 @@ NSString *const PGPhotoFilterMainShaderString = PGShaderString
 }
 
 @end
-
-#pragma clang diagnostic pop

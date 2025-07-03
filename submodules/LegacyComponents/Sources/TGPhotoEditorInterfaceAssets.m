@@ -1,10 +1,10 @@
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/TGFont.h>
+#import "TGImageUtils.h"
+#import "TGFont.h"
 
-#import <LegacyComponents/TGMediaAssetsController.h>
+#import "TGMediaAssetsController.h"
 
 @implementation TGPhotoEditorInterfaceAssets
 

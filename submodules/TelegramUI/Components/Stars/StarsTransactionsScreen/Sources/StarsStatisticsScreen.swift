@@ -522,21 +522,21 @@ final class StarsStatisticsScreenComponent: Component {
                             theme: environment.theme,
                             dateTimeFormat: environment.dateTimeFormat,
                             title: strings.Stars_BotRevenue_Proceeds_Available,
-                            value: starsState?.balances.availableBalance.amount ?? StarsAmount.zero,
+                            value: starsState?.balances.availableBalance ?? StarsAmount.zero,
                             rate: starsState?.usdRate ?? 0.0
                         ))),
                         AnyComponentWithIdentity(id: 1, component: AnyComponent(StarsOverviewItemComponent(
                             theme: environment.theme,
                             dateTimeFormat: environment.dateTimeFormat,
                             title: strings.Stars_BotRevenue_Proceeds_Current,
-                            value: starsState?.balances.currentBalance.amount ?? StarsAmount.zero,
+                            value: starsState?.balances.currentBalance ?? StarsAmount.zero,
                             rate: starsState?.usdRate ?? 0.0
                         ))),
                         AnyComponentWithIdentity(id: 2, component: AnyComponent(StarsOverviewItemComponent(
                             theme: environment.theme,
                             dateTimeFormat: environment.dateTimeFormat,
                             title: strings.Stars_BotRevenue_Proceeds_Total,
-                            value: starsState?.balances.overallRevenue.amount ?? StarsAmount.zero,
+                            value: starsState?.balances.overallRevenue ?? StarsAmount.zero,
                             rate: starsState?.usdRate ?? 0.0
                         )))
                     ],
@@ -579,8 +579,7 @@ final class StarsStatisticsScreenComponent: Component {
                             theme: environment.theme,
                             strings: strings,
                             dateTimeFormat: environment.dateTimeFormat,
-                            count: self.starsState?.balances.availableBalance.amount ?? StarsAmount.zero,
-                            currency: .stars,
+                            count: self.starsState?.balances.availableBalance ?? StarsAmount.zero,
                             rate: self.starsState?.usdRate ?? 0,
                             actionTitle: strings.Stars_Intro_BuyShort,
                             actionAvailable: true,
@@ -623,8 +622,7 @@ final class StarsStatisticsScreenComponent: Component {
                             theme: environment.theme,
                             strings: strings,
                             dateTimeFormat: environment.dateTimeFormat,
-                            count: self.starsState?.balances.availableBalance.amount ?? StarsAmount.zero,
-                            currency: .stars,
+                            count: self.starsState?.balances.availableBalance ?? StarsAmount.zero,
                             rate: self.starsState?.usdRate ?? 0,
                             actionTitle: strings.Stars_BotRevenue_Withdraw_WithdrawShort,
                             actionAvailable: true,
@@ -712,7 +710,7 @@ final class StarsStatisticsScreenComponent: Component {
                 if let current = self.allTransactionsContext {
                     allTransactionsContext = current
                 } else {
-                    allTransactionsContext = component.context.engine.payments.peerStarsTransactionsContext(subject: .peer(peerId: component.peerId, ton: false), mode: .all)
+                    allTransactionsContext = component.context.engine.payments.peerStarsTransactionsContext(subject: .peer(component.peerId), mode: .all)
                     self.allTransactionsContext = allTransactionsContext
                 }
                 

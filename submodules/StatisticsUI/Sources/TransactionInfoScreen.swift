@@ -23,14 +23,14 @@ private final class SheetContent: CombinedComponent {
     
     let context: AccountContext
     let peer: EnginePeer
-    let transaction: StarsContext.State.Transaction
+    let transaction: RevenueStatsTransactionsContext.State.Transaction
     let openExplorer: (String) -> Void
     let dismiss: () -> Void
     
     init(
         context: AccountContext,
         peer: EnginePeer,
-        transaction: StarsContext.State.Transaction,
+        transaction: RevenueStatsTransactionsContext.State.Transaction,
         openExplorer: @escaping (String) -> Void,
         dismiss: @escaping () -> Void
     ) {
@@ -136,52 +136,39 @@ private final class SheetContent: CombinedComponent {
             let labelColor: UIColor
             
             var showPeer = false
-            if let fromDate = component.transaction.adsProceedsFromDate, let toDate = component.transaction.adsProceedsToDate {
+            switch component.transaction {
+            case let .proceeds(amount, fromDate, toDate):
                 labelColor = theme.list.itemDisclosureActions.constructive.fillColor
-                amountString = tonAmountAttributedString(formatTonAmountText(component.transaction.count.amount.value, dateTimeFormat: dateTimeFormat, showPlus: true), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
+                amountString = tonAmountAttributedString(formatTonAmountText(amount, dateTimeFormat: dateTimeFormat, showPlus: true), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
                 dateString = "\(stringForMediumCompactDate(timestamp: fromDate, strings: strings, dateTimeFormat: dateTimeFormat)) – \(stringForMediumCompactDate(timestamp: toDate, strings: strings, dateTimeFormat: dateTimeFormat))"
                 titleString = strings.Monetization_TransactionInfo_Proceeds
                 buttonTitle = strings.Common_OK
                 explorerUrl = nil
                 showPeer = true
-            } else if case .fragment = component.transaction.peer {
-                if component.transaction.flags.contains(.isRefund) {
-                    labelColor = theme.list.itemDisclosureActions.constructive.fillColor
-                    titleString = strings.Monetization_TransactionInfo_Refund
-                    amountString = tonAmountAttributedString(formatTonAmountText(component.transaction.count.amount.value, dateTimeFormat: dateTimeFormat, showPlus: true), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
-                    dateString = stringForFullDate(timestamp: component.transaction.date, strings: strings, dateTimeFormat: dateTimeFormat)
+            case let .withdrawal(status, amount, date, provider, _, transactionUrl):
+                labelColor = theme.list.itemDestructiveColor
+                amountString = tonAmountAttributedString(formatTonAmountText(amount, dateTimeFormat: dateTimeFormat), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
+                dateString = stringForFullDate(timestamp: date, strings: strings, dateTimeFormat: dateTimeFormat)
+                
+                switch status {
+                case .succeed:
+                    titleString = strings.Monetization_TransactionInfo_Withdrawal(provider).string
+                    buttonTitle = strings.Monetization_TransactionInfo_ViewInExplorer
+                case .pending:
+                    titleString = strings.Monetization_TransactionInfo_Pending
                     buttonTitle = strings.Common_OK
-                } else {
-                    labelColor = theme.list.itemDestructiveColor
-                    amountString = tonAmountAttributedString(formatTonAmountText(component.transaction.count.amount.value, dateTimeFormat: dateTimeFormat), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
-                    dateString = stringForFullDate(timestamp: component.transaction.date, strings: strings, dateTimeFormat: dateTimeFormat)
-                    
-                    if component.transaction.flags.contains(.isPending) {
-                        titleString = strings.Monetization_TransactionInfo_Pending
-                        buttonTitle = strings.Common_OK
-                    } else if component.transaction.flags.contains(.isFailed) {
-                        titleString = strings.Monetization_TransactionInfo_Failed
-                        buttonTitle = strings.Common_OK
-                        titleColor = theme.list.itemDestructiveColor
-                    } else {
-                        titleString = strings.Monetization_TransactionInfo_Withdrawal("Fragment").string
-                        buttonTitle = strings.Monetization_TransactionInfo_ViewInExplorer
-                    }
+                case .failed:
+                    titleString = strings.Monetization_TransactionInfo_Failed
+                    buttonTitle = strings.Common_OK
+                    titleColor = theme.list.itemDestructiveColor
                 }
-                explorerUrl = component.transaction.transactionUrl
-            } else if component.transaction.flags.contains(.isRefund) {
+                explorerUrl = transactionUrl
+            case let .refund(amount, date, _):
                 labelColor = theme.list.itemDisclosureActions.constructive.fillColor
                 titleString = strings.Monetization_TransactionInfo_Refund
-                amountString = tonAmountAttributedString(formatTonAmountText(component.transaction.count.amount.value, dateTimeFormat: dateTimeFormat, showPlus: true), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
-                dateString = stringForFullDate(timestamp: component.transaction.date, strings: strings, dateTimeFormat: dateTimeFormat)
+                amountString = tonAmountAttributedString(formatTonAmountText(amount, dateTimeFormat: dateTimeFormat, showPlus: true), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
+                dateString = stringForFullDate(timestamp: date, strings: strings, dateTimeFormat: dateTimeFormat)
                 buttonTitle = strings.Common_OK
-                explorerUrl = nil
-            } else {
-                labelColor = theme.list.itemDisclosureActions.constructive.fillColor
-                amountString = tonAmountAttributedString(formatTonAmountText(component.transaction.count.amount.value, dateTimeFormat: dateTimeFormat, showPlus: true), integralFont: integralFont, fractionalFont: fractionalFont, color: labelColor, decimalSeparator: dateTimeFormat.decimalSeparator).mutableCopy() as! NSMutableAttributedString
-                dateString = ""
-                titleString = ""
-                buttonTitle = ""
                 explorerUrl = nil
             }
             
@@ -306,13 +293,13 @@ private final class SheetContainerComponent: CombinedComponent {
     
     let context: AccountContext
     let peer: EnginePeer
-    let transaction: StarsContext.State.Transaction
+    let transaction: RevenueStatsTransactionsContext.State.Transaction
     let openExplorer: (String) -> Void
     
     init(
         context: AccountContext,
         peer: EnginePeer,
-        transaction: StarsContext.State.Transaction,
+        transaction: RevenueStatsTransactionsContext.State.Transaction,
         openExplorer: @escaping (String) -> Void
     ) {
         self.context = context
@@ -423,7 +410,7 @@ final class TransactionInfoScreen: ViewControllerComponentContainer {
     init(
         context: AccountContext,
         peer: EnginePeer,
-        transaction: StarsContext.State.Transaction,
+        transaction: RevenueStatsTransactionsContext.State.Transaction,
         openExplorer: @escaping (String) -> Void
     ) {
         self.context = context

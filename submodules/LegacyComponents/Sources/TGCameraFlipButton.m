@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGCameraFlipButton.h>
+#import "TGCameraFlipButton.h"
 
-#import <LegacyComponents/TGCameraInterfaceAssets.h>
+#import "TGCameraInterfaceAssets.h"
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGImageUtils.h"
 
 @implementation TGCameraFlipButton
 

@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGRTLScreenEdgePanGestureRecognizer.h>
+#import "TGRTLScreenEdgePanGestureRecognizer.h"
 
-#import <LegacyComponents/Freedom.h>
+#import "Freedom.h"
 
 @implementation TGRTLScreenEdgePanGestureRecognizer
 

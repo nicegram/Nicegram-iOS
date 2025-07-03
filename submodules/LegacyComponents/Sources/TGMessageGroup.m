@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageGroup.h>
+#import "TGMessageGroup.h"
 
 @implementation TGMessageGroup
 

@@ -172,7 +172,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
     public override init() {
         self.button = HighlightableButtonNode()
         self.discussButton = HighlightableButtonNode()
-        self.activityIndicator = UIActivityIndicatorView(style: .medium)
+        self.activityIndicator = UIActivityIndicatorView(style: .gray)
         self.activityIndicator.isHidden = true
         
         self.discussButtonText = ImmediateTextNode()
@@ -236,7 +236,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
     }
 
     @objc private func suggestedPostPressed() {
-        self.interfaceInteraction?.openMonoforum()
+        self.interfaceInteraction?.openSuggestPost()
     }
     
     @objc private func buttonPressed() {

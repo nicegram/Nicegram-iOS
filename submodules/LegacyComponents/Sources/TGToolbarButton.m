@@ -1,7 +1,7 @@
-#import <LegacyComponents/TGToolbarButton.h>
+#import "TGToolbarButton.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGImageUtils.h"
 
 static UIImage *backgroundBack()
 {

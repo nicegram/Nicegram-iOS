@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGBotReplyMarkup.h>
+#import "TGBotReplyMarkup.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGBotReplyMarkup
 

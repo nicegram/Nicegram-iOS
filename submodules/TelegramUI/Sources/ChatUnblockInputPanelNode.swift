@@ -47,7 +47,7 @@ final class ChatUnblockInputPanelNode: ChatInputPanelNode {
         self.strings = strings
         
         self.button = HighlightableButtonNode()
-        self.activityIndicator = UIActivityIndicatorView(style: .medium)
+        self.activityIndicator = UIActivityIndicatorView(style: .gray)
         self.activityIndicator.isHidden = true
         
         super.init()

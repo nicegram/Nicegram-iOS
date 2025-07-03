@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/disable-tg-notifications-splash",
-        "revision" : "11c9e770e16ab6ede6925f3609cf8b3915692e5c"
+        "branch" : "feat/adsgram",
+        "revision" : "f4155b9dea4db0ee8153e7919e647029f15daa68"
       }
     },
     {
@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "e7622ed0df28ec992030cbc74823ba0089344146"
+        "branch" : "feat/adsgram",
+        "revision" : "f98d40ae7e676157e2be975092f2dd5aa2b5b1a1"
       }
     },
     {

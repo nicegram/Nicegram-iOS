@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGCameraShutterButton.h>
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGCameraShutterButton.h"
+#import "TGImageUtils.h"
 
 #import <LegacyComponents/JNWSpringAnimation.h>
 
-#import <LegacyComponents/TGCameraInterfaceAssets.h>
+#import "TGCameraInterfaceAssets.h"
 #import <LegacyComponents/TGModernButton.h>
 
 @interface TGCameraShutterButton ()

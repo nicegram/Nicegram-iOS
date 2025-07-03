@@ -6,7 +6,6 @@ import AsyncDisplayKit
 import YuvConversion
 import MediaResources
 import AnimationCompression
-import UIKit
 
 private let sharedQueue = Queue()
 

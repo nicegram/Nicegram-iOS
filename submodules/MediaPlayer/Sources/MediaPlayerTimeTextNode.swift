@@ -1,7 +1,6 @@
 import Foundation
 import AsyncDisplayKit
 import SwiftSignalKit
-import UIKit
 import Display
 
 public enum MediaPlayerTimeTextNodeMode {

@@ -1,21 +1,18 @@
-#import <LegacyComponents/TGViewController.h>
+#import "TGViewController.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/Freedom.h>
+#import "TGFont.h"
+#import "TGImageUtils.h"
+#import "Freedom.h"
 
-#import <LegacyComponents/TGNavigationController.h>
-#import <LegacyComponents/TGOverlayControllerWindow.h>
+#import "TGNavigationController.h"
+#import "TGOverlayControllerWindow.h"
 
 #import <QuartzCore/QuartzCore.h>
 
-#import <LegacyComponents/TGHacks.h>
+#import "TGHacks.h"
 
 #import <set>
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 static __strong NSTimer *autorotationEnableTimer = nil;
 static bool autorotationDisabled = false;
@@ -1207,7 +1204,7 @@ static id<LegacyComponentsContext> _defaultContext = nil;
     UIEdgeInsets finalInset = self.controllerInset;
     
     scrollView.contentInset = finalInset;
-    scrollView.verticalScrollIndicatorInsets = _explicitScrollIndicatorInset;
+    scrollView.scrollIndicatorInsets = _explicitScrollIndicatorInset;
 
     if (!UIEdgeInsetsEqualToEdgeInsets(previousInset, UIEdgeInsetsZero))
     {
@@ -1546,5 +1543,3 @@ static id<LegacyComponentsContext> _defaultContext = nil;
 }
 
 @end
-
-#pragma clang diagnostic pop

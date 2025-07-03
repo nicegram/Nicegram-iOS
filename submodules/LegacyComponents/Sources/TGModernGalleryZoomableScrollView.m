@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
+#import "TGModernGalleryZoomableScrollView.h"
 
-#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
+#import "TGDoubleTapGestureRecognizer.h"
 
 @interface TGModernGalleryZoomableScrollView () <TGDoubleTapGestureRecognizerDelegate>
 {

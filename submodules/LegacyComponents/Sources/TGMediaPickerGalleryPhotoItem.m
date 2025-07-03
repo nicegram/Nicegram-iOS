@@ -1,7 +1,7 @@
-#import <LegacyComponents/TGMediaPickerGalleryPhotoItem.h>
+#import "TGMediaPickerGalleryPhotoItem.h"
 #import "TGMediaPickerGalleryPhotoItemView.h"
 
-#import <LegacyComponents/TGMediaAsset+TGMediaEditableItem.h>
+#import "TGMediaAsset+TGMediaEditableItem.h"
 
 @implementation TGMediaPickerGalleryPhotoItem
 

@@ -1,7 +1,7 @@
-#import <LegacyComponents/TGCameraPreviewView.h>
+#import "TGCameraPreviewView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGImageUtils.h"
 
 #import <AVFoundation/AVFoundation.h>
 

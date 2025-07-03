@@ -7,7 +7,7 @@
   of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#import <LegacyComponents/POPAnimatableProperty.h>
+#import "POPAnimatableProperty.h"
 #import "POPCGUtils.h"
 #import "POPAnimationRuntime.h"
 

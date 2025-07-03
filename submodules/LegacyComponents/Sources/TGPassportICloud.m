@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGPassportICloud.h>
+#import "TGPassportICloud.h"
 
 #import <SSignalKit/SSignalKit.h>
 #import <LegacyComponents/TGPassportAttachMenu.h>

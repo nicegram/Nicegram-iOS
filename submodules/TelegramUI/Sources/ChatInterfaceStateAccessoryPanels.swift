@@ -8,7 +8,6 @@ import ChatControllerInteraction
 import AccessoryPanelNode
 import ForwardAccessoryPanelNode
 import ReplyAccessoryPanelNode
-import SuggestPostAccessoryPanelNode
 
 func accessoryPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, currentPanel: AccessoryPanelNode?, chatControllerInteraction: ChatControllerInteraction?, interfaceInteraction: ChatPanelInterfaceInteraction?) -> AccessoryPanelNode? {
     if case .standard(.previewing) = chatPresentationInterfaceState.mode {
@@ -28,7 +27,7 @@ func accessoryPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceS
         break
     }
     
-    if let editMessage = chatPresentationInterfaceState.interfaceState.editMessage, chatPresentationInterfaceState.interfaceState.postSuggestionState == nil {
+    if let editMessage = chatPresentationInterfaceState.interfaceState.editMessage {
         if let editingUrlPreview = chatPresentationInterfaceState.editingUrlPreview, !editMessage.disableUrlPreviews.contains(editingUrlPreview.url) {
             if let previewPanelNode = currentPanel as? WebpagePreviewAccessoryPanelNode {
                 previewPanelNode.interfaceInteraction = interfaceInteraction
@@ -92,16 +91,6 @@ func accessoryPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceS
             } else {
                 return nil
             }
-        }
-    } else if chatPresentationInterfaceState.interfaceState.postSuggestionState != nil {
-        if let replyPanelNode = currentPanel as? SuggestPostAccessoryPanelNode {
-            replyPanelNode.interfaceInteraction = interfaceInteraction
-            replyPanelNode.updateThemeAndStrings(theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings)
-            return replyPanelNode
-        } else {
-            let panelNode = SuggestPostAccessoryPanelNode(context: context, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, nameDisplayOrder: chatPresentationInterfaceState.nameDisplayOrder, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat, animationCache: chatControllerInteraction?.presentationContext.animationCache, animationRenderer: chatControllerInteraction?.presentationContext.animationRenderer)
-            panelNode.interfaceInteraction = interfaceInteraction
-            return panelNode
         }
     } else {
         return nil

@@ -30,8 +30,6 @@ extension StickerPackReference {
             return .inputStickerSetEmojiChannelDefaultStatuses
         case .iconTopicEmoji:
             return .inputStickerSetEmojiDefaultTopicIcons
-        case .tonGifts:
-            return .inputStickerSetTonGifts
         }
     }
 }

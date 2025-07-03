@@ -1,4 +1,4 @@
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 #import <pthread.h>
 

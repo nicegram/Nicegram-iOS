@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGModernGalleryContainerView.h>
+#import "TGModernGalleryContainerView.h"
 
 #import <LegacyComponents/LegacyComponents.h>
 

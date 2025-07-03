@@ -1,12 +1,12 @@
-#import <LegacyComponents/TGDocumentMediaAttachment.h>
+#import "TGDocumentMediaAttachment.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/PSCoding.h>
-#import <LegacyComponents/PSKeyValueEncoder.h>
-#import <LegacyComponents/PSKeyValueDecoder.h>
+#import "PSCoding.h"
+#import "PSKeyValueEncoder.h"
+#import "PSKeyValueDecoder.h"
 
-#import <LegacyComponents/TGMessage.h>
+#import "TGMessage.h"
 
 @interface TGDocumentMediaAttachment () {
     NSArray *_textCheckingResults;
@@ -167,7 +167,7 @@
     
     NSData *originData = nil;
     @try {
-        originData = [NSKeyedArchiver archivedDataWithRootObject:_originInfo requiringSecureCoding:false error:nil];
+        originData = [NSKeyedArchiver archivedDataWithRootObject:_originInfo];
     } @catch (NSException *e) {
         
     }
@@ -286,10 +286,7 @@
             NSData *data = [[NSData alloc] initWithBytesNoCopy:originBytes length:originLength freeWhenDone:true];
             TGMediaOriginInfo *origin = nil;
             @try {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                 origin = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-#pragma clang diagnostic pop
             } @catch (NSException *e) {
                 
             }

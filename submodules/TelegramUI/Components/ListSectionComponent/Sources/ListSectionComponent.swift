@@ -76,7 +76,6 @@ public final class ListSectionContentView: UIView {
     private let contentItemContainerView: UIView
     
     public let externalContentBackgroundView: DynamicCornerRadiusView
-    public var automaticallyLayoutExternalContentBackgroundView = true
     
     public var itemViews: [AnyHashable: ItemView] = [:]
     private var highlightedItemId: AnyHashable?
@@ -284,9 +283,7 @@ public final class ListSectionContentView: UIView {
             }
             self.externalContentBackgroundView.update(size: backgroundFrame.size, corners: corners, transition: transition)
         }
-        if self.automaticallyLayoutExternalContentBackgroundView {
-            transition.setFrame(view: self.externalContentBackgroundView, frame: backgroundFrame)
-        }
+        transition.setFrame(view: self.externalContentBackgroundView, frame: backgroundFrame)
         transition.setAlpha(view: self.externalContentBackgroundView, alpha: backgroundAlpha)
         transition.setCornerRadius(layer: self.layer, cornerRadius: contentCornerRadius)
         

@@ -1,4 +1,4 @@
-#import <LegacyComponents/SGraphListNode.h>
+#import "SGraphListNode.h"
 
 @implementation SGraphListNode
 

@@ -1,11 +1,11 @@
-#import <LegacyComponents/TGReplyMarkupAttachment.h>
+#import "TGReplyMarkupAttachment.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/PSKeyValueEncoder.h>
-#import <LegacyComponents/PSKeyValueDecoder.h>
+#import "PSKeyValueEncoder.h"
+#import "PSKeyValueDecoder.h"
 
-#import <LegacyComponents/NSInputStream+TL.h>
+#import "NSInputStream+TL.h"
 
 @implementation TGReplyMarkupAttachment
 
@@ -56,7 +56,7 @@
 
 - (void)serialize:(NSMutableData *)data
 {
-    NSData *serializedData = [NSKeyedArchiver archivedDataWithRootObject:self requiringSecureCoding:false error:nil];
+    NSData *serializedData = [NSKeyedArchiver archivedDataWithRootObject:self];
     int32_t length = (int32_t)serializedData.length;
     [data appendBytes:&length length:4];
     [data appendData:serializedData];
@@ -66,10 +66,7 @@
 {
     int32_t length = [is readInt32];
     NSData *data = [is readData:length];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return [NSKeyedUnarchiver unarchiveObjectWithData:data];
-#pragma clang diagnostic pop
 }
 
 @end

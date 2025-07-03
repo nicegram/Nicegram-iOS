@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGModernGalleryImageItemImageView.h>
+#import "TGModernGalleryImageItemImageView.h"
 
 @interface TGModernGalleryImageItemImageView ()
 

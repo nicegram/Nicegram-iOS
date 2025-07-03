@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGVideoMessageScrubber.h>
+#import "TGVideoMessageScrubber.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/POPBasicAnimation.h>
+#import "TGImageUtils.h"
+#import "POPBasicAnimation.h"
 
 #import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
 
@@ -11,7 +11,7 @@
 #import "TGVideoMessageScrubberThumbnailView.h"
 #import "TGVideoMessageTrimView.h"
 
-#import <LegacyComponents/TGModernConversationInputMicButton.h>
+#import "TGModernConversationInputMicButton.h"
 
 static const CGFloat TGVideoScrubberMinimumTrimDuration = 1.0f;
 static const CGFloat TGVideoScrubberTrimRectEpsilon = 3.0f;

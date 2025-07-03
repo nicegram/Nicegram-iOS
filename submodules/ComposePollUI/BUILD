@@ -41,7 +41,6 @@ swift_library(
         "//submodules/TelegramUI/Components/PlainButtonComponent",
         "//submodules/ChatPresentationInterfaceState",
         "//submodules/TelegramUI/Components/EmojiSuggestionsComponent",
-        "//submodules/TelegramUI/Components/ListComposePollOptionComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageEntityEmail.h>
+#import "TGMessageEntityEmail.h"
 
 @implementation TGMessageEntityEmail
 

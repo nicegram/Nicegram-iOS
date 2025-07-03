@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageEntityHashtag.h>
+#import "TGMessageEntityHashtag.h"
 
 @implementation TGMessageEntityHashtag
 

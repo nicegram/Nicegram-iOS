@@ -7,7 +7,7 @@
  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-#import <LegacyComponents/POPCustomAnimation.h>
+#import "POPCustomAnimation.h"
 #import "POPAnimationInternal.h"
 
 @interface POPCustomAnimation ()

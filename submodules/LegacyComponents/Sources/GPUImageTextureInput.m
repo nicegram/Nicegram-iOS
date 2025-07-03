@@ -1,8 +1,5 @@
 #import "GPUImageTextureInput.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 @implementation GPUImageTextureInput
 {
     CIContext *ciContext;
@@ -144,5 +141,3 @@
 }
 
 @end
-
-#pragma clang diagnostic pop

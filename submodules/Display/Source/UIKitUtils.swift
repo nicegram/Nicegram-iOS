@@ -80,15 +80,19 @@ public extension UIColor {
     }
     
     convenience init?(hexString: String) {
-        let cleanedString = hexString.hasPrefix("#") ? hexString.dropFirst() : hexString[...]
-        guard let value = UInt32(cleanedString, radix: 16) else {
-            return nil
+        let scanner = Scanner(string: hexString)
+        if hexString.hasPrefix("#") {
+            scanner.scanLocation = 1
         }
-        
-        if hexString.count > 7 {
-            self.init(argb: value)
+        var value: UInt32 = 0
+        if scanner.scanHexInt32(&value) {
+            if hexString.count > 7 {
+                self.init(argb: value)
+            } else {
+                self.init(rgb: value)
+            }
         } else {
-            self.init(rgb: value)
+            return nil
         }
     }
     

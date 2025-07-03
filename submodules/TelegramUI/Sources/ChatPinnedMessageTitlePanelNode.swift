@@ -80,7 +80,6 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
     private let fetchDisposable = MetaDisposable()
     
     private var statusDisposable: Disposable?
-    private var progressDisposable: Disposable?
     
     private let animationCache: AnimationCache?
     private let animationRenderer: MultiAnimationRenderer?
@@ -235,7 +234,6 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
         self.fetchDisposable.dispose()
         self.statusDisposable?.dispose()
         self.translationDisposable.dispose()
-        self.progressDisposable?.dispose()
     }
     
     private var theme: PresentationTheme?
@@ -262,10 +260,37 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                 return status == .pinnedMessage
             }
             |> deliverOnMainQueue).startStrict(next: { [weak self] isLoading in
-                guard let self else {
+                guard let strongSelf = self else {
                     return
                 }
-                self.updateIsLoading(isLoading: isLoading)
+                let transition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)
+                if isLoading {
+                    if strongSelf.activityIndicator.alpha.isZero {
+                        transition.updateAlpha(node: strongSelf.activityIndicator, alpha: 1.0)
+                        transition.updateSublayerTransformScale(node: strongSelf.activityIndicatorContainer, scale: 1.0)
+                        
+                        transition.updateAlpha(node: strongSelf.buttonsContainer, alpha: 0.0)
+                        transition.updateSublayerTransformScale(node: strongSelf.buttonsContainer, scale: 0.1)
+                        
+                        if let theme = strongSelf.theme {
+                            strongSelf.activityIndicator.transitionToState(.progress(color: theme.chat.inputPanel.panelControlAccentColor, lineWidth: nil, value: nil, cancelEnabled: false, animateRotation: true), animated: false, completion: {
+                            })
+                        }
+                    }
+                } else {
+                    if !strongSelf.activityIndicator.alpha.isZero {
+                        transition.updateAlpha(node: strongSelf.activityIndicator, alpha: 0.0, completion: { [weak self] completed in
+                            if completed {
+                                self?.activityIndicator.transitionToState(.none, animated: false, completion: {
+                                })
+                            }
+                        })
+                        transition.updateSublayerTransformScale(node: strongSelf.activityIndicatorContainer, scale: 0.1)
+                        
+                        transition.updateAlpha(node: strongSelf.buttonsContainer, alpha: 1.0)
+                        transition.updateSublayerTransformScale(node: strongSelf.buttonsContainer, scale: 1.0)
+                    }
+                }
             })
         }
         
@@ -305,14 +330,6 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                     actionTitle = title
                     if case .payment = attribute.rows[0].buttons[0].action, title.contains("⭐️") {
                         isStarsPayment = true
-                    }
-                }
-            }
-            
-            if actionTitle == nil {
-                for media in message.message.media {
-                    if let webpage = media as? TelegramMediaWebpage, case let .Loaded(content) = webpage.content, content.type == "telegram_call" {
-                        actionTitle = interfaceState.strings.Chat_TitleJoinGroupCall
                     }
                 }
             }
@@ -395,7 +412,7 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
         
         let closeButtonSize = self.closeButton.measure(CGSize(width: 100.0, height: 100.0))
         
-        if let actionTitle {
+        if let actionTitle = actionTitle {
             var actionButtonTransition = transition
             var animateButtonIn = false
             if self.actionButton.isHidden {
@@ -521,37 +538,6 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
         }*/
         
         return LayoutResult(backgroundHeight: panelHeight, insetHeight: panelHeight, hitTestSlop: 0.0)
-    }
-    
-    private func updateIsLoading(isLoading: Bool) {
-        let transition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)
-        if isLoading {
-            if self.activityIndicator.alpha.isZero {
-                transition.updateAlpha(node: self.activityIndicator, alpha: 1.0)
-                transition.updateSublayerTransformScale(node: self.activityIndicatorContainer, scale: 1.0)
-                
-                transition.updateAlpha(node: self.buttonsContainer, alpha: 0.0)
-                transition.updateSublayerTransformScale(node: self.buttonsContainer, scale: 0.1)
-                
-                if let theme = self.theme {
-                    self.activityIndicator.transitionToState(.progress(color: theme.chat.inputPanel.panelControlAccentColor, lineWidth: nil, value: nil, cancelEnabled: false, animateRotation: true), animated: false, completion: {
-                    })
-                }
-            }
-        } else {
-            if !self.activityIndicator.alpha.isZero {
-                transition.updateAlpha(node: self.activityIndicator, alpha: 0.0, completion: { [weak self] completed in
-                    if completed {
-                        self?.activityIndicator.transitionToState(.none, animated: false, completion: {
-                        })
-                    }
-                })
-                transition.updateSublayerTransformScale(node: self.activityIndicatorContainer, scale: 0.1)
-                
-                transition.updateAlpha(node: self.buttonsContainer, alpha: 1.0)
-                transition.updateSublayerTransformScale(node: self.buttonsContainer, scale: 1.0)
-            }
-        }
     }
     
     private func enqueueTransition(width: CGFloat, panelHeight: CGFloat, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition, animation: PinnedMessageAnimation?, pinnedMessage: ChatPinnedMessage, theme: PresentationTheme, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, accountPeerId: PeerId, firstTime: Bool, isReplyThread: Bool, translateToLanguage: String?) {
@@ -680,9 +666,6 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
             for media in message.media {
                 if let media = media as? TelegramMediaInvoice {
                     titleStrings = [.text(0, NSAttributedString(string: media.title, font: Font.medium(15.0), textColor: theme.chat.inputPanel.panelControlAccentColor))]
-                    break
-                } else if let webpage = media as? TelegramMediaWebpage, case let .Loaded(content) = webpage.content, content.type == "telegram_call" {
-                    titleStrings = [.text(0, NSAttributedString(string: strings.Chat_PinnedGroupCallTitle, font: Font.medium(15.0), textColor: theme.chat.inputPanel.panelControlAccentColor))]
                     break
                 }
             }
@@ -920,45 +903,20 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                     switch button.action {
                     case .text:
                         controllerInteraction.sendMessage(button.title)
-                        return
                     case let .url(url):
                         var isConcealed = true
                         if url.hasPrefix("tg://") {
                             isConcealed = false
                         }
                         controllerInteraction.openUrl(ChatControllerInteraction.OpenUrl(url: url, concealed: isConcealed, progress: Promise()))
-                        return
                     case .requestMap:
                         controllerInteraction.shareCurrentLocation()
-                        return
                     case .requestPhone:
                         controllerInteraction.shareAccountContact()
-                        return
                     case .openWebApp:
-                        let progressPromise = Promise<Bool>()
-                        controllerInteraction.requestMessageActionCallback(message, nil, true, false, progressPromise)
-                        self.progressDisposable?.dispose()
-                        self.progressDisposable = (progressPromise.get()
-                        |> deliverOnMainQueue).startStrict(next: { [weak self] value in
-                            guard let self else {
-                                return
-                            }
-                            self.updateIsLoading(isLoading: value)
-                        })
-                        
-                        return
+                        controllerInteraction.requestMessageActionCallback(message.id, nil, true, false)
                     case let .callback(requiresPassword, data):
-                        let progressPromise = Promise<Bool>()
-                        controllerInteraction.requestMessageActionCallback(message, data, false, requiresPassword, progressPromise)
-                        self.progressDisposable?.dispose()
-                        self.progressDisposable = (progressPromise.get()
-                        |> deliverOnMainQueue).startStrict(next: { [weak self] value in
-                            guard let self else {
-                                return
-                            }
-                            self.updateIsLoading(isLoading: value)
-                        })
-                        return
+                        controllerInteraction.requestMessageActionCallback(message.id, data, false, requiresPassword)
                     case let .switchInline(samePeer, query, peerTypes):
                         var botPeer: Peer?
                         
@@ -982,13 +940,10 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                         if let botPeer = botPeer, let addressName = botPeer.addressName {
                             controllerInteraction.activateSwitchInline(peerId, "@\(addressName) \(query)", peerTypes)
                         }
-                        return
                     case .payment:
                         controllerInteraction.openCheckoutOrReceipt(message.id, nil)
-                        return
                     case let .urlAuth(url, buttonId):
                         controllerInteraction.requestMessageActionUrlAuth(url, .message(id: message.id, buttonId: buttonId))
-                        return
                     case .setupPoll:
                         break
                     case let .openUserProfile(peerId):
@@ -998,45 +953,15 @@ final class ChatPinnedMessageTitlePanelNode: ChatTitleAccessoryPanelNode {
                                 controllerInteraction.openPeer(peer, .info(nil), nil, .default)
                             }
                         })
-                        return
                     case let .openWebView(url, simple):
                         controllerInteraction.openWebView(button.title, url, simple, .generic)
-                        return
                     case .requestPeer:
                         break
                     case let .copyText(payload):
                         controllerInteraction.copyText(payload)
-                        return
                     }
                     
                     break
-                }
-            }
-            
-            for media in message.media {
-                if let webpage = media as? TelegramMediaWebpage, case let .Loaded(content) = webpage.content, content.type == "telegram_call" {
-                    var isConcealed = true
-                    if content.url.hasPrefix("tg://") {
-                        isConcealed = false
-                    }
-                    let progressPromise = Promise<Bool>()
-                    controllerInteraction.openUrl(ChatControllerInteraction.OpenUrl(
-                        url: content.url,
-                        concealed: isConcealed,
-                        message: message,
-                        progress: progressPromise
-                    ))
-                    
-                    self.progressDisposable?.dispose()
-                    self.progressDisposable = (progressPromise.get()
-                    |> deliverOnMainQueue).startStrict(next: { [weak self] value in
-                        guard let self else {
-                            return
-                        }
-                        self.updateIsLoading(isLoading: value)
-                    })
-                    
-                    return
                 }
             }
         }

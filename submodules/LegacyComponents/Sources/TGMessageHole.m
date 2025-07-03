@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageHole.h>
+#import "TGMessageHole.h"
 
 @implementation TGMessageHole
 

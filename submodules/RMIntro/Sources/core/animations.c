@@ -968,7 +968,7 @@ static void draw_ic(int type)
         t_y -= value*bounce;
     }
 
-    __unused float pink = 0;
+    float pink = 0;
     if (time_local > anim_pin_start_time) {
         pink = t_local(0, 1, anim_pin_start_time, anim_pin_duration, Sin);
         if (time_local > anim_pin_start_time + anim_pin_duration) {
@@ -1286,7 +1286,7 @@ static void draw_ic(int type)
 
 
     // pencil
-    __unused float begin_k;
+    float begin_k;
     if (type == 0) {
         ic_pos = CPointMake(-88/2-15, -100/2+13);
 
@@ -1388,7 +1388,7 @@ void draw_safe(int type, float alpha, float screw_alpha)
     float screw_distance = 53;
 
     float dk = .1;
-    __unused float k = dk * 0;
+    float k = dk * 0;
 
     private_screw.params.alpha = alpha * screw_alpha;
 

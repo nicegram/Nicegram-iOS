@@ -21,7 +21,6 @@ objc_library(
     copts = [
         "-I{}/{}".format(package_name(), directory) for directory in unique_directories(private_headers)
     ] + [
-        "-Werror",
         "-I{}/PublicHeaders/RMIntro".format(package_name()),
     ],
     deps = [

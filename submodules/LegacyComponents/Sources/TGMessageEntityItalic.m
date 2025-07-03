@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageEntityItalic.h>
+#import "TGMessageEntityItalic.h"
 
 @implementation TGMessageEntityItalic
 

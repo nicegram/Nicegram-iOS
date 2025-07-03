@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGImageManager.h>
+#import "TGImageManager.h"
 
-#import <LegacyComponents/TGImageManagerTask.h>
+#import "TGImageManagerTask.h"
 
 #import "LegacyComponentsInternal.h"
 

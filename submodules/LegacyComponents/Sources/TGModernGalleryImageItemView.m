@@ -1,12 +1,12 @@
-#import <LegacyComponents/TGModernGalleryImageItemView.h>
+#import "TGModernGalleryImageItemView.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/TGModernGalleryImageItem.h>
+#import "TGModernGalleryImageItem.h"
 
 #import <LegacyComponents/TGImageView.h>
 
-#import <LegacyComponents/TGModernGalleryImageItemImageView.h>
+#import "TGModernGalleryImageItemImageView.h"
 #import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
 
 #import <LegacyComponents/TGMessageImageViewOverlayView.h>

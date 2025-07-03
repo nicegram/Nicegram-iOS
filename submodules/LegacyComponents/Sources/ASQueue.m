@@ -1,6 +1,6 @@
 
 
-#import <LegacyComponents/ASQueue.h>
+#import "ASQueue.h"
 
 @interface ASQueue ()
 {

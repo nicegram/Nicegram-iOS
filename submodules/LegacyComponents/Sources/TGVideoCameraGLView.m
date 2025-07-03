@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGVideoCameraGLView.h>
+#import "TGVideoCameraGLView.h"
 #import <OpenGLES/EAGL.h>
 #import <OpenGLES/ES2/glext.h>
 #import <QuartzCore/CAEAGLLayer.h>
@@ -7,9 +7,6 @@
 
 #import "LegacyComponentsInternal.h"
 #import "TGVideoCameraPipeline.h"
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 @interface TGVideoCameraGLView ()
 {
@@ -233,5 +230,3 @@ bail:
 }
 
 @end
-
-#pragma clang diagnostic pop

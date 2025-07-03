@@ -1,8 +1,5 @@
 #import "GPUImageToneCurveFilter.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 #pragma mark -
 #pragma mark GPUImageToneCurveFilter Implementation
 
@@ -457,5 +454,3 @@ NSString *const kGPUImageToneCurveFragmentShaderString = SHADER_STRING
 }
 
 @end
-
-#pragma clang diagnostic pop

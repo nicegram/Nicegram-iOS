@@ -1,6 +1,6 @@
-#import <LegacyComponents/TGBotInfo.h>
+#import "TGBotInfo.h"
 
-#import <LegacyComponents/PSKeyValueCoder.h>
+#import "PSKeyValueCoder.h"
 
 @implementation TGBotInfo
 

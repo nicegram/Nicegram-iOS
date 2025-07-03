@@ -32,7 +32,7 @@ public enum SemanticStatusNodeState: Equatable {
     case play
     case pause
     case check(appearance: CheckAppearance?)
-    case progress(value: CGFloat?, cancelEnabled: Bool, appearance: ProgressAppearance?, animateRotation: Bool)
+    case progress(value: CGFloat?, cancelEnabled: Bool, appearance: ProgressAppearance?)
     case secretTimeout(position: Double, duration: Double, generationTimestamp: Double, appearance: ProgressAppearance?)
     case customIcon(UIImage)
 }
@@ -136,12 +136,12 @@ private extension SemanticStatusNodeState {
             } else {
                 return SemanticStatusNodeSecretTimeoutContext(position: position, duration: duration, generationTimestamp: generationTimestamp, appearance: appearance)
             }
-        case let .progress(value, cancelEnabled, appearance, animateRotation):
+        case let .progress(value, cancelEnabled, appearance):
             if let current = current as? SemanticStatusNodeProgressContext, current.displayCancel == cancelEnabled {
                 current.updateValue(value: value)
                 return current
             } else {
-                return SemanticStatusNodeProgressContext(value: value, displayCancel: cancelEnabled, appearance: appearance, animateRotation: animateRotation)
+                return SemanticStatusNodeProgressContext(value: value, displayCancel: cancelEnabled, appearance: appearance)
             }
         }
     }

@@ -1,7 +1,7 @@
-#import <LegacyComponents/TGPhotoMaskPosition.h>
+#import "TGPhotoMaskPosition.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGDocumentAttributeSticker.h>
+#import "TGDocumentAttributeSticker.h"
 
 @implementation TGPhotoMaskPosition
 

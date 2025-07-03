@@ -1,4 +1,4 @@
-#import <LegacyComponents/LegacyComponentsGlobals.h>
+#import "LegacyComponentsGlobals.h"
 
 @class TGLocalization;
 

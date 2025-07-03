@@ -128,7 +128,6 @@ public final class AccountContextImpl: AccountContext {
     private let themeUpdateManager: ThemeUpdateManager?
     public let inAppPurchaseManager: InAppPurchaseManager?
     public let starsContext: StarsContext?
-    public let tonContext: StarsContext?
     
     public let peerChannelMemberCategoriesContextsManager = PeerChannelMemberCategoriesContextsManager()
     
@@ -155,6 +154,8 @@ public final class AccountContextImpl: AccountContext {
     public var countriesConfiguration: Signal<CountriesConfiguration, NoError> {
         return self._countriesConfiguration.get()
     }
+    
+    public var watchManager: WatchManager?
     
     private var storedPassword: (String, CFAbsoluteTime, SwiftSignalKit.Timer)?
     private var limitsConfigurationDisposable: Disposable?
@@ -308,18 +309,15 @@ public final class AccountContextImpl: AccountContext {
             
             self.inAppPurchaseManager = InAppPurchaseManager(engine: .authorized(self.engine))
             self.starsContext = self.engine.payments.peerStarsContext()
-            self.tonContext = self.engine.payments.peerTonContext()
         } else {
             self.prefetchManager = nil
             self.wallpaperUploadManager = nil
             self.themeUpdateManager = nil
             self.inAppPurchaseManager = nil
             self.starsContext = nil
-            self.tonContext = nil
         }
         
         self.account.stateManager.starsContext = self.starsContext
-        self.account.stateManager.tonContext = self.starsContext
         
         self.peersNearbyManager = nil
         
@@ -695,7 +693,7 @@ public final class AccountContextImpl: AccountContext {
         }
     }
     
-    public func joinConferenceCall(call: JoinCallLinkInformation, isVideo: Bool, unmuteByDefault: Bool) {
+    public func joinConferenceCall(call: JoinCallLinkInformation, isVideo: Bool) {
         guard let callManager = self.sharedContext.callManager else {
             return
         }
@@ -712,8 +710,7 @@ public final class AccountContextImpl: AccountContext {
             reference: call.reference,
             beginWithVideo: isVideo,
             invitePeerIds: [],
-            endCurrentIfAny: false,
-            unmuteByDefault: unmuteByDefault
+            endCurrentIfAny: false
         )
         if case let .alreadyInProgress(currentPeerId) = result {
             let dataInput: Signal<EnginePeer?, NoError>
@@ -761,8 +758,7 @@ public final class AccountContextImpl: AccountContext {
                                 reference: call.reference,
                                 beginWithVideo: isVideo,
                                 invitePeerIds: [],
-                                endCurrentIfAny: true,
-                                unmuteByDefault: unmuteByDefault
+                                endCurrentIfAny: true
                             )
                         })]), on: .root)
                     default:
@@ -785,8 +781,7 @@ public final class AccountContextImpl: AccountContext {
                                 reference: call.reference,
                                 beginWithVideo: isVideo,
                                 invitePeerIds: [],
-                                endCurrentIfAny: true,
-                                unmuteByDefault: unmuteByDefault
+                                endCurrentIfAny: true
                             )
                         })]), on: .root)
                     }

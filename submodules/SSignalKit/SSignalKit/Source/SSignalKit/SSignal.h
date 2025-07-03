@@ -1,4 +1,3 @@
-#import <Foundation/Foundation.h>
 #import <SSignalKit/SSubscriber.h>
 
 @interface SSignal : NSObject

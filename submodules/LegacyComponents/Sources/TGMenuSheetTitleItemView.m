@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGMenuSheetTitleItemView.h>
+#import "TGMenuSheetTitleItemView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
+#import "TGFont.h"
 
-#import <LegacyComponents/TGMenuSheetController.h>
+#import "TGMenuSheetController.h"
 
 @interface TGMenuSheetTitleItemView ()
 {

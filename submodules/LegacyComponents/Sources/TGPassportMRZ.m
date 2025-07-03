@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGPassportMRZ.h>
+#import "TGPassportMRZ.h"
 
 const NSUInteger TGPassportTD1Length = 30;
 const NSUInteger TGPassportTD23Length = 44;

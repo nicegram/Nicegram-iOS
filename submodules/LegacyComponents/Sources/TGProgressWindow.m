@@ -1,8 +1,8 @@
-#import <LegacyComponents/TGProgressWindow.h>
+#import "TGProgressWindow.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/TGProgressSpinnerView.h>
+#import "TGProgressSpinnerView.h"
 
 static bool TGProgressWindowIsLight = true;
 

@@ -1,13 +1,13 @@
-#import <LegacyComponents/TGMenuSheetButtonItemView.h>
+#import "TGMenuSheetButtonItemView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGFont.h>
+#import "TGFont.h"
 #import "TGColor.h"
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGImageUtils.h"
 
 #import <LegacyComponents/TGModernButton.h>
 
-#import <LegacyComponents/TGMenuSheetController.h>
+#import "TGMenuSheetController.h"
 
 const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
 

@@ -1,14 +1,14 @@
-#import <LegacyComponents/TGModernGalleryDefaultInterfaceView.h>
+#import "TGModernGalleryDefaultInterfaceView.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/LegacyComponentsGlobals.h>
-#import <LegacyComponents/TGImageUtils.h>
-#import <LegacyComponents/TGViewController.h>
+#import "LegacyComponentsGlobals.h"
+#import "TGImageUtils.h"
+#import "TGViewController.h"
 
-#import <LegacyComponents/TGModernGalleryItemView.h>
-#import <LegacyComponents/TGModernGalleryDefaultFooterView.h>
+#import "TGModernGalleryItemView.h"
+#import "TGModernGalleryDefaultFooterView.h"
 
-#import <LegacyComponents/TGModernBackToolbarButton.h>
+#import "TGModernBackToolbarButton.h"
 
 #import <CoreMotion/CoreMotion.h>
 
@@ -50,7 +50,7 @@
     {
         if (iosMajorVersion() >= 7 && [TGViewController isWidescreen] && [CMMotionActivityManager isActivityAvailable])
         {
-            UIActivityIndicatorView *activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
+            UIActivityIndicatorView *activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
             activityIndicator.alpha = 0.02f;
             [self addSubview:activityIndicator];
             [activityIndicator startAnimating];

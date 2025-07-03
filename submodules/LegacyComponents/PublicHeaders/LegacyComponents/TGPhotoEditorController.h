@@ -1,9 +1,10 @@
-#import <LegacyComponents/TGMediaEditingContext.h>
-#import <LegacyComponents/TGPhotoToolbarView.h>
-#import <LegacyComponents/LegacyComponentsContext.h>
-#import <LegacyComponents/TGOverlayController.h>
+#import <LegacyComponents/LegacyComponents.h>
 
-#import <AVFoundation/AVFoundation.h>
+#import <LegacyComponents/TGMediaEditingContext.h>
+
+#import <LegacyComponents/TGPhotoToolbarView.h>
+
+#import <LegacyComponents/LegacyComponentsContext.h>
 
 @class SSignal;
 @class PGCameraShotMetadata;

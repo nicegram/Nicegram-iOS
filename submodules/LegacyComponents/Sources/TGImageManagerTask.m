@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGImageManagerTask.h>
+#import "TGImageManagerTask.h"
 
 @implementation TGImageManagerTask
 

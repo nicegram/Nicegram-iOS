@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGCheckButtonView.h>
+#import "TGCheckButtonView.h"
 
-#import <LegacyComponents/TGFont.h>
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGFont.h"
+#import "TGImageUtils.h"
 
-#import <LegacyComponents/LegacyComponentsGlobals.h>
+#import "LegacyComponentsGlobals.h"
 
 @interface TGCheckButtonView ()
 {

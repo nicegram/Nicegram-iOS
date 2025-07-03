@@ -5,9 +5,6 @@
 #import "GLProgram.h"
 #import "GPUImageFilter.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 @interface PGPhotoEditorRawDataOutput ()
 {
     GPUImageFramebuffer *firstInputFramebuffer, *outputFramebuffer, *retainedFramebuffer;
@@ -289,5 +286,3 @@
 }
 
 @end
-
-#pragma clang diagnostic pop

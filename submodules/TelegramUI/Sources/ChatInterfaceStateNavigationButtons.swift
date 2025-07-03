@@ -74,13 +74,6 @@ func leftNavigationButtonForChatInterfaceState(_ presentationInterfaceState: Cha
 }
 
 func rightNavigationButtonForChatInterfaceState(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, strings: PresentationStrings, currentButton: ChatNavigationButton?, target: Any?, selector: Selector?, chatInfoNavigationButton: ChatNavigationButton?, moreInfoNavigationButton: ChatNavigationButton?) -> ChatNavigationButton? {
-    var hasMessages = false
-    if let chatHistoryState = presentationInterfaceState.chatHistoryState {
-        if case .loaded(false, _) = chatHistoryState {
-            hasMessages = true
-        }
-    }
-    
     if let _ = presentationInterfaceState.interfaceState.selectionState {
         if case .messageOptions = presentationInterfaceState.subject {
             return nil
@@ -107,18 +100,12 @@ func rightNavigationButtonForChatInterfaceState(context: AccountContext, present
     }
     
     if let channel = presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isMonoForum, case .peer = presentationInterfaceState.chatLocation {
-        let displaySearch = hasMessages
-        
-        if displaySearch {
-            if case .search(false) = currentButton?.action {
-                return currentButton
-            } else {
-                let buttonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationCompactSearchIcon(presentationInterfaceState.theme), style: .plain, target: target, action: selector)
-                buttonItem.accessibilityLabel = strings.Conversation_Search
-                return ChatNavigationButton(action: .search(hasTags: false), buttonItem: buttonItem)
-            }
+        if case .search(false) = currentButton?.action {
+            return currentButton
         } else {
-            return nil
+            let buttonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationCompactSearchIcon(presentationInterfaceState.theme), style: .plain, target: target, action: selector)
+            buttonItem.accessibilityLabel = strings.Conversation_Search
+            return ChatNavigationButton(action: .search(hasTags: false), buttonItem: buttonItem)
         }
     }
     
@@ -129,6 +116,13 @@ func rightNavigationButtonForChatInterfaceState(context: AccountContext, present
             } else {
                 return moreInfoNavigationButton
             }
+        }
+    }
+    
+    var hasMessages = false
+    if let chatHistoryState = presentationInterfaceState.chatHistoryState {
+        if case .loaded(false, _) = chatHistoryState {
+            hasMessages = true
         }
     }
     

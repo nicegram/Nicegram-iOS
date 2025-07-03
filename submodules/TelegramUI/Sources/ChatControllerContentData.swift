@@ -136,12 +136,12 @@ extension ChatControllerImpl {
             var voiceMessagesAvailable: Bool = true
             var requestsState: PeerInvitationImportersState?
             var dismissedInvitationRequests: [Int64]?
+            
             var customEmojiAvailable: Bool = false
             var threadData: ChatPresentationInterfaceState.ThreadData?
             var forumTopicData: ChatPresentationInterfaceState.ThreadData?
             var isGeneralThreadClosed: Bool?
             var premiumGiftOptions: [CachedPremiumGiftOption] = []
-            var removePaidMessageFeeData: ChatPresentationInterfaceState.RemovePaidMessageFeeData?
         }
         
         private let presentationData: PresentationData
@@ -551,20 +551,12 @@ extension ChatControllerImpl {
                             strongSelf.state.chatTitleContent = .custom(strings.Chat_TitlePinnedMessages(Int32(displayedCount ?? 1)), nil, false)
                         } else if let channel = peer as? TelegramChannel, channel.isMonoForum {
                             if let linkedMonoforumId = channel.linkedMonoforumId, let mainPeer = peerView.peers[linkedMonoforumId] {
-                                strongSelf.state.chatTitleContent = .peer(peerView: ChatTitleContent.PeerData(
-                                    peerId: mainPeer.id,
-                                    peer: mainPeer,
-                                    isContact: false,
-                                    isSavedMessages: false,
-                                    notificationSettings: nil,
-                                    peerPresences: [:],
-                                    cachedData: nil
-                                ), customTitle: nil, customSubtitle: strings.Chat_Monoforum_Subtitle, onlineMemberCount: (nil, nil), isScheduledMessages: false, isMuted: nil, customMessageCount: nil, isEnabled: true)
+                                strongSelf.state.chatTitleContent = .custom(mainPeer.debugDisplayTitle, strings.Chat_Monoforum_Subtitle, true)
                             } else {
                                 strongSelf.state.chatTitleContent = .custom(channel.debugDisplayTitle, nil, true)
                             }
                         } else {
-                            strongSelf.state.chatTitleContent = .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: nil, customSubtitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: isScheduledMessages, isMuted: nil, customMessageCount: nil, isEnabled: hasPeerInfo)
+                            strongSelf.state.chatTitleContent = .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: isScheduledMessages, isMuted: nil, customMessageCount: nil, isEnabled: hasPeerInfo)
                             
                             let imageOverride: AvatarNodeImageOverride?
                             if context.account.peerId == peer.id {
@@ -705,10 +697,7 @@ extension ChatControllerImpl {
                         upgradedToPeerId = migrationReference.peerId
                     }
                     if let previous = strongSelf.state.peerView, let channel = previous.peers[previous.peerId] as? TelegramChannel, !channel.isForumOrMonoForum, let updatedChannel = peerView.peers[peerView.peerId] as? TelegramChannel, updatedChannel.isForumOrMonoForum {
-                        if updatedChannel.isForum && updatedChannel.flags.contains(.displayForumAsTabs) {
-                        } else {
-                            movedToForumTopics = true
-                        }
+                        movedToForumTopics = true
                     }
                     
                     var shouldDismiss = false
@@ -775,7 +764,6 @@ extension ChatControllerImpl {
                     }
                     var starGiftsAvailable = false
                     var peerDiscussionId: PeerId?
-                    var peerMonoforumId: PeerId?
                     var peerGeoLocation: PeerGeoLocation?
                     if let peer = peerView.peers[peerView.peerId] as? TelegramChannel, let cachedData = peerView.cachedData as? CachedChannelData {
                         if case .broadcast = peer.info {
@@ -785,9 +773,6 @@ extension ChatControllerImpl {
                         }
                         if case let .known(value) = cachedData.linkedDiscussionPeerId {
                             peerDiscussionId = value
-                        }
-                        if !peer.isMonoForum {
-                            peerMonoforumId = peer.linkedMonoforumId
                         }
                     }
                     var renderedPeer: RenderedPeer?
@@ -829,24 +814,14 @@ extension ChatControllerImpl {
                             
                             if let channel = peerView.peers[peerView.peerId] as? TelegramChannel {
                                 if channel.isMonoForum {
-                                    if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
-                                    } else if let sendPaidMessageStarsValue = cachedData.sendPaidMessageStars, sendPaidMessageStarsValue == .zero {
-                                        sendPaidMessageStars = nil
+                                    if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                     } else {
                                         sendPaidMessageStars = channel.sendPaidMessageStars
                                     }
                                 } else {
                                     if channel.flags.contains(.isCreator) || channel.adminRights != nil {
                                     } else {
-                                        if let personalSendPaidMessageStars = cachedData.sendPaidMessageStars {
-                                            if personalSendPaidMessageStars == .zero {
-                                                sendPaidMessageStars = nil
-                                            } else {
-                                                sendPaidMessageStars = personalSendPaidMessageStars
-                                            }
-                                        } else {
-                                            sendPaidMessageStars = channel.sendPaidMessageStars
-                                        }
+                                        sendPaidMessageStars = channel.sendPaidMessageStars
                                     }
                                 }
                             }
@@ -901,7 +876,7 @@ extension ChatControllerImpl {
                             }
                         } else if let cachedChannelData = peerView.cachedData as? CachedChannelData {
                             if let channel = peer as? TelegramChannel, channel.isMonoForum {
-                                if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                                if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                     currentSendAsPeerId = channel.linkedMonoforumId
                                 } else {
                                     currentSendAsPeerId = nil
@@ -949,18 +924,13 @@ extension ChatControllerImpl {
                         explicitelyCanPinMessages = true
                     }
                     
-                    #if DEBUG
-                    peerMonoforumId = nil
-                    #endif
-                    
-                    let preloadHistoryPeerId = peerMonoforumId ?? peerDiscussionId
-                    if strongSelf.preloadHistoryPeerId != preloadHistoryPeerId {
-                        strongSelf.preloadHistoryPeerId = preloadHistoryPeerId
-                        if let preloadHistoryPeerId, let channel = peerView.peers[peerView.peerId] as? TelegramChannel, case .broadcast = channel.info {
+                    if strongSelf.preloadHistoryPeerId != peerDiscussionId {
+                        strongSelf.preloadHistoryPeerId = peerDiscussionId
+                        if let peerDiscussionId = peerDiscussionId, let channel = peerView.peers[peerView.peerId] as? TelegramChannel, case .broadcast = channel.info {
                             let combinedDisposable = DisposableSet()
                             strongSelf.preloadHistoryPeerIdDisposable.set(combinedDisposable)
-                            combinedDisposable.add(context.account.viewTracker.polledChannel(peerId: preloadHistoryPeerId).startStrict())
-                            combinedDisposable.add(context.account.addAdditionalPreloadHistoryPeerId(peerId: preloadHistoryPeerId))
+                            combinedDisposable.add(context.account.viewTracker.polledChannel(peerId: peerDiscussionId).startStrict())
+                            combinedDisposable.add(context.account.addAdditionalPreloadHistoryPeerId(peerId: peerDiscussionId))
                         } else {
                             strongSelf.preloadHistoryPeerIdDisposable.set(nil)
                         }
@@ -1211,15 +1181,13 @@ extension ChatControllerImpl {
                     savedMessagesPeerId = nil
                 }
                 
-                let savedMessagesPeer: Signal<(peer: EnginePeer?, messageCount: Int, presence: EnginePeer.Presence?, isMonoforumFeeRemoved: Bool)?, NoError>
+                let savedMessagesPeer: Signal<(peer: EnginePeer?, messageCount: Int, presence: EnginePeer.Presence?)?, NoError>
                 if let savedMessagesPeerId {
                     let threadPeerId = savedMessagesPeerId
                     let basicPeerKey: PostboxViewKey = .peer(peerId: threadPeerId, components: [])
                     let countViewKey: PostboxViewKey = .historyTagSummaryView(tag: MessageTags(), peerId: peerId, threadId: savedMessagesPeerId.toInt64(), namespace: Namespaces.Message.Cloud, customTag: nil)
-                    let threadInfoKey: PostboxViewKey = .messageHistoryThreadInfo(peerId: peerId, threadId: savedMessagesPeerId.toInt64())
-                    
-                    savedMessagesPeer = context.account.postbox.combinedView(keys: [basicPeerKey, countViewKey, threadInfoKey])
-                    |> map { views -> (peer: EnginePeer?, messageCount: Int, presence: EnginePeer.Presence?, isMonoforumFeeRemoved: Bool)? in
+                    savedMessagesPeer = context.account.postbox.combinedView(keys: [basicPeerKey, countViewKey])
+                    |> map { views -> (peer: EnginePeer?, messageCount: Int, presence: EnginePeer.Presence?)? in
                         var peer: EnginePeer?
                         var presence: EnginePeer.Presence?
                         if let peerView = views.views[basicPeerKey] as? PeerView {
@@ -1232,12 +1200,7 @@ extension ChatControllerImpl {
                             messageCount += Int(count)
                         }
                         
-                        var isMonoforumFeeRemoved = false
-                        if let threadInfoView = views.views[threadInfoKey] as? MessageHistoryThreadInfoView, let threadInfo = threadInfoView.info?.data.get(MessageHistoryThreadData.self) {
-                            isMonoforumFeeRemoved = threadInfo.isMessageFeeRemoved
-                        }
-                        
-                        return (peer, messageCount, presence, isMonoforumFeeRemoved)
+                        return (peer, messageCount, presence)
                     }
                     |> distinctUntilChanged(isEqual: { lhs, rhs in
                         if lhs?.peer != rhs?.peer {
@@ -1247,9 +1210,6 @@ extension ChatControllerImpl {
                             return false
                         }
                         if lhs?.presence != rhs?.presence {
-                            return false
-                        }
-                        if lhs?.isMonoforumFeeRemoved != rhs?.isMonoforumFeeRemoved {
                             return false
                         }
                         return true
@@ -1417,7 +1377,7 @@ extension ChatControllerImpl {
                            
                             if let channel = peerView.peers[peerView.peerId] as? TelegramChannel {
                                 if channel.isMonoForum {
-                                    if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                                    if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                     } else {
                                         sendPaidMessageStars = channel.sendPaidMessageStars
                                     }
@@ -1459,7 +1419,7 @@ extension ChatControllerImpl {
                             customMessageCount = savedMessagesPeer?.messageCount ?? 0
                         }
                         
-                        strongSelf.state.chatTitleContent = .peer(peerView: mappedPeerData, customTitle: nil, customSubtitle: nil, onlineMemberCount: (nil, nil), isScheduledMessages: false, isMuted: false, customMessageCount: customMessageCount, isEnabled: true)
+                        strongSelf.state.chatTitleContent = .peer(peerView: mappedPeerData, customTitle: nil, onlineMemberCount: (nil, nil), isScheduledMessages: false, isMuted: false, customMessageCount: customMessageCount, isEnabled: true)
                         
                         strongSelf.state.peerView = peerView
                         
@@ -1494,7 +1454,7 @@ extension ChatControllerImpl {
                         var currentSendAsPeerId: PeerId?
                         if let peer = peerView.peers[peerView.peerId] as? TelegramChannel, let cachedData = peerView.cachedData as? CachedChannelData {
                             if peer.isMonoForum {
-                                if let linkedMonoforumId = peer.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                                if let linkedMonoforumId = peer.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                     currentSendAsPeerId = peer.linkedMonoforumId
                                 } else {
                                     currentSendAsPeerId = nil
@@ -1504,23 +1464,12 @@ extension ChatControllerImpl {
                             }
                         }
                         
-                        var removePaidMessageFeeData: ChatPresentationInterfaceState.RemovePaidMessageFeeData?
-                        if let savedMessagesPeer, !savedMessagesPeer.isMonoforumFeeRemoved, let peer = savedMessagesPeer.peer, let channel = peerView.peers[peerView.peerId] as? TelegramChannel, let sendPaidMessageStars = channel.sendPaidMessageStars, channel.isMonoForum {
-                            if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
-                                removePaidMessageFeeData = ChatPresentationInterfaceState.RemovePaidMessageFeeData(
-                                    peer: peer,
-                                    amount: sendPaidMessageStars
-                                )
-                            }
-                        }
-                        
                         strongSelf.state.renderedPeer = renderedPeer
                         strongSelf.state.savedMessagesTopicPeer = savedMessagesPeer?.peer
                         strongSelf.state.hasSearchTags = hasSearchTags
                         strongSelf.state.hasSavedChats = hasSavedChats
                         strongSelf.state.hasScheduledMessages = hasScheduledMessages
                         strongSelf.state.currentSendAsPeerId = currentSendAsPeerId
-                        strongSelf.state.removePaidMessageFeeData = removePaidMessageFeeData
                     } else {
                         let message = messageAndTopic.message
                         
@@ -1546,7 +1495,7 @@ extension ChatControllerImpl {
                         }
                         
                         if let threadInfo = messageAndTopic.threadData?.info {
-                            strongSelf.state.chatTitleContent = .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: threadInfo.title, customSubtitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: false, isMuted: peerIsMuted, customMessageCount: messageAndTopic.messageCount == 0 ? nil : messageAndTopic.messageCount, isEnabled: true)
+                            strongSelf.state.chatTitleContent = .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: threadInfo.title, onlineMemberCount: onlineMemberCount, isScheduledMessages: false, isMuted: peerIsMuted, customMessageCount: messageAndTopic.messageCount == 0 ? nil : messageAndTopic.messageCount, isEnabled: true)
                             
                             let avatarContent: EmojiStatusComponent.Content
                             if chatLocation.threadId == 1 {
@@ -1603,19 +1552,16 @@ extension ChatControllerImpl {
                         strongSelf.state.threadInfo = messageAndTopic.threadData?.info
                         
                         var peerDiscussionId: PeerId?
-                        var peerMonoforumId: PeerId?
                         var peerGeoLocation: PeerGeoLocation?
                         var currentSendAsPeerId: PeerId?
                         if let peer = peerView.peers[peerView.peerId] as? TelegramChannel, let cachedData = peerView.cachedData as? CachedChannelData {
                             if peer.isMonoForum {
-                                if let linkedMonoforumId = peer.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                                if let linkedMonoforumId = peer.linkedMonoforumId, let mainChannel = peerView.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.sendSomething) {
                                     currentSendAsPeerId = peer.linkedMonoforumId
                                 } else {
                                     currentSendAsPeerId = nil
                                 }
                             } else {
-                                peerMonoforumId = peer.linkedMonoforumId
-                                
                                 currentSendAsPeerId = cachedData.sendAsPeerId
                                 if case .group = peer.info {
                                     peerGeoLocation = cachedData.peerGeoLocation
@@ -1657,15 +1603,10 @@ extension ChatControllerImpl {
                             explicitelyCanPinMessages = true
                         }
                         
-                        #if DEBUG
-                        peerMonoforumId = nil
-                        #endif
-                        
-                        let preloadHistoryPeerId = peerMonoforumId ?? peerDiscussionId
-                        if strongSelf.preloadHistoryPeerId != preloadHistoryPeerId {
-                            strongSelf.preloadHistoryPeerId = preloadHistoryPeerId
-                            if let preloadHistoryPeerId {
-                                strongSelf.preloadHistoryPeerIdDisposable.set(context.account.addAdditionalPreloadHistoryPeerId(peerId: preloadHistoryPeerId))
+                        if strongSelf.preloadHistoryPeerId != peerDiscussionId {
+                            strongSelf.preloadHistoryPeerId = peerDiscussionId
+                            if let peerDiscussionId = peerDiscussionId {
+                                strongSelf.preloadHistoryPeerIdDisposable.set(context.account.addAdditionalPreloadHistoryPeerId(peerId: peerDiscussionId))
                             } else {
                                 strongSelf.preloadHistoryPeerIdDisposable.set(nil)
                             }
@@ -1924,10 +1865,7 @@ extension ChatControllerImpl {
                     }
                         
                     strongSelf.initialInterfaceState = (interfaceState, initialEditMessage)
-                } else {
-                    strongSelf.initialInterfaceState = (ChatInterfaceState(), nil)
                 }
-                
                 if let readStateData = combinedInitialData.readStateData {
                     if case let .peer(peerId) = chatLocation, let peerReadStateData = readStateData[peerId], let notificationSettings = peerReadStateData.notificationSettings {
                         

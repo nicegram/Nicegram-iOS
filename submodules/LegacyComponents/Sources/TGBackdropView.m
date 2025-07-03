@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGBackdropView.h>
+#import "TGBackdropView.h"
 
 #import "LegacyComponentsInternal.h"
 

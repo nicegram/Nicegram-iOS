@@ -1,9 +1,9 @@
-#import <LegacyComponents/TGMediaAssetsModernLibrary.h>
+#import "TGMediaAssetsModernLibrary.h"
 
 #import "LegacyComponentsInternal.h"
 
-#import <LegacyComponents/TGMediaAssetFetchResultChange.h>
-#import <LegacyComponents/TGMediaAssetMomentList.h>
+#import "TGMediaAssetFetchResultChange.h"
+#import "TGMediaAssetMomentList.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 
 @interface TGMediaAssetsModernLibrary () <PHPhotoLibraryChangeObserver>

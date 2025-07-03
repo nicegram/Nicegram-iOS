@@ -29,11 +29,6 @@ func openWebAppImpl(
     skipTermsOfService: Bool,
     payload: String?
 ) {
-    if context.isFrozen {
-        parentController.push(context.sharedContext.makeAccountFreezeInfoScreen(context: context))
-        return
-    }
-    
     let presentationData: PresentationData
     if let parentController = parentController as? ChatControllerImpl {
         presentationData = parentController.presentationData

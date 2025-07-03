@@ -1,4 +1,3 @@
-#import <LegacyComponents/LegacyComponents.h>
 #import "TGPhotoEditorCurvesHistogramView.h"
 
 #import "LegacyComponentsInternal.h"
@@ -10,10 +9,10 @@
 #import "PGPhotoHistogram.h"
 
 #import <LegacyComponents/TGModernButton.h>
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 #import "TGHistogramView.h"
 
-#import <LegacyComponents/TGPhotoEditorTabController.h>
+#import "TGPhotoEditorTabController.h"
 #import "TGPhotoEditorToolButtonsView.h"
 
 @interface TGPhotoEditorCurvesHistogramView ()

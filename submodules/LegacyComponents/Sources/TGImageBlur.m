@@ -1,14 +1,14 @@
-#import <LegacyComponents/TGImageBlur.h>
+#import "TGImageBlur.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/LegacyComponentsGlobals.h>
-#import <LegacyComponents/TGImageUtils.h>
+#import "LegacyComponentsGlobals.h"
+#import "TGImageUtils.h"
 
 #import <Accelerate/Accelerate.h>
 
-#import <LegacyComponents/UIImage+TG.h>
-#import <LegacyComponents/TGStaticBackdropImageData.h>
-#import <LegacyComponents/TGStaticBackdropAreaData.h>
+#import "UIImage+TG.h"
+#import "TGStaticBackdropImageData.h"
+#import "TGStaticBackdropAreaData.h"
 
 static inline uint64_t get_colors (const uint8_t *p) {
     return p[0] + (p[1] << 16) + ((uint64_t)p[2] << 32);

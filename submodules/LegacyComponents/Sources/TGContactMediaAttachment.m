@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGContactMediaAttachment.h>
+#import "TGContactMediaAttachment.h"
 
 @implementation TGContactMediaAttachment
 

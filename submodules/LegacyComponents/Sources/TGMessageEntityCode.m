@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageEntityCode.h>
+#import "TGMessageEntityCode.h"
 
 @implementation TGMessageEntityCode
 

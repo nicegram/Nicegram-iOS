@@ -3,9 +3,9 @@
 #import "LegacyComponentsInternal.h"
 
 #import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 
-#import <LegacyComponents/TGPhotoEditorSliderView.h>
+#import "TGPhotoEditorSliderView.h"
 
 @interface TGPhotoEditorGenericToolView ()
 {

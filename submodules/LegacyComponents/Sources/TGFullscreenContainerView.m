@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGFullscreenContainerView.h>
+#import "TGFullscreenContainerView.h"
 
 #import <LegacyComponents/LegacyComponents.h>
 

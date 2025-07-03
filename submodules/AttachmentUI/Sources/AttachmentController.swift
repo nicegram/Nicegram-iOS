@@ -21,7 +21,6 @@ public enum AttachmentButtonType: Equatable {
     case gallery
     case file
     case location
-    case todo
     case quickReply
     case contact
     case poll
@@ -37,8 +36,6 @@ public enum AttachmentButtonType: Equatable {
             return "file"
         case .location:
             return "location"
-        case .todo:
-            return "todo"
         case .quickReply:
             return "quickReply"
         case .contact:
@@ -70,12 +67,6 @@ public enum AttachmentButtonType: Equatable {
             }
         case .location:
             if case .location = rhs {
-                return true
-            } else {
-                return false
-            }
-        case .todo:
-            if case .todo = rhs {
                 return true
             } else {
                 return false

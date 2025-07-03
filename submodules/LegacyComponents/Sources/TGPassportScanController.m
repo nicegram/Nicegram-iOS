@@ -1,5 +1,4 @@
-#import <LegacyComponents/LegacyComponents.h>
-#import <LegacyComponents/TGPassportScanController.h>
+#import "TGPassportScanController.h"
 #import "TGPassportScanView.h"
 
 #import "LegacyComponentsInternal.h"

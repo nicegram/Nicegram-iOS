@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGModernGalleryVideoView.h>
+#import "TGModernGalleryVideoView.h"
 #import <AVFoundation/AVFoundation.h>
 
 #import "LegacyComponentsInternal.h"

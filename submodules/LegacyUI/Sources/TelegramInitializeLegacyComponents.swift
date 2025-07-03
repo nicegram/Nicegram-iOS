@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import TelegramCore
-import SSignalKit
 import SwiftSignalKit
 import MtProtoKit
 import Display
@@ -114,11 +113,11 @@ private final class LegacyComponentsGlobalsProviderImpl: NSObject, LegacyCompone
     }
     
     public func applicationStatusBarOrientation() -> UIInterfaceOrientation {
-        return legacyComponentsApplication?.delegate?.window??.windowScene?.interfaceOrientation ?? .portrait
+        return legacyComponentsApplication?.statusBarOrientation ?? UIInterfaceOrientation.portrait
     }
     
     public func statusBarFrame() -> CGRect {
-        return legacyComponentsApplication?.delegate?.window??.windowScene?.statusBarManager?.statusBarFrame ?? CGRect(origin: CGPoint(), size: CGSize(width: 320.0, height: 20.0))
+        return legacyComponentsApplication?.statusBarFrame ?? CGRect(origin: CGPoint(), size: CGSize(width: 320.0, height: 20.0))
     }
     
     public func isStatusBarHidden() -> Bool {

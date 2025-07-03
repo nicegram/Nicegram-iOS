@@ -1,16 +1,16 @@
-#import <LegacyComponents/TGMediaPickerModernGalleryMixin.h>
+#import "TGMediaPickerModernGalleryMixin.h"
 
 #import "LegacyComponentsInternal.h"
 
 #import <LegacyComponents/LegacyComponents.h>
 
 #import <LegacyComponents/TGModernGalleryController.h>
-#import <LegacyComponents/TGMediaPickerGalleryItem.h>
-#import <LegacyComponents/TGMediaPickerGalleryPhotoItem.h>
-#import <LegacyComponents/TGMediaPickerGalleryVideoItem.h>
-#import <LegacyComponents/TGMediaPickerGalleryVideoItemView.h>
+#import "TGMediaPickerGalleryItem.h"
+#import "TGMediaPickerGalleryPhotoItem.h"
+#import "TGMediaPickerGalleryVideoItem.h"
+#import "TGMediaPickerGalleryVideoItemView.h"
 
-#import <LegacyComponents/TGMediaPickerSendActionSheetController.h>
+#import "TGMediaPickerSendActionSheetController.h"
 
 #import <LegacyComponents/TGMediaEditingContext.h>
 #import <LegacyComponents/TGMediaSelectionContext.h>

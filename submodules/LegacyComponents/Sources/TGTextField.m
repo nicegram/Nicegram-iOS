@@ -1,7 +1,7 @@
-#import <LegacyComponents/TGTextField.h>
+#import "TGTextField.h"
 
 #import "LegacyComponentsInternal.h"
-#import <LegacyComponents/TGImageUtils.h>
+#import "TGImageUtils.h"
 
 @implementation TGTextField
 

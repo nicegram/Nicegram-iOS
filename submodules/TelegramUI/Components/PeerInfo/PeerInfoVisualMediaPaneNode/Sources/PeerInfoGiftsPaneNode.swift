@@ -1,5 +1,4 @@
 import AsyncDisplayKit
-import UIKit
 import Display
 import ComponentFlow
 import TelegramCore

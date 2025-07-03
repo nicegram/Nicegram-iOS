@@ -3,8 +3,8 @@
 #import <LegacyComponents/TGPaintUtils.h>
 #import <ImageIO/ImageIO.h>
 
-#import <LegacyComponents/TGMediaEditingContext.h>
-#import <LegacyComponents/UIImage+TG.h>
+#import "TGMediaEditingContext.h"
+#import "UIImage+TG.h"
 
 @interface TGPaintFace ()
 

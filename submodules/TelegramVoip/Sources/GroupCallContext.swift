@@ -2,7 +2,6 @@ import Foundation
 import SwiftSignalKit
 import TgVoipWebrtc
 import TelegramCore
-import CoreMedia
 
 #if os(macOS)
 public class OngoingCallContext {

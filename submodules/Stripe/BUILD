@@ -15,7 +15,6 @@ objc_library(
     ],
     copts = [
         "-I{}/PublicHeaders/Stripe".format(package_name()),
-        "-Werror",
     ],
     sdk_frameworks = [
         "Foundation",

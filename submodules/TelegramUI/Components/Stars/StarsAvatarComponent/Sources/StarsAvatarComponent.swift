@@ -374,19 +374,13 @@ public final class StarsAvatarComponent: Component {
 public final class StarsLabelComponent: CombinedComponent {
     let text: NSAttributedString
     let subtext: NSAttributedString?
-    let iconName: String
-    let iconColor: UIColor?
     
     public init(
         text: NSAttributedString,
-        subtext: NSAttributedString? = nil,
-        iconName: String = "Premium/Stars/StarMedium",
-        iconColor: UIColor? = nil
+        subtext: NSAttributedString? = nil
     ) {
         self.text = text
         self.subtext = subtext
-        self.iconName = iconName
-        self.iconColor = iconColor
     }
     
     public static func ==(lhs: StarsLabelComponent, rhs: StarsLabelComponent) -> Bool {
@@ -394,12 +388,6 @@ public final class StarsLabelComponent: CombinedComponent {
             return false
         }
         if lhs.subtext != rhs.subtext {
-            return false
-        }
-        if lhs.iconName != rhs.iconName {
-            return false
-        }
-        if lhs.iconColor != rhs.iconColor {
             return false
         }
         return true
@@ -432,8 +420,8 @@ public final class StarsLabelComponent: CombinedComponent {
             let iconSize = CGSize(width: 20.0, height: 20.0)
             let icon = icon.update(
                 component: BundleIconComponent(
-                    name: component.iconName,
-                    tintColor: component.iconColor
+                    name: "Premium/Stars/StarMedium",
+                    tintColor: nil
                 ),
                 availableSize: iconSize,
                 transition: context.transition

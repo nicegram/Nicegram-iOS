@@ -3,7 +3,7 @@
 #import "PGPhotoTool.h"
 
 #import "TGPhotoEditorGenericToolView.h"
-#import <LegacyComponents/TGPhotoEditorInterfaceAssets.h>
+#import "TGPhotoEditorInterfaceAssets.h"
 
 NSString * const TGPhotoToolCellKind = @"TGPhotoToolCellKind";
 

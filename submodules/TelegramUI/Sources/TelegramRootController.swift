@@ -1,6 +1,9 @@
 // MARK: Nicegram Assistant
+import struct CoreSwiftUI.Popover
+import class CoreSwiftUI.TosPopupPresenter
+import FeatAccountBackup
 import FeatAssistant
-import FeatLaunchOverlays
+import FeatOnboarding
 import let NGCoreUI.images
 import var NGCoreUI.strings
 import NGUI
@@ -176,26 +179,48 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
+        if #available(iOS 15.0, *) {
+            Task {
+                PostLoginOnboardingPresenter().presentIfNeeded()
+            }
+        }
+        
         if #available(iOS 15.0, *), !didAppear {
-            let canPresent = { [weak self] in
-                guard let window = self?.context.sharedContext.mainWindow else {
-                    return false
+            Task {
+                let canPresent = { [weak self] in
+                    guard let window = self?.context.sharedContext.mainWindow else {
+                        return false
+                    }
+                    
+                    if window.hasOverlayController() {
+                        return false
+                    }
+                    
+                    let windowRootController = UIApplication.findKeyWindow()?.rootViewController
+                    if let windowRootController,
+                       windowRootController.presentedViewController != nil {
+                        return false
+                    }
+                    
+                    return true
                 }
-                
-                if window.hasOverlayController() {
-                    return false
-                }
-                
-                let windowRootController = UIApplication.findKeyWindow()?.rootViewController
-                if let windowRootController,
-                   windowRootController.presentedViewController != nil {
-                    return false
-                }
-                
-                return true
+                await AssistantTgHelper.showAlertsFromHomeIfNeeded(
+                    canPresent: canPresent,
+                    showAssitantTooltip: { [weak self] in
+                        self?.showNicegramTooltip(
+                            backgroundColor: .secondarySystemBackground,
+                            content: { AssistantPopover() }
+                        )
+                    }
+                )
             }
             
-            LaunchOverlaysPresenter().present(canPresent: canPresent)
+            Task {
+                try await Task.sleep(seconds: 0.5)
+                TosPopupPresenter().presentIfNeeded()
+            }
+            
+            ResolveNotMainAccountsPresenter().presentNotMainAccountsIfNeeded()
         }
         
         didAppear = true
@@ -400,6 +425,44 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         
         rootTabController.setControllers(controllers, selectedIndex: nil)
     }
+    
+    // MARK: Nicegram Assistant
+    @available(iOS 13.0, *)
+    public func showNicegramTooltip<Content: View>(
+        backgroundColor: UIColor,
+        content: () -> Content
+    ) {
+        guard let rootTabController = rootTabController as? TabBarControllerImpl else {
+            return
+        }
+        
+        let index = rootTabController.controllers.firstIndex {
+            $0 === assistantController
+        }
+        guard let index else {
+            return
+        }
+        
+        let tabBarView = rootTabController.tabBarView
+        let tabWidth = tabBarView.frame.width / CGFloat(rootTabController.controllers.count)
+        
+        let sourceRect = CGRect(
+            x: tabWidth * CGFloat(index),
+            y: 0,
+            width: tabWidth,
+            height: tabBarView.frame.height
+        )
+        
+        Popover.show(
+            on: rootTabController,
+            sourceView: tabBarView,
+            sourceRect: sourceRect,
+            backgroundColor: backgroundColor,
+            permittedArrowDirections: .down,
+            content: content
+        )
+    }
+    //
     
     public func openChatsController(activateSearch: Bool, filter: ChatListSearchFilter = .chats, query: String? = nil) {
         guard let rootTabController = self.rootTabController else {

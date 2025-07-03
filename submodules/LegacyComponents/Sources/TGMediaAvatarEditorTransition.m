@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMediaAvatarEditorTransition.h>
+#import "TGMediaAvatarEditorTransition.h"
 
 #import "LegacyComponentsInternal.h"
 

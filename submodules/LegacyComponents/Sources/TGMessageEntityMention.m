@@ -1,4 +1,4 @@
-#import <LegacyComponents/TGMessageEntityMention.h>
+#import "TGMessageEntityMention.h"
 
 @implementation TGMessageEntityMention
 

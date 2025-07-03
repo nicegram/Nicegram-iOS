@@ -1,6 +1,5 @@
 import Foundation
 import SwiftSignalKit
-import UIKit
 import AsyncDisplayKit
 
 public enum AnimationRendererFrameType {

@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 #import "PGPhotoEditorItem.h"
-#import <LegacyComponents/TGPhotoEditorToolView.h>
+#import "TGPhotoEditorToolView.h"
 
 @interface TGPhotoEditorBlurAreaView : UIView <TGPhotoEditorToolView>
 

@@ -1,13 +1,10 @@
-#import <LegacyComponents/TGPaintShader.h>
+#import "TGPaintShader.h"
 
 #import "LegacyComponentsInternal.h"
 
 #include <OpenGLES/ES2/glext.h>
 
 #import <LegacyComponents/TGPaintUtils.h>
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 @implementation TGPaintShader
 
@@ -161,5 +158,3 @@
 }
 
 @end
-
-#pragma clang diagnostic pop

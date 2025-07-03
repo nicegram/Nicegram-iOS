@@ -15,8 +15,8 @@ import ChatListSearchItemHeader
 import ContactsPeerItem
 
 //Xcode 16
-#if SWIFT_PACKAGE
-extension NavigationBarSearchContentNode: ItemListControllerSearchNavigationContentNode {
+#if canImport(ContactProvider)
+extension NavigationBarSearchContentNode: @retroactive ItemListControllerSearchNavigationContentNode {
     public func activate() {
     }
     
@@ -27,7 +27,7 @@ extension NavigationBarSearchContentNode: ItemListControllerSearchNavigationCont
     }
 }
 #else
-extension NavigationBarSearchContentNode: @retroactive ItemListControllerSearchNavigationContentNode {
+extension NavigationBarSearchContentNode: ItemListControllerSearchNavigationContentNode {
     public func activate() {
     }
     
