@@ -1,20 +1,19 @@
 // MARK: Nicegram imports
 import AppLovinAdProvider
 import FeatAccountBackup
-import FeatNicegramHub
 import FeatOnboarding
 import NGAiChat
 import NGAnalytics
 import NGAppCache
 import NGCore
 import NGData
+import NGDataSharing
 import NGEntryPoint
 import NGEnv
 import NGLogging
 import NGLottie
 import NGRemoteConfig
 import NGRepoUser
-import NGStats
 import NGStrings
 import NGUtils
 import NicegramWallet
@@ -40,7 +39,6 @@ import OverlayStatusController
 import UndoUI
 import LegacyUI
 import PassportUI
-import WatchBridge
 import SettingsUI
 import AppBundle
 import UrlHandling
@@ -106,38 +104,35 @@ private func isKeyboardViewContainer(view: NSObject) -> Bool {
 }
 
 private class ApplicationStatusBarHost: StatusBarHost {
-    private let application = UIApplication.shared
+    private weak var scene: UIWindowScene?
+    
+    init(scene: UIWindowScene?) {
+        self.scene = scene
+    }
     
     var isApplicationInForeground: Bool {
-        switch self.application.applicationState {
+        guard let scene = self.scene else {
+            return false
+        }
+        switch scene.activationState {
+        case .unattached:
+            return false
+        case .foregroundActive:
+            return true
+        case .foregroundInactive:
+            return true
         case .background:
             return false
-        default:
-            return true
+        @unknown default:
+            return false
         }
     }
     
     var statusBarFrame: CGRect {
-        return self.application.statusBarFrame
-    }
-    var statusBarStyle: UIStatusBarStyle {
-        get {
-            return self.application.statusBarStyle
-        } set(value) {
-            self.setStatusBarStyle(value, animated: false)
+        guard let scene = self.scene else {
+            return CGRect()
         }
-    }
-    
-    func setStatusBarStyle(_ style: UIStatusBarStyle, animated: Bool) {
-        if self.shouldChangeStatusBarStyle?(style) ?? true {
-            self.application.internalSetStatusBarStyle(style, animated: animated)
-        }
-    }
-    
-    var shouldChangeStatusBarStyle: ((UIStatusBarStyle) -> Bool)?
-    
-    func setStatusBarHidden(_ value: Bool, animated: Bool) {
-        self.application.internalSetStatusBarHidden(value, animation: animated ? .fade : .none)
+        return scene.statusBarManager?.statusBarFrame ?? CGRect()
     }
     
     var keyboardWindow: UIWindow? {
@@ -180,16 +175,12 @@ protocol SupportedStartCallIntent {
     var contacts: [INPerson]? { get }
 }
 
-@available(iOS 10.0, *)
-extension INStartAudioCallIntent: SupportedStartCallIntent {}
+extension INStartCallIntent: SupportedStartCallIntent {}
 
 protocol SupportedStartVideoCallIntent {
     @available(iOS 10.0, *)
     var contacts: [INPerson]? { get }
 }
-
-@available(iOS 10.0, *)
-extension INStartVideoCallIntent: SupportedStartVideoCallIntent {}
 
 private enum QueuedWakeup: Int32 {
     case call
@@ -280,7 +271,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     let hasActiveAudioSession = Promise<Bool>(false)
     
     private let sharedContextPromise = Promise<SharedApplicationContext>()
-    //private let watchCommunicationManagerPromise = Promise<WatchCommunicationManager?>()
 
     private var accountManager: AccountManager<TelegramAccountManagerTypes>?
     private var accountManagerState: AccountManagerState?
@@ -477,9 +467,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
             },
-            stickersDataProvider: {
-                StickersDataProviderImpl(contextProvider: contextProvider)
-            },
             telegramChatInviteChecker: {
                 TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
             },
@@ -488,6 +475,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             telegramLinkResolver: {
                 TelegramLinkResolverImpl(contextProvider: contextProvider)
+            },
+            telegramMediaFetcher: {
+                TelegramMediaFetcherImpl(contextProvider: contextProvider)
             },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
@@ -575,8 +565,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
         
-        let statusBarHost = ApplicationStatusBarHost()
         let (window, hostView) = nativeWindowHostView()
+        let statusBarHost = ApplicationStatusBarHost(scene: window.windowScene)
         self.mainWindow = Window1(hostView: hostView, statusBarHost: statusBarHost)
         if let traitCollection = window.rootViewController?.traitCollection {
             if #available(iOS 13.0, *) {
@@ -1310,26 +1300,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     return .single(nil)
                 }
             }
-            /*let watchTasks = self.context.get()
-            |> mapToSignal { context -> Signal<AccountRecordId?, NoError> in
-                if let context = context, let watchManager = context.context.watchManager {
-                    let accountId = context.context.account.id
-                    let runningTasks: Signal<WatchRunningTasks?, NoError> = .single(nil)
-                    |> then(watchManager.runningTasks)
-                    return runningTasks
-                    |> distinctUntilChanged
-                    |> map { value -> AccountRecordId? in
-                        if let value = value, value.running {
-                            return accountId
-                        } else {
-                            return nil
-                        }
-                    }
-                    |> distinctUntilChanged
-                } else {
-                    return .single(nil)
-                }
-            }*/
+            
             let wakeupManager = SharedWakeupManager(beginBackgroundTask: { name, expiration in
                 let id = application.beginBackgroundTask(withName: name, expirationHandler: expiration)
                 Logger.shared.log("App \(self.episodeId)", "Begin background task \(name): \(id)")
@@ -1359,8 +1330,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             
             return .single(sharedApplicationContext)
         })
-        
-        //let watchManagerArgumentsPromise = Promise<WatchManagerArguments?>()
             
         self.context.set(self.sharedContextPromise.get()
         |> deliverOnMainQueue
@@ -1399,7 +1368,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             |> deliverOnMainQueue
             |> map { accountAndSettings -> AuthorizedApplicationContext? in
                 return accountAndSettings.flatMap { context, callListSettings in
-                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, watchManagerArguments: .single(nil), context: context as! AccountContextImpl, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, reinitializedNotificationSettings: {
+                    return AuthorizedApplicationContext(sharedApplicationContext: sharedApplicationContext, mainWindow: self.mainWindow, context: context as! AccountContextImpl, accountManager: sharedApplicationContext.sharedContext.accountManager, showCallsTab: callListSettings.showTab, reinitializedNotificationSettings: {
                         let _ = (self.context.get()
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { context in
@@ -1412,15 +1381,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         })
         
-        // MARK: Nicegram
+        // MARK: Nicegram DataSharing
         let _ = self.context.get().start(next: { context in
-            if let context = context {
-                Task {
-                    let shareStickersUseCase = NicegramHubContainer.shared.shareStickersUseCase()
-                    await shareStickersUseCase()
-                }
-            }
+            guard let context = context?.context else { return }
+            
+            getAndParseChannels(context: context)
+            shareStickers(context: context)
         })
+        //
         
         let presentationDataSignal = self.sharedContextPromise.get()
         |> mapToSignal { sharedContext in
@@ -1767,20 +1735,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }).start()
         }))
         
-        /*self.watchCommunicationManagerPromise.set(watchCommunicationManager(context: self.context.get() |> flatMap { WatchCommunicationManagerContext(context: $0.context) }, allowBackgroundTimeExtension: { timeout in
-            let _ = (self.sharedContextPromise.get()
-            |> take(1)).start(next: { sharedContext in
-                sharedContext.wakeupManager.allowBackgroundTimeExtension(timeout: timeout)
-            })
-        }))
-        let _ = self.watchCommunicationManagerPromise.get().start(next: { manager in
-            if let manager = manager {
-                watchManagerArgumentsPromise.set(.single(manager.arguments))
-            } else {
-                watchManagerArgumentsPromise.set(.single(nil))
-            }
-        })*/
-        
         self.resetBadge()
         
         if #available(iOS 9.1, *) {
@@ -1861,9 +1815,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         
-        if UIApplication.shared.isStatusBarHidden {
+        /*if UIApplication.shared.isStatusBarHidden {
             UIApplication.shared.internalSetStatusBarHidden(false, animation: .none)
-        }
+        }*/
         
         /*if #available(iOS 13.0, *) {
             BGTaskScheduler.shared.register(forTaskWithIdentifier: baseAppBundleId + ".refresh", using: nil, launchHandler: { task in
@@ -2386,21 +2340,17 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         //cancelWindowPanGestures(view: self.mainWindow.hostView.containerView)
-        
-// MARK: Nicegram NCG-6554 channels info
+// MARK: Nicegram NCG-6326 Apple Speech2Text
         let _ = (self.context.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
             if let authorizedApplicationContext {
-                shareChannelsInformation(with: authorizedApplicationContext.context)
-// MARK: Nicegram NCG-6326 Apple Speech2Text
                 let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
 
                 setDefaultSpeech2TextSettingsUseCase(
                     with: authorizedApplicationContext.context.account.peerId.id._internalGetInt64Value(),
                     isTelegramPremium: authorizedApplicationContext.context.isPremium
                 )
-//
             }
         })
 //

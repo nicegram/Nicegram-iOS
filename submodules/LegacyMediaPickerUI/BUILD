@@ -14,6 +14,7 @@ swift_library(
         #"-warnings-as-errors",
     ],
     deps = NGDEPS + [
+        "//submodules/SSignalKit/SSignalKit",
     	"//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",

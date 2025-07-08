@@ -438,7 +438,7 @@ public struct NetworkInitializationArguments {
     public let externalRecaptchaRequestVerification: (String, String) -> Signal<String?, NoError>
     public let autolockDeadine: Signal<Int32?, NoError>
     public let encryptionProvider: EncryptionProvider
-    public let deviceModelName:String?
+    public let deviceModelName: String?
     public let useBetaFeatures: Bool
     public let isICloudEnabled: Bool
     
@@ -999,7 +999,8 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
         self.loggedOut?()
     }
     
-    func download(datacenterId: Int, isMedia: Bool, isCdn: Bool = false, tag: MediaResourceFetchTag?) -> Signal<Download, NoError> {
+    // MARK: Nicegram, 'public'
+    public func download(datacenterId: Int, isMedia: Bool, isCdn: Bool = false, tag: MediaResourceFetchTag?) -> Signal<Download, NoError> {
         return self.worker(datacenterId: datacenterId, isCdn: isCdn, isMedia: isMedia, tag: tag)
     }
     

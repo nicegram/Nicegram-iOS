@@ -307,8 +307,8 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
-        case .paidMessages:
-            if case .messageEffects = rhs {
+        case .todo:
+            if case .todo = rhs {
                 return true
             } else {
                 return false
@@ -366,7 +366,7 @@ public enum PremiumSource: Equatable {
     case messageTags
     case folderTags
     case messageEffects
-    case paidMessages
+    case todo
     case auth(String)
     
     var identifier: String? {
@@ -461,8 +461,8 @@ public enum PremiumSource: Equatable {
             return "folder_tags"
         case .messageEffects:
             return "effects"
-        case .paidMessages:
-            return "paid_messages"
+        case .todo:
+            return "todo"
         case .auth:
             return "auth"
         }
@@ -493,7 +493,7 @@ public enum PremiumPerk: CaseIterable {
     case business
     case folderTags
     case messageEffects
-    case paidMessages
+    case todo
     
     case businessLocation
     case businessHours
@@ -529,7 +529,7 @@ public enum PremiumPerk: CaseIterable {
             .folderTags,
             .business,
             .messageEffects,
-            .paidMessages
+            .todo
         ]
     }
     
@@ -603,8 +603,8 @@ public enum PremiumPerk: CaseIterable {
             return "folder_tags"
         case .messageEffects:
             return "effects"
-        case .paidMessages:
-            return "paid_messages"
+        case .todo:
+            return "todo"
         case .business:
             return "business"
         case .businessLocation:
@@ -674,8 +674,8 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_Business
         case .messageEffects:
             return strings.Premium_MessageEffects
-        case .paidMessages:
-            return strings.Premium_PaidMessages
+        case .todo:
+            return strings.Premium_Todo
         case .businessLocation:
             return strings.Business_Location
         case .businessHours:
@@ -743,8 +743,8 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_BusinessInfo
         case .messageEffects:
             return strings.Premium_MessageEffectsInfo
-        case .paidMessages:
-            return strings.Premium_PaidMessagesInfo
+        case .todo:
+            return strings.Premium_TodoInfo
         case .businessLocation:
             return strings.Business_LocationInfo
         case .businessHours:
@@ -812,8 +812,8 @@ public enum PremiumPerk: CaseIterable {
             return "Premium/Perk/Business"
         case .messageEffects:
             return "Premium/Perk/MessageEffects"
-        case .paidMessages:
-            return "Premium/Perk/PaidMessages"
+        case .todo:
+            return "Premium/Perk/Todo"
         case .businessLocation:
             return "Premium/BusinessPerk/Location"
         case .businessHours:
@@ -844,6 +844,7 @@ struct PremiumIntroConfiguration {
             .voiceToText,
             .fasterDownload,
             .translation,
+            .todo,
             .animatedEmoji,
             .emojiStatus,
             .messageEffects,
@@ -851,7 +852,6 @@ struct PremiumIntroConfiguration {
             .colors,
             .wallpapers,
             .profileBadge,
-            .paidMessages,
             .messagePrivacy,
             .advancedChatManagement,
             .noAds,
@@ -2156,8 +2156,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 demoSubject = .messagePrivacy
                             case .messageEffects:
                                 demoSubject = .messageEffects
-                            case .paidMessages:
-                                demoSubject = .paidMessages
+                            case .todo:
+                                demoSubject = .todo
                             case .business:
                                 demoSubject = .business
                                 let _ = ApplicationSpecificNotice.setDismissedBusinessBadge(accountManager: accountContext.sharedContext.accountManager).startStandalone()
@@ -3706,8 +3706,8 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                 let buttonTitle: String
                 var buttonSubtitle: String?
                 if case let .auth(price) = context.component.source {
-                    buttonTitle = "Sign up for \(price)"
-                    buttonSubtitle = "Get Telegram Premium for 1 week"
+                    buttonTitle = environment.strings.Premium_Week_SignUp(price).string
+                    buttonSubtitle = environment.strings.Premium_Week_SignUpInfo
                 } else if isUnusedGift {
                     buttonTitle = environment.strings.Premium_Gift_ApplyLink
                 } else if state.isPremium == true && state.canUpgrade {

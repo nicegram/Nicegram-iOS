@@ -3,7 +3,7 @@ import Postbox
 import TelegramApi
 
 
-extension ExportedInvitation {
+public extension ExportedInvitation {
     init(apiExportedInvite: Api.ExportedChatInvite) {
         switch apiExportedInvite {
             case let .chatInviteExported(flags, link, adminId, date, startDate, expireDate, usageLimit, usage, requested, subscriptionExpired, title, pricing):

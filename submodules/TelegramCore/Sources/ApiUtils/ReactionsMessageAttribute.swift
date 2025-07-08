@@ -262,7 +262,7 @@ public func mergedMessageReactions(attributes: [MessageAttribute], isTags: Bool)
     }
 }
 
-extension ReactionsMessageAttribute {
+public extension ReactionsMessageAttribute {
     convenience init(apiReactions: Api.MessageReactions) {
         switch apiReactions {
         case let .messageReactions(flags, results, recentReactions, topReactors):

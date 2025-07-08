@@ -26,10 +26,14 @@ extension ContactImageProviderImpl: ContactImageProvider {
             return nil
         }
         
-        let imageData = try? await fetchAvatarImage(
-            peer: peer._asPeer(),
-            context: context
-        ).awaitForFirstValue()
+        let imageData = try? await MediaFetcher(context: context)
+            .getAvatarImage(
+                peer: peer._asPeer(),
+                options: .init(
+                    fetchIfMissing: true,
+                    fetchTimeout: 10
+                )
+            )
         guard let imageData else { return nil }
         
         return UIImage(data: imageData)

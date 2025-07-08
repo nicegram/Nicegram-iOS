@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "V9tRcQ3AK7P1jDrn2k5EHNBV7xfGu3salKbbaCfjesg=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "c4254fc03694112ef07ec656d857e01dcbee41e7ead618466a6c30f7b8d93413"
+          "@@//Package.resolved": "af9473a1d195e69521932a23874f7786172b961cf63d4f10d8cbcc192209bc09"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -533,9 +533,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_firebase_ios_sdk",
-              "commit": "45d327fcbe7793747295346c2209ad419bdead74",
+              "commit": "fdc352fabaf5916e7faa1f96ad02b1957e93e5a5",
               "remote": "https://github.com/firebase/firebase-ios-sdk.git",
-              "version": "11.14.0",
+              "version": "11.15.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "db78a9f1da45726c88178e2fed16b78b14d2d0b1",
+              "commit": "d4b89c692a7ca0ed11133675e6349b7cee66c86a",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -569,7 +569,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "a6e5c6b150480bb330e2625486ae861c4f8fed1a",
+              "commit": "e7622ed0df28ec992030cbc74823ba0089344146",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,
@@ -677,9 +677,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_cryptoswift",
-              "commit": "729e01bc9b9dab466ac85f21fb9ee2bc1c61b258",
+              "commit": "132f5b209cd0251067f29cdb59c97d9f8a63252a",
               "remote": "https://github.com/krzyzanowskim/CryptoSwift.git",
-              "version": "1.8.4",
+              "version": "1.8.5",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -803,9 +803,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_googleappmeasurement",
-              "commit": "406f72d0d5e9445fd1cf782db3e9e338cee2bed4",
+              "commit": "45ce435e9406d3c674dd249a042b932bee006f60",
               "remote": "https://github.com/google/GoogleAppMeasurement.git",
-              "version": "11.14.0",
+              "version": "11.15.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1199,9 +1199,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_argument_parser",
-              "commit": "011f0c765fb46d9cac61bca19be0527e99c98c8b",
+              "commit": "852f74ca63a9fb9903d311ffc5379d42dd52ed5f",
               "remote": "https://github.com/apple/swift-argument-parser",
-              "version": "1.5.1",
+              "version": "1.6.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
