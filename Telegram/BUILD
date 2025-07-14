@@ -298,7 +298,7 @@ filegroup(
     name = "FirebaseRemoteConfigDefaults",
     srcs = glob([
         "Telegram-iOS/FirebaseRemoteConfigDefaults.plist",
-    ]),
+    ], allow_empty=True),
 )
 
 # MARK: Nicegram AltIcons

@@ -6,11 +6,6 @@ ARCH="$1"
 
 BUILD_DIR="$2"
 
-# Nicegram: create symlink, because dav1d uses hardcoded Xcode path /Applications/Xcode.app
-CURRENT_XCODE_PATH=$(xcode-select -p | sed 's/\/Contents\/Developer$//')
-ln -s "$CURRENT_XCODE_PATH" /Applications/Xcode.app
-#
-
 MESON_OPTIONS="--buildtype=release --default-library=static -Denable_tools=false -Denable_tests=false"
 CROSSFILE=""
 
