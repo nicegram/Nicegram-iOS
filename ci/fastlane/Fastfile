@@ -315,7 +315,7 @@ lane :ensure_xcode_symlink do
   xcode_path = xcode_dev_path.sub(%r{/Contents/Developer$}, '')
   symlink = "/Applications/Xcode.app"
 
-  if !File.exist?(symlink) || File.realpath(symlink) != xcode_path
+  if !File.exist?(symlink)
     File.symlink(xcode_path, symlink)
   end
 end
