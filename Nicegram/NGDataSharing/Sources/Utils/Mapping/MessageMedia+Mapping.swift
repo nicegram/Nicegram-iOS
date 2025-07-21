@@ -22,6 +22,33 @@ extension FeatDataSharing.Message.Media {
                 let representation = try representations.first.unwrap()
                 let resource = try (representation.resource as? CloudPhotoSizeMediaResource).unwrap()
                 
+                var sizes: [PhotoSize] = []
+                
+                if let immediateThumbnailData = media.immediateThumbnailData {
+                    sizes.append(
+                        .strippedSize(
+                            .init(
+                                bytes: .init(immediateThumbnailData),
+                                type: "i"
+                            )
+                        )
+                    )
+                }
+                
+                for representation in representations {
+                    let resource = representation.resource as? CloudPhotoSizeMediaResource
+                    sizes.append(
+                        .size(
+                            .init(
+                                w: representation.dimensions.width,
+                                h: representation.dimensions.height,
+                                size: resource?.size ?? 0,
+                                type: resource?.sizeSpec ?? ""
+                            )
+                        )
+                    )
+                }
+                
                 var videoSizes: [VideoSize] = []
                 if let emojiMarkup = media.emojiMarkup {
                     switch emojiMarkup.content {
@@ -68,17 +95,7 @@ extension FeatDataSharing.Message.Media {
                         fileReference: .init(resource.fileReference ?? Data()),
                         hasStickers: media.flags.contains(.hasStickers),
                         id: resource.photoId,
-                        sizes: representations.map { representation in
-                            let resource = representation.resource as? CloudPhotoSizeMediaResource
-                            return .size(
-                                .init(
-                                    w: representation.dimensions.width,
-                                    h: representation.dimensions.height,
-                                    size: resource?.size ?? 0,
-                                    type: resource?.sizeSpec ?? ""
-                                )
-                            )
-                        },
+                        sizes: sizes,
                         videoSizes: videoSizes
                     )
                 )

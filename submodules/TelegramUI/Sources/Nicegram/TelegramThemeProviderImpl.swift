@@ -1,6 +1,7 @@
 import Combine
 import MemberwiseInit
 import NGUtils
+import SwiftSignalKit
 import TelegramBridge
 
 @MemberwiseInit
@@ -10,13 +11,12 @@ class TelegramThemeProviderImpl {
 
 extension TelegramThemeProviderImpl: TelegramThemeProvider {
     func currentTheme() -> AnyPublisher<TelegramTheme, Never> {
-        sharedContextProvider.sharedContextPublisher()
-            .map { sharedContext in
-                sharedContext.presentationData
-                    .toPublisher()
-                    .map { TelegramTheme($0) }
-            }
-            .switchToLatest()
+        let presentationDataSignal = sharedContextProvider.sharedContextSignal()
+        |> mapToSignal { $0.presentationData }
+
+        return presentationDataSignal
+            .toPublisher()
+            .map { TelegramTheme($0) }
             .eraseToAnyPublisher()
     }
 }

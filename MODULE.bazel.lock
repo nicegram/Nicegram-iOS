@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "V9tRcQ3AK7P1jDrn2k5EHNBV7xfGu3salKbbaCfjesg=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "af9473a1d195e69521932a23874f7786172b961cf63d4f10d8cbcc192209bc09"
+          "@@//Package.resolved": "0def6a5d35b1e937cd9f1d949eca154c378d8ab844a5f8c4289d9d9da6884a01"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "d4b89c692a7ca0ed11133675e6349b7cee66c86a",
+              "commit": "92990e6a084bd610f88251872c41abad6c13b3cc",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -569,7 +569,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "e7622ed0df28ec992030cbc74823ba0089344146",
+              "commit": "bb8a357189d81a42a5bb7d876087b8b1a1d16423",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,
@@ -677,9 +677,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_cryptoswift",
-              "commit": "132f5b209cd0251067f29cdb59c97d9f8a63252a",
+              "commit": "e45a26384239e028ec87fbcc788f513b67e10d8f",
               "remote": "https://github.com/krzyzanowskim/CryptoSwift.git",
-              "version": "1.8.5",
+              "version": "1.9.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1091,7 +1091,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_rive_ios",
-              "commit": "c3fdfcce8dcd24ee2385e14a7e7932735cb4e6d3",
+              "commit": "a97fb4cf6ebd520a17995f7ecfd8064db0267cc8",
               "remote": "https://github.com/denis15yo/rive-ios",
               "version": "",
               "init_submodules": false,
@@ -1199,9 +1199,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_argument_parser",
-              "commit": "852f74ca63a9fb9903d311ffc5379d42dd52ed5f",
+              "commit": "309a47b2b1d9b5e991f36961c983ecec72275be3",
               "remote": "https://github.com/apple/swift-argument-parser",
-              "version": "1.6.0",
+              "version": "1.6.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

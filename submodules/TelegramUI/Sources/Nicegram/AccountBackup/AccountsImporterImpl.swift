@@ -42,7 +42,9 @@ extension AccountsImporterImpl: AccountsImporter {
             }
             .awaitForFirstValue()
         
-        try await loadPeersInfo(records.map(\.tgAccountId))
+        Task {
+            try await loadPeersInfo(records.map(\.tgAccountId))
+        }
     }
 }
 

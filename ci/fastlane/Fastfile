@@ -88,8 +88,6 @@ lane :build do |options|
   build_number = options[:build_number]
   upload_to_tf = options[:upload_to_tf]
 
-  # Create temp keychain
-  ensure_temp_keychain(name: KEYCHAIN_NAME, password: KEYCHAIN_PASSWORD)
   # Match because Telegram script doesnt import certificates
   nicegram_match(
     type: "appstore"
@@ -100,6 +98,8 @@ lane :build do |options|
   )
 
   update_remote_config_defaults()
+
+  ensure_xcode_symlink()
 
   # Build
   ipa_path = build_bazel(
@@ -189,16 +189,9 @@ lane :build_bazel do |options|
 end
 
 lane :generate_project do |options|
-  match(
-    type: "development",
-    app_identifier: app_identifier_llc,
-    team_id: TEAM_ID,
-    git_url: SIGN_URL,
-    git_branch: TEAM_ID,
-    api_key: generate_app_store_connect_api_key()
-  )
-
   configuration_path = resolve_telegram_configuration()
+
+  ensure_xcode_symlink()
 
   sh "cd #{SOURCE_PATH} && python3 build-system/Make/Make.py \
   --cacheDir=#{BAZEL_LOCAL_CACHE} \
@@ -249,6 +242,11 @@ end
 lane :nicegram_match do |options|
   type = options[:type]
 
+  ensure_temp_keychain(
+    name: KEYCHAIN_NAME, 
+    password: KEYCHAIN_PASSWORD
+  )
+
   match(
     type: type,
     app_identifier: app_identifier_llc,
@@ -257,8 +255,7 @@ lane :nicegram_match do |options|
     git_branch: TEAM_ID,
     api_key: generate_app_store_connect_api_key(),
     keychain_name: KEYCHAIN_NAME,
-    keychain_password: KEYCHAIN_PASSWORD,
-    skip_provisioning_profiles: true
+    keychain_password: KEYCHAIN_PASSWORD
   )
 end
 
@@ -313,6 +310,15 @@ lane :tg do |options|
    )
 end
 
+lane :ensure_xcode_symlink do
+  xcode_dev_path = sh("xcode-select -p").chomp
+  xcode_path = xcode_dev_path.sub(%r{/Contents/Developer$}, '')
+  symlink = "/Applications/Xcode.app"
+
+  if !File.exist?(symlink)
+    File.symlink(xcode_path, symlink)
+  end
+end
 
 error do |_, exception|
     delete_keychain_if_exists(name: KEYCHAIN_NAME)

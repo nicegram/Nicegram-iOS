@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/krzyzanowskim/CryptoSwift.git",
       "state" : {
-        "revision" : "132f5b209cd0251067f29cdb59c97d9f8a63252a",
-        "version" : "1.8.5"
+        "revision" : "e45a26384239e028ec87fbcc788f513b67e10d8f",
+        "version" : "1.9.0"
       }
     },
     {
@@ -249,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "f38b79da91b9e21da130d62ce2c7a6a05299d241"
+        "revision" : "92990e6a084bd610f88251872c41abad6c13b3cc"
       }
     },
     {
@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "0c9cc2a34a4d80739385fbe6a1077b3f2b17e684"
+        "revision" : "bb8a357189d81a42a5bb7d876087b8b1a1d16423"
       }
     },
     {
@@ -294,7 +294,7 @@
       "location" : "https://github.com/denis15yo/rive-ios",
       "state" : {
         "branch" : "main",
-        "revision" : "c3fdfcce8dcd24ee2385e14a7e7932735cb4e6d3"
+        "revision" : "a97fb4cf6ebd520a17995f7ecfd8064db0267cc8"
       }
     },
     {
