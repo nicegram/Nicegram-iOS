@@ -1,7 +1,9 @@
 // MARK: Nicegram
 import class Combine.AnyCancellable
+import struct Combine.Just
 import EntityKeyboard
 import FeatAiShortcuts
+import FeatAiVoiceAssistant
 import FeatChatBanner
 import FeatTgChatButton
 import NGAiChatUI
@@ -987,6 +989,83 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 AiChatAnalysisHelper(context: self.context).presentFromChat(
                     peerId: chatLocation.peerId
                 )
+            }
+            if #available(iOS 16.0, *),
+               let peerId = chatLocation.peerId {
+                nicegramOverlayView.openAiVoiceAssistant = { [weak context] in
+                    let telegramBridge = FeatAiVoiceAssistant.Session.TelegramBridge(
+                        chatId: .init(peerId),
+                        chatInfo: {
+                            guard let context else {
+                                return Just(nil).eraseToAnyPublisher()
+                            }
+                            return context.account.viewTracker
+                                .peerView(peerId, updateData: true)
+                                .toPublisher()
+                                .map { peerView in
+                                    let peer = peerView.peers[peerId]
+                                    let cachedData = peerView.cachedData
+                                    
+                                    return .init(
+                                        bio: cachedData?.aboutText ?? "",
+                                        name: peer?.debugDisplayTitle ?? ""
+                                    )
+                                }
+                                .eraseToAnyPublisher()
+                        },
+                        latestMessages: {
+                            guard let context else {
+                                return Just([]).eraseToAnyPublisher()
+                            }
+                            
+                            let limit = 100
+                            
+                            return context.account.viewTracker
+                                .aroundMessageHistoryViewForLocation(
+                                    .peer(
+                                        peerId: peerId,
+                                        threadId: nil
+                                    ),
+                                    index: .upperBound,
+                                    anchorIndex: .upperBound,
+                                    count: limit,
+                                    fixedCombinedReadStates: nil
+                                )
+                                .toPublisher()
+                                .map { $0.0.entries.map(\.message) }
+                                .map { messages in
+                                    messages.map { message in
+                                        return .init(
+                                            author: message.author?.debugDisplayTitle ?? "",
+                                            date: Int(message.timestamp),
+                                            id: message.id.description,
+                                            isIncoming: message.flags.contains(.Incoming),
+                                            text: message.text
+                                        )
+                                    }
+                                }
+                                .eraseToAnyPublisher()
+                        },
+                        sendMessage: { text in
+                            guard let context else { return }
+                            
+                            let message = EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                            
+                            _ = enqueueMessages(
+                                account: context.account,
+                                peerId: peerId,
+                                messages: [message]
+                            ).start()
+                        }
+                    )
+                    
+                    let rootController = context?.sharedContext.mainWindow?.viewController as? TelegramRootController
+                    if let rootController {
+                        rootController.nicegramDockWidget.aiVoiceAssistantModel.startSession(
+                            telegramBridge: telegramBridge
+                        )
+                    }
+                }
             }
             nicegramOverlayView.openWallet = { [weak self] in
                 self?.openNicegramWallet()

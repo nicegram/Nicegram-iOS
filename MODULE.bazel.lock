@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "V9tRcQ3AK7P1jDrn2k5EHNBV7xfGu3salKbbaCfjesg=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "0def6a5d35b1e937cd9f1d949eca154c378d8ab844a5f8c4289d9d9da6884a01"
+          "@@//Package.resolved": "ea29b79ba1ebb0f80e9d2a68fa5bbdc2cc1665b65d62f508c5645aa9f00efdd8"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "92990e6a084bd610f88251872c41abad6c13b3cc",
+              "commit": "cb2eac14e85169859ab2d60976727a46738af7f5",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -569,7 +569,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "bb8a357189d81a42a5bb7d876087b8b1a1d16423",
+              "commit": "898e07993d3e8dd192f19afe5cf1a344ff1fc0f4",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1213,6 +1213,24 @@
               "patches": []
             }
           },
+          "swiftpkg_swift_async_algorithms": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_swift_async_algorithms",
+              "commit": "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23",
+              "remote": "https://github.com/denis15yo/swift-async-algorithms.git",
+              "version": "",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
+            }
+          },
           "swiftpkg_swift_case_paths": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -1253,9 +1271,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_collections",
-              "commit": "c1805596154bb3a265fd91b8ac0c4433b4348fb0",
+              "commit": "8c0c0a8b49e080e54e5e328cc552821ff07cd341",
               "remote": "https://github.com/apple/swift-collections",
-              "version": "1.2.0",
+              "version": "1.2.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1631,9 +1649,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_xctest_dynamic_overlay",
-              "commit": "39de59b2d47f7ef3ca88a039dff3084688fe27f4",
+              "commit": "23e3442166b5122f73f9e3e622cd1e4bafeab3b7",
               "remote": "https://github.com/pointfreeco/xctest-dynamic-overlay",
-              "version": "1.5.2",
+              "version": "1.6.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

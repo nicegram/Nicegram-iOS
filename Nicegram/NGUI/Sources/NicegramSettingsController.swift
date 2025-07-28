@@ -11,6 +11,7 @@
 import AccountContext
 import Display
 import FeatAccountBackup
+import FeatAdsgram
 import FeatAiShortcuts
 import FeatDataSharing
 import FeatImagesHubUI
@@ -805,14 +806,40 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
         ApplicationSpecificSharedDataKeys.experimentalUISettings,
     ])
     
+    let adsgramModule = AdsgramModule.shared
+    let adsgramSettingsPublisher = adsgramModule.getFeatureStatusUseCase().enabledPublisher()
+        .combineLatestThreadSafe(
+            adsgramModule.getSettingsUseCase().publisher()
+        )
+        .map { enabled, settings in
+            enabled ? settings : nil
+        }
+    
     let pinnedChatsSignal = PinnedChatsContainer.shared.getPinnedChatsUseCase()
         .publisher()
         .combineLatestThreadSafe(
+            adsgramSettingsPublisher,
             PumpAdsModule.shared.getConfigUseCase().publisher(),
             PumpAdsModule.shared.getSettingsUseCase().publisher()
         )
-        .map { pinnedChats, pumpConfig, pumpSettings in
+        .map { pinnedChats, adsgramSettings, pumpConfig, pumpSettings in
             var entries = [NicegramSettingsControllerEntry.PinnedChat]()
+            
+            if let adsgramSettings {
+                entries.append(
+                    NicegramSettingsControllerEntry.PinnedChat(
+                        index: (entries.last?.index ?? 0) + 1,
+                        title: "adsgram",
+                        enabled: adsgramSettings.showPin,
+                        setEnabled: { value in
+                            Task { @MainActor in
+                                let settingsViewModel = SettingsViewModel()
+                                settingsViewModel.onChange(showPin: value)
+                            }
+                        }
+                    )
+                )
+            }
             
             if pumpConfig != nil {
                 entries.append(

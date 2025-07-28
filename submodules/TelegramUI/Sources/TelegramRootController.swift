@@ -10,6 +10,9 @@ import SwiftUI
 import NGGrumUI
 //
 // MARK: Nicegram imports
+import class Combine.AnyCancellable
+import FeatDockWidget
+import MinimizedContainer
 import NGData
 import NGStrings
 //
@@ -119,13 +122,77 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     public var minimizedContainerUpdated: (MinimizedContainer?) -> Void = { _ in }
+    
+    // Nicegram DockWidget
+    @available(iOS 16.0, *)
+    public var nicegramDockWidget: DockWidgetViewModel {
+        _nicegramDockWidget as! DockWidgetViewModel
+    }
+    private let _nicegramDockWidget: Any?
+    
+    private var cancellables = Set<AnyCancellable>()
+    //
         
     public init(context: AccountContext) {
         self.context = context
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
+        // Nicegram DockWidget
+        if #available(iOS 16.0, *) {
+            _nicegramDockWidget = DockWidgetViewModel()
+        } else {
+            _nicegramDockWidget = nil
+        }
+        //
+        
         super.init(mode: .automaticMasterDetail, theme: NavigationControllerTheme(presentationTheme: self.presentationData.theme))
+        
+        // Nicegram DockWidget
+        if #available(iOS 16.0, *) {
+            nicegramDockWidget.$viewState
+                .map(\.height)
+                .removeDuplicates()
+                .sink { [weak self] height in
+                    guard let self else { return }
+                    
+                    let transition = ContainedViewLayoutTransition.animated(
+                        duration: 0.4,
+                        curve: .spring
+                    )
+                    
+                    if height > 0 {
+                        let minimizedContainer: MinimizedContainer
+                        if let _minimizedContainer = self.minimizedContainer {
+                            minimizedContainer = _minimizedContainer
+                        } else {
+                            minimizedContainer = MinimizedContainerImpl(sharedContext: context.sharedContext)
+                            
+                            self.minimizedContainer = minimizedContainer
+                        }
+                        
+                        if minimizedContainer.nicegramWidgetView == nil {
+                            minimizedContainer.nicegramWidgetView = makeDockWidgetView(viewModel: nicegramDockWidget)
+                        }
+                    } else {
+                        if let minimizedContainer, minimizedContainer.controllers.isEmpty {
+                            DispatchQueue.main.async {
+                                self.dismissMinimizedControllers(animated: true)
+                            }
+                        }
+                    }
+                    
+                    self.minimizedContainer?.updateNicegramWidget(height: height, transition: transition)
+                    self.updateContainersNonReentrant(transition: transition)
+                }
+                .store(in: &cancellables)
+            
+            self.shouldPreventMinimizedDockDismissal = { [weak self] in
+                guard let self else { return false }
+                return nicegramDockWidget.viewState.height > 0
+            }
+        }
+        //
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).startStrict(next: { [weak self] presentationData in

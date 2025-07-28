@@ -3,7 +3,10 @@ import UIKit
 import Postbox
 // MARK: Nicegram Imports
 import class Combine.CurrentValueSubject
+import Factory
+import FeatAdsgram
 import FeatAssistant
+import FeatChatListWidget
 import FeatPinnedChats
 import NGAiChat
 import NGAiChatUI
@@ -111,6 +114,11 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
 
 public class ChatListControllerImpl: TelegramBaseController, ChatListController {
     private var validLayout: ContainerViewLayout?
+    
+    // MARK: Nicegram, ChatListWidget
+    @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
+    private var chatListWidgetViewModel
+    //
     
     public let context: AccountContext
     private let controlsHistoryPreload: Bool
@@ -2944,6 +2952,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private func updateChatListNode(isVisible: Bool) {
         let oldIsVisible = self.chatListNicegramData.isChatListVisible.value
         self.chatListNicegramData.isChatListVisible.value = isVisible
+        
+        self.chatListWidgetViewModel.set(isViewVisible: isVisible)
         
         if isVisible, !oldIsVisible {
             chatListDisplayNode.effectiveContainerNode.currentItemNode.forEachItemNode { itemNode in
