@@ -85,7 +85,7 @@ final class MentionChatInputPanelItem: ListViewItem {
         if self.revealed {
             self.setPeerIdRevealed(nil)
         } else {
-            // MARK: Nicegram changes
+            // Nicegram changes
             if let peer = peer {
                 self.peerSelected(EnginePeer(peer))
             } else {
@@ -183,7 +183,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                 updatedInverted = item.inverted
             }
             
-            // MARK: Nicegram MentionAll, title for MentionAll (item.peer == nil)
+            // Nicegram MentionAll, title for MentionAll (item.peer == nil)
             let title: String
             if let peer = item.peer {
                 title = EnginePeer(peer).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
@@ -220,7 +220,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                     strongSelf.topSeparatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
                     strongSelf.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
                     strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
-                    // MARK: Nicegram changes
+                    // Nicegram changes
                     if let peer = item.peer {
                         strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: EnginePeer(peer), emptyColor: item.presentationData.theme.list.mediaPlaceholderColor)
                     } else {
@@ -419,7 +419,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
     }
     
     private func revealOptionSelected(_ option: ItemListRevealOption, animated: Bool) {
-        // MARK: Nicegram changes
+        // Nicegram changes
         guard let item = self.item, let peer = item.peer else {
             return
         }
@@ -474,7 +474,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
     }
     
     func revealOptionsInteractivelyOpened() {
-        // MARK: Nicegram changes
+        // Nicegram changes
         if let item = self.item, let peer = item.peer {
             item.setPeerIdRevealed(peer.id)
         }

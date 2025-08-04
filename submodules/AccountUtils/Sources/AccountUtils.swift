@@ -4,14 +4,14 @@ import TelegramCore
 import TelegramUIPreferences
 import AccountContext
 
-// MARK: Nicegram MaxAccounts
+// Nicegram MaxAccounts
 public let nicegramMaximumNumberOfAccounts = 1000
 public let maximumNumberOfAccounts = nicegramMaximumNumberOfAccounts
 public let maximumPremiumNumberOfAccounts = nicegramMaximumNumberOfAccounts
 //
 
 public func activeAccountsAndPeers(context: AccountContext, includePrimary: Bool = false) -> Signal<((AccountContext, EnginePeer)?, [(AccountContext, EnginePeer, Int32)]), NoError> {
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     let hiddenIds = context.sharedContext.accountManager.accountRecords()
     |> map { view -> [AccountRecordId] in
         return view.records.filter({ $0.attributes.contains(where: { $0.isHiddenAccountAttribute }) }).map { $0.id }

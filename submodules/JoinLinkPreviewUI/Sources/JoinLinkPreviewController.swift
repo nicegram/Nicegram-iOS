@@ -1,4 +1,4 @@
-// MARK: Nicegram
+// Nicegram
 import FeatAttentionEconomy
 //
 import Foundation
@@ -85,11 +85,11 @@ public final class LegacyJoinLinkPreviewController: ViewController {
                         if invite.flags.requestNeeded {
                             strongSelf.isRequest = true
                             strongSelf.isGroup = !invite.flags.isBroadcast
-                            // MARK: Nicegram ATT, inviteHash added
+                            // Nicegram ATT, inviteHash added
                             strongSelf.controllerNode.setRequestPeer(inviteHash: strongSelf.link, image: invite.photoRepresentation, title: invite.title, about: invite.about, memberCount: invite.participantsCount, isGroup: !invite.flags.isBroadcast, isVerified: invite.flags.isVerified, isFake: invite.flags.isFake, isScam: invite.flags.isScam)
                         } else {
                             let data = JoinLinkPreviewData(isGroup: !invite.flags.isBroadcast, isJoined: false)
-                            // MARK: Nicegram ATT, inviteHash added
+                            // Nicegram ATT, inviteHash added
                             strongSelf.controllerNode.setInvitePeer(inviteHash: strongSelf.link, image: invite.photoRepresentation, title: invite.title, about: invite.about, memberCount: invite.participantsCount, members: invite.participants?.map({ $0 }) ?? [], data: data)
                         }
                     case let .alreadyJoined(peer):
@@ -146,7 +146,7 @@ public final class LegacyJoinLinkPreviewController: ViewController {
     private func join() {
         self.disposable.set((self.context.engine.peers.joinChatInteractively(with: self.link) |> deliverOnMainQueue).start(next: { [weak self] peer in
             if let strongSelf = self {
-                // MARK: Nicegram ATT
+                // Nicegram ATT
                 Task {
                     await AttCoreModule.shared.claimOngoingActionUseCase()
                         .claimSubscribeIfNeeded(

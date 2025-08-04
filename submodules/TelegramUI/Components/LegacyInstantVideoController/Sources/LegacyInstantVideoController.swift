@@ -1,5 +1,5 @@
 import Foundation
-// MARK: Nicegram imports
+// Nicegram imports
 import NGData
 //
 import UIKit
@@ -168,7 +168,7 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                 node.slowmodeState = slowmodeState
                 return node
             }, canSendSilently: !isSecretChat, canSchedule: hasSchedule, reminder: peerId == context.account.peerId, useRearCamTelescopy: NGSettings.useRearCamTelescopy)!
-            // MARK: Nicegram useRearCamTelescopy
+            // Nicegram useRearCamTelescopy
             controller.presentScheduleController = { done in
                 presentSchedulePicker { time in
                     done?(time)

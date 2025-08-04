@@ -193,10 +193,10 @@ public final class ReactionNode: ASDisplayNode, ReactionItemNode {
         self.useDirectRendering = useDirectRendering
         
         self.selectionTintView = UIView()
-        self.selectionTintView?.backgroundColor = UIColor(white: 1.0, alpha: 0.2)
+        self.selectionTintView?.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
         
         self.selectionView = UIView()
-        self.selectionView?.backgroundColor = theme.chat.inputMediaPanel.panelContentControlVibrantSelectionColor
+        self.selectionView?.backgroundColor = theme.chat.inputMediaPanel.panelContentControlVibrantOverlayColor.mixedWith(theme.contextMenu.backgroundColor.withMultipliedAlpha(0.4), alpha: 0.5)
         
         self.staticAnimationNode = self.useDirectRendering ? DirectAnimatedStickerNode() : DefaultAnimatedStickerNodeImpl()
     
@@ -722,7 +722,7 @@ final class EmojiItemNode: ASDisplayNode, ReactionItemNode {
         self.emoji = emoji
         
         self.selectionTintView = UIView()
-        self.selectionTintView?.backgroundColor = UIColor(white: 1.0, alpha: 0.2)
+        self.selectionTintView?.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
         
         self.selectionView = UIView()
         self.selectionView?.backgroundColor = theme.chat.inputMediaPanel.panelContentControlVibrantSelectionColor

@@ -99,6 +99,8 @@ swift_library(
         "//submodules/TelegramUI/Components/InteractiveTextComponent",
         "//submodules/TelegramUI/Components/SaveProgressScreen",
         "//submodules/TelegramUI/Components/Chat/ChatMessagePaymentAlertController",
+        "//submodules/DirectMediaImageCache",
+        "//submodules/PromptUI",
     ],
     visibility = [
         "//visibility:public",

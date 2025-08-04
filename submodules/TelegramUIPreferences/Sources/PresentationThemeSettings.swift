@@ -11,7 +11,7 @@ private extension UIColor {
 }
 
 public enum PresentationBuiltinThemeReference: Int32 {
-    // MARK: Nicegram DefaultTheme
+    // Nicegram DefaultTheme
     case nicegram = -1
     //
     case dayClassic = 0
@@ -21,7 +21,7 @@ public enum PresentationBuiltinThemeReference: Int32 {
     
     public init(baseTheme: TelegramBaseTheme) {
         switch baseTheme {
-            // MARK: Nicegram DefaultTheme
+            // Nicegram DefaultTheme
             case .nicegram:
                 self = .nicegram
             //
@@ -38,7 +38,7 @@ public enum PresentationBuiltinThemeReference: Int32 {
     
     public var baseTheme: TelegramBaseTheme {
         switch self {
-            // MARK: Nicegram DefaultTheme
+            // Nicegram DefaultTheme
             case .nicegram:
                 return .nicegram
             //
@@ -664,7 +664,7 @@ public struct PresentationThemeSettings: Codable {
     }
     
     public static var defaultSettings: PresentationThemeSettings {
-        // MARK: Nicegram DefaultTheme, change defaultSettings
+        // Nicegram DefaultTheme, change defaultSettings
         return PresentationThemeSettings(theme: .builtin(.nicegram), themePreferredBaseTheme: [:], themeSpecificAccentColors: [:], themeSpecificChatWallpapers: [:], useSystemFont: true, fontSize: .regular, listsFontSize: .regular, chatBubbleSettings: .default, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting(force: false, trigger: .explicitNone, theme: .builtin(.nicegram)), largeEmoji: true, reduceMotion: false)
     }
     

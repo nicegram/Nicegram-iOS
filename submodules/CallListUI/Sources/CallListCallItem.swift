@@ -854,6 +854,12 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             avatarFrame.origin.x = revealOffset + leftInset - 52.0
             transition.updateFrameAdditive(node: self.avatarNode, frame: avatarFrame)
             
+            if let conferenceAvatarListNode = self.conferenceAvatarListNode {
+                var conferenceAvatarFrame = conferenceAvatarListNode.frame
+                conferenceAvatarFrame.origin.x = avatarFrame.minX + floor((avatarFrame.width - conferenceAvatarFrame.width) / 2.0)
+                transition.updateFrameAdditive(node: conferenceAvatarListNode, frame: conferenceAvatarFrame)
+            }
+            
             transition.updateFrameAdditive(node: self.titleNode, frame: CGRect(origin: CGPoint(x: revealOffset + leftInset, y: self.titleNode.frame.minY), size: self.titleNode.bounds.size))
             
             transition.updateFrameAdditive(node: self.statusNode, frame: CGRect(origin: CGPoint(x: revealOffset + leftInset, y: self.statusNode.frame.minY), size: self.statusNode.bounds.size))

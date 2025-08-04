@@ -1,4 +1,4 @@
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 import NGRoundedVideos
 import TooltipUI
 //
@@ -282,7 +282,7 @@ func presentLegacyMediaPickerGallery(context: AccountContext, peer: EnginePeer?,
                     sendWhenOnlineAvailable = .single(false)
                 }
                 
-                // MARK: Nicegram RoundedVideos
+                // Nicegram RoundedVideos
                 let canSendAsRoundedVideo = canSendAsRoundedVideo(
                     currentItem: item,
                     editingContext: editingContext,
@@ -294,7 +294,7 @@ func presentLegacyMediaPickerGallery(context: AccountContext, peer: EnginePeer?,
                 |> take(1)
                 |> deliverOnMainQueue).start(next: { sendWhenOnlineAvailable in
                     let legacySheetController = LegacyController(presentation: .custom, theme: presentationData.theme, initialLayout: nil)
-                    // MARK: Nicegram RoundedVideos, canSendAsRoundedVideo added
+                    // Nicegram RoundedVideos, canSendAsRoundedVideo added
                     let sheetController = TGMediaPickerSendActionSheetController(context: legacyController.context, isDark: true, sendButtonFrame: model.interfaceView.doneButtonFrame, canSendAsRoundedVideo: canSendAsRoundedVideo,  canSendSilently: hasSilentPosting, canSendWhenOnline: sendWhenOnlineAvailable && effectiveHasSchedule, canSchedule: effectiveHasSchedule, reminder: reminder, hasTimer: hasTimer)
                     let dismissImpl = { [weak model] in
                         model?.dismiss(true, false)
@@ -305,7 +305,7 @@ func presentLegacyMediaPickerGallery(context: AccountContext, peer: EnginePeer?,
                             dismissImpl()
                         })
                     }
-                    // MARK: Nicegram RoundedVideos
+                    // Nicegram RoundedVideos
                     sheetController.sendAsRoundedVideo = {
                         NGRoundedVideos.sendAsRoundedVideo = true
                         
@@ -396,7 +396,7 @@ func presentLegacyMediaPickerGallery(context: AccountContext, peer: EnginePeer?,
     }
     present(legacyController, nil)
     
-    // MARK: Nicegram RoundedVideos
+    // Nicegram RoundedVideos
     Queue.mainQueue().after(1) { [weak model, weak legacyController, weak editingContext, weak selectionContext] in
         guard let model, let legacyController else {
             return

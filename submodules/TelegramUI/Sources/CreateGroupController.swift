@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import Display
+import SSignalKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
@@ -33,6 +34,7 @@ import TextFormat
 import AvatarEditorScreen
 import SendInviteLinkScreen
 import OldChannelsController
+import AVFoundation
 
 private struct CreateGroupArguments {
     let context: AccountContext

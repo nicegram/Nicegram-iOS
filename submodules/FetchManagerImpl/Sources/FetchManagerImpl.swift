@@ -7,7 +7,7 @@ import AccountContext
 import UniversalMediaPlayer
 import RangeSet
 
-// MARK: Nicegram downloading feature
+// Nicegram downloading feature
 import UIKit
 import SaveToCameraRoll
 import NGCore
@@ -157,7 +157,7 @@ private final class FetchManagerCategoryContext {
         return Array(self.entries.values)
     }
     
-    // MARK: Nicegram downloading feature
+    // Nicegram downloading feature
     func withEntry(id: FetchManagerLocationEntryId, accountContext: AccountContext?, shouldSave: Bool = false, takeNew: (() -> (AnyMediaReference?, MediaResourceReference, MediaResourceStatsCategory, Int32))?, _ f: (FetchManagerLocationEntry) -> Void) {
         let entry: FetchManagerLocationEntry
         let previousPriorityKey: FetchManagerPriorityKey?
@@ -208,7 +208,7 @@ private final class FetchManagerCategoryContext {
         var activeContextsUpdated = false
         let _ = activeContextsUpdated
         
-        // MARK: Nicegram downloading feature
+        // Nicegram downloading feature
         if self.maybeFindAndActivateNewTopEntry(accountContext: accountContext, shouldSave: shouldSave) {
             activeContextsUpdated = true
         }
@@ -313,7 +313,7 @@ private final class FetchManagerCategoryContext {
         self.activeEntriesUpdated()
     }
     
-    // MARK: Nicegram downloading feature
+    // Nicegram downloading feature
     func maybeFindAndActivateNewTopEntry(accountContext: AccountContext?, shouldSave: Bool = false) -> Bool {
         if self.topEntryIdAndPriority == nil && !self.entries.isEmpty {
             var topEntryIdAndPriority: (FetchManagerLocationEntryId, FetchManagerPriorityKey)?
@@ -496,7 +496,7 @@ private final class FetchManagerCategoryContext {
         return nil
     }
     
-    // MARK: Nicegram downloading feature
+    // Nicegram downloading feature
     func cancelEntry(_ entryId: FetchManagerLocationEntryId, isCompleted: Bool, accountContext: AccountContext?) {
         var id: FetchManagerLocationEntryId = entryId
         if self.entries[id] == nil {
@@ -547,7 +547,7 @@ private final class FetchManagerCategoryContext {
             self.topEntryIdAndPriority = nil
         }
         
-        // MARK: Nicegram downloading feature
+        // Nicegram downloading feature
         if self.maybeFindAndActivateNewTopEntry(accountContext: accountContext) {
             activeContextsUpdated = true
         }
@@ -555,7 +555,7 @@ private final class FetchManagerCategoryContext {
         self.activeEntriesUpdated()
     }
     
-    // MARK: Nicegram downloading feature
+    // Nicegram downloading feature
     func toggleEntryPaused(_ entryId: FetchManagerLocationEntryId, isPaused: Bool, accountContext: AccountContext?) -> Bool {
         var id: FetchManagerLocationEntryId = entryId
         if self.entries[id] == nil {
@@ -596,7 +596,7 @@ private final class FetchManagerCategoryContext {
                 }
             }
             
-            // MARK: Nicegram downloading feature
+            // Nicegram downloading feature
             let _ = self.maybeFindAndActivateNewTopEntry(accountContext: accountContext)
             self.activeEntriesUpdated()
             
@@ -606,7 +606,7 @@ private final class FetchManagerCategoryContext {
         }
     }
     
-    // MARK: Nicegram downloading feature
+    // Nicegram downloading feature
     func raiseEntryPriority(_ entryId: FetchManagerLocationEntryId, accountContext: AccountContext?) {
         var id: FetchManagerLocationEntryId = entryId
         if self.entries[id] == nil {
@@ -629,7 +629,7 @@ private final class FetchManagerCategoryContext {
             }
         }
         
-        // MARK: Nicegram downloading feature
+        // Nicegram downloading feature
         self.withEntry(id: id, accountContext: accountContext, takeNew: nil, { entry in
             if entry.userInitiatedPriorityIndices.last == topUserInitiatedPriority {
                 return
@@ -770,7 +770,7 @@ public final class FetchManagerImpl: FetchManager {
                         return
                     }
                     strongSelf.withCategoryContext(key, { context in
-                        // MARK: Nicegram downloading feature
+                        // Nicegram downloading feature
                         context.cancelEntry(id, isCompleted: true, accountContext: nil)
                     })
                 }
@@ -808,7 +808,7 @@ public final class FetchManagerImpl: FetchManager {
         }
     }
     
-    // MARK: Nicegram downloading feature, 'accountContext, shouldSave' params added
+    // Nicegram downloading feature, 'accountContext, shouldSave' params added
     public func interactivelyFetched(category: FetchManagerCategory, location: FetchManagerLocation, locationKey: FetchManagerLocationKey, mediaReference: AnyMediaReference?, resourceReference: MediaResourceReference, ranges: RangeSet<Int64>, statsCategory: MediaResourceStatsCategory, elevatedPriority: Bool, userInitiated: Bool, priority: FetchManagerPriority = .userInitiated, storeToDownloadsPeerId: EnginePeer.Id?, accountContext: AccountContext?, shouldSave: Bool = false) -> Signal<Void, NoError> {
         let queue = self.queue
         return Signal { [weak self] subscriber in
@@ -821,7 +821,7 @@ public final class FetchManagerImpl: FetchManager {
                 var assignedRangeIndex: Int?
                 
                 strongSelf.withCategoryContext(category, { context in
-                    // MARK: Nicegram downloading feature
+                    // Nicegram downloading feature
                     context.withEntry(id: FetchManagerLocationEntryId(location: location, resourceId: resourceReference.resource.id, locationKey: locationKey), accountContext: accountContext, shouldSave: shouldSave, takeNew: { return (mediaReference, resourceReference, statsCategory, strongSelf.takeNextEpisodeId()) }, { entry in
                         assignedEpisode = entry.episode
                         if userInitiated {
@@ -854,7 +854,7 @@ public final class FetchManagerImpl: FetchManager {
                     queue.async {
                         if let strongSelf = self {
                             strongSelf.withCategoryContext(category, { context in
-                                // MARK: Nicegram downloading feature
+                                // Nicegram downloading feature
                                 context.withEntry(id: FetchManagerLocationEntryId(location: location, resourceId: resourceReference.resource.id, locationKey: locationKey), accountContext: accountContext, shouldSave: shouldSave, takeNew: nil, { entry in
                                     if entry.episode == assignedEpisode {
                                         if let assignedReferenceIndex = assignedReferenceIndex {
@@ -893,7 +893,7 @@ public final class FetchManagerImpl: FetchManager {
     public func cancelInteractiveFetches(category: FetchManagerCategory, location: FetchManagerLocation, locationKey: FetchManagerLocationKey, resource: MediaResource) {
         self.queue.async {
             self.withCategoryContext(category, { context in
-                // MARK: Nicegram downloading feature
+                // Nicegram downloading feature
                 context.cancelEntry(FetchManagerLocationEntryId(location: location, resourceId: resource.id, locationKey: locationKey), isCompleted: false, accountContext: nil)
             })
             
@@ -906,7 +906,7 @@ public final class FetchManagerImpl: FetchManager {
             var removeCategories: [FetchManagerCategory] = []
             for (category, categoryContext) in self.categoryContexts {
                 if let id = categoryContext.getEntryId(resourceId: resourceId) {
-                    // MARK: Nicegram downloading feature
+                    // Nicegram downloading feature
                     categoryContext.cancelEntry(id, isCompleted: false, accountContext: nil)
                     if categoryContext.isEmpty {
                         removeCategories.append(category)
@@ -926,7 +926,7 @@ public final class FetchManagerImpl: FetchManager {
         self.queue.async {
             for (_, categoryContext) in self.categoryContexts {
                 if let id = categoryContext.getEntryId(resourceId: resourceId) {
-                    // MARK: Nicegram downloading feature
+                    // Nicegram downloading feature
                     if categoryContext.toggleEntryPaused(id, isPaused: isPaused, accountContext: nil) {
                         self.postbox.mediaBox.cancelInteractiveResourceFetch(resourceId: MediaResourceId(resourceId))
                     }
@@ -939,7 +939,7 @@ public final class FetchManagerImpl: FetchManager {
         self.queue.async {
             for (_, categoryContext) in self.categoryContexts {
                 if let id = categoryContext.getEntryId(resourceId: resourceId) {
-                    // MARK: Nicegram downloading feature
+                    // Nicegram downloading feature
                     categoryContext.raiseEntryPriority(id, accountContext: nil)
                 }
             }

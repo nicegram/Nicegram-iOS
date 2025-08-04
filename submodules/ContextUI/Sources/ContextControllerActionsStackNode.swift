@@ -653,13 +653,16 @@ public final class ContextControllerActionsListActionItemNode: HighlightTracking
             }
             
             if let additionalIconSize {
-                let iconFrame = CGRect(
+                var iconFrame = CGRect(
                     origin: CGPoint(
                         x: 10.0,
                         y: floor((size.height - additionalIconSize.height) / 2.0)
                     ),
                     size: additionalIconSize
                 )
+                if self.item.iconPosition == .left {
+                    iconFrame.origin.x = size.width - additionalIconSize.width - 10.0
+                }
                 transition.updateFrame(node: self.additionalIconNode, frame: iconFrame, beginWithCurrentState: true)
             }
         })

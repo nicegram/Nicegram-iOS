@@ -1,4 +1,4 @@
-// MARK: Nicegram imports
+// Nicegram imports
 import AppLovinAdProvider
 import FeatAccountBackup
 import FeatOnboarding
@@ -231,7 +231,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
     )
 }
 
-// MARK: Nicegram Themes
+// Nicegram Themes
 private class UserInterfaceStyleObserverWindow: UIWindow {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
@@ -246,7 +246,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 //
 
 @objc(AppDelegate) class AppDelegate: UIResponder, UIApplicationDelegate, PKPushRegistryDelegate, UNUserNotificationCenterDelegate, URLSessionDelegate, URLSessionTaskDelegate {
-    // MARK: Nicegram Themes
+    // Nicegram Themes
     private let userInterfaceStyleObserverWindow = UserInterfaceStyleObserverWindow()
     //
     
@@ -258,7 +258,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private var buildConfig: BuildConfig?
     let episodeId = arc4random()
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private var isCurrentlyLocked = true
     /// property for universal links handling
     private var needOpenURL = false
@@ -301,7 +301,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private var _notificationTokenPromise: Promise<Data>?
     private let voipTokenPromise = Promise<Data>()
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private var doubleBottomFlow: DoubleBottomFlow?
     
     private var firebaseSecrets: [String: String] = [:] {
@@ -389,7 +389,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.buildConfig = buildConfig
         let signatureDict = BuildConfigExtra.signatureDict()
 
-         // MARK: Nicegram, moved 'isDebugConfiguration' definition here
+         // Nicegram, moved 'isDebugConfiguration' definition here
         var isDebugConfiguration = false
         #if DEBUG
         isDebugConfiguration = true
@@ -552,7 +552,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         )
         AdsgramPinWebViewLoader(contextProvider: contextProvider).initialize()
         
-        // MARK: Nicegram Unblock
+        // Nicegram Unblock
         let _ = (self.context.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { context in
@@ -794,7 +794,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             return true
         }
 
-        // MARK: Nicegram, moved 'isDebugConfiguration' definition up
+        // Nicegram, moved 'isDebugConfiguration' definition up
         
         if isDebugConfiguration || buildConfig.isInternalBuild {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: true, logToConsole: false, redactSensitiveData: true)
@@ -1079,7 +1079,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }, getAvailableAlternateIcons: {
             if #available(iOS 10.3, *) {
                 var icons = [
-                    // MARK: Nicegram, default AppIcon changed
+                    // Nicegram, default AppIcon changed
                     PresentationAppIcon(name: "NewBlack", imageName: "NewBlack", isDefault: buildConfig.isAppStoreBuild),
                     PresentationAppIcon(name: "NewWhite", imageName: "NewWhite"),
                     PresentationAppIcon(name: "New3", imageName: "New3"),
@@ -1151,7 +1151,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 UINavigationController.attemptRotationToDeviceOrientation()
             }
         })
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         let hiddenAccountManager = HiddenAccountManagerImpl()
         let accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: false, isReadOnly: false, useCaches: true, removeDatabaseOnError: true, hiddenAccountManager: hiddenAccountManager)
 
@@ -1201,7 +1201,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             let appLockContext = AppLockContextImpl(rootPath: rootPath, window: self.mainWindow!, rootController: self.window?.rootViewController, applicationBindings: applicationBindings, accountManager: accountManager, presentationDataSignal: presentationDataPromise.get(), lockIconInitialFrame: {
                 return (self.mainWindow?.viewController as? TelegramRootController)?.chatListController?.lockViewFrame
             })
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             _ = appLockContext.onUnlockedDismiss.signal()
                 .start { [weak self] _ in
                     self?.unlockedAndReady.putNext(())
@@ -1233,7 +1233,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         self.mainWindow.coveringView = nil
                     }
                 }
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
             }, openDoubleBottomFlow: { [weak self] selectedAccount in
                 self?.openDoubleBottomFlow(selectedAccount: selectedAccount)
             }, appDelegate: self)
@@ -1382,7 +1382,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         })
         
-        // MARK: Nicegram DataSharing
+        // Nicegram DataSharing
         let _ = self.context.get().start(next: { context in
             guard let context = context?.context else { return }
             
@@ -1417,7 +1417,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             |> map { primary, accounts, auth -> (AccountContext?, UnauthorizedAccount, [AccountContext])? in
                 if let auth = auth {
                     return (primary, auth, Array(accounts.map({ $0.1 })))
-                    // MARK: Nicegram DB Changes
+                    // Nicegram DB Changes
                     //return (primary, auth, Array(accounts.filter { !$0.1.account.isHidden }.map({ $0.1 })))
                 } else {
                     return nil
@@ -1466,7 +1466,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         })
         
-        // MARK: Nicegram Onboarding (we put the telegram start navigation code in a closure that we will call when we are done with processing our onboarding)
+        // Nicegram Onboarding (we put the telegram start navigation code in a closure that we will call when we are done with processing our onboarding)
         let onNicegramOnboardingComplete = {
         //
         let _ = presentationDataSignal.start(next: { presentationData in
@@ -1677,7 +1677,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 authContextReadyDisposable.set(nil)
             }
         }))
-        // MARK: Nicegram Onboarding
+        // Nicegram Onboarding
         }
         if AppCache.wasOnboardingShown {
             onNicegramOnboardingComplete()
@@ -1747,7 +1747,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     return activeAccountsAndPeers(context: context.context)
                     |> take(1)
                     |> map { primaryAndAccounts -> (AccountContext, EnginePeer, Int32)? in
-                        // MARK: Nicegram DB Changes
+                        // Nicegram DB Changes
                         let accounts = primaryAndAccounts.1
                         if context.context.sharedContext.accountManager.hiddenAccountManager.unlockedAccountRecordId != nil {
                             if accounts.count > 1 {
@@ -2227,7 +2227,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         
         let _ = (self.sharedContextPromise.get()
         |> take(1)
@@ -2317,7 +2317,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
 //        self.maybeCheckForUpdates()
         
-        // MARK: Nicegram fetch
+        // Nicegram fetch
         Queue().async {
         	self.fetchGlobalNGSettings()
 		    //self.fetchPremium()
@@ -2341,7 +2341,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         //cancelWindowPanGestures(view: self.mainWindow.hostView.containerView)
-// MARK: Nicegram NCG-6326 Apple Speech2Text
+// Nicegram NCG-6326 Apple Speech2Text
         let _ = (self.context.get()
         |> take(1)
         |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
@@ -2358,7 +2358,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
     
     func applicationWillTerminate(_ application: UIApplication) {
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         Logger.shared.log("App \(self.episodeId)", "terminating")
     }
     
@@ -2427,7 +2427,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             return
         }
         
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         let _ = (combineLatest(queue: .mainQueue(), self.sharedContextPromise.get(), accountIdFromNotification(userInfo, sharedContext: self.sharedContextPromise.get()))
                  |> take(1)).start(next: { sharedApplicationContext, accountId in
             
@@ -2817,12 +2817,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         self.openUrl(url: url)
         return true
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
         self.handleUniversalLink(url)
         return true
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private func handleUniversalLink(_ url: URL) {
         if isCurrentlyLocked {
             handleURLWhenUnlocked(url)
@@ -2830,7 +2830,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             openUrl(url: url)
         }
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private func handleURLWhenUnlocked(_ url: URL) {
         self.needOpenURL = true
         _ = (self.unlockedAndReady.signal()
@@ -3080,7 +3080,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 })
             }
             if let appLockContext = sharedContext.sharedContext.appLockContext as? AppLockContextImpl, !immediately {
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
                 let _ = (appLockContext.isUnlockedAndReady
                 |> take(1)
                 |> deliverOnMainQueue).start(next: { _ in
@@ -3105,7 +3105,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         |> take(1)
         |> mapToSignal { sharedApplicationContext -> Signal<AuthorizedApplicationContext, NoError> in
             if let accountId = accountId {
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
                 let _ = (sharedApplicationContext.sharedContext.accountManager.transaction({ transaction -> Bool in
                     if let record = transaction.getRecords().first(where: { $0.id == accountId }) {
                         return !record.attributes.contains(where: { $0.isHiddenAccountAttribute })
@@ -3171,7 +3171,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             })
         }))
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private func openDoubleBottomFlow(selectedAccount: AccountContext) {
         guard let context = self.contextValue else { return }
         doubleBottomFlow = DoubleBottomFlow(context: context, selectedAccount: selectedAccount) { [weak self] in
@@ -3181,9 +3181,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
 
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
         func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-            // MARK: Nicegram Notifications
+            // Nicegram Notifications
             let userInfo = response.notification.request.content.userInfo
             if let nicegramDeeplink = userInfo["nicegramDeeplink"] as? String,
                let url = URL(string: nicegramDeeplink) {
@@ -3216,7 +3216,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     if response.notification.request.content.categoryIdentifier == "c" || response.notification.request.content.categoryIdentifier == "t" {
                         messageId = messageIdFromNotification(peerId: peerId, notification: response.notification)
                     }
-                    // MARK: Nicegram DB Changes
+                    // Nicegram DB Changes
                     if let accountId = accountId, hiddenIdsAndPasscodeSettings.hiddenIds.contains(accountId) {
                         if hiddenIdsAndPasscodeSettings.hasMasterPasscode {
                             context.sharedContext.appLockContext.lock()
@@ -3262,7 +3262,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         if let threadId {
                             replyToMessageId = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId))
                         }
-                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
+                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
                         |> map { messageIds -> MessageId? in
                             if messageIds.isEmpty {
                                 return nil
@@ -3404,7 +3404,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let _ = (accountIdFromNotification(notification, sharedContext: self.sharedContextPromise.get())
         |> deliverOnMainQueue).start(next: { accountId in
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             if let context = self.contextValue, let accountId = accountId, context.context.account.id != accountId {
                 let _ = context.context.sharedContext.accountManager.transaction { transaction in
                     if let record = transaction.getRecords().first(where: { $0.id == accountId }),
@@ -3592,7 +3592,7 @@ private func accountIdFromNotification(_ notification: UNNotification, sharedCon
         }
     }
 }
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 private func accountIdFromNotification(_ notification: [AnyHashable : Any], sharedContext: Signal<SharedApplicationContext, NoError>) -> Signal<AccountRecordId?, NoError> {
     if let id = notification["accountId"] as? Int64 {
         return .single(AccountRecordId(rawValue: id))
@@ -3733,7 +3733,7 @@ private func downloadHTTPData(url: URL) -> Signal<Data, DownloadFileError> {
     }
 }
 
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 
 import LocalAuth
 import PasscodeUI

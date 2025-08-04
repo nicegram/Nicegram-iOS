@@ -1,4 +1,4 @@
-// MARK: Nicegram Imports
+// Nicegram Imports
 import NGWebUtils
 //
 import Foundation
@@ -830,7 +830,7 @@ public final class AvatarNode: ASDisplayNode {
                     icon = .storyIcon
                 }
             }
-            // MARK: Nicegram (isAllowedChat)
+            // Nicegram (isAllowedChat)
             else if peer?.restrictionText(platform: "ios", contentSettings: genericContext.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer?._asPeer(), contentSettings: genericContext.currentContentSettings.with { $0 }) {
                 representation = peer?.smallProfileImage
             }
@@ -874,7 +874,7 @@ public final class AvatarNode: ASDisplayNode {
                     
                     parameters = AvatarNodeParameters(theme: theme, accountPeerId: account.peerId, peerId: peer.id, colors: calculateAvatarColors(context: genericContext, explicitColorIndex: nil, peerId: peer.id, nameColor: peer.nameColor, icon: icon, theme: theme), letters: peer.displayLetters, font: self.font, icon: icon, explicitColorIndex: nil, hasImage: true, clipStyle: clipStyle, cutoutRect: cutoutRect)
                 }
-                // MARK: Nicegram changes
+                // Nicegram changes
                 else if let signal = nicegramAvatarImage(nicegramImage: nicegramImage) {
                     self.contents = nil
                     self.displaySuspended = true
@@ -1345,7 +1345,7 @@ public final class AvatarNode: ASDisplayNode {
         )
     }
     
-    // MARK: Nicegram, nicegramImage added
+    // Nicegram, nicegramImage added
     public func setPeer(
         context: AccountContext,
         account: Account? = nil,

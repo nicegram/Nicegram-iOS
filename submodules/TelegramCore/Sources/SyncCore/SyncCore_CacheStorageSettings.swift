@@ -20,7 +20,7 @@ public struct CacheStorageSettings: Codable, Equatable {
     public var categoryStorageTimeout: [PeerStorageCategory: Int32]
 
     public static var defaultSettings: CacheStorageSettings {
-        // MARK: Nicegram CacheSettings, change defaultCacheStorageLimitGigabytes to 2
+        // Nicegram CacheSettings, change defaultCacheStorageLimitGigabytes to 2
         return CacheStorageSettings(
             defaultCacheStorageTimeout: Int32.max,
             defaultCacheStorageLimitGigabytes: 2,
@@ -53,7 +53,7 @@ public struct CacheStorageSettings: Codable, Equatable {
         } else if let value = try container.decodeIfPresent(Int32.self, forKey: "sizeLimit") {
             self.defaultCacheStorageLimitGigabytes = value
         } else {
-            // MARK: Nicegram CacheSettings, change defaultCacheStorageLimitGigabytes to 2
+            // Nicegram CacheSettings, change defaultCacheStorageLimitGigabytes to 2
             self.defaultCacheStorageLimitGigabytes = 2
         }
         

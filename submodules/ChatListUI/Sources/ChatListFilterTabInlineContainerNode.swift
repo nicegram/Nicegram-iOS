@@ -5,7 +5,7 @@ import Display
 import Postbox
 import TelegramCore
 import TelegramPresentationData
-// MARK: Nicegram NCG-7581 Folder for keywords
+// Nicegram NCG-7581 Folder for keywords
 import NGStrings
 import NGData
 //
@@ -386,7 +386,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
     private var reorderingAutoScrollAnimator: ConstantDisplayLinkAnimator?
     private var reorderedItemIds: [ChatListFilterTabEntryId]?
     private lazy var hapticFeedback = { HapticFeedback() }()
-    // MARK: Nicegram NCG-7581 Folder for keywords
+    // Nicegram NCG-7581 Folder for keywords
     private let userId: Int64
     public let keywordsButtonNode: ASButtonNode
     var openKeywords: (() -> Void)?
@@ -405,9 +405,9 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             }
         }
     }
-    // MARK: Nicegram NCG-7581 Folder for keywords, userId
+    // Nicegram NCG-7581 Folder for keywords, userId
     init(userId: Int64) {
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.userId = userId
         //
         self.scrollNode = ASScrollNode()
@@ -431,14 +431,14 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
         self.highlightedItemsClippingContainer.layer.cornerRadius = 16.0
         
         self.highlightedItemsContainer = ASDisplayNode()
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.keywordsButtonNode = ASButtonNode()
         self.keywordsButtonNode.displaysAsynchronously = false
         self.keywordsButtonNode.titleNode.maximumNumberOfLines = 1
         self.keywordsButtonNode.titleNode.truncationMode = .byTruncatingTail
         //
         super.init()
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.keywordsButtonNode.addTarget(self, action: #selector(self.keywordsPressed), forControlEvents: .touchUpInside)
         //
         
@@ -457,7 +457,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
         self.scrollNode.addSubnode(self.selectedBackgroundNode)
         self.scrollNode.addSubnode(self.highlightedItemsClippingContainer)
         self.highlightedItemsClippingContainer.addSubnode(self.highlightedItemsContainer)
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.scrollNode.addSubnode(self.keywordsButtonNode)
         //
         let reorderingGesture = ReorderingGestureRecognizer(shouldBegin: { [weak self] point in
@@ -600,7 +600,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             } else {
                 self.itemsBackgroundView.effect = UIBlurEffect(style: .light)
             }
-            // MARK: Nicegram change
+            // Nicegram change
             self.itemsBackgroundTintNode.image = generateStretchableFilledCircleImage(diameter: 40.0, color: presentationData.theme.rootController.tabBar.backgroundColor)
             
             let selectedFilterColor: UIColor
@@ -796,9 +796,9 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
         let resolvedSideInset = max(resolvedInitialSideInset, floor((size.width - rawContentWidth) / 2.0))
         
         var leftOffset: CGFloat = resolvedSideInset
-        // MARK: Nicegram NCG-7581 Folder for keywords, var itemsBackgroundLeftX
+        // Nicegram NCG-7581 Folder for keywords, var itemsBackgroundLeftX
         var itemsBackgroundLeftX = leftOffset - 14.0 - 4.0
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         let showKeywordButton = getNicegramSettings().keywords.show[userId] ?? true
         self.keywordsButtonNode.isHidden = !showKeywordButton
         let title = (getNicegramSettings().keywords.showTooltip[userId] ?? true) ? l("NicegramKeywords.Title") : l("NicegramKeywords.TitleNoEmoji")
@@ -950,7 +950,7 @@ final class ChatListFilterTabInlineContainerNode: ASDisplayNode {
             self.previousSelectedFrame = nil
         }
     }
-    // MARK: Nicegram NCG-7581 Folder for keywords
+    // Nicegram NCG-7581 Folder for keywords
     @objc func keywordsPressed() {
         openKeywords?()
     }

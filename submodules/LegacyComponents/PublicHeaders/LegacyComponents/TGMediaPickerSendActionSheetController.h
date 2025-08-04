@@ -4,7 +4,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface TGMediaPickerSendActionSheetController : TGOverlayController
 
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 @property (nonatomic, copy) void (^sendAsRoundedVideo)(void);
 //
 @property (nonatomic, copy) void (^send)(void);
@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) void (^sendWithTimer)(void);
 
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context isDark:(bool)isDark sendButtonFrame:(CGRect)sendButtonFrame canSendSilently:(bool)canSendSilently canSendWhenOnline:(bool)canSendWhenOnline canSchedule:(bool)canSchedule reminder:(bool)reminder hasTimer:(bool)hasTimer;
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context isDark:(bool)isDark sendButtonFrame:(CGRect)sendButtonFrame canSendAsRoundedVideo:(bool)canSendAsRoundedVideo canSendSilently:(bool)canSendSilently canSendWhenOnline:(bool)canSendWhenOnline canSchedule:(bool)canSchedule reminder:(bool)reminder hasTimer:(bool)hasTimer;
 //
 

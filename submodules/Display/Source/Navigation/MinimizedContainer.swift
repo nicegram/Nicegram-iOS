@@ -22,13 +22,6 @@ public protocol MinimizedContainer: ASDisplayNode {
     
     func updateLayout(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition)
     func collapsedHeight(layout: ContainerViewLayout) -> CGFloat
-    
-    // Nicegram DockWidget
-    var nicegramWidgetView: UIView? { get set }
-    func updateNicegramWidget(height: CGFloat, transition: ContainedViewLayoutTransition)
-    
-    func dismissOnlyControllers()
-    //
 }
 
 public protocol MinimizableController: ViewController {

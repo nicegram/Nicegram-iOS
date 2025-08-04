@@ -14,6 +14,7 @@ import OpenInExternalAppUI
 import ItemListPeerActionItem
 import StorageUsageScreen
 import PresentationDataUtils
+import FaceScanScreen
 
 public enum AutomaticSaveIncomingPeerType {
     case privateChats
@@ -617,7 +618,7 @@ private func autosaveLabelAndValue(presentationData: PresentationData, settings:
     return (label, value)
 }
 
-private func dataAndStorageControllerEntries(state: DataAndStorageControllerState, data: DataAndStorageData, presentationData: PresentationData, defaultWebBrowser: String, contentSettingsConfiguration: ContentSettingsConfiguration?, networkUsage: Int64, storageUsage: Int64, mediaAutoSaveSettings: MediaAutoSaveSettings, autosaveExceptionPeers: [EnginePeer.Id: EnginePeer?], mediaSettings: MediaDisplaySettings) -> [DataAndStorageEntry] {
+private func dataAndStorageControllerEntries(context: AccountContext, state: DataAndStorageControllerState, data: DataAndStorageData, presentationData: PresentationData, defaultWebBrowser: String, contentSettingsConfiguration: ContentSettingsConfiguration?, networkUsage: Int64, storageUsage: Int64, mediaAutoSaveSettings: MediaAutoSaveSettings, autosaveExceptionPeers: [EnginePeer.Id: EnginePeer?], mediaSettings: MediaDisplaySettings, showSensitiveContentSetting: Bool) -> [DataAndStorageEntry] {
     var entries: [DataAndStorageEntry] = []
     
     entries.append(.storageUsage(presentationData.theme, presentationData.strings.ChatSettings_Cache, dataSizeString(storageUsage, formatting: DataSizeStringFormatting(presentationData: presentationData))))
@@ -656,7 +657,7 @@ private func dataAndStorageControllerEntries(state: DataAndStorageControllerStat
     entries.append(.raiseToListen(presentationData.theme, presentationData.strings.Settings_RaiseToListen, data.mediaInputSettings.enableRaiseToSpeak))
     entries.append(.raiseToListenInfo(presentationData.theme, presentationData.strings.Settings_RaiseToListenInfo))
 
-    if !"".isEmpty, let contentSettingsConfiguration = contentSettingsConfiguration, contentSettingsConfiguration.canAdjustSensitiveContent {
+    if let contentSettingsConfiguration = contentSettingsConfiguration, contentSettingsConfiguration.canAdjustSensitiveContent && (showSensitiveContentSetting || requireAgeVerification(context: context)) {
         entries.append(.sensitiveContent(presentationData.strings.Settings_SensitiveContent, contentSettingsConfiguration.sensitiveContentEnabled))
         entries.append(.sensitiveContentInfo(presentationData.strings.Settings_SensitiveContentInfo))
     }
@@ -684,6 +685,7 @@ public func dataAndStorageController(context: AccountContext, focusOnItemTag: Da
     
     var pushControllerImpl: ((ViewController) -> Void)?
     var presentControllerImpl: ((ViewController, ViewControllerPresentationArguments?) -> Void)?
+    var presentAgeVerificationImpl: ((@escaping () -> Void) -> Void)?
     
     let actionsDisposable = DisposableSet()
     
@@ -913,14 +915,18 @@ public func dataAndStorageController(context: AccountContext, focusOnItemTag: Da
             updateSensitiveContentDisposable.set(updateRemoteContentSettingsConfiguration(postbox: context.account.postbox, network: context.account.network, sensitiveContentEnabled: value).start())
         }
         if value {
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let alertController = textAlertController(context: context, title: presentationData.strings.SensitiveContent_Enable_Title, text: presentationData.strings.SensitiveContent_Enable_Text, actions: [
-                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
-                TextAlertAction(type: .defaultAction, title: presentationData.strings.SensitiveContent_Enable_Confirm, action: {
-                    update()
-                })
-            ])
-            presentControllerImpl?(alertController, nil)
+            if requireAgeVerification(context: context) {
+                presentAgeVerificationImpl?(update)
+            } else {
+                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                let alertController = textAlertController(context: context, title: presentationData.strings.SensitiveContent_Enable_Title, text: presentationData.strings.SensitiveContent_Enable_Text, actions: [
+                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
+                    TextAlertAction(type: .defaultAction, title: presentationData.strings.SensitiveContent_Enable_Confirm, action: {
+                        update()
+                    })
+                ])
+                presentControllerImpl?(alertController, nil)
+            }
         } else {
             update()
         }
@@ -944,6 +950,7 @@ public func dataAndStorageController(context: AccountContext, focusOnItemTag: Da
     }
 
     let sensitiveContent = Atomic<Bool?>(value: nil)
+    let canAdjustSensitiveContent = Atomic<Bool?>(value: nil)
     
     let signal = combineLatest(queue: .mainQueue(),
         context.sharedContext.presentationData,
@@ -974,9 +981,14 @@ public func dataAndStorageController(context: AccountContext, focusOnItemTag: Da
         if previousSensitiveContent != contentSettingsConfiguration?.sensitiveContentEnabled {
             animateChanges = true
         }
+
+        if canAdjustSensitiveContent.with({ $0 }) == nil {
+            let _ = canAdjustSensitiveContent.swap(contentSettingsConfiguration?.sensitiveContentEnabled)
+        }
+        let showSensitiveContentSetting = canAdjustSensitiveContent.with { $0 } ?? false
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.ChatSettings_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: dataAndStorageControllerEntries(state: state, data: dataAndStorageData, presentationData: presentationData, defaultWebBrowser: defaultWebBrowser, contentSettingsConfiguration: contentSettingsConfiguration, networkUsage: usageSignal.network, storageUsage: usageSignal.storage, mediaAutoSaveSettings: mediaAutoSaveSettings, autosaveExceptionPeers: autosaveExceptionPeers, mediaSettings: mediaSettings), style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, animateChanges: animateChanges)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: dataAndStorageControllerEntries(context: context, state: state, data: dataAndStorageData, presentationData: presentationData, defaultWebBrowser: defaultWebBrowser, contentSettingsConfiguration: contentSettingsConfiguration, networkUsage: usageSignal.network, storageUsage: usageSignal.storage, mediaAutoSaveSettings: mediaAutoSaveSettings, autosaveExceptionPeers: autosaveExceptionPeers, mediaSettings: mediaSettings, showSensitiveContentSetting: showSensitiveContentSetting), style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, animateChanges: animateChanges)
         
         return (controllerState, (listState, arguments))
     } |> afterDisposed {
@@ -991,6 +1003,14 @@ public func dataAndStorageController(context: AccountContext, focusOnItemTag: Da
     }
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
+    }
+    presentAgeVerificationImpl = { [weak controller] update in
+        guard let controller else {
+            return
+        }
+        presentAgeVerification(context: context, parentController: controller, completion: {
+            update()
+        })
     }
 
     return controller

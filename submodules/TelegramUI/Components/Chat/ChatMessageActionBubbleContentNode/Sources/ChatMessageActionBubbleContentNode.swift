@@ -760,20 +760,14 @@ public class ChatMessageActionBubbleContentNode: ChatMessageBubbleContentNode {
                             if suggestedPost != nil {
                                 let backgroundFrame = contentFrame
                                 
-                                if item.context.sharedContext.energyUsageSettings.fullTranslucency {
-                                    if strongSelf.backgroundNode == nil {
-                                        if let backgroundNode = item.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {
-                                            strongSelf.backgroundNode = backgroundNode
-                                            backgroundNode.addSubnode(strongSelf.backgroundColorNode)
-                                            strongSelf.insertSubnode(backgroundNode, at: 0)
-                                        }
-                                    }
-                                    strongSelf.backgroundColorNode.isHidden = true
-                                } else {
-                                    if strongSelf.backgroundMaskNode.supernode == nil {
-                                        strongSelf.insertSubnode(strongSelf.backgroundMaskNode, at: 0)
+                                if strongSelf.backgroundNode == nil {
+                                    if let backgroundNode = item.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {
+                                        strongSelf.backgroundNode = backgroundNode
+                                        backgroundNode.addSubnode(strongSelf.backgroundColorNode)
+                                        strongSelf.insertSubnode(backgroundNode, at: 0)
                                     }
                                 }
+                                strongSelf.backgroundColorNode.isHidden = true
                                 
                                 if let backgroundNode = strongSelf.backgroundNode {
                                     backgroundNode.clipsToBounds = true
@@ -810,20 +804,14 @@ public class ChatMessageActionBubbleContentNode: ChatMessageBubbleContentNode {
                                     //strongSelf.spoilerTextNode?.visibilityRect = subRect
                                 }
                             } else if let (offset, image) = backgroundMaskImage {
-                                if item.context.sharedContext.energyUsageSettings.fullTranslucency {
-                                    if strongSelf.backgroundNode == nil {
-                                        if let backgroundNode = item.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {
-                                            strongSelf.backgroundNode = backgroundNode
-                                            backgroundNode.addSubnode(strongSelf.backgroundColorNode)
-                                            strongSelf.insertSubnode(backgroundNode, at: 0)
-                                        }
-                                    }
-                                    strongSelf.backgroundColorNode.isHidden = true
-                                } else {
-                                    if strongSelf.backgroundMaskNode.supernode == nil {
-                                        strongSelf.insertSubnode(strongSelf.backgroundMaskNode, at: 0)
+                                if strongSelf.backgroundNode == nil {
+                                    if let backgroundNode = item.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {
+                                        strongSelf.backgroundNode = backgroundNode
+                                        backgroundNode.addSubnode(strongSelf.backgroundColorNode)
+                                        strongSelf.insertSubnode(backgroundNode, at: 0)
                                     }
                                 }
+                                strongSelf.backgroundColorNode.isHidden = true
 
                                 if backgroundMaskUpdated {
                                     if let backgroundNode = strongSelf.backgroundNode {

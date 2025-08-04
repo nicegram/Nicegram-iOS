@@ -244,7 +244,7 @@ public enum TelegramMediaActionType: PostboxCoding, Equatable {
     case giftStars(currency: String, amount: Int64, count: Int64, cryptoCurrency: String?, cryptoAmount: Int64?, transactionId: String?)
     case prizeStars(amount: Int64, isUnclaimed: Bool, boostPeerId: PeerId?, transactionId: String?, giveawayMessageId: MessageId?)
     case starGift(gift: StarGift, convertStars: Int64?, text: String?, entities: [MessageTextEntity]?, nameHidden: Bool, savedToProfile: Bool, converted: Bool, upgraded: Bool, canUpgrade: Bool, upgradeStars: Int64?, isRefunded: Bool, upgradeMessageId: Int32?, peerId: EnginePeer.Id?, senderId: EnginePeer.Id?, savedId: Int64?)
-    case starGiftUnique(gift: StarGift, isUpgrade: Bool, isTransferred: Bool, savedToProfile: Bool, canExportDate: Int32?, transferStars: Int64?, isRefunded: Bool, peerId: EnginePeer.Id?, senderId: EnginePeer.Id?, savedId: Int64?, resaleStars: Int64?, canTransferDate: Int32?, canResaleDate: Int32?)
+    case starGiftUnique(gift: StarGift, isUpgrade: Bool, isTransferred: Bool, savedToProfile: Bool, canExportDate: Int32?, transferStars: Int64?, isRefunded: Bool, peerId: EnginePeer.Id?, senderId: EnginePeer.Id?, savedId: Int64?, resaleAmount: CurrencyAmount?, canTransferDate: Int32?, canResaleDate: Int32?)
     case paidMessagesRefunded(count: Int32, stars: Int64)
     case paidMessagesPriceEdited(stars: Int64, broadcastMessagesAllowed: Bool)
     case conferenceCall(ConferenceCall)
@@ -377,7 +377,13 @@ public enum TelegramMediaActionType: PostboxCoding, Equatable {
         case 44:
             self = .starGift(gift: decoder.decodeObjectForKey("gift", decoder: { StarGift(decoder: $0) }) as! StarGift, convertStars: decoder.decodeOptionalInt64ForKey("convertStars"), text: decoder.decodeOptionalStringForKey("text"), entities: decoder.decodeOptionalObjectArrayWithDecoderForKey("entities"), nameHidden: decoder.decodeBoolForKey("nameHidden", orElse: false), savedToProfile: decoder.decodeBoolForKey("savedToProfile", orElse: false), converted: decoder.decodeBoolForKey("converted", orElse: false), upgraded: decoder.decodeBoolForKey("upgraded", orElse: false), canUpgrade: decoder.decodeBoolForKey("canUpgrade", orElse: false), upgradeStars: decoder.decodeOptionalInt64ForKey("upgradeStars"), isRefunded: decoder.decodeBoolForKey("isRefunded", orElse: false), upgradeMessageId: decoder.decodeOptionalInt32ForKey("upgradeMessageId"), peerId: decoder.decodeOptionalInt64ForKey("peerId").flatMap { EnginePeer.Id($0) }, senderId: decoder.decodeOptionalInt64ForKey("senderId").flatMap { EnginePeer.Id($0) }, savedId: decoder.decodeOptionalInt64ForKey("savedId"))
         case 45:
-            self = .starGiftUnique(gift: decoder.decodeObjectForKey("gift", decoder: { StarGift(decoder: $0) }) as! StarGift, isUpgrade: decoder.decodeBoolForKey("isUpgrade", orElse: false), isTransferred: decoder.decodeBoolForKey("isTransferred", orElse: false), savedToProfile: decoder.decodeBoolForKey("savedToProfile", orElse: false), canExportDate: decoder.decodeOptionalInt32ForKey("canExportDate"), transferStars: decoder.decodeOptionalInt64ForKey("transferStars"), isRefunded: decoder.decodeBoolForKey("isRefunded", orElse: false), peerId: decoder.decodeOptionalInt64ForKey("peerId").flatMap { EnginePeer.Id($0) }, senderId: decoder.decodeOptionalInt64ForKey("senderId").flatMap { EnginePeer.Id($0) }, savedId: decoder.decodeOptionalInt64ForKey("savedId"), resaleStars: decoder.decodeOptionalInt64ForKey("resaleStars"), canTransferDate: decoder.decodeOptionalInt32ForKey("canTransferDate"), canResaleDate: decoder.decodeOptionalInt32ForKey("canResaleDate"))
+            var resaleAmount: CurrencyAmount?
+            if let amount = decoder.decodeCodable(CurrencyAmount.self, forKey: "resaleAmount") {
+                resaleAmount = amount
+            } else if let stars = decoder.decodeOptionalInt64ForKey("resaleStars") {
+                resaleAmount = CurrencyAmount(amount: StarsAmount(value: stars, nanos: 0), currency: .stars)
+            }
+            self = .starGiftUnique(gift: decoder.decodeObjectForKey("gift", decoder: { StarGift(decoder: $0) }) as! StarGift, isUpgrade: decoder.decodeBoolForKey("isUpgrade", orElse: false), isTransferred: decoder.decodeBoolForKey("isTransferred", orElse: false), savedToProfile: decoder.decodeBoolForKey("savedToProfile", orElse: false), canExportDate: decoder.decodeOptionalInt32ForKey("canExportDate"), transferStars: decoder.decodeOptionalInt64ForKey("transferStars"), isRefunded: decoder.decodeBoolForKey("isRefunded", orElse: false), peerId: decoder.decodeOptionalInt64ForKey("peerId").flatMap { EnginePeer.Id($0) }, senderId: decoder.decodeOptionalInt64ForKey("senderId").flatMap { EnginePeer.Id($0) }, savedId: decoder.decodeOptionalInt64ForKey("savedId"), resaleAmount: resaleAmount, canTransferDate: decoder.decodeOptionalInt32ForKey("canTransferDate"), canResaleDate: decoder.decodeOptionalInt32ForKey("canResaleDate"))
         case 46:
             self = .paidMessagesRefunded(count: decoder.decodeInt32ForKey("count", orElse: 0), stars: decoder.decodeInt64ForKey("stars", orElse: 0))
         case 47:
@@ -745,7 +751,7 @@ public enum TelegramMediaActionType: PostboxCoding, Equatable {
             } else {
                 encoder.encodeNil(forKey: "savedId")
             }
-        case let .starGiftUnique(gift, isUpgrade, isTransferred, savedToProfile, canExportDate, transferStars, isRefunded, peerId, senderId, savedId, resaleStars, canTransferDate, canResaleDate):
+        case let .starGiftUnique(gift, isUpgrade, isTransferred, savedToProfile, canExportDate, transferStars, isRefunded, peerId, senderId, savedId, resaleAmount, canTransferDate, canResaleDate):
             encoder.encodeInt32(45, forKey: "_rawValue")
             encoder.encodeObject(gift, forKey: "gift")
             encoder.encodeBool(isUpgrade, forKey: "isUpgrade")
@@ -777,10 +783,10 @@ public enum TelegramMediaActionType: PostboxCoding, Equatable {
             } else {
                 encoder.encodeNil(forKey: "savedId")
             }
-            if let resaleStars {
-                encoder.encodeInt64(resaleStars, forKey: "resaleStars")
+            if let resaleAmount {
+                encoder.encodeCodable(resaleAmount, forKey: "resaleAmount")
             } else {
-                encoder.encodeNil(forKey: "resaleStars")
+                encoder.encodeNil(forKey: "resaleAmount")
             }
             if let canTransferDate {
                 encoder.encodeInt32(canTransferDate, forKey: "canTransferDate")
@@ -869,22 +875,28 @@ public enum TelegramMediaActionType: PostboxCoding, Equatable {
             return [peerId]
         case let .prizeStars(_, _, boostPeerId, _, _):
             return boostPeerId.flatMap { [$0] } ?? []
-        case let .starGift(_, _, _, _, _, _, _, _, _, _, _, _, peerId, senderId, _):
+        case let .starGift(gift, _, _, _, _, _, _, _, _, _, _, _, peerId, senderId, _):
             var peerIds: [PeerId] = []
             if let peerId {
                 peerIds.append(peerId)
             }
             if let senderId {
                 peerIds.append(senderId)
+            }
+            if let releasedBy = gift.releasedBy {
+                peerIds.append(releasedBy)
             }
             return peerIds
-        case let .starGiftUnique(_, _, _, _, _, _, _, peerId, senderId, _, _, _, _):
+        case let .starGiftUnique(gift, _, _, _, _, _, _, peerId, senderId, _, _, _, _):
             var peerIds: [PeerId] = []
             if let peerId {
                 peerIds.append(peerId)
             }
             if let senderId {
                 peerIds.append(senderId)
+            }
+            if let releasedBy = gift.releasedBy {
+                peerIds.append(releasedBy)
             }
             return peerIds
         case let .conferenceCall(conferenceCall):

@@ -1,4 +1,4 @@
-// MARK: Nicegram Imports
+// Nicegram Imports
 import FeatPremiumUI
 import NGData
 //
@@ -106,7 +106,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         var index = 0
         var peerIdSet = Set<Int64>()
         
-        // MARK: Nicegram changes
+        // Nicegram changes
         let telegramUsers = results.compactMap { peer -> TelegramUser? in
             switch peer {
             case .user(let user):
@@ -119,7 +119,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                 return nil
             }
         }
-        // MARK: Nicegram MentionAll
+        // Nicegram MentionAll
         let currentModeSupportsMentionAll: Bool
         switch mode {
         case .input:
@@ -169,7 +169,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                             
                             if let range = mentionQueryRange {
                                 let inputText = NSMutableAttributedString(attributedString: textInputState.inputText)
-                                // MARK: Nicegram changes
+                                // Nicegram changes
                                 guard let peer = peer else {
                                     let entries = entries
                                         .map { entry in
@@ -239,7 +239,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                             }
                             return (textInputState, inputMode)
                         }
-                    // MARK: Nicegram changes
+                    // Nicegram changes
                 case .search:
                     if let peer = peer {
                         interfaceInteraction.beginMessageSearch(.member(peer._asPeer()), "")

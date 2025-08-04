@@ -11,7 +11,7 @@ import AudioToolbox
 import SwiftSignalKit
 import LocalizedPeerData
 
-// MARK: Nicegram OpenGifsShortcut
+// Nicegram OpenGifsShortcut
 public enum EntityKeyboardInputTab: String {
     case gif
     case stickers
@@ -100,7 +100,7 @@ public final class EntityKeyboardComponent: Component {
         }
     }
     
-    // MARK: Nicegram OpenGifsShortcut
+    // Nicegram OpenGifsShortcut
     public let defaultTab: EntityKeyboardInputTab?
     //
     
@@ -139,7 +139,7 @@ public final class EntityKeyboardComponent: Component {
     public let customTintColor: UIColor?
     
     public init(
-        // MARK: Nicegram OpenGifsShortcut
+        // Nicegram OpenGifsShortcut
         defaultTab: EntityKeyboardInputTab? = nil,
         //
         theme: PresentationTheme,
@@ -176,7 +176,7 @@ public final class EntityKeyboardComponent: Component {
         hidePanels: Bool = false,
         customTintColor: UIColor? = nil
     ) {
-        // MARK: Nicegram OpenGifsShortcut
+        // Nicegram OpenGifsShortcut
         self.defaultTab = defaultTab
         //
         self.theme = theme
@@ -745,7 +745,7 @@ public final class EntityKeyboardComponent: Component {
                     contentIcons: contentIcons,
                     contentAccessoryLeftButtons: contentAccessoryLeftButtons,
                     contentAccessoryRightButtons: contentAccessoryRightButtons,
-                    // MARK: Nicegram OpenGifsShortcut, first check component.defaultTab value
+                    // Nicegram OpenGifsShortcut, first check component.defaultTab value
                     defaultId: component.defaultTab?.rawValue ?? (component.defaultToEmojiTab ? "emoji" : "stickers"),
                     //
                     contentBackground: nil,

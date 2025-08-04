@@ -872,7 +872,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
                     updatedFetchControls = FetchControls(fetch: { [weak self] in
                         if let strongSelf = self {
                             if let file = selectedMedia as? TelegramMediaFile {
-                                // MARK: Nicegram downloading feature
+                                // Nicegram downloading feature
                                 strongSelf.fetchDisposable.set(messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: true, shouldSave: true).start())
                             } else if let image = selectedMedia as? TelegramMediaImage, let representation = image.representations.last {
                                 strongSelf.fetchDisposable.set(messageMediaImageInteractiveFetched(context: context, message: message, image: image, resource: representation.resource, userInitiated: true, storeToDownloadsPeerId: nil).start())

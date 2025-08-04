@@ -3087,7 +3087,7 @@ final class MessageHistoryTable: Table {
         return indices
     }
     
-    // MARK: Nicegram SelectAllMessagesWithAuthor
+    // Nicegram SelectAllMessagesWithAuthor
     func allMessageIdsWithAuthor(peerId: PeerId, authorId: PeerId, namespace: MessageId.Namespace) -> [MessageId] {
         return allIndicesWithAuthor(peerId: peerId, authorId: authorId, namespace: namespace).map(\.id)
     }

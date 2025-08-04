@@ -1,8 +1,8 @@
-// MARK: Nicegram ATT
+// Nicegram ATT
 import class Combine.AnyCancellable
 import FeatAttentionEconomy
 //
-// MARK: Nicegram HideReactions, HideStories
+// Nicegram HideReactions, HideStories
 import FeatPinnedChats
 import FeatPumpAds
 import NGData
@@ -479,7 +479,7 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
         case auto
     }
     
-    // MARK: Nicegram PinnedChats
+    // Nicegram PinnedChats
     let nicegramItem: PinnedChatToDisplay?
     
     let attBannerFeature = AttBannerFeature()
@@ -520,9 +520,9 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
         }
     }
     
-    // MARK: Nicegram PinnedChats, nicegramItem added
+    // Nicegram PinnedChats, nicegramItem added
     public init(nicegramItem: PinnedChatToDisplay? = nil, presentationData: ChatListPresentationData, context: AccountContext, chatListLocation: ChatListControllerLocation, filterData: ChatListItemFilterData?, index: EngineChatList.Item.Index, content: ChatListItemContent, editing: Bool, hasActiveRevealControls: Bool, selected: Bool, header: ListViewItemHeader?, enabledContextActions: EnabledContextActions?, hiddenOffset: Bool, interaction: ChatListNodeInteraction) {
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         self.nicegramItem = nicegramItem
         //
         self.presentationData = presentationData
@@ -592,7 +592,7 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
         case .loading:
             break
         case let .peer(peerData):
-            // MARK: Nicegram PinnedChats
+            // Nicegram PinnedChats
             if let nicegramItem {
                 if #available(iOS 13.0, *) {
                     Task { @MainActor in
@@ -1115,7 +1115,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         }
                     }
                     
-                    // MARK: Nicegram ColorAlign
+                    // Nicegram ColorAlign
                     titleTopicIconComponent = titleTopicIconComponent?.applyingChatListDisplaySettings()
                     //
                     
@@ -1346,7 +1346,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     
     var item: ChatListItem?
     
-    // MARK: Nicegram ATT
+    // Nicegram ATT
     private var attClaimAnimationView: AttClaimAnimationView?
     private var attClaimAnimationCancellable: AnyCancellable?
     //
@@ -1619,7 +1619,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 }
                 self.authorNode.visibilityStatus = self.visibilityStatus
                 
-                // MARK: Nicegram ATT
+                // Nicegram ATT
                 trackViewIfNeeded()
                 //
                 
@@ -1630,7 +1630,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
         }
     }
     
-    // MARK: Nicegram ATT
+    // Nicegram ATT
     public func trackViewIfNeeded() {
         guard self.visibilityStatus,
               let item,
@@ -1783,7 +1783,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 return
             }
             
-            // MARK: Nicegram PinnedChats
+            // Nicegram PinnedChats
             if item.isNicegramItem {
                 return
             }
@@ -1863,7 +1863,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             enablePreview = false
         }
         
-        // MARK: Nicegram HideStories, check hideStories flag before setStoryStats
+        // Nicegram HideStories, check hideStories flag before setStoryStats
         if !NGSettings.hideStories {
             self.avatarNode.setStoryStats(storyStats: storyState.flatMap { storyState in
                 return AvatarNode.StoryStats(
@@ -2017,7 +2017,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             }
         }
         
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         if let nicegramItem = item.nicegramItem {
             self.avatarNode.setPeer(
                 context: item.context,
@@ -2028,7 +2028,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
         }
         //
         
-        // MARK: Nicegram ATT
+        // Nicegram ATT
         attClaimAnimationCancellable = item.attBannerFeature.claimAnimationPublisher
             .sink { [weak self] result in
                 self?.attClaimAnimationView?.animate(value: result.claimAmount)
@@ -2138,7 +2138,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     }
     
     func asyncLayout() -> (_ item: ChatListItem, _ params: ListViewItemLayoutParams, _ first: Bool, _ last: Bool, _ firstWithHeader: Bool, _ nextIsPinned: Bool) -> (ListViewItemNodeLayout, (Bool, Bool) -> Void) {
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         self.textNode.disableAnimations = getNicegramSettings().disableAnimationsInChatList
         //
         
@@ -2419,7 +2419,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             } else {
                 editingOffset = 0.0
             }
-            // MARK: Nicegram PinnedChats
+            // Nicegram PinnedChats
             if item.isNicegramItem {
                 reorderControlSizeAndApply = nil
             }
@@ -2558,7 +2558,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             
             switch contentData {
                 case let .chat(itemPeer, _, _, _, text, spoilers, customEmojiRanges):
-                    // MARK: Nicegram PinnedChats
+                    // Nicegram PinnedChats
                     if let nicegramItem = item.nicegramItem {
                         titleAttributedString = NSAttributedString(
                             string: nicegramItem.chat.title,
@@ -3236,7 +3236,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                 }
             }
-            // MARK: Nicegram NCG-6652 Hide UI notifications, !NGSettings.hideBadgeCounters
+            // Nicegram NCG-6652 Hide UI notifications, !NGSettings.hideBadgeCounters
             if unreadCount.unread, !NGSettings.hideUnreadCounters {
                 if !isPeerGroup, let message = messages.last, message.tags.contains(.unseenPersonalMessage), unreadCount.count == 1 {
                 } else {
@@ -3280,7 +3280,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             }
 
             if !isPeerGroup {
-// MARK: Nicegram NCG-6652 Hide UI notifications, !NGSettings.hideMentionNotification
+// Nicegram NCG-6652 Hide UI notifications, !NGSettings.hideMentionNotification
                 if hasUnseenMentions, !NGSettings.hideMentionNotification {
                     if case .chatList(.archive) = item.chatListLocation {
                         currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactiveMention(item.presentationData.theme, diameter: badgeDiameter)
@@ -3289,7 +3289,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                     mentionBadgeContent = .mention
                 }
-                // MARK: Nicegram HideReactions, !VarSystemNGSettings.hideReactions added, !NGSettings.hideBadgeCounters
+                // Nicegram HideReactions, !VarSystemNGSettings.hideReactions added, !NGSettings.hideBadgeCounters
                 else if hasUnseenReactions, !VarSystemNGSettings.hideReactions, !NGSettings.hideBadgeCounters {
                     if isRemovedFromTotalUnreadCount {
                         currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactiveReactions(item.presentationData.theme, diameter: badgeDiameter)
@@ -3417,7 +3417,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 }
             }
             
-            // MARK: Nicegram PinnedChats
+            // Nicegram PinnedChats
             if let nicegramBadge = item.nicegramItem?.badge {
                 currentCredibilityIconContent = .image(
                     image: nicegramBadge,
@@ -3689,7 +3689,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     peerRevealOptions = []
                     peerLeftRevealOptions = []
                 case let .peer(peerData):
-                    // MARK: Nicegram PinnedChats
+                    // Nicegram PinnedChats
                     if item.isNicegramItem {
                         let presentationData = item.presentationData
                         let unpin = ItemListRevealOption(key: RevealOptionKey.unpin.rawValue, title: presentationData.strings.DialogList_Unpin, icon: unpinIcon, color: presentationData.theme.list.itemDisclosureActions.constructive.fillColor, textColor: presentationData.theme.list.itemDisclosureActions.constructive.foregroundColor)
@@ -4116,7 +4116,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             content: avatarIconContent,
                             isVisibleForAnimations: strongSelf.visibilityStatus && item.context.sharedContext.energyUsageSettings.loopEmoji,
                             action: nil
-                            // MARK: Nicegram ColorAlign, added .applyingChatListDisplaySettings()
+                            // Nicegram ColorAlign, added .applyingChatListDisplaySettings()
                         ).applyingChatListDisplaySettings()
                         strongSelf.avatarIconComponent = avatarIconComponent
                         
@@ -4936,7 +4936,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             content: currentCredibilityIconContent,
                             isVisibleForAnimations: strongSelf.visibilityStatus && item.context.sharedContext.energyUsageSettings.loopEmoji,
                             action: nil
-                            // MARK: Nicegram ColorAlign, added .applyingChatListDisplaySettings()
+                            // Nicegram ColorAlign, added .applyingChatListDisplaySettings()
                         ).applyingChatListDisplaySettings()
                         strongSelf.credibilityIconComponent = credibilityIconComponent
                         
@@ -4977,7 +4977,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             content: currentVerifiedIconContent,
                             isVisibleForAnimations: strongSelf.visibilityStatus && item.context.sharedContext.energyUsageSettings.loopEmoji,
                             action: nil
-                            // MARK: Nicegram ColorAlign, added .applyingChatListDisplaySettings()
+                            // Nicegram ColorAlign, added .applyingChatListDisplaySettings()
                         ).applyingChatListDisplaySettings()
                         strongSelf.verifiedIconComponent = verifiedIconComponent
                         
@@ -5045,7 +5045,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         titleBadge.textNode.removeFromSupernode()
                     }
                     
-                    // MARK: Nicegram ATT
+                    // Nicegram ATT
                     if let nicegramItem = item.nicegramItem,
                        case .att = nicegramItem.chat.type {
                         let attClaimAnimationView: AttClaimAnimationView
@@ -5307,7 +5307,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             return
         }
         
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         if #available(iOS 13.0, *),
            let nicegramItem = item.nicegramItem {
             switch option.key {
@@ -5557,7 +5557,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     }
 }
 
-// MARK: Nicegram ColorAlign
+// Nicegram ColorAlign
 private extension EmojiStatusComponent {
     func applyingChatListDisplaySettings() -> EmojiStatusComponent {
         var result = self
@@ -5567,7 +5567,7 @@ private extension EmojiStatusComponent {
 }
 //
 
-// MARK: Nicegram PinnedChats
+// Nicegram PinnedChats
 private extension ChatListItem {
     var isNicegramItem: Bool {
         nicegramItem != nil

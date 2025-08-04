@@ -658,7 +658,7 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
     
     open var awaitingAppliedReaction: (MessageReaction.Reaction?, () -> Void)?
     
-    // MARK: Nicegram
+    // Nicegram
     public var wantTrButton: [(Bool, [String])] = [(false, [])]
     //
     

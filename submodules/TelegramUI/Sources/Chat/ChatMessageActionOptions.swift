@@ -316,7 +316,7 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
             quote = EngineMessageReplyQuote(text: trimmedText.string, offset: textSelection.offset, entities: trimmedText.entities, media: nil)
         }
         
-        selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote)).withoutSelectionState() }) })
+        selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote, todoItemId: nil)).withoutSelectionState() }) })
     }
     
     let items = combineLatest(queue: .mainQueue(),
@@ -381,7 +381,7 @@ private func generateChatReplyOptionItems(selfController: ChatControllerImpl, ch
                                     quote = EngineMessageReplyQuote(text: trimmedText.string, offset: textSelection.offset, entities: trimmedText.entities, media: nil)
                                 }
                                 
-                                selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote)).withoutSelectionState() }) })
+                                selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(messageId: replySubject.messageId, quote: quote, todoItemId: nil)).withoutSelectionState() }) })
                                 
                                 f(.default)
                             })))
@@ -989,27 +989,64 @@ extension ChatControllerImpl {
         
         let subject: StarsWithdrawalScreenSubject
         if postSuggestionState.editingOriginalMessageId != nil {
-            subject = .postSuggestionModification(current: postSuggestionState.price ?? CurrencyAmount(amount: .zero, currency: .stars), timestamp: postSuggestionState.timestamp, completion: { [weak self] price, timestamp in
-                guard let self else {
-                    return
+            var isFromAdmin = false
+            if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isMonoForum {
+                if let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = self.presentationInterfaceState.renderedPeer?.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                    isFromAdmin = true
                 }
-                
-                let price: CurrencyAmount? = price.amount == .zero ? nil : price
-                
-                self.updateChatPresentationInterfaceState(interactive: true, { state in
-                    var state = state
-                    state = state.updatedInterfaceState { interfaceState in
-                        var interfaceState = interfaceState
-                        interfaceState = interfaceState.withUpdatedPostSuggestionState(ChatInterfaceState.PostSuggestionState(
-                            editingOriginalMessageId: interfaceState.postSuggestionState?.editingOriginalMessageId,
-                            price: price,
-                            timestamp: timestamp
-                        ))
-                        return interfaceState
+            }
+            
+            if isFromAdmin {
+                subject = .postSuggestionModification(current: postSuggestionState.price ?? CurrencyAmount(amount: .zero, currency: .stars), timestamp: postSuggestionState.timestamp, completion: { [weak self] price, timestamp in
+                    guard let self else {
+                        return
                     }
-                    return state
+                    
+                    let price: CurrencyAmount? = price.amount == .zero ? nil : price
+                    
+                    self.updateChatPresentationInterfaceState(interactive: true, { state in
+                        var state = state
+                        state = state.updatedInterfaceState { interfaceState in
+                            var interfaceState = interfaceState
+                            interfaceState = interfaceState.withUpdatedPostSuggestionState(ChatInterfaceState.PostSuggestionState(
+                                editingOriginalMessageId: interfaceState.postSuggestionState?.editingOriginalMessageId,
+                                price: price,
+                                timestamp: timestamp
+                            ))
+                            return interfaceState
+                        }
+                        return state
+                    })
                 })
-            })
+            } else {
+                subject = .postSuggestion(
+                    channel: .channel(channel),
+                    isFromAdmin: false,
+                    current: postSuggestionState.price ?? CurrencyAmount(amount: .zero, currency: .stars),
+                    timestamp: postSuggestionState.timestamp,
+                    completion: { [weak self] price, timestamp in
+                        guard let self else {
+                            return
+                        }
+                        
+                        let price: CurrencyAmount? = price.amount == .zero ? nil : price
+                        
+                        self.updateChatPresentationInterfaceState(interactive: true, { state in
+                            var state = state
+                            state = state.updatedInterfaceState { interfaceState in
+                                var interfaceState = interfaceState
+                                interfaceState = interfaceState.withUpdatedPostSuggestionState(ChatInterfaceState.PostSuggestionState(
+                                    editingOriginalMessageId: interfaceState.postSuggestionState?.editingOriginalMessageId,
+                                    price: price,
+                                    timestamp: timestamp
+                                ))
+                                return interfaceState
+                            }
+                            return state
+                        })
+                    }
+                )
+            }
         } else {
             var isFromAdmin = false
             if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isMonoForum {

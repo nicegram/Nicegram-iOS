@@ -1,4 +1,4 @@
-// MARK: Nicegram
+// Nicegram
 import FeatAccountBackup
 //
 import Foundation
@@ -25,7 +25,7 @@ private struct LogoutOptionsItemArguments {
     let clearCache: () -> Void
     let changePhoneNumber: () -> Void
     let contactSupport: () -> Void
-    // MARK: Nicegram AccountBackup, changed 'let' to 'var'
+    // Nicegram AccountBackup, changed 'let' to 'var'
     var logout: () -> Void
 }
 
@@ -138,13 +138,13 @@ public func logoutOptionsController(context: AccountContext, navigationControlle
     
     let supportPeerDisposable = MetaDisposable()
     
-    // MARK: Nicegram AccountBackup, changed 'let' to 'var'
+    // Nicegram AccountBackup, changed 'let' to 'var'
     var arguments = LogoutOptionsItemArguments(addAccount: {
         let _ = (activeAccountsAndPeers(context: context)
         |> take(1)
         |> deliverOnMainQueue
         ).start(next: { accountAndPeer, accountsAndPeers in
-            // MARK: Nicegram MaxAccounts
+            // Nicegram MaxAccounts
             let maximumAvailableAccounts: Int = nicegramMaximumNumberOfAccounts
             var count: Int = 1
             for (accountContext, _, _) in accountsAndPeers {
@@ -267,7 +267,7 @@ public func logoutOptionsController(context: AccountContext, navigationControlle
         presentControllerImpl?(alertController, nil)
     })
     
-    // MARK: Nicegram AccountBackup
+    // Nicegram AccountBackup
     if #available(iOS 15.0, *) {
         let logoutImpl = arguments.logout
         arguments.logout = {

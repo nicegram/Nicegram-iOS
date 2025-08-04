@@ -24,7 +24,7 @@ func switchToAuthorizedAccount(transaction: AccountManagerModifier<TelegramAccou
         }
         return 0
     }).max() ?? 0) + 1
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     var attributes: [TelegramAccountRecordAttribute] = [
         .environment(AccountEnvironmentAttribute(environment: account.testingEnvironment ? .test : .production)),
         .sortOrder(AccountSortOrderAttribute(order: nextSortOrder))

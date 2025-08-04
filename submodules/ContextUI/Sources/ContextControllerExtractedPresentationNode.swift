@@ -92,6 +92,15 @@ private extension ContextControllerTakeViewInfo.ContainingItem {
         }
     }
     
+    var onDismiss: (() -> Void)? {
+        switch self {
+        case let .node(containingNode):
+            return containingNode.onDismiss
+        case let .view(containingView):
+            return containingView.onDismiss
+        }
+    }
+    
     var layoutUpdated: ((CGSize, ListViewItemUpdateAnimation) -> Void)? {
         get {
             switch self {
@@ -1169,7 +1178,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 }
             }
             let contentSize = CGSize(width: layout.size.width, height: contentHeight)
-            // MARK: Nicegram changes
+            // Nicegram changes
             var topInset = actionsFrame.height - actionsFrame.maxY + bottomInset + layout.intrinsicInsets.bottom
             if topInset < 0.0 {
                 topInset = 0.0
@@ -1608,6 +1617,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                             
                             contentNode.containingItem.isExtractedToContextPreview = false
                             contentNode.containingItem.isExtractedToContextPreviewUpdated?(false)
+                            contentNode.containingItem.onDismiss?()
                             
                             restoreOverlayViews.forEach({ $0() })
                             completion()

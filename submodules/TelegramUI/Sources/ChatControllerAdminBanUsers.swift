@@ -389,7 +389,7 @@ extension ChatControllerImpl {
                 return
             }
             
-            if let message = messages.values.compactMap({ $0 }).first(where: { message in message.attributes.contains(where: { $0 is PublishedSuggestedPostMessageAttribute }) }), let attribute = message.attributes.first(where: { $0 is PublishedSuggestedPostMessageAttribute }) as? PublishedSuggestedPostMessageAttribute {
+            if let message = messages.values.compactMap({ $0 }).first(where: { message in message.attributes.contains(where: { $0 is PublishedSuggestedPostMessageAttribute }) }), let attribute = message.attributes.first(where: { $0 is PublishedSuggestedPostMessageAttribute }) as? PublishedSuggestedPostMessageAttribute, message.timestamp > Int32(Date().timeIntervalSince1970) - 60 * 60 * 24 {
                 let commit = { [weak self] in
                     guard let self else {
                         return

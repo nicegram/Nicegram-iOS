@@ -481,16 +481,19 @@ public final class ChatInterfaceState: Codable, Equatable {
     public struct ReplyMessageSubject: Codable, Equatable {
         public var messageId: EngineMessage.Id
         public var quote: EngineMessageReplyQuote?
+        public var todoItemId: Int32?
         
-        public init(messageId: EngineMessage.Id, quote: EngineMessageReplyQuote?) {
+        public init(messageId: EngineMessage.Id, quote: EngineMessageReplyQuote?, todoItemId: Int32?) {
             self.messageId = messageId
             self.quote = quote
+            self.todoItemId = todoItemId
         }
         
         public var subjectModel: EngineMessageReplySubject {
             return EngineMessageReplySubject(
                 messageId: self.messageId,
-                quote: self.quote
+                quote: self.quote,
+                todoItemId: self.todoItemId
             )
         }
     }
@@ -520,7 +523,7 @@ public final class ChatInterfaceState: Codable, Equatable {
     public let mediaRecordingMode: ChatTextInputMediaRecordingButtonMode
     public let mediaDraftState: ChatInterfaceMediaDraftState?
     public let silentPosting: Bool
-    // MARK: Nicegram
+    // Nicegram
     public let forwardAsCopy: Bool
     //
     public let inputLanguage: String?
@@ -548,7 +551,8 @@ public final class ChatInterfaceState: Codable, Equatable {
         var result = self.withUpdatedComposeInputState(ChatTextInputState(inputText: chatInputStateStringWithAppliedEntities(state?.text ?? "", entities: state?.entities ?? []))).withUpdatedReplyMessageSubject((state?.replySubject).flatMap {
             return ReplyMessageSubject(
                 messageId: $0.messageId,
-                quote: $0.quote
+                quote: $0.quote,
+                todoItemId: $0.todoItemId
             )
         })
         if let timestamp = state?.timestamp {
@@ -583,7 +587,7 @@ public final class ChatInterfaceState: Codable, Equatable {
         self.mediaRecordingMode = .audio
         self.mediaDraftState = nil
         self.silentPosting = false
-        // MARK: Nicegram
+        // Nicegram
         self.forwardAsCopy = false
         //
         self.inputLanguage = nil
@@ -591,7 +595,7 @@ public final class ChatInterfaceState: Codable, Equatable {
         self.postSuggestionState = nil
     }
     
-    // MARK: Nicegram (forwardAsCopy)
+    // Nicegram (forwardAsCopy)
     public init(timestamp: Int32, composeInputState: ChatTextInputState, composeDisableUrlPreviews: [String], replyMessageSubject: ReplyMessageSubject?, forwardMessageIds: [EngineMessage.Id]?, forwardOptionsState: ChatInterfaceForwardOptionsState?, editMessage: ChatEditMessageState?, selectionState: ChatInterfaceSelectionState?, messageActionsState: ChatInterfaceMessageActionsState, historyScrollState: ChatInterfaceHistoryScrollState?, mediaRecordingMode: ChatTextInputMediaRecordingButtonMode, mediaDraftState: ChatInterfaceMediaDraftState?, silentPosting: Bool, forwardAsCopy: Bool = false, inputLanguage: String?, sendMessageEffect: Int64?, postSuggestionState: PostSuggestionState?) {
         self.timestamp = timestamp
         self.composeInputState = composeInputState
@@ -606,7 +610,7 @@ public final class ChatInterfaceState: Codable, Equatable {
         self.mediaRecordingMode = mediaRecordingMode
         self.mediaDraftState = mediaDraftState
         self.silentPosting = silentPosting
-        // MARK: Nicegram
+        // Nicegram
         self.forwardAsCopy = forwardAsCopy
         //
         self.inputLanguage = inputLanguage
@@ -639,7 +643,7 @@ public final class ChatInterfaceState: Codable, Equatable {
             let replyMessageIdNamespace: Int32? = try? container.decodeIfPresent(Int32.self, forKey: "r.n")
             let replyMessageIdId: Int32? = try? container.decodeIfPresent(Int32.self, forKey: "r.i")
             if let replyMessageIdPeerId = replyMessageIdPeerId, let replyMessageIdNamespace = replyMessageIdNamespace, let replyMessageIdId = replyMessageIdId {
-                self.replyMessageSubject = ReplyMessageSubject(messageId: EngineMessage.Id(peerId: EnginePeer.Id(replyMessageIdPeerId), namespace: replyMessageIdNamespace, id: replyMessageIdId), quote: nil)
+                self.replyMessageSubject = ReplyMessageSubject(messageId: EngineMessage.Id(peerId: EnginePeer.Id(replyMessageIdPeerId), namespace: replyMessageIdNamespace, id: replyMessageIdId), quote: nil, todoItemId: nil)
             } else {
                 self.replyMessageSubject = nil
             }
@@ -682,7 +686,7 @@ public final class ChatInterfaceState: Codable, Equatable {
         }
         
         self.silentPosting = ((try? container.decode(Int32.self, forKey: "sip")) ?? 0) != 0
-        // MARK: Nicegram
+        // Nicegram
         self.forwardAsCopy = ((try? container.decode(Int32.self, forKey: "fwdcpy")) ?? 0) != 0
         //
         self.inputLanguage = try? container.decodeIfPresent(String.self, forKey: "inputLanguage")
@@ -739,7 +743,7 @@ public final class ChatInterfaceState: Codable, Equatable {
             try container.encodeNil(forKey: "mds")
         }
         try container.encode((self.silentPosting ? 1 : 0) as Int32, forKey: "sip")
-        // MARK: Nicegram
+        // Nicegram
         try container.encode((self.forwardAsCopy ? 1 : 0) as Int32, forKey: "fwdcpy")
         //
         if let inputLanguage = self.inputLanguage {
@@ -781,7 +785,7 @@ public final class ChatInterfaceState: Codable, Equatable {
         if lhs.silentPosting != rhs.silentPosting {
             return false
         }
-        // MARK: Nicegram
+        // Nicegram
         if lhs.forwardAsCopy != rhs.forwardAsCopy {
             return false
         }
@@ -798,7 +802,7 @@ public final class ChatInterfaceState: Codable, Equatable {
         return lhs.composeInputState == rhs.composeInputState && lhs.replyMessageSubject == rhs.replyMessageSubject && lhs.selectionState == rhs.selectionState && lhs.editMessage == rhs.editMessage
     }
     
-    // MARK: Nicegram ForwardAsCopy
+    // Nicegram ForwardAsCopy
     public func withUpdatedForwardAsCopy(_ forwardAsCopy: Bool) -> ChatInterfaceState {
         return ChatInterfaceState(timestamp: self.timestamp, composeInputState: self.composeInputState, composeDisableUrlPreviews: self.composeDisableUrlPreviews, replyMessageSubject: self.replyMessageSubject, forwardMessageIds: self.forwardMessageIds, forwardOptionsState: forwardOptionsState, editMessage: self.editMessage, selectionState: self.selectionState, messageActionsState: self.messageActionsState, historyScrollState: self.historyScrollState, mediaRecordingMode: self.mediaRecordingMode, mediaDraftState: self.mediaDraftState, silentPosting: self.silentPosting, forwardAsCopy: forwardAsCopy, inputLanguage: self.inputLanguage, sendMessageEffect: self.sendMessageEffect, postSuggestionState: self.postSuggestionState)
     }

@@ -190,20 +190,10 @@ open class NavigationController: UINavigationController, ContainableController, 
                 guard let self else {
                     return
                 }
-                // Nicegram DockWidget
-                if shouldPreventMinimizedDockDismissal() {
-                    return
-                }
-                //
                 self.minimizedContainer = nil
                 self.updateContainersNonReentrant(transition: .animated(duration: 0.4, curve: .spring))
             }
-            self.minimizedContainer?.didDismiss = { [weak self] minimizedContainer in
-                // Nicegram DockWidget
-                if let self, shouldPreventMinimizedDockDismissal() {
-                    return
-                }
-                //
+            self.minimizedContainer?.didDismiss = { minimizedContainer in
                 minimizedContainer.removeFromSupernode()
             }
             self.minimizedContainer?.statusBarStyleUpdated = { [weak self] in
@@ -214,10 +204,6 @@ open class NavigationController: UINavigationController, ContainableController, 
             }
         }
     }
-    
-    // Nicegram DockWidget
-    public var shouldPreventMinimizedDockDismissal: () -> Bool = { false }
-    //
     
     private var globalOverlayContainers: [NavigationOverlayContainer] = []
     private var globalOverlayBelowKeyboardContainerParent: GlobalOverlayContainerParent?
@@ -445,8 +431,7 @@ open class NavigationController: UINavigationController, ContainableController, 
     
     private var isUpdatingContainers: Bool = false
     
-    // Nicegram DockWidget, make 'public'
-    public func updateContainersNonReentrant(transition: ContainedViewLayoutTransition) {
+    func updateContainersNonReentrant(transition: ContainedViewLayoutTransition) {
         if self.isUpdatingContainers {
             return
         }
@@ -1715,8 +1700,7 @@ open class NavigationController: UINavigationController, ContainableController, 
             
             self.isMaximizing = false
             
-            // Nicegram DockWidget, added !shouldPreventMinimizedDockDismissal()
-            if dismissed, let minimizedContainer = self.minimizedContainer, !shouldPreventMinimizedDockDismissal() {
+            if dismissed, let minimizedContainer = self.minimizedContainer {
                 self.minimizedContainer = nil
                 minimizedContainer.removeFromSupernode()
             }
@@ -1727,15 +1711,6 @@ open class NavigationController: UINavigationController, ContainableController, 
         guard let minimizedContainer = self.minimizedContainer else {
             return
         }
-        
-        // Nicegram DockWidget
-        if shouldPreventMinimizedDockDismissal() {
-            minimizedContainer.dismissOnlyControllers()
-            self.updateContainersNonReentrant(transition: animated ? .animated(duration: 0.4, curve: .spring) : .immediate)
-            return
-        }
-        //
-        
         self.minimizedContainer = nil
         
         minimizedContainer.dismissAll(completion: { [weak minimizedContainer] in

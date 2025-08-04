@@ -1152,7 +1152,7 @@ public func deviceContactInfoController(context: ShareControllerAccountContext, 
                                     |> deliverOnMainQueue).start(error: { _ in
                                         presentControllerImpl?(textAlertController(context: context, updatedPresentationData: (environment.presentationData, updatedPresentationData), title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
                                     }, completed: {
-                                        // MARK: Nicegram DB Changes
+                                        // Nicegram DB Changes
                                         let _ = (contactDataManager.createContactWithData(composedContactData, account: context.account)
                                         |> deliverOnMainQueue).start(next: { contactIdAndData in
                                             updateState { state in
@@ -1172,7 +1172,7 @@ public func deviceContactInfoController(context: ShareControllerAccountContext, 
                             default:
                                 break
                         }
-                        // MARK: Nicegram DB Changes
+                        // Nicegram DB Changes
                         let _ = (contactDataManager.createContactWithData(composedContactData, account: context.account)
                         |> castError(AddContactError.self)
                         |> mapToSignal { contactIdAndData -> Signal<(DeviceContactStableId, DeviceContactExtendedData, EnginePeer?)?, AddContactError> in

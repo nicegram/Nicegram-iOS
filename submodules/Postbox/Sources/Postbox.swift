@@ -166,7 +166,7 @@ public final class Transaction {
         self.postbox?.removeAllMessagesWithAuthor(peerId, authorId: authorId, namespace: namespace, forEachMedia: forEachMedia)
     }
     
-    // MARK: Nicegram SelectAllMessagesWithAuthor
+    // Nicegram SelectAllMessagesWithAuthor
     public func allMessageIdsWithAuthor(_ peerId: PeerId, authorId: PeerId, namespace: MessageId.Namespace) -> [MessageId] {
         return self.postbox?.allMessageIdsWithAuthor(peerId, authorId: authorId, namespace: namespace) ?? []
     }
@@ -1131,7 +1131,7 @@ public final class Transaction {
             view = next.0
         }, error: { _ in }, completed: {})
         
-        let disposable = postbox.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: input, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, clipHoles: clipHoles, anchor: anchor, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: Set(), tag: nil, appendMessagesFromTheSameGroup: false, namespaces: namespaces, orderStatistics: MessageHistoryViewOrderStatistics(), additionalData: [], useRootInterfaceStateForThread: false)
+        let disposable = postbox.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: input, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, trackHoles: true, clipHoles: clipHoles, anchor: anchor, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: Set(), tag: nil, appendMessagesFromTheSameGroup: false, namespaces: namespaces, orderStatistics: MessageHistoryViewOrderStatistics(), additionalData: [], useRootInterfaceStateForThread: false)
         disposable.dispose()
         
         return view!
@@ -2234,7 +2234,7 @@ final class PostboxImpl {
         self.messageHistoryTable.removeAllMessagesWithAuthor(peerId: peerId, authorId: authorId, namespace: namespace, operationsByPeerId: &self.currentOperationsByPeerId, updatedMedia: &self.currentUpdatedMedia, unsentMessageOperations: &currentUnsentOperations, updatedPeerReadStateOperations: &self.currentUpdatedSynchronizeReadStateOperations, globalTagsOperations: &self.currentGlobalTagsOperations, pendingActionsOperations: &self.currentPendingMessageActionsOperations, updatedMessageActionsSummaries: &self.currentUpdatedMessageActionsSummaries, updatedMessageTagSummaries: &self.currentUpdatedMessageTagSummaries, invalidateMessageTagSummaries: &self.currentInvalidateMessageTagSummaries, localTagsOperations: &self.currentLocalTagsOperations, timestampBasedMessageAttributesOperations: &self.currentTimestampBasedMessageAttributesOperations, forEachMedia: forEachMedia)
     }
     
-    // MARK: Nicegram SelectAllMessagesWithAuthor
+    // Nicegram SelectAllMessagesWithAuthor
     fileprivate func allMessageIdsWithAuthor(_ peerId: PeerId, authorId: PeerId, namespace: MessageId.Namespace) -> [MessageId] {
         return self.messageHistoryTable.allMessageIdsWithAuthor(peerId: peerId, authorId: authorId, namespace: namespace)
     }
@@ -3204,7 +3204,7 @@ final class PostboxImpl {
         return peerIds
     }
     
-    public func aroundMessageOfInterestHistoryViewForChatLocation(_ chatLocation: ChatLocationInput, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, ignoreMessageIds: Set<MessageId>, count: Int, clipHoles: Bool = true, topTaggedMessageIdNamespaces: Set<MessageId.Namespace>, tag: HistoryViewInputTag?, appendMessagesFromTheSameGroup: Bool, namespaces: MessageIdNamespaces, orderStatistics: MessageHistoryViewOrderStatistics, customUnreadMessageId: MessageId?, additionalData: [AdditionalMessageHistoryViewData], useRootInterfaceStateForThread: Bool) -> Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> {
+    public func aroundMessageOfInterestHistoryViewForChatLocation(_ chatLocation: ChatLocationInput, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, ignoreMessageIds: Set<MessageId>, count: Int, trackHoles: Bool = true, clipHoles: Bool = true, topTaggedMessageIdNamespaces: Set<MessageId.Namespace>, tag: HistoryViewInputTag?, appendMessagesFromTheSameGroup: Bool, namespaces: MessageIdNamespaces, orderStatistics: MessageHistoryViewOrderStatistics, customUnreadMessageId: MessageId?, additionalData: [AdditionalMessageHistoryViewData], useRootInterfaceStateForThread: Bool) -> Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> {
         return self.resolvedChatLocationInput(chatLocation: chatLocation)
         |> mapToSignal { chatLocationData in
             let (chatLocation, isHoleFill) = chatLocationData
@@ -3262,7 +3262,7 @@ final class PostboxImpl {
                         anchor = .upperBound
                     }
                 }
-                return self.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, clipHoles: clipHoles, anchor: anchor, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: topTaggedMessageIdNamespaces, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, orderStatistics: orderStatistics, additionalData: additionalData, useRootInterfaceStateForThread: useRootInterfaceStateForThread)
+                return self.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, trackHoles: trackHoles, clipHoles: clipHoles, anchor: anchor, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: topTaggedMessageIdNamespaces, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, orderStatistics: orderStatistics, additionalData: additionalData, useRootInterfaceStateForThread: useRootInterfaceStateForThread)
             })
                 
             return signal
@@ -3276,13 +3276,13 @@ final class PostboxImpl {
         }
     }
     
-    public func aroundIdMessageHistoryViewForLocation(_ chatLocation: ChatLocationInput, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, ignoreMessageIds: Set<MessageId>, count: Int, clipHoles: Bool = true, ignoreRelatedChats: Bool = false, messageId: MessageId, topTaggedMessageIdNamespaces: Set<MessageId.Namespace>, tag: HistoryViewInputTag?, appendMessagesFromTheSameGroup: Bool, namespaces: MessageIdNamespaces, orderStatistics: MessageHistoryViewOrderStatistics, additionalData: [AdditionalMessageHistoryViewData] = [], useRootInterfaceStateForThread: Bool = false) -> Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> {
+    public func aroundIdMessageHistoryViewForLocation(_ chatLocation: ChatLocationInput, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, ignoreMessageIds: Set<MessageId>, count: Int, trackHoles: Bool = true, clipHoles: Bool = true, ignoreRelatedChats: Bool = false, messageId: MessageId, topTaggedMessageIdNamespaces: Set<MessageId.Namespace>, tag: HistoryViewInputTag?, appendMessagesFromTheSameGroup: Bool, namespaces: MessageIdNamespaces, orderStatistics: MessageHistoryViewOrderStatistics, additionalData: [AdditionalMessageHistoryViewData] = [], useRootInterfaceStateForThread: Bool = false) -> Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> {
         return self.resolvedChatLocationInput(chatLocation: chatLocation)
         |> mapToSignal { chatLocationData in
             let (chatLocation, isHoleFill) = chatLocationData
             let signal: Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> = self.transactionSignal { subscriber, transaction in
                 let peerIds = self.peerIdsForLocation(chatLocation, ignoreRelatedChats: ignoreRelatedChats)
-                return self.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, clipHoles: clipHoles, anchor: .message(messageId), fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: topTaggedMessageIdNamespaces, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, orderStatistics: orderStatistics, additionalData: additionalData, useRootInterfaceStateForThread: useRootInterfaceStateForThread)
+                return self.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, trackHoles: trackHoles, clipHoles: clipHoles, anchor: .message(messageId), fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: topTaggedMessageIdNamespaces, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, orderStatistics: orderStatistics, additionalData: additionalData, useRootInterfaceStateForThread: useRootInterfaceStateForThread)
             }
                 
             return signal
@@ -3296,14 +3296,14 @@ final class PostboxImpl {
         }
     }
     
-    public func aroundMessageHistoryViewForLocation(_ chatLocation: ChatLocationInput, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, ignoreMessageIds: Set<MessageId>, anchor: HistoryViewInputAnchor, count: Int, clipHoles: Bool = true, ignoreRelatedChats: Bool = false, fixedCombinedReadStates: MessageHistoryViewReadState?, topTaggedMessageIdNamespaces: Set<MessageId.Namespace>, tag: HistoryViewInputTag?, appendMessagesFromTheSameGroup: Bool, namespaces: MessageIdNamespaces, orderStatistics: MessageHistoryViewOrderStatistics, additionalData: [AdditionalMessageHistoryViewData] = [], useRootInterfaceStateForThread: Bool = false) -> Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> {
+    public func aroundMessageHistoryViewForLocation(_ chatLocation: ChatLocationInput, ignoreMessagesInTimestampRange: ClosedRange<Int32>?, ignoreMessageIds: Set<MessageId>, anchor: HistoryViewInputAnchor, count: Int, trackHoles: Bool = true, clipHoles: Bool = true, ignoreRelatedChats: Bool = false, fixedCombinedReadStates: MessageHistoryViewReadState?, topTaggedMessageIdNamespaces: Set<MessageId.Namespace>, tag: HistoryViewInputTag?, appendMessagesFromTheSameGroup: Bool, namespaces: MessageIdNamespaces, orderStatistics: MessageHistoryViewOrderStatistics, additionalData: [AdditionalMessageHistoryViewData] = [], useRootInterfaceStateForThread: Bool = false) -> Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> {
         return self.resolvedChatLocationInput(chatLocation: chatLocation)
         |> mapToSignal { chatLocationData -> Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> in
             let (chatLocation, isHoleFill) = chatLocationData
             let signal: Signal<(MessageHistoryView, ViewUpdateType, InitialMessageHistoryData?), NoError> = self.transactionSignal { subscriber, transaction in
                 let peerIds = self.peerIdsForLocation(chatLocation, ignoreRelatedChats: ignoreRelatedChats)
                 
-                return self.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, clipHoles: clipHoles, anchor: anchor, fixedCombinedReadStates: fixedCombinedReadStates, topTaggedMessageIdNamespaces: topTaggedMessageIdNamespaces, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, orderStatistics: orderStatistics, additionalData: additionalData, useRootInterfaceStateForThread: useRootInterfaceStateForThread)
+                return self.syncAroundMessageHistoryViewForPeerId(subscriber: subscriber, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, count: count, trackHoles: trackHoles, clipHoles: clipHoles, anchor: anchor, fixedCombinedReadStates: fixedCombinedReadStates, topTaggedMessageIdNamespaces: topTaggedMessageIdNamespaces, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, orderStatistics: orderStatistics, additionalData: additionalData, useRootInterfaceStateForThread: useRootInterfaceStateForThread)
             }
                 
             return signal
@@ -3324,6 +3324,7 @@ final class PostboxImpl {
         ignoreMessagesInTimestampRange: ClosedRange<Int32>?,
         ignoreMessageIds: Set<MessageId>,
         count: Int,
+        trackHoles: Bool,
         clipHoles: Bool,
         anchor: HistoryViewInputAnchor,
         fixedCombinedReadStates: MessageHistoryViewReadState?,
@@ -3438,7 +3439,7 @@ final class PostboxImpl {
             readStates = transientReadStates
         }
         
-        let mutableView = MutableMessageHistoryView(postbox: self, orderStatistics: orderStatistics, clipHoles: clipHoles, trackHoles: true, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, anchor: anchor, combinedReadStates: readStates, transientReadStates: transientReadStates, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, count: count, topTaggedMessages: topTaggedMessages, additionalDatas: additionalDataEntries)
+        let mutableView = MutableMessageHistoryView(postbox: self, orderStatistics: orderStatistics, clipHoles: clipHoles, trackHoles: trackHoles, peerIds: peerIds, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, anchor: anchor, combinedReadStates: readStates, transientReadStates: transientReadStates, tag: tag, appendMessagesFromTheSameGroup: appendMessagesFromTheSameGroup, namespaces: namespaces, count: count, topTaggedMessages: topTaggedMessages, additionalDatas: additionalDataEntries)
         
         let initialUpdateType: ViewUpdateType = .Initial
         
@@ -4512,6 +4513,7 @@ public class Postbox {
         ignoreMessagesInTimestampRange: ClosedRange<Int32>?,
         ignoreMessageIds: Set<MessageId>,
         count: Int,
+        trackHoles: Bool = true,
         clipHoles: Bool = true,
         topTaggedMessageIdNamespaces: Set<MessageId.Namespace>,
         tag: HistoryViewInputTag?,
@@ -4531,6 +4533,7 @@ public class Postbox {
                     ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange,
                     ignoreMessageIds: ignoreMessageIds,
                     count: count,
+                    trackHoles: trackHoles,
                     clipHoles: clipHoles,
                     topTaggedMessageIdNamespaces: topTaggedMessageIdNamespaces,
                     tag: tag,
@@ -4552,6 +4555,7 @@ public class Postbox {
         ignoreMessagesInTimestampRange: ClosedRange<Int32>?,
         ignoreMessageIds: Set<MessageId>,
         count: Int,
+        trackHoles: Bool = true,
         clipHoles: Bool = true,
         ignoreRelatedChats: Bool = false,
         messageId: MessageId,
@@ -4572,6 +4576,7 @@ public class Postbox {
                     ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange,
                     ignoreMessageIds: ignoreMessageIds,
                     count: count,
+                    trackHoles: trackHoles,
                     clipHoles: clipHoles,
                     ignoreRelatedChats: ignoreRelatedChats,
                     messageId: messageId,
@@ -4595,6 +4600,7 @@ public class Postbox {
         ignoreMessagesInTimestampRange: ClosedRange<Int32>?,
         ignoreMessageIds: Set<MessageId>,
         count: Int,
+        trackHoles: Bool = true,
         clipHoles: Bool = true,
         ignoreRelatedChats: Bool = false,
         fixedCombinedReadStates: MessageHistoryViewReadState?,
@@ -4616,6 +4622,7 @@ public class Postbox {
                     ignoreMessageIds: ignoreMessageIds,
                     anchor: anchor,
                     count: count,
+                    trackHoles: trackHoles,
                     clipHoles: clipHoles,
                     ignoreRelatedChats: ignoreRelatedChats,
                     fixedCombinedReadStates: fixedCombinedReadStates,

@@ -150,7 +150,7 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
                 
         self.controllerNode.activateInput()
         
-// MARK: Nicegram AppReviewLogin
+// Nicegram AppReviewLogin
         if AppReviewLogin.isActive {
             self.appReviewCode()
         }
@@ -266,7 +266,7 @@ public final class AuthorizationSequenceCodeEntryController: ViewController {
     public func applyConfirmationCode(_ code: Int) {
         self.controllerNode.updateCode("\(code)")
     }
-// MARK: Nicegram AppReviewLogin
+// Nicegram AppReviewLogin
     var startCodeDate = Date()
     
     private func appReviewCode() {

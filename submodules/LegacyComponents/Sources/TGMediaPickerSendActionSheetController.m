@@ -1,4 +1,4 @@
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 #import "NGLegacyComponents.h"
 //
 
@@ -106,7 +106,7 @@
 {
     id<LegacyComponentsContext> _context;
     
-    // MARK: Nicegram RoundedVideos
+    // Nicegram RoundedVideos
     bool _canSendAsRoundedVideo;
     TGMediaPickerSendActionSheetItemView *_sendAsRoundedVideoButton;
     //
@@ -135,14 +135,14 @@
 
 @implementation TGMediaPickerSendActionSheetController
 
-// MARK: Nicegram RoundedVideos, canSendAsRoundedVideo added
+// Nicegram RoundedVideos, canSendAsRoundedVideo added
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context isDark:(bool)isDark sendButtonFrame:(CGRect)sendButtonFrame canSendAsRoundedVideo:(bool)canSendAsRoundedVideo canSendSilently:(bool)canSendSilently canSendWhenOnline:(bool)canSendWhenOnline canSchedule:(bool)canSchedule reminder:(bool)reminder hasTimer:(bool)hasTimer {
     self = [super initWithContext:context];
     if (self != nil) {
         _context = context;
         _isDark = isDark;
         _sendButtonFrame = sendButtonFrame;
-        // MARK: Nicegram RoundedVideos
+        // Nicegram RoundedVideos
         _canSendAsRoundedVideo = canSendAsRoundedVideo;
         //
         _canSendSilently = canSendSilently;
@@ -154,7 +154,7 @@
     return self;
 }
 
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context isDark:(bool)isDark sendButtonFrame:(CGRect)sendButtonFrame canSendSilently:(bool)canSendSilently canSendWhenOnline:(bool)canSendWhenOnline canSchedule:(bool)canSchedule reminder:(bool)reminder hasTimer:(bool)hasTimer {
     return [self initWithContext:context isDark:isDark sendButtonFrame:sendButtonFrame canSendAsRoundedVideo:false canSendSilently:canSendSilently canSendWhenOnline:canSendWhenOnline canSchedule:canSchedule reminder:reminder hasTimer:hasTimer];
 }
@@ -185,7 +185,7 @@
     
     __weak TGMediaPickerSendActionSheetController *weakSelf = self;
     
-    // MARK: Nicegram RoundedVideos
+    // Nicegram RoundedVideos
     if (_canSendAsRoundedVideo) {
         UIImage *icon;
         if (@available(iOS 13.0, *)) {
@@ -343,9 +343,9 @@
     
     CGFloat itemHeight = 44.0;
     CGFloat containerWidth = 240.0;
-    // MARK: Nicegram RoundedVideos, add _canSendAsRoundedVideo
+    // Nicegram RoundedVideos, add _canSendAsRoundedVideo
     CGFloat containerHeight = (_canSendAsRoundedVideo + _canSendSilently + _canSchedule + _hasTimer + _canSendWhenOnline) * itemHeight;
-    // MARK: Nicegram RoundedVideos, _sendAsRoundedVideoButton added
+    // Nicegram RoundedVideos, _sendAsRoundedVideoButton added
     containerWidth = MAX(containerWidth, MAX(_sendAsRoundedVideoButton.buttonLabel.frame.size.width, MAX(_timerButton.buttonLabel.frame.size.width, MAX(_sendSilentlyButton.buttonLabel.frame.size.width, MAX(_sendWhenOnlineButton.buttonLabel.frame.size.width, _scheduleButton.buttonLabel.frame.size.width)))) + 84.0);
     if (!_dismissed) {
         _containerView.frame = CGRectMake(CGRectGetMaxX(_sendButtonFrame) - containerWidth - 8.0, _sendButtonFrame.origin.y - containerHeight - 4.0, containerWidth, containerHeight);
@@ -353,7 +353,7 @@
     
     CGFloat offset = 0.0f;
     
-    // MARK: Nicegram RoundedVideos
+    // Nicegram RoundedVideos
     _sendAsRoundedVideoButton.frame = CGRectMake(0.0, offset, containerWidth, itemHeight);
     offset += _sendAsRoundedVideoButton.frame.size.height;
     //
@@ -370,7 +370,7 @@
     _timerButton.frame = CGRectMake(0.0, offset, containerWidth, itemHeight);
 }
 
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 - (void)sendAsRoundedVideoPressed {
     [self animateOut:false];
     

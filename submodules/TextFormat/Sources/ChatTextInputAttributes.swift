@@ -588,6 +588,8 @@ private let textUrlEdgeCharacters: CharacterSet = {
     var set: CharacterSet = .alphanumerics
     set.formUnion(.symbols)
     set.formUnion(.punctuationCharacters)
+    set.remove("(")
+    set.remove(")")
     return set
 }()
 

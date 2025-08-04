@@ -1,4 +1,4 @@
-// MARK: Nicegram (useRearCamTelescopy)
+// Nicegram (useRearCamTelescopy)
 import NGData
 //
 import Foundation
@@ -894,10 +894,10 @@ public class VideoMessageCameraScreen: ViewController {
             self.previewContainerView.addSubview(self.previewContainerContentView)
                         
             let isDualCameraEnabled = Camera.isDualCameraSupported(forRoundVideo: true)
-            // MARK: Nicegram (useRearCamTelescopy), change let to var
+            // Nicegram (useRearCamTelescopy), change let to var
             var isFrontPosition = "".isEmpty
             
-            // MARK: Nicegram (useRearCamTelescopy)
+            // Nicegram (useRearCamTelescopy)
             if NGSettings.useRearCamTelescopy {
                 isFrontPosition = false
             }

@@ -9,11 +9,11 @@ import RangeSet
 public func freeMediaFileInteractiveFetched(account: Account, userLocation: MediaResourceUserLocation, fileReference: FileMediaReference) -> Signal<FetchResourceSourceType, FetchResourceError> {
     return fetchedMediaResource(mediaBox: account.postbox.mediaBox, userLocation: userLocation, userContentType: MediaResourceUserContentType(file: fileReference.media), reference: fileReference.resourceReference(fileReference.media.resource))
 }
-// MARK: Nicegram downloading feature
+// Nicegram downloading feature
 public func freeMediaFileInteractiveFetched(fetchManager: FetchManager, fileReference: FileMediaReference, priority: FetchManagerPriority, accountContext: AccountContext?) -> Signal<Void, NoError> {
     let file = fileReference.media
     let mediaReference = AnyMediaReference.standalone(media: fileReference.media)
-    // MARK: Nicegram downloading feature, 'accountContext, shouldSave' params added
+    // Nicegram downloading feature, 'accountContext, shouldSave' params added
     return fetchManager.interactivelyFetched(category: fetchCategoryForFile(file), location: .chat(PeerId(0)), locationKey: .free, mediaReference: mediaReference, resourceReference: mediaReference.resourceReference(file.resource), ranges: RangeSet<Int64>(0 ..< Int64.max), statsCategory: statsCategoryForFileWithAttributes(file.attributes), elevatedPriority: false, userInitiated: false, priority: priority, storeToDownloadsPeerId: nil, accountContext: accountContext, shouldSave: false)
 }
 
@@ -38,15 +38,15 @@ private func fetchCategoryForFile(_ file: TelegramMediaFile) -> FetchManagerCate
         return .file
     }
 }
-// MARK: Nicegram downloading feature
+// Nicegram downloading feature
 public func messageMediaFileInteractiveFetched(context: AccountContext, message: Message, file: TelegramMediaFile, userInitiated: Bool, storeToDownloadsPeerId: EnginePeer.Id? = nil, shouldSave: Bool = false) -> Signal<Void, NoError> {
-    // MARK: Nicegram downloading feature, 'accountContext, shouldSave' params added
+    // Nicegram downloading feature, 'accountContext, shouldSave' params added
     return messageMediaFileInteractiveFetched(fetchManager: context.fetchManager, messageId: message.id, messageReference: MessageReference(message), file: file, userInitiated: userInitiated, priority: .userInitiated, storeToDownloadsPeerId: storeToDownloadsPeerId, accountContext: context, shouldSave: shouldSave)
 }
-// MARK: Nicegram downloading feature, 'accountContext, shouldSave' params added
+// Nicegram downloading feature, 'accountContext, shouldSave' params added
 public func messageMediaFileInteractiveFetched(fetchManager: FetchManager, messageId: MessageId, messageReference: MessageReference, file: TelegramMediaFile, ranges: RangeSet<Int64> = RangeSet<Int64>(0 ..< Int64.max), userInitiated: Bool, priority: FetchManagerPriority, storeToDownloadsPeerId: EnginePeer.Id? = nil, accountContext: AccountContext?, shouldSave: Bool = false) -> Signal<Void, NoError> {
     let mediaReference = AnyMediaReference.message(message: messageReference, media: file)
-    // MARK: Nicegram downloading feature, 'accountContext, shouldSave' params added
+    // Nicegram downloading feature, 'accountContext, shouldSave' params added
     return fetchManager.interactivelyFetched(category: fetchCategoryForFile(file), location: .chat(messageId.peerId), locationKey: .messageId(messageId), mediaReference: mediaReference, resourceReference: mediaReference.resourceReference(file.resource), ranges: ranges, statsCategory: statsCategoryForFileWithAttributes(file.attributes), elevatedPriority: false, userInitiated: userInitiated, priority: priority, storeToDownloadsPeerId: storeToDownloadsPeerId, accountContext: accountContext, shouldSave: shouldSave)
 }
 
@@ -66,7 +66,7 @@ public func messageMediaImageInteractiveFetched(fetchManager: FetchManager, mess
     } else {
         ranges = RangeSet(0 ..< Int64.max)
     }
-    // MARK: Nicegram downloading feature, 'accountContext, shouldSave' params added
+    // Nicegram downloading feature, 'accountContext, shouldSave' params added
     return fetchManager.interactivelyFetched(category: .image, location: .chat(messageId.peerId), locationKey: .messageId(messageId), mediaReference: mediaReference, resourceReference: mediaReference.resourceReference(resource), ranges: ranges, statsCategory: .image, elevatedPriority: false, userInitiated: userInitiated, priority: priority, storeToDownloadsPeerId: storeToDownloadsPeerId, accountContext: nil, shouldSave: false)
 }
 

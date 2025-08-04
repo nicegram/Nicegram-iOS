@@ -84,6 +84,7 @@ final class ItemListControllerTabsContentNode: NavigationBarContentNode {
                     foreground: self.theme.list.itemSecondaryTextColor,
                     selection: self.theme.list.itemAccentColor
                 ),
+                theme: self.theme,
                 customLayout: TabSelectorComponent.CustomLayout(
                     font: Font.medium(14.0),
                     spacing: 48.0,

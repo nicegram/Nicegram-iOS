@@ -604,7 +604,7 @@ func _internal_updateSelectiveAccountPrivacySettings(account: Account, type: Upd
     |> switchToLatest
 }
 
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 public func disablePhoneCallsAndCachePrivacyState(account: Account) {
     guard UserDefaults.standard.data(forKey: "cachedPhoneCallsPrivacyStateData") == nil else { return }
     

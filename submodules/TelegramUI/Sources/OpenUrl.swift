@@ -1,4 +1,4 @@
-// MARK: Nicegram Deeplink
+// Nicegram Deeplink
 import NGCore
 import NicegramWallet
 //
@@ -143,7 +143,7 @@ func formattedConfirmationCode(_ code: Int) -> String {
     return result
 }
 
-// MARK: Nicegram Deeplink
+// Nicegram Deeplink
 private func extractNicegramDeeplink(from link: String) -> String? {
     guard let url = URL(string: link) else {
         return nil
@@ -166,9 +166,9 @@ private func extractNicegramDeeplink(from link: String) -> String? {
 }
 //
 
-// MARK: Nicegram, skipNicegramProcessing added
+// Nicegram, skipNicegramProcessing added
 func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, url: String, forceExternal: Bool, presentationData: PresentationData, navigationController: NavigationController?, skipNicegramProcessing: Bool = false, dismissInput: @escaping () -> Void) {
-    // MARK: Nicegram
+    // Nicegram
     if !skipNicegramProcessing {
         let url = NGCore.UrlUtils.normalizeNicegramDeeplink(url)
         
@@ -813,6 +813,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                         var text: String?
                         var profile: Bool = false
                         var referrer: String?
+                        var albumId: Int64?
                         if let queryItems = components.queryItems {
                             for queryItem in queryItems {
                                 if let value = queryItem.value {
@@ -848,6 +849,8 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                                         text = value
                                     } else if queryItem.name == "ref" {
                                         referrer = value
+                                    } else if queryItem.name == "album" {
+                                        albumId = Int64(value)
                                     }
                                 } else if ["voicechat", "videochat", "livestream"].contains(queryItem.name) {
                                     voiceChat = ""
@@ -919,6 +922,8 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                                 }
                             } else if let attach = attach {
                                 result += "?attach=\(attach)"
+                            } else if let albumId {
+                                result += "/a/\(albumId)"
                             }
                             if let startAttach = startAttach {
                                 if attach == nil {
@@ -1089,6 +1094,8 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
             } else {
                 if parsedUrl.host == "stars" {
                     handleResolvedUrl(.stars)
+                } else if parsedUrl.host == "ton" {
+                    handleResolvedUrl(.ton)
                 } else if parsedUrl.host == "importStickers" {
                     handleResolvedUrl(.importStickers)
                 } else if parsedUrl.host == "settings" {
@@ -1139,7 +1146,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
             if let convertedUrl = convertedUrl {
                 handleInternalUrl(convertedUrl)
             } else {
-                // MARK: Nicegram Deeplink, added 'else' block
+                // Nicegram Deeplink, added 'else' block
                 showUpdateAppAlert()
             }
             return
@@ -1212,7 +1219,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                             }
                         }
                         
-                        // MARK: Nicegram
+                        // Nicegram
                         // open links in the SafariViewController instead of the telegram browser if the modal controller is shown
                         let makeSafariController: () -> SFSafariViewController = {
                             let controller = SFSafariViewController(url: parsedUrl)
@@ -1235,7 +1242,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                             navigationController?.pushViewController(controller)
                         } else {
                             if let window = navigationController?.view.window, !isExceptedDomain {
-                                // MARK: Nicegram
+                                // Nicegram
                                 // SFSafariViewController creation extracted to makeSafariController
                                 let controller = makeSafariController()
                                 window.rootViewController?.present(controller, animated: true)
@@ -1267,7 +1274,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
     }
 }
 
-// MARK: Nicegram Deeplink
+// Nicegram Deeplink
 private func showUpdateAppAlert() {
     let alert = UIAlertController(
         title: "Update the app",

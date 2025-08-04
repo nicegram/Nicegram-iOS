@@ -1,4 +1,4 @@
-// MARK: Nicegram MessageMetadata
+// Nicegram MessageMetadata
 import CoreSwiftUI
 import NGWrap
 //
@@ -29,7 +29,7 @@ import AdUI
 import TelegramNotices
 import ReactionListContextMenuContent
 import TelegramUIPreferences
-// MARK: Nicegram Imports
+// Nicegram Imports
 import ConvertOpusToAAC
 import FeatPremiumUI
 import NGAiChatUI
@@ -54,12 +54,12 @@ import ChatMessageBubbleItemNode
 import AdsInfoScreen
 import AdsReportScreen
 
-// MARK: Nicegram SelectAllMessagesWithAuthor
-// MARK: Nicegram ReplyPrivately
+// Nicegram SelectAllMessagesWithAuthor
+// Nicegram ReplyPrivately
 private func isServiceMessage(_ message: Message) -> Bool {
     return message.media.contains(where: { $0 is TelegramMediaAction })
 }
-// MARK: Nicegram NCG-6326 Apple Speech2Text
+// Nicegram NCG-6326 Apple Speech2Text
 let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
 //
 
@@ -149,7 +149,7 @@ private func canEditMessage(accountPeerId: PeerId, limitsConfiguration: EngineCo
             if let _ = attribute as? InlineBotMessageAttribute {
                 hasUneditableAttributes = true
                 break
-            } else if let _ = attribute as? PublishedSuggestedPostMessageAttribute {
+            } else if let _ = attribute as? PublishedSuggestedPostMessageAttribute, message.timestamp > Int32(Date().timeIntervalSince1970) - 60 * 60 * 24 {
                 hasUneditableAttributes = true
                 break
             }
@@ -504,7 +504,7 @@ func updatedChatEditInterfaceMessageState(context: AccountContext, state: ChatPr
         previewState
     )
 }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
 var saveMediaDisposable: MetaDisposable?
 //
 func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, messages: [Message], controllerInteraction: ChatControllerInteraction?, selectAll: Bool, interfaceInteraction: ChatPanelInterfaceInteraction?, readStats: MessageReadStats? = nil, messageNode: ChatMessageItemView? = nil) -> Signal<ContextController.Items, NoError> {
@@ -958,7 +958,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
     return dataSignal
     |> deliverOnMainQueue
     |> map { data, updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer -> ContextController.Items in
-// MARK: Nicegram NCG-6326 Apple Speech2Text
+// Nicegram NCG-6326 Apple Speech2Text
         let nicegramPremium = isPremium()
 //
         let isPremium = accountPeer?.isPremium ?? false
@@ -1055,7 +1055,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 break
             }
         }
-// MARK: Nicegram NCG-6326 Apple Speech2Text
+// Nicegram NCG-6326 Apple Speech2Text
         let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: context.account.peerId.id._internalGetInt64Value())
         if let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }),
            !(nicegramPremium && useOpenAI) {
@@ -1217,14 +1217,14 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuReply, icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Reply"), color: theme.actionSheet.primaryTextColor)
             }, action: { c, _ in
-                interfaceInteraction.setupReplyMessage(messages[0].id, { transition, completed in
+                interfaceInteraction.setupReplyMessage(messages[0].id, nil, { transition, completed in
                     c?.dismiss(result: .custom(transition), completion: {
                         completed()
                     })
                 })
             })))
             
-            // MARK: Nicegram ReplyPrivately
+            // Nicegram ReplyPrivately
             let message = messages[0]
             
             let authorId = message.author?.id
@@ -1514,7 +1514,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                             f(.default)
                         })))
                     }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
                     else if file.isVoice {
                         actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.WebBrowser_Download_Download, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Save"), color: theme.actionSheet.primaryTextColor)
@@ -2143,7 +2143,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }), false))
             } else if !isUnremovableAction {
                 var iconName: String = isSending ? "Chat/Context Menu/Clear" : "Chat/Context Menu/Delete"
-                if message.attributes.contains(where: { $0 is PublishedSuggestedPostMessageAttribute }) {
+                if message.attributes.contains(where: { $0 is PublishedSuggestedPostMessageAttribute }) && message.timestamp > Int32(Date().timeIntervalSince1970) - 60 * 60 * 24 {
                     iconName = "Chat/Context Menu/DeletePaid"
                 }
                 
@@ -2158,7 +2158,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     }
                 })))
                 
-                // MARK: Nicegram DeleteAllSystemMessages
+                // Nicegram DeleteAllSystemMessages
                 if isServiceMessage(message) {
                     actions.append(.action(ContextMenuActionItem(text: l("Messages.DeleteAllSystemMessages"), textColor: .destructive, icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.actionSheet.destructiveActionTextColor)
@@ -2189,7 +2189,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 actions.append(.separator)
             }
             
-            // MARK: Nicegram AiChat
+            // Nicegram AiChat
             let messageTextIsEmpty = message.text.isEmpty
             if #available(iOS 13.0, *), !messageTextIsEmpty {
                 let commands = TgChatAiHelper.getCommandsForMessage()
@@ -2219,7 +2219,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
             
-            // MARK: Nicegram MessageContextMenu, helpers
+            // Nicegram MessageContextMenu, helpers
             let isSecretChat = message.id.peerId.namespace == Namespaces.Peer.SecretChat
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             let nicegramIcon: (PresentationTheme) -> UIImage? = { theme in
@@ -2227,7 +2227,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
             
-            // MARK: Nicegram ForwardAsCopy
+            // Nicegram ForwardAsCopy
             if !message.isCopyProtected() {
                 actions.append(.action(ContextMenuActionItem(text: l("Chat.ForwardAsCopy"), icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.actionSheet.primaryTextColor)
@@ -2238,7 +2238,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
             
-            // MARK: Nicegram Translate
+            // Nicegram Translate
             let textToTranslate = message.textToTranslate()
             if !isSecretChat,
                !textToTranslate.isEmpty {
@@ -2270,7 +2270,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
             
-            // MARK: Nicegram RestrictFromContextMenu
+            // Nicegram RestrictFromContextMenu
             if let peer = chatPresentationInterfaceState.renderedPeer?.peer ?? message.peers[message.id.peerId] {
                 let hasRestrictPermission: Bool
                 if let channel = peer as? TelegramChannel {
@@ -2315,7 +2315,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
             
-            // MARK: Nicegram MessageMetadata
+            // Nicegram MessageMetadata
             if !isCopyProtected, !isSecretChat, #available(iOS 15.0, *) {
                 let messageMetadataAction = ContextMenuActionItem(
                     text: "Metadata",
@@ -2346,7 +2346,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             //
                
-            // MARK: Nicegram SelectAllMessagesWithAuthor
+            // Nicegram SelectAllMessagesWithAuthor
             if let authorId = message.author?.id {
                 actions.append(.action(ContextMenuActionItem(text: l("Messages.SelectAllFromUser"), icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/SelectAll"), color: theme.actionSheet.primaryTextColor)
@@ -2647,7 +2647,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
     }
 }
 
-// MARK: Nicegram MessageMetadata
+// Nicegram MessageMetadata
 extension Data: WrapCustomizable {
     public func wrap(context: Any?, dateFormatter: DateFormatter?) -> Any? {
         return ""

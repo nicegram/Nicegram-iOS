@@ -1,4 +1,4 @@
-// MARK: Nicegram Imports
+// Nicegram Imports
 import FeatTgUserNotes
 import NGData
 import FeatSpyOnFriends
@@ -394,12 +394,13 @@ final class PeerInfoScreenData {
     let revenueStatsState: StarsRevenueStats?
     let revenueStatsContext: StarsRevenueStatsContext?
     let profileGiftsContext: ProfileGiftsContext?
+    let profileGiftsCollectionsContext: ProfileGiftsCollectionsContext?
     let premiumGiftOptions: [PremiumGiftCodeOption]
     let webAppPermissions: WebAppPermissionsState?
-    // MARK: Nicegram TgUserNotes
+    // Nicegram TgUserNotes
     var note: String
     //
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
     let spyOnFriends: SpyOnFriendsContext?
 //
     let _isContact: Bool
@@ -451,11 +452,12 @@ final class PeerInfoScreenData {
         revenueStatsState: StarsRevenueStats?,
         revenueStatsContext: StarsRevenueStatsContext?,
         profileGiftsContext: ProfileGiftsContext?,
+        profileGiftsCollectionsContext: ProfileGiftsCollectionsContext?,
         premiumGiftOptions: [PremiumGiftCodeOption],
         webAppPermissions: WebAppPermissionsState?,
-        // MARK: Nicegram TgUserNotes
+        // Nicegram TgUserNotes
         note: String = "",
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
         spyOnFriends: SpyOnFriendsContext? = nil
 //
     ) {
@@ -496,11 +498,12 @@ final class PeerInfoScreenData {
         self.revenueStatsState = revenueStatsState
         self.revenueStatsContext = revenueStatsContext
         self.profileGiftsContext = profileGiftsContext
+        self.profileGiftsCollectionsContext = profileGiftsCollectionsContext
         self.premiumGiftOptions = premiumGiftOptions
         self.webAppPermissions = webAppPermissions
-        // MARK: Nicegram TgUserNotes
+        // Nicegram TgUserNotes
         self.note = note
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
         self.spyOnFriends = spyOnFriends
 //
     }
@@ -523,7 +526,7 @@ private enum PeerInfoScreenInputData: Equatable {
 
 public func hasAvailablePeerInfoMediaPanes(context: AccountContext, peerId: PeerId) -> Signal<Bool, NoError> {
     let chatLocationContextHolder = Atomic<ChatLocationContextHolder?>(value: nil)
-    let mediaPanes = peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: .peer(id: peerId), isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder)
+    let mediaPanes = peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: .peer(id: peerId), isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder, sharedMediaFromForumTopic: nil)
     |> map { panes -> Bool in
         if let panes {
             return !panes.isEmpty
@@ -546,7 +549,31 @@ public func hasAvailablePeerInfoMediaPanes(context: AccountContext, peerId: Peer
     }
 }
 
-private func peerInfoAvailableMediaPanes(context: AccountContext, peerId: PeerId, chatLocation: ChatLocation, isMyProfile: Bool, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>) -> Signal<[PeerInfoPaneKey]?, NoError> {
+private func peerInfoAvailableMediaPanes(context: AccountContext, peerId: PeerId, chatLocation: ChatLocation, isMyProfile: Bool, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?) -> Signal<[PeerInfoPaneKey]?, NoError> {
+    var peerId = peerId
+    var chatLocation = chatLocation
+    var chatLocationContextHolder = chatLocationContextHolder
+    if let sharedMediaFromForumTopic {
+        peerId = sharedMediaFromForumTopic.0
+        chatLocation = .replyThread(message: ChatReplyThreadMessage(
+            peerId: sharedMediaFromForumTopic.0,
+            threadId: sharedMediaFromForumTopic.1,
+            channelMessageId: nil,
+            isChannelPost: false,
+            isForumPost: true,
+            isMonoforumPost: true,
+            maxMessage: nil,
+            maxReadIncomingMessageId: nil,
+            maxReadOutgoingMessageId: nil,
+            unreadCount: 0,
+            initialFilledHoles: IndexSet(),
+            initialAnchor: .automatic,
+            isNotAvailable: false
+        ))
+        chatLocationContextHolder = Atomic(value: nil)
+    }
+    let _ = peerId
+    
     var tags: [(MessageTags, PeerInfoPaneKey)] = []
     
     if !isMyProfile {
@@ -669,12 +696,12 @@ public func keepPeerInfoScreenDataHot(context: AccountContext, peerId: PeerId, c
         case .user, .channel, .group:
             var signals: [Signal<Never, NoError>] = []
             
-            signals.append(context.peerChannelMemberCategoriesContextsManager.profileData(postbox: context.account.postbox, network: context.account.network, peerId: peerId, customData: peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder) |> ignoreValues) |> ignoreValues)
+            signals.append(context.peerChannelMemberCategoriesContextsManager.profileData(postbox: context.account.postbox, network: context.account.network, peerId: peerId, customData: peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder, sharedMediaFromForumTopic: nil) |> ignoreValues) |> ignoreValues)
             signals.append(context.peerChannelMemberCategoriesContextsManager.profilePhotos(postbox: context.account.postbox, network: context.account.network, peerId: peerId, fetch: peerInfoProfilePhotos(context: context, peerId: peerId)) |> ignoreValues)
             
             if case .user = inputData {
                 signals.append(Signal { _ in
-                    let listContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false)
+                    let listContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false, folderId: nil)
                     let expiringListContext = PeerExpiringStoryListContext(account: context.account, peerId: peerId)
                     
                     return ActionDisposable {
@@ -826,7 +853,7 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
     )
     |> distinctUntilChanged
     
-    let storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false)
+    let storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false, folderId: nil)
     let hasStories: Signal<Bool?, NoError> = storyListContext.state
     |> map { state -> Bool? in
         if !state.hasCache {
@@ -997,13 +1024,14 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             revenueStatsState: nil,
             revenueStatsContext: nil,
             profileGiftsContext: profileGiftsContext,
+            profileGiftsCollectionsContext: nil,
             premiumGiftOptions: [],
             webAppPermissions: nil
         )
     }
 }
 
-func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, isSettings: Bool, isMyProfile: Bool, hintGroupInCommon: PeerId?, existingRequestsContext: PeerInvitationImportersContext?, existingProfileGiftsContext: ProfileGiftsContext?, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, privacySettings: Signal<AccountPrivacySettings?, NoError>, forceHasGifts: Bool) -> Signal<PeerInfoScreenData, NoError> {
+func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, isSettings: Bool, isMyProfile: Bool, hintGroupInCommon: PeerId?, existingRequestsContext: PeerInvitationImportersContext?, existingProfileGiftsContext: ProfileGiftsContext?, existingProfileGiftsCollectionsContext: ProfileGiftsCollectionsContext?, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?, privacySettings: Signal<AccountPrivacySettings?, NoError>, forceHasGifts: Bool) -> Signal<PeerInfoScreenData, NoError> {
     return peerInfoScreenInputData(context: context, peerId: peerId, isSettings: isSettings)
     |> mapToSignal { inputData -> Signal<PeerInfoScreenData, NoError> in
         let wasUpgradedGroup = Atomic<Bool?>(value: nil)
@@ -1048,12 +1076,13 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 revenueStatsState: nil,
                 revenueStatsContext: nil,
                 profileGiftsContext: nil,
+                profileGiftsCollectionsContext: nil,
                 premiumGiftOptions: [],
                 webAppPermissions: nil
             ))
         case let .user(userPeerId, secretChatId, kind):
             let groupsInCommon: GroupsInCommonContext?
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
             var spyOnFriends: SpyOnFriendsContext? = nil
             let feature = SpyOnFriendsFeature(navigator: SpyOnFriendsNavigatorImpl())
             
@@ -1088,11 +1117,14 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             
             let premiumGiftOptions: Signal<[PremiumGiftCodeOption], NoError>
             let profileGiftsContext: ProfileGiftsContext?
+            let profileGiftsCollectionsContext: ProfileGiftsCollectionsContext?
             if case .user = kind {
                 if isMyProfile || userPeerId != context.account.peerId {
                     profileGiftsContext = existingProfileGiftsContext ?? ProfileGiftsContext(account: context.account, peerId: userPeerId)
+                    profileGiftsCollectionsContext = existingProfileGiftsCollectionsContext ?? ProfileGiftsCollectionsContext(account: context.account, peerId: userPeerId, allGiftsContext: profileGiftsContext)
                 } else {
                     profileGiftsContext = nil
+                    profileGiftsCollectionsContext = nil
                 }
                 premiumGiftOptions = .single([])
                 |> then(
@@ -1100,6 +1132,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 )
             } else {
                 profileGiftsContext = nil
+                profileGiftsCollectionsContext = nil
                 premiumGiftOptions = .single([])
             }
             
@@ -1203,7 +1236,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                 secretChatKeyFingerprint = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.SecretChatKeyFingerprint(id: secretChatId))
             }
             
-            let storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false)
+            let storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false, folderId: nil)
             let hasStories: Signal<Bool?, NoError> = storyListContext.state
             |> map { state -> Bool? in
                 if !state.hasCache {
@@ -1216,7 +1249,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             let hasStoryArchive: Signal<Bool?, NoError>
             var storyArchiveListContext: StoryListContext?
             if isMyProfile {
-                let storyArchiveListContextValue = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: true)
+                let storyArchiveListContextValue = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: true, folderId: nil)
                 storyArchiveListContext = storyArchiveListContextValue
                 hasStoryArchive = storyArchiveListContextValue.state
                 |> map { state -> Bool? in
@@ -1381,7 +1414,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                      
             return combineLatest(
                 context.account.viewTracker.peerView(peerId, updateData: true),
-                peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, isMyProfile: isMyProfile, chatLocationContextHolder: chatLocationContextHolder),
+                peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, isMyProfile: isMyProfile, chatLocationContextHolder: chatLocationContextHolder, sharedMediaFromForumTopic: sharedMediaFromForumTopic),
                 context.engine.data.subscribe(TelegramEngine.EngineData.Item.NotificationSettings.Global()),
                 secretChatKeyFingerprint,
                 status,
@@ -1487,7 +1520,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                         hasWatchApp: false,
                         enableQRLogin: false)
                 }
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
                 if #available(iOS 15.0, *),
                    let user = peer as? TelegramUser,
                    !(user.botInfo != nil && !user.id.isVerificationCodes), // checking is bot
@@ -1537,9 +1570,10 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     revenueStatsState: revenueContextAndState.1,
                     revenueStatsContext: revenueContextAndState.0,
                     profileGiftsContext: profileGiftsContext,
+                    profileGiftsCollectionsContext: profileGiftsCollectionsContext,
                     premiumGiftOptions: premiumGiftOptions,
                     webAppPermissions: webAppPermissions,
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
                     spyOnFriends: spyOnFriends
 //
                 )
@@ -1564,7 +1598,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             let requestsContextPromise = Promise<PeerInvitationImportersContext?>(nil)
             let requestsStatePromise = Promise<PeerInvitationImportersState?>(nil)
             
-            let storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false)
+            let storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false, folderId: nil)
             let hasStories: Signal<Bool?, NoError> = storyListContext.state
             |> map { state -> Bool? in
                 if !state.hasCache {
@@ -1648,12 +1682,13 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             }
             
             let profileGiftsContext = ProfileGiftsContext(account: context.account, peerId: peerId)
+            let profileGiftsCollectionsContext = ProfileGiftsCollectionsContext(account: context.account, peerId: peerId, allGiftsContext: profileGiftsContext)
             
             let personalChannel = peerInfoPersonalOrLinkedChannel(context: context, peerId: peerId, isSettings: false)
             
             return combineLatest(
                 context.account.viewTracker.peerView(peerId, updateData: true),
-                peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder),
+                peerInfoAvailableMediaPanes(context: context, peerId: peerId, chatLocation: chatLocation, isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder, sharedMediaFromForumTopic: sharedMediaFromForumTopic),
                 context.engine.data.subscribe(TelegramEngine.EngineData.Item.NotificationSettings.Global()),
                 status,
                 invitationsContextPromise.get(),
@@ -1772,6 +1807,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     revenueStatsState: revenueContextAndState.1,
                     revenueStatsContext: revenueContextAndState.0,
                     profileGiftsContext: profileGiftsContext,
+                    profileGiftsCollectionsContext: profileGiftsCollectionsContext,
                     premiumGiftOptions: [],
                     webAppPermissions: nil
                 )
@@ -1886,7 +1922,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             let storyListContext: StoryListContext?
             let hasStories: Signal<Bool?, NoError>
             if peerId.namespace == Namespaces.Peer.CloudChannel {
-                storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false)
+                storyListContext = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false, folderId: nil)
                 hasStories = storyListContext!.state
                 |> map { state -> Bool? in
                     if !state.hasCache {
@@ -1975,7 +2011,7 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
             
             return combineLatest(queue: .mainQueue(),
                 context.account.viewTracker.peerView(groupId, updateData: true),
-                peerInfoAvailableMediaPanes(context: context, peerId: groupId, chatLocation: chatLocation, isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder),
+                peerInfoAvailableMediaPanes(context: context, peerId: groupId, chatLocation: chatLocation, isMyProfile: false, chatLocationContextHolder: chatLocationContextHolder, sharedMediaFromForumTopic: sharedMediaFromForumTopic),
                 context.engine.data.subscribe(TelegramEngine.EngineData.Item.NotificationSettings.Global()),
                 status,
                 membersData,
@@ -2105,13 +2141,14 @@ func peerInfoScreenData(context: AccountContext, peerId: PeerId, strings: Presen
                     revenueStatsState: nil,
                     revenueStatsContext: nil,
                     profileGiftsContext: nil,
+                    profileGiftsCollectionsContext: nil,
                     premiumGiftOptions: [],
                     webAppPermissions: nil
                 ))
             }
         }
     }
-    // MARK: Nicegram TgUserNotes
+    // Nicegram TgUserNotes
     |> mapToSignal { peerInfoScreenData -> Signal<PeerInfoScreenData, NoError> in
         let note = TgUserNotesModule.shared.getTgUserNoteUseCase()
             .publisher(userId: peerId.ng_toInt64())

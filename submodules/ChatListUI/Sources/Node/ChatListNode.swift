@@ -1,14 +1,14 @@
-// MARK: Nicegram ChatListWidget
+// Nicegram ChatListWidget
 import FeatChatListWidget
 //
-// MARK: Nicegram PinnedChats
+// Nicegram PinnedChats
 import Combine
 import FeatImagesHubUI
 import FeatPinnedChats
 import NGAiChatUI
 import NGUI
 //
-// MARK: Nicegram HiddenChats
+// Nicegram HiddenChats
 import FeatHiddenChats
 //
 import Foundation
@@ -87,7 +87,7 @@ public final class ChatListNodeInteraction {
     
     let activateSearch: () -> Void
     
-    // MARK: Nicegram PinnedChats
+    // Nicegram PinnedChats
     let getController: () -> ChatListControllerImpl?
     let clearHighlightAnimated: (Bool) -> Void
     let isChatListVisible: () -> Bool
@@ -153,7 +153,7 @@ public final class ChatListNodeInteraction {
         animationCache: AnimationCache,
         animationRenderer: MultiAnimationRenderer,
         activateSearch: @escaping () -> Void,
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         getController: @escaping () -> ChatListControllerImpl? = { nil },
         clearHighlightAnimated: @escaping (Bool) -> Void = { _ in },
         isChatListVisible: @escaping () -> Bool = { false },
@@ -204,7 +204,7 @@ public final class ChatListNodeInteraction {
         openUrl: @escaping (String) -> Void
     ) {
         self.activateSearch = activateSearch
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         self.getController = getController
         self.clearHighlightAnimated = clearHighlightAnimated
         self.isChatListVisible = isChatListVisible
@@ -406,7 +406,7 @@ public struct ChatListNodeState: Equatable {
 private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatListNodeInteraction, location: ChatListControllerLocation, isPremium: Bool, filterData: ChatListItemFilterData?, chatListFilters: [ChatListFilter]?, mode: ChatListNodeMode, isPeerEnabled: ((EnginePeer) -> Bool)?, entries: [ChatListNodeViewTransitionInsertEntry]) -> [ListViewInsertItem] {
     return entries.map { entry -> ListViewInsertItem in
         switch entry.entry {
-            // MARK: Nicegram ChatListWidget
+            // Nicegram ChatListWidget
             case let .NicegramWidget(height, presentationData):
                 if #available(iOS 16.0, *) {
                     return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListNicegramWidget(height: height, theme: presentationData.theme), directionHint: entry.directionHint)
@@ -462,7 +462,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                 switch mode {
                     case .chatList:
                         return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(
-                            // MARK: Nicegram PinnedChats
+                            // Nicegram PinnedChats
                             nicegramItem: peerEntry.nicegramItem,
                             //
                             presentationData: presentationData,
@@ -839,7 +839,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
 private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatListNodeInteraction, location: ChatListControllerLocation, isPremium: Bool, filterData: ChatListItemFilterData?, chatListFilters: [ChatListFilter]?, mode: ChatListNodeMode, isPeerEnabled: ((EnginePeer) -> Bool)?, entries: [ChatListNodeViewTransitionUpdateEntry]) -> [ListViewUpdateItem] {
     return entries.map { entry -> ListViewUpdateItem in
         switch entry.entry {
-            // MARK: Nicegram ChatListWidget
+            // Nicegram ChatListWidget
             case let .NicegramWidget(height, presentationData):
                 if #available(iOS 16.0, *) {
                     return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListNicegramWidget(height: height, theme: presentationData.theme), directionHint: entry.directionHint)
@@ -872,7 +872,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                 switch mode {
                     case .chatList:
                         return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListItem(
-                            // MARK: Nicegram PinnedChats
+                            // Nicegram PinnedChats
                             nicegramItem: peerEntry.nicegramItem,
                             //
                             presentationData: presentationData,
@@ -1254,7 +1254,7 @@ public enum ChatListNodeEmptyState: Equatable {
     case empty(isLoading: Bool, hasArchiveInfo: Bool)
 }
 
-// MARK: Nicegram PinnedChats
+// Nicegram PinnedChats
 public struct ChatListNicegramData {
     let controller: () -> ChatListControllerImpl?
     let currentFolder: () -> ChatListFilter?
@@ -1330,11 +1330,11 @@ public final class ChatListNode: ListView {
         if let chatListView = self.chatListView {
             return chatListView.filteredEntries.compactMap { item -> EnginePeer.Id? in
                 switch item.stableId {
-                // MARK: Nicegram ChatListWidget
+                // Nicegram ChatListWidget
                 case .ngWidget:
                     return nil
                 //
-                // MARK: Nicegram PinnedChats
+                // Nicegram PinnedChats
                 case .ngPinnedChat:
                     return nil
                 //
@@ -1355,7 +1355,7 @@ public final class ChatListNode: ListView {
     private var dequeuedInitialTransitionOnLayout = false
     private var enqueuedTransition: (ChatListNodeListViewTransition, () -> Void)?
     
-    // MARK: Nicegram PinnedChats
+    // Nicegram PinnedChats
     private let nicegramData: ChatListNicegramData
     //
     
@@ -1459,7 +1459,7 @@ public final class ChatListNode: ListView {
     
     public var synchronousDrawingWhenNotAnimated: Bool = false
     
-    // MARK: Nicegram PinnedChats, added 'nicegramData'
+    // Nicegram PinnedChats, added 'nicegramData'
     public init(context: AccountContext, location: ChatListControllerLocation, chatListFilter: ChatListFilter? = nil, previewing: Bool, fillPreloadItems: Bool, mode: ChatListNodeMode, isPeerEnabled: ((EnginePeer) -> Bool)? = nil, theme: PresentationTheme, fontSize: PresentationFontSize, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameSortOrder: PresentationPersonNameOrder, nameDisplayOrder: PresentationPersonNameOrder, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, disableAnimations: Bool, isInlineMode: Bool, autoSetReady: Bool, isMainTab: Bool?, nicegramData: ChatListNicegramData? = nil) {
         self.context = context
         self.location = location
@@ -1470,7 +1470,7 @@ public final class ChatListNode: ListView {
         self.animationCache = animationCache
         self.animationRenderer = animationRenderer
         self.autoSetReady = autoSetReady
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         self.nicegramData = nicegramData ?? ChatListNicegramData(
             controller: { nil },
             currentFolder: { nil },
@@ -1510,7 +1510,7 @@ public final class ChatListNode: ListView {
             if let strongSelf = self, let activateSearch = strongSelf.activateSearch {
                 activateSearch()
             }
-            // MARK: Nicegram PinnedChats
+            // Nicegram PinnedChats
         }, getController: { [weak self] in
             self?.nicegramData.controller()
         }, clearHighlightAnimated: { [weak self] flag in
@@ -2401,7 +2401,7 @@ public final class ChatListNode: ListView {
             contacts = .single([])
         }
         
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         let nicegramItemsSignal = self.nicegramData.pinnedChats
             .removeDuplicates()
             .map { Array($0.reversed()) }
@@ -2409,7 +2409,7 @@ public final class ChatListNode: ListView {
             .skipError()
         //
         
-        // MARK: Nicegram HiddenChats
+        // Nicegram HiddenChats
         let hiddenChatsSignal: Signal<[HiddenChat], NoError>
         if #available(iOS 13.0, *) {
             hiddenChatsSignal = HiddenChatsContainer.shared.getChatsToHideUseCase()
@@ -2421,7 +2421,7 @@ public final class ChatListNode: ListView {
         }
         //
         
-        // MARK: Nicegram ChatListWidget
+        // Nicegram ChatListWidget
         let nicegramWidgetHeightSignal = ChatListWidgetModule.shared.chatListWidgetViewModel()
             .$viewState
             .map(\.height)
@@ -2471,13 +2471,13 @@ public final class ChatListNode: ListView {
             suggestedChatListNotice.get(),
             savedMessagesPeer,
             chatListViewUpdate,
-            // MARK: Nicegram PinnedChats
+            // Nicegram PinnedChats
             nicegramItemsSignal,
             //,
-            // MARK: Nicegram HiddenChats
+            // Nicegram HiddenChats
             hiddenChatsSignal,
             //
-            // MARK: Nicegram ChatListWidget
+            // Nicegram ChatListWidget
             nicegramWidgetHeightSignal,
             //
             self.statePromise.get(),
@@ -2485,9 +2485,9 @@ public final class ChatListNode: ListView {
             chatListFilters,
             accountIsPremium
         )
-        // MARK: Nicegram PinnedChats, nicegramItems added
-        // MARK: Nicegram HiddenChats, hiddenChats added
-        // MARK: Nicegram ChatListWidget, nicegramWidgetHeight added
+        // Nicegram PinnedChats, nicegramItems added
+        // Nicegram HiddenChats, hiddenChats added
+        // Nicegram ChatListWidget, nicegramWidgetHeight added
         |> mapToQueue { (hideArchivedFolderByDefault, displayArchiveIntro, storageInfo, suggestedChatListNotice, savedMessagesPeer, updateAndFilter, nicegramItems, hiddenChats, nicegramWidgetHeight, state, contacts, chatListFilters, accountIsPremium) -> Signal<ChatListNodeListViewTransition, NoError> in
             let (update, filter) = updateAndFilter
             
@@ -2502,7 +2502,7 @@ public final class ChatListNode: ListView {
                 notice = nil
             }
             
-            // MARK: Nicegram PinnedChats
+            // Nicegram PinnedChats
             var nicegramItems = nicegramItems
             var nicegramWidgetHeight = nicegramWidgetHeight
             if case let .chatList(group) = location,
@@ -2521,12 +2521,12 @@ public final class ChatListNode: ListView {
             
             let innerIsMainTab = location == .chatList(groupId: .root) && chatListFilter == nil
             
-            // MARK: Nicegram PinnedChats, nicegramItems added
-            // MARK: Nicegram ChatListWidget, nicegramWidgetHeight added
+            // Nicegram PinnedChats, nicegramItems added
+            // Nicegram ChatListWidget, nicegramWidgetHeight added
             let (rawEntries, isLoading) = chatListNodeEntriesForView(view: update.list, state: state, savedMessagesPeer: savedMessagesPeer, foundPeers: state.foundPeers, hideArchivedFolderByDefault: hideArchivedFolderByDefault, displayArchiveIntro: displayArchiveIntro, notice: notice, mode: mode, chatListLocation: location, contacts: contacts, accountPeerId: accountPeerId, isMainTab: innerIsMainTab, nicegramItems: nicegramItems, nicegramWidgetHeight: nicegramWidgetHeight)
             var isEmpty = true
             var entries = rawEntries.filter { entry in
-                // MARK: Nicegram HiddenChats
+                // Nicegram HiddenChats
                 if case let .PeerEntry(peerEntry) = entry,
                    hiddenChats.contains(where: { $0.id == peerEntry.peer.peerId.id._internalGetInt64Value()}) {
                     return false
@@ -3818,7 +3818,7 @@ public final class ChatListNode: ListView {
                                 } else {
                                     break loop
                                 }
-                            // MARK: Nicegram ChatListWidget, added .NicegramWidget
+                            // Nicegram ChatListWidget, added .NicegramWidget
                             case .ArchiveIntro, .EmptyIntro, .SectionHeader, .Notice, .HeaderEntry, .AdditionalCategory, .NicegramWidget:
                                 break
                             }

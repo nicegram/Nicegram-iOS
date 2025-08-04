@@ -42,6 +42,7 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
     
     private let backgroundView: BlurredBackgroundView
     private let backgroundTintView: UIView
+    private let backgroundTintMaskOuterContainer: UIView
     let backgroundTintMaskContainer: UIView
     let vibrantExpandedContentContainer: UIView
     
@@ -64,6 +65,7 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         
         self.backgroundTintView = UIView()
         self.backgroundTintMaskContainer = UIView()
+        self.backgroundTintMaskOuterContainer = UIView()
         
         self.maskLayer = SimpleLayer()
         self.backgroundClippingLayer = SimpleLayer()
@@ -91,7 +93,8 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         }
         
         self.vibrantExpandedContentContainer = UIView()
-        self.backgroundTintMaskContainer.addSubview(self.vibrantExpandedContentContainer)
+        self.backgroundTintMaskOuterContainer.addSubview(self.backgroundTintMaskContainer)
+        self.backgroundTintMaskOuterContainer.addSubview(self.vibrantExpandedContentContainer)
         
         super.init()
         
@@ -103,11 +106,10 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         self.largeCircleShadowLayer.opacity = 0.0
         self.smallCircleShadowLayer.opacity = 0.0
         
-        self.backgroundView.addSubview(self.backgroundTintView)
-        
-        self.backgroundTintMaskContainer.backgroundColor = .white
+        self.backgroundTintMaskOuterContainer.backgroundColor = .white
         
         self.view.addSubview(self.backgroundView)
+        self.backgroundView.addSubview(self.backgroundTintView)
         
         self.maskLayer.addSublayer(self.smallCircleLayer)
         self.maskLayer.addSublayer(self.largeCircleLayer)
@@ -144,17 +146,17 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
             
             if theme.overallDarkAppearance {
                 if let invertFilter = CALayer.colorInvert(), let filter = CALayer.luminanceToAlpha() {
-                    self.backgroundTintMaskContainer.layer.filters = [invertFilter, filter]
+                    self.backgroundTintMaskOuterContainer.layer.filters = [invertFilter, filter]
                 }
-                self.backgroundTintView.mask = self.backgroundTintMaskContainer
+                self.backgroundTintView.mask = self.backgroundTintMaskOuterContainer
                 
                 self.backgroundView.updateColor(color: theme.contextMenu.backgroundColor, forceKeepBlur: true, transition: .immediate)
                 self.backgroundTintView.backgroundColor = UIColor(white: 1.0, alpha: 0.5)
             } else {
                 if let filter = CALayer.luminanceToAlpha() {
-                    self.backgroundTintMaskContainer.layer.filters = [filter]
+                    self.backgroundTintMaskOuterContainer.layer.filters = [filter]
                 }
-                self.backgroundTintView.mask = self.backgroundTintMaskContainer
+                self.backgroundTintView.mask = self.backgroundTintMaskOuterContainer
                 
                 self.backgroundView.updateColor(color: .clear, forceKeepBlur: true, transition: .immediate)
                 self.backgroundTintView.backgroundColor = theme.contextMenu.backgroundColor
@@ -216,8 +218,10 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         transition.updateFrame(view: self.backgroundView, frame: contentBounds, beginWithCurrentState: true)
         self.backgroundView.update(size: contentBounds.size, transition: transition)
         
-        transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: -contentBounds.minX, y: -contentBounds.minY), size: contentBounds.size))
-        transition.updateFrame(view: self.backgroundTintMaskContainer, frame: CGRect(origin: CGPoint(), size: contentBounds.size))
+        transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)))
+        transition.updateFrame(view: self.backgroundTintMaskOuterContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: contentBounds.size))
+        transition.updateFrame(view: self.backgroundTintMaskContainer, frame: CGRect(origin: CGPoint(x: 10.0, y: 10.0), size: contentBounds.size))
+        transition.updateFrame(view: self.vibrantExpandedContentContainer, frame: CGRect(origin: CGPoint(x: 10.0, y: 10.0), size: contentBounds.size))
     }
     
     func animateIn() {

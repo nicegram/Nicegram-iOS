@@ -58,7 +58,7 @@ final class AuthorizationSequencePasswordEntryController: ViewController {
             back()
         }
         
-        // MARK: Nicegram, show back button on 2fa password screen
+        // Nicegram, show back button on 2fa password screen
         self.navigationBar?.customBackButtonText = presentationData.strings.Common_Back
         self.navigationBar?.item = self.navigationItem
         //

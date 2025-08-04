@@ -72,7 +72,7 @@ func _internal_getMessagesLoadIfNecessary(_ messageIds: [MessageId], postbox: Po
                             switch result {
                                 case let .messages(messages, chats, users):
                                     return (peer, messages, chats, users)
-                                case let .messagesSlice(_, _, _, _, messages, chats, users):
+                                case let .messagesSlice(_, _, _, _, _, messages, chats, users):
                                     return (peer, messages, chats, users)
                                 case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
                                     let _ = apiTopics

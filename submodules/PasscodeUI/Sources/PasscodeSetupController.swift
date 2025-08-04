@@ -16,24 +16,24 @@ public final class PasscodeSetupController: ViewController {
     private var controllerNode: PasscodeSetupControllerNode {
         return self.displayNode as! PasscodeSetupControllerNode
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private let context: SharedAccountContext
     private var mode: PasscodeSetupControllerMode
     
     public var complete: ((String, Bool) -> Void)?
     public var check: ((String) -> Bool)?
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public var checkSetupPasscode: ((String) -> Bool)?
     
     private let hapticFeedback = HapticFeedback()
     
     private var presentationData: PresentationData
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private let isChangeModeAllowed: Bool
     
     private var nextAction: UIBarButtonItem?
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public init(context: SharedAccountContext, mode: PasscodeSetupControllerMode, isChangeModeAllowed: Bool = true, isOpaqueNavigationBar: Bool = false) {
         self.context = context
         self.mode = mode
@@ -55,7 +55,7 @@ public final class PasscodeSetupController: ViewController {
     }
     
     override public func loadDisplayNode() {
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.displayNode = PasscodeSetupControllerNode(presentationData: self.presentationData, mode: self.mode, isChangeModeAllowed: isChangeModeAllowed)
         self.displayNodeDidLoad()
         
@@ -132,7 +132,7 @@ public final class PasscodeSetupController: ViewController {
         self.controllerNode.checkPasscode = { [weak self] passcode in
             return self?.check?(passcode) ?? false
         }
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.controllerNode.checkSetupPasscode = { [weak self] passcode in
             return self?.checkSetupPasscode?(passcode) ?? true
         }

@@ -436,7 +436,7 @@ public final class SharedWakeupManager {
                 
                 if (self.inForeground && primary) || !tasks.isEmpty || (self.activeExplicitExtensionTimer != nil && primary) {
                     account.shouldBeServiceTaskMaster.set(.single(.always))
-                    // MARK: Nicegram DB Changes
+                    // Nicegram DB Changes
                 } else if !account.keepServiceTaskMasterActiveState {
                     account.shouldBeServiceTaskMaster.set(.single(.never))
                 }

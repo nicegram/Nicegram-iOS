@@ -840,6 +840,7 @@
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-Wgnu-folding-constant"
     
     const NSUInteger bufSize = 1024;
     NSUInteger numberOfBuffersToRead = MIN(32, floor(fileData.length / bufSize));

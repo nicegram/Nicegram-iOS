@@ -115,7 +115,7 @@ extension ChatControllerImpl {
         let textItems: [AnimatedTextComponent.Item] = [
             AnimatedTextComponent.Item(id: 0, content: .text(text))
         ]
-        let controller = UndoOverlayController(presentationData: self.presentationData, content: .starsSent(context: self.context, title: title, text: textItems), elevatedLayout: false, position: .top, action: { [weak self] action in
+        let controller = UndoOverlayController(presentationData: self.presentationData, content: .starsSent(context: self.context, title: title, text: textItems, hasUndo: true), elevatedLayout: false, position: .top, action: { [weak self] action in
             guard let self else {
                 return false
             }

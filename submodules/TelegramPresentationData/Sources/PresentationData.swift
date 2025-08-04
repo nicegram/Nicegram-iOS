@@ -4,7 +4,6 @@ import SwiftSignalKit
 import Postbox
 import TelegramCore
 import Contacts
-import AddressBook
 import Display
 import TelegramUIPreferences
 import AppBundle
@@ -201,19 +200,11 @@ private func currentDateTimeFormat() -> PresentationDateTimeFormat {
 }
 
 private func currentPersonNameSortOrder() -> PresentationPersonNameOrder {
-    if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
-        switch CNContactsUserDefaults.shared().sortOrder {
-            case .givenName:
-                return .firstLast
-            default:
-                return .lastFirst
-        }
-    } else {
-        if ABPersonGetSortOrdering() == kABPersonSortByFirstName {
+    switch CNContactsUserDefaults.shared().sortOrder {
+        case .givenName:
             return .firstLast
-        } else {
+        default:
             return .lastFirst
-        }
     }
 }
 
@@ -891,7 +882,7 @@ public func themeDisplayName(strings: PresentationStrings, reference: Presentati
     switch reference {
     case let .builtin(theme):
         switch theme {
-        // MARK: Nicegram DefaultTheme
+        // Nicegram DefaultTheme
         case .nicegram:
             name = "Nicegram"
         //

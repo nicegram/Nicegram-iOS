@@ -941,10 +941,10 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
         self.mainButtonNode.addTarget(self, action: #selector(self.mainButtonPressed), forControlEvents: .touchUpInside)
         self.secondaryButtonNode.addTarget(self, action: #selector(self.secondaryButtonPressed), forControlEvents: .touchUpInside)
         
-        // MARK: Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
+        // Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
         self.interfaceInteraction = ChatPanelInterfaceInteraction(cloudMessages: { _ in}, copyForwardMessages: { _ in
         }, copySelectedMessages: {
-        }, setupReplyMessage: { _, _ in
+        }, setupReplyMessage: { _, _, _  in
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in
@@ -1308,6 +1308,8 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
                     return data.sendPaidMessageStars
                 } else if let channel = peerViewMainPeer(view) as? TelegramChannel {
                     if channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = view.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect) {
+                        return nil
+                    } else if let cachedData = view.cachedData as? CachedChannelData, let sendPaidMessageStarsValue = cachedData.sendPaidMessageStars, sendPaidMessageStarsValue == .zero {
                         return nil
                     } else {
                         return channel.sendPaidMessageStars

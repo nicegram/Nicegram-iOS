@@ -226,7 +226,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
     public let effectiveAuthorId: PeerId?
     public let additionalContent: ChatMessageItemAdditionalContent?
     
-    // MARK: Nicegram
+    // Nicegram
     let wantTrButton: [(Bool, [String])]
     //
     let dateHeader: ChatMessageDateHeader
@@ -280,7 +280,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
         }
     }
     
-    // MARK: Nicegram (wantTrButton)
+    // Nicegram (wantTrButton)
     public init(presentationData: ChatPresentationData, context: AccountContext, chatLocation: ChatLocation, associatedData: ChatMessageItemAssociatedData, controllerInteraction: ChatControllerInteraction, content: ChatMessageItemContent, disableDate: Bool = false, additionalContent: ChatMessageItemAdditionalContent? = nil, wantTrButton: [(Bool, [String])] = [(false, [])]) {
         self.presentationData = presentationData
         self.context = context
@@ -290,7 +290,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
         self.content = content
         self.disableDate = disableDate || !controllerInteraction.chatIsRotated
         self.additionalContent = additionalContent
-        // MARK: Nicegram
+        // Nicegram
         self.wantTrButton = wantTrButton
         //
         
@@ -532,7 +532,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
         
         let configure = {
             let node = (viewClassName as! ChatMessageItemView.Type).init(rotated: self.controllerInteraction.chatIsRotated)
-            // MARK: Nicegram
+            // Nicegram
             node.wantTrButton = self.wantTrButton
             //
             node.setupItem(self, synchronousLoad: synchronousLoads)

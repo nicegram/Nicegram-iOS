@@ -11,6 +11,7 @@ public enum TranslationError {
     case textTooLong
     case invalidLanguage
     case limitExceeded
+    case tryAlternative
 }
 
 func _internal_translate(network: Network, text: String, toLang: String, entities: [MessageTextEntity] = []) -> Signal<(String, [MessageTextEntity])?, TranslationError> {
@@ -29,6 +30,8 @@ func _internal_translate(network: Network, text: String, toLang: String, entitie
             return .textTooLong
         } else if error.errorDescription == "TO_LANG_INVALID" {
             return .invalidLanguage
+        } else if error.errorDescription == "TRANSLATIONS_DISABLED_ALT" {
+            return .tryAlternative
         } else {
             return .generic
         }

@@ -98,7 +98,7 @@ public final class NotificationViewControllerImpl {
         
         if sharedAccountContext == nil {
             initializeAccountManagement()
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             let hiddenAccountManager = HiddenAccountManagerImpl()
             let accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: true, isReadOnly: false, useCaches: false, removeDatabaseOnError: false, hiddenAccountManager: hiddenAccountManager)
             
@@ -142,7 +142,7 @@ public final class NotificationViewControllerImpl {
                 return nil
             })
             
-            // MARK: Nicegram DB Changes, openDoubleBottomFlow added
+            // Nicegram DB Changes, openDoubleBottomFlow added
             sharedAccountContext = SharedAccountContextImpl(mainWindow: nil, sharedContainerPath: self.initializationData.appGroupPath, basePath: rootPath, encryptionParameters: ValueBoxEncryptionParameters(forceEncryptionIfNoSet: false, key: ValueBoxEncryptionParameters.Key(data: self.initializationData.encryptionParameters.0)!, salt: ValueBoxEncryptionParameters.Salt(data: self.initializationData.encryptionParameters.1)!), accountManager: accountManager, appLockContext: appLockContext, notificationController: nil, applicationBindings: applicationBindings, initialPresentationDataAndSettings: initialPresentationDataAndSettings!, networkArguments: NetworkInitializationArguments(apiId: self.initializationData.apiId, apiHash: self.initializationData.apiHash, languagesCategory: self.initializationData.languagesCategory, appVersion: self.initializationData.appVersion, voipMaxLayer: 0, voipVersions: [], appData: .single(self.initializationData.bundleData), externalRequestVerificationStream: .never(), externalRecaptchaRequestVerification: { _, _ in return .never() }, autolockDeadine: .single(nil), encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: self.initializationData.useBetaFeatures, isICloudEnabled: false), hasInAppPurchases: false, rootPath: rootPath, legacyBasePath: nil, apsNotificationToken: .never(), voipNotificationToken: .never(), firebaseSecretStream: .never(), setNotificationCall: { _ in }, navigateToChat: { _, _, _, _ in }, openDoubleBottomFlow: { _ in }, appDelegate: nil)
             
             presentationDataPromise.set(sharedAccountContext!.presentationData)

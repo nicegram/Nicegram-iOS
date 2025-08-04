@@ -8,7 +8,7 @@ import ComponentFlow
 import SwiftSignalKit
 import UIKitRuntimeUtils
 import TelegramPresentationData
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
 import NGData
 import NGCallRecorder
 import NGUtils
@@ -85,7 +85,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
         public var remoteVideo: VideoSource?
         public var isRemoteBatteryLow: Bool
         public var isEnergySavingEnabled: Bool
-        // MARK: Nicegram NCG-5828 call recording
+        // Nicegram NCG-5828 call recording
         public var isCallRecord: Bool
         //
         public var isConferencePossible: Bool
@@ -104,7 +104,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             remoteVideo: VideoSource?,
             isRemoteBatteryLow: Bool,
             isEnergySavingEnabled: Bool,
-            // MARK: Nicegram NCG-5828 call recording
+            // Nicegram NCG-5828 call recording
             isCallRecord: Bool,
             //
             isConferencePossible: Bool,
@@ -164,7 +164,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             if lhs.isEnergySavingEnabled != rhs.isEnergySavingEnabled {
                 return false
             }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
             if lhs.isCallRecord != rhs.isCallRecord {
                 return false
             }
@@ -371,7 +371,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             blurFilter.setValue(10.0 as NSNumber, forKey: "inputRadius")
             self.overlayContentsView.layer.filters = [blurFilter]
         }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
         self.buttonGroupView.addSubview(self.recordTimerView)
 //
     }
@@ -831,7 +831,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
                 guard let self else {
                     return
                 }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
                 self.stopRecordTimer()
 //
                 self.endCallAction?()
@@ -852,7 +852,7 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
                 self.speakerAction?()
             }), at: 0)
         }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
         if case .active = params.state.lifecycleState,
            isPremium() {
             if NGSettings.recordAllCalls &&
@@ -1568,12 +1568,12 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
                 })
             }
         }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
         updateRecordTimerView(with: transition, currentAreControlsHidden: currentAreControlsHidden)
 //
     }
 
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
     public var recordAction: (() -> Void)?
 
     private let recordTimerView = RecordIndicatorView()

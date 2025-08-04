@@ -4,6 +4,7 @@ import SwiftSignalKit
 import AsyncDisplayKit
 import Display
 import ComponentFlow
+import ComponentDisplayAdapters
 import Postbox
 import TelegramCore
 import TelegramPresentationData
@@ -323,17 +324,41 @@ public class ChatMessagePaymentAlertController: AlertController {
     private weak var parentNavigationController: NavigationController?
     private let chatPeerId: EnginePeer.Id
     private let showBalance: Bool
-   
+    private let animateBalanceOverlay: Bool
+    
+    private var didUpdateCurrency = false
+    public var currency: CurrencyAmount.Currency {
+        didSet {
+            self.didUpdateCurrency = true
+            if let layout = self.validLayout {
+                self.containerLayoutUpdated(layout, transition: .animated(duration: 0.25, curve: .easeInOut))
+            }
+        }
+    }
+       
     private let balance = ComponentView<Empty>()
     
     private var didAppear = false
     
-    public init(context: AccountContext?, presentationData: PresentationData, contentNode: AlertContentNode, navigationController: NavigationController?, chatPeerId: EnginePeer.Id, showBalance: Bool = true) {
+    private var validLayout: ContainerViewLayout?
+    
+    public init(
+        context: AccountContext?,
+        presentationData: PresentationData,
+        contentNode: AlertContentNode,
+        navigationController: NavigationController?,
+        chatPeerId: EnginePeer.Id,
+        showBalance: Bool = true,
+        currency: CurrencyAmount.Currency = .stars,
+        animateBalanceOverlay: Bool = true
+    ) {
         self.context = context
         self.presentationData = presentationData
         self.parentNavigationController = navigationController
         self.chatPeerId = chatPeerId
         self.showBalance = showBalance
+        self.currency = currency
+        self.animateBalanceOverlay = animateBalanceOverlay
         
         super.init(theme: AlertControllerTheme(presentationData: presentationData), contentNode: contentNode)
         
@@ -350,9 +375,18 @@ public class ChatMessagePaymentAlertController: AlertController {
     }
     
     private func animateOut() {
-        if let view = self.balance.view {
-            view.layer.animateScale(from: 1.0, to: 0.8, duration: 0.4, removeOnCompletion: false)
-            view.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
+        if !self.animateBalanceOverlay {
+            if self.currency == .ton && self.didUpdateCurrency {
+                self.currency = .stars
+            }
+            Queue.mainQueue().after(0.39, {
+                
+            })
+        } else {
+            if let view = self.balance.view {
+                view.layer.animateScale(from: 1.0, to: 0.8, duration: 0.4, removeOnCompletion: false)
+                view.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
+            }
         }
     }
     
@@ -365,6 +399,8 @@ public class ChatMessagePaymentAlertController: AlertController {
     public override func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
+        self.validLayout = layout
+        
         if !self.didAppear {
             self.didAppear = true
             if !layout.metrics.isTablet && layout.size.width > layout.size.height {
@@ -376,31 +412,45 @@ public class ChatMessagePaymentAlertController: AlertController {
         
         if let context = self.context, let _ = self.parentNavigationController, self.showBalance {
             let insets = layout.insets(options: .statusBar)
+            var balanceTransition = ComponentTransition(transition)
+            if self.balance.view == nil {
+                balanceTransition = .immediate
+            }
+            
             let balanceSize = self.balance.update(
-                transition: .immediate,
+                transition: balanceTransition,
                 component: AnyComponent(
                     StarsBalanceOverlayComponent(
                         context: context,
                         peerId: self.chatPeerId.namespace == Namespaces.Peer.CloudChannel ? self.chatPeerId : context.account.peerId,
                         theme: self.presentationData.theme,
+                        currency: self.currency,
                         action: { [weak self] in
                             guard let self, let starsContext = context.starsContext, let navigationController = self.parentNavigationController else {
                                 return
                             }
+                            switch self.currency {
+                            case .stars:
+                                let _ = (context.engine.payments.starsTopUpOptions()
+                                |> take(1)
+                                |> deliverOnMainQueue).startStandalone(next: { options in
+                                    let controller = context.sharedContext.makeStarsPurchaseScreen(
+                                        context: context,
+                                        starsContext: starsContext,
+                                        options: options,
+                                        purpose: .generic,
+                                        completion: { _ in }
+                                    )
+                                    navigationController.pushViewController(controller)
+                                })
+                            case .ton:
+                                var fragmentUrl = "https://fragment.com/ads/topup"
+                                if let data = context.currentAppConfiguration.with({ $0 }).data, let value = data["ton_topup_url"] as? String {
+                                    fragmentUrl = value
+                                }
+                                context.sharedContext.applicationBindings.openUrl(fragmentUrl)
+                            }
                             self.dismissAnimated()
-                            
-                            let _ = (context.engine.payments.starsTopUpOptions()
-                            |> take(1)
-                            |> deliverOnMainQueue).startStandalone(next: { options in
-                                let controller = context.sharedContext.makeStarsPurchaseScreen(
-                                    context: context,
-                                    starsContext: starsContext,
-                                    options: options,
-                                    purpose: .generic,
-                                    completion: { _ in }
-                                )
-                                navigationController.pushViewController(controller)
-                            })
                         }
                     )
                 ),
@@ -411,11 +461,13 @@ public class ChatMessagePaymentAlertController: AlertController {
                 if view.superview == nil {
                     self.view.addSubview(view)
                     
-                    view.layer.animatePosition(from: CGPoint(x: 0.0, y: -64.0), to: .zero, duration: 0.4, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-                    view.layer.animateSpring(from: 0.8 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: 0.5, initialVelocity: 0.0, removeOnCompletion: true, additive: false, completion: nil)
-                    view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                    if self.animateBalanceOverlay {
+                        view.layer.animatePosition(from: CGPoint(x: 0.0, y: -64.0), to: .zero, duration: 0.4, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+                        view.layer.animateSpring(from: 0.8 as NSNumber, to: 1.0 as NSNumber, keyPath: "transform.scale", duration: 0.5, initialVelocity: 0.0, removeOnCompletion: true, additive: false, completion: nil)
+                        view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                    }
                 }
-                view.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - balanceSize.width) / 2.0), y: insets.top + 5.0), size: balanceSize)
+                balanceTransition.setFrame(view: view, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - balanceSize.width) / 2.0), y: insets.top + 5.0), size: balanceSize))
             }
         }
     }

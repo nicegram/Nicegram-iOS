@@ -86,14 +86,14 @@ private enum DebugAccountsControllerEntry: ItemListNodeEntry {
         }
     }
 }
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 private func debugAccountsControllerEntries(view: AccountRecordsView<TelegramAccountManagerTypes>, presentationData: PresentationData, currentHiddenId: AccountRecordId?) -> [DebugAccountsControllerEntry] {
     var entries: [DebugAccountsControllerEntry] = []
     
     for entry in view.records.sorted(by: {
         $0.id < $1.id
     }) {
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         if UserDefaults.standard.bool(forKey: "inDoubleBottom"), entry.attributes.contains(where: { $0.isHiddenAccountAttribute }) {
             entries.append(.record(presentationData.theme, entry, true))
         } else if !UserDefaults.standard.bool(forKey: "inDoubleBottom") {
@@ -126,7 +126,7 @@ public func debugAccountsController(context: AccountContext, accountManager: Acc
                 ActionSheetButtonItem(title: "Production", color: .accent, action: {
                     dismissAction()
                     
-                    // MARK: Nicegram Multi-account, internal build check commented
+                    // Nicegram Multi-account, internal build check commented
                     context.sharedContext.beginNewAuth(testingEnvironment: false)
 //                    if case .internal = context.sharedContext.applicationBindings.appBuildType {
 //                        context.sharedContext.beginNewAuth(testingEnvironment: false)
@@ -141,11 +141,11 @@ public func debugAccountsController(context: AccountContext, accountManager: Acc
         ])
         presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     })
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     let signal = combineLatest(context.sharedContext.presentationData, accountManager.accountRecords(), accountManager.hiddenAccountManager.unlockedAccountRecordIdPromise.get())
         |> map { presentationData, view, currentHiddenId -> (ItemListControllerState, (ItemListNodeState, Any)) in
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Accounts"), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugAccountsControllerEntries(view: view, presentationData: presentationData, currentHiddenId: currentHiddenId), style: .blocks)
             
             return (controllerState, (listState, arguments))

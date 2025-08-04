@@ -152,6 +152,7 @@ final class HashtagSearchNavigationContentNode: NavigationBarContentNode {
                         foreground: self.theme.list.itemSecondaryTextColor,
                         selection: self.theme.list.itemAccentColor
                     ),
+                    theme: self.theme,
                     customLayout: TabSelectorComponent.CustomLayout(
                         font: Font.medium(14.0),
                         spacing: self.hasCurrentChat ? 24.0 : 8.0,

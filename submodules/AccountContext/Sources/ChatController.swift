@@ -48,6 +48,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
     public let availableMessageEffects: AvailableMessageEffects?
     public let savedMessageTags: SavedMessageTags?
     public let defaultReaction: MessageReaction.Reaction?
+    public let areStarReactionsEnabled: Bool
     public let isPremium: Bool
     public let forceInlineReactions: Bool
     public let alwaysDisplayTranscribeButton: DisplayTranscribeButton
@@ -83,6 +84,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
         availableMessageEffects: AvailableMessageEffects?,
         savedMessageTags: SavedMessageTags?,
         defaultReaction: MessageReaction.Reaction?,
+        areStarReactionsEnabled: Bool,
         isPremium: Bool,
         accountPeer: EnginePeer?,
         forceInlineReactions: Bool = false,
@@ -117,6 +119,7 @@ public final class ChatMessageItemAssociatedData: Equatable {
         self.availableMessageEffects = availableMessageEffects
         self.savedMessageTags = savedMessageTags
         self.defaultReaction = defaultReaction
+        self.areStarReactionsEnabled = areStarReactionsEnabled
         self.isPremium = isPremium
         self.accountPeer = accountPeer
         self.forceInlineReactions = forceInlineReactions
@@ -875,7 +878,7 @@ public struct ChatInputQueryCommandsResult: Equatable {
 }
 
 public enum ChatPresentationInputQueryResult: Equatable {
-    // MARK: Nicegram QuickReplies
+    // Nicegram QuickReplies
     case quickReplies([String], String)
     //
     case stickers([FoundStickerItem])
@@ -887,7 +890,7 @@ public enum ChatPresentationInputQueryResult: Equatable {
     
     public static func ==(lhs: ChatPresentationInputQueryResult, rhs: ChatPresentationInputQueryResult) -> Bool {
         switch lhs {
-        // MARK: Nicegram QuickReplies
+        // Nicegram QuickReplies
         case let .quickReplies(lhsResults, lhsQuery):
             if case let .quickReplies(rhsResults, rhsQuery) = rhs {
                 return lhsResults == rhsResults && lhsQuery == rhsQuery

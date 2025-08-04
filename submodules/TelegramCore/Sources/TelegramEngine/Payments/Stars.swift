@@ -1644,7 +1644,8 @@ func _internal_sendStarsPaymentForm(account: Account, formId: Int64, source: Bot
                                             upgradeStars: nil,
                                             transferStars: transferStars,
                                             canTransferDate: canTransferDate,
-                                            canResaleDate: canResaleDate
+                                            canResaleDate: canResaleDate,
+                                            collectionIds: nil
                                         )
                                     }
                                 }

@@ -1,4 +1,4 @@
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 import NGRoundedVideos
 //
 import Foundation
@@ -1024,7 +1024,7 @@ private extension MediaEditorValues {
             qualityPreset = defaultPreset
         }
         
-        // MARK: Nicegram RoundedVideos
+        // Nicegram RoundedVideos
         let cropRect: CGRect
         let cropScale: CGFloat
         if qualityPreset == .videoMessage {
@@ -1051,7 +1051,7 @@ private extension MediaEditorValues {
             peerId: EnginePeer.Id(0),
             originalDimensions: PixelDimensions(legacyAdjustments.originalSize),
             cropOffset: .zero,
-            // MARK: Nicegram RoundedVideos
+            // Nicegram RoundedVideos
             cropRect: cropRect,
             cropScale: cropScale,
             //

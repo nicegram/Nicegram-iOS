@@ -824,7 +824,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                         credibilityIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_ScamAccount.uppercased())
                     } else if peer.isFake {
                         credibilityIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased())
-                    } else if let emojiStatus = peer.emojiStatus {
+                    } else if let emojiStatus = peer.emojiStatus, !item.isAd {
                         credibilityIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: item.presentationData.theme.list.mediaPlaceholderColor, themeColor: item.presentationData.theme.list.itemAccentColor, loopMode: .count(2))
                         if let color = emojiStatus.color {
                             credibilityParticleColor = UIColor(rgb: UInt32(bitPattern: color))

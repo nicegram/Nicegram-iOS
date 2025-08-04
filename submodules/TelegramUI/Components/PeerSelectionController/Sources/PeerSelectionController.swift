@@ -10,7 +10,7 @@ import AccountContext
 import SearchUI
 import ChatListUI
 import CounterControllerTitleView
-// MARK: Nicegram NCG-6652 Hide UI notifications
+// Nicegram NCG-6652 Hide UI notifications
 import NGData
 //
 public final class PeerSelectionControllerImpl: ViewController, PeerSelectionController {
@@ -291,7 +291,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                         TelegramEngine.EngineData.Item.Peer.Peer(id: linkedMonoforumId)
                     )
                 } else {
-                    mainPeer = .single(nil)
+                    mainPeer = .single(EnginePeer.channel(peer))
                 }
                 
                 let _ = (mainPeer |> deliverOnMainQueue).startStandalone(next: { [weak self] mainPeer in
@@ -491,7 +491,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                 }
             }
             
-// MARK: Nicegram NCG-6652 Hide UI notifications
+// Nicegram NCG-6652 Hide UI notifications
             let resolvedItems = filterItems.map { filter -> ChatListFilterTabEntry in
                 switch filter {
                 case let .all(unreadCount):

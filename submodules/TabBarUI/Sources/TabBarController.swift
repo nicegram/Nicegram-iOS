@@ -88,7 +88,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         }
     }
     
-    // MARK: Nicegram Assistant, tooltip
+    // Nicegram Assistant, tooltip
     public var tabBarView: UIView {
         tabBarControllerNode.tabBarNode.view
     }
@@ -135,21 +135,21 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     
     private var navigationBarPresentationData: NavigationBarPresentationData
     private var theme: TabBarControllerTheme
-    // MARK: Nicegram
+    // Nicegram
     private var showTabNames: Bool
     //
     
     public var cameraItemAndAction: (item: UITabBarItem, action: () -> Void)?
     
-    // MARK: Nicegram
+    // Nicegram
     public var willSelect: ((Int) -> Void)?
     //
     
-    // MARK: Nicegram (showTabNames)
+    // Nicegram (showTabNames)
     public init(navigationBarPresentationData: NavigationBarPresentationData, theme: TabBarControllerTheme, showTabNames: Bool) {
         self.navigationBarPresentationData = navigationBarPresentationData
         self.theme = theme
-        // MARK: Nicegram
+        // Nicegram
         self.showTabNames = showTabNames
         //
         
@@ -235,7 +235,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     }
     
     override open func loadDisplayNode() {
-        // MARK: Nicegram (showTabNames)
+        // Nicegram (showTabNames)
         self.displayNode = TabBarControllerNode(theme: self.theme, showTabNames: self.showTabNames, navigationBarPresentationData: self.navigationBarPresentationData, itemSelected: { [weak self] index, longTap, itemNodes in
             if let strongSelf = self {
                 var index = index
@@ -307,7 +307,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
                                 }
                             }
                         } else {
-                            // MARK: Nicegram
+                            // Nicegram
                             strongSelf.willSelect?(index)
                             //
                             strongSelf.selectedIndex = index

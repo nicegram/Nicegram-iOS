@@ -854,6 +854,7 @@ public final class PendingMessageManager {
                 var replyPeerId: PeerId?
                 var replyQuote: EngineMessageReplyQuote?
                 var replyToStoryId: StoryId?
+                var replyTodoItemId: Int32?
                 var scheduleTime: Int32?
                 var videoTimestamp: Int32?
                 var sendAsPeerId: PeerId?
@@ -873,6 +874,7 @@ public final class PendingMessageManager {
                         if replyAttribute.isQuote {
                             replyQuote = replyAttribute.quote
                         }
+                        replyTodoItemId = replyAttribute.todoItemId
                     } else if let attribute = attribute as? ReplyStoryAttribute {
                         replyToStoryId = attribute.storyId
                     } else if let _ = attribute as? ForwardSourceInfoAttribute {
@@ -1108,7 +1110,11 @@ public final class PendingMessageManager {
                             }
                         }
                         
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId)
+                        if let _ = replyTodoItemId {
+                            replyFlags |= 1 << 6
+                        }
+                        
+                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
                     } else if let replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
@@ -1349,6 +1355,7 @@ public final class PendingMessageManager {
                 var replyPeerId: PeerId?
                 var replyQuote: EngineMessageReplyQuote?
                 var replyToStoryId: StoryId?
+                var replyTodoItemId: Int32?
                 var scheduleTime: Int32?
                 var videoTimestamp: Int32?
                 var sendAsPeerId: PeerId?
@@ -1381,6 +1388,7 @@ public final class PendingMessageManager {
                         if replyAttribute.isQuote {
                             replyQuote = replyAttribute.quote
                         }
+                        replyTodoItemId = replyAttribute.todoItemId
                     } else if let attribute = attribute as? ReplyStoryAttribute {
                         replyToStoryId = attribute.storyId
                     } else if let outgoingInfo = attribute as? OutgoingMessageInfoAttribute {
@@ -1490,9 +1498,10 @@ public final class PendingMessageManager {
                                 }
                             }
                             
-                            
-                            
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId)
+                            if let _ = replyTodoItemId {
+                                replyFlags |= 1 << 6
+                            }
+                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
@@ -1586,8 +1595,11 @@ public final class PendingMessageManager {
                                     quoteEntities = apiEntitiesFromMessageTextEntities(replyQuote.entities, associatedPeers: associatedPeers)
                                 }
                             }
-                            
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId)
+
+                            if let _ = replyTodoItemId {
+                                replyFlags |= 1 << 6
+                            }
+                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
@@ -1731,8 +1743,11 @@ public final class PendingMessageManager {
                                     quoteEntities = apiEntitiesFromMessageTextEntities(replyQuote.entities, associatedPeers: associatedPeers)
                                 }
                             }
-                            
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: message.threadId.flatMap(Int32.init(clamping:)), replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId)
+
+                            if let _ = replyTodoItemId {
+                                replyFlags |= 1 << 6
+                            }
+                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: message.threadId.flatMap(Int32.init(clamping:)), replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
@@ -1764,18 +1779,18 @@ public final class PendingMessageManager {
                     
                         if let replyMessageId = replyMessageId {
                             let replyFlags: Int32 = 0
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil)
+                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
                                 replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
                             } else {
                                 let replyFlags: Int32 = 0
-                                replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId)
+                                replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil)
                             }
                         } else {
                             let replyFlags: Int32 = 0
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId)
+                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil)
                         }
                     
                         sendMessageRequest = network.request(Api.functions.messages.sendScreenshotNotification(peer: inputPeer, replyTo: replyTo, randomId: uniqueId))

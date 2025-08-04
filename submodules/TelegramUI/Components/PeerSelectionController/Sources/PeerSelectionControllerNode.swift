@@ -381,9 +381,9 @@ final class PeerSelectionControllerNode: ASDisplayNode {
             self.indexChanged(1)
         }
              
-        // MARK: Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
+        // Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
         self.interfaceInteraction = ChatPanelInterfaceInteraction(cloudMessages: { _ in }, copyForwardMessages: { _ in }, copySelectedMessages: {
-        }, setupReplyMessage: { _, _ in
+        }, setupReplyMessage: { _, _, _ in
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in

@@ -13,7 +13,7 @@ public struct AccessChallengeAttempts: Equatable {
     }
 }
 
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 public enum PostboxAccessChallengeData: PostboxCoding, Hashable, Codable {
     enum CodingKeys: String, CodingKey {
         case numericalPassword

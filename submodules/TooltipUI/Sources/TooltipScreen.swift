@@ -20,6 +20,7 @@ import BalancedTextComponent
 import MultilineTextComponent
 import MultilineTextWithEntitiesComponent
 import ShimmerEffect
+import UIKitRuntimeUtils
 
 public enum TooltipActiveTextItem {
     case url(String, Bool)
@@ -1270,10 +1271,10 @@ public final class TooltipScreen: ViewController {
     private var dismissTimer: Foundation.Timer?
     
     public var alwaysVisible = false
-    // MARK: Nicegram NCG-7581 Folder for keywords
+    // Nicegram NCG-7581 Folder for keywords
     private let backgroundColor: UIColor?
     //
-    // MARK: Nicegram NCG-7581 Folder for keywords, backgroundColor
+    // Nicegram NCG-7581 Folder for keywords, backgroundColor
     public init(
         context: AccountContext? = nil,
         account: Account,
@@ -1315,7 +1316,7 @@ public final class TooltipScreen: ViewController {
         self.cornerRadius = cornerRadius
         self.shouldDismissOnTouch = shouldDismissOnTouch
         self.openActiveTextItem = openActiveTextItem
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.backgroundColor = backgroundColor
         //
         super.init(navigationBarPresentationData: nil)
@@ -1333,9 +1334,14 @@ public final class TooltipScreen: ViewController {
     
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.view.backgroundColor = backgroundColor
         //
+        
+        if self.ignoreAppearanceMethodInvocations() {
+            return
+        }
+        
         self.controllerNode.animateIn()
         self.resetDismissTimeout(duration: self.displayDuration)
     }

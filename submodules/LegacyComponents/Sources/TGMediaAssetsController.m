@@ -871,7 +871,7 @@
     
     if (_intent == TGMediaAssetsControllerSendMediaIntent && _selectionContext.allowGrouping)
         [[NSUserDefaults standardUserDefaults] setObject:@(!_selectionContext.grouping) forKey:@"TG_mediaGroupingDisabled_v0"];
-    
+        
     return [TGMediaAssetsController resultSignalsForSelectionContext:_selectionContext editingContext:_editingContext intent:_intent currentItem:currentItem storeAssets:storeAssets convertToJpeg:false descriptionGenerator:descriptionGenerator saveEditedPhotos:_saveEditedPhotos];
 }
 
@@ -888,6 +888,9 @@
     NSMutableArray *selectedItems = selectionContext.selectedItems ? [selectionContext.selectedItems mutableCopy] : [[NSMutableArray alloc] init];
     if (selectedItems.count == 0 && currentItem != nil)
         [selectedItems addObject:currentItem];
+    
+    if (intent == TGMediaAssetsControllerSendMediaIntent)
+        [[NSUserDefaults standardUserDefaults] setObject:@(editingContext.isHighQualityPhoto) forKey:@"TG_photoHighQuality_v0"];
     
     if (saveEditedPhotos && storeAssets && editingContext != nil)
     {

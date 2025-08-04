@@ -1,14 +1,14 @@
-// MARK: Nicegram ATT
+// Nicegram ATT
 import ChatMessageNicegramAdNode
 import FeatAttentionEconomy
 //
-// MARK: Nicegram AiChat
+// Nicegram AiChat
 import NGAiChatUI
 //
-// MARK: Nicegram ChatBanner
+// Nicegram ChatBanner
 import FeatChatBanner
 //
-// MARK: Nicegram Wallet
+// Nicegram Wallet
 import ChatMessageNicegramWalletTxNode
 //
 import Foundation
@@ -52,7 +52,7 @@ import DustEffect
 import UrlHandling
 import TextFormat
 
-// MARK: Nicegram AiChat
+// Nicegram AiChat
 private extension ListViewUpdateSizeAndInsets {
     func with(insets: UIEdgeInsets) -> ListViewUpdateSizeAndInsets {
         ListViewUpdateSizeAndInsets(size: size, insets: insets, headerInsets: headerInsets, scrollIndicatorInsets: scrollIndicatorInsets, duration: duration, curve: curve, ensureTopInsetForOverlayHighlightedItems: ensureTopInsetForOverlayHighlightedItems)
@@ -246,14 +246,14 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
     return entries.map { entry -> ListViewInsertItem in
         switch entry.entry {
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
-                // MARK: Nicegram, changed to 'var'
+                // Nicegram, changed to 'var'
                 var item: ListViewItem
                 switch mode {
                     case .bubbles:
-                        // MARK: Nicegram, wantTrButton
+                        // Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .message(message: message, read: read, selection: selection, attributes: attributes, location: location), disableDate: disableFloatingDateHeaders || message.timestamp < 10, wantTrButton: wantTrButton)
                     
-                        // MARK: Nicegram Wallet
+                        // Nicegram Wallet
                         if #available(iOS 16.0, *), let tx = attributes.walletTx {
                             item = ChatMessageNicegramWalletTxItem(
                                 controllerInteraction: controllerInteraction,
@@ -280,7 +280,7 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
                 let item: ListViewItem
                 switch mode {
                     case .bubbles:
-                        // MARK: Nicegram, wantTrButton
+                        // Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .group(messages: messages), disableDate: disableFloatingDateHeaders, wantTrButton: wantTrButton)
                     case .list:
                         assertionFailure()
@@ -304,7 +304,7 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListSearchItem(theme: theme, placeholder: strings.Common_Search, activate: {
                     controllerInteraction.openSearch()
                 }), directionHint: entry.directionHint)
-            // MARK: Nicegram ATT
+            // Nicegram ATT
             case let .NicegramAdEntry(_, ad, presentationData):
                 if #available(iOS 15.0, *) {
                     return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
@@ -325,14 +325,14 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
     return entries.map { entry -> ListViewUpdateItem in
         switch entry.entry {
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
-                // MARK: Nicegram, changed to 'var'
+                // Nicegram, changed to 'var'
                 var item: ListViewItem
                 switch mode {
                     case .bubbles:
-                        // MARK: Nicegram, wantTrButton
+                        // Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .message(message: message, read: read, selection: selection, attributes: attributes, location: location), disableDate: disableFloatingDateHeaders || message.timestamp < 10, wantTrButton: wantTrButton)
                     
-                        // MARK: Nicegram Wallet
+                        // Nicegram Wallet
                         if #available(iOS 16.0, *), let tx = attributes.walletTx {
                             item = ChatMessageNicegramWalletTxItem(
                                 controllerInteraction: controllerInteraction,
@@ -359,7 +359,7 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
                 let item: ListViewItem
                 switch mode {
                     case .bubbles:
-                        // MARK: Nicegram, wantTrButton
+                        // Nicegram, wantTrButton
                         item = ChatMessageItemImpl(presentationData: presentationData, context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, content: .group(messages: messages), disableDate: disableFloatingDateHeaders, wantTrButton: wantTrButton)
                     case .list:
                         assertionFailure()
@@ -383,7 +383,7 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatListSearchItem(theme: theme, placeholder: strings.Common_Search, activate: {
                     controllerInteraction.openSearch()
                 }), directionHint: entry.directionHint)
-            // MARK: Nicegram ATT
+            // Nicegram ATT
             case let .NicegramAdEntry(_, ad, presentationData):
                 if #available(iOS 15.0, *) {
                     return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ChatMessageNicegramAdItem(ad: ad, chatLocation: chatLocation, context: context, controllerInteraction: controllerInteraction, presentationData: presentationData), directionHint: entry.directionHint)
@@ -395,9 +395,9 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
     }
 }
 
-// MARK: Nicegram, wantTrButton
+// Nicegram, wantTrButton
 private func mappedChatHistoryViewListTransition(context: AccountContext, chatLocation: ChatLocation, associatedData: ChatMessageItemAssociatedData, controllerInteraction: ChatControllerInteraction, mode: ChatHistoryListMode, lastHeaderId: Int64, animateFromPreviousFilter: Bool, transition: ChatHistoryViewTransition, wantTrButton: [(Bool, [String])]) -> ChatHistoryListViewTransition {
-    // MARK: Nicegram, wantTrButton
+    // Nicegram, wantTrButton
     return ChatHistoryListViewTransition(historyView: transition.historyView, deleteItems: transition.deleteItems, insertItems: mappedInsertEntries(context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, mode: mode, lastHeaderId: lastHeaderId, entries: transition.insertEntries, wantTrButton: wantTrButton), updateItems: mappedUpdateEntries(context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, mode: mode, lastHeaderId: lastHeaderId, entries: transition.updateEntries, wantTrButton: wantTrButton), options: transition.options, scrollToItem: transition.scrollToItem, stationaryItemRange: transition.stationaryItemRange, initialData: transition.initialData, keyboardButtonsMessage: transition.keyboardButtonsMessage, cachedData: transition.cachedData, cachedDataMessages: transition.cachedDataMessages, readStateData: transition.readStateData, scrolledToIndex: transition.scrolledToIndex, scrolledToSomeIndex: transition.scrolledToSomeIndex, peerType: associatedData.automaticDownloadPeerType, networkType: associatedData.automaticDownloadNetworkType, animateIn: transition.animateIn, reason: transition.reason, flashIndicators: transition.flashIndicators, animateFromPreviousFilter: animateFromPreviousFilter)
 }
 
@@ -423,6 +423,7 @@ private func extractAssociatedData(
     availableMessageEffects: AvailableMessageEffects?,
     savedMessageTags: SavedMessageTags?,
     defaultReaction: MessageReaction.Reaction?,
+    areStarReactionsEnabled: Bool,
     isPremium: Bool,
     alwaysDisplayTranscribeButton: ChatMessageItemAssociatedData.DisplayTranscribeButton,
     accountPeer: EnginePeer?,
@@ -491,7 +492,7 @@ private func extractAssociatedData(
         automaticDownloadPeerId = message.peerId
     }
     
-    return ChatMessageItemAssociatedData(automaticDownloadPeerType: automaticMediaDownloadPeerType, automaticDownloadPeerId: automaticDownloadPeerId, automaticDownloadNetworkType: automaticDownloadNetworkType, preferredStoryHighQuality: preferredStoryHighQuality, isRecentActions: false, subject: subject, contactsPeerIds: contactsPeerIds, channelDiscussionGroup: channelDiscussionGroup, animatedEmojiStickers: animatedEmojiStickers, additionalAnimatedEmojiStickers: additionalAnimatedEmojiStickers, currentlyPlayingMessageId: currentlyPlayingMessageId, isCopyProtectionEnabled: isCopyProtectionEnabled, availableReactions: availableReactions, availableMessageEffects: availableMessageEffects, savedMessageTags: savedMessageTags, defaultReaction: defaultReaction, isPremium: isPremium, accountPeer: accountPeer, alwaysDisplayTranscribeButton: alwaysDisplayTranscribeButton, topicAuthorId: topicAuthorId, hasBots: hasBots, translateToLanguage: translateToLanguage, maxReadStoryId: maxReadStoryId, recommendedChannels: recommendedChannels, audioTranscriptionTrial: audioTranscriptionTrial, chatThemes: chatThemes, deviceContactsNumbers: deviceContactsNumbers, isInline: isInline, showSensitiveContent: showSensitiveContent, isSuspiciousPeer: isSuspiciousPeer)
+    return ChatMessageItemAssociatedData(automaticDownloadPeerType: automaticMediaDownloadPeerType, automaticDownloadPeerId: automaticDownloadPeerId, automaticDownloadNetworkType: automaticDownloadNetworkType, preferredStoryHighQuality: preferredStoryHighQuality, isRecentActions: false, subject: subject, contactsPeerIds: contactsPeerIds, channelDiscussionGroup: channelDiscussionGroup, animatedEmojiStickers: animatedEmojiStickers, additionalAnimatedEmojiStickers: additionalAnimatedEmojiStickers, currentlyPlayingMessageId: currentlyPlayingMessageId, isCopyProtectionEnabled: isCopyProtectionEnabled, availableReactions: availableReactions, availableMessageEffects: availableMessageEffects, savedMessageTags: savedMessageTags, defaultReaction: defaultReaction, areStarReactionsEnabled: areStarReactionsEnabled, isPremium: isPremium, accountPeer: accountPeer, alwaysDisplayTranscribeButton: alwaysDisplayTranscribeButton, topicAuthorId: topicAuthorId, hasBots: hasBots, translateToLanguage: translateToLanguage, maxReadStoryId: maxReadStoryId, recommendedChannels: recommendedChannels, audioTranscriptionTrial: audioTranscriptionTrial, chatThemes: chatThemes, deviceContactsNumbers: deviceContactsNumbers, isInline: isInline, showSensitiveContent: showSensitiveContent, isSuspiciousPeer: isSuspiciousPeer)
 }
 
 private extension ChatHistoryLocationInput {
@@ -536,7 +537,7 @@ private var nextClientId: Int32 = 1
 public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHistoryListNode {
     static let fixedAdMessageStableId: UInt32 = UInt32.max - 5000
     
-    // MARK: Nicegram ChatBanner
+    // Nicegram ChatBanner
     var showNgBanner = false
     //
     
@@ -831,7 +832,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
     private let initTimestamp: Double
     
     public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>), chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, adMessagesContext: AdMessagesHistoryContext?, tag: HistoryViewInputTag?, source: ChatHistoryListSource, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, selectedMessages: Signal<Set<MessageId>?, NoError>, mode: ChatHistoryListMode = .bubbles, rotated: Bool = false, isChatPreview: Bool, messageTransitionNode: @escaping () -> ChatMessageTransitionNodeImpl?) {
-        // MARK: Nicegram
+        // Nicegram
         self.wantTrButton = usetrButton()
         //
         self.initTimestamp = CFAbsoluteTimeGetCurrent()
@@ -1681,11 +1682,29 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             savedMessageTags = .single(nil)
         }
         
-        let defaultReaction = combineLatest(
-            self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId)),
+        let peerReactionSettings: Signal<EnginePeerCachedInfoItem<PeerReactionSettings>?, NoError>
+        if let peerId = chatLocation.peerId {
+            peerReactionSettings = self.context.engine.data.subscribe(
+                TelegramEngine.EngineData.Item.Peer.ReactionSettings(id: peerId)
+            )
+            |> map(Optional.init)
+        } else {
+            peerReactionSettings = .single(nil)
+        }
+        
+        let defaultReaction: Signal<(MessageReaction.Reaction?, Bool), NoError> = combineLatest(
+            self.context.engine.data.subscribe(
+                TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId)
+            ),
+            peerReactionSettings,
             self.context.account.postbox.preferencesView(keys: [PreferencesKeys.reactionSettings])
         )
-        |> map { peer, preferencesView -> MessageReaction.Reaction? in
+        |> map { peer, peerReactionSettings, preferencesView -> (MessageReaction.Reaction?, Bool) in
+            var areStarsEnabled: Bool = false
+            if let peerReactionSettings, let value = peerReactionSettings.knownValue?.starsAllowed {
+                areStarsEnabled = value
+            }
+            
             let reactionSettings: ReactionSettings
             if let entry = preferencesView.values[PreferencesKeys.reactionSettings], let value = entry.get(ReactionSettings.self) {
                 reactionSettings = value
@@ -1696,9 +1715,11 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             if case let .user(user) = peer {
                 hasPremium = user.isPremium
             }
-            return reactionSettings.effectiveQuickReaction(hasPremium: hasPremium)
+            return (reactionSettings.effectiveQuickReaction(hasPremium: hasPremium), areStarsEnabled)
         }
-        |> distinctUntilChanged
+        |> distinctUntilChanged(isEqual: { lhs, rhs in
+            return lhs.0 == rhs.0 && lhs.1 == rhs.1
+        })
         
         let accountPeer = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
         |> map { peer -> EnginePeer? in
@@ -1801,7 +1822,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         }
         |> distinctUntilChanged
         
-        // MARK: Nicegram ATT
+        // Nicegram ATT
         let areAdsAllowed: Bool
         let allowedNamespaces = [
             Namespaces.Peer.CloudChannel,
@@ -1880,7 +1901,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             chatThemes |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_chatThemes"),
             deviceContactsNumbers |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_deviceContactsNumbers"),
             contentSettings |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_contentSettings"),
-            // MARK: Nicegram ATT
+            // Nicegram ATT
             nicegramAd
         ) |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_firstChatHistoryTransition")).startStrict(next: { [weak self] update, chatPresentationData, selectedMessages, updatingMedia, networkType, preferredStoryHighQuality, animatedEmojiStickers, additionalAnimatedEmojiStickers, customChannelDiscussionReadState, customThreadOutgoingReadState, availableReactions, availableMessageEffects, savedMessageTags, defaultReaction, accountPeer, suggestAudioTranscription, promises, topicAuthorId, translationState, maxReadStoryId, recommendedChannels, audioTranscriptionTrial, chatThemes, deviceContactsNumbers, contentSettings, nicegramAd in
             let (historyAppearsCleared, pendingUnpinnedAllMessages, pendingRemovedMessages, currentlyPlayingMessageIdAndType, scrollToMessageId, chatHasBots, allAdMessages) = promises
@@ -1982,7 +2003,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     let forceSynchronous = true
                     
                     let rawTransition = preparedChatHistoryViewTransition(from: previous, to: processedView, reason: reason, reverse: false, chatLocation: chatLocation, controllerInteraction: controllerInteraction, scrollPosition: nil, scrollAnimationCurve: nil, initialData: initialData?.initialData, keyboardButtonsMessage: nil, cachedData: initialData?.cachedData, cachedDataMessages: initialData?.cachedDataMessages, readStateData: initialData?.readStateData, flashIndicators: false, updatedMessageSelection: previousSelectedMessages != selectedMessages, messageTransitionNode: messageTransitionNode(), allUpdated: false)
-                    // MARK: Nicegram, wantTrButton
+                    // Nicegram, wantTrButton
                     var mappedTransition = mappedChatHistoryViewListTransition(context: context, chatLocation: chatLocation, associatedData: previousViewValue.associatedData, controllerInteraction: controllerInteraction, mode: mode, lastHeaderId: 0, animateFromPreviousFilter: resetScrolling, transition: rawTransition, wantTrButton: self?.wantTrButton ?? [(false, [])])
                     
                     if disableAnimations {
@@ -2122,7 +2143,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     isSuspiciousPeer = true
                 }
                 
-                let associatedData = extractAssociatedData(chatLocation: chatLocation, view: view, automaticDownloadNetworkType: networkType, preferredStoryHighQuality: preferredStoryHighQuality, animatedEmojiStickers: animatedEmojiStickers, additionalAnimatedEmojiStickers: additionalAnimatedEmojiStickers, subject: subject, currentlyPlayingMessageId: currentlyPlayingMessageIdAndType?.0, isCopyProtectionEnabled: isCopyProtectionEnabled, availableReactions: availableReactions, availableMessageEffects: availableMessageEffects, savedMessageTags: savedMessageTags, defaultReaction: defaultReaction, isPremium: isPremium, alwaysDisplayTranscribeButton: alwaysDisplayTranscribeButton, accountPeer: accountPeer, topicAuthorId: topicAuthorId, hasBots: chatHasBots, translateToLanguage: translateToLanguage?.toLang, maxReadStoryId: maxReadStoryId, recommendedChannels: recommendedChannels, audioTranscriptionTrial: audioTranscriptionTrial, chatThemes: chatThemes, deviceContactsNumbers: deviceContactsNumbers, isInline: !rotated, showSensitiveContent: contentSettings.ignoreContentRestrictionReasons.contains("sensitive"), isSuspiciousPeer: isSuspiciousPeer)
+                let associatedData = extractAssociatedData(chatLocation: chatLocation, view: view, automaticDownloadNetworkType: networkType, preferredStoryHighQuality: preferredStoryHighQuality, animatedEmojiStickers: animatedEmojiStickers, additionalAnimatedEmojiStickers: additionalAnimatedEmojiStickers, subject: subject, currentlyPlayingMessageId: currentlyPlayingMessageIdAndType?.0, isCopyProtectionEnabled: isCopyProtectionEnabled, availableReactions: availableReactions, availableMessageEffects: availableMessageEffects, savedMessageTags: savedMessageTags, defaultReaction: defaultReaction.0, areStarReactionsEnabled: defaultReaction.1, isPremium: isPremium, alwaysDisplayTranscribeButton: alwaysDisplayTranscribeButton, accountPeer: accountPeer, topicAuthorId: topicAuthorId, hasBots: chatHasBots, translateToLanguage: translateToLanguage?.toLang, maxReadStoryId: maxReadStoryId, recommendedChannels: recommendedChannels, audioTranscriptionTrial: audioTranscriptionTrial, chatThemes: chatThemes, deviceContactsNumbers: deviceContactsNumbers, isInline: !rotated, showSensitiveContent: contentSettings.ignoreContentRestrictionReasons.contains("sensitive"), isSuspiciousPeer: isSuspiciousPeer)
                 
                 var includeEmbeddedSavedChatInfo = false
                 if case let .replyThread(message) = chatLocation, message.peerId == context.account.peerId, !rotated {
@@ -2131,7 +2152,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 
                 let previousChatHistoryEntriesForViewState = chatHistoryEntriesForViewState.with({ $0 })
                 
-                // MARK: Nicegram ATT, changed 'let' to 'var'
+                // Nicegram ATT, changed 'let' to 'var'
                 var (filteredEntries, updatedChatHistoryEntriesForViewState) = chatHistoryEntriesForView(
                     currentState: previousChatHistoryEntriesForViewState,
                     context: context,
@@ -2159,7 +2180,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     adMessage: allAdMessages.fixed,
                     dynamicAdMessages: allAdMessages.opportunistic
                 )
-                // MARK: Nicegram ATT
+                // Nicegram ATT
                 if let self {
                     var cachedPeerData: CachedPeerData?
                     for entry in view.additionalData {
@@ -2396,7 +2417,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 }
                 
                 let rawTransition = preparedChatHistoryViewTransition(from: previous, to: processedView, reason: reason, reverse: reverse, chatLocation: chatLocation, controllerInteraction: controllerInteraction, scrollPosition: updatedScrollPosition, scrollAnimationCurve: scrollAnimationCurve, initialData: initialData?.initialData, keyboardButtonsMessage: keyboardButtonsMessage, cachedData: initialData?.cachedData, cachedDataMessages: initialData?.cachedDataMessages, readStateData: initialData?.readStateData, flashIndicators: flashIndicators, updatedMessageSelection: previousSelectedMessages != selectedMessages, messageTransitionNode: messageTransitionNode(), allUpdated: updateAllOnEachVersion || forceUpdateAll)
-                // MARK: Nicegram, wantTrButton
+                // Nicegram, wantTrButton
                 var mappedTransition = mappedChatHistoryViewListTransition(context: context, chatLocation: chatLocation, associatedData: associatedData, controllerInteraction: controllerInteraction, mode: mode, lastHeaderId: lastHeaderId, animateFromPreviousFilter: resetScrolling, transition: rawTransition, wantTrButton: self?.wantTrButton ?? [(false, [])])
                 
                 if disableAnimations {
@@ -4454,7 +4475,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         
     public func updateLayout(transition: ContainedViewLayoutTransition, updateSizeAndInsets: ListViewUpdateSizeAndInsets, additionalScrollDistance: CGFloat, scrollToTop: Bool, completion: @escaping () -> Void) {
         
-        // MARK: Nicegram AiChat, NuHub
+        // Nicegram AiChat, NuHub
         var insets = updateSizeAndInsets.insets
         var additionalBotInset: CGFloat = 0
         if #available(iOS 15.0, *), NGSettings.showNicegramButtonInChat {
@@ -4692,7 +4713,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                             let item: ListViewItem
                             switch self.mode {
                             case .bubbles:
-                                // MARK: Nicegram, wantTrButton
+                                // Nicegram, wantTrButton
                                 item = ChatMessageItemImpl(presentationData: presentationData, context: self.context, chatLocation: self.chatLocation, associatedData: associatedData, controllerInteraction: self.controllerInteraction, content: .message(message: message, read: read, selection: selection, attributes: attributes, location: location), disableDate: disableFloatingDateHeaders, wantTrButton: wantTrButton)
                             case let .list(_, _, _, displayHeaders, hintLinks, isGlobalSearch):
                                 let displayHeader: Bool

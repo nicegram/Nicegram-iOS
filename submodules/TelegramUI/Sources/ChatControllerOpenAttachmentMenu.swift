@@ -35,6 +35,7 @@ import CameraScreen
 import ShareController
 import ComposeTodoScreen
 import ComposePollUI
+import Photos
 
 extension ChatControllerImpl {
     enum AttachMenuSubject {
@@ -2113,6 +2114,20 @@ extension ChatControllerImpl {
             return
         }
         guard let existingTodo = message.media.first(where: { $0 is TelegramMediaTodo }) as? TelegramMediaTodo else {
+            return
+        }
+        
+        guard self.context.isPremium else {
+            let context = self.context
+            var replaceImpl: ((ViewController) -> Void)?
+            let demoController = context.sharedContext.makePremiumDemoController(context: context, subject: .todo, forceDark: false, action: {
+                let controller = context.sharedContext.makePremiumIntroController(context: context, source: .todo, forceDark: false, dismissed: nil)
+                replaceImpl?(controller)
+            }, dismissed: nil)
+            replaceImpl = { [weak demoController] c in
+                demoController?.replace(with: c)
+            }
+            self.push(demoController)
             return
         }
         

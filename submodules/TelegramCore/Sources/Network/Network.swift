@@ -516,7 +516,7 @@ func initializedNetwork(accountId: AccountRecordId, arguments: NetworkInitializa
                 } else {
                     useNetworkFramework = false
                 }
-                // MARK: Nicegram waiting network bug
+                // Nicegram waiting network bug
                 if useNetworkFramework || true {
                     if #available(iOS 12.0, macOS 14.0, *) {
                         context.makeTcpConnectionInterface = { delegate, delegateQueue in
@@ -999,7 +999,7 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
         self.loggedOut?()
     }
     
-    // MARK: Nicegram, 'public'
+    // Nicegram, 'public'
     public func download(datacenterId: Int, isMedia: Bool, isCdn: Bool = false, tag: MediaResourceFetchTag?) -> Signal<Download, NoError> {
         return self.worker(datacenterId: datacenterId, isCdn: isCdn, isMedia: isMedia, tag: tag)
     }
@@ -1219,7 +1219,7 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
         }
     }
     
-    // MARK: Nicegram waiting network bug    
+    // Nicegram waiting network bug    
     public func simulateDisconnection() {
         mtProto.simulateDisconnection()
         mtProto.resume()

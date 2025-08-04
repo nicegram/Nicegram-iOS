@@ -272,16 +272,16 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
             case .error:
                 return .single(.upgrading(0.0))
             case let .postbox(postbox):
-            // MARK: Nicegram DB Changes, isHidden added
+            // Nicegram DB Changes, isHidden added
                 return accountManager.transaction { transaction -> (LocalizationSettings?, ProxySettings?, Bool) in
                     var localizationSettings: LocalizationSettings?
                     if !supplementary {
                         localizationSettings = transaction.getSharedData(SharedDataKeys.localizationSettings)?.get(LocalizationSettings.self)
                     }
-                    // MARK: Nicegram DB Changes
+                    // Nicegram DB Changes
                     return (localizationSettings, transaction.getSharedData(SharedDataKeys.proxySettings)?.get(ProxySettings.self), transaction.getRecords().first(where: { $0.id == id })?.attributes.contains(where: { $0.isHiddenAccountAttribute }) ?? false)
                 }
-                // MARK: Nicegram DB Changes, isHidden added
+                // Nicegram DB Changes, isHidden added
                 |> mapToSignal { localizationSettings, proxySettings, isHidden -> Signal<AccountResult, NoError> in
                     return postbox.transaction { transaction -> (PostboxCoding?, LocalizationSettings?, ProxySettings?, NetworkSettings?, AppConfiguration, Bool) in
                         var state = transaction.getState()
@@ -308,7 +308,7 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
                         }
                         let appConfig = transaction.getPreferencesEntry(key: PreferencesKeys.appConfiguration)?.get(AppConfiguration.self) ?? .defaultValue
                         
-                        // MARK: Nicegram DB Changes, isHidden added
+                        // Nicegram DB Changes, isHidden added
                         return (state, localizationSettings, proxySettings, transaction.getPreferencesEntry(key: PreferencesKeys.networkSettings)?.get(NetworkSettings.self), appConfig, isHidden)
                     }
                     |> mapToSignal { (accountState, localizationSettings, proxySettings, networkSettings, appConfig, isHidden) -> Signal<AccountResult, NoError> in
@@ -335,7 +335,7 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
                                     |> mapToSignal { phoneNumber in
                                         return initializedNetwork(accountId: id, arguments: networkArguments, supplementary: supplementary, datacenterId: Int(authorizedState.masterDatacenterId), keychain: keychain, basePath: path, testingEnvironment: authorizedState.isTestingEnvironment, languageCode: localizationSettings?.primaryComponent.languageCode, proxySettings: proxySettings, networkSettings: networkSettings, phoneNumber: phoneNumber, useRequestTimeoutTimers: useRequestTimeoutTimers, appConfiguration: appConfig)
                                         |> map { network -> AccountResult in
-                                            // MARK: Nicegram DB Changes, isHidden
+                                            // Nicegram DB Changes, isHidden
                                             return .authorized(Account(accountManager: accountManager, id: id, basePath: path, testingEnvironment: authorizedState.isTestingEnvironment, postbox: postbox, network: network, networkArguments: networkArguments, peerId: authorizedState.peerId, auxiliaryMethods: auxiliaryMethods, supplementary: supplementary, isSupportUser: isSupportUser, isHidden: isHidden))
                                         }
                                     }
@@ -354,7 +354,7 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
     }
 }
 
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 public func setAccountRecordAccessChallengeData(transaction: AccountManagerModifier<TelegramAccountManagerTypes>, id: AccountRecordId, accessChallengeData: PostboxAccessChallengeData) {
     transaction.updateRecord(id) { record in
         guard let record = record else { return nil }
@@ -1079,7 +1079,7 @@ public class Account {
         return self._importantTasksRunning.get()
     }
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public var isHidden: Bool
     private var isHiddenDisposable: Disposable?
     fileprivate let masterNotificationKey = Atomic<MasterNotificationKey?>(value: nil)
@@ -1091,7 +1091,7 @@ public class Account {
     
     let networkStatsContext: NetworkStatsContext
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public private(set) var keepServiceTaskMasterActiveState = false
     private var keepServiceTaskMasterActiveStateTimer: SwiftSignalKit.Timer?
     //
@@ -1099,11 +1099,11 @@ public class Account {
     public let filteredStorySubscriptionsContext: StorySubscriptionsContext?
     public let hiddenStorySubscriptionsContext: StorySubscriptionsContext?
     
-    // MARK: Nicegram AccountExporter
+    // Nicegram AccountExporter
     public var shouldKeepConnection = Signal<Bool, NoError>.single(true)
     //
     
-    // MARK: Nicegram DB Changes, isHidden
+    // Nicegram DB Changes, isHidden
     public init(accountManager: AccountManager<TelegramAccountManagerTypes>, id: AccountRecordId, basePath: String, testingEnvironment: Bool, postbox: Postbox, network: Network, networkArguments: NetworkInitializationArguments, peerId: PeerId, auxiliaryMethods: AccountAuxiliaryMethods, supplementary: Bool, isSupportUser: Bool, isHidden: Bool) {
         self.accountManager = accountManager
         self.id = id
@@ -1113,7 +1113,7 @@ public class Account {
         self.network = network
         self.networkArguments = networkArguments
         self.peerId = peerId
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.isHidden = isHidden
         
         self.auxiliaryMethods = auxiliaryMethods
@@ -1192,7 +1192,7 @@ public class Account {
         }
         
         let networkStateQueue = Queue()
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.isHiddenDisposable = (accountManager.accountRecords()
         |> map { view -> Bool in
             return view.records.first(where: { $0.id == id })?.attributes.contains(where: { $0.isHiddenAccountAttribute }) ?? false
@@ -1262,7 +1262,7 @@ public class Account {
         }
         |> distinctUntilChanged
         
-        // MARK: Nicegram AccountExporter, save signal before set to network.shouldKeepConnection
+        // Nicegram AccountExporter, save signal before set to network.shouldKeepConnection
         self.shouldKeepConnection = shouldBeMaster
         //
         self.network.shouldKeepConnection.set(shouldBeMaster)
@@ -1424,7 +1424,7 @@ public class Account {
         #endif*/
     }
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     deinit {
         self.managedContactsDisposable.dispose()
         self.managedStickerPacksDisposable.dispose()

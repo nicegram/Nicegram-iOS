@@ -17,6 +17,7 @@ import AnimationCache
 import MultiAnimationRenderer
 import ChatMessageItemCommon
 import MessageInlineBlockBackgroundView
+import CheckNode
 
 public enum ChatMessageReplyInfoType {
     case bubble(incoming: Bool)
@@ -81,6 +82,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
         public let message: Message?
         public let replyForward: QuotedReplyMessageAttribute?
         public let quote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
+        public let todoItemId: Int32?
         public let story: StoryId?
         public let parentMessage: Message
         public let constrainedSize: CGSize
@@ -96,6 +98,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             message: Message?,
             replyForward: QuotedReplyMessageAttribute?,
             quote: (quote: EngineMessageReplyQuote, isQuote: Bool)?,
+            todoItemId: Int32?,
             story: StoryId?,
             parentMessage: Message,
             constrainedSize: CGSize,
@@ -110,6 +113,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             self.message = message
             self.replyForward = replyForward
             self.quote = quote
+            self.todoItemId = todoItemId
             self.story = story
             self.parentMessage = parentMessage
             self.constrainedSize = constrainedSize
@@ -136,6 +140,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
     private var imageNode: TransformImageNode?
     private var previousMediaReference: AnyMediaReference?
     private var expiredStoryIconView: UIImageView?
+    private var checkLayer: CheckLayer?
     
     private var currentProgressDisposable: Disposable?
     
@@ -417,8 +422,15 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                     textColor = titleColor
             }
             
+            var textLeftInset: CGFloat = 0.0
             let messageText: NSAttributedString
-            if isText, let message = arguments.message {
+            var todoItemCompleted: Bool?
+            if let todoItemId = arguments.todoItemId, let todo = arguments.message?.media.first(where: { $0 is TelegramMediaTodo }) as? TelegramMediaTodo, let todoItem = todo.items.first(where: { $0.id == todoItemId }) {
+                messageText = stringWithAppliedEntities(todoItem.text, entities: todoItem.entities, baseColor: textColor, linkColor: textColor, baseFont: textFont, linkFont: textFont, boldFont: textFont, italicFont: textFont, boldItalicFont: textFont, fixedFont: textFont, blockQuoteFont: textFont, underlineLinks: false, message: nil)
+                textLeftInset += 16.0
+                
+                todoItemCompleted = todo.completions.contains(where: { $0.id == todoItemId })
+            } else if isText, let message = arguments.message {
                 var text: String
                 var messageEntities: [MessageTextEntity]
                 
@@ -577,6 +589,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                     textCutoutWidth = imageTextInset + 6.0
                 }
             }
+            adjustedConstrainedTextSize.width -= textLeftInset
             
             let (titleLayout, titleApply) = titleNodeLayout(TextNodeLayoutArguments(attributedString: titleString, backgroundColor: nil, maximumNumberOfLines: maxTitleNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: contrainedTextSize.width - additionalTitleWidth, height: contrainedTextSize.height), alignment: .natural, cutout: nil, insets: textInsets))
             if isExpiredStory || isStory {
@@ -643,7 +656,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             }
             
             var size = CGSize()
-            size.width = max(titleLayout.size.width + additionalTitleWidth - textInsets.left - textInsets.right, textLayout.size.width - textInsets.left - textInsets.right - textCutoutWidth) + leftInset + 6.0
+            size.width = max(titleLayout.size.width + additionalTitleWidth - textInsets.left - textInsets.right, textLeftInset + textLayout.size.width - textInsets.left - textInsets.right - textCutoutWidth) + leftInset + 6.0
             size.height = titleLayout.size.height + textLayout.size.height - 2 * (textInsets.top + textInsets.bottom) + 2 * spacing
             size.height += 2.0
             if isExpiredStory || isStory {
@@ -713,7 +726,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                 
                 titleNode.frame = CGRect(origin: CGPoint(x: leftInset - textInsets.left - 2.0, y: spacing - textInsets.top + 1.0), size: titleLayout.size)
                 
-                let textFrame = CGRect(origin: CGPoint(x: leftInset - textInsets.left - 2.0 - textCutoutWidth, y: titleNode.frame.maxY - textInsets.bottom + spacing - textInsets.top - 2.0), size: textLayout.size)
+                let textFrame = CGRect(origin: CGPoint(x: textLeftInset + leftInset - textInsets.left - 2.0 - textCutoutWidth, y: titleNode.frame.maxY - textInsets.bottom + spacing - textInsets.top - 2.0), size: textLayout.size)
                 let effectiveTextFrame = textFrame.offsetBy(dx: (isExpiredStory || isStory) ? 18.0 : 0.0, dy: 0.0)
                 
                 if textNode.textNode.bounds.isEmpty || !animation.isAnimated || textNode.textNode.bounds.height == effectiveTextFrame.height {
@@ -841,11 +854,33 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                         quoteIconView.frame = quoteIconFrame
                     }
                     quoteIconView.tintColor = mainColor
-                } else {
-                    if let quoteIconView = node.quoteIconView {
-                        node.quoteIconView = nil
-                        quoteIconView.removeFromSuperview()
+                } else if let quoteIconView = node.quoteIconView {
+                    node.quoteIconView = nil
+                    quoteIconView.removeFromSuperview()
+                }
+                
+                if let todoItemCompleted {
+                    let checkLayerFrame = CGRect(origin: CGPoint(x: textFrame.minX - 16.0, y: textFrame.minY + 5.0), size: CGSize(width: 12.0, height: 12.0))
+                    let checkTheme = CheckNodeTheme(backgroundColor: titleColor, strokeColor: .clear, borderColor: titleColor, overlayBorder: false, hasInset: true, hasShadow: false, borderWidth: 1.0)
+                    
+                    let checkLayer: CheckLayer
+                    if let current = node.checkLayer {
+                        checkLayer = current
+                        
+                        checkLayer.setSelected(todoItemCompleted, animated: true)
+                        animation.animator.updateFrame(layer: checkLayer, frame: checkLayerFrame, completion: nil)
+                    } else {
+                        checkLayer = CheckLayer(theme: checkTheme)
+                        node.checkLayer = checkLayer
+                        node.contentNode.layer.addSublayer(checkLayer)
+                        
+                        checkLayer.setSelected(todoItemCompleted, animated: false)
+                        checkLayer.frame = checkLayerFrame
                     }
+                    checkLayer.theme = checkTheme
+                } else if let checkLayer = node.checkLayer {
+                    node.checkLayer = nil
+                    checkLayer.removeFromSuperlayer()
                 }
                 
                 node.contentNode.frame = CGRect(origin: CGPoint(), size: size)

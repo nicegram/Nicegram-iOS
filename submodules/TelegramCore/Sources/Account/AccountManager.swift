@@ -4,7 +4,7 @@ import SwiftSignalKit
 import TelegramApi
 import MtProtoKit
 
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 public final class HiddenAccountAttribute: Codable, Equatable, AccountRecordAttribute {
     enum CodingKeys: String, CodingKey {
         case accessChallengeData = "d"
@@ -76,7 +76,7 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
         case loggedOut
         case hiddenDoubleBottom
         case supportUserInfo
-        // MARK: Nicegram
+        // Nicegram
         case nicegram
         //
         case legacyRootObject = "_"
@@ -88,11 +88,11 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
     case loggedOut(LoggedOutAccountAttribute)
     case supportUserInfo(AccountSupportUserInfo)
     case hiddenDoubleBottom(HiddenAccountAttribute)
-    // MARK: Nicegram
+    // Nicegram
     case nicegram(AccountNicegramAttribute)
     //
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public var isHiddenAccountAttribute: Bool {
         switch self {
         case .hiddenDoubleBottom:
@@ -102,7 +102,7 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
         }
     }
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public var isLoggedOutAccountAttribute: Bool {
         switch self {
         case .loggedOut:
@@ -115,7 +115,7 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        // MARK: Nicegram
+        // Nicegram
         if let nicegram = try? container.decodeIfPresent(AccountNicegramAttribute.self, forKey: .nicegram) {
             self = .nicegram(nicegram)
             return
@@ -130,7 +130,7 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
             self = .sortOrder(sortOrder)
         } else if let loggedOut = try? container.decodeIfPresent(LoggedOutAccountAttribute.self, forKey: .loggedOut) {
             self = .loggedOut(loggedOut)
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
         } else if let hiddenDoubleBottom = try? container.decodeIfPresent(HiddenAccountAttribute.self, forKey: .hiddenDoubleBottom) {
             self = .hiddenDoubleBottom(hiddenDoubleBottom)
         } else if let supportUserInfo = try? container.decodeIfPresent(AccountSupportUserInfo.self, forKey: .supportUserInfo) {
@@ -138,7 +138,7 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
         } else {
             let legacyRootObjectData = try! container.decode(AdaptedPostboxDecoder.RawObjectData.self, forKey: .legacyRootObject)
             
-            // MARK: Nicegram
+            // Nicegram
             if legacyRootObjectData.typeHash == postboxEncodableTypeHash(AccountNicegramAttribute.self) {
                 self = .nicegram(try! AdaptedPostboxDecoder().decode(AccountNicegramAttribute.self, from: legacyRootObjectData.data))
                 return
@@ -153,7 +153,7 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
                 self = .sortOrder(try! AdaptedPostboxDecoder().decode(AccountSortOrderAttribute.self, from: legacyRootObjectData.data))
             } else if legacyRootObjectData.typeHash == postboxEncodableTypeHash(LoggedOutAccountAttribute.self) {
                 self = .loggedOut(try! AdaptedPostboxDecoder().decode(LoggedOutAccountAttribute.self, from: legacyRootObjectData.data))
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
             } else if legacyRootObjectData.typeHash == postboxEncodableTypeHash(HiddenAccountAttribute.self) {
                 self = .hiddenDoubleBottom(HiddenAccountAttribute(decoder: PostboxDecoder(buffer: MemoryBuffer(data: legacyRootObjectData.data))))
 
@@ -175,12 +175,12 @@ public enum TelegramAccountRecordAttribute: AccountRecordAttribute, Equatable {
             try container.encode(sortOrder, forKey: .sortOrder)
         case let .loggedOut(loggedOut):
             try container.encode(loggedOut, forKey: .loggedOut)
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
         case let .hiddenDoubleBottom(hiddenDoubleBottom):
             try container.encode(hiddenDoubleBottom, forKey: .hiddenDoubleBottom)
         case let .supportUserInfo(supportUserInfo):
             try container.encode(supportUserInfo, forKey: .supportUserInfo)
-        // MARK: Nicegram
+        // Nicegram
         case let .nicegram(nicegram):
             try container.encode(nicegram, forKey: .nicegram)
         //
@@ -400,7 +400,7 @@ public func currentAccount(allocateIfNotExists: Bool, networkArguments: NetworkI
     })
     |> mapToSignal { record -> Signal<AccountResult?, NoError> in
         if let record = record {
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             guard !record.1.contains(where: { $0.isHiddenAccountAttribute }) else {
                 return .single(nil)
             }
@@ -470,7 +470,7 @@ public func currentAccount(allocateIfNotExists: Bool, networkArguments: NetworkI
 
 public func logoutFromAccount(id: AccountRecordId, accountManager: AccountManager<TelegramAccountManagerTypes>, alreadyLoggedOutRemotely: Bool) -> Signal<Void, NoError> {
     Logger.shared.log("AccountManager", "logoutFromAccount \(id)")
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     if accountManager.hiddenAccountManager.unlockedAccountRecordId == id {
         accountManager.hiddenAccountManager.unlockedAccountRecordIdPromise.set(nil)
     }
@@ -601,7 +601,7 @@ public func managedCleanupAccounts(networkArguments: NetworkInitializationArgume
 
 public typealias AccountManagerPreferencesEntry = PreferencesEntry
 
-// MARK: Nicegram
+// Nicegram
 // Workaround, since TelegramCore module cannot depend on FeatAccountBackup module (build error occurs)
 public struct AccountManagerCallbacks {
     let onRemoteLogout: (AccountRecordId) -> Void
@@ -636,7 +636,7 @@ private func cleanupAccount(networkArguments: NetworkInitializationArguments, ac
             case .unauthorized:
                 return .complete()
             case let .authorized(account):
-                // MARK: Nicegram AccountBackup
+                // Nicegram AccountBackup
                 if attributes.nicegramAttribute().skipRemoteLogout {
                     return accountManager.transaction { transaction -> Void in
                         transaction.updateRecord(id) { _ in nil }
@@ -657,7 +657,7 @@ private func cleanupAccount(networkArguments: NetworkInitializationArguments, ac
                             storeFutureLoginToken(accountManager: accountManager, token: futureAuthToken.makeData())
                         }
                         
-                        // MARK: Nicegram
+                        // Nicegram
                         accountManagerCallbacks?.onRemoteLogout(id)
                         //
                     default:

@@ -1003,7 +1003,7 @@ public func themePickerController(context: AccountContext, focusOnItemTag: Theme
             rightNavigationButton = nil
         }
         
-        // MARK: Nicegram DefaultTheme, always include all themes (regardless of presentationData.autoNightModeTriggered)
+        // Nicegram DefaultTheme, always include all themes (regardless of presentationData.autoNightModeTriggered)
         let defaultThemes: [PresentationThemeReference] = [
             .builtin(.nicegram),
             .builtin(.dayClassic),

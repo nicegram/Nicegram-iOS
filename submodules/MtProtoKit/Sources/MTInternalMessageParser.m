@@ -688,7 +688,13 @@
     NSUInteger length = [data length];
     int windowBits = 15 + 32; //Default + gzip header instead of zlib header
     int retCode;
+#pragma clang diagnostic push
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#pragma clang diagnostic ignored "-Wvla-cxx-extension"
+#endif
+#pragma clang diagnostic ignored "-Wgnu-folding-constant"
     unsigned char output[kMemoryChunkSize];
+#pragma clang diagnostic pop
     uInt gotBack;
     NSMutableData *result;
     z_stream stream;

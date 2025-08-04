@@ -2271,7 +2271,7 @@ final class StoryItemSetContainerSendMessage {
                                     }
                                     
                                     let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: fileId), partialReference: nil, resource: ICloudFileResource(urlData: item.urlData, thumbnail: false), previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: mimeType, size: Int64(item.fileSize), attributes: attributes, alternativeRepresentations: [])
-                                    let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: replyToStoryId, localGroupingKey: groupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                                    let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: replyToStoryId, localGroupingKey: groupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                                     messages.append(message)
                                 }
                                 if let _ = groupingKey, messages.count % 10 == 0 {
@@ -2376,7 +2376,7 @@ final class StoryItemSetContainerSendMessage {
                 threadId: nil,
                 botId: results.botId,
                 result: result,
-                replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) },
+                replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) },
                 replyToStoryId: storyId,
                 hideVia: hideVia,
                 silentPosting: silentPosting,
@@ -2764,7 +2764,7 @@ final class StoryItemSetContainerSendMessage {
                     mappedMessages.append(message)
                 }
 
-                strongSelf.sendMessages(view: view, peer: peer, messages: mappedMessages.map { $0.withUpdatedReplyToMessageId(replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }).withUpdatedReplyToStoryId(replyToStoryId) }, silentPosting: silentPosting, scheduleTime: scheduleTime)
+                strongSelf.sendMessages(view: view, peer: peer, messages: mappedMessages.map { $0.withUpdatedReplyToMessageId(replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }).withUpdatedReplyToStoryId(replyToStoryId) }, silentPosting: silentPosting, scheduleTime: scheduleTime)
                 
                 completion()
             }

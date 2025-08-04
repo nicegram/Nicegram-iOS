@@ -39,7 +39,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSDictionary<NSNumber *, NSNumber *> *)participantLatencies;
 
-- (void)applyBlock:(NSData *)block;
+- (bool)applyBlock:(NSData *)block;
 - (void)applyBroadcastBlock:(NSData *)block;
 
 - (nullable NSData *)generateRemoveParticipantsBlock:(NSArray<NSNumber *> *)participantIds;

@@ -62,7 +62,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
     private var sharedDataViews = Bag<(MutableAccountSharedDataView<Types>, ValuePipe<AccountSharedDataView<Types>>)>()
     private var noticeEntryViews = Bag<(MutableNoticeEntryView<Types>, ValuePipe<NoticeEntryView<Types>>)>()
     private var accessChallengeDataViews = Bag<(MutableAccessChallengeDataView, ValuePipe<AccessChallengeDataView>)>()
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private let hiddenAccountManager: HiddenAccountManager
 
     private var unlockedHiddenAccountRecordIdDisposable: Disposable?
@@ -76,12 +76,12 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         } catch let e {
             postboxLog("decode atomic state error: \(e)")
             postboxLogSync()
-            // MARK: Nicegram, possible crash fix
+            // Nicegram, possible crash fix
             return ([], nil)
 //            preconditionFailure()
         }
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     fileprivate init?(queue: Queue, basePath: String, isTemporary: Bool, isReadOnly: Bool, useCaches: Bool, removeDatabaseOnError: Bool, temporarySessionId: Int64, hiddenAccountManager: HiddenAccountManager) {
         let startTime = CFAbsoluteTimeGetCurrent()
         
@@ -89,7 +89,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         self.basePath = basePath
         self.atomicStatePath = "\(basePath)/atomic-state"
         self.loginTokensPath = "\(basePath)/login-tokens"
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.hiddenAccountManager = hiddenAccountManager
         self.temporarySessionId = temporarySessionId
         let _ = try? FileManager.default.createDirectory(atPath: basePath, withIntermediateDirectories: true, attributes: nil)
@@ -164,7 +164,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             self.currentAtomicState.accessChallengeData = tableAccessChallengeData
             self.syncAtomicStateToFile()
         }
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.unlockedHiddenAccountRecordIdDisposable = hiddenAccountManager.accountManagerRecordIdPromise.get().start(next: { [weak self] id in
             guard let strongSelf = self else { return }
             
@@ -195,7 +195,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
     
     deinit {
         assert(self.queue.isCurrent())
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         unlockedHiddenAccountRecordIdDisposable?.dispose()
     }
 
@@ -226,7 +226,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             self.currentAtomicState.currentRecordId = id
             self.currentMetadataOperations.append(.updateCurrentAccountId(id))
             self.currentAtomicStateUpdated = true
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             self.hiddenAccountManager.unlockedAccountRecordIdPromise.set(nil)
         }, getCurrentAuth: {
             if let record = self.currentAtomicState.currentAuthRecord {
@@ -379,7 +379,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             table.beforeCommit()
         }
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     fileprivate func accountRecords(currentRecordId: AccountRecordId?) -> Signal<AccountRecordsView<Types>, NoError> {
         return self.transaction(ignoreDisabled: false, { transaction -> Signal<AccountRecordsView<Types>, NoError> in
             return self.accountRecordsInternal(transaction: transaction, currentRecordId: currentRecordId)
@@ -414,12 +414,12 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
         })
         |> switchToLatest
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private func accountRecordsInternal(transaction: AccountManagerModifier<Types>, currentRecordId: AccountRecordId?) -> Signal<AccountRecordsView<Types>, NoError> {
         assert(self.queue.isCurrent())
         let mutableView = MutableAccountRecordsView<Types>(getRecords: {
             return self.currentAtomicState.records.map { $0.1 }
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
         }, currentId: currentRecordId ?? self.currentAtomicState.currentRecordId, currentAuth: self.currentAtomicState.currentAuthRecord)
         let pipe = ValuePipe<AccountRecordsView<Types>>()
         let index = self.recordsViews.add((mutableView, pipe))
@@ -494,7 +494,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             }
         }
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     fileprivate func currentAccountRecord(allocateIfNotExists: Bool, currentRecordId: AccountRecordId?) -> Signal<(AccountRecordId, [Types.Attribute])?, NoError> {
         return self.transaction(ignoreDisabled: false, { transaction -> Signal<(AccountRecordId, [Types.Attribute])?, NoError> in
             let current = transaction.getCurrent()
@@ -508,7 +508,7 @@ final class AccountManagerImpl<Types: AccountManagerTypes> {
             } else {
                 return .single(nil)
             }
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             let signal = self.accountRecordsInternal(transaction: transaction, currentRecordId: currentRecordId)
             |> map { view -> (AccountRecordId, [Types.Attribute])? in
                 if let currentRecord = view.currentRecord {
@@ -569,13 +569,13 @@ public final class AccountManager<Types: AccountManagerTypes> {
     private let queue: Queue
     private let impl: QueueLocalObject<AccountManagerImpl<Types>>
     public let temporarySessionId: Int64
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public let hiddenAccountManager: HiddenAccountManager
     
     public static func getCurrentRecords(basePath: String) -> (records: [AccountRecord<Types.Attribute>], currentId: AccountRecordId?) {
         return AccountManagerImpl<Types>.getCurrentRecords(basePath: basePath)
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public init(basePath: String, isTemporary: Bool, isReadOnly: Bool, useCaches: Bool, removeDatabaseOnError: Bool, hiddenAccountManager: HiddenAccountManager) {
         self.queue = sharedQueue
         self.basePath = basePath
@@ -584,7 +584,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
         self.temporarySessionId = temporarySessionId
         let queue = self.queue
         self.impl = QueueLocalObject(queue: queue, generate: {
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             if let value = AccountManagerImpl<Types>(queue: queue, basePath: basePath, isTemporary: isTemporary, isReadOnly: isReadOnly, useCaches: useCaches, removeDatabaseOnError: removeDatabaseOnError, temporarySessionId: temporarySessionId, hiddenAccountManager: hiddenAccountManager) {
                 return value
             } else {
@@ -593,7 +593,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
             }
         })
         self.mediaBox = MediaBox(basePath: basePath + "/media", isMainProcess: removeDatabaseOnError)
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.hiddenAccountManager = hiddenAccountManager
         hiddenAccountManager.configureAccountsAccessChallengeData(accountManager: self)
     }
@@ -612,7 +612,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
         }
     }
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public func accountRecords() -> Signal<AccountRecordsView<Types>, NoError> {
         return hiddenAccountManager.accountManagerRecordIdPromise.get() |> mapToSignal { currentHiddenRecordId in
             return Signal { subscriber in
@@ -679,7 +679,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
         }
     }
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public func currentAccountRecord(allocateIfNotExists: Bool) -> Signal<(AccountRecordId, [Types.Attribute])?, NoError> {
         return hiddenAccountManager.accountManagerRecordIdPromise.get() |> mapToSignal { currentHiddenRecordId in
             return Signal { subscriber in
@@ -711,7 +711,7 @@ public final class AccountManager<Types: AccountManagerTypes> {
     }
 }
 
-// MARK: Nicegram DB Changes
+// Nicegram DB Changes
 public final class HiddenAccountManagerImpl: HiddenAccountManager {
     public let unlockedAccountRecordIdPromise = ValuePromise<AccountRecordId?>(nil)
     public var unlockedAccountRecordId: AccountRecordId?

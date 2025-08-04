@@ -17,7 +17,7 @@ public enum BotPaymentInvoiceSource {
     case starGiftUpgrade(keepOriginalInfo: Bool, reference: StarGiftReference)
     case starGiftTransfer(reference: StarGiftReference, toPeerId: EnginePeer.Id)
     case premiumGift(peerId: EnginePeer.Id, option: CachedPremiumGiftOption, text: String?, entities: [MessageTextEntity]?)
-    case starGiftResale(slug: String, toPeerId: EnginePeer.Id)
+    case starGiftResale(slug: String, toPeerId: EnginePeer.Id, ton: Bool)
 }
 
 public struct BotPaymentInvoiceFields: OptionSet {
@@ -180,6 +180,7 @@ public enum BotPaymentFormRequestError {
     case noPaymentNeeded
     case disallowedStarGift
     case starGiftResellTooEarly(Int32)
+    case starGiftUserLimit
 }
 
 extension BotPaymentInvoice {
@@ -402,11 +403,15 @@ func _internal_parseInputInvoice(transaction: Transaction, source: BotPaymentInv
             message = .textWithEntities(text: text, entities: entities.flatMap { apiEntitiesFromMessageTextEntities($0, associatedPeers: SimpleDictionary()) } ?? [])
         }
         return .inputInvoicePremiumGiftStars(flags: flags, userId: inputUser, months: option.months, message: message)
-    case let .starGiftResale(slug, toPeerId):
+    case let .starGiftResale(slug, toPeerId, ton):
         guard let peer = transaction.getPeer(toPeerId), let inputPeer = apiInputPeer(peer) else {
             return nil
         }
-        return .inputInvoiceStarGiftResale(slug: slug, toId: inputPeer)
+        var flags: Int32 = 0
+        if ton {
+            flags |= 1 << 0
+        }
+        return .inputInvoiceStarGiftResale(flags: flags, slug: slug, toId: inputPeer)
     }
 }
 
@@ -488,6 +493,8 @@ func _internal_fetchBotPaymentForm(accountPeerId: PeerId, postbox: Postbox, netw
                 if let value = Int32(timeout) {
                     return .fail(.starGiftResellTooEarly(value))
                 }
+            } else if error.errorDescription == "STARGIFT_USER_USAGE_LIMITED" {
+                return .fail(.starGiftUserLimit)
             }
             return .fail(.generic)
         }
@@ -651,6 +658,7 @@ public enum SendBotPaymentFormError {
     case alreadyPaid
     case starGiftOutOfStock
     case disallowedStarGift
+    case starGiftUserLimit
 }
 
 public enum SendBotPaymentResult {

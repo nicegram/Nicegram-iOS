@@ -452,7 +452,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 self.textNode.attributedText = string
                 displayUndo = false
                 self.originalRemainingSeconds = 5
-            case let .starsSent(_, title, textItems):
+            case let .starsSent(_, title, textItems, hasUndo):
                 self.avatarNode = nil
                 self.iconNode = nil
                 self.iconCheckNode = nil
@@ -478,11 +478,13 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 
                 self.animatedTextItems = textItems
             
-                displayUndo = true
-                self.originalRemainingSeconds = 4.9
+                displayUndo = hasUndo
+                self.originalRemainingSeconds = hasUndo ? 4.9 : 3.0
                 isUserInteractionEnabled = true
             
-                self.statusNode = RadialStatusNode(backgroundNodeColor: .clear)
+                if hasUndo {
+                    self.statusNode = RadialStatusNode(backgroundNodeColor: .clear)
+                }
             case let .messagesUnpinned(title, text, undo, isHidden):
                 self.avatarNode = nil
                 self.iconNode = nil
@@ -1562,8 +1564,10 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
         switch content {
         case .removedChat:
             self.panelWrapperNode.addSubnode(self.timerTextNode)
-        case .starsSent:
-            self.panelWrapperNode.addSubnode(self.timerTextNode)
+        case let .starsSent(_, _, _, hasUndo):
+            if hasUndo {
+                self.panelWrapperNode.addSubnode(self.timerTextNode)
+            }
             
             if self.textNode.tapAttributeAction != nil || displayUndo {
                 self.isUserInteractionEnabled = true
@@ -1835,7 +1839,7 @@ final class UndoOverlayControllerNode: ViewControllerTracingNode {
                 self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(14.0), textColor: .white)
             }
             self.textNode.attributedText = attributedText
-        case let .starsSent(_, title, textItems):
+        case let .starsSent(_, title, textItems, _):
             self.animatedTextItems = textItems
         
             self.titleNode.attributedText = NSAttributedString(string: title, font: Font.semibold(14.0), textColor: .white)

@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
       "state" : {
-        "revision" : "428d8bb138e00f9a3f4f61cc6cd8863607524f65",
-        "version" : "2.1.0"
+        "revision" : "973bd67929bfbe465f63c05cd5a4b113765fbc7f",
+        "version" : "2.2.1"
       }
     },
     {
@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "qa/build-526",
-        "revision" : "cb2eac14e85169859ab2d60976727a46738af7f5"
+        "branch" : "develop",
+        "revision" : "6fc34ea4bbf436363a2666633f8759d219542749"
       }
     },
     {
@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "qa/build-526",
-        "revision" : "898e07993d3e8dd192f19afe5cf1a344ff1fc0f4"
+        "branch" : "develop",
+        "revision" : "243431d38fc82180a2ffdb590818bd00b8a93751"
       }
     },
     {
@@ -349,15 +349,6 @@
       "state" : {
         "revision" : "309a47b2b1d9b5e991f36961c983ecec72275be3",
         "version" : "1.6.1"
-      }
-    },
-    {
-      "identity" : "swift-async-algorithms",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/swift-async-algorithms.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23"
       }
     },
     {

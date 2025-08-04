@@ -30,7 +30,7 @@ enum PeerInfoScreenLabeledValueLeftIcon {
 }
 
 enum PeerInfoScreenLabeledValueIcon {
-    // MARK: Nicegram TranslateBio
+    // Nicegram TranslateBio
     case nicegram(UIImage?)
     //
     case qrCode
@@ -494,7 +494,7 @@ private final class PeerInfoScreenLabeledValueItemNode: PeerInfoScreenItemNode {
         if let icon = item.icon {
             let iconImage: UIImage?
             switch icon {
-            // MARK: Nicegram TranslateBio
+            // Nicegram TranslateBio
             case let .nicegram(image):
                 iconImage = image
             //
@@ -672,11 +672,11 @@ private final class PeerInfoScreenLabeledValueItemNode: PeerInfoScreenItemNode {
         let iconButtonFrame = CGRect(x: width - safeInsets.right - height, y: 0.0, width: height, height: height)
         transition.updateFrame(node: self.iconButtonNode, frame: iconButtonFrame)
         if let iconSize = self.iconNode.image?.size {
-            // MARK: Nicegram TranslateBio, iconFrame variable
+            // Nicegram TranslateBio, iconFrame variable
             let iconFrame =  CGRect(origin: CGPoint(x: width - safeInsets.right - sideInset - iconSize.width + 5.0, y: floorToScreenPixels((height - iconSize.height) / 2.0)), size: iconSize)
             transition.updateFrame(node: self.iconNode, frame: iconFrame)
             
-            // MARK: Nicegram TranslateBio, identical frames for iconNode and iconButtonNode
+            // Nicegram TranslateBio, identical frames for iconNode and iconButtonNode
             transition.updateFrame(node: self.iconButtonNode, frame: iconFrame)
             //
         }

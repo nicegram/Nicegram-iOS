@@ -44,7 +44,8 @@ func updateChatPresentationInterfaceStateImpl(
                     temporaryChatPresentationInterfaceState = temporaryChatPresentationInterfaceState.updatedInterfaceState({
                         $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(
                             messageId: keyboardButtonsMessage.id,
-                            quote: nil
+                            quote: nil,
+                            todoItemId: nil
                         )).withUpdatedMessageActionsState({ value in
                         var value = value
                         value.processedSetupReplyMessageId = keyboardButtonsMessage.id
@@ -67,7 +68,8 @@ func updateChatPresentationInterfaceStateImpl(
         if temporaryChatPresentationInterfaceState.interfaceState.replyMessageSubject == nil && temporaryChatPresentationInterfaceState.interfaceState.messageActionsState.processedSetupReplyMessageId != keyboardButtonsMessage.id  {
             temporaryChatPresentationInterfaceState = temporaryChatPresentationInterfaceState.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(
                 messageId: keyboardButtonsMessage.id,
-                quote: nil
+                quote: nil,
+                todoItemId: nil
             )).withUpdatedMessageActionsState({ value in
                 var value = value
                 value.processedSetupReplyMessageId = keyboardButtonsMessage.id

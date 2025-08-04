@@ -380,10 +380,10 @@ public final class ButtonComponent: Component {
     public init(
         background: Background,
         content: AnyComponentWithIdentity<Empty>,
-        isEnabled: Bool,
+        isEnabled: Bool = true,
         tintWhenDisabled: Bool = true,
         allowActionWhenDisabled: Bool = false,
-        displaysProgress: Bool,
+        displaysProgress: Bool = false,
         action: @escaping () -> Void
     ) {
         self.background = background
@@ -510,6 +510,8 @@ public final class ButtonComponent: Component {
                     animateIn = true
                     contentView.isUserInteractionEnabled = false
                     self.addSubview(contentView)
+                    
+                    contentItem.view.parentState = state
                 }
                 let contentFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - contentSize.width) * 0.5), y: floorToScreenPixels((availableSize.height - contentSize.height) * 0.5)), size: contentSize)
                 

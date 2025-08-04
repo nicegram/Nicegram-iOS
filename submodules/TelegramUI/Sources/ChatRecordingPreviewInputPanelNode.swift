@@ -21,12 +21,11 @@ import ComponentFlow
 import MediaScrubberComponent
 import AnimatedCountLabelNode
 
-//Xcode 16
-#if canImport(ContactProvider)
-extension AudioWaveformNode: @retroactive CustomMediaPlayerScrubbingForegroundNode {
+#if SWIFT_PACKAGE
+extension AudioWaveformNode: CustomMediaPlayerScrubbingForegroundNode {
 }
 #else
-extension AudioWaveformNode: CustomMediaPlayerScrubbingForegroundNode {
+extension AudioWaveformNode: @retroactive CustomMediaPlayerScrubbingForegroundNode {
 }
 #endif
 

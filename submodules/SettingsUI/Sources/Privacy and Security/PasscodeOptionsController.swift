@@ -16,12 +16,12 @@ import PasscodeUI
 import TelegramStringFormatting
 import TelegramIntents
 
-// MARK: Nicegram import
+// Nicegram import
 import NGData
 import NGInstantLock
 import NGStrings
 
-// MARK: Nicegram InstantLock
+// Nicegram InstantLock
 private let instantLockTimeout = NGInstantLock.instantLockTimeout
 //
 
@@ -172,7 +172,7 @@ private struct PasscodeOptionsData: Equatable {
 
 private func autolockStringForTimeout(strings: PresentationStrings, timeout: Int32?) -> String {
     if let timeout = timeout {
-        // MARK: Nicegram InstantLock
+        // Nicegram InstantLock
         if timeout == instantLockTimeout {
             return l("NiceFeatures.InstantLock")
         }
@@ -247,14 +247,14 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
         actionSheet.setItemGroups([ActionSheetItemGroup(items: [
             ActionSheetButtonItem(title: presentationData.strings.PasscodeSettings_TurnPasscodeOff, color: .destructive, action: { [weak actionSheet] in
                 actionSheet?.dismissAnimated()
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
                 VarSystemNGSettings.isDoubleBottomOn = false
                 VarSystemNGSettings.inDoubleBottom = false
                 
                 let challenge = PostboxAccessChallengeData.none
                 let _ = context.sharedContext.accountManager.transaction({ transaction -> Void in
                     transaction.setAccessChallengeData(challenge)
-                    // MARK: Nicegram DB Changes
+                    // Nicegram DB Changes
                     for record in transaction.getRecords() {
                         transaction.updateRecord(record.id) { record in
                             guard let record = record else { return nil }
@@ -264,7 +264,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
                         }
                     }
                 }).start()
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
                 
                 let _ = (passcodeOptionsDataPromise.get() |> take(1)).start(next: { [weak passcodeOptionsDataPromise] data in
                     passcodeOptionsDataPromise?.set(.single(data.withUpdatedAccessChallenge(challenge)))
@@ -272,7 +272,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
                 
                 var innerReplaceTopControllerImpl: ((ViewController, Bool) -> Void)?
                 let controller = PrivacyIntroController(context: context, mode: .passcode, proceedAction: {
-                    // MARK: Nicegram DB Changes
+                    // Nicegram DB Changes
                     let setupController = PasscodeSetupController(context: context.sharedContext, mode: .setup(change: false, .digits6))
                     setupController.complete = { passcode, numerical in
                         let _ = (context.sharedContext.accountManager.transaction({ transaction -> Void in
@@ -359,7 +359,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
                 }).start()
             })
         }
-        // MARK: Nicegram InstantLock, instantLockTimeout added
+        // Nicegram InstantLock, instantLockTimeout added
         var values: [Int32] = [0, instantLockTimeout, 1 * 60, 5 * 60, 1 * 60 * 60, 5 * 60 * 60]
         
         #if DEBUG
@@ -433,7 +433,7 @@ public func passcodeOptionsAccessController(context: AccountContext, animateIn: 
     |> map { challenge -> ViewController? in
         if case .none = challenge {
             let controller = PrivacyIntroController(context: context, mode: .passcode, proceedAction: {
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
                 let setupController = PasscodeSetupController(context: context.sharedContext, mode: .setup(change: false, .digits6))
                 setupController.complete = { passcode, numerical in
                     let _ = (context.sharedContext.accountManager.transaction({ transaction -> Void in
@@ -457,7 +457,7 @@ public func passcodeOptionsAccessController(context: AccountContext, animateIn: 
             })
             return controller
         } else {
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             let controller = PasscodeSetupController(context: context.sharedContext, mode: .entry(challenge))
             controller.check = { passcode in
                 var succeed = false
@@ -536,7 +536,7 @@ public func passcodeEntryController(
             #endif
             let controller = PasscodeEntryController(applicationBindings: applicationBindings, accountManager: accountManager, appLockContext: appLockContext, presentationData: presentationData, presentationDataSignal: updatedPresentationData, statusBarHost: statusBarHost, challengeData: challenge, biometrics: biometrics, arguments: PasscodeEntryControllerPresentationArguments(animated: false, fadeIn: true, cancel: {
                 completion(false)
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
             }, modalPresentation: modalPresentation), hiddenAccountsAccessChallengeData: appLockContext.hiddenAccountsAccessChallengeData)
             controller.presentationCompleted = { [weak controller] in
                 Queue.mainQueue().after(0.5, { [weak controller] in

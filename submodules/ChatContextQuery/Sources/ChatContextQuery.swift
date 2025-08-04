@@ -21,12 +21,12 @@ public struct PossibleContextQueryTypes: OptionSet {
     public static let command = PossibleContextQueryTypes(rawValue: (1 << 3))
     public static let contextRequest = PossibleContextQueryTypes(rawValue: (1 << 4))
     public static let emojiSearch = PossibleContextQueryTypes(rawValue: (1 << 5))
-    // MARK: Nicegram QuickReplies
+    // Nicegram QuickReplies
     public static let quickReply = PossibleContextQueryTypes(rawValue: (1 << 6))
     //
 }
 
-// MARK: Nicegram QuickReplies
+// Nicegram QuickReplies
 public func characterCanPrependQueryControl(_ c: Character?) -> Bool {
     let scalar: UnicodeScalar?
     if let c = c {
@@ -54,7 +54,7 @@ private func makeScalar(_ c: Character) -> Character {
     return c
 }
 
-// MARK: Nicegram QuickReplies
+// Nicegram QuickReplies
 private let quickReplyScalar = "&" as UnicodeScalar
 //
 private let spaceScalar = " " as UnicodeScalar
@@ -65,7 +65,7 @@ private let slashScalar = "/" as UnicodeScalar
 private let colonScalar = ":" as UnicodeScalar
 private let alphanumerics = CharacterSet.alphanumerics
 
-// MARK: Nicegram QuickReplies
+// Nicegram QuickReplies
 public let quickReplyQueryCharacter = Character(quickReplyScalar)
 //
 
@@ -145,7 +145,7 @@ public func textInputStateContextQueryRangeAndType(inputText: NSAttributedString
             }*/
         }
         
-        // MARK: Nicegram QuickReplies, .quickReply added
+        // Nicegram QuickReplies, .quickReply added
         var possibleTypes = PossibleContextQueryTypes([.command, .mention, .hashtag, .emojiSearch, .quickReply])
         var definedType = false
         
@@ -181,7 +181,7 @@ public func textInputStateContextQueryRangeAndType(inputText: NSAttributedString
                         possibleQueryRange = NSRange(location: index, length: maxIndex - index)
                     }
                     break
-                } /* MARK: Nicegram QuickReplies */ else if c == quickReplyScalar {
+                } /* Nicegram QuickReplies */ else if c == quickReplyScalar {
                     if scalarCanPrependQueryControl(previousC) {
                         possibleTypes = possibleTypes.intersection([.quickReply])
                         definedType = true
@@ -216,7 +216,7 @@ public func textInputStateContextQueryRangeAndType(inputText: NSAttributedString
 }
 
 public enum ChatPresentationInputQueryKind: Int32 {
-    // MARK: Nicegram QuickReplies
+    // Nicegram QuickReplies
     case quickReply
     //
     case emoji
@@ -240,7 +240,7 @@ public struct ChatInputQueryMentionTypes: OptionSet, Hashable {
 }
 
 public enum ChatPresentationInputQuery: Hashable, Equatable {
-    // MARK: Nicegram QuickReplies
+    // Nicegram QuickReplies
     case quickReply(String)
     //
     case emoji(String)
@@ -252,7 +252,7 @@ public enum ChatPresentationInputQuery: Hashable, Equatable {
     
     public var kind: ChatPresentationInputQueryKind {
         switch self {
-            // MARK: Nicegram QuickReplies
+            // Nicegram QuickReplies
             case .quickReply:
                 return .quickReply
             //

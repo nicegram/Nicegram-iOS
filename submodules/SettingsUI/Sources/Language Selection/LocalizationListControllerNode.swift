@@ -562,7 +562,7 @@ final class LocalizationListControllerNode: ViewControllerTracingNode {
                     }
                 }
                 
-                // MARK: Nicegram UnofficialLocalizations
+                // Nicegram UnofficialLocalizations
                 for info in niceLocalizations {
                     if existingIds.contains(info.languageCode) {
                         continue

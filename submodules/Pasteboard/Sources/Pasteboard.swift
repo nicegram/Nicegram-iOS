@@ -45,7 +45,183 @@ private func appSpecificStringWithAppliedEntities(_ text: String, entities: [Mes
     return data
 }
 
+private func preprocessLists(attributedString: NSAttributedString) -> NSAttributedString {
+    let result = NSMutableAttributedString()
+    var listCounters: [NSTextList: Int] = [:]
+    
+    let string = attributedString.string
+    var currentIndex = 0
+    
+    while currentIndex < string.count {
+        let nsRange = NSRange(location: currentIndex, length: 1)
+        let attributes = attributedString.attributes(at: currentIndex, effectiveRange: nil)
+        
+        if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle,
+           !paragraphStyle.textLists.isEmpty {
+            let listItemRange = findListItemRange(in: attributedString, startingAt: currentIndex)
+            let listItemSubstring = attributedString.attributedSubstring(from: listItemRange)
+            
+            let listMarker = generateListMarker(for: paragraphStyle, counters: &listCounters)
+            
+            let newAttributedString = NSMutableAttributedString()
+            
+            let markerString = NSMutableAttributedString(string: listMarker)
+            if let firstCharFont = attributes[.font] {
+                markerString.addAttribute(.font, value: firstCharFont, range: NSRange(location: 0, length: listMarker.count))
+            }
+            
+            let newParagraphStyle = NSMutableParagraphStyle()
+            newParagraphStyle.alignment = paragraphStyle.alignment
+            newParagraphStyle.lineSpacing = paragraphStyle.lineSpacing
+            newParagraphStyle.paragraphSpacing = paragraphStyle.paragraphSpacing
+            newParagraphStyle.paragraphSpacingBefore = paragraphStyle.paragraphSpacingBefore
+            newParagraphStyle.headIndent = 0
+            newParagraphStyle.tailIndent = paragraphStyle.tailIndent
+            newParagraphStyle.firstLineHeadIndent = 0
+            newParagraphStyle.lineBreakMode = paragraphStyle.lineBreakMode
+            newParagraphStyle.minimumLineHeight = paragraphStyle.minimumLineHeight
+            newParagraphStyle.maximumLineHeight = paragraphStyle.maximumLineHeight
+            newParagraphStyle.baseWritingDirection = paragraphStyle.baseWritingDirection
+            newParagraphStyle.lineHeightMultiple = paragraphStyle.lineHeightMultiple
+            newParagraphStyle.hyphenationFactor = paragraphStyle.hyphenationFactor
+            newParagraphStyle.tabStops = paragraphStyle.tabStops
+            newParagraphStyle.defaultTabInterval = paragraphStyle.defaultTabInterval
+            newParagraphStyle.allowsDefaultTighteningForTruncation = paragraphStyle.allowsDefaultTighteningForTruncation
+            
+            markerString.addAttribute(.paragraphStyle, value: newParagraphStyle, range: NSRange(location: 0, length: listMarker.count))
+            newAttributedString.append(markerString)
+            
+            let cleanedListItem = NSMutableAttributedString()
+            listItemSubstring.enumerateAttributes(in: NSRange(location: 0, length: listItemSubstring.length), options: []) { itemAttributes, itemRange, _ in
+                let itemSubstring = listItemSubstring.attributedSubstring(from: itemRange)
+                let cleanedItemString = NSMutableAttributedString(attributedString: itemSubstring)
+                
+                if let itemParagraphStyle = itemAttributes[.paragraphStyle] as? NSParagraphStyle,
+                   !itemParagraphStyle.textLists.isEmpty {
+                    cleanedItemString.addAttribute(.paragraphStyle, value: newParagraphStyle, range: NSRange(location: 0, length: cleanedItemString.length))
+                }
+                
+                cleanedListItem.append(cleanedItemString)
+            }
+            newAttributedString.append(cleanedListItem)
+            result.append(newAttributedString)
+            currentIndex = listItemRange.location + listItemRange.length
+        } else {
+            let charSubstring = attributedString.attributedSubstring(from: nsRange)
+            result.append(charSubstring)
+            currentIndex += 1
+        }
+    }
+    
+    return result
+}
+
+private func findListItemRange(in attributedString: NSAttributedString, startingAt index: Int) -> NSRange {
+    let string = attributedString.string
+    let startIndex = string.index(string.startIndex, offsetBy: index)
+    
+    var endIndex = startIndex
+    while endIndex < string.endIndex {
+        let character = string[endIndex]
+        if character == "\n" {
+            endIndex = string.index(after: endIndex)
+            break
+        }
+        endIndex = string.index(after: endIndex)
+    }
+    
+    let length = string.distance(from: startIndex, to: endIndex)
+    return NSRange(location: index, length: length)
+}
+
+private func generateListMarker(for paragraphStyle: NSParagraphStyle, counters: inout [NSTextList: Int]) -> String {
+    guard let textList = paragraphStyle.textLists.first else { return "" }
+    
+    if counters[textList] == nil {
+        counters[textList] = 0
+    }
+    counters[textList]! += 1
+    
+    let currentIndex = counters[textList]!
+    let format = textList.markerFormat
+    
+    let marker = generateMarkerText(format: format.rawValue, index: currentIndex)
+    
+    return marker + " "
+}
+
+private func generateMarkerText(format: String, index: Int) -> String {
+    switch format {
+    case "{decimal}":
+        return "\(index)."
+    case "{lower-alpha}":
+        return "\(indexToLowerAlpha(index))."
+    case "{upper-alpha}":
+        return "\(indexToUpperAlpha(index))."
+    case "{lower-roman}":
+        return "\(indexToRoman(index))."
+    case "{upper-roman}":
+        return "\(indexToRoman(index).uppercased())."
+    case "{disc}":
+        return "•"
+    case "{circle}":
+        return "◦"
+    case "{square}":
+        return "▪"
+    case "{hyphen}":
+        return "-"
+    case "{\"":
+        return "-"
+    default:
+        if format.contains("decimal") {
+            return "\(index)."
+        } else if format.contains("alpha") {
+            return "\(indexToLowerAlpha(index))."
+        } else if format.contains("roman") {
+            return "\(indexToRoman(index))."
+        } else {
+            return "•"
+        }
+    }
+}
+
+private func indexToLowerAlpha(_ index: Int) -> String {
+    let alphabet = "abcdefghijklmnopqrstuvwxyz"
+    let alphabetArray = Array(alphabet)
+    
+    if index <= 26 {
+        return String(alphabetArray[index - 1])
+    } else {
+        let letterIndex = (index - 1) % 26
+        let repeatCount = (index - 1) / 26 + 1
+        return String(repeating: String(alphabetArray[letterIndex]), count: repeatCount)
+    }
+}
+
+private func indexToUpperAlpha(_ index: Int) -> String {
+    return indexToLowerAlpha(index).uppercased()
+}
+
+private func indexToRoman(_ index: Int) -> String {
+    let romanNumerals = [
+        (1000, "m"), (900, "cm"), (500, "d"), (400, "cd"),
+        (100, "c"), (90, "xc"), (50, "l"), (40, "xl"),
+        (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i")
+    ]
+    var result = ""
+    var number = index
+    for (value, numeral) in romanNumerals {
+        while number >= value {
+            result += numeral
+            number -= value
+        }
+    }
+    return result
+}
+
 private func chatInputStateString(attributedString: NSAttributedString) -> NSAttributedString? {
+    //let preprocessedString = preprocessLists(attributedString: attributedString)
+        
     let string = NSMutableAttributedString(string: attributedString.string)
     attributedString.enumerateAttributes(in: NSRange(location: 0, length: attributedString.length), options: [], using: { attributes, range, _ in
         if let value = attributes[.link], let url = (value as? URL)?.absoluteString {

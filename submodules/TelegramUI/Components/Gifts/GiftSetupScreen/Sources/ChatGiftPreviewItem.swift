@@ -294,7 +294,7 @@ final class ChatGiftPreviewItemNode: ListViewItemNode {
             }
             
             var contentSize = CGSize(width: params.width, height: 4.0 + 4.0)
-            contentSize.height = 346.0
+            contentSize.height = 370.0
             insets = itemListNeighborsGroupedInsets(neighbors, params)
             if params.width <= 320.0 {
                 insets.top = 0.0

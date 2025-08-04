@@ -1,7 +1,7 @@
-// MARK: Nicegram AiChat
+// Nicegram AiChat
 import NGAiChatUI
 //
-// MARK: Nicegram TranslateEnteredMessage
+// Nicegram TranslateEnteredMessage
 import NGStrings
 import NGTranslate
 //
@@ -57,7 +57,7 @@ public protocol ChatSendMessageContextScreenMediaPreview: AnyObject {
     func update(containerSize: CGSize, transition: ComponentTransition) -> CGSize
 }
 
-// MARK: Nicegram TranslateEnteredMessage
+// Nicegram TranslateEnteredMessage
 public struct ChatSendMessageContextNicegramData {
     let canTranslate: Bool
     let translate: () -> Void
@@ -82,7 +82,7 @@ public struct ChatSendMessageContextNicegramData {
 final class ChatSendMessageContextScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
-    // MARK: Nicegram TranslateEnteredMessage
+    // Nicegram TranslateEnteredMessage
     let nicegramData: ChatSendMessageContextNicegramData
     let interlocutorLangCode: String?
     //
@@ -108,7 +108,7 @@ final class ChatSendMessageContextScreenComponent: Component {
     let isPremium: Bool
 
     init(
-        // MARK: Nicegram TranslateEnteredMessage
+        // Nicegram TranslateEnteredMessage
         nicegramData: ChatSendMessageContextNicegramData,
         //
         initialData: ChatSendMessageContextScreen.InitialData,
@@ -131,7 +131,7 @@ final class ChatSendMessageContextScreenComponent: Component {
         availableMessageEffects: AvailableMessageEffects?,
         isPremium: Bool
     ) {
-        // MARK: Nicegram TranslateEnteredMessage
+        // Nicegram TranslateEnteredMessage
         self.nicegramData = nicegramData
         self.interlocutorLangCode = getCachedLanguageCode(forChatWith: peerId)
         //
@@ -515,7 +515,7 @@ final class ChatSendMessageContextScreenComponent: Component {
             
             var items: [ContextMenuItem] = []
             
-            // MARK: Nicegram AiChat
+            // Nicegram AiChat
             if textString.length > 0 {
                 let commands = TgChatAiHelper.getCommandsForInputText()
                 for command in commands {
@@ -712,7 +712,7 @@ final class ChatSendMessageContextScreenComponent: Component {
                 )))
             }
             
-            // MARK: Nicegram TranslateEnteredMessage
+            // Nicegram TranslateEnteredMessage
             if component.nicegramData.canTranslate {
                 if case .separator = items.last {} else {
                     items.append(.separator)
@@ -1540,7 +1540,7 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
     }
     
     public init(
-        // MARK: Nicegram TranslateEnteredMessage
+        // Nicegram TranslateEnteredMessage
         nicegramData: ChatSendMessageContextNicegramData,
         //
         initialData: InitialData,
@@ -1568,7 +1568,7 @@ public class ChatSendMessageContextScreen: ViewControllerComponentContainer, Cha
         super.init(
             context: context,
             component: ChatSendMessageContextScreenComponent(
-                // MARK: Nicegram TranslateEnteredMessage
+                // Nicegram TranslateEnteredMessage
                 nicegramData: nicegramData,
                 //
                 initialData: initialData,

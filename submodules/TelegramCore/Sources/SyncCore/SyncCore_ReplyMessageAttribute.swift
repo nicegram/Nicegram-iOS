@@ -7,16 +7,18 @@ public class ReplyMessageAttribute: MessageAttribute {
     public let threadMessageId: MessageId?
     public let quote: EngineMessageReplyQuote?
     public let isQuote: Bool
+    public let todoItemId: Int32?
     
     public var associatedMessageIds: [MessageId] {
         return [self.messageId]
     }
     
-    public init(messageId: MessageId, threadMessageId: MessageId?, quote: EngineMessageReplyQuote?, isQuote: Bool) {
+    public init(messageId: MessageId, threadMessageId: MessageId?, quote: EngineMessageReplyQuote?, isQuote: Bool, todoItemId: Int32?) {
         self.messageId = messageId
         self.threadMessageId = threadMessageId
         self.quote = quote
         self.isQuote = isQuote
+        self.todoItemId = todoItemId
     }
     
     required public init(decoder: PostboxDecoder) {
@@ -31,6 +33,7 @@ public class ReplyMessageAttribute: MessageAttribute {
         
         self.quote = decoder.decodeCodable(EngineMessageReplyQuote.self, forKey: "qu")
         self.isQuote = decoder.decodeBoolForKey("iq", orElse: self.quote != nil)
+        self.todoItemId = decoder.decodeOptionalInt32ForKey("tid")
     }
     
     public func encode(_ encoder: PostboxEncoder) {
@@ -48,6 +51,11 @@ public class ReplyMessageAttribute: MessageAttribute {
             encoder.encodeNil(forKey: "qu")
         }
         encoder.encodeBool(self.isQuote, forKey: "iq")
+        if let todoItemId = self.todoItemId {
+            encoder.encodeInt32(todoItemId, forKey: "tid")
+        } else {
+            encoder.encodeNil(forKey: "tid")
+        }
     }
 }
 

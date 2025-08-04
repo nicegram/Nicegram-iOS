@@ -5,6 +5,8 @@ import SwiftSignalKit
 
 public typealias DeviceContactStableId = String
 
+public var sharedDisableDeviceContactDataDiffing: Bool = false
+
 public protocol DeviceContactDataManager: AnyObject {
     func personNameDisplayOrder() -> Signal<PresentationPersonNameOrder, NoError>
     func basicData() -> Signal<[DeviceContactStableId: DeviceContactBasicData], NoError>
@@ -15,7 +17,7 @@ public protocol DeviceContactDataManager: AnyObject {
     func search(query: String) -> Signal<[DeviceContactStableId: (DeviceContactBasicData, EnginePeer.Id?)], NoError>
     func appendContactData(_ contactData: DeviceContactExtendedData, to stableId: DeviceContactStableId) -> Signal<DeviceContactExtendedData?, NoError>
     func appendPhoneNumber(_ phoneNumber: DeviceContactPhoneNumberData, to stableId: DeviceContactStableId) -> Signal<DeviceContactExtendedData?, NoError>
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     func createContactWithData(_ contactData: DeviceContactExtendedData, account: Account) -> Signal<(DeviceContactStableId, DeviceContactExtendedData)?, NoError>
     func deleteContactWithAppSpecificReference(peerId: EnginePeer.Id) -> Signal<Never, NoError>
 }

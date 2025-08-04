@@ -2039,7 +2039,7 @@ final class RoundGradientButtonComponent: Component {
     }
 }
 
-public final class Throttler<T: Hashable> {
+public final class Throttler<T: Hashable & Sendable> {
     public var duration: TimeInterval = 0.25
     public var queue: DispatchQueue = .main
     public var isEnabled: Bool { duration > 0 }

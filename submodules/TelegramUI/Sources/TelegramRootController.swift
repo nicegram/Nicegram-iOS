@@ -1,4 +1,4 @@
-// MARK: Nicegram Assistant
+// Nicegram Assistant
 import FeatAssistant
 import FeatLaunchOverlays
 import let NGCoreUI.images
@@ -6,13 +6,10 @@ import var NGCoreUI.strings
 import NGUI
 import SwiftUI
 //
-// MARK: Nicegram Grum
+// Nicegram Grum
 import NGGrumUI
 //
-// MARK: Nicegram imports
-import class Combine.AnyCancellable
-import FeatDockWidget
-import MinimizedContainer
+// Nicegram imports
 import NGData
 import NGStrings
 //
@@ -49,6 +46,7 @@ import PeerInfoScreen
 import PeerInfoStoryGridScreen
 import ShareWithPeersScreen
 import ChatEmptyNode
+import UndoUI
 
 private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceholderNode {
     private var presentationData: PresentationData
@@ -90,10 +88,10 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
 
 public final class TelegramRootController: NavigationController, TelegramRootControllerInterface {
     
-    // MARK: Nicegram Assistant
+    // Nicegram Assistant
     public var assistantController: ViewController?
     //
-// MARK: Nicegram NCG-6373 Feed tab
+// Nicegram NCG-6373 Feed tab
     private var feedController: FeedController?
 //
     private let context: AccountContext
@@ -122,77 +120,13 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     public var minimizedContainerUpdated: (MinimizedContainer?) -> Void = { _ in }
-    
-    // Nicegram DockWidget
-    @available(iOS 16.0, *)
-    public var nicegramDockWidget: DockWidgetViewModel {
-        _nicegramDockWidget as! DockWidgetViewModel
-    }
-    private let _nicegramDockWidget: Any?
-    
-    private var cancellables = Set<AnyCancellable>()
-    //
         
     public init(context: AccountContext) {
         self.context = context
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
-        // Nicegram DockWidget
-        if #available(iOS 16.0, *) {
-            _nicegramDockWidget = DockWidgetViewModel()
-        } else {
-            _nicegramDockWidget = nil
-        }
-        //
-        
         super.init(mode: .automaticMasterDetail, theme: NavigationControllerTheme(presentationTheme: self.presentationData.theme))
-        
-        // Nicegram DockWidget
-        if #available(iOS 16.0, *) {
-            nicegramDockWidget.$viewState
-                .map(\.height)
-                .removeDuplicates()
-                .sink { [weak self] height in
-                    guard let self else { return }
-                    
-                    let transition = ContainedViewLayoutTransition.animated(
-                        duration: 0.4,
-                        curve: .spring
-                    )
-                    
-                    if height > 0 {
-                        let minimizedContainer: MinimizedContainer
-                        if let _minimizedContainer = self.minimizedContainer {
-                            minimizedContainer = _minimizedContainer
-                        } else {
-                            minimizedContainer = MinimizedContainerImpl(sharedContext: context.sharedContext)
-                            
-                            self.minimizedContainer = minimizedContainer
-                        }
-                        
-                        if minimizedContainer.nicegramWidgetView == nil {
-                            minimizedContainer.nicegramWidgetView = makeDockWidgetView(viewModel: nicegramDockWidget)
-                        }
-                    } else {
-                        if let minimizedContainer, minimizedContainer.controllers.isEmpty {
-                            DispatchQueue.main.async {
-                                self.dismissMinimizedControllers(animated: true)
-                            }
-                        }
-                    }
-                    
-                    self.minimizedContainer?.updateNicegramWidget(height: height, transition: transition)
-                    self.updateContainersNonReentrant(transition: transition)
-                }
-                .store(in: &cancellables)
-            
-            self.shouldPreventMinimizedDockDismissal = { [weak self] in
-                guard let self else { return false }
-                return nicegramDockWidget.viewState.height > 0
-            }
-        }
-        //
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).startStrict(next: { [weak self] presentationData in
@@ -237,7 +171,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.storyUploadEventsDisposable?.dispose()
     }
     
-    // MARK: Nicegram Assistant
+    // Nicegram Assistant
     private var didAppear = false
     
     override public func viewDidAppear(_ animated: Bool) {
@@ -308,7 +242,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     public func addRootControllers(showCallsTab: Bool) {
-        // MARK: Nicegram (showTabNames)
+        // Nicegram (showTabNames)
         let tabBarController = TabBarControllerImpl(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: NGSettings.showTabNames)
         tabBarController.navigationPresentation = .master
         let chatListController = self.context.sharedContext.makeChatListController(context: self.context, location: .chatList(groupId: .root), controlsHistoryPreload: true, hideNetworkActivityStatus: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
@@ -323,7 +257,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         contactsController.switchToChatsController = {  [weak self] in
             self?.openChatsController(activateSearch: false)
         }
-        // MARK: Nicegram
+        // Nicegram
         if NGSettings.showContactsTab {
             controllers.append(contactsController)
         }
@@ -335,7 +269,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
 
         controllers.append(chatListController)
         
-// MARK: Nicegram NCG-6373 Feed tab
+// Nicegram NCG-6373 Feed tab
         let feedController = FeedController(
             context: self.context
         )
@@ -346,7 +280,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.feedController = feedController
 //
         
-        // MARK: Nicegram Assistant
+        // Nicegram Assistant
         if #available(iOS 15.0, *) {
             let assistantController = NativeControllerWrapper(
                 controller: AssistantTgHelper.assistantTab(),
@@ -422,7 +356,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         accountSettingsController.parentController = self
         controllers.append(accountSettingsController)
                 
-        // MARK: Nicegram Assistant
+        // Nicegram Assistant
         // calculate chatListControllerIndex (instead of (controllers.count - 2))
         let selectedControllerIndex = controllers.firstIndex {
             $0 is ChatListController
@@ -442,7 +376,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             return
         }
         var controllers: [ViewController] = []
-        // MARK: Nicegram
+        // Nicegram
         if NGSettings.showContactsTab {
             controllers.append(self.contactsController!)
         }
@@ -451,13 +385,13 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             controllers.append(self.callListController!)
         }
         controllers.append(self.chatListController!)
-// MARK: Nicegram NCG-6373 Feed tab
+// Nicegram NCG-6373 Feed tab
         if NGSettings.showFeedTab &&
            NGSettings.feedPeer[context.account.id.int64] != nil {
             controllers.append(self.feedController!)
         }
 //
-        // MARK: Nicegram Assistant
+        // Nicegram Assistant
         if let assistantController {
             controllers.append(assistantController)
         }
@@ -702,7 +636,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                                     externalState.isPeerArchived = channel.storiesHidden ?? false
                                 }
                                  
-                                self.proceedWithStoryUpload(target: target, results: results, existingMedia: nil, forwardInfo: nil, externalState: externalState, commit: commit)
+                                 self.proceedWithStoryUpload(target: target, results: results, existingMedia: nil, forwardInfo: nil, externalState: externalState, commit: commit)
                                 
                                 dismissCameraImpl?()
                             })
@@ -780,6 +714,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         case .botPreview:
             targetPeerId = nil
         }
+        
+        let folders: [Int64] = results.first?.options.folderIds ?? []
 
         if let rootTabController = self.rootTabController {
             if let index = rootTabController.controllers.firstIndex(where: { $0 is ChatListController}) {
@@ -951,6 +887,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                         period: result.options.timeout,
                         randomId: result.randomId,
                         forwardInfo: forwardInfo,
+                        folders: folders,
                         uploadInfo: results.count > 1 ? StoryUploadInfo(groupingId: groupingId, index: index, total: Int32(results.count)) : nil
                     )
                     |> deliverOnMainQueue).startStandalone(next: { stableId in
@@ -991,9 +928,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
 }
 
-//Xcode 16
-#if canImport(ContactProvider)
-extension MediaEditorScreenImpl.Result: @retroactive MediaEditorScreenResult {
+#if SWIFT_PACKAGE
+extension MediaEditorScreenImpl.Result: MediaEditorScreenResult {
     public var target: Stories.PendingTarget {
         if let sendAsPeerId = self.options.sendAsPeerId {
             return .peer(sendAsPeerId)
@@ -1003,7 +939,7 @@ extension MediaEditorScreenImpl.Result: @retroactive MediaEditorScreenResult {
     }
 }
 #else
-extension MediaEditorScreenImpl.Result: MediaEditorScreenResult {
+extension MediaEditorScreenImpl.Result: @retroactive MediaEditorScreenResult {
     public var target: Stories.PendingTarget {
         if let sendAsPeerId = self.options.sendAsPeerId {
             return .peer(sendAsPeerId)

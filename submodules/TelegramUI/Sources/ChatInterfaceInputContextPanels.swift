@@ -24,7 +24,7 @@ private func inputQueryResultPriority(_ result: ChatPresentationInputQueryResult
             return (4, nonEmpty)
         case let .emojis(items, _):
             return (5, !items.isEmpty)
-        // MARK: Nicegram QuickReplies
+        // Nicegram QuickReplies
         case let .quickReplies(items, _):
             return (6, !items.isEmpty)
         //
@@ -102,7 +102,7 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
                     return panel
                 }
             }
-        // MARK: Nicegram QuickReplies
+        // Nicegram QuickReplies
         case let .quickReplies(results, query):
             var peer: EnginePeer?
             if let chatPeer = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, chatPeer.addressName != nil {

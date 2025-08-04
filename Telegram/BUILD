@@ -285,7 +285,7 @@ filegroup(
     ], exclude = ["Telegram-iOS/DefaultAppIcon.xcassets/**/.*"]),
 )
 
-# MARK: Nicegram
+# Nicegram
 filegroup(
     name = "GoogleService-Info",
     srcs = glob([
@@ -293,7 +293,7 @@ filegroup(
     ]),
 )
 
-# MARK: Nicegram
+# Nicegram
 filegroup(
     name = "FirebaseRemoteConfigDefaults",
     srcs = glob([
@@ -301,7 +301,7 @@ filegroup(
     ], allow_empty=True),
 )
 
-# MARK: Nicegram AltIcons
+# Nicegram AltIcons
 # removed BlackClassicIcon, BlueClassicIcon 
 alternate_icon_folders = [
     "BlackIcon",
@@ -561,7 +561,7 @@ official_communication_notifications_fragment = """
 <key>com.apple.developer.usernotifications.communication</key>
 <true/>
 """
-# MARK: Nicegram, change 'official_bundle_ids' to 'nicegram_bundle_ids'
+# Nicegram, change 'official_bundle_ids' to 'nicegram_bundle_ids'
 communication_notifications_fragment = official_communication_notifications_fragment if telegram_bundle_id in nicegram_bundle_ids else ""
 
 store_signin_fragment = """
@@ -572,7 +572,7 @@ store_signin_fragment = """
 """
 signin_fragment = store_signin_fragment if telegram_bundle_id in store_bundle_ids else ""
 
-# MARK: Nicegram, keychain_access_groups_fragment
+# Nicegram, keychain_access_groups_fragment
 keychain_access_groups_fragment = """
     <key>keychain-access-groups</key>
     <array>
@@ -597,7 +597,7 @@ plist_fragment(
         carplay_fragment,
         communication_notifications_fragment,
         signin_fragment,
-        # MARK: Nicegram, keychain_access_groups_fragment
+        # Nicegram, keychain_access_groups_fragment
         keychain_access_groups_fragment
     ])
 )
@@ -1553,7 +1553,7 @@ ios_extension(
     ],
 )
 
-# MARK: Nicegram
+# Nicegram
 nicegram_queries_schemes = """
 <string>appesim</string>
 <string>com.sticker.studio</string>
@@ -1561,7 +1561,7 @@ nicegram_queries_schemes = """
 <string>plnt</string>
 """
 
-# MARK: Nicegram
+# Nicegram
 nicegram_skad_network_items = """
 <key>SKAdNetworkItems</key>
 <array>
@@ -2208,7 +2208,6 @@ ios_application(
 
 xcodeproj(
     name = "Telegram_xcodeproj",
-    build_mode = "bazel",
     bazel_path = telegram_bazel_path,
     project_name = "Telegram",
     tags = ["manual"],
@@ -2258,12 +2257,12 @@ ios_application(
         #"//third-party/webrtc:webrtc_objc",
         #"//submodules/AsyncDisplayKit",
         #"//submodules/ObjCRuntimeUtils",
-        "//submodules/OpusBinding",
+        #"//submodules/OpusBinding",
         #"//third-party/boringssl:ssl",
         #"//third-party/boringssl:crypto",
         #"//submodules/TelegramVoip",
-        "//third-party/recaptcha:RecaptchaEnterprise",
-        #"//submodules/TelegramUI",
+        #"//third-party/recaptcha:RecaptchaEnterprise",
+        "//submodules/TelegramUI",
     ],
 )
 

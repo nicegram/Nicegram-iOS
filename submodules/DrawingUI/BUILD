@@ -98,7 +98,6 @@ swift_library(
         "//submodules/TelegramUI/Components/LottieComponent",
         "//submodules/TelegramUI/Components/LottieComponentResourceContent",
         "//submodules/ImageTransparency",
-        #"//submodules/GalleryUI",
         "//submodules/MediaPlayer:UniversalMediaPlayer",
         "//submodules/TelegramUniversalVideoContent",
         "//submodules/TelegramUI/Components/CameraButtonComponent",

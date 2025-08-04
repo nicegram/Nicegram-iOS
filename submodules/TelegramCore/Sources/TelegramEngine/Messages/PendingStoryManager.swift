@@ -98,6 +98,7 @@ public extension Stories {
             case randomId
             case forwardInfo
             case uploadInfo
+            case folders
         }
         
         public let target: PendingTarget
@@ -114,6 +115,7 @@ public extension Stories {
         public let period: Int32
         public let randomId: Int64
         public let forwardInfo: PendingForwardInfo?
+        public let folders: [Int64]
         public let uploadInfo: StoryUploadInfo?
         
         public init(
@@ -131,6 +133,7 @@ public extension Stories {
             period: Int32,
             randomId: Int64,
             forwardInfo: PendingForwardInfo?,
+            folders: [Int64],
             uploadInfo: StoryUploadInfo?
         ) {
             self.target = target
@@ -147,6 +150,7 @@ public extension Stories {
             self.period = period
             self.randomId = randomId
             self.forwardInfo = forwardInfo
+            self.folders = folders
             self.uploadInfo = uploadInfo
         }
         
@@ -175,6 +179,8 @@ public extension Stories {
             self.randomId = try container.decode(Int64.self, forKey: .randomId)
             
             self.forwardInfo = try container.decodeIfPresent(PendingForwardInfo.self, forKey: .forwardInfo)
+            
+            self.folders = try container.decodeIfPresent([Int64].self, forKey: .folders) ?? []
             
             self.uploadInfo = try container.decodeIfPresent(StoryUploadInfo.self, forKey: .uploadInfo)
         }
@@ -205,6 +211,7 @@ public extension Stories {
             try container.encode(self.period, forKey: .period)
             try container.encode(self.randomId, forKey: .randomId)
             try container.encodeIfPresent(self.forwardInfo, forKey: .forwardInfo)
+            try container.encode(self.folders, forKey: .folders)
             try container.encodeIfPresent(self.uploadInfo, forKey: .uploadInfo)
         }
         
@@ -243,6 +250,9 @@ public extension Stories {
                 return false
             }
             if lhs.forwardInfo != rhs.forwardInfo {
+                return false
+            }
+            if lhs.folders != rhs.folders {
                 return false
             }
             if lhs.uploadInfo != rhs.uploadInfo {
@@ -473,7 +483,7 @@ final class PendingStoryManager {
                         let partTotalProgress = 1.0 / Float(uploadInfo.total)
                         pendingItemContext.progress = Float(uploadInfo.index) * partTotalProgress
                     }
-                    pendingItemContext.disposable = (_internal_uploadStoryImpl(postbox: self.postbox, network: self.network, accountPeerId: self.accountPeerId, stateManager: self.stateManager, messageMediaPreuploadManager: self.messageMediaPreuploadManager, revalidationContext: self.revalidationContext, auxiliaryMethods: self.auxiliaryMethods, toPeerId: toPeerId, stableId: stableId, media: firstItem.media, mediaAreas: firstItem.mediaAreas, text: firstItem.text, entities: firstItem.entities, embeddedStickers: firstItem.embeddedStickers, pin: firstItem.pin, privacy: firstItem.privacy, isForwardingDisabled: firstItem.isForwardingDisabled, period: Int(firstItem.period), randomId: firstItem.randomId, forwardInfo: firstItem.forwardInfo)
+                    pendingItemContext.disposable = (_internal_uploadStoryImpl(postbox: self.postbox, network: self.network, accountPeerId: self.accountPeerId, stateManager: self.stateManager, messageMediaPreuploadManager: self.messageMediaPreuploadManager, revalidationContext: self.revalidationContext, auxiliaryMethods: self.auxiliaryMethods, toPeerId: toPeerId, stableId: stableId, media: firstItem.media, mediaAreas: firstItem.mediaAreas, text: firstItem.text, entities: firstItem.entities, embeddedStickers: firstItem.embeddedStickers, pin: firstItem.pin, privacy: firstItem.privacy, isForwardingDisabled: firstItem.isForwardingDisabled, period: Int(firstItem.period), folders: firstItem.folders, randomId: firstItem.randomId, forwardInfo: firstItem.forwardInfo)
                     |> deliverOn(self.queue)).start(next: { [weak self] event in
                         guard let `self` = self else {
                             return

@@ -122,6 +122,7 @@ import PeerNameColorScreen
 import ChatEmptyNode
 import ChatMediaInputStickerGridItem
 import AdsInfoScreen
+import Photos
 
 extension ChatControllerImpl {
     public func presentThemeSelection() {

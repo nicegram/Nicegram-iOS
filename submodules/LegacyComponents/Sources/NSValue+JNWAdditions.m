@@ -96,7 +96,10 @@
 	const char *type = self.objCType;
 	
 	static const NSInteger numberofNumberTypes = 10;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-folding-constant"
 	static const char *numberTypes[numberofNumberTypes] = { "i", "s", "l", "q", "I", "S", "L", "Q", "f", "d" };
+#pragma clang diagnostic pop
 	
 	for (NSInteger i = 0; i < numberofNumberTypes; i++) {
 		if (strcmp(type, numberTypes[i]) == 0) {

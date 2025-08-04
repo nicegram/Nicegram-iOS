@@ -1045,7 +1045,7 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
             themeReference = settings.theme
         }
         
-        // MARK: Nicegram DefaultTheme, always include all themes (regardless of presentationData.autoNightModeTriggered)
+        // Nicegram DefaultTheme, always include all themes (regardless of presentationData.autoNightModeTriggered)
         let defaultThemes: [PresentationThemeReference] = [
             .builtin(.nicegram),
             .builtin(.dayClassic),

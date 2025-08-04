@@ -103,7 +103,7 @@ public class ChatMessageShareButton: ASDisplayNode {
         self.morePressed?()
     }
     
-    // MARK: Nicegram (translateButton)
+    // Nicegram (translateButton)
     public func update(presentationData: ChatPresentationData, controllerInteraction: ChatControllerInteraction, chatLocation: ChatLocation, subject: ChatControllerSubject?, message: Message, account: Account, disableComments: Bool = false, translateButton: Bool = false) -> CGSize {
         var isReplies = false
         var isNavigate = false
@@ -143,7 +143,7 @@ public class ChatMessageShareButton: ASDisplayNode {
             var updatedIconImage: UIImage?
             var updatedBottomIconImage: UIImage?
             var updatedIconOffset = CGPoint()
-            // MARK: Nicegram  (if translateButton)
+            // Nicegram  (if translateButton)
             if translateButton {
                 updatedIconImage = PresentationResourcesChat.chatTranslateButtonIcon(presentationData.theme.theme, wallpaper: presentationData.theme.wallpaper)
             } else if let _ = message.adAttribute {

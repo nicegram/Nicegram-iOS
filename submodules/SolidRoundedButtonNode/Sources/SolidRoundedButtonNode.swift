@@ -163,7 +163,7 @@ private final class BadgeNode: ASDisplayNode {
 }
 
 public final class SolidRoundedButtonNode: ASDisplayNode {
-    // MARK: Nicegram Onboarding, make public
+    // Nicegram Onboarding, make public
     public private(set) var theme: SolidRoundedButtonTheme
     private var fontSize: CGFloat
     private let gloss: Bool
@@ -184,7 +184,7 @@ public final class SolidRoundedButtonNode: ASDisplayNode {
     private var progressNode: ASImageNode?
     private var badgeNode: BadgeNode?
     
-    // MARK: Nicegram Onboarding, make public
+    // Nicegram Onboarding, make public
     public let buttonHeight: CGFloat
     public let buttonCornerRadius: CGFloat
     

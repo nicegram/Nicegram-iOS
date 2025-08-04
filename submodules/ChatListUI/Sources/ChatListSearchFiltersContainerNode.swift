@@ -13,6 +13,7 @@ private final class ItemNode: ASDisplayNode {
     private let iconNode: ASImageNode
     private let titleNode: ImmediateTextNode
     private let titleActiveNode: ImmediateTextNode
+    private var titleBadgeView: UIImageView?
     private let buttonNode: HighlightTrackingButtonNode
     
     private var selectionFraction: CGFloat = 0.0
@@ -74,6 +75,7 @@ private final class ItemNode: ASDisplayNode {
         self.selectionFraction = selectionFraction
         
         let title: String
+        var titleBadge: String?
         let icon: UIImage?
         
         let color = presentationData.theme.list.itemSecondaryTextColor
@@ -89,6 +91,10 @@ private final class ItemNode: ASDisplayNode {
             icon = nil
         case .apps:
             title = presentationData.strings.ChatList_Search_FilterApps
+            icon = nil
+        case .globalPosts:
+            title = presentationData.strings.ChatList_Search_FilterGlobalPosts
+            titleBadge = presentationData.strings.ChatList_ContextMenuBadgeNew
             icon = nil
         case .media:
             title = presentationData.strings.ChatList_Search_FilterMedia
@@ -133,6 +139,38 @@ private final class ItemNode: ASDisplayNode {
         self.titleNode.attributedText = NSAttributedString(string: title, font: Font.medium(14.0), textColor: color)
         self.titleActiveNode.attributedText = NSAttributedString(string: title, font: Font.medium(14.0), textColor: presentationData.theme.list.itemAccentColor)
         
+        if let titleBadge {
+            let titleBadgeView: UIImageView
+            if let current = self.titleBadgeView {
+                titleBadgeView = current
+            } else {
+                titleBadgeView = UIImageView()
+                self.titleBadgeView = titleBadgeView
+                self.view.addSubview(titleBadgeView)
+                
+                let labelText = NSAttributedString(string: titleBadge, font: Font.medium(11.0), textColor: presentationData.theme.list.itemCheckColors.foregroundColor)
+                let labelBounds = labelText.boundingRect(with: CGSize(width: 100.0, height: 100.0), options: [.usesLineFragmentOrigin], context: nil)
+                let labelSize = CGSize(width: ceil(labelBounds.width), height: ceil(labelBounds.height))
+                let badgeSize = CGSize(width: labelSize.width + 8.0, height: labelSize.height + 2.0 + 1.0)
+                titleBadgeView.image = generateImage(badgeSize, rotatedContext: { size, context in
+                    context.clear(CGRect(origin: CGPoint(), size: size))
+                    
+                    let rect = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height - UIScreenPixel * 2.0))
+                    
+                    context.addPath(UIBezierPath(roundedRect: rect, cornerRadius: 5.0).cgPath)
+                    context.setFillColor(presentationData.theme.list.itemCheckColors.fillColor.cgColor)
+                    context.fillPath()
+                    
+                    UIGraphicsPushContext(context)
+                    labelText.draw(at: CGPoint(x: 4.0, y: 1.0 + UIScreenPixel))
+                    UIGraphicsPopContext()
+                })
+            }
+        } else if let titleBadgeView = self.titleBadgeView {
+            self.titleBadgeView = nil
+            titleBadgeView.removeFromSuperview()
+        }
+        
         let selectionAlpha: CGFloat = selectionFraction * selectionFraction
         let deselectionAlpha: CGFloat = 1.0// - selectionFraction
         transition.updateAlpha(node: self.titleNode, alpha: deselectionAlpha)
@@ -163,8 +201,15 @@ private final class ItemNode: ASDisplayNode {
         let titleFrame = CGRect(origin: CGPoint(x: -self.titleNode.insets.left + iconInset, y: floor((height - titleSize.height) / 2.0)), size: titleSize)
         self.titleNode.frame = titleFrame
         self.titleActiveNode.frame = titleFrame
-                
-        return titleSize.width - self.titleNode.insets.left - self.titleNode.insets.right + iconInset
+        
+        var width = titleSize.width - self.titleNode.insets.left - self.titleNode.insets.right + iconInset
+        
+        if let titleBadgeView = self.titleBadgeView, let image = titleBadgeView.image {
+            width += 4.0 + image.size.width
+            titleBadgeView.frame = CGRect(origin: CGPoint(x: titleFrame.maxX + 4.0, y: titleFrame.minY + floorToScreenPixels((titleFrame.height - image.size.height) * 0.5) + 1.0), size: image.size)
+        }
+        
+        return width
     }
     
     func updateArea(size: CGSize, sideInset: CGFloat, transition: ContainedViewLayoutTransition) {

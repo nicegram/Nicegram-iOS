@@ -168,7 +168,7 @@ private final class VisualMediaItemNode: ASDisplayNode {
             case .Local:
                 self.interaction.openMessage(message)
             case .Remote, .Paused:
-                // MARK: Nicegram downloading feature, shouldSave added
+                // Nicegram downloading feature, shouldSave added
                 self.fetchDisposable.set(messageMediaFileInteractiveFetched(context: self.context, message: message, file: file, userInitiated: true, shouldSave: true).startStrict())
             }
         }

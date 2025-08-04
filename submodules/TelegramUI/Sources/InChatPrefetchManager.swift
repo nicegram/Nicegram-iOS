@@ -116,7 +116,7 @@ final class InChatPrefetchManager {
                     } else if let _ = media as? TelegramMediaWebFile {
                         //strongSelf.fetchDisposable.set(chatMessageWebFileInteractiveFetched(account: context.account, image: image).startStrict())
                     } else if let file = media as? TelegramMediaFile {
-                        // MARK: Nicegram downloading feature, accountContext added
+                        // Nicegram downloading feature, accountContext added
                         let fetchSignal = messageMediaFileInteractiveFetched(fetchManager: self.context.fetchManager, messageId: message.id, messageReference: MessageReference(message), file: file, userInitiated: false, priority: priority, accountContext: nil)
                         context.fetchDisposable.set(fetchSignal.startStrict())
                     }

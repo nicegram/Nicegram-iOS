@@ -413,7 +413,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 }
                 
                 
-                if item.associatedData.isSuspiciousPeer, let entities = messageEntities {
+                if incoming && item.associatedData.isSuspiciousPeer, let entities = messageEntities {
                     messageEntities = entities.filter { entity in
                         switch entity.type {
                         case .Url, .TextUrl, .Mention, .TextMention, .Hashtag, .Email, .BankCard:
@@ -660,6 +660,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         reactionPeers: dateReactionsAndPeers.peers,
                         displayAllReactionPeers: item.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                         areReactionsTags: item.topMessage.areReactionsTags(accountPeerId: item.context.account.peerId),
+                        areStarReactionsEnabled: item.associatedData.areStarReactionsEnabled,
                         messageEffect: item.topMessage.messageEffect(availableMessageEffects: item.associatedData.availableMessageEffects),
                         replyCount: dateReplies,
                         starsCount: starsCount,

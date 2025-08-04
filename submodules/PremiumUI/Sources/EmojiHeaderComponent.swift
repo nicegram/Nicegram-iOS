@@ -20,6 +20,7 @@ class EmojiHeaderComponent: Component {
     let placeholderColor: UIColor
     let accentColor: UIColor
     let fileId: Int64
+    let file: TelegramMediaFile?
     let isVisible: Bool
     let hasIdleAnimations: Bool
         
@@ -30,6 +31,7 @@ class EmojiHeaderComponent: Component {
         placeholderColor: UIColor,
         accentColor: UIColor,
         fileId: Int64,
+        file: TelegramMediaFile? = nil,
         isVisible: Bool,
         hasIdleAnimations: Bool
     ) {
@@ -39,6 +41,7 @@ class EmojiHeaderComponent: Component {
         self.placeholderColor = placeholderColor
         self.accentColor = accentColor
         self.fileId = fileId
+        self.file = file
         self.isVisible = isVisible
         self.hasIdleAnimations = hasIdleAnimations
     }
@@ -156,7 +159,7 @@ class EmojiHeaderComponent: Component {
                     animationCache: component.animationCache,
                     animationRenderer: component.animationRenderer,
                     content: .animation(
-                        content: .customEmoji(fileId: component.fileId),
+                        content: component.file.flatMap { .file(file: $0) } ?? .customEmoji(fileId: component.fileId),
                         size: CGSize(width: 100.0, height: 100.0),
                         placeholderColor: component.placeholderColor,
                         themeColor: component.accentColor,
@@ -169,6 +172,10 @@ class EmojiHeaderComponent: Component {
                 containerSize: CGSize(width: 96.0, height: 96.0)
             )
             self.statusView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - size.width) / 2.0), y: 63.0), size: size)
+            
+            if let _ = component.file {
+                self.statusView.isHidden = false
+            }
             
             return availableSize
         }

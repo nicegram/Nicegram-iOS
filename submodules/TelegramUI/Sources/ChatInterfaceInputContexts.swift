@@ -71,7 +71,7 @@ func inputContextQueriesForChatPresentationIntefaceState(_ chatPresentationInter
     var result: [ChatPresentationInputQuery] = []
     for (possibleQueryRange, possibleTypes, additionalStringRange) in textInputStateContextQueryRangeAndType(inputState) {
         let query = inputString.substring(with: possibleQueryRange)
-        // MARK: Nicegram QuickReplies
+        // Nicegram QuickReplies
         if possibleTypes == [.quickReply] {
             result.append(.quickReply(query))
         }

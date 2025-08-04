@@ -1,4 +1,4 @@
-// MARK: Nicegram
+// Nicegram
 import FeatAttentionEconomy
 import NGUtils
 //
@@ -151,7 +151,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
     private let badgeText: ImmediateTextNode
     private let activityIndicator: UIActivityIndicatorView
     
-    // MARK: Nicegram ATT
+    // Nicegram ATT
     private let subscribeButtonClaimApplier = SubscribeButtonClaimApplier()
     //
     
@@ -304,7 +304,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                 }
                 strongSelf.interfaceInteraction?.presentController(textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationInterfaceState.strings.Common_OK, action: {})]), nil)
             },  completed: {
-                // MARK: Nicegram ATT
+                // Nicegram ATT
                 Task {
                     await AttCoreModule.shared.claimOngoingActionUseCase()
                         .claimSubscribeIfNeeded(
@@ -538,7 +538,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         let indicatorSize = self.activityIndicator.bounds.size
         self.activityIndicator.frame = CGRect(origin: CGPoint(x: width - rightInset - indicatorSize.width - 12.0, y: floor((panelHeight - indicatorSize.height) / 2.0)), size: indicatorSize)
         
-        // MARK: Nicegram ATT
+        // Nicegram ATT
         let isJoinAction = switch action {
         case .join, .joinGroup, .applyToJoin:
             true

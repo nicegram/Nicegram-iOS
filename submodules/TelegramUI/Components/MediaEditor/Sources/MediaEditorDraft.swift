@@ -15,6 +15,7 @@ public struct MediaEditorResultPrivacy: Codable, Equatable {
         case timeout
         case disableForwarding
         case archive
+        case folderIds
     }
     
     public let sendAsPeerId: EnginePeer.Id?
@@ -22,19 +23,22 @@ public struct MediaEditorResultPrivacy: Codable, Equatable {
     public let timeout: Int
     public let isForwardingDisabled: Bool
     public let pin: Bool
+    public let folderIds: [Int64]
     
     public init(
         sendAsPeerId: EnginePeer.Id?,
         privacy: EngineStoryPrivacy,
         timeout: Int,
         isForwardingDisabled: Bool,
-        pin: Bool
+        pin: Bool,
+        folderIds: [Int64]
     ) {
         self.sendAsPeerId = sendAsPeerId
         self.privacy = privacy
         self.timeout = timeout
         self.isForwardingDisabled = isForwardingDisabled
         self.pin = pin
+        self.folderIds = folderIds
     }
     
     public init(from decoder: Decoder) throws {
@@ -45,6 +49,7 @@ public struct MediaEditorResultPrivacy: Codable, Equatable {
         self.timeout = Int(try container.decode(Int32.self, forKey: .timeout))
         self.isForwardingDisabled = try container.decodeIfPresent(Bool.self, forKey: .disableForwarding) ?? false
         self.pin = try container.decode(Bool.self, forKey: .archive)
+        self.folderIds = try container.decodeIfPresent([Int64].self, forKey: .folderIds) ?? []
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -55,6 +60,7 @@ public struct MediaEditorResultPrivacy: Codable, Equatable {
         try container.encode(Int32(self.timeout), forKey: .timeout)
         try container.encode(self.isForwardingDisabled, forKey: .disableForwarding)
         try container.encode(self.pin, forKey: .archive)
+        try container.encode(self.folderIds, forKey: .folderIds)
     }
 }
 

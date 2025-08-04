@@ -117,7 +117,7 @@ private extension ChannelParserFromApi {
             messages = _messages
             chats = _chats
             users = _users
-        case let .messagesSlice(_, _, _, _, _messages, _chats, _users):
+        case let .messagesSlice(_, _, _, _, _, _messages, _chats, _users):
             messages = _messages
             chats = _chats
             users = _users

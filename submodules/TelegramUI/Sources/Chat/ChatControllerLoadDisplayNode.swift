@@ -1,4 +1,4 @@
-// MARK: Nicegram ATTUserActions
+// Nicegram ATTUserActions
 import NGUtils
 //
 import Foundation
@@ -156,7 +156,7 @@ extension ChatControllerImpl {
             presentationData: self.presentationData,
             historyNode: historyNode,
             inviteRequestsContext: self.contentData?.inviteRequestsContext,
-            // MARK: Nicegram NCG-6373 Feed tab
+            // Nicegram NCG-6373 Feed tab
             isFeed: self.isFeed
             //
         )
@@ -574,6 +574,26 @@ extension ChatControllerImpl {
                 self.dismiss()
             }
         }
+        
+        self.updatePreloadNextChatPeerId()
+    }
+    
+    func updatePreloadNextChatPeerId() {
+        if !self.checkedPeerChatServiceActions {
+            return
+        }
+        
+        if self.preloadNextChatPeerId != self.contentData?.state.preloadNextChatPeerId {
+            self.preloadNextChatPeerId = self.contentData?.state.preloadNextChatPeerId
+            if let nextPeerId = self.contentData?.state.preloadNextChatPeerId {
+                let combinedDisposable = DisposableSet()
+                self.preloadNextChatPeerIdDisposable.set(combinedDisposable)
+                combinedDisposable.add(self.context.account.viewTracker.polledChannel(peerId: nextPeerId).startStrict())
+                combinedDisposable.add(self.context.account.addAdditionalPreloadHistoryPeerId(peerId: nextPeerId))
+            } else {
+                self.preloadNextChatPeerIdDisposable.set(nil)
+            }
+        }
     }
     
     func reloadCachedData() {
@@ -623,7 +643,7 @@ extension ChatControllerImpl {
             }
         }
         
-        // MARK: Nicegram, isFeed added
+        // Nicegram, isFeed added
         self.displayNode = ChatControllerNode(context: self.context, chatLocation: self.chatLocation, chatLocationContextHolder: self.chatLocationContextHolder, subject: self.subject, controllerInteraction: self.controllerInteraction!, chatPresentationInterfaceState: self.presentationInterfaceState, automaticMediaDownloadSettings: self.automaticMediaDownloadSettings, navigationBar: self.navigationBar, statusBar: self.statusBar, backgroundNode: self.chatBackgroundNode, controller: self, isFeed: self.isFeed)
         
         if let currentItem = self.tempVoicePlaylistCurrentItem {
@@ -1027,7 +1047,7 @@ extension ChatControllerImpl {
                         signal = enqueueMessages(account: strongSelf.context.account, peerId: peerId, messages: transformedMessages)
                     }
                     
-                    // MARK: Nicegram ATTUserActions
+                    // Nicegram ATTUserActions
                     if transformedMessages.contains(where: { $0.threadId != nil }) {
                         AttUserActionsHelper.save(
                             peerId: peerId,
@@ -1536,7 +1556,7 @@ extension ChatControllerImpl {
             strongSelf.window?.presentInGlobalOverlay(controller)
         }
         
-        // MARK: Nicegram, additonal ChatPanelInterfaceInteraction closures
+        // Nicegram, additonal ChatPanelInterfaceInteraction closures
         let interfaceInteraction = ChatPanelInterfaceInteraction(cloudMessages: { [weak self] messages in
             guard let strongSelf = self, strongSelf.isNodeLoaded else {
                 return
@@ -1576,7 +1596,7 @@ extension ChatControllerImpl {
                 }
             }
         }, copySelectedMessages: { [weak self] in
-            // MARK: Nicegram CopySelectedMessages
+            // Nicegram CopySelectedMessages
             guard let strongSelf = self else {
                 return
             }
@@ -1611,16 +1631,16 @@ extension ChatControllerImpl {
                 }
             })
         }, openGifs: { [weak self] in
-            // MARK: Nicegram OpenGifsShortcut
+            // Nicegram OpenGifsShortcut
             guard let self = self else { return }
             self.chatDisplayNode.openStickers(defaultTab: .gif, beginWithEmoji: false)
             self.mediaRecordingModeTooltipController?.dismissImmediately()
             //
         }, replyPrivately: { [weak self] message in
-            // MARK: Nicegram ReplyPrivately
+            // Nicegram ReplyPrivately
             self?.replyPrivately(message: message)
             //
-        }, setupReplyMessage: { [weak self] messageId, completion in
+        }, setupReplyMessage: { [weak self] messageId, todoItemId, completion in
             guard let strongSelf = self, strongSelf.isNodeLoaded else {
                 return
             }
@@ -1646,7 +1666,8 @@ extension ChatControllerImpl {
                             strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: true, { $0.updatedInterfaceState({
                                 $0.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(
                                     messageId: message.id,
-                                    quote: nil
+                                    quote: nil,
+                                    todoItemId: todoItemId
                                 ))
                             }).updatedReplyMessage(message).updatedSearch(nil).updatedShowCommands(false) }, completion: { t in
                                 completion(t, {})
@@ -1669,7 +1690,8 @@ extension ChatControllerImpl {
                 } else {
                     let replySubject = ChatInterfaceState.ReplyMessageSubject(
                         messageId: messageId,
-                        quote: nil
+                        quote: nil,
+                        todoItemId: todoItemId
                     )
                     
                     completion(.immediate, {
@@ -1912,7 +1934,7 @@ extension ChatControllerImpl {
                     return
                 }
                 
-                if actions.options.contains(.deleteGlobally), let message = messages.first(where: { message in message.attributes.contains(where: { $0 is PublishedSuggestedPostMessageAttribute }) }), let attribute = message.attributes.first(where: { $0 is PublishedSuggestedPostMessageAttribute }) as? PublishedSuggestedPostMessageAttribute {
+                if actions.options.contains(.deleteGlobally), let message = messages.first(where: { message in message.attributes.contains(where: { $0 is PublishedSuggestedPostMessageAttribute }) }), let attribute = message.attributes.first(where: { $0 is PublishedSuggestedPostMessageAttribute }) as? PublishedSuggestedPostMessageAttribute, message.timestamp > Int32(Date().timeIntervalSince1970) - 60 * 60 * 24 {
                     let commit = { [weak self] in
                         guard let self else {
                             return
@@ -4670,7 +4692,7 @@ extension ChatControllerImpl {
                                 strongSelf.chatDisplayNode.navigateButtons.mentionCount = mentionCount
                                 strongSelf.chatDisplayNode.navigateButtons.reactionsCount = reactionCount
                             }
-                            // MARK: Nicegram AiChat
+                            // Nicegram AiChat
                             strongSelf.updateAiOverlayVisibility()
                             //
                         }
@@ -4686,7 +4708,7 @@ extension ChatControllerImpl {
                                 strongSelf.chatDisplayNode.navigateButtons.mentionCount = mentionCount
                                 strongSelf.chatDisplayNode.navigateButtons.reactionsCount = reactionCount
                             }
-                            // MARK: Nicegram AiChat
+                            // Nicegram AiChat
                             strongSelf.updateAiOverlayVisibility()
                             //
                         }
@@ -4972,7 +4994,7 @@ extension ChatControllerImpl {
                     if let message = strongSelf.chatDisplayNode.historyNode.messageInCurrentHistoryView(mappedId) {
                         if toSubject.setupReply {
                             Queue.mainQueue().after(0.1) {
-                                strongSelf.interfaceInteraction?.setupReplyMessage(mappedId, { _, f in f() })
+                                strongSelf.interfaceInteraction?.setupReplyMessage(mappedId, nil, { _, f in f() })
                             }
                         }
                         

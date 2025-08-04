@@ -1,4 +1,4 @@
-// MARK: Nicegram Imports
+// Nicegram Imports
 import FeatPremiumUI
 import FeatSpeechToText
 import NGData
@@ -369,7 +369,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: arguments.context.currentAppConfiguration.with { $0 })
         
         let transcriptionText = self.forcedAudioTranscriptionText ?? transcribedText(message: message)
-// MARK: Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
+// Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
         if transcriptionText == nil && !arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost && false {
             if premiumConfiguration.audioTransciptionTrialCount > 0 {
                 if !arguments.associatedData.isPremium {
@@ -483,7 +483,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         strongSelf.transcribeDisposable?.dispose()
                         strongSelf.transcribeDisposable = nil
                     })
-// MARK: Nicegram NCG-6326 Apple Speech2Text
+// Nicegram NCG-6326 Apple Speech2Text
                 } else if !isLongMedia() && arguments.associatedData.isPremium {
                     self.transcribeDisposable = (context.engine.messages.transcribeAudio(messageId: message.id)
                     |> deliverOnMainQueue).startStrict(next: { [weak self] result in
@@ -499,7 +499,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                             })
                         }
                     })
-// MARK: Nicegram NCG-6326 Apple Speech2Text
+// Nicegram NCG-6326 Apple Speech2Text
                 } else {
                     internalConvertSpeechToText()
                 }
@@ -526,7 +526,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
 //        guard let arguments = self.arguments, let context = self.context, let message = self.message else {
 //            return
 //        }
-//// MARK: Nicegram NCG-6326 Apple Speech2Text, remove premium check !context.isPremium
+//// Nicegram NCG-6326 Apple Speech2Text, remove premium check !context.isPremium
 //        if case .inProgress = self.audioTranscriptionState {
 //            return
 //        }
@@ -535,7 +535,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
 //        let premiumConfiguration = PremiumConfiguration.with(appConfiguration: arguments.context.currentAppConfiguration.with { $0 })
 //        
 //        let transcriptionText = self.forcedAudioTranscriptionText ?? transcribedText(message: message)
-//// MARK: Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
+//// Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
 //        if transcriptionText == nil && !arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost && false {
 //            if premiumConfiguration.audioTransciptionTrialCount > 0 {
 //                if !arguments.associatedData.isPremium {
@@ -593,7 +593,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
 //                self.audioTranscriptionState = .inProgress
 //                self.requestUpdateLayout(true)
 //                
-//                // MARK: Nicegram Speech2Text
+//                // Nicegram Speech2Text
 //                let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared
 //                    .getSpeech2TextSettingsUseCase()
 //                let useNicegram = getSpeech2TextSettingsUseCase()
@@ -647,7 +647,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
 //                        
 //                        if let result = result {
 //                            let _ = arguments.context.engine.messages.storeLocallyTranscribedAudio(messageId: arguments.message.id, text: result.text, isFinal: result.isFinal, error: nil).startStandalone()
-//                            // MARK: Nicegram Speech2Text
+//                            // Nicegram Speech2Text
 //                            strongSelf.audioTranscriptionState = .expanded
 //                            //
 //                        } else {
@@ -661,7 +661,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
 //                        strongSelf.transcribeDisposable?.dispose()
 //                        strongSelf.transcribeDisposable = nil
 //                    })
-//                // MARK: Nicegram NCG-6326 Apple Speech2Text, add if context.isPremium
+//                // Nicegram NCG-6326 Apple Speech2Text, add if context.isPremium
 //                } else if context.isPremium {
 //                    self.transcribeDisposable = (context.engine.messages.transcribeAudio(messageId: message.id)
 //                    |> deliverOnMainQueue).startStrict(next: { [weak self] result in
@@ -678,7 +678,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
 //                        }
 //                    })
 //                }
-//                // MARK: Nicegram NCG-6326 Apple Speech2Text
+//                // Nicegram NCG-6326 Apple Speech2Text
 //                else {
 //                    Queue.mainQueue().async { [weak self] in
 //                        self?.audioTranscriptionState = .collapsed
@@ -989,7 +989,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         displayTranscribe = true
                     }
                     
-                    // MARK: Nicegram Speech2Text
+                    // Nicegram Speech2Text
                     if #available(iOS 13.0, *) {
                         let getSpeechToTextConfigUseCase = SpeechToTextContainer.shared.getSpeechToTextConfigUseCase()
                         let alwaysShowButton = getSpeechToTextConfigUseCase().alwaysShowButton
@@ -1005,7 +1005,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 
                 switch audioTranscriptionState {
                 case .inProgress:
-                    // MARK: Nicegram Speech2Text (line changed)
+                    // Nicegram Speech2Text (line changed)
                     if case .success(_, _) = transcribedText {
                         updatedAudioTranscriptionState = .expanded
                     }
@@ -1170,6 +1170,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         reactionPeers: dateReactionsAndPeers.peers,
                         displayAllReactionPeers: arguments.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                         areReactionsTags: arguments.message.areReactionsTags(accountPeerId: arguments.context.account.peerId),
+                        areStarReactionsEnabled: arguments.associatedData.areStarReactionsEnabled,
                         messageEffect: arguments.message.messageEffect(availableMessageEffects: arguments.associatedData.availableMessageEffects),
                         replyCount: dateReplies,
                         starsCount: starsCount,
@@ -2315,7 +2316,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
         }
     }
     
-// MARK: Nicegram NCG-6326 Apple Speech2Text
+// Nicegram NCG-6326 Apple Speech2Text
     private func internalConvertSpeechToText(
         with languageStyle: RecognitionLanguagesControllerStyle = .normal
     ) {

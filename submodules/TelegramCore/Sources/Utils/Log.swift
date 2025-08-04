@@ -212,7 +212,7 @@ public final class Logger {
             return EmptyDisposable
         }
     }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
     public func collectLogs(
         with basePath: String,
         accountPathName: String?

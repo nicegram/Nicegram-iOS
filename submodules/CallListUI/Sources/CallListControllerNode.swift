@@ -350,6 +350,8 @@ final class CallListControllerNode: ASDisplayNode {
                 let actionSheet = ActionSheetController(presentationData: strongSelf.presentationData)
                 var items: [ActionSheetItem] = []
                 
+                items.append(ActionSheetTextItem(title: strongSelf.presentationData.strings.CallList_DeleteConfirmation, parseMarkdown: true))
+                
                 items.append(ActionSheetButtonItem(title: strongSelf.presentationData.strings.Conversation_DeleteMessagesFor(peer.displayTitle(strings: strongSelf.presentationData.strings, displayOrder: strongSelf.presentationData.nameDisplayOrder)).string, color: .destructive, action: { [weak actionSheet] in
                     actionSheet?.dismissAnimated()
                     guard let strongSelf = self else {

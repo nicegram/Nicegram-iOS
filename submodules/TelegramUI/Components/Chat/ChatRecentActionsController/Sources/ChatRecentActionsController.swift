@@ -55,9 +55,9 @@ public final class ChatRecentActionsController: TelegramBaseController {
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
-        // MARK: Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
+        // Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
         self.panelInteraction = ChatPanelInterfaceInteraction(cloudMessages: { _ in }, copyForwardMessages: { _ in }, copySelectedMessages: {
-        }, setupReplyMessage: { _, _ in
+        }, setupReplyMessage: { _, _, _ in
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in

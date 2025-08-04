@@ -7,6 +7,7 @@ private let labelWidth: CGFloat = 16.0
 private let labelHeight: CGFloat = 36.0
 private let labelSize = CGSize(width: labelWidth, height: labelHeight)
 private let font = Font.with(size: 24.0, design: .round, weight: .semibold, traits: [])
+private let suffixFont = Font.with(size: 22.0, design: .regular, weight: .regular, traits: [])
 
 final class BadgeLabelView: UIView {
     private class StackView: UIView {
@@ -76,7 +77,9 @@ final class BadgeLabelView: UIView {
     }
     
     private var itemViews: [Int: StackView] = [:]
-    private var staticLabel = UILabel()
+    private var staticLabel = ImmediateTextNode()
+    
+    private var params: (value: String, suffix: String?)?
     
     init() {
         super.init(frame: .zero)
@@ -91,31 +94,49 @@ final class BadgeLabelView: UIView {
     
     var color: UIColor = .white {
         didSet {
-            self.staticLabel.textColor = self.color
+            if let params {
+                self.staticLabel.attributedText = BadgeLabelView.makeText(value: params.value, suffix: params.suffix, color: self.color)
+                let _ = self.staticLabel.updateLayout(CGSize(width: 1000.0, height: 1000.0))
+            }
             for (_, view) in self.itemViews {
                 view.color = self.color
             }
         }
     }
     
-    func update(value: String, transition: ComponentTransition) -> CGSize {
-        if value.contains(" ") {
+    static func makeText(value: String, suffix: String?, color: UIColor) -> NSAttributedString {
+        let string = NSMutableAttributedString()
+        string.append(NSAttributedString(string: value, font: font, textColor: color))
+        if let suffix {
+            string.append(NSAttributedString(string: suffix, font: suffixFont, textColor: color.withMultipliedAlpha(0.6)))
+        }
+        return string
+    }
+    
+    static func calculateSize(value: String, suffix: String?) -> CGSize {
+        let textView = ImmediateTextView()
+        textView.attributedText = BadgeLabelView.makeText(value: value, suffix: suffix, color: .black)
+        return textView.updateLayout(CGSize(width: 1000.0, height: 1000.0))
+    }
+    
+    func update(value: String, suffix: String?, transition: ComponentTransition) -> CGSize {
+        self.params = (value, suffix)
+        
+        if value.contains(" ") || value.contains(".") || value.contains(where: { !$0.isNumber }) || suffix != nil {
             for (_, view) in self.itemViews {
                 view.isHidden = true
             }
             
-            if self.staticLabel.superview == nil {
-                self.staticLabel.textColor = self.color
-                self.staticLabel.font = font
-                
-                self.addSubview(self.staticLabel)
+            if self.staticLabel.view.superview == nil {
+                self.addSubview(self.staticLabel.view)
             }
             
-            self.staticLabel.text = value
-            let size = self.staticLabel.sizeThatFits(CGSize(width: 100.0, height: 100.0))
-            self.staticLabel.frame = CGRect(origin: .zero, size: CGSize(width: size.width, height: labelHeight))
+            self.staticLabel.attributedText = BadgeLabelView.makeText(value: value, suffix: suffix, color: self.color)
             
-            return CGSize(width: ceil(self.staticLabel.bounds.width), height: ceil(self.staticLabel.bounds.height))
+            let size = self.staticLabel.updateLayout(CGSize(width: 1000.0, height: 1000.0))
+            self.staticLabel.frame = CGRect(origin: CGPoint(x: 0.0, y: 3.0), size: CGSize(width: size.width, height: labelHeight))
+            
+            return size
         }
         
         let string = value

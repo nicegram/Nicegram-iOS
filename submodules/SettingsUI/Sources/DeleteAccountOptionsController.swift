@@ -200,7 +200,7 @@ public func deleteAccountOptionsController(context: AccountContext, navigationCo
         |> take(1)
         |> deliverOnMainQueue
         ).start(next: { accountAndPeer, accountsAndPeers in
-            // MARK: Nicegram MaxAccounts
+            // Nicegram MaxAccounts
             let maximumAvailableAccounts: Int = nicegramMaximumNumberOfAccounts
             var count: Int = 1
             for (accountContext, _, _) in accountsAndPeers {

@@ -842,7 +842,7 @@ public final class OngoingCallContext {
             })
         }
         
-        // MARK: Nicegram NCG-5828 call recording
+        // Nicegram NCG-5828 call recording
 
         public func startNicegramRecording(
             callback: @escaping ((String, Double, UInt) -> Void),

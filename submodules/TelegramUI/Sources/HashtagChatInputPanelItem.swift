@@ -21,7 +21,7 @@ final class HashtagChatInputPanelItem: ListViewItem {
     fileprivate let hashtag: String
     fileprivate let revealed: Bool
     fileprivate let isAdditionalRecent: Bool
-    // MARK: Nicegram QuickReplies
+    // Nicegram QuickReplies
     fileprivate let canDelete: Bool
     //
     fileprivate let setHashtagRevealed: (String?) -> Void
@@ -30,7 +30,7 @@ final class HashtagChatInputPanelItem: ListViewItem {
     
     let selectable: Bool = true
     
-    // MARK: Nicegram QuickReplies, canDelete added
+    // Nicegram QuickReplies, canDelete added
     public init(context: AccountContext, presentationData: ItemListPresentationData, peer: EnginePeer?, title: String, text: String?, badge: String? = nil, hashtag: String, revealed: Bool, isAdditionalRecent: Bool, canDelete: Bool, setHashtagRevealed: @escaping (String?) -> Void, hashtagSelected: @escaping (String) -> Void, removeRequested: @escaping (String) -> Void) {
         self.context = context
         self.presentationData = presentationData
@@ -41,7 +41,7 @@ final class HashtagChatInputPanelItem: ListViewItem {
         self.hashtag = hashtag
         self.revealed = revealed
         self.isAdditionalRecent = isAdditionalRecent
-        // MARK: Nicegram QuickReplies
+        // Nicegram QuickReplies
         self.canDelete = canDelete
         //
         self.setHashtagRevealed = setHashtagRevealed
@@ -208,7 +208,7 @@ final class HashtagChatInputPanelItemNode: ListViewItemNode {
             
             let leftInset: CGFloat = 15.0 + params.leftInset
             let textLeftInset: CGFloat = 40.0
-            // MARK: Nicegram QuickReplies, baseWidth fix
+            // Nicegram QuickReplies, baseWidth fix
             let baseWidth = params.width - leftInset - params.rightInset
             
             let (badgeLayout, badgeApply) = makeBadgeLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.badge ?? "", font: badgeFont, textColor: item.presentationData.theme.list.itemCheckColors.foregroundColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: baseWidth, height: 100.0), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
@@ -289,7 +289,7 @@ final class HashtagChatInputPanelItemNode: ListViewItemNode {
                     strongSelf.activateAreaNode.accessibilityLabel = item.title
                     strongSelf.activateAreaNode.frame = CGRect(origin: .zero, size: nodeLayout.size)
                     
-                    // MARK: Nicegram QuickReplies, !item.canDelete ? [] : added
+                    // Nicegram QuickReplies, !item.canDelete ? [] : added
                     strongSelf.setRevealOptions(!item.canDelete ? [] : [ItemListRevealOption(key: 0, title: item.presentationData.strings.Common_Delete, icon: .none, color: item.presentationData.theme.list.itemDisclosureActions.destructive.fillColor, textColor: item.presentationData.theme.list.itemDisclosureActions.destructive.foregroundColor)])
                     strongSelf.setRevealOptionsOpened(item.revealed, animated: animation.isAnimated)
                 }

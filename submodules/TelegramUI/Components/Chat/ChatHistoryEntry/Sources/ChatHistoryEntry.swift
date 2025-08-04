@@ -1,7 +1,7 @@
-// MARK: Nicegram ATT
+// Nicegram ATT
 import FeatAttentionEconomy
 //
-// MARK: Nicegram Wallet
+// Nicegram Wallet
 import NicegramWallet
 //
 import Postbox
@@ -18,7 +18,7 @@ public enum ChatMessageEntryContentType {
 }
 
 public struct ChatMessageEntryAttributes: Equatable {
-    // MARK: Nicegram Wallet
+    // Nicegram Wallet
     public var walletTx: ChatMessageTx?
     //
     public var rank: CachedChannelAdminRank?
@@ -62,11 +62,11 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
     case ReplyCountEntry(MessageIndex, Bool, Int, ChatPresentationData)
     case ChatInfoEntry(ChatInfoData, ChatPresentationData)
     case SearchEntry(PresentationTheme, PresentationStrings)
-    // MARK: Nicegram ATT
+    // Nicegram ATT
     case NicegramAdEntry(String, AttAd, ChatPresentationData)
     //
     
-    // MARK: Nicegram ATT
+    // Nicegram ATT
     public enum StableId: Hashable, Comparable {
         case uint64(UInt64)
         case nicegramAd(String)
@@ -84,7 +84,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
     }
     //
     
-    // MARK: Nicegram ATT, changed UInt64 to StableId
+    // Nicegram ATT, changed UInt64 to StableId
     public var stableId: StableId {
         switch self {
             case let .MessageEntry(message, _, _, _, _, attributes):
@@ -97,24 +97,24 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                     case .animatedEmoji:
                         type = 4
                 }
-                // MARK: Nicegram ATT, wrap in .uint64()
+                // Nicegram ATT, wrap in .uint64()
                 return .uint64(UInt64(message.stableId) | ((type << 40)))
             case let .MessageGroupEntry(groupInfo, _, _):
-                // MARK: Nicegram ATT, wrap in .uint64()
+                // Nicegram ATT, wrap in .uint64()
                 return .uint64(UInt64(bitPattern: groupInfo) | ((UInt64(2) << 40)))
             case .UnreadEntry:
-                // MARK: Nicegram ATT, wrap in .uint64()
+                // Nicegram ATT, wrap in .uint64()
                 return .uint64(UInt64(4) << 40)
             case .ReplyCountEntry:
-                // MARK: Nicegram ATT, wrap in .uint64()
+                // Nicegram ATT, wrap in .uint64()
                 return .uint64(UInt64(5) << 40)
             case .ChatInfoEntry:
-                // MARK: Nicegram ATT, wrap in .uint64()
+                // Nicegram ATT, wrap in .uint64()
                 return .uint64(UInt64(6) << 40)
             case .SearchEntry:
-                // MARK: Nicegram ATT, wrap in .uint64()
+                // Nicegram ATT, wrap in .uint64()
                 return .uint64(UInt64(7) << 40)
-            // MARK: Nicegram ATT
+            // Nicegram ATT
             case let .NicegramAdEntry(id, _, _):
                 return .nicegramAd(id)
             //
@@ -135,7 +135,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return MessageIndex.absoluteLowerBound()
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
-            // MARK: Nicegram ATT
+            // Nicegram ATT
             case .NicegramAdEntry:
                 return MessageIndex.absoluteLowerBound()
             //
@@ -156,7 +156,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return MessageIndex.absoluteLowerBound()
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
-            // MARK: Nicegram ATT
+            // Nicegram ATT
             case .NicegramAdEntry:
                 return MessageIndex.absoluteLowerBound()
             //
@@ -338,7 +338,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 } else {
                     return false
                 }
-            // MARK: Nicegram ATT
+            // Nicegram ATT
             case let .NicegramAdEntry(lhsId, lhsAd, lhsPresentationData):
                 if case let .NicegramAdEntry(rhsId, rhsAd, rhsPresentationData) = rhs,
                    lhsId == rhsId,

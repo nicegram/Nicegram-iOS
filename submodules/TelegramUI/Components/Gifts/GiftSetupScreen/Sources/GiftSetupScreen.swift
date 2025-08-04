@@ -363,6 +363,8 @@ final class GiftSetupScreenComponent: Component {
             let entities = generateChatInputTextEntities(self.textInputState.text)
             
             var finalPrice: Int64
+            var perUserLimit: Int32?
+            var giftFile: TelegramMediaFile?
             let source: BotPaymentInvoiceSource
             switch component.subject {
             case let .premium(product):
@@ -377,6 +379,8 @@ final class GiftSetupScreenComponent: Component {
                 if self.includeUpgrade, let upgradeStars = starGift.upgradeStars  {
                     finalPrice += upgradeStars
                 }
+                perUserLimit = starGift.perUserLimit?.total
+                giftFile = starGift.file
                 source = .starGift(hideName: self.hideName, includeUpgrade: self.includeUpgrade, peerId: peerId, giftId: starGift.id, text: self.textInputState.text.string, entities: entities)
             }
             
@@ -395,6 +399,8 @@ final class GiftSetupScreenComponent: Component {
                     switch error {
                     case .disallowedStarGifts:
                         return .fail(.disallowedStarGift)
+                    case .starGiftsUserLimit:
+                        return .fail(.starGiftUserLimit)
                     default:
                         return .fail(.generic)
                     }
@@ -468,6 +474,14 @@ final class GiftSetupScreenComponent: Component {
                     
                     var errorText: String?
                     switch error {
+                    case .starGiftUserLimit:
+                        if let perUserLimit, let giftFile {
+                            let text = presentationData.strings.Gift_Options_Gift_BuyLimitReached(perUserLimit)
+                            let undoController = UndoOverlayController(presentationData: presentationData, content: .sticker(context: component.context, file: giftFile, loop: true, title: nil, text: text, undoText: nil, customAction: nil), action: { _ in return false })
+                            controller.present(undoController, in: .current)
+                            return
+                        }
+                        return
                     case .starGiftOutOfStock:
                         errorText = presentationData.strings.Gift_Send_ErrorOutOfStock
                     case .disallowedStarGift:
@@ -559,25 +573,42 @@ final class GiftSetupScreenComponent: Component {
                     self.hideName = true
                 }
                 
+                var releasedBy: EnginePeer.Id?
                 if case let .starGift(gift, true) = component.subject, gift.upgradeStars != nil {
                     self.includeUpgrade = true
                 }
+                if case let .starGift(gift, _) = component.subject {
+                    releasedBy = gift.releasedBy
+                }
                 
-                let _ = (component.context.engine.data.get(
-                    TelegramEngine.EngineData.Item.Peer.Peer(id: component.peerId),
-                    TelegramEngine.EngineData.Item.Peer.Peer(id: component.context.account.peerId),
-                    TelegramEngine.EngineData.Item.Peer.SendPaidMessageStars(id: component.peerId)
-                )
-                |> deliverOnMainQueue).start(next: { [weak self] peer, accountPeer, sendPaidMessageStars in
+                var peerIds: [EnginePeer.Id] = [
+                    component.context.account.peerId,
+                    component.peerId
+                ]
+                if let releasedBy {
+                    peerIds.append(releasedBy)
+                }
+                
+                let _ = combineLatest(queue: Queue.mainQueue(),
+                    component.context.engine.data.get(EngineDataMap(
+                        peerIds.map { peerId -> TelegramEngine.EngineData.Item.Peer.Peer in
+                            return TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)
+                        }
+                    )),
+                    component.context.engine.data.get(
+                        TelegramEngine.EngineData.Item.Peer.SendPaidMessageStars(id: component.peerId)
+                    )
+                ).start(next: { [weak self] peers, sendPaidMessageStars in
                     guard let self else {
                         return
                     }
-                    if let peer {
-                        self.peerMap[peer.id] = peer
+                    var peersMap: [EnginePeer.Id: EnginePeer] = [:]
+                    for (peerId, maybePeer) in peers {
+                        if let peer = maybePeer {
+                            peersMap[peerId] = peer
+                        }
                     }
-                    if let accountPeer {
-                        self.peerMap[accountPeer.id] = accountPeer
-                    }
+                    self.peerMap = peersMap
                     self.sendPaidMessageStars = sendPaidMessageStars
                     
                     self.state?.updated()
@@ -847,7 +878,7 @@ final class GiftSetupScreenComponent: Component {
             let giftConfiguration = GiftConfiguration.with(appConfiguration: component.context.currentAppConfiguration.with { $0 })
                
             var introSectionItems: [AnyComponentWithIdentity<Empty>] = []
-            introSectionItems.append(AnyComponentWithIdentity(id: introSectionItems.count, component: AnyComponent(Rectangle(color: .clear, height: 346.0, tag: self.introPlaceholderTag))))
+            introSectionItems.append(AnyComponentWithIdentity(id: introSectionItems.count, component: AnyComponent(Rectangle(color: .clear, height: 370.0, tag: self.introPlaceholderTag))))
             
             if self.sendPaidMessageStars == nil {
                 introSectionItems.append(AnyComponentWithIdentity(id: introSectionItems.count, component: AnyComponent(ListMultilineTextFieldItemComponent(
@@ -965,6 +996,7 @@ final class GiftSetupScreenComponent: Component {
             if let accountPeer = self.peerMap[component.context.account.peerId] {
                 var upgradeStars: Int64?
                 let subject: ChatGiftPreviewItem.Subject
+                var releasedBy: EnginePeer.Id?
                 switch component.subject {
                 case let .premium(product):
                     if self.payWithStars, let starsPrice = product.starsPrice {
@@ -976,10 +1008,14 @@ final class GiftSetupScreenComponent: Component {
                 case let .starGift(gift, _):
                     subject = .starGift(gift: gift)
                     upgradeStars = gift.upgradeStars
+                    releasedBy = gift.releasedBy
                 }
                 
                 var peers: [EnginePeer] = [accountPeer]
                 if let peer = self.peerMap[component.peerId] {
+                    peers.append(peer)
+                }
+                if let releasedBy, let peer = self.peerMap[releasedBy] {
                     peers.append(peer)
                 }
                 

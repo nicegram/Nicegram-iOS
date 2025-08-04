@@ -1,4 +1,4 @@
-// MARK: Nicegram
+// Nicegram
 import NGUtils
 //
 import Foundation
@@ -533,7 +533,7 @@ private func makeTextInputTheme(context: AccountContext, interfaceState: ChatPre
 }
 
 class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, ChatInputTextNodeDelegate {
-    // MARK: Nicegram Send with Enter
+    // Nicegram Send with Enter
     let sendWithKb: Bool
     //
     
@@ -564,7 +564,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
     
     private let startButton: SolidRoundedButtonNode
     
-    // MARK: Nicegram ATT
+    // Nicegram ATT
     private let subscribeButtonClaimApplier = SubscribeButtonClaimApplier()
     //
     
@@ -677,7 +677,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         }
     }
     
-    // MARK: Nicegram AiShortcuts
+    // Nicegram AiShortcuts
     private var aiShortcutsLoading = false
     func update(aiShortcutsLoading: Bool) {
         self.aiShortcutsLoading = aiShortcutsLoading
@@ -716,7 +716,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
                     if itemAndButton == nil {
                         let button = AccessoryItemIconButtonNode(item: item, theme: currentState.theme, strings: currentState.strings)
                         button.addTarget(self, action: #selector(self.accessoryItemButtonPressed(_:)), forControlEvents: .touchUpInside)
-                        // MARK: Nicegram OpenGifsShortcut
+                        // Nicegram OpenGifsShortcut
                         let contextGesture = ContextGesture()
                         contextGesture.activated = { [weak self] _, _ in
                             self?.accessoryItemButtonLongTap(item)
@@ -810,7 +810,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
     
     private var tooltipController: TooltipScreen?
     
-    // MARK: Nicegram (sendWithKb)
+    // Nicegram (sendWithKb)
     init(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, presentationContext: ChatPresentationContext?, presentController: @escaping (ViewController) -> Void, sendWithKb: Bool = false) {
         self.presentationInterfaceState = presentationInterfaceState
         self.presentationContext = presentationContext
@@ -984,7 +984,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         self.attachmentButton.addTarget(self, action: #selector(self.attachmentButtonPressed), forControlEvents: .touchUpInside)
         self.attachmentButtonDisabledNode.addTarget(self, action: #selector(self.attachmentButtonPressed), forControlEvents: .touchUpInside)
         
-        // MARK: Nicegram QuickReplies
+        // Nicegram QuickReplies
         let gesture = ContextGesture()
         gesture.activated = { [weak self] _, _ in
             guard let self = self else { return }
@@ -1226,7 +1226,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         textInputNode.textView.scrollIndicatorInsets = UIEdgeInsets(top: 9.0, left: 0.0, bottom: 9.0, right: -13.0)
         self.textInputContainer.addSubnode(textInputNode)
         textInputNode.view.disablesInteractiveTransitionGestureRecognizer = true
-        // MARK: Nicegram Send with Enter
+        // Nicegram Send with Enter
         if self.sendWithKb {
             textInputNode.textView.returnKeyType = .send
         }
@@ -2109,7 +2109,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
                 if itemAndButton == nil {
                     let button = AccessoryItemIconButtonNode(item: item, theme: interfaceState.theme, strings: interfaceState.strings)
                     button.addTarget(self, action: #selector(self.accessoryItemButtonPressed(_:)), forControlEvents: .touchUpInside)
-                    // MARK: Nicegram OpenGifsShortcut
+                    // Nicegram OpenGifsShortcut
                     let contextGesture = ContextGesture()
                     contextGesture.activated = { [weak self] _, _ in
                         self?.accessoryItemButtonLongTap(item)
@@ -3045,7 +3045,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
             self.viewOnceButton.isHidden = true
         }
         
-        // MARK: Nicegram ATT
+        // Nicegram ATT
         self.subscribeButtonClaimApplier.update(
             buttonNode: self.startButton,
             titleNode: self.startButton.titleNode,
@@ -3918,7 +3918,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
             }
         }
         
-        // MARK: Nicegram AiShortcuts
+        // Nicegram AiShortcuts
         let aiShortcutsLoading = self.aiShortcutsLoading
         self.actionButtons.sendButton.isEnabled = !aiShortcutsLoading
         self.actionButtons.sendContainerNode.alpha = aiShortcutsLoading ? 0.3 : 1
@@ -4542,7 +4542,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         }
         
         self.updateActivity()
-        // MARK: Nicegram Send with Enter
+        // Nicegram Send with Enter
         if self.sendWithKb {
             if text == "\n" {
                 self.sendButtonPressed()
@@ -4876,7 +4876,7 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         }
     }
     
-    // MARK: Nicegram OpenGifsShortcut
+    // Nicegram OpenGifsShortcut
     private func accessoryItemButtonLongTap(_ item: ChatTextInputAccessoryItem) {
         switch item {
         case let .input(isEnabled, inputMode), let .botInput(isEnabled, inputMode):

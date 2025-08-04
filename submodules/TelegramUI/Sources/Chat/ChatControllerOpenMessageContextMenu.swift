@@ -1,4 +1,4 @@
-// MARK: Nicegram ATTUserActions
+// Nicegram ATTUserActions
 import NGUtils
 //
 import Foundation
@@ -120,7 +120,7 @@ extension ChatControllerImpl {
                 actions.context = self.context
                 actions.animationCache = self.controllerInteraction?.presentationContext.animationCache
                                         
-                // MARK: Nicegram HideReactions, account added
+                // Nicegram HideReactions, account added
                 if canAddMessageReactions(message: topMessage, account: context.account), let allowedReactions = allowedReactions, !topReactions.isEmpty {
                     actions.reactionItems = topReactions.map { ReactionContextItem.reaction(item: $0, icon: .none) }
                     actions.selectedReactionItems = selectedReactions.reactions
@@ -598,7 +598,7 @@ extension ChatControllerImpl {
                             }
                         }
                         
-                        // MARK: Nicegram ATTUserActions
+                        // Nicegram ATTUserActions
                         if removedReaction == nil {
                             AttUserActionsHelper.save(
                                 peerId: message.id.peerId,

@@ -7,19 +7,24 @@ import TelegramAudio
 import Display
 import Postbox
 
+public enum CallAlreadyInProgressType {
+    case peer(EnginePeer.Id?)
+    case external
+}
+
 public enum RequestCallResult {
     case requested
-    case alreadyInProgress(EnginePeer.Id?)
+    case alreadyInProgress(CallAlreadyInProgressType)
 }
 
 public enum JoinGroupCallManagerResult {
     case joined
-    case alreadyInProgress(EnginePeer.Id?)
+    case alreadyInProgress(CallAlreadyInProgressType)
 }
 
 public enum RequestScheduleGroupCallResult {
     case success
-    case alreadyInProgress(EnginePeer.Id?)
+    case alreadyInProgress(CallAlreadyInProgressType)
 }
 
 public struct CallAuxiliaryServer {
@@ -583,7 +588,7 @@ public protocol PresentationCallManager: AnyObject {
     var hasActiveCall: Bool { get }
     var hasActiveGroupCall: Bool { get }
     
-    // MARK: Nicegram NCG-5828 call recording
+    // Nicegram NCG-5828 call recording
     var callCompletion: (() -> Void)? { get set }
     func startRecordCall(with completion: @escaping () -> Void)
     func stopRecordCall(needStopPartTimer: Bool)

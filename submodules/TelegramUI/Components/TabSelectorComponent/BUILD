@@ -10,12 +10,14 @@ swift_library(
         #"-warnings-as-errors",
     ],
     deps = [
+        "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/ComponentFlow",
         "//submodules/TelegramUI/Components/PlainButtonComponent",
         "//submodules/Components/MultilineTextWithEntitiesComponent",
         "//submodules/TextFormat",
-        "//submodules/AccountContext"
+        "//submodules/AccountContext",
+        "//submodules/TelegramPresentationData",
     ],
     visibility = [
         "//visibility:public",

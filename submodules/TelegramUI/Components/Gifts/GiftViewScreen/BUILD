@@ -51,6 +51,8 @@ swift_library(
         "//submodules/TelegramUI/Components/Stars/StarsBalanceOverlayComponent",
         "//submodules/TelegramUI/Components/Chat/ChatMessagePaymentAlertController",
         "//submodules/ActivityIndicator",
+        "//submodules/TelegramUI/Components/TabSelectorComponent",
+        "//submodules/TelegramUI/Components/Stars/BalanceNeededScreen",
     ],
     visibility = [
         "//visibility:public",

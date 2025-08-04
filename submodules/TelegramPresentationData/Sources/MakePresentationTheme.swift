@@ -7,7 +7,7 @@ import TelegramCore
 public func makeDefaultPresentationTheme(reference: PresentationBuiltinThemeReference, extendingThemeReference: PresentationThemeReference? = nil, serviceBackgroundColor: UIColor?, preview: Bool = false) -> PresentationTheme {
     let theme: PresentationTheme
     switch reference {
-        // MARK: Nicegram DefaultTheme
+        // Nicegram DefaultTheme
         case .nicegram:
             if let nicegramThemeFileUrl = Bundle.main.url(forResource: "nicegram-theme", withExtension: "txt"),
                let nicegramThemeData = try? Data(contentsOf: nicegramThemeFileUrl),
@@ -34,7 +34,7 @@ public func customizePresentationTheme(_ theme: PresentationTheme, editing: Bool
         return theme
     }
     switch theme.referenceTheme {
-        // MARK: Nicegram DefaultTheme
+        // Nicegram DefaultTheme
         case .nicegram:
             return theme
         //

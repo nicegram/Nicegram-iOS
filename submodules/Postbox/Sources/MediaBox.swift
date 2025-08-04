@@ -846,7 +846,7 @@ public final class MediaBox {
         }
     }
     
-    // MARK: Nicegram downloading feature
+    // Nicegram downloading feature
     public func fetchedResource(_ resource: MediaResource, parameters: MediaResourceFetchParameters?, implNext: Bool = false, shouldSave: Bool = false) -> Signal<FetchResourceSourceType, FetchResourceError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()

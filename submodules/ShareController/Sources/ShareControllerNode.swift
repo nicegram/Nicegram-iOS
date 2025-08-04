@@ -329,6 +329,7 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
     private let collectibleItemInfo: TelegramCollectibleItemInfo?
     private let mediaParameters: ShareControllerSubject.MediaParameters?
     private let messageCount: Int
+    var canSendInHighQuality = false
     
     var selectedSegmentedIndex: Int = 0
     
@@ -389,7 +390,26 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
     
     private let showNames = ValuePromise<Bool>(true)
     
-    init(controller: ShareController, environment: ShareControllerEnvironment, presentationData: PresentationData, presetText: String?, defaultAction: ShareControllerAction?, mediaParameters: ShareControllerSubject.MediaParameters?, requestLayout: @escaping (ContainedViewLayoutTransition) -> Void, presentError: @escaping (String?, String) -> Void, externalShare: Bool, immediateExternalShare: Bool, immediatePeerId: PeerId?, fromForeignApp: Bool, forceTheme: PresentationTheme?, fromPublicChannel: Bool, segmentedValues: [ShareControllerSegmentedValue]?, shareStory: (() -> Void)?, collectibleItemInfo: TelegramCollectibleItemInfo?, messageCount: Int) {
+    init(
+        controller: ShareController,
+        environment: ShareControllerEnvironment,
+        presentationData: PresentationData,
+        presetText: String?,
+        defaultAction: ShareControllerAction?,
+        mediaParameters: ShareControllerSubject.MediaParameters?,
+        requestLayout: @escaping (ContainedViewLayoutTransition) -> Void,
+        presentError: @escaping (String?, String) -> Void,
+        externalShare: Bool,
+        immediateExternalShare: Bool,
+        immediatePeerId: PeerId?,
+        fromForeignApp: Bool,
+        forceTheme: PresentationTheme?,
+        fromPublicChannel: Bool,
+        segmentedValues: [ShareControllerSegmentedValue]?,
+        shareStory: (() -> Void)?,
+        collectibleItemInfo: TelegramCollectibleItemInfo?,
+        messageCount: Int
+    ) {
         self.controller = controller
         self.environment = environment
         self.presentationData = presentationData
@@ -544,6 +564,18 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
                             .separator,
                         ])
                     }
+                    
+                    if fromForeignApp, strongSelf.canSendInHighQuality {
+                        items.append(
+                            .action(ContextMenuActionItem(text: presentationData.strings.Attachment_SendInHd, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/QualityHd"), color: theme.contextMenu.primaryColor) }, action: { _, f in
+                                f(.default)
+                                if let strongSelf = self {
+                                    strongSelf.send(showNames: showNamesValue, silently: true)
+                                }
+                            }))
+                        )
+                    }
+                    
                     items.append(contentsOf: [
                         .action(ContextMenuActionItem(text: presentationData.strings.Conversation_SendMessage_SendSilently, icon: { theme in return generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Menu/SilentIcon"), color: theme.contextMenu.primaryColor) }, action: { _, f in
                             f(.default)

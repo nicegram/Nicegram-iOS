@@ -5,12 +5,14 @@ import AsyncDisplayKit
 import ComponentFlow
 import ComponentDisplayAdapters
 import TelegramPresentationData
-import SolidRoundedButtonComponent
+import ButtonComponent
+import MultilineTextComponent
 
 public final class BottomButtonPanelComponent: Component {
     let theme: PresentationTheme
     let title: String
     let label: String?
+    let icon: AnyComponentWithIdentity<Empty>?
     let isEnabled: Bool
     let insets: UIEdgeInsets
     let action: () -> Void
@@ -19,6 +21,7 @@ public final class BottomButtonPanelComponent: Component {
         theme: PresentationTheme,
         title: String,
         label: String?,
+        icon: AnyComponentWithIdentity<Empty>? = nil,
         isEnabled: Bool,
         insets: UIEdgeInsets,
         action: @escaping () -> Void
@@ -26,6 +29,7 @@ public final class BottomButtonPanelComponent: Component {
         self.theme = theme
         self.title = title
         self.label = label
+        self.icon = icon
         self.isEnabled = isEnabled
         self.insets = insets
         self.action = action
@@ -39,6 +43,9 @@ public final class BottomButtonPanelComponent: Component {
             return false
         }
         if lhs.label != rhs.label {
+            return false
+        }
+        if lhs.icon != rhs.icon {
             return false
         }
         if lhs.isEnabled != rhs.isEnabled {
@@ -98,25 +105,39 @@ public final class BottomButtonPanelComponent: Component {
             
             transition.setFrame(layer: self.separatorLayer, frame: CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
             
+            var buttonTitleVStack: [AnyComponentWithIdentity<Empty>] = []
+            
+            let titleString = NSMutableAttributedString(string: component.title, font: Font.semibold(17.0), textColor: component.theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)
+            buttonTitleVStack.append(AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(text: .plain(titleString)))))
+            
+            if let label = component.label {
+                let labelString = NSMutableAttributedString(string: label, font: Font.semibold(11.0), textColor: component.theme.list.itemCheckColors.foregroundColor.withAlphaComponent(0.7), paragraphAlignment: .center)
+                buttonTitleVStack.append(AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(text: .plain(labelString)))))
+            }
+            
+            var buttonTitleContent: AnyComponent<Empty> = AnyComponent(VStack(buttonTitleVStack, spacing: 1.0))
+            if let icon = component.icon {
+                buttonTitleContent = AnyComponent(HStack([
+                    icon,
+                    AnyComponentWithIdentity(id: "_title", component: buttonTitleContent)
+                ], spacing: 7.0))
+            }
+            
             let actionButtonSize = self.actionButton.update(
                 transition: transition,
-                component: AnyComponent(SolidRoundedButtonComponent(
-                    title: component.title,
-                    label: component.label,
-                    theme: SolidRoundedButtonComponent.Theme(
-                        backgroundColor: component.theme.list.itemCheckColors.fillColor,
-                        backgroundColors: [],
-                        foregroundColor: component.theme.list.itemCheckColors.foregroundColor
+                component: AnyComponent(ButtonComponent(
+                    background: ButtonComponent.Background(
+                        color: component.theme.list.itemCheckColors.fillColor,
+                        foreground: component.theme.list.itemCheckColors.foregroundColor,
+                        pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                        cornerRadius: 10.0
                     ),
-                    font: .bold,
-                    fontSize: 17.0,
-                    height: 50.0,
-                    cornerRadius: 10.0,
-                    gloss: false,
+                    content: AnyComponentWithIdentity(
+                        id: 0,
+                        component: buttonTitleContent
+                    ),
                     isEnabled: component.isEnabled,
-                    animationName: nil,
-                    iconPosition: .right,
-                    iconSpacing: 4.0,
+                    displaysProgress: false,
                     action: { [weak self] in
                         guard let self else {
                             return

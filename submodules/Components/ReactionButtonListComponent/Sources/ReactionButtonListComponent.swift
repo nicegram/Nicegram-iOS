@@ -842,11 +842,13 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
                 let compactString = countString(Int64(spec.component.count))
                 #endif
                 
-                for character in compactString {
-                    counterComponents.append(String(character))
-                }
-                for character in "\(spec.component.count)" {
-                    extractedCounterComponents.append(String(character))
+                if spec.component.count != 0 {
+                    for character in compactString {
+                        counterComponents.append(String(character))
+                    }
+                    for character in "\(spec.component.count)" {
+                        extractedCounterComponents.append(String(character))
+                    }
                 }
             }
             

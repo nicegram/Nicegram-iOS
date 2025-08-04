@@ -14425,6 +14425,12 @@ Sorry for the inconvenience.";
 "Notification.TodoTasks_1" = "%@ task";
 "Notification.TodoTasks_any" = "%@ tasks";
 
+"Notification.TodoTasksDone_1" = "%@ task as done";
+"Notification.TodoTasksDone_any" = "%@ tasks as done";
+
+"Notification.TodoTasksUndone_1" = "%@ task as not done";
+"Notification.TodoTasksUndone_any" = "%@ tasks as not done";
+
 "Notification.TodoCompleted" = "%1$@ marked \"%2$@\" as done.";
 "Notification.TodoIncompleted" = "%1$@ marked \"%2$@\" as undone.";
 "Notification.TodoMultipleCompleted" = "%1$@ marked %2$@ as done.";
@@ -14433,6 +14439,9 @@ Sorry for the inconvenience.";
 "Notification.TodoIncompletedYou" = "You marked \"%1$@\" as not done.";
 "Notification.TodoMultipleCompletedYou" = "You marked %1$@ as done.";
 "Notification.TodoMultipleIncompletedYou" = "You marked %1$@ as not done.";
+
+"Notification.TodoMultiple" = "%1$@ marked %2$@.";
+"Notification.TodoMultipleYou" = "You marked %1$@.";
 
 "Notification.TodoAddedTasks_1" = "%@ task";
 "Notification.TodoAddedTasks_any" = "%@ tasks";
@@ -14448,6 +14457,8 @@ Sorry for the inconvenience.";
 "SuggestPost.SetTimeFormat.Date" = "%@";
 "SuggestPost.SetTimeFormat.TodayAt" = "Today at %@";
 "SuggestPost.SetTimeFormat.TomorrowAt" = "Tomorrow at %@";
+"SuggestPost.SetTimeFormat.Any" = "Anytime";
+"SuggestPost.SetTime.Label" = "Time";
 
 "Chat.TodoItemCompletionTimestamp.Date" = "completed %@";
 "Chat.TodoItemCompletionTimestamp.TodayAt" = "completed today at %@";
@@ -14496,7 +14507,8 @@ Sorry for the inconvenience.";
 "Chat.Todo.ContextMenu.SectionsInfo" = "You're viewing actions for one task.\nYou can switch to actions for the list.";
 
 "Chat.Todo.PremiumRequired" = "Only [Telegram Premium]() subscribers can mark tasks as done.";
-"Chat.Todo.CompletionLimited" = "%@ has restricted others from editing this to do list.";
+"Chat.Todo.CompletionLimited" = "%@ has restricted others from editing this checklist.";
+"Chat.Todo.CompletionLimitedForward" = "You can’t make changes to forwarded checklists.";
 
 "Forward.ErrorTodoDisabledInChannels" = "Sorry, checklists can’t be forwarded to channels.";
 
@@ -14542,8 +14554,8 @@ Sorry for the inconvenience.";
 "Chat.PostApproval.Message.UserAgreementPriceTon" = "💰 You have been charged %1$@.\n\n⌛ **%2$@** will receive the TON once the post has been live for 24 hours.\n\n🔄 If admins the post before it has been live for 24 hours, your TON will be refunded.";
 "Chat.PostApproval.Message.AdminAgreementPriceStars" = "💰 The user have been charged %1$@.\n\n⌛ **%2$@** will receive the Stars once the post has been live for 24 hours.\n\n🔄 If you remove the post before it has been live for 24 hours, the user's Stars will be refunded.";
 "Chat.PostApproval.Message.AdminAgreementPriceTon" = "💰 The user have been charged %1$@.\n\n⌛ **%2$@** will receive the TON once the post has been live for 24 hours.\n\n🔄 If you remove the post before it has been live for 24 hours, the user's TON will be refunded.";
-"Chat.PostApproval.Message.AdminDeclined" = "You declined the post.";
-"Chat.PostApproval.Message.AdminDeclinedComment" = "You declined the post with the following comment:\n\n%@";
+"Chat.PostApproval.Message.AdminDeclined" = "";
+"Chat.PostApproval.Message.AdminDeclinedComment" = "%@";
 
 "Chat.PostApproval.Message.ActionApprove" = "Approve";
 "Chat.PostApproval.Message.ActionReject" = "Decline";
@@ -14623,7 +14635,7 @@ Sorry for the inconvenience.";
 "VoiceOver.SuggestPost" = "Suggest Post";
 
 "Chat.ContextMenu.SuggestedPost.EditMessage" = "Edit Message";
-"Chat.ContextMenu.SuggestedPost.EditPrice" = "Edit Prive";
+"Chat.ContextMenu.SuggestedPost.EditPrice" = "Edit Price";
 "Chat.ContextMenu.SuggestedPost.EditTime" = "Edit Time";
 "Chat.ContextMenu.SuggestedPost.Create" = "Suggest Post";
 
@@ -14667,3 +14679,192 @@ Sorry for the inconvenience.";
 "Chat.Todo.Message.Completed_any" = "%@ of {count} completed";
 "Chat.Todo.Message.CompletedBy_1" = "%@ of {count} completed by {name}";
 "Chat.Todo.Message.CompletedBy_any" = "%@ of {count} completed by {name}";
+
+"Notification.StarGift.ReleasedBy" = "released by %@";
+
+"Gift.View.ReleasedBy" = "released by %@";
+"Gift.Unique.CollectibleBy" = "collectible %1$@ by %2$@";
+
+"SendInviteLink.TextCallsRestrictedSendOneInviteLink" = "**%@** restricts calling them. You can send them an invite link to call instead.";
+
+"Chat.ReplyPanel.ReplyToTodoItem" = "Reply to Checklist Item";
+
+"Chat.Todo.ReplyToItem" = "Reply to Item";
+
+"Premium.SubscribeForBiannual" = "Subscribe for %@ / 2 years";
+"Premium.Biannual" = "2 Years";
+
+"Premium.PricePer2Years" = "%@/2 years";
+
+"Chat.SensitiveContentShort" = "18+";
+
+"AccessDenied.AgeVerificationCamera" = "Telegram needs access to your camera for age verification.\n\nOpen your device's Settings > Privacy > Camera and set Telegram to ON.";
+
+"PeerInfo.Gifts.Collections.All" = "All Gifts";
+"PeerInfo.Gifts.Collections.Add" = "Add Collection";
+
+"PeerInfo.Gifts.AddGiftsButton" = "Add Gifts";
+
+"PeerInfo.Gifts.AddCollection" = "Add Collection";
+"PeerInfo.Gifts.AddGifts" = "Add Gifts";
+"PeerInfo.Gifts.RenameCollection" = "Rename";
+"PeerInfo.Gifts.ShareCollection" = "Share";
+"PeerInfo.Gifts.DeleteCollection" = "Delete Collection";
+
+"PeerInfo.Gifts.CreateCollection.Title" = "Create a New Collection";
+"PeerInfo.Gifts.CreateCollection.Text" = "Choose a name for your collection and start adding your gifts there.";
+"PeerInfo.Gifts.CreateCollection.Placeholder" = "Title";
+
+"PeerInfo.Gifts.RenameCollection.Title" = "Create a New Collection";
+
+"PeerInfo.Gifts.Context.AddToCollection" = "Add to Collection";
+"PeerInfo.Gifts.Context.NewCollection" = "New Collection";
+"PeerInfo.Gifts.Context.RemoveFromCollection" = "Remove from Collection";
+
+"PeerInfo.Gifts.CollectionLimitReached.Title" = "Limit Reached";
+"PeerInfo.Gifts.CollectionLimitReached.Text" = "Please remove one of the existing collections to add a new one.";
+
+"PeerInfo.Gifts.RemoveCollectionConfirmation" = "This will remove the collection.";
+"PeerInfo.Gifts.RemoveCollectionAction" = "Remove";
+
+"PeerInfo.Gifts.EmptyCollection.Title" = "Organize Your Gifts";
+"PeerInfo.Gifts.EmptyCollection.Text" = "Add some gifts to this collection.";
+"PeerInfo.Gifts.EmptyCollection.Action" = "Add to Collection";
+
+"PeerInfo.Gifts.AddedToCollection" = "The gift has been added to **%@**.";
+"PeerInfo.Gifts.RemovedFromCollection" = "The gift has been removed from **%@**.";
+
+"PeerInfo.Gifts.AddedToCollectionUnique" = "**%1$@** has been added to **%2$@**.";
+"PeerInfo.Gifts.RemovedFromCollectionUnique" = "**%1$@** has been removed from **%2$@**.";
+
+"AddGifts.Title" = "Add Gifts";
+"AddGifts.AddGifts_1" = "Add %@ Gift";
+"AddGifts.AddGifts_any" = "Add %@ Gifts";
+
+"Gift.Options.Gift.BuyLimitReached_1" = "You've already sent %@ of these gifts, and it's the limit.";
+"Gift.Options.Gift.BuyLimitReached_any" = "You've already sent %@ of these gifts, and it's the limit.";
+
+"AgeVerification.Title" = "Age Verification";
+"AgeVerification.Text" = "To access this content, you must confirm you are at least **18** years old.\n\nThis is a one-time process using your phone's camera. Your selfie will not be stored by Telegram.";
+"AgeVerification.Text.GB" = "To access this content, you must confirm you are at least **18** years old as required by UK law.\n\nThis is a one-time process using your phone's camera. Your selfie will not be stored by Telegram.";
+"AgeVerification.Verify" = "Verify My Age";
+
+"AgeVerification.Unavailable.Title" = "18+";
+"AgeVerification.Unavailable.Text" = "This media may contain sensitive content suitable only for adults.";
+
+"AgeVerification.Success.Title" = "Age check passed!";
+"AgeVerification.Success.Text" = "You can now view this content.";
+
+"AgeVerification.Fail.Title" = "Age check failed";
+"AgeVerification.Fail.Text" = "Sorry, you can't view this content.";
+
+"FaceScan.Instruction.Position" = "Position your face\nwithin the frame";
+"FaceScan.Instruction.Rotate" = "Move your head slowly to\ncomplete the circle";
+
+"Gift.Buy.Confirm.BuyForTon" = "Buy for %@ TON";
+
+"Gift.View.DisplayedInfoNew" = "This gift is visible. [Hide from Profile >]()";
+"Gift.View.HiddenInfoNew" = "This gift is hidden. [Show on Profile >]()";
+
+"Gift.View.DisplayedInfoChannelNew" = "This gift is visible. [Hide from Profile >]()";
+"Gift.View.HiddenInfoChannelNew" = "This gift is hidden. [Show on Profile >]()";
+
+"Gift.View.Upgrade" = "Upgrade";
+
+"Gift.View.UpgradeDescription" = "Upgrade this gift to turn it to a unique collectible.";
+"Gift.View.UpgradeFreeDescription" = "Upgrade this gift for free to turn it to a unique collectible.";
+
+"Gift.View.EqualsTo" = "Equals to %@";
+
+"Gift.Buy.AcceptsTonOnly" = "The seller only accepts\nTON as payment.";
+"Gift.Buy.PayInStars" = "Pay in Stars";
+"Gift.Buy.PayInTon" = "Pay in TON";
+"Gift.Buy.PayInTon.Tooltip" = "Pay with TON to skip the 21-day wait before transferring the gift again.";
+
+"Premium.PremiumGift.Title" = "Premium Gift";
+"Premium.PremiumGift.Description" = "Subscribe to **Telegram Premium** to send up to **5** of these gifts and unlock access to multiple additional features.";
+
+"Stars.SellGift.TonAmountTitle" = "PRICE IN TON";
+"Stars.SellGift.OnlyTon" = "Only Accept TON";
+"Stars.SellGift.OnlyTonInfo" = "If the buyer pays you in TON, there's no risk of refunds, unlike with Stars payments.";
+
+"Chat.ViewCollection" = "VIEW COLLECTION";
+
+"CallList.DeleteConfirmation" = "Do you want to delete the information about this call?";
+
+"ChatList.Search.FilterGlobalPosts" = "Posts";
+"ChatList.HeaderPublicPosts" = "PUBLIC POSTS";
+"ChatList.PaidSearchToast.Text_1" = "%@ Star spent on extra search.";
+"ChatList.PaidSearchToast.Text_any" = "%@ Stars spent on extra search.";
+
+"ChatList.GlobalSearch.StartPlaceholder.Title" = "Global Search";
+"ChatList.GlobalSearch.StartPlaceholder.Text" = "Type a keyword to search all posts\nfrom public channels.";
+"ChatList.GlobalSearch.StartPlaceholder.Subtitle" = "Global search is a Premium feature.";
+"ChatList.GlobalSearch.StartPlaceholder.RemainingSubtitle_1" = "%@ free search remaining today.";
+"ChatList.GlobalSearch.StartPlaceholder.RemainingSubtitle_any" = "%@ free searches remaining today.";
+"ChatList.GlobalSearch.LimitPlaceholder.Title" = "Limit Reached";
+"ChatList.GlobalSearch.LimitPlaceholder.Text_1" = "You can make up to\n%@ search query per day.";
+"ChatList.GlobalSearch.LimitPlaceholder.Text_any" = "You can make up to\n%@ search queries per day.";
+"ChatList.GlobalSearch.SearchButton" = "Search";
+"ChatList.GlobalSearch.SearchButtonPremium" = "Subscribe to Premium";
+"ChatList.GlobalSearch.SearchButtonQuery" = "Search {}";
+"ChatList.GlobalSearch.SearchButtonPaidTitle" = "Search for  *  %@";
+"ChatList.GlobalSearch.SearchButtonPaidSubtitle" = "free search unlocks in %@";
+
+"Chat.ViewCollection" = "VIEW COLLECTION";
+"Chat.ViewAlbum" = "VIEW ALBUM";
+
+"PeerInfo.MenuAddStories" = "Add Stories";
+"Stories.MenuDeleteAlbum" = "Delete Album";
+"Stories.AddStoriesTitle" = "Add Stories";
+"Stories.AddStoriesEmpty" = "Add Stories";
+"Stories.AddStories_1" = "Add %@ Story";
+"Stories.AddStories_any" = "Add %@ Stories";
+"Stories.MenuAddToAlbum" = "Add to Album";
+"Stories.MenuRemoveFromAlbum" = "Remove from Album";
+"Stories.MenuNewAlbum" = "New Album";
+"Stories.MenuRenameAlbum" = "Rename Album";
+"Stories.StatusEmpty" = "no stories";
+"Stories.AlbumAll" = "All Stories";
+"Stories.AlbumAdd" = "+ Add Album";
+"Stories.AlbumEmptyTitle" = "Organize Your Stories";
+"Stories.AlbumEmptyText" = "Add some stories to this album.";
+"Stories.AlbumEmptyButton" = "Add to Album";
+"Stories.CreateAlbum.Title" = "Create a New Album";
+"Stories.CreateAlbum.Text" = "Choose a name for your album and start adding your stories there.";
+"Stories.CreateAlbum.Placeholder" = "Title";
+"Stories.EditAlbum.Title" = "Edit Album Name";
+"Stories.EditAlbum.Text" = "Choose a new name for your album.";
+"Stories.DeleteAlbum.Confirmation" = "Delete %@?";
+
+"ProfileLevelInfo.Title" = "Rating";
+"ProfileLevelInfo.MyText" = "The rating reflects your activity on Telegram. What affects it:";
+"ProfileLevelInfo.MyDescriptionToday_1" = "The rating updates today.\n\%@ point is pending.";
+"ProfileLevelInfo.MyDescriptionToday_any" = "The rating updates today.\n\%@ points are pending.";
+"ProfileLevelInfo.MyDescriptionDays_1" = "%@ day";
+"ProfileLevelInfo.MyDescriptionDays_any" = "%@ days";
+"ProfileLevelInfo.MyDescriptionPoints_1" = "%@ point is";
+"ProfileLevelInfo.MyDescriptionPoints_any" = "%@ points are";
+"ProfileLevelInfo.MyDescription" = "The rating updates in %@ after purchases.\n\%@ pending.";
+"ProfileLevelInfo.OtherDescription" = "The rating reflects **%@'s** activity on Telegram. What affects it:";
+"ProfileLevelInfo.LevelIndex_1" = "Level %@";
+"ProfileLevelInfo.LevelIndex_any" = "Level %@";
+"ProfileLevelInfo.CloseButton" = "Understood";
+
+"ProfileLevelInfo.Item0.Title" = "Gifts from Telegram";
+"ProfileLevelInfo.Item0.Text" = "100% of the Stars spent on gifts purchased from Telegram.";
+"ProfileLevelInfo.Item0.Badge" = "ADDED";
+"ProfileLevelInfo.Item1.Title" = "Gifts and Posts from Users";
+"ProfileLevelInfo.Item1.Text" = "20% of the Stars spent on gifts or posts from users and channels.";
+"ProfileLevelInfo.Item1.Badge" = "ADDED";
+"ProfileLevelInfo.Item2.Title" = "Refunds and Conversions";
+"ProfileLevelInfo.Item2.Text" = "10x of refunded Stars and 85% of bought gifts converted to Stars.";
+"ProfileLevelInfo.Item2.Badge" = "DEDUCTED";
+
+"Call.AlertMoveToConference" = "End current call and start a conference?";
+
+"Stories.Post.Album" = "Album";
+"Stories.Post.AlbumFooter" = "Choose the albums where you want to share your story.";
+"Stories.Post.AlbumAll" = "All Stories";
+"Stories.Post.AlbumCount_1" = "%@ Album";
+"Stories.Post.AlbumCount_any" = "%@ Albums";

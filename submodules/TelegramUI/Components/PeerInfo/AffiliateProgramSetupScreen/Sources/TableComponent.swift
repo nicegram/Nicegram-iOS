@@ -224,7 +224,7 @@ final class TableComponent: CombinedComponent {
     }
 }
 
-private final class TableAlertContentComponet: CombinedComponent {
+private final class TableAlertContentComponent: CombinedComponent {
     let theme: PresentationTheme
     let title: String
     let text: String
@@ -237,7 +237,7 @@ private final class TableAlertContentComponet: CombinedComponent {
         self.table = table
     }
     
-    static func ==(lhs: TableAlertContentComponet, rhs: TableAlertContentComponet) -> Bool {
+    static func ==(lhs: TableAlertContentComponent, rhs: TableAlertContentComponent) -> Bool {
         if lhs.theme !== rhs.theme {
             return false
         }
@@ -322,7 +322,7 @@ private final class TableAlertContentComponet: CombinedComponent {
 func tableAlert(theme: PresentationTheme, title: String, text: String, table: TableComponent, actions: [ComponentAlertAction]) -> ViewController {
     return componentAlertController(
         theme: AlertControllerTheme(presentationTheme: theme, fontSize: .regular),
-        content: AnyComponent(TableAlertContentComponet(
+        content: AnyComponent(TableAlertContentComponent(
             theme: theme,
             title: title,
             text: text,

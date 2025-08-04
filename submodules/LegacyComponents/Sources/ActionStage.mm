@@ -244,7 +244,13 @@ ActionStage *ActionStageInstance()
         return @"";
     
     int length = (int)path.length;
+
+#pragma clang diagnostic push
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#pragma clang diagnostic ignored "-Wvla-cxx-extension"
+#endif
     unichar newPath[path.length];
+#pragma clang diagnostic pop
     int newLength = 0;
     
     SEL sel = @selector(characterAtIndex:);
