@@ -3918,12 +3918,6 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
             }
         }
         
-        // Nicegram AiShortcuts
-        let aiShortcutsLoading = self.aiShortcutsLoading
-        self.actionButtons.sendButton.isEnabled = !aiShortcutsLoading
-        self.actionButtons.sendContainerNode.alpha = aiShortcutsLoading ? 0.3 : 1
-        //
-        
         var animateWithBounce = false
         if self.extendedSearchLayout {
             hideMicButton = true
@@ -4088,6 +4082,20 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
         }
         
         self.actionButtons.updateAccessibility()
+        
+        // Nicegram AiShortcuts
+        let aiShortcutsLoading = self.aiShortcutsLoading
+        
+        self.actionButtons.ngSendContainerNode.isUserInteractionEnabled = !aiShortcutsLoading
+        
+        let sendAlpha: CGFloat
+        if self.actionButtons.sendContainerNode.alpha.isZero {
+            sendAlpha = 0
+        } else {
+            sendAlpha = aiShortcutsLoading ? 0.3 : 1
+        }
+        self.actionButtons.ngSendContainerNode.alpha = sendAlpha
+        //
     }
     
     private func updateTextHeight(animated: Bool) {

@@ -795,7 +795,7 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
 
     let showCallsTab = context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.callListSettings])
         |> map { sharedData -> Bool in
-            var value = false
+            var value = CallListSettings.defaultSettings.showTab
             if let settings = sharedData.entries[ApplicationSpecificSharedDataKeys.callListSettings]?.get(CallListSettings.self) {
                 value = settings.showTab
             }

@@ -5095,9 +5095,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 
                 if !messages.isEmpty || postEmptyMessages || self.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil {
                     if let forwardMessageIds = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
-                        // Nicegram ForwardAsCopy
-                        let asCopy = self.chatPresentationInterfaceState.interfaceState.forwardAsCopy
-                        //
                         var attributes: [MessageAttribute] = []
                         attributes.append(ForwardOptionsMessageAttribute(hideNames: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideNames == true, hideCaptions: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideCaptions == true))
 
@@ -5107,8 +5104,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         }
                         
                         for id in forwardMessageIds.sorted() {
-                            // Nicegram ForwardAsCopy, asCopy added
-                            messages.append(.forward(source: id, threadId: replyThreadId, grouping: .auto, attributes: attributes, correlationId: nil, asCopy: asCopy))
+                            messages.append(.forward(source: id, threadId: replyThreadId, grouping: .auto, attributes: attributes, correlationId: nil))
                         }
                     }
                                         

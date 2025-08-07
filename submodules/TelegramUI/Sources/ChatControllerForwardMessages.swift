@@ -37,7 +37,7 @@ extension ChatControllerImpl {
             // Nicegram
             if (cloud) {
                 let _ = (enqueueMessages(account: self.context.account, peerId: self.context.account.peerId, messages: messages.map { message -> EnqueueMessage in
-                    return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: nil, asCopy: asCopy)
+                    return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: nil)
                 })
                          |> deliverOnMainQueue).start(next: { messageIds in
                     let signals: [Signal<Bool, NoError>] = messageIds.compactMap({ id -> Signal<Bool, NoError>? in
@@ -207,8 +207,7 @@ extension ChatControllerImpl {
                         attributes.append(ForwardOptionsMessageAttribute(hideNames: forwardOptions?.hideNames == true, hideCaptions: forwardOptions?.hideCaptions == true))
                         
                         result.append(contentsOf: messages.map { message -> EnqueueMessage in
-                            // Nicegram, asCopy added
-                            return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: attributes, correlationId: nil, asCopy: asCopy)
+                            return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: attributes, correlationId: nil)
                         })
                         
                         let commit: ([EnqueueMessage]) -> Void = { result in
@@ -448,8 +447,7 @@ extension ChatControllerImpl {
                     let mappedMessages = messages.map { message -> EnqueueMessage in
                         let correlationId = Int64.random(in: Int64.min ... Int64.max)
                         correlationIds.append(correlationId)
-                        // Nicegram (asCopy)
-                        return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: correlationId, asCopy: asCopy)
+                        return .forward(source: message.id, threadId: nil, grouping: .auto, attributes: [], correlationId: correlationId)
                     }
                     
                     let _ = (reactionItems

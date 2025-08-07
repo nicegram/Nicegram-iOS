@@ -6770,25 +6770,18 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         with id: Int32,
         peerId: Int64
     ) {
-        guard let navigationController = self.context.sharedContext.mainWindow?.viewController as? NavigationController else { return }
-        
-        _ = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: PeerId(peerId)))
-            .start { [weak self] result in
-                if let result, let self {
-                    self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(
-                        navigationController: navigationController,
-                        context: self.context,
-                        chatLocation: .peer(EnginePeer(result._asPeer())),
-                        subject: .message(
-                            id: .id(EngineMessage.Id(peerId: result.id, namespace: 0, id: id)),
-                            highlight: ChatControllerSubject.MessageHighlight(quote: nil),
-                            timecode: nil,
-                            setupReply: false
-                        ),
-                        keepStack: .always
-                    ))
-                }
-            }
+        Task {
+            let peerId = PeerId(peerId)
+            let messageId = MessageId(peerId: peerId, namespace: 0, id: id)
+            
+            let link = try await context.engine.messages.exportMessageLink(
+                peerId: peerId,
+                messageId: messageId,
+                isThread: true
+            ).awaitForFirstValue().unwrap()
+            
+            CoreContainer.shared.urlOpener().open(link)
+        }
     }
     //
 }
