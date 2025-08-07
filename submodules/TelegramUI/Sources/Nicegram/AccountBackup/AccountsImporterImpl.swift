@@ -14,6 +14,10 @@ extension AccountsImporterImpl: AccountsImporter {
     func importAccounts(_ records: [AccountBackupRecord]) async throws {
         try await sharedContextProvider.sharedContext().accountManager
             .transaction { transaction in
+                let currentMaxSortOrder = transaction.getRecords()
+                    .map { $0.attributes.sortOrder }
+                    .max() ?? -1
+                var sortOrder = currentMaxSortOrder + 1
                 for record in records {
                     let telegramData = try? AccountBackupRecord.TelegramData(
                         string: record.telegramData
@@ -22,6 +26,7 @@ extension AccountsImporterImpl: AccountsImporter {
                         let record = telegramData.toRecord(recordId: record.tgAccountId)
                         transaction.updateRecord(record.id) { _ in
                             var attributes = record.attributes
+                            attributes.sortOrder = sortOrder
                             attributes.updateNicegramAttribute {
                                 $0 = AccountNicegramAttribute(
                                     imported: true
@@ -30,6 +35,7 @@ extension AccountsImporterImpl: AccountsImporter {
                             
                             return record.with(attributes: attributes)
                         }
+                        sortOrder += 1
                     }
                 }
                 

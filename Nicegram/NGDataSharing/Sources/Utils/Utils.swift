@@ -21,7 +21,11 @@ func prepareForSharing(messages: [Message]) -> [Message] {
     let getConfigUseCase = DataSharingModule.shared.getConfigUseCase()
     let config = getConfigUseCase()
     
-    let messages = messages.sorted { $0.date > $1.date }
+    let messages = messages
+        .filter {
+            !$0.message.isEmpty || ($0.media != nil)
+        }
+        .sorted { $0.date > $1.date }
     
     var groupedMessages: [GroupedMessages] = []
     for message in messages {

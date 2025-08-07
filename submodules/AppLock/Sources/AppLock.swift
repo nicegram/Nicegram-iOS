@@ -27,7 +27,7 @@ private func isLocked(passcodeSettings: PresentationPasscodeSettings, state: Loc
             if timestamp.bootTimestamp != applicationActivityTimestamp.bootTimestamp {
                 return true
             }
-            if timestamp.uptime >= applicationActivityTimestamp.uptime + autolockTimeout {
+            if timestamp.uptime > applicationActivityTimestamp.uptime + autolockTimeout {
                 return true
             }
         } else {

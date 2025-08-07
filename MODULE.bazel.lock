@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "O9f9KZzKDY2k1O7DX2SJQoktdgrpTrnNNZs8JlD3zXU=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "e6916f3923144168e2e92bdb5fd7bc1c04bd3cb7ce172e8780fd41577c34365b"
+          "@@//Package.resolved": "4c1e677196cf99ed14cb4d75d7a838ec2d3fde20c0b7aaf790c761de10e0939c"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "c88cc2b572002340204feaee497783510f889d11",
+              "commit": "7065db0084f7c6c574844933e271d8f8752c8498",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1631,9 +1631,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_xctest_dynamic_overlay",
-              "commit": "23e3442166b5122f73f9e3e622cd1e4bafeab3b7",
+              "commit": "b2ed9eabefe56202ee4939dd9fc46b6241c88317",
               "remote": "https://github.com/pointfreeco/xctest-dynamic-overlay",
-              "version": "1.6.0",
+              "version": "1.6.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
