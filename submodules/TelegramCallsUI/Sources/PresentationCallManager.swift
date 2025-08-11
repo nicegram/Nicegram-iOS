@@ -12,7 +12,7 @@ import TelegramUIPreferences
 import AccountContext
 import CallKit
 import PhoneNumberFormat
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
 import NGLogging
 import NGData
 import NGStrings
@@ -202,7 +202,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                 return result
             }
         }
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.ringingStatesDisposable = (combineLatest(ringingStatesByAccount, enableCallKit, enabledMicrophoneAccess, accountManager.currentAccountRecord(allocateIfNotExists: false)) |> mapToSignal { ringingStatesByAccount, enableCallKit, enabledMicrophoneAccess, currentAccountRecord -> Signal<([(AccountContext, Peer, CallSessionRingingState, Bool, NetworkType)], Bool), NoError> in
             if ringingStatesByAccount.isEmpty {
                 return .single(([], enableCallKit && enabledMicrophoneAccess))
@@ -214,7 +214,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     )
                     |> map { peer, isContact -> (AccountContext, Peer, CallSessionRingingState, Bool, NetworkType)? in
                         if let peer = peer {
-                            // MARK: Nicegram DB Changes
+                            // Nicegram DB Changes
                             if context.account.isHidden,
                                let currentAccountRecordId = currentAccountRecord?.0,
                                currentAccountRecordId != context.account.id {
@@ -347,7 +347,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
                     let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
-                    // MARK: Nicegram NCG-5828 call recording, callActiveState
+                    // Nicegram NCG-5828 call recording, callActiveState
                     let call = PresentationCallImpl(
                         context: firstState.0,
                         audioSession: strongSelf.audioSession,
@@ -381,7 +381,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
 
                     strongSelf.updateCurrentCall(call)
                 }))
-            } else if let currentCall = self.currentCall, currentCall.peerId == firstState.1.id, currentCall.peerId.id._internalGetInt64Value() < firstState.0.account.peerId.id._internalGetInt64Value() {
+            } else if !"".isEmpty, let currentCall = self.currentCall, currentCall.peerId == firstState.1.id, currentCall.peerId.id._internalGetInt64Value() < firstState.0.account.peerId.id._internalGetInt64Value() {
                 let _ = currentCall.hangUp().startStandalone()
                 
                 self.currentCallDisposable.set((combineLatest(
@@ -447,28 +447,25 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
     }
     
     public func requestCall(context: AccountContext, peerId: PeerId, isVideo: Bool, endCurrentIfAny: Bool) -> RequestCallResult {
-        var alreadyInCall: Bool = false
-        var alreadyInCallWithPeerId: PeerId?
+        var alreadyInCallType: CallAlreadyInProgressType?
         
         if let call = self.currentCall {
-            alreadyInCall = true
-            alreadyInCallWithPeerId = call.peerId
+            alreadyInCallType = .peer(call.peerId)
         } else if let currentGroupCall = self.currentGroupCallValue {
-            alreadyInCall = true
             switch currentGroupCall {
             case let .conferenceSource(conferenceSource):
-                alreadyInCallWithPeerId = conferenceSource.peerId
+                alreadyInCallType = .peer(conferenceSource.peerId)
             case let .group(groupCall):
-                alreadyInCallWithPeerId = groupCall.peerId
+                alreadyInCallType = .peer(groupCall.peerId)
             }
         } else {
             if CXCallObserver().calls.contains(where: { $0.hasEnded == false }) {
-                alreadyInCall = true
+                alreadyInCallType = .external
             }
         }
         
-        if alreadyInCall, !endCurrentIfAny {
-            return .alreadyInProgress(alreadyInCallWithPeerId)
+        if let alreadyInCallType, !endCurrentIfAny {
+            return .alreadyInProgress(alreadyInCallType)
         }
         if let _ = callKitIntegrationIfEnabled(self.callKitIntegration, settings: self.callSettings) {
             let begin: () -> Void = { [weak self] in
@@ -675,7 +672,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
 
-                    // MARK: Nicegram NCG-5828 call recording, callActiveState
+                    // Nicegram NCG-5828 call recording, callActiveState
                     let call = PresentationCallImpl(
                         context: context,
                         audioSession: strongSelf.audioSession,
@@ -975,9 +972,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             } else {
                 switch currentGroupCall {
                 case let .conferenceSource(conferenceSource):
-                    return .alreadyInProgress(conferenceSource.peerId)
+                    return .alreadyInProgress(.peer(conferenceSource.peerId))
                 case let .group(groupCall):
-                    return .alreadyInProgress(groupCall.peerId)
+                    return .alreadyInProgress(.peer(groupCall.peerId))
                 }
             }
         } else if let currentCall = self.currentCall {
@@ -988,7 +985,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     begin()
                 }))
             } else {
-                return .alreadyInProgress(currentCall.peerId)
+                return .alreadyInProgress(.peer(currentCall.peerId))
             }
         } else {
             begin()
@@ -1034,9 +1031,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             } else {
                 switch currentGroupCall {
                 case let .conferenceSource(conferenceSource):
-                    return .alreadyInProgress(conferenceSource.peerId)
+                    return .alreadyInProgress(.peer(conferenceSource.peerId))
                 case let .group(groupCall):
-                    return .alreadyInProgress(groupCall.peerId)
+                    return .alreadyInProgress(.peer(groupCall.peerId))
                 }
             }
         } else if let currentCall = self.currentCall {
@@ -1047,7 +1044,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     begin()
                 }))
             } else {
-                return .alreadyInProgress(currentCall.peerId)
+                return .alreadyInProgress(.peer(currentCall.peerId))
             }
         } else {
             begin()
@@ -1227,9 +1224,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             } else {
                 switch currentGroupCall {
                 case let .conferenceSource(conferenceSource):
-                    return .alreadyInProgress(conferenceSource.peerId)
+                    return .alreadyInProgress(.peer(conferenceSource.peerId))
                 case let .group(groupCall):
-                    return .alreadyInProgress(groupCall.peerId)
+                    return .alreadyInProgress(.peer(groupCall.peerId))
                 }
             }
         } else if let currentCall = self.currentCall {
@@ -1240,7 +1237,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     begin()
                 }))
             } else {
-                return .alreadyInProgress(currentCall.peerId)
+                return .alreadyInProgress(.peer(currentCall.peerId))
             }
         } else {
             begin()
@@ -1248,7 +1245,7 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         return .joined
     }
     
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
     public var callCompletion: (() -> Void)?
 
     private weak var audioDevice: OngoingCallContext.AudioDevice?

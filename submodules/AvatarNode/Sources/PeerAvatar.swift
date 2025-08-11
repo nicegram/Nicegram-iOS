@@ -171,7 +171,7 @@ public func peerAvatarCompleteImage(postbox: Postbox, network: Network, peer: En
     return iconSignal
 }
 
-// MARK: Nicegram changes
+// Nicegram changes
 public func nicegramAvatarImage(nicegramImage: UIImage?) -> Signal<(UIImage, UIImage)?, NoError>? {
     if let nicegramImage = nicegramImage {
         return .single((nicegramImage, nicegramImage))

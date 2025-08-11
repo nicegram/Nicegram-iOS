@@ -517,6 +517,7 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
             availableMessageEffects: nil,
             savedMessageTags: nil,
             defaultReaction: nil,
+            areStarReactionsEnabled: false,
             isPremium: false,
             accountPeer: nil
         )

@@ -610,9 +610,7 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
             self.scrollView.canCancelContentTouches = true
             self.scrollView.clipsToBounds = false
             self.scrollView.contentInsetAdjustmentBehavior = .never
-            if #available(iOS 13.0, *) {
-                self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
-            }
+            self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
             self.scrollView.showsVerticalScrollIndicator = false
             self.scrollView.showsHorizontalScrollIndicator = false
             self.scrollView.alwaysBounceHorizontal = false
@@ -620,6 +618,7 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
             self.scrollView.scrollsToTop = false
             self.scrollView.delegate = self
             self.scrollView.clipsToBounds = true
+            self.scrollView.disablesInteractiveTransitionGestureRecognizer = true
             
             self.addSubview(self.scrollView)
         }
@@ -698,7 +697,7 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
                                 transition.animateScale(view: itemComponentView, from: 0.001, to: 1.0)
                             }
                         }
-                        transition.setFrame(view: itemComponentView, frame: itemFrame)
+                        itemTransition.setFrame(view: itemComponentView, frame: itemFrame)
                     }
                 }
             }
@@ -743,12 +742,16 @@ final class VideoChatExpandedParticipantThumbnailsComponent: Component {
             let size = CGSize(width: availableSize.width, height: itemLayout.contentSize.height)
             
             self.ignoreScrolling = true
+            let previousOffsetX = self.scrollView.bounds.minX
             if self.scrollView.bounds.size != size {
                 transition.setFrame(view: self.scrollView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: size))
             }
             let contentSize = CGSize(width: itemLayout.contentSize.width, height: size.height)
             if self.scrollView.contentSize != contentSize {
                 self.scrollView.contentSize = contentSize
+            }
+            if self.scrollView.isDragging {
+                self.scrollView.bounds.origin.x = previousOffsetX
             }
             self.ignoreScrolling = false
             

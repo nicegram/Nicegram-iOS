@@ -34,6 +34,7 @@ import TextNodeWithEntities
 import RangeSet
 import GiftItemComponent
 import MediaResources
+import UIKitRuntimeUtils
 
 private struct FetchControls {
     let fetch: (Bool) -> Void
@@ -664,7 +665,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
         self.imageNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.imageTap(_:))))
     }
     
-    // MARK: Nicegram downloading feature
+    // Nicegram downloading feature
     private var shouldDownload = false
     private func progressPressed(canActivate: Bool) {
         if let _ = self.attributes?.updatingMedia {
@@ -725,7 +726,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                     }
                 case .Remote, .Paused:
                     if let fetch = self.fetchControls.with({ return $0?.fetch }) {
-                        // MARK: Nicegram downloading feature
+                        // Nicegram downloading feature
                         shouldDownload = true
                         fetch(true)
                     }
@@ -1123,6 +1124,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                     reactionPeers: dateAndStatus.dateReactionPeers,
                     displayAllReactionPeers: message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                     areReactionsTags: message.areReactionsTags(accountPeerId: context.account.peerId),
+                    areStarReactionsEnabled: associatedData.areStarReactionsEnabled,
                     messageEffect: messageEffect,
                     replyCount: dateAndStatus.dateReplies,
                     starsCount: dateAndStatus.starsCount,
@@ -1633,7 +1635,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                     } else if NativeVideoContent.isHLSVideo(file: file) {
                                         strongSelf.fetchDisposable.set(nil)
                                     } else {
-                                        // MARK: Nicegram downloading feature, shouldSave added
+                                        // Nicegram downloading feature, shouldSave added
                                         strongSelf.fetchDisposable.set(messageMediaFileInteractiveFetched(context: context, message: message, file: file, userInitiated: manual, storeToDownloadsPeerId: storeToDownloadsPeerId, shouldSave: true).startStrict())
                                     }
                                 }
@@ -2996,7 +2998,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
             
             var viewText: String = ""
             if case .eye = icon {
-                viewText = strings.Chat_SensitiveContent
+                viewText = wideLayout ? strings.Chat_SensitiveContent : strings.Chat_SensitiveContentShort
                 extendedMediaOverlayNode.dustNode.revealOnTap = false
             } else {
                 outer: for attribute in message.attributes {
@@ -3203,7 +3205,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                 dateAndStatusNode.isHidden = true
             }
             
-            let view: UIView?
+            var view: UIView?
             if let strongSelf = self, strongSelf.imageNode.captureProtected {
                 let imageView = UIImageView()
                 imageView.contentMode = .scaleToFill
@@ -3212,9 +3214,13 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                 if imageView.layer.contents == nil {
                     imageView.layer.contents = imageView.image?.cgImage
                 }
+                setLayerDisableScreenshots(imageView.layer, true)
                 strongSelf.imageNode.view.superview?.insertSubview(imageView, aboveSubview: strongSelf.imageNode.view)
                 
                 view = self?.view.snapshotContentTree(unhide: true)
+                if let view {
+                    setLayerDisableScreenshots(view.layer, true)
+                }
                 imageView.removeFromSuperview()
             } else {
                 view = self?.view.snapshotContentTree(unhide: true)

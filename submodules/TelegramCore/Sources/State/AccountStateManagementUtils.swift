@@ -1595,7 +1595,7 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                         }
                         if let replyToMsgHeader {
                             switch replyToMsgHeader {
-                            case let .inputReplyToMessage(_, replyToMsgId, topMsgId, replyToPeerId, quoteText, quoteEntities, quoteOffset, monoforumPeerId):
+                            case let .inputReplyToMessage(_, replyToMsgId, topMsgId, replyToPeerId, quoteText, quoteEntities, quoteOffset, monoforumPeerId, todoItemId):
                                 let _ = topMsgId
                                 let _ = monoforumPeerId
                                 
@@ -1631,7 +1631,8 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                                 
                                 replySubject = EngineMessageReplySubject(
                                     messageId: MessageId(peerId: parsedReplyToPeerId ?? peer.peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId),
-                                    quote: quote
+                                    quote: quote,
+                                    todoItemId: todoItemId
                                 )
                             case .inputReplyToStory:
                                 break
@@ -2682,7 +2683,7 @@ private func resolveAssociatedMessages(accountPeerId: PeerId, postbox: Postbox, 
                         switch result {
                             case let .messages(messages, chats, users):
                                 return (messages, chats, users)
-                            case let .messagesSlice(_, _, _, _, messages, chats, users):
+                            case let .messagesSlice(_, _, _, _, _, messages, chats, users):
                                 return (messages, chats, users)
                             case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
                                 let _ = apiTopics
@@ -2713,7 +2714,7 @@ private func resolveAssociatedMessages(accountPeerId: PeerId, postbox: Postbox, 
                         switch result {
                             case let .messages(messages, chats, users):
                                 return (messages, chats, users)
-                            case let .messagesSlice(_, _, _, _, messages, chats, users):
+                            case let .messagesSlice(_, _, _, _, _, messages, chats, users):
                                 return (messages, chats, users)
                             case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
                                 let _ = apiTopics
@@ -5114,7 +5115,8 @@ func replayFinalState(
                             isMy: item.isMy,
                             myReaction: updatedReaction,
                             forwardInfo: item.forwardInfo,
-                            authorId: item.authorId
+                            authorId: item.authorId,
+                            folderIds: item.folderIds
                         ))
                         if let entry = CodableEntry(updatedItem) {
                             updatedPeerEntries[index] = StoryItemsTableEntry(value: entry, id: item.id, expirationTimestamp: item.expirationTimestamp, isCloseFriends: item.isCloseFriends)
@@ -5148,7 +5150,8 @@ func replayFinalState(
                         isMy: item.isMy,
                         myReaction: MessageReaction.Reaction(apiReaction: reaction),
                         forwardInfo: item.forwardInfo,
-                        authorId: item.authorId
+                        authorId: item.authorId,
+                        folderIds: item.folderIds
                     ))
                     if let entry = CodableEntry(updatedItem) {
                         transaction.setStory(id: StoryId(peerId: peerId, id: id), value: entry)

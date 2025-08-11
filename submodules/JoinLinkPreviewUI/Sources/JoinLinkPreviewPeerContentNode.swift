@@ -1,4 +1,4 @@
-// MARK: Nicegram
+// Nicegram
 import NGUtils
 //
 import Foundation
@@ -115,7 +115,7 @@ final class JoinLinkPreviewPeerContentNode: ASDisplayNode, ShareContentContainer
     private let theme: PresentationTheme
     private let strings: PresentationStrings
     
-    // MARK: Nicegram ATT
+    // Nicegram ATT
     var inviteHash: String?
     
     private let subscribeButtonClaimApplier = SubscribeButtonClaimApplier()
@@ -393,7 +393,7 @@ final class JoinLinkPreviewPeerContentNode: ASDisplayNode, ShareContentContainer
             
         self.contentOffsetUpdated?(-size.height + nodeHeight, transition)
         
-        // MARK: Nicegram ATT
+        // Nicegram ATT
         subscribeButtonClaimApplier.update(
             buttonNode: actionButtonNode,
             titleNode: actionButtonNode.titleNode,

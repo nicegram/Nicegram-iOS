@@ -19,7 +19,7 @@ import TelegramVoip
 import MetalEngine
 import DeviceAccess
 import LibYuvBinding
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
 import NGStrings
 import UndoUI
 //
@@ -143,7 +143,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
                 return
             }
             self.endCall?()
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
             self.sharedContext.callManager?.stopPartTimer()
 //
         }
@@ -167,7 +167,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             }
             self.restoreUIForPictureInPicture?(completion)
         }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
         self.callScreen.recordAction = { [weak self] in
             guard let self,
                   let callScreenState else {
@@ -215,7 +215,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             remoteVideo: nil,
             isRemoteBatteryLow: false,
             isEnergySavingEnabled: !self.sharedContext.energyUsageSettings.fullTranslucency,
-            // MARK: Nicegram NCG-5828 call recording
+            // Nicegram NCG-5828 call recording
             isCallRecord: false,
             //
             isConferencePossible: false,
@@ -645,7 +645,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
     
     func updatePeer(accountPeer: Peer, peer: Peer, hasOther: Bool) {
         self.updatePeer(peer: EnginePeer(peer))
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
         self.sharedContext.callManager?.setupPeer(peer: EnginePeer(peer))
 //
     }
@@ -827,7 +827,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             )
         }
     }
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
     private func showRecordSaveAlert(with completion: @escaping () -> Void) {
         let alertController = UIAlertController(
             title: l("NicegramCallRecord.StopAlertTitle"),

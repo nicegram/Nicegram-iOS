@@ -33,7 +33,7 @@ public func isConcealedUrlWhitelisted(_ url: URL) -> Bool {
     return false
 }
 
-// MARK: Nicegram parse url change
+// Nicegram parse url change
 public func parseUrl(url: String, wasConcealed: Bool) -> (string: String, concealed: Bool) {
     var parsedUrlValue: URL?
     if url.hasPrefix("tel:") {

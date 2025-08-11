@@ -59,7 +59,7 @@ public final class PasscodeEntryController: ViewController {
     private var inBackground: Bool = false
     private var inBackgroundDisposable: Disposable?
     
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private var isActive: Bool = false
     private var isActiveDisposable: Disposable?
     
@@ -67,7 +67,7 @@ public final class PasscodeEntryController: ViewController {
     private var hasPublicAccounts: Bool = true
     //
       
-    // MARK: Nicegram DB Changes, added hiddenAccountsAccessChallengeData, hasPublicAccountsSignal
+    // Nicegram DB Changes, added hiddenAccountsAccessChallengeData, hasPublicAccountsSignal
     public init(applicationBindings: TelegramApplicationBindings, accountManager: AccountManager<TelegramAccountManagerTypes>, appLockContext: AppLockContext, presentationData: PresentationData, presentationDataSignal: Signal<PresentationData, NoError>, statusBarHost: StatusBarHost?, challengeData: PostboxAccessChallengeData, biometrics: PasscodeEntryControllerBiometricsMode, arguments: PasscodeEntryControllerPresentationArguments, hiddenAccountsAccessChallengeData: [AccountRecordId:PostboxAccessChallengeData], hasPublicAccountsSignal: Signal<Bool, NoError> = .single(true)) {
         self.applicationBindings = applicationBindings
         self.accountManager = accountManager
@@ -75,7 +75,7 @@ public final class PasscodeEntryController: ViewController {
         self.presentationData = presentationData
         self.presentationDataSignal = presentationDataSignal
         self.challengeData = challengeData
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.hiddenAccountsAccessChallengeData = hiddenAccountsAccessChallengeData
         self.biometrics = biometrics
         self.arguments = arguments
@@ -102,7 +102,7 @@ public final class PasscodeEntryController: ViewController {
                 strongSelf.skipNextBiometricsRequest = false
             }
         })
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.isActiveDisposable = (applicationBindings.applicationIsActive
         |> deliverOnMainQueue).start(next: { [weak self] value in
             guard let strongSelf = self else {
@@ -119,7 +119,7 @@ public final class PasscodeEntryController: ViewController {
             strongSelf.hasPublicAccounts = value
         })
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     deinit {
         self.presentationDataDisposable?.dispose()
         self.biometricsDisposable.dispose()
@@ -167,7 +167,7 @@ public final class PasscodeEntryController: ViewController {
             }
             strongSelf.controllerNode.updateInvalidAttempts(attempts)
         })
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         func check(passcode: String, challengeData: PostboxAccessChallengeData) -> Bool {
             switch challengeData {
             case .none:
@@ -189,7 +189,7 @@ public final class PasscodeEntryController: ViewController {
             guard let strongSelf = self else {
                 return
             }
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             var succeed = check(passcode: passcode, challengeData: strongSelf.challengeData)
             if succeed {
                 UserDefaults.standard.set(false, forKey: "inDoubleBottom")
@@ -259,7 +259,7 @@ public final class PasscodeEntryController: ViewController {
         self.view.disablesInteractiveTransitionGestureRecognizer = true
         
         self.controllerNode.activateInput()
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         if !isActive {
             self.controllerNode.initialAppearance()
             self.presentationCompleted?()

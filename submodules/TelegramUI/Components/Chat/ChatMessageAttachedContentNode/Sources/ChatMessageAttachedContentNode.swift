@@ -748,6 +748,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                 reactionPeers: dateReactionsAndPeers.peers,
                                 displayAllReactionPeers: message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                                 areReactionsTags: message.areReactionsTags(accountPeerId: context.account.peerId),
+                                areStarReactionsEnabled: associatedData.areStarReactionsEnabled,
                                 messageEffect: message.messageEffect(availableMessageEffects: associatedData.availableMessageEffects),
                                 replyCount: dateReplies,
                                 starsCount: starsCount,

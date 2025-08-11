@@ -660,7 +660,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             case .stars:
                 formattedAmount = formatStarsAmountText(absCount, dateTimeFormat: dateTimeFormat)
             case .ton:
-                formattedAmount = formatTonAmountText(absCount.value, dateTimeFormat: dateTimeFormat)
+                formattedAmount = formatTonAmountText(absCount.value, dateTimeFormat: dateTimeFormat, maxDecimalPositions: nil)
             }
             let countColor: UIColor
             var countFont: UIFont = isSubscription || isSubscriber ? Font.regular(17.0) : Font.semibold(17.0)
@@ -927,8 +927,13 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     title = count.amount < StarsAmount.zero || countIsGeneric ? strings.Stars_Transaction_To : strings.Stars_Transaction_From
                 }
                 
+                var isGiftResale = false
+                if count.amount < StarsAmount.zero, case let .transaction(transaction, _) = subject, transaction.flags.contains(.isStarGiftResale) {
+                    isGiftResale = true
+                }
+                
                 let toComponent: AnyComponent<Empty>
-                if let _ = giftAnimationSubject, !toPeer.isDeleted && !isGiftUpgrade {
+                if let _ = giftAnimationSubject, !toPeer.isDeleted && !isGiftUpgrade && !isGiftResale {
                     toComponent = AnyComponent(
                         HStack([
                             AnyComponentWithIdentity(
@@ -1207,14 +1212,25 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     if transaction.flags.contains(.isPaidMessage) || transaction.flags.contains(.isStarGiftResale) {
                         var totalStars = transaction.count
                         if let starrefCount = transaction.starrefAmount {
-                            totalStars = CurrencyAmount(amount: totalStars.amount + starrefCount, currency: .stars)
+                            totalStars = CurrencyAmount(amount: totalStars.amount + starrefCount, currency: totalStars.currency)
                         }
-                        let valueString = "\(presentationStringsFormattedNumber(abs(Int32(totalStars.amount.value)), dateTimeFormat.groupingSeparator))⭐️"
+                        var valueString = formatCurrencyAmountText(totalStars, dateTimeFormat: dateTimeFormat)
+                        switch totalStars.currency {
+                        case .stars:
+                            valueString = "\(valueString)⭐️"
+                        case .ton:
+                            valueString = "💎\(valueString)"
+                        }
                         let valueAttributedString = NSMutableAttributedString(string: valueString, font: tableBoldFont, textColor: theme.list.itemDisclosureActions.constructive.fillColor)
-                        let range = (valueAttributedString.string as NSString).range(of: "⭐️")
-                        if range.location != NSNotFound {
-                            valueAttributedString.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)
-                            valueAttributedString.addAttribute(.baselineOffset, value: 1.0, range: range)
+                        let starRange = (valueAttributedString.string as NSString).range(of: "⭐️")
+                        if starRange.location != NSNotFound {
+                            valueAttributedString.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: starRange)
+                            valueAttributedString.addAttribute(.baselineOffset, value: 1.0, range: starRange)
+                        }
+                        let tonRange = (valueAttributedString.string as NSString).range(of: "💎")
+                        if tonRange.location != NSNotFound {
+                            valueAttributedString.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .ton(tinted: true)), range: tonRange)
+                            valueAttributedString.addAttribute(.baselineOffset, value: 1.0, range: tonRange)
                         }
                         tableItems.append(.init(
                             id: "paid",

@@ -1604,6 +1604,7 @@ final class StoryItemSetViewListComponent: Component {
                         foreground: .white,
                         selection: UIColor(rgb: 0xffffff, alpha: 0.09)
                     ),
+                    theme: component.theme,
                     items: [
                         TabSelectorComponent.Item(
                             id: AnyHashable(ListMode.everyone.rawValue),

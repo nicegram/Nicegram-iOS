@@ -353,6 +353,17 @@ absl_sources = [
     "absl/types/bad_any_cast.cc",
     "absl/types/bad_optional_access.cc",
     "absl/types/bad_variant_access.cc",
+    # Nicegram, manually added source files to solve the linking problem. Temporary solution, we should try to remove it the next time we merge with telegram source code.
+    "absl/flags/commandlineflag.cc",
+    "absl/flags/internal/private_handle_accessor.cc",
+    "absl/flags/reflection.cc",
+    "absl/hash/internal/low_level_hash.cc",
+    "absl/strings/internal/damerau_levenshtein_distance.cc",
+    "absl/synchronization/internal/kernel_timeout.cc",
+    "absl/synchronization/mutex.cc",
+    "absl/synchronization/internal/pthread_waiter.cc",
+    "absl/synchronization/internal/waiter_base.cc",
+    #
 ]
 
 cc_library(

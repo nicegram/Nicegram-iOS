@@ -1,4 +1,4 @@
-// MARK: Nicegram Imports
+// Nicegram Imports
 import NGWebUtils
 //
 import Foundation
@@ -464,7 +464,7 @@ extension ChatControllerImpl {
                         if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .forumTopic(thread: replyThreadMessage), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                             self.effectiveNavigationController?.pushViewController(infoController)
                         }
-                    } else if let peer = self.presentationInterfaceState.renderedPeer?.peer, case let .replyThread(replyThreadMessage) = self.chatLocation, peer.isMonoForum {
+                    } else if let monoforumPeer = self.presentationInterfaceState.renderedPeer?.peer, case let .replyThread(replyThreadMessage) = self.chatLocation, monoforumPeer.isMonoForum {
                         let context = self.context
                         if #available(iOS 13.0, *) {
                             Task { @MainActor [weak self] in
@@ -476,7 +476,7 @@ extension ChatControllerImpl {
                                 guard let self else {
                                     return
                                 }
-                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
+                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer._asPeer(), mode: .monoforum(monoforumPeer.id), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                                     self.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             }

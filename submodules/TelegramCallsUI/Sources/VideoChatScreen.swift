@@ -481,7 +481,7 @@ final class VideoChatScreenComponent: Component {
                                     if target === participantsView {
                                         return nil
                                     }
-                                    if let target = target as? UIScrollView {
+                                    if let target = target as? UIScrollView, !target.disablesInteractiveTransitionGestureRecognizer {
                                         return target
                                     }
                                     if let parent = target.superview {

@@ -42,6 +42,10 @@ swift_library(
         "//submodules/UndoUI",
         "//submodules/TemporaryCachedPeerDataManager",
         "//submodules/CountrySelectionUI",
+        "//submodules/TelegramUI/Components/ListActionItemComponent",
+        "//submodules/ContextUI",
+        "//submodules/PromptUI",
+        "//submodules/DirectMediaImageCache",
     ],
     visibility = [
         "//visibility:public",

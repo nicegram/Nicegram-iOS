@@ -37,6 +37,36 @@ public final class StoryPreloadInfo {
     }
 }
 
+public final class TelegramGlobalPostSearchState: Codable, Equatable {
+    public let totalFreeSearches: Int32
+    public let remainingFreeSearches: Int32
+    public let price: StarsAmount
+    public let unlockTimestamp: Int32?
+    
+    public init(totalFreeSearches: Int32, remainingFreeSearches: Int32, price: StarsAmount, unlockTimestamp: Int32?) {
+        self.totalFreeSearches = totalFreeSearches
+        self.remainingFreeSearches = remainingFreeSearches
+        self.price = price
+        self.unlockTimestamp = unlockTimestamp
+    }
+    
+    public static func ==(lhs: TelegramGlobalPostSearchState, rhs: TelegramGlobalPostSearchState) -> Bool {
+        if lhs.totalFreeSearches != rhs.totalFreeSearches {
+            return false
+        }
+        if lhs.remainingFreeSearches != rhs.remainingFreeSearches {
+            return false
+        }
+        if lhs.price != rhs.price {
+            return false
+        }
+        if lhs.unlockTimestamp != rhs.unlockTimestamp {
+            return false
+        }
+        return true
+    }
+}
+
 public extension TelegramEngine {
     final class Messages {
         private let account: Account
@@ -104,7 +134,7 @@ public extension TelegramEngine {
             |> ignoreValues
         }
         
-        // MARK: Nicegram SelectAllMessagesWithAuthor
+        // Nicegram SelectAllMessagesWithAuthor
         public func allMessageIdsWithAuthor(peerId: PeerId, authorId: PeerId, namespace: MessageId.Namespace) -> Signal<[MessageId], NoError> {
             return self.account.postbox.transaction { transaction -> [MessageId] in
                 return transaction.allMessageIdsWithAuthor(peerId, authorId: authorId, namespace: namespace)
@@ -429,8 +459,8 @@ public extension TelegramEngine {
             }
         }
 
-        public func adMessages(peerId: PeerId, messageId: EngineMessage.Id? = nil) -> AdMessagesHistoryContext {
-            return AdMessagesHistoryContext(account: self.account, peerId: peerId, messageId: messageId)
+        public func adMessages(peerId: PeerId, messageId: EngineMessage.Id? = nil, activateManually: Bool = false) -> AdMessagesHistoryContext {
+            return AdMessagesHistoryContext(account: self.account, peerId: peerId, messageId: messageId, activateManually: activateManually)
         }
 
         public func messageReadStats(id: MessageId) -> Signal<MessageReadStats?, NoError> {
@@ -528,7 +558,7 @@ public extension TelegramEngine {
                     signals.append(self.account.network.request(Api.functions.messages.search(flags: flags, peer: inputPeer, q: "", fromId: nil, savedPeerId: inputSavedPeer, savedReaction: nil, topMsgId: topMsgId, filter: filter, minDate: 0, maxDate: 0, offsetId: 0, addOffset: 0, limit: 1, maxId: 0, minId: 0, hash: 0))
                     |> map { result -> (count: Int32?, topId: Int32?) in
                         switch result {
-                        case let .messagesSlice(_, count, _, _, messages, _, _):
+                        case let .messagesSlice(_, count, _, _, _, messages, _, _):
                             return (count, messages.first?.id(namespace: Namespaces.Message.Cloud)?.id)
                         case let .channelMessages(_, _, count, _, messages, _, _, _):
                             return (count, messages.first?.id(namespace: Namespaces.Message.Cloud)?.id)
@@ -1367,7 +1397,8 @@ public extension TelegramEngine {
                                     isMy: item.isMy,
                                     myReaction: item.myReaction,
                                     forwardInfo: item.forwardInfo,
-                                    authorId: item.authorId
+                                    authorId: item.authorId,
+                                    folderIds: item.folderIds
                                 ))
                                 if let entry = CodableEntry(updatedItem) {
                                     currentItems[i] = StoryItemsTableEntry(value: entry, id: updatedItem.id, expirationTimestamp: updatedItem.expirationTimestamp, isCloseFriends: updatedItem.isCloseFriends)
@@ -1381,8 +1412,8 @@ public extension TelegramEngine {
             }
         }
         
-        public func uploadStory(target: Stories.PendingTarget, media: EngineStoryInputMedia, mediaAreas: [MediaArea], text: String, entities: [MessageTextEntity], pin: Bool, privacy: EngineStoryPrivacy, isForwardingDisabled: Bool, period: Int, randomId: Int64, forwardInfo: Stories.PendingForwardInfo?, uploadInfo: StoryUploadInfo? = nil) -> Signal<Int32, NoError> {
-            return _internal_uploadStory(account: self.account, target: target, media: media, mediaAreas: mediaAreas, text: text, entities: entities, pin: pin, privacy: privacy, isForwardingDisabled: isForwardingDisabled, period: period, randomId: randomId, forwardInfo: forwardInfo, uploadInfo: uploadInfo)
+        public func uploadStory(target: Stories.PendingTarget, media: EngineStoryInputMedia, mediaAreas: [MediaArea], text: String, entities: [MessageTextEntity], pin: Bool, privacy: EngineStoryPrivacy, isForwardingDisabled: Bool, period: Int, randomId: Int64, forwardInfo: Stories.PendingForwardInfo?, folders: [Int64], uploadInfo: StoryUploadInfo? = nil) -> Signal<Int32, NoError> {
+            return _internal_uploadStory(account: self.account, target: target, media: media, mediaAreas: mediaAreas, text: text, entities: entities, pin: pin, privacy: privacy, isForwardingDisabled: isForwardingDisabled, period: period, randomId: randomId, forwardInfo: forwardInfo, folders: folders, uploadInfo: uploadInfo)
         }
         
         public func allStoriesUploadEvents() -> Signal<(Int32, Int32), NoError> {
@@ -1609,6 +1640,10 @@ public extension TelegramEngine {
         
         public func monoforumPerformSuggestedPostAction(id: EngineMessage.Id, action: MonoforumSuggestedPostAction) -> Signal<Never, NoError> {
             return _internal_monoforumPerformSuggestedPostAction(account: self.account, id: id, action: action)
+        }
+        
+        public func refreshGlobalPostSearchState() -> Signal<Never, NoError> {
+            return _internal_refreshGlobalPostSearchState(account: self.account)
         }
     }
 }

@@ -716,7 +716,7 @@ private final class NotificationServiceHandler {
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
 
         
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         let hiddenAccountManager = HiddenAccountManagerImpl()
         self.accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: true, isReadOnly: false, useCaches: false, removeDatabaseOnError: false, hiddenAccountManager: hiddenAccountManager)
 

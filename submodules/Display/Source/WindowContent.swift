@@ -244,7 +244,7 @@ public final class WindowKeyboardGestureRecognizerDelegate: NSObject, UIGestureR
     }
 
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        // MARK: Nicegram
+        // Nicegram
         if otherGestureRecognizer.isNicegramExclusiveGesture() {
             return false
         }
@@ -1440,7 +1440,7 @@ public class Window1 {
     }
 }
 
-// MARK: Nicegram
+// Nicegram
 public extension Window1 {
     func hasOverlayController() -> Bool {
         return !topPresentationContext.controllers.isEmpty

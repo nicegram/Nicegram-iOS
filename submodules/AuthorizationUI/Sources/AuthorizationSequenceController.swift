@@ -1,4 +1,4 @@
-// MARK: Nicegram Analytics
+// Nicegram Analytics
 import NGAnalytics
 //
 import Foundation
@@ -1202,7 +1202,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
     }
     
     private func updateState(state: InnerState) {
-        // MARK: Nicegram Analytics
+        // Nicegram Analytics
         let analyticsManager = AnalyticsContainer.shared.analyticsManager()
         
         if otherAccountPhoneNumbers.1.isEmpty {
@@ -1237,7 +1237,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                         var controllers: [ViewController] = []
                         if self.otherAccountPhoneNumbers.1.isEmpty {
                             controllers.append(self.splashController())
-                            // MARK: Nicegram Onboarding
+                            // Nicegram Onboarding
                             controllers.append(self.phoneEntryController(countryCode: AuthorizationSequenceController.defaultCountryCode(), number: "", splashController: nil))
                             //
                         } else {
@@ -1328,7 +1328,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                     var displayCancel = false
                     if !self.otherAccountPhoneNumbers.1.isEmpty {
                         controllers.append(self.splashController())
-                        // MARK: Nicegram Onboarding
+                        // Nicegram Onboarding
                         displayCancel = true
                         //
                     } else {
@@ -1348,7 +1348,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
     }
     
     override public func setViewControllers(_ viewControllers: [UIViewController], animated: Bool) {
-        // MARK: Nicegram Onboarding
+        // Nicegram Onboarding
         let viewControllers = viewControllers.filter { !($0 is AuthorizationSequenceSplashController) }
         //
         let wasEmpty = self.viewControllers.isEmpty

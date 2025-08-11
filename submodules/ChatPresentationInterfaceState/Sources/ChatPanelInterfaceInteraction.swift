@@ -69,7 +69,7 @@ public final class ChatPanelInterfaceInteraction {
         case editPrice
     }
     
-    // MARK: Nicegram
+    // Nicegram
     public let cloudMessages: ([Message]?) -> Void
     public let copyForwardMessages:  ([Message]?) -> Void
     public let copySelectedMessages: () -> Void
@@ -77,7 +77,7 @@ public final class ChatPanelInterfaceInteraction {
     public let replyPrivately: (Message) -> Void
     //
     
-    public let setupReplyMessage: (MessageId?, @escaping (ContainedViewLayoutTransition, @escaping () -> Void) -> Void) -> Void
+    public let setupReplyMessage: (MessageId?, Int32?, @escaping (ContainedViewLayoutTransition, @escaping () -> Void) -> Void) -> Void
     public let setupEditMessage: (MessageId?, @escaping (ContainedViewLayoutTransition) -> Void) -> Void
     public let beginMessageSelection: ([MessageId], @escaping (ContainedViewLayoutTransition) -> Void) -> Void
     public let cancelMessageSelection: (ContainedViewLayoutTransition) -> Void
@@ -200,14 +200,14 @@ public final class ChatPanelInterfaceInteraction {
     public let statuses: ChatPanelInterfaceInteractionStatuses?
     
     public init(
-        // MARK: Nicegram
+        // Nicegram
         cloudMessages: @escaping ([Message]?) -> Void,
         copyForwardMessages: @escaping ([Message]?) -> Void,
         copySelectedMessages: @escaping () -> Void,
         openGifs: @escaping () -> Void = {},
         replyPrivately: @escaping (Message) -> Void = { _ in },
         //
-        setupReplyMessage: @escaping (MessageId?, @escaping (ContainedViewLayoutTransition, @escaping () -> Void) -> Void) -> Void,
+        setupReplyMessage: @escaping (MessageId?, Int32?, @escaping (ContainedViewLayoutTransition, @escaping () -> Void) -> Void) -> Void,
         setupEditMessage: @escaping (MessageId?, @escaping (ContainedViewLayoutTransition) -> Void) -> Void,
         beginMessageSelection: @escaping ([MessageId], @escaping (ContainedViewLayoutTransition) -> Void) -> Void,
         cancelMessageSelection: @escaping (ContainedViewLayoutTransition) -> Void,
@@ -329,7 +329,7 @@ public final class ChatPanelInterfaceInteraction {
         chatController: @escaping () -> ViewController?,
         statuses: ChatPanelInterfaceInteractionStatuses?
     ) {
-        // MARK: Nicegram
+        // Nicegram
         self.cloudMessages = cloudMessages
         self.copyForwardMessages = copyForwardMessages
         self.copySelectedMessages = copySelectedMessages
@@ -465,11 +465,11 @@ public final class ChatPanelInterfaceInteraction {
         updateInputModeAndDismissedButtonKeyboardMessageId: @escaping ((ChatPresentationInterfaceState) -> (ChatInputMode, MessageId?)) -> Void,
         openLinkEditing: @escaping () -> Void
     ) {
-        // MARK: Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
+        // Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
         self.init(cloudMessages: { _ in
         }, copyForwardMessages: { _ in
         }, copySelectedMessages: {
-        }, setupReplyMessage: { _, _ in
+        }, setupReplyMessage: { _, _, _ in
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in

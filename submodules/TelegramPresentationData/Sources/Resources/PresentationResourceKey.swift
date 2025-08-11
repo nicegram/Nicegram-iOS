@@ -299,7 +299,7 @@ public enum PresentationResourceKey: Int32 {
     case chatFreeCommentButtonIcon
     case chatFreeNavigateButtonIcon
     case chatFreeShareButtonIcon
-    // MARK: Nicegram
+    // Nicegram
     case chatTranslateButtonIcon
     //
     case chatFreeCloseButtonIcon

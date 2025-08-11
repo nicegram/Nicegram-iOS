@@ -6,7 +6,7 @@ import TelegramCore
 import TelegramPresentationData
 import TextNodeWithEntities
 import AccountContext
-// MARK: Nicegram NCG-7581 Folder for keywords
+// Nicegram NCG-7581 Folder for keywords
 import NGStrings
 import NGData
 //
@@ -326,7 +326,7 @@ private final class ItemNode: ASDisplayNode {
         if self.isReordering != isReordering {
             self.isReordering = isReordering
             if self.isReordering {
-                self.startShaking()
+                self.layer.addReorderingShaking()
             } else {
                 self.layer.removeAnimation(forKey: "shaking_position")
                 self.layer.removeAnimation(forKey: "shaking_rotation")
@@ -418,52 +418,7 @@ private final class ItemNode: ASDisplayNode {
             transition.updateSublayerTransformScale(node: self.badgeContainerNode, scale: 0.1)
         }
     }
-    
-    private func startShaking() {
-        func degreesToRadians(_ x: CGFloat) -> CGFloat {
-            return .pi * x / 180.0
-        }
-
-        let duration: Double = 0.4
-        let displacement: CGFloat = 1.0
-        let degreesRotation: CGFloat = 2.0
         
-        let negativeDisplacement = -1.0 * displacement
-        let position = CAKeyframeAnimation.init(keyPath: "position")
-        position.beginTime = 0.8
-        position.duration = duration
-        position.values = [
-            NSValue(cgPoint: CGPoint(x: negativeDisplacement, y: negativeDisplacement)),
-            NSValue(cgPoint: CGPoint(x: 0, y: 0)),
-            NSValue(cgPoint: CGPoint(x: negativeDisplacement, y: 0)),
-            NSValue(cgPoint: CGPoint(x: 0, y: negativeDisplacement)),
-            NSValue(cgPoint: CGPoint(x: negativeDisplacement, y: negativeDisplacement))
-        ]
-        position.calculationMode = .linear
-        position.isRemovedOnCompletion = false
-        position.repeatCount = Float.greatestFiniteMagnitude
-        position.beginTime = CFTimeInterval(Float(arc4random()).truncatingRemainder(dividingBy: Float(25)) / Float(100))
-        position.isAdditive = true
-
-        let transform = CAKeyframeAnimation.init(keyPath: "transform")
-        transform.beginTime = 2.6
-        transform.duration = 0.3
-        transform.valueFunction = CAValueFunction(name: CAValueFunctionName.rotateZ)
-        transform.values = [
-            degreesToRadians(-1.0 * degreesRotation),
-            degreesToRadians(degreesRotation),
-            degreesToRadians(-1.0 * degreesRotation)
-        ]
-        transform.calculationMode = .linear
-        transform.isRemovedOnCompletion = false
-        transform.repeatCount = Float.greatestFiniteMagnitude
-        transform.isAdditive = true
-        transform.beginTime = CFTimeInterval(Float(arc4random()).truncatingRemainder(dividingBy: Float(25)) / Float(100))
-
-        self.layer.add(position, forKey: "shaking_position")
-        self.layer.add(transform, forKey: "shaking_rotation")
-    }
-    
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         if let deleteButtonNode = self.deleteButtonNode {
             if deleteButtonNode.frame.insetBy(dx: -4.0, dy: -4.0).contains(point) {
@@ -552,7 +507,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
     private var initialReorderedItemIds: [ChatListFilterTabEntryId]?
     private var reorderedItemIds: [ChatListFilterTabEntryId]?
     private lazy var hapticFeedback = { HapticFeedback() }()
-    // MARK: Nicegram NCG-7581 Folder for keywords
+    // Nicegram NCG-7581 Folder for keywords
     public let keywordsButtonNode: ASButtonNode
     var openKeywords: (() -> Void)?
     //
@@ -593,14 +548,14 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         self.selectedLineNode = ASImageNode()
         self.selectedLineNode.displaysAsynchronously = false
         self.selectedLineNode.displayWithoutProcessing = true
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.keywordsButtonNode = ASButtonNode()
         self.keywordsButtonNode.displaysAsynchronously = false
         self.keywordsButtonNode.titleNode.maximumNumberOfLines = 1
         self.keywordsButtonNode.titleNode.truncationMode = .byTruncatingTail
         //
         super.init()
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.keywordsButtonNode.addTarget(self, action: #selector(self.keywordsPressed), forControlEvents: .touchUpInside)
         //
         self.scrollNode.view.showsHorizontalScrollIndicator = false
@@ -614,7 +569,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         
         self.addSubnode(self.scrollNode)
         self.scrollNode.addSubnode(self.selectedLineNode)
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.scrollNode.addSubnode(self.keywordsButtonNode)
         //
         let reorderingGesture = ReorderingGestureRecognizer(shouldBegin: { [weak self] point in
@@ -897,7 +852,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
                 transition.updateTransformScale(node: itemNode, scale: 0.1)
             }
         }
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         let id = self.context.account.peerId.toInt64()
         let showKeywordButton = getNicegramSettings().keywords.show[id] ?? true
         self.keywordsButtonNode.isHidden = !showKeywordButton
@@ -951,7 +906,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         }
         
         let minSpacing: CGFloat = 26.0
-        // MARK: Nicegram NCG-7581 Folder for keywords, keywordButtonOffsetX
+        // Nicegram NCG-7581 Folder for keywords, keywordButtonOffsetX
         let resolvedSideInset: CGFloat = 16.0 + sideInset + keywordButtonOffsetX
         var leftOffset: CGFloat = resolvedSideInset
         
@@ -1065,7 +1020,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
             self.previousSelectedFrame = nil
         }
     }
-    // MARK: Nicegram NCG-7581 Folder for keywords
+    // Nicegram NCG-7581 Folder for keywords
     @objc func keywordsPressed() {
         openKeywords?()
     }

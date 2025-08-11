@@ -1204,7 +1204,13 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                                 attributedString = NSAttributedString(string: strings.Notification_StarsGift_SentSomeone, font: titleFont, textColor: primaryTextColor)
                             } else if message.author?.id == accountPeerId {
                                 if let resaleStars {
-                                    let starsString = strings.Notification_StarsGift_Bought_Stars(Int32(resaleStars))
+                                    let starsString: String
+                                    switch resaleStars.currency {
+                                    case .stars:
+                                        starsString = strings.Notification_StarsGift_Bought_Stars(Int32(resaleStars.amount.value))
+                                    case .ton:
+                                        starsString = formatTonAmountText(resaleStars.amount.value, dateTimeFormat: dateTimeFormat) + " TON"
+                                    }
                                     if message.id.peerId == accountPeerId {
                                         attributedString = addAttributesToStringWithRanges(strings.Notification_StarsGift_BoughtForYouself(starsString)._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
                                     } else {
@@ -1237,7 +1243,13 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                             } else {
                                 var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
                                 if let resaleStars {
-                                    let starsString = strings.Notification_StarsGift_Bought_Stars(Int32(resaleStars))
+                                    let starsString: String
+                                    switch resaleStars.currency {
+                                    case .stars:
+                                        starsString = strings.Notification_StarsGift_Bought_Stars(Int32(resaleStars.amount.value))
+                                    case .ton:
+                                        starsString = formatTonAmountText(resaleStars.amount.value, dateTimeFormat: dateTimeFormat) + " TON"
+                                    }
                                     let giftTitle = "\(gift.title) #\(presentationStringsFormattedNumber(gift.number, dateTimeFormat.groupingSeparator))"
                                     attributes[1] = boldAttributes
                                     attributes[2] = boldAttributes
@@ -1349,11 +1361,11 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                 if message.author?.id == accountPeerId {
                     let resultString: PresentationStrings.FormattedString
                     if completed.count > 1 || (completed.count == 1 && taskTitle == nil) {
-                        resultString = strings.Notification_TodoMultipleCompletedYou(strings.Notification_TodoTasks(Int32(completed.count)))
+                        resultString = strings.Notification_TodoMultipleYou(strings.Notification_TodoTasksDone(Int32(completed.count)))
                     } else if let _ = completed.first {
                         resultString = strings.Notification_TodoCompletedYou(taskTitle ?? "")
                     } else if incompleted.count > 1 || (incompleted.count == 1 && taskTitle == nil) {
-                        resultString = strings.Notification_TodoMultipleIncompletedYou(strings.Notification_TodoTasks(Int32(incompleted.count)))
+                        resultString = strings.Notification_TodoMultipleYou(strings.Notification_TodoTasksUndone(Int32(incompleted.count)))
                     } else if let _ = incompleted.first {
                         resultString = strings.Notification_TodoIncompletedYou(taskTitle ?? "")
                     } else {
@@ -1368,11 +1380,11 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                     
                     let resultString: PresentationStrings.FormattedString
                     if completed.count > 1 || (completed.count == 1 && taskTitle == nil) {
-                        resultString = strings.Notification_TodoMultipleCompleted(peerName, strings.Notification_TodoTasks(Int32(completed.count)))
+                        resultString = strings.Notification_TodoMultiple(peerName, strings.Notification_TodoTasksDone(Int32(completed.count)))
                     } else if let _ = completed.first {
                         resultString = strings.Notification_TodoCompleted(peerName, taskTitle ?? "")
                     } else if incompleted.count > 1 || (incompleted.count == 1 && taskTitle == nil) {
-                        resultString = strings.Notification_TodoMultipleIncompleted(peerName, strings.Notification_TodoTasks(Int32(incompleted.count)))
+                        resultString = strings.Notification_TodoMultiple(peerName, strings.Notification_TodoTasksUndone(Int32(incompleted.count)))
                     } else if let _ = incompleted.first {
                         resultString = strings.Notification_TodoIncompleted(peerName, taskTitle ?? "")
                     } else {

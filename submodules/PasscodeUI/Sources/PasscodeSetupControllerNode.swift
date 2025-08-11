@@ -50,14 +50,14 @@ final class PasscodeSetupControllerNode: ASDisplayNode {
     var checkPasscode: ((String) -> Bool)?
     var complete: ((String, Bool) -> Void)?
     var updateNextAction: ((Bool) -> Void)?
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     var checkSetupPasscode: ((String) -> Bool)?
 
     private let hapticFeedback = HapticFeedback()
     
     private var validLayout: (ContainerViewLayout, CGFloat)?
     private var maxBottomInset: CGFloat?
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private let isChangeModeAllowed: Bool
     
     init(presentationData: PresentationData, mode: PasscodeSetupControllerMode, isChangeModeAllowed: Bool) {
@@ -84,7 +84,7 @@ final class PasscodeSetupControllerNode: ASDisplayNode {
                     default:
                         passcodeType = .alphanumeric
                 }
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             case let .setup(_ , type):
                 passcodeType = type
         }
@@ -134,7 +134,7 @@ final class PasscodeSetupControllerNode: ASDisplayNode {
         }
         
         self.modeButtonNode.addTarget(self, action: #selector(self.modePressed), forControlEvents: .touchUpInside)
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         if !self.isChangeModeAllowed {
             self.modeButtonNode.isHidden = true
             self.modeButtonNode.isAccessibilityElement = false
@@ -235,7 +235,7 @@ final class PasscodeSetupControllerNode: ASDisplayNode {
                             self.titleNode.attributedText = NSAttributedString(string: self.presentationData.strings.EnterPasscode_EnterNewPasscodeChange, font: Font.regular(16.0), textColor: self.presentationData.theme.list.itemPrimaryTextColor)
                             self.subtitleNode.isHidden = false
                             self.subtitleNode.attributedText = NSAttributedString(string: self.presentationData.strings.PasscodeSettings_DoNotMatch, font: Font.regular(16.0), textColor: self.presentationData.theme.list.itemPrimaryTextColor)
-                            // MARK: Nicegram DB Changes
+                            // Nicegram DB Changes
                             if self.isChangeModeAllowed {
                                 self.modeButtonNode.isHidden = false
                                 self.modeButtonNode.isAccessibilityElement = true
@@ -249,7 +249,7 @@ final class PasscodeSetupControllerNode: ASDisplayNode {
                         }
                     }
                 } else {
-                    // MARK: Nicegram DB Changes
+                    // Nicegram DB Changes
                     guard (self.checkSetupPasscode?(self.currentPasscode) ?? true) else {
                         self.animateError()
                         

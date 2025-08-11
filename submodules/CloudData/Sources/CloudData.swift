@@ -12,7 +12,7 @@ private enum FetchError {
 @available(iOS 10.0, *)
 private func fetchRawData(prefix: String) -> Signal<Data, FetchError> {
     return Signal { subscriber in
-        // MARK: Nicegram disable iCloud
+        // Nicegram disable iCloud
         #if targetEnvironment(simulator) || true
         return EmptyDisposable
         #else

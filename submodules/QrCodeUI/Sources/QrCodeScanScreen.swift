@@ -43,41 +43,6 @@ private func parseAuthTransferUrl(_ url: URL) -> Data? {
     return nil
 }
 
-private func generateFrameImage() -> UIImage? {
-    return generateImage(CGSize(width: 64.0, height: 64.0), contextGenerator: { size, context in
-        let bounds = CGRect(origin: CGPoint(), size: size)
-        context.clear(bounds)
-        context.setStrokeColor(UIColor.white.cgColor)
-        context.setLineWidth(4.0)
-        context.setLineCap(.round)
-        
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: 2.0, y: 2.0 + 26.0))
-        path.addArc(tangent1End: CGPoint(x: 2.0, y: 2.0), tangent2End: CGPoint(x: 2.0 + 26.0, y: 2.0), radius: 6.0)
-        path.addLine(to: CGPoint(x: 2.0 + 26.0, y: 2.0))
-        context.addPath(path)
-        context.strokePath()
-        
-        path.move(to: CGPoint(x: size.width - 2.0, y: 2.0 + 26.0))
-        path.addArc(tangent1End: CGPoint(x: size.width - 2.0, y: 2.0), tangent2End: CGPoint(x: 2.0 + 26.0, y: 2.0), radius: 6.0)
-        path.addLine(to: CGPoint(x: size.width - 2.0 - 26.0, y: 2.0))
-        context.addPath(path)
-        context.strokePath()
-        
-        path.move(to: CGPoint(x: 2.0, y: size.height - 2.0 - 26.0))
-        path.addArc(tangent1End: CGPoint(x: 2.0, y: size.height - 2.0), tangent2End: CGPoint(x: 2.0 + 26.0, y: size.height - 2.0), radius: 6.0)
-        path.addLine(to: CGPoint(x: 2.0 + 26.0, y: size.height - 2.0))
-        context.addPath(path)
-        context.strokePath()
-        
-        path.move(to: CGPoint(x: size.width - 2.0, y: size.height - 2.0 - 26.0))
-        path.addArc(tangent1End: CGPoint(x: size.width - 2.0, y: size.height - 2.0), tangent2End: CGPoint(x: 2.0 + 26.0, y: size.height - 2.0), radius: 6.0)
-        path.addLine(to: CGPoint(x: size.width - 2.0 - 26.0, y: size.height - 2.0))
-        context.addPath(path)
-        context.strokePath()
-    })?.stretchableImage(withLeftCapWidth: 32, topCapHeight: 32)
-}
-
 public final class QrCodeScanScreen: ViewController {
     public enum Subject {
         case authTransfer(activeSessionsContext: ActiveSessionsContext)

@@ -12,6 +12,7 @@ public final class BotCheckoutController: ViewController {
         public enum FetchError {
             case generic
             case disallowedStarGifts
+            case starGiftsUserLimit
         }
 
         public let form: BotPaymentForm
@@ -58,6 +59,8 @@ public final class BotCheckoutController: ViewController {
                 switch error {
                 case .disallowedStarGift:
                     return .disallowedStarGifts
+                case .starGiftUserLimit:
+                    return .starGiftsUserLimit
                 default:
                     return .generic
                 }

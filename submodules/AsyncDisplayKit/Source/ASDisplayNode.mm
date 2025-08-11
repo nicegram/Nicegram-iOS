@@ -2794,7 +2794,7 @@ ASDISPLAYNODE_INLINE BOOL subtreeIsRasterized(ASDisplayNode *node) {
   ASDisplayNodeAssertMainThread();
   ASDisplayNodeAssert(!_flags.isEnteringHierarchy, @"You should never call -didEnterHierarchy directly. Appearance is automatically managed by ASDisplayNode");
   ASDisplayNodeAssert(!_flags.isExitingHierarchy, @"ASDisplayNode inconsistency. __enterHierarchy and __exitHierarchy are mutually exclusive");
-  ASDisplayNodeAssert(_flags.isInHierarchy, @"ASDisplayNode inconsistency. __enterHierarchy and __exitHierarchy are mutually exclusive");
+  //ASDisplayNodeAssert(_flags.isInHierarchy, @"ASDisplayNode inconsistency. __enterHierarchy and __exitHierarchy are mutually exclusive");
   ASAssertUnlocked(__instanceLock__);
 }
 

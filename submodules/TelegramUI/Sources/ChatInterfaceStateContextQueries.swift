@@ -1,4 +1,4 @@
-// MARK: Nicegram Importns
+// Nicegram Importns
 import NGQuickReplies
 //
 import Foundation
@@ -110,7 +110,7 @@ private func updatedContextQueryResultStateForQuery(context: AccountContext, pee
                 }
             }
             return signal |> then(stickers)
-        // MARK: Nicegram QuickReplies
+        // Nicegram QuickReplies
         case let .quickReply(query):
             var signal: Signal<(ChatPresentationInputQueryResult?) -> ChatPresentationInputQueryResult?, ChatContextQueryError> = .complete()
             if let previousQuery = previousQuery {

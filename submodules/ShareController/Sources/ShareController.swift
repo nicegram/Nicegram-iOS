@@ -1,4 +1,4 @@
-// MARK: Nicegram Imports
+// Nicegram Imports
 import NGWebUtils
 //
 import Foundation
@@ -294,7 +294,7 @@ private func collectExternalShareItems(strings: PresentationStrings, dateTimeFor
 }
 
 public final class ShareControllerAppEnvironment: ShareControllerEnvironment {
-    // MARK: Nicegram DB, public
+    // Nicegram DB, public
     public let sharedContext: SharedAccountContext
     
     public private(set) var presentationData: PresentationData
@@ -421,7 +421,7 @@ public final class ShareController: ViewController {
     private let peersDisposable = MetaDisposable()
     private let readyDisposable = MetaDisposable()
     private let accountActiveDisposable = MetaDisposable()
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     private var activeAccountsDisposable: Disposable?
     
     private var defaultAction: ShareControllerAction?
@@ -443,10 +443,15 @@ public final class ShareController: ViewController {
             }
         }
     }
-    
-    public var openShareAsImage: (([Message]) -> Void)?
-    
+        
     public var shareStory: (() -> Void)?
+    public var canSendInHighQuality = false {
+        didSet {
+            if self.isNodeLoaded {
+                self.controllerNode.canSendInHighQuality = self.canSendInHighQuality
+            }
+        }
+    }
 
     public var debugAction: (() -> Void)?
     
@@ -503,7 +508,7 @@ public final class ShareController: ViewController {
         self.statusBar.statusBarStyle = .Ignore
         self.automaticallyControlPresentationContextLayout = false
         
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         if let appEnv = self.environment as? ShareControllerAppEnvironment {
             self.activeAccountsDisposable = appEnv.sharedContext.activeAccountContexts.start(next: { [weak self] (primary, accounts, _) in
                 guard let strongSelf = self else { return }
@@ -560,7 +565,7 @@ public final class ShareController: ViewController {
                         self?.actionCompleted?()
                     })
                 }
-            // MARK: Nicegram, text added
+            // Nicegram, text added
             case let .media(mediaReference, _, _):
                 var canSave = false
                 var isVideo = false
@@ -689,7 +694,7 @@ public final class ShareController: ViewController {
         self.peersDisposable.dispose()
         self.readyDisposable.dispose()
         self.accountActiveDisposable.dispose()
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         self.activeAccountsDisposable?.dispose()
         
         if self.fromForeignApp {
@@ -721,14 +726,46 @@ public final class ShareController: ViewController {
             mediaParameters = parameters
         }
         
-        self.displayNode = ShareControllerNode(controller: self, environment: self.environment, presentationData: self.presentationData, presetText: self.presetText, defaultAction: self.defaultAction, mediaParameters: mediaParameters, requestLayout: { [weak self] transition in
-            self?.requestLayout(transition: transition)
-        }, presentError: { [weak self] title, text in
-            guard let strongSelf = self else {
-                return
-            }
-            strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: title, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-        }, externalShare: self.externalShare, immediateExternalShare: self.immediateExternalShare, immediatePeerId: self.immediatePeerId, fromForeignApp: self.fromForeignApp, forceTheme: self.forceTheme, fromPublicChannel: fromPublicChannel, segmentedValues: self.segmentedValues, shareStory: self.shareStory, collectibleItemInfo: self.collectibleItemInfo, messageCount: messageCount)
+        self.displayNode = ShareControllerNode(
+            controller: self,
+            environment: self.environment,
+            presentationData: self.presentationData,
+            presetText: self.presetText,
+            defaultAction: self.defaultAction,
+            mediaParameters: mediaParameters,
+            requestLayout: { [weak self] transition in
+                self?.requestLayout(
+                    transition: transition
+                )
+            },
+            presentError: { [weak self] title, text in
+                guard let strongSelf = self else {
+                    return
+                }
+                strongSelf.present(standardTextAlertController(
+                    theme: AlertControllerTheme(presentationData: strongSelf.presentationData),
+                    title: title,
+                    text: text,
+                    actions: [TextAlertAction(
+                        type: .defaultAction,
+                        title: strongSelf.presentationData.strings.Common_OK,
+                        action: {
+                        })
+                    ]
+                ), in: .window(.root))
+            },
+            externalShare: self.externalShare,
+            immediateExternalShare: self.immediateExternalShare,
+            immediatePeerId: self.immediatePeerId,
+            fromForeignApp: self.fromForeignApp,
+            forceTheme: self.forceTheme,
+            fromPublicChannel: fromPublicChannel,
+            segmentedValues: self.segmentedValues,
+            shareStory: self.shareStory,
+            collectibleItemInfo: self.collectibleItemInfo,
+            messageCount: messageCount
+        )
+        self.controllerNode.canSendInHighQuality = self.canSendInHighQuality
         self.controllerNode.completed = self.completed
         self.controllerNode.enqueued = self.enqueued
         self.controllerNode.present = { [weak self] c in
@@ -818,7 +855,7 @@ public final class ShareController: ViewController {
                         return false
                     }
                 }
-            // MARK: Nicegram, text added
+            // Nicegram, text added
             case let .media(mediaReference, _, _):
                 var sendTextAsCaption = false
                 if mediaReference.media is TelegramMediaImage || mediaReference.media is TelegramMediaFile {
@@ -1035,7 +1072,7 @@ public final class ShareController: ViewController {
                     case let .image(representations):
                         let media = TelegramMediaImage(imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)), representations: representations.map({ $0.representation }), immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
                         collectableItems.append(CollectableExternalShareItem(url: "", text: "", author: nil, timestamp: nil, mediaReference: .standalone(media: media)))
-                    // MARK: Nicegram, text added
+                    // Nicegram, text added
                     case let .media(mediaReference, _, text):
                         collectableItems.append(CollectableExternalShareItem(url: "", text: text, author: nil, timestamp: nil, mediaReference: mediaReference))
                     case let .mapMedia(media):
@@ -1594,7 +1631,7 @@ public final class ShareController: ViewController {
                         messages: messages
                     ))
                 }
-            // MARK: Nicegram, text added
+            // Nicegram, text added
             case let .media(mediaReference, _, string):
                 let text = "\(text)\n\n\(string)".trimmingCharacters(in: .whitespacesAndNewlines)
                 
@@ -2035,10 +2072,10 @@ public final class ShareController: ViewController {
                     var messages: [EnqueueMessage] = []
                     if !text.isEmpty {
                         messages.append(.message(text: url + "\n\n" + text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap {
-                            EngineMessageReplySubject(messageId: $0, quote: nil)
+                            EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil)
                         }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     } else {
-                        messages.append(.message(text: url, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        messages.append(.message(text: url, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     }
                     messages = transformMessages(messages, showNames: showNames, silently: silently, sendPaidMessageStars: requiresStars[peerId])
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
@@ -2071,9 +2108,9 @@ public final class ShareController: ViewController {
                     
                     var messages: [EnqueueMessage] = []
                     if !text.isEmpty {
-                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     }
-                    messages.append(.message(text: string, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                    messages.append(.message(text: string, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     messages = transformMessages(messages, showNames: showNames, silently: silently, sendPaidMessageStars: requiresStars[peerId])
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
                 }
@@ -2105,12 +2142,12 @@ public final class ShareController: ViewController {
                     
                     var messages: [EnqueueMessage] = []
                     if !text.isEmpty {
-                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     }
                     let attributedText = NSMutableAttributedString(string: string, attributes: [ChatTextInputAttributes.italic: true as NSNumber])
                     attributedText.append(NSAttributedString(string: "\n\n\(url)"))
                     let entities = generateChatInputTextEntities(attributedText)
-                    messages.append(.message(text: attributedText.string, attributes: [TextEntitiesMessageAttribute(entities: entities)], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                    messages.append(.message(text: attributedText.string, attributes: [TextEntitiesMessageAttribute(entities: entities)], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     messages = transformMessages(messages, showNames: showNames, silently: silently, sendPaidMessageStars: requiresStars[peerId])
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
                 }
@@ -2141,11 +2178,11 @@ public final class ShareController: ViewController {
                     }
                     
                     var messages: [EnqueueMessage] = []
-                    messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaImage(imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)), representations: representations.map({ $0.representation }), immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])), threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                    messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: .standalone(media: TelegramMediaImage(imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)), representations: representations.map({ $0.representation }), immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])), threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     messages = transformMessages(messages, showNames: showNames, silently: silently, sendPaidMessageStars: requiresStars[peerId])
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
                 }
-            // MARK: Nicegram, text added
+            // Nicegram, text added
             case let .media(mediaReference, mediaParameters, string):
                 let text = "\(text)\n\n\(string)".trimmingCharacters(in: .whitespacesAndNewlines)
                 
@@ -2228,7 +2265,7 @@ public final class ShareController: ViewController {
                     
                     var messages: [EnqueueMessage] = []
                     if !text.isEmpty && !sendTextAsCaption {
-                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     }
                     var attributes: [MessageAttribute] = []
                     if let startAtTimestamp = mediaParameters?.startAtTimestamp, let startAtTimestampNode = strongSelf.controllerNode.startAtTimestampNode, startAtTimestampNode.value {
@@ -2237,7 +2274,7 @@ public final class ShareController: ViewController {
                     if let forwardSourceMessageId {
                         messages.append(.forward(source: forwardSourceMessageId, threadId: threadId, grouping: .auto, attributes: attributes, correlationId: nil))
                     } else {
-                        messages.append(.message(text: sendTextAsCaption ? text : "", attributes: attributes, inlineStickers: [:], mediaReference: mediaReference, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        messages.append(.message(text: sendTextAsCaption ? text : "", attributes: attributes, inlineStickers: [:], mediaReference: mediaReference, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     }
                     messages = transformMessages(messages, showNames: showNames, silently: silently, sendPaidMessageStars: requiresStars[peerId])
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
@@ -2270,9 +2307,9 @@ public final class ShareController: ViewController {
                     
                     var messages: [EnqueueMessage] = []
                     if !text.isEmpty {
-                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        messages.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     }
-                    messages.append(.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: media), threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                    messages.append(.message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: media), threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
                     messages = transformMessages(messages, showNames: showNames, silently: silently, sendPaidMessageStars: requiresStars[peerId])
                     shareSignals.append(enqueueMessages(account: currentContext.context.account, peerId: peerId, messages: messages))
                 }
@@ -2306,7 +2343,7 @@ public final class ShareController: ViewController {
                         
                         let correlationId = Int64.random(in: Int64.min ... Int64.max)
                         correlationIds.append(correlationId)
-                        messagesToEnqueue.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: correlationId, bubbleUpEmojiOrStickersets: []))
+                        messagesToEnqueue.append(.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: threadId, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: correlationId, bubbleUpEmojiOrStickersets: []))
                     }
                     for message in messages {
                         for media in message.media {

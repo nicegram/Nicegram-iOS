@@ -170,7 +170,7 @@ private func mergeReactions(reactions: [MessageReaction], recentPeers: [Reaction
 }
 
 public func mergedMessageReactions(attributes: [MessageAttribute], isTags: Bool) -> ReactionsMessageAttribute? {
-    // MARK: Nicegram HideReactions
+    // Nicegram HideReactions
     if !isTags,
        UserDefaults.standard.bool(forKey: "hideReactions") {
         return nil

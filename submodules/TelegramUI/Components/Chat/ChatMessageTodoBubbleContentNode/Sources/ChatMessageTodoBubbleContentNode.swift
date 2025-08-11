@@ -372,6 +372,19 @@ private func generatePercentageAnimationImages(presentationData: ChatPresentatio
     return images
 }
 
+private class TodoTrackingButtonNode: HighlightableButtonNode {
+    private var internalHighlighted = false
+    
+    public var shouldHighlightAtPoint: (CGPoint) -> Bool = { _ in return true }
+        
+    open override func beginTracking(with touch: UITouch, with event: UIEvent?) -> Bool {
+        if self.shouldHighlightAtPoint(touch.location(in: self.view)) {
+            return super.beginTracking(with: touch, with: event)
+        }
+        return false
+    }
+}
+
 private final class ChatMessageTodoItemNode: ASDisplayNode {
     private var backgroundWallpaperNode: ChatMessageBubbleBackdrop?
     private var backgroundNode: ChatMessageBackground?
@@ -390,7 +403,7 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
     fileprivate var titleNode: TextNodeWithEntities?
     fileprivate var nameNode: TextNode?
     
-    private let buttonNode: HighlightTrackingButtonNode
+    private let buttonNode: TodoTrackingButtonNode
     let separatorNode: ASDisplayNode
     
     var context: AccountContext?
@@ -433,9 +446,8 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
         self.highlightedBackgroundNode.alpha = 0.0
         self.highlightedBackgroundNode.isUserInteractionEnabled = false
         
-        self.buttonNode = HighlightTrackingButtonNode()
+        self.buttonNode = TodoTrackingButtonNode()
         self.separatorNode = ASDisplayNode()
-        self.separatorNode.isLayerBacked = true
                 
         super.init()
                 
@@ -447,9 +459,20 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
         self.addSubnode(self.buttonNode)
         
         self.buttonNode.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: .touchUpInside)
+        self.buttonNode.shouldHighlightAtPoint = { [weak self] location in
+            guard let self else {
+                return true
+            }
+            if case .none = self.tapActionAtPoint(location, gesture: .tap, isEstimating: true).content {
+                return true
+            }
+            return false
+        }
         self.buttonNode.highligthedChanged = { [weak self] highlighted in
             if let strongSelf = self {
                 if highlighted {
+                    strongSelf.containerNode.view.tag = 0x2bad
+                    
                     if let theme = strongSelf.presentationData?.theme.theme, theme.overallDarkAppearance, let contentNode = strongSelf.supernode as? ChatMessageTodoBubbleContentNode, let backdropNode = contentNode.bubbleBackgroundNode?.backdropNode {
                         strongSelf.highlightedBackgroundNode.layer.compositingFilter = "overlayBlendMode"
                         strongSelf.highlightedBackgroundNode.frame = strongSelf.view.convert(strongSelf.highlightedBackgroundNode.frame, to: backdropNode.view)
@@ -474,6 +497,8 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
                         }
                     }
                 } else {
+                    strongSelf.containerNode.view.tag = 0
+                    
                     strongSelf.highlightedBackgroundNode.alpha = 0.0
                     strongSelf.highlightedBackgroundNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, completion: { finished in
                         if finished && strongSelf.highlightedBackgroundNode.supernode != strongSelf {
@@ -589,17 +614,6 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
                 if let backgroundNode = self.backgroundNode {
                     self.backgroundNode = nil
                     transition.updateAlpha(node: backgroundNode, alpha: 0.0, completion: { [weak backgroundNode] _ in
-                        self.extractedRadioView?.removeFromSuperview()
-                        self.extractedRadioView = nil
-                        self.extractedIconView?.removeFromSuperview()
-                        self.extractedIconView = nil
-                        self.extractedAvatarView?.removeFromSuperview()
-                        self.extractedAvatarView = nil
-                        self.extractedTitleNode?.textNode.removeFromSupernode()
-                        self.extractedTitleNode = nil
-                        self.extractedNameView?.removeFromSuperview()
-                        self.extractedNameView = nil
-                        
                         backgroundNode?.removeFromSupernode()
                     })
                 }
@@ -611,6 +625,31 @@ private final class ChatMessageTodoItemNode: ASDisplayNode {
                 }
             }
         }
+        
+        self.contextSourceNode.isExtractedToContextPreviewUpdated = { [weak self] isExtracted in
+            guard let self else {
+                return
+            }
+            if !isExtracted {
+                self.extractedRadioView?.removeFromSuperview()
+                self.extractedRadioView = nil
+                self.extractedIconView?.removeFromSuperview()
+                self.extractedIconView = nil
+                self.extractedAvatarView?.removeFromSuperview()
+                self.extractedAvatarView = nil
+                self.extractedTitleNode?.textNode.removeFromSupernode()
+                self.extractedTitleNode = nil
+                self.extractedNameView?.removeFromSuperview()
+                self.extractedNameView = nil
+            }
+        }
+    }
+    
+    override func didLoad() {
+        super.didLoad()
+        
+        self.highlightedBackgroundNode.view.tag = 0x1bad
+        self.separatorNode.view.tag = 0x3bad
     }
     
     @objc private func buttonPressed() {
@@ -1145,6 +1184,7 @@ public class ChatMessageTodoBubbleContentNode: ChatMessageBubbleContentNode {
                         reactionPeers: dateReactionsAndPeers.peers,
                         displayAllReactionPeers: item.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                         areReactionsTags: item.topMessage.areReactionsTags(accountPeerId: item.context.account.peerId),
+                        areStarReactionsEnabled: item.associatedData.areStarReactionsEnabled,
                         messageEffect: item.topMessage.messageEffect(availableMessageEffects: item.associatedData.availableMessageEffects),
                         replyCount: dateReplies,
                         starsCount: starsCount,

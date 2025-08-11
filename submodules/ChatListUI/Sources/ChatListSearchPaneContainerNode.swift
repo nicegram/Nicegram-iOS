@@ -55,6 +55,7 @@ public enum ChatListSearchPaneKey {
     case publicPosts
     case channels
     case apps
+    case globalPosts
     case media
     case downloads
     case links
@@ -77,6 +78,8 @@ extension ChatListSearchPaneKey {
             return .channels
         case .apps:
             return .apps
+        case .globalPosts:
+            return .globalPosts
         case .media:
             return .media
         case .downloads:
@@ -107,6 +110,9 @@ func defaultAvailableSearchPanes(isForum: Bool, hasDownloads: Bool, hasPublicPos
     }
     result.append(.channels)
     result.append(.apps)
+    if !isForum {
+        result.append(.globalPosts)
+    }
     result.append(contentsOf: [.media, .downloads, .links, .files, .music, .voice])
         
     if !hasDownloads {
@@ -232,7 +238,10 @@ final class ChatListSearchPaneContainerNode: ASDisplayNode, ASGestureRecognizerD
             }
             return
         }
+        #if DEBUG
+        #else
         self.isAdjacentLoadingEnabled = true
+        #endif
         if self.currentPanes[key] != nil {
             self.currentPaneKey = key
 

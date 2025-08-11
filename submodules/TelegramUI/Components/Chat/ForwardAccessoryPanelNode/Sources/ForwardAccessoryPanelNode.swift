@@ -72,6 +72,8 @@ func textStringForForwardedMessage(_ message: Message, strings: PresentationStri
             return ("", [], true)
         case _ as TelegramMediaPoll:
             return (strings.ForwardedPolls(1), [], true)
+        case let todo as TelegramMediaTodo:
+            return (todo.text, [], true)
         case let dice as TelegramMediaDice:
             return (dice.emoji, [], true)
         case let invoice as TelegramMediaInvoice:

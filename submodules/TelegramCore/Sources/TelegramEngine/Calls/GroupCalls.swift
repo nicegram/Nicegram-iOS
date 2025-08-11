@@ -1687,6 +1687,11 @@ public final class GroupCallParticipantsContext {
         return self.memberEventsPipe.signal()
     }
     
+    private let isFailedEventPromise = ValuePromise<Bool>(false, ignoreRepeated: true)
+    public var isFailedEvent: Signal<Bool, NoError> {
+        return self.isFailedEventPromise.get()
+    }
+    
     private var updateQueue: [Update.StateUpdate] = []
     private var isProcessingUpdate: Bool = false
     private let disposable = MetaDisposable()
@@ -1715,6 +1720,7 @@ public final class GroupCallParticipantsContext {
     public private(set) var serviceState: ServiceState
     
     private var e2eStateUpdateDisposable: Disposable?
+    private var e2eIsFailedDisposable: Disposable?
     private var pendingBlockchainState: [ResolvedBlockchainParticipant]?
     private var pendingApplyBlockchainStateTimer: Foundation.Timer?
     
@@ -1889,6 +1895,18 @@ public final class GroupCallParticipantsContext {
                     self.applyPendingBlockchainState()
                 }
             })
+            
+            self.e2eIsFailedDisposable = (e2eContext.isFailed
+            |> filter { $0 }
+            |> take(1)
+            |> deliverOnMainQueue).startStrict(next: { [weak self] isFailed in
+                guard let self else {
+                    return
+                }
+                if isFailed {
+                    self.isFailedEventPromise.set(true)
+                }
+            })
         }
     }
     
@@ -1902,6 +1920,7 @@ public final class GroupCallParticipantsContext {
         self.resetInviteLinksDisposable.dispose()
         self.subscribeDisposable.dispose()
         self.e2eStateUpdateDisposable?.dispose()
+        self.e2eIsFailedDisposable?.dispose()
         self.pendingApplyBlockchainStateTimer?.invalidate()
     }
     

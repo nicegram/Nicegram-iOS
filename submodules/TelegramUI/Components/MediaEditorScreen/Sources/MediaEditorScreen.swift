@@ -2915,7 +2915,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []),
             timeout: 86400,
             isForwardingDisabled: false,
-            pin: true
+            pin: true,
+            folderIds: []
         )
     }
     
@@ -3729,7 +3730,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                 } else if case let .gift(gift) = subject {
                     isGift = true
-                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, peerId: nil, senderId: nil, savedId: nil, resaleStars: nil, canTransferDate: nil, canResaleDate: nil))]
+                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil))]
                     let message = Message(stableId: 0, stableVersion: 0, id: MessageId(peerId: self.context.account.peerId, namespace: Namespaces.Message.Cloud, id: -1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: media, peers: SimpleDictionary(), associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
                     messages = .single([message])
                 } else {
@@ -6641,7 +6642,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             self.mediaAreas = []
             self.caption = NSAttributedString()
             self.coverTimestamp = nil
-            self.options = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false)
+            self.options = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: [])
             self.stickers = []
             self.randomId = 0
         }
@@ -6651,7 +6652,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             mediaAreas: [MediaArea] = [],
             caption: NSAttributedString = NSAttributedString(),
             coverTimestamp: Double? = nil,
-            options: MediaEditorResultPrivacy = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false),
+            options: MediaEditorResultPrivacy = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: []),
             stickers: [TelegramMediaFile] = [],
             randomId: Int64 = 0
         ) {
@@ -6760,7 +6761,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     privacy: initialPrivacy,
                     timeout: 86400,
                     isForwardingDisabled: false,
-                    pin: false
+                    pin: false,
+                    folderIds: []
                 )
             }
         } else {
@@ -6771,9 +6773,9 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             ).start(next: { [weak self] state, peer in
                 if let self, var privacy = state?.privacy {
                     if case let .user(user) = peer, !user.isPremium && privacy.timeout != 86400 {
-                        privacy = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: privacy.privacy, timeout: 86400, isForwardingDisabled: privacy.isForwardingDisabled, pin: privacy.pin)
+                        privacy = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: privacy.privacy, timeout: 86400, isForwardingDisabled: privacy.isForwardingDisabled, pin: privacy.pin, folderIds: privacy.folderIds)
                     } else {
-                        privacy = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: privacy.privacy, timeout: privacy.timeout, isForwardingDisabled: privacy.isForwardingDisabled, pin: privacy.pin)
+                        privacy = MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: privacy.privacy, timeout: privacy.timeout, isForwardingDisabled: privacy.isForwardingDisabled, pin: privacy.pin, folderIds: privacy.folderIds)
                     }
                     self.state.privacy = privacy
                 }
@@ -6980,7 +6982,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 mentions: mentions,
                 coverImage: coverImage,
                 stateContext: stateContext,
-                completion: { [weak self] sendAsPeerId, privacy, allowScreenshots, pin, _, completed in
+                completion: { [weak self] sendAsPeerId, privacy, allowScreenshots, pin, _, folders, completed in
                     guard let self else {
                         return
                     }
@@ -6989,13 +6991,14 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                         privacy: privacy,
                         timeout: timeout,
                         isForwardingDisabled: !allowScreenshots,
-                        pin: pin
+                        pin: pin,
+                        folderIds: folders
                     )
                     if completed {
                         completion()
                     }
                 },
-                editCategory: { [weak self] privacy, allowScreenshots, pin in
+                editCategory: { [weak self] privacy, allowScreenshots, pin, folders in
                     guard let self else {
                         return
                     }
@@ -7008,11 +7011,12 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             privacy: privacy,
                             timeout: timeout,
                             isForwardingDisabled: !allowScreenshots,
-                            pin: pin
+                            pin: pin,
+                            folderIds: folders
                         ), completion: completion)
                     })
                 },
-                editBlockedPeers: { [weak self] privacy, allowScreenshots, pin in
+                editBlockedPeers: { [weak self] privacy, allowScreenshots, pin, folders in
                     guard let self else {
                         return
                     }
@@ -7025,7 +7029,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             privacy: privacy,
                             timeout: timeout,
                             isForwardingDisabled: !allowScreenshots,
-                            pin: pin
+                            pin: pin,
+                            folderIds: folders
                         ), completion: completion)
                     })
                 },
@@ -7078,7 +7083,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 allowScreenshots: !isForwardingDisabled,
                 pin: pin,
                 stateContext: stateContext,
-                completion: { [weak self] _, result, isForwardingDisabled, pin, peers, completed in
+                completion: { [weak self] _, result, isForwardingDisabled, pin, peers, folders, completed in
                     guard let self, completed else {
                         return
                     }
@@ -7093,8 +7098,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                         completion(result)
                     }
                 },
-                editCategory: { _, _, _ in },
-                editBlockedPeers: { _, _, _ in }
+                editCategory: { _, _, _, _ in },
+                editBlockedPeers: { _, _, _, _ in }
             )
             controller.customModalStyleOverlayTransitionFactorUpdated = { [weak self, weak controller] transition in
                 if let self, let controller {
@@ -7175,7 +7180,8 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 privacy: self.state.privacy.privacy,
                 timeout: timeout ?? 86400,
                 isForwardingDisabled: self.state.privacy.isForwardingDisabled,
-                pin: self.state.privacy.pin
+                pin: self.state.privacy.pin,
+                folderIds: self.state.privacy.folderIds
             )
         }
         
@@ -7672,7 +7678,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                                 mediaAreas: [],
                                 caption: NSAttributedString(),
                                 coverTimestamp: nil,
-                                options: MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false),
+                                options: MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: []),
                                 stickers: [],
                                 randomId: 0
                             )], { [weak self] finished in

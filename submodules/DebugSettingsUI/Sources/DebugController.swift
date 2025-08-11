@@ -1,4 +1,4 @@
-// MARK: Nicegram Imports
+// Nicegram Imports
 import NGAppCache
 import NGData
 import NicegramWallet
@@ -50,7 +50,7 @@ private final class DebugControllerArguments {
 }
 
 private enum DebugControllerSection: Int32 {
-    // MARK: Nicegram DebugMenu
+    // Nicegram DebugMenu
     case nicegram
     //
     case sticker
@@ -65,7 +65,7 @@ private enum DebugControllerSection: Int32 {
 }
 
 private enum DebugControllerEntry: ItemListNodeEntry {
-    // MARK: Nicegram DebugMenu
+    // Nicegram DebugMenu
     case showOnboarding(Bool)
     case multichainEnabled(Bool)
     //
@@ -73,7 +73,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case sendLogs(PresentationTheme)
     case sendOneLog(PresentationTheme)
     case sendNGLogs(PresentationTheme)
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
     case sendNGCallRecorderLogs(PresentationTheme)
 //
     case sendShareLogs
@@ -139,13 +139,13 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     
     var section: ItemListSectionId {
         switch self {
-        // MARK: Nicegram DebugMenu
+        // Nicegram DebugMenu
         case .showOnboarding, .multichainEnabled:
             return DebugControllerSection.nicegram.rawValue
         //
         case .testStickerImport:
             return DebugControllerSection.sticker.rawValue
-// MARK: Nicegram NCG-5828 call recording, .sendNGCallRecorderLogs
+// Nicegram NCG-5828 call recording, .sendNGCallRecorderLogs
         case .sendNGLogs, .sendLogs, .sendOneLog, .sendShareLogs, .sendGroupCallLogs, .sendStorageStats, .sendNotificationLogs, .sendCriticalLogs, .sendAllLogs, .sendNGCallRecorderLogs:
             return DebugControllerSection.logs.rawValue
 //
@@ -172,7 +172,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     
     var stableId: Int {
         switch self {
-        // MARK: Nicegram DebugMenu
+        // Nicegram DebugMenu
         case .showOnboarding:
             return -4
         case .multichainEnabled:
@@ -180,7 +180,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         //
         case .sendNGLogs:
             return -2
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
         case .sendNGCallRecorderLogs:
             return -1
 //
@@ -320,7 +320,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         let arguments = arguments as! DebugControllerArguments
         switch self {
-        // MARK: Nicegram DebugMenu
+        // Nicegram DebugMenu
         case let .showOnboarding(value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Show onboarding", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 AppCache.wasOnboardingShown = !value
@@ -767,7 +767,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     arguments.presentController(actionSheet, nil)
                 })
             })
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
         case .sendNGCallRecorderLogs:
             return ItemListDisclosureItem(
                 presentationData: presentationData,
@@ -1620,15 +1620,15 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     }
 }
 
-// MARK: Nicegram Wallet, added multichainEnabled
+// Nicegram Wallet, added multichainEnabled
 private func debugControllerEntries(sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool, multichainEnabled: Bool) -> [DebugControllerEntry] {
     var entries: [DebugControllerEntry] = []
-    // MARK: Nicegram DebugMenu
+    // Nicegram DebugMenu
     entries.append(.showOnboarding(!AppCache.wasOnboardingShown))
     entries.append(.multichainEnabled(multichainEnabled))
     //
     entries.append(.sendNGLogs(presentationData.theme))
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
     entries.append(.sendNGCallRecorderLogs(presentationData.theme))
 //
 
@@ -1766,14 +1766,14 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         preferencesSignal = .single(nil)
     }
     
-    // MARK: Nicegram Wallet
+    // Nicegram Wallet
     let multichainEnabledSignal = WalletSettingsModule.shared.getUserBlockchainsUseCase()
         .multichainEnabledPublisher()
         .toSignal()
         .skipError()
     //
     
-    // MARK: Nicegram Wallet, added multichainEnabled
+    // Nicegram Wallet, added multichainEnabled
     let signal = combineLatest(sharedContext.presentationData, sharedContext.accountManager.sharedData(keys: Set([SharedDataKeys.loggingSettings, ApplicationSpecificSharedDataKeys.mediaInputSettings, ApplicationSpecificSharedDataKeys.experimentalUISettings])), preferencesSignal, multichainEnabledSignal)
     |> map { presentationData, sharedData, preferences, multichainEnabled -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let loggingSettings: LoggingSettings
@@ -1807,7 +1807,7 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         }
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Debug"), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-        // MARK: Nicegram Wallet, added multichainEnabled
+        // Nicegram Wallet, added multichainEnabled
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures, multichainEnabled: multichainEnabled), style: .blocks)
         
         return (controllerState, (listState, arguments))

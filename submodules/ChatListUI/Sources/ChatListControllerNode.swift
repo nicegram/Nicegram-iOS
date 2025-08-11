@@ -1,7 +1,7 @@
-// MARK: Nicegram HideStories
+// Nicegram HideStories
 import NGData
 //
-// MARK: Nicegram ColorAlign
+// Nicegram ColorAlign
 import NGUtils
 import NGLogging
 import FeatKeywords
@@ -546,7 +546,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
         if let _ = otherGestureRecognizer as? InteractiveTransitionGestureRecognizer {
             return false
         }
-        // MARK: Nicegram ChatListWidget
+        // Nicegram ChatListWidget
         let isNicegramWidget = otherGestureRecognizer.view?.superviewSequence().contains {
             $0 is ChatListNicegramWidgetView
         } ?? false
@@ -837,7 +837,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                 itemNode.emptyNode?.restartAnimation()
                 completion?()
             } else if self.pendingItemNode == nil {
-// MARK: Nicegram NCG-7102 bottom folders fix
+// Nicegram NCG-7102 bottom folders fix
                 var autoSetReady = !animated
                 if preselected {
                     autoSetReady = true
@@ -851,7 +851,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                     self?.secondaryEmptyAction()
                 }, openArchiveSettings: { [weak self] in
                     self?.openArchiveSettings()
-                // MARK: Nicegram NCG-7102 bottom folders fix, autoSetReady
+                // Nicegram NCG-7102 bottom folders fix, autoSetReady
                 }, autoSetReady: autoSetReady, isMainTab: index == 0)
                 self.pendingItemNode?.2.dispose()
                 let disposable = MetaDisposable()
@@ -1075,7 +1075,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     private let animationCache: AnimationCache
     private let animationRenderer: MultiAnimationRenderer
     
-    // MARK: Nicegram FoldersAtBottom
+    // Nicegram FoldersAtBottom
     let inlineTabContainerNode: ChatListFilterTabInlineContainerNode
     //
     
@@ -1089,7 +1089,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         }
     }
     
-    // MARK: Nicegram ColorAlign
+    // Nicegram ColorAlign
     private let grayscaleLayer = GrayscaleLayer(
         enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleInChatListPublisher()
     )
@@ -1166,14 +1166,14 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             openArchiveSettings?()
         })
         
-        // MARK: Nicegram FoldersAtBottom, userId
+        // Nicegram FoldersAtBottom, userId
         self.inlineTabContainerNode = ChatListFilterTabInlineContainerNode(userId: context.account.peerId.toInt64())
         //
         
         self.controller = controller
         
         super.init()
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.inlineTabContainerNode.openKeywords = {
             if #available(iOS 15.0, *) {
                 let presentationData = (context.sharedContext.currentPresentationData.with { $0 })
@@ -1214,11 +1214,11 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         
         self.addSubnode(self.mainContainerNode)
         
-        // MARK: Nicegram FoldersAtBottom
+        // Nicegram FoldersAtBottom
         self.addSubnode(self.inlineTabContainerNode)
         //
         
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         self.layer.addSublayer(self.grayscaleLayer)
         //
         
@@ -1678,7 +1678,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             cleanMainNavigationBarHeight = visualNavigationHeight
             mainInsets.top = visualNavigationHeight
         }
-        // MARK: Nicegram FoldersAtBottom
+        // Nicegram FoldersAtBottom
         if !self.inlineTabContainerNode.isHidden {
             mainInsets.bottom += 50
         }
@@ -1716,7 +1716,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             }
         }
         
-        // MARK: Nicegram FoldersAtBottom
+        // Nicegram FoldersAtBottom
         transition.updateFrame(node: self.inlineTabContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - layout.intrinsicInsets.bottom - 8.0 - 40.0), size: CGSize(width: layout.size.width, height: 40.0)))
         //
         
@@ -1735,7 +1735,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             navigationBarComponentView.applyCurrentScroll(transition: ComponentTransition(transition))
         }
         
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         transition.updateFrame(
             layer: self.grayscaleLayer,
             frame: CGRect(origin: .zero, size: layout.size)
@@ -2142,7 +2142,7 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
 }
 
 func shouldDisplayStoriesInChatListHeader(storySubscriptions: EngineStorySubscriptions, isHidden: Bool) -> Bool {
-    // MARK: Nicegram HideStories
+    // Nicegram HideStories
     if NGSettings.hideStories {
         return false
     }

@@ -61,7 +61,7 @@
 
 - (void)setTone:(CallAudioTone * _Nullable)tone;
 
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
 -(void)StartNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion
                               errorCallback:(void (^_Nullable)(NSString* _Nonnull))errorCallback;
 -(void)StopNicegramRecording;

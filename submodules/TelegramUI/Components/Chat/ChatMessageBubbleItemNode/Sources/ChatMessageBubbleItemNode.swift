@@ -22,7 +22,7 @@ import GridMessageSelectionNode
 import AppBundle
 import Markdown
 import WallpaperBackgroundNode
-// MARK: Nicegram Imports
+// Nicegram Imports
 import OverlayStatusController
 import PresentationDataUtils
 import NGData
@@ -149,7 +149,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
     outer: for (message, itemAttributes) in item.content {
         for attribute in message.attributes {
             if let attribute = attribute as? RestrictedContentMessageAttribute, attribute.platformText(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }) != nil {
-                // MARK: Nicegram
+                // Nicegram
                 if isAllowedMessage(restrictionReason: attribute.platformText(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }, extractReason: true), contentSettings: item.context.currentContentSettings.with { $0 }) {
                 } else {
                     result.append((message, ChatMessageRestrictedBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
@@ -1778,7 +1778,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             }
         }
 
-        // MARK: Nicegram Translate
+        // Nicegram Translate
         if !incoming {
             needTrButton = false
         }
@@ -2010,6 +2010,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         var replyMessage: Message?
         var replyForward: QuotedReplyMessageAttribute?
         var replyQuote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
+        var replyTodoItemId: Int32?
         var replyStory: StoryId?
         var replyMarkup: ReplyMarkupMessageAttribute?
         var authorNameColor: UIColor?
@@ -2027,6 +2028,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     replyMessage = firstMessage.associatedMessages[attribute.messageId]
                 }
                 replyQuote = attribute.quote.flatMap { ($0, attribute.isQuote) }
+                replyTodoItemId = attribute.todoItemId
             } else if let attribute = attribute as? QuotedReplyMessageAttribute {
                 replyForward = attribute
             } else if let attribute = attribute as? ReplyStoryAttribute {
@@ -2487,6 +2489,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     reactionPeers: dateReactionsAndPeers.peers,
                     displayAllReactionPeers: item.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                     areReactionsTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId),
+                    areStarReactionsEnabled: item.associatedData.areStarReactionsEnabled,
                     messageEffect: item.message.messageEffect(availableMessageEffects: item.associatedData.availableMessageEffects),
                     replyCount: dateReplies,
                     starsCount: starsCount,
@@ -2797,6 +2800,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     message: replyMessage,
                     replyForward: replyForward,
                     quote: replyQuote,
+                    todoItemId: replyTodoItemId,
                     story: replyStory,
                     parentMessage: item.message,
                     constrainedSize: CGSize(width: maximumNodeWidth - layoutConstants.text.bubbleInsets.left - layoutConstants.text.bubbleInsets.right - 6.0, height: CGFloat.greatestFiniteMagnitude),
@@ -4789,7 +4793,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             shareButtonNode.removeFromSupernode()
         }
         
-        // MARK: Nicegram Translate
+        // Nicegram Translate
         if needsTrButton {
             if strongSelf.trButtonNode == nil {
                 let trButtonNode = ChatMessageShareButton()
@@ -4966,7 +4970,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 strongSelf.messageAccessibilityArea.frame = backgroundFrame
             }
             
-            // MARK: Nicegram Translate
+            // Nicegram Translate
             var additionalTopOffsetForTranslateButton: CGFloat = 0
             //
             
@@ -4998,12 +5002,12 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 animation.animator.updateAlpha(layer: shareButtonNode.layer, alpha: (isCurrentlyPlayingMedia || isSidePanelOpen) ? 0.0 : 1.0, completion: nil)
                 animation.animator.updateScale(layer: shareButtonNode.layer, scale: (isCurrentlyPlayingMedia || isSidePanelOpen) ? 0.001 : 1.0, completion: nil)
                 
-                // MARK: Nicegram Translate
+                // Nicegram Translate
                 additionalTopOffsetForTranslateButton = buttonFrame.height + 4
                 //
             }
             
-            // MARK: Nicegram Translate
+            // Nicegram Translate
             if let trButtonNode = strongSelf.trButtonNode {
                 let buttonSize = trButtonNode.update(presentationData: item.presentationData, controllerInteraction: item.controllerInteraction, chatLocation: item.chatLocation, subject: item.associatedData.subject, message: item.message, account: item.context.account, disableComments: disablesComments, translateButton: true)
                 
@@ -5037,7 +5041,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             }*/
             strongSelf.messageAccessibilityArea.frame = backgroundFrame
             
-            // MARK: Nicegram Translate
+            // Nicegram Translate
             var additionalTopOffsetForTranslateButton: CGFloat = 0
             //
             
@@ -5069,12 +5073,12 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 animation.animator.updateAlpha(layer: shareButtonNode.layer, alpha: (isCurrentlyPlayingMedia || isSidePanelOpen) ? 0.0 : 1.0, completion: nil)
                 animation.animator.updateScale(layer: shareButtonNode.layer, scale: (isCurrentlyPlayingMedia || isSidePanelOpen) ? 0.001 : 1.0, completion: nil)
                 
-                // MARK: Nicegram Translate
+                // Nicegram Translate
                 additionalTopOffsetForTranslateButton = buttonFrame.height + 4
                 //
             }
             
-            // MARK: Nicegram Translate
+            // Nicegram Translate
             if let trButtonNode = strongSelf.trButtonNode {
                 let buttonSize = trButtonNode.update(presentationData: item.presentationData, controllerInteraction: item.controllerInteraction, chatLocation: item.chatLocation, subject: item.associatedData.subject, message: item.message, account: item.context.account, disableComments: disablesComments, translateButton: true)
                 
@@ -5246,7 +5250,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        // MARK: Nicegram HideReactions, account added
+                        // Nicegram HideReactions, account added
                         if canAddMessageReactions(message: openContextMenu.tapMessage, account: item.context.account) {
                             item.controllerInteraction.updateMessageReaction(openContextMenu.tapMessage, .default, false, nil)
                         } else {
@@ -5256,7 +5260,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 } else if case .tap = gesture {
                     item.controllerInteraction.clickThroughMessage(self.view, location)
                 } else if case .doubleTap = gesture {
-                    // MARK: Nicegram HideReactions, account added
+                    // Nicegram HideReactions, account added
                     if canAddMessageReactions(message: item.message, account: item.context.account) {
                         item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                     }
@@ -5393,7 +5397,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                     if let replyInfoNode = self.replyInfoNode {
                                         progress = replyInfoNode.makeProgress()
                                     }
-                                    item.controllerInteraction.navigateToMessage(item.message.id, attribute.messageId, NavigateToMessageParams(timestamp: nil, quote: attribute.isQuote ? attribute.quote.flatMap { quote in NavigateToMessageParams.Quote(string: quote.text, offset: quote.offset) } : nil, progress: progress))
+                                    item.controllerInteraction.navigateToMessage(item.message.id, attribute.messageId, NavigateToMessageParams(timestamp: nil, quote: attribute.isQuote ? attribute.quote.flatMap { quote in NavigateToMessageParams.Quote(string: quote.text, offset: quote.offset) } : nil, todoTaskId: attribute.todoItemId, progress: progress))
                                 }, contextMenuOnLongPress: true))
                             } else if let attribute = attribute as? ReplyStoryAttribute {
                                 return .action(InternalBubbleTapAction.Action({

@@ -117,7 +117,7 @@ private func actionForAttribute(attribute: StarGift.UniqueGift.Attribute, presen
             }
         }
              
-        return ContextMenuActionItem(text: title,  entities: entities, entityFiles: entityFiles, enableEntityAnimations: false, parseMarkdown: true, icon: { theme in
+        return ContextMenuActionItem(text: title, entities: entities, entityFiles: entityFiles, enableEntityAnimations: false, parseMarkdown: true, icon: { theme in
             return isSelected ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
         }, action: { _, f in
             getController()?.dismiss(result: .dismissWithoutContent, completion: nil)
@@ -363,8 +363,7 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
                     self.actionNodes[itemId] = actionNode
                     self.scrollNode.addSubnode(actionNode)
                 }
-                
-            case .attribute(let attribute):
+            case let .attribute(attribute):
                 if self.actionNodes[itemId] == nil {
                     let selectedAttributes = Set(self.item.selectedAttributes)
                     guard let action = actionForAttribute(
@@ -398,7 +397,6 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
                         self.actionNodes[itemId]?.setItem(item: action)
                     }
                 }
-                
             case .noResults:
                 if self.actionNodes[itemId] == nil {
                     let nopAction: ((ContextControllerProtocol?, @escaping (ContextMenuActionResult) -> Void) -> Void)? = nil

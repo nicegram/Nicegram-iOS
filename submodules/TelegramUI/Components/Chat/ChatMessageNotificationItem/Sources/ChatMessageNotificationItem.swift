@@ -139,7 +139,11 @@ final class ChatMessageNotificationItemNode: NotificationItemNode {
                     }
                     
                     if case let .channel(channel) = peer, channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = firstMessage.peers[linkedMonoforumId] {
-                        title = authorString + "@" + EnginePeer(mainChannel).displayTitle(strings: item.strings, displayOrder: item.nameDisplayOrder)
+                        if author.id == mainChannel.id {
+                            title = EnginePeer(mainChannel).displayTitle(strings: item.strings, displayOrder: item.nameDisplayOrder)
+                        } else {
+                            title = authorString + "@" + EnginePeer(mainChannel).displayTitle(strings: item.strings, displayOrder: item.nameDisplayOrder)
+                        }
                     } else {
                         if let threadData = item.threadData {
                             title = "\(authorString) → \(threadData.info.title)"

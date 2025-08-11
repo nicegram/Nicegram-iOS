@@ -90,6 +90,21 @@ private func updateInfoControllerEntries(theme: PresentationTheme, strings: Pres
     return entries
 }
 
+private class UpdateInfoController: ItemListController {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        self.view.layer.animatePosition(from: CGPoint(x: self.view.layer.position.x, y: self.view.layer.position.y + self.view.layer.bounds.size.height), to: self.view.layer.position, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
+        })
+    }
+    
+    func animateOut(completion: (() -> Void)? = nil) {
+        self.view.layer.animatePosition(from: self.view.layer.position, to: CGPoint(x: self.view.layer.position.x, y: self.view.layer.position.y + self.view.layer.bounds.size.height), duration: 0.2, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, completion: { _ in
+            completion?()
+        })
+    }
+}
+
 public func updateInfoController(context: AccountContext, appUpdateInfo: AppUpdateInfo) -> ViewController {
     var dismissImpl: (() -> Void)?
     var linkActionImpl: ((TextLinkItemActionType, TextLinkItem) -> Void)?
@@ -128,16 +143,16 @@ public func updateInfoController(context: AccountContext, appUpdateInfo: AppUpda
         actionsDisposable.dispose()
     }
     
-    let controller = ItemListController(sharedContext: context.sharedContext, state: signal)
-    controller.navigationPresentation = .modal
+    let controller = UpdateInfoController(sharedContext: context.sharedContext, state: signal)
     linkActionImpl = { [weak controller, weak context] action, itemLink in
         if let strongController = controller, let context = context {
             context.sharedContext.handleTextLinkAction(context: context, peerId: nil, navigateDisposable: navigateDisposable, controller: strongController, action: action, itemLink: itemLink)
         }
     }
     dismissImpl = { [weak controller] in
-        controller?.view.endEditing(true)
-        controller?.presentingViewController?.dismiss(animated: true, completion: nil)
+        controller?.animateOut(completion: { [weak controller] in
+            controller?.dismiss()
+        })
     }
     return controller
 }

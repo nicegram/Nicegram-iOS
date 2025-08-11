@@ -122,9 +122,10 @@ import PeerNameColorScreen
 import ChatEmptyNode
 import ChatMediaInputStickerGridItem
 import AdsInfoScreen
+import FaceScanScreen
 
 extension ChatControllerImpl {
-    func openPeer(peer: EnginePeer?, navigation: ChatControllerInteractionNavigateToPeer, fromMessage: MessageReference?, fromReactionMessageId: MessageId? = nil, expandAvatar: Bool = false, peerTypes: ReplyMarkupButtonAction.PeerTypes? = nil) {
+    func openPeer(peer: EnginePeer?, navigation: ChatControllerInteractionNavigateToPeer, fromMessage: MessageReference?, fromReactionMessageId: MessageId? = nil, expandAvatar: Bool = false, peerTypes: ReplyMarkupButtonAction.PeerTypes? = nil, skipAgeVerification: Bool = false) {
         let _ = self.presentVoiceMessageDiscardAlert(action: {
             if case let .peer(currentPeerId) = self.chatLocation, peer?.id == currentPeerId {
                 switch navigation {
@@ -223,11 +224,23 @@ extension ChatControllerImpl {
                                         }
                                     })
                                 } else {
-                                    if case let .channel(channel) = peer, channel.isForumOrMonoForum {
-                                        self.effectiveNavigationController?.pushViewController(ChatListControllerImpl(context: self.context, location: .forum(peerId: channel.id), controlsHistoryPreload: false, enableDebugActions: false))
-                                    } else {
-                                        self.effectiveNavigationController?.pushViewController(ChatControllerImpl(context: self.context, chatLocation: .peer(id: peer.id), subject: subject))
-                                    }
+                                    let _ = (requireAgeVerification(context: self.context, peer: peer)
+                                    |> deliverOnMainQueue).start(next: { [weak self] require in
+                                        guard let self else {
+                                            return
+                                        }
+                                        if require && !skipAgeVerification {
+                                            presentAgeVerification(context: self.context, parentController: self, completion: {
+                                                self.openPeer(peer: peer, navigation: navigation, fromMessage: fromMessage, fromReactionMessageId: fromReactionMessageId, expandAvatar: expandAvatar, peerTypes: peerTypes)
+                                            })
+                                        } else {
+                                            if case let .channel(channel) = peer, channel.isForumOrMonoForum {
+                                                self.effectiveNavigationController?.pushViewController(ChatListControllerImpl(context: self.context, location: .forum(peerId: channel.id), controlsHistoryPreload: false, enableDebugActions: false))
+                                            } else {
+                                                self.effectiveNavigationController?.pushViewController(ChatControllerImpl(context: self.context, chatLocation: .peer(id: peer.id), subject: subject))
+                                            }
+                                        }
+                                    })
                                 }
                             case let .withBotStartPayload(botStart):
                                 self.effectiveNavigationController?.pushViewController(ChatControllerImpl(context: self.context, chatLocation: .peer(id: peer.id), botStart: botStart))

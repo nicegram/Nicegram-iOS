@@ -161,7 +161,9 @@ ASLayoutElementStyleExtensibilityForwarding
     // Use tiny descriptions because these trees can get nested very deep.
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400
 #pragma clang diagnostic push
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
+#endif
 #endif
     const auto tinyDescriptions = ASArrayByFlatMapping(children, id object, ASObjectDescriptionMakeTiny(object));
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400
@@ -299,7 +301,9 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__)
   const auto count = children.count;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400
 #pragma clang diagnostic push
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
+#endif
 #endif
   ASLayout *rawSublayouts[count];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400

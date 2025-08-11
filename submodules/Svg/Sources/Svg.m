@@ -88,8 +88,7 @@ CGSize aspectFitSize(CGSize size, CGSize bounds) {
 
 @end
 
-UIImage * _Nullable drawSvgImage(NSData * _Nonnull data, CGSize size, UIColor *backgroundColor, UIColor *foregroundColor, bool opaque) {
-    NSDate *startTime = [NSDate date];
+UIImage * _Nullable drawSvgImage(NSData * _Nonnull data, CGSize size, UIColor *backgroundColor, UIColor *foregroundColor, CGFloat canvasScale, bool opaque) {
     
     NSXMLParser *parser = [[NSXMLParser alloc] initWithData:data];
     if (parser == nil) {
@@ -119,16 +118,13 @@ UIImage * _Nullable drawSvgImage(NSData * _Nonnull data, CGSize size, UIColor *b
     if (CGSizeEqualToSize(size, CGSizeZero)) {
         size = CGSizeMake(image->width, image->height);
     }
-    
-    double deltaTime = -1.0f * [startTime timeIntervalSinceNow];
-    printf("parseTime = %f\n", deltaTime);
-    
-    startTime = [NSDate date];
 
-    UIGraphicsBeginImageContextWithOptions(size, opaque, 1.0);
+    UIGraphicsBeginImageContextWithOptions(size, opaque, canvasScale);
     CGContextRef context = UIGraphicsGetCurrentContext();
-    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
-    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
+    if (backgroundColor != nil) {
+        CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
+    }
     
     CGSize svgSize = CGSizeMake(image->width, image->height);
     CGSize drawingSize = aspectFillSize(svgSize, size);
@@ -230,9 +226,6 @@ UIImage * _Nullable drawSvgImage(NSData * _Nonnull data, CGSize size, UIColor *b
     
     UIImage *resultImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-    
-    deltaTime = -1.0f * [startTime timeIntervalSinceNow];
-    printf("drawingTime %fx%f = %f\n", size.width, size.height, deltaTime);
     
     nsvgDelete(image);
     

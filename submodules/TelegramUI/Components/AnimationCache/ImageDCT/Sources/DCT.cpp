@@ -371,43 +371,9 @@ typedef int16_t tran_low_t;
 typedef int32_t tran_high_t;
 typedef int16_t tran_coef_t;
 
-static const tran_coef_t cospi_1_64 = 16364;
-static const tran_coef_t cospi_2_64 = 16305;
-static const tran_coef_t cospi_3_64 = 16207;
-static const tran_coef_t cospi_4_64 = 16069;
-static const tran_coef_t cospi_5_64 = 15893;
-static const tran_coef_t cospi_6_64 = 15679;
-static const tran_coef_t cospi_7_64 = 15426;
 static const tran_coef_t cospi_8_64 = 15137;
-static const tran_coef_t cospi_9_64 = 14811;
-static const tran_coef_t cospi_10_64 = 14449;
-static const tran_coef_t cospi_11_64 = 14053;
-static const tran_coef_t cospi_12_64 = 13623;
-static const tran_coef_t cospi_13_64 = 13160;
-static const tran_coef_t cospi_14_64 = 12665;
-static const tran_coef_t cospi_15_64 = 12140;
 static const tran_coef_t cospi_16_64 = 11585;
-static const tran_coef_t cospi_17_64 = 11003;
-static const tran_coef_t cospi_18_64 = 10394;
-static const tran_coef_t cospi_19_64 = 9760;
-static const tran_coef_t cospi_20_64 = 9102;
-static const tran_coef_t cospi_21_64 = 8423;
-static const tran_coef_t cospi_22_64 = 7723;
-static const tran_coef_t cospi_23_64 = 7005;
 static const tran_coef_t cospi_24_64 = 6270;
-static const tran_coef_t cospi_25_64 = 5520;
-static const tran_coef_t cospi_26_64 = 4756;
-static const tran_coef_t cospi_27_64 = 3981;
-static const tran_coef_t cospi_28_64 = 3196;
-static const tran_coef_t cospi_29_64 = 2404;
-static const tran_coef_t cospi_30_64 = 1606;
-static const tran_coef_t cospi_31_64 = 804;
-
-//  16384 * sqrt(2) * sin(kPi/9) * 2 / 3
-static const tran_coef_t sinpi_1_9 = 5283;
-static const tran_coef_t sinpi_2_9 = 9929;
-static const tran_coef_t sinpi_3_9 = 13377;
-static const tran_coef_t sinpi_4_9 = 15212;
 
 #define DCT_CONST_BITS 14
 #define DCT_CONST_ROUNDING (1 << (DCT_CONST_BITS - 1))
@@ -490,7 +456,7 @@ void vpx_fdct4x4_c(const int16_t *input, tran_low_t *output, int stride) {
 
 #define ROUND_POWER_OF_TWO(value, n) (((value) + (1 << ((n)-1))) >> (n))
 
-static inline tran_high_t dct_const_round_shift(tran_high_t input) {
+/*static inline tran_high_t dct_const_round_shift(tran_high_t input) {
   tran_high_t rv = ROUND_POWER_OF_TWO(input, DCT_CONST_BITS);
   return (tran_high_t)rv;
 }
@@ -507,11 +473,11 @@ static inline tran_high_t check_range(tran_high_t input) {
   assert(input <= INT16_MAX);
 #endif  // CONFIG_COEFFICIENT_RANGE_CHECKING
   return input;
-}
+}*/
 
 #define WRAPLOW(x) ((int32_t)check_range(x))
 
-void idct4_c(const tran_low_t *input, tran_low_t *output) {
+/*void idct4_c(const tran_low_t *input, tran_low_t *output) {
     int16_t step[4];
     tran_high_t temp1, temp2;
     
@@ -553,7 +519,7 @@ void vpx_idct4x4_16_add_c(const tran_low_t *input, tran_low_t *dest, int stride)
             dest[j * stride + i] = ROUND_POWER_OF_TWO(temp_out[j], 4);
         }
     }
-}
+}*/
 
 #if defined(__aarch64__)
 

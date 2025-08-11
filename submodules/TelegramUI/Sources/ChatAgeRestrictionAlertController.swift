@@ -259,7 +259,7 @@ private final class ChatAgeRestrictionAlertContentNode: AlertContentNode {
     }
 }
 
-public func chatAgeRestrictionAlertController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, completion: @escaping (Bool) -> Void) -> AlertController {
+public func chatAgeRestrictionAlertController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, parentController: ViewController, completion: @escaping (Bool) -> Void) -> AlertController {
     let theme = defaultDarkColorPresentationTheme
     let presentationData: PresentationData
     if let updatedPresentationData {
@@ -268,7 +268,7 @@ public func chatAgeRestrictionAlertController(context: AccountContext, updatedPr
         presentationData = context.sharedContext.currentPresentationData.with { $0 }
     }
     let strings = presentationData.strings
-    
+        
     var dismissImpl: ((Bool) -> Void)?
     var getContentNodeImpl: (() -> ChatAgeRestrictionAlertContentNode?)?
     let actions: [TextAlertAction] = [TextAlertAction(type: .defaultAction, title: strings.SensitiveContent_ViewAnyway, action: {

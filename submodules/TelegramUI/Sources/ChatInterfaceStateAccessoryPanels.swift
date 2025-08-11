@@ -86,7 +86,7 @@ func accessoryPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceS
             }
             
             if let chatPeerId {
-                let panelNode = ReplyAccessoryPanelNode(context: context, chatPeerId: chatPeerId, messageId: replyMessageSubject.messageId, quote: replyMessageSubject.quote, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, nameDisplayOrder: chatPresentationInterfaceState.nameDisplayOrder, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat, animationCache: chatControllerInteraction?.presentationContext.animationCache, animationRenderer: chatControllerInteraction?.presentationContext.animationRenderer)
+                let panelNode = ReplyAccessoryPanelNode(context: context, chatPeerId: chatPeerId, messageId: replyMessageSubject.messageId, quote: replyMessageSubject.quote, todoItemId: replyMessageSubject.todoItemId, theme: chatPresentationInterfaceState.theme, strings: chatPresentationInterfaceState.strings, nameDisplayOrder: chatPresentationInterfaceState.nameDisplayOrder, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat, animationCache: chatControllerInteraction?.presentationContext.animationCache, animationRenderer: chatControllerInteraction?.presentationContext.animationRenderer)
                 panelNode.interfaceInteraction = interfaceInteraction
                 return panelNode
             } else {

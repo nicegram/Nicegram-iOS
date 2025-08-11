@@ -1,4 +1,4 @@
-// MARK: Nicegram AuthCode
+// Nicegram AuthCode
 import NGCoreUI
 //
 import Foundation
@@ -30,7 +30,7 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
     private let currentOptionNode: ImmediateTextNodeWithEntities
     private let currentOptionActivateAreaNode: AccessibilityAreaNode
     
-    // MARK: Nicegram AuthCode
+    // Nicegram AuthCode
     private let ngAuthCodeNode: ASDisplayNode
     //
     
@@ -164,7 +164,7 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
         
         self.nextOptionTitleNode = ImmediateTextNode()
         
-        // MARK: Nicegram AuthCode
+        // Nicegram AuthCode
         self.ngAuthCodeNode = ASDisplayNode { TgAuthCodeButton() }
         self.ngAuthCodeNode.isHidden = true
         //
@@ -287,7 +287,7 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
         self.addSubnode(self.currentOptionNode)
         self.addSubnode(self.currentOptionActivateAreaNode)
         self.addSubnode(self.currentOptionInfoNode)
-        // MARK: Nicegram AuthCode
+        // Nicegram AuthCode
         self.addSubnode(self.ngAuthCodeNode)
         //
         self.addSubnode(self.nextOptionButtonNode)
@@ -664,7 +664,7 @@ final class AuthorizationSequenceCodeEntryControllerNode: ASDisplayNode, UITextF
                 
                 items.append(AuthorizationLayoutItem(node: self.codeInputView, size: codeFieldSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 30.0, maxValue: 30.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
                 
-                // MARK: Nicegram AuthCode
+                // Nicegram AuthCode
                 self.ngAuthCodeNode.isHidden = false
                 items.append(AuthorizationLayoutItem(node: self.ngAuthCodeNode, size: CGSize(width: layout.size.width, height: 34), spacingBefore: AuthorizationLayoutItemSpacing(weight: 120.0, maxValue: 120.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
                 //

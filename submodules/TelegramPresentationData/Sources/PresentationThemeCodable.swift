@@ -2032,7 +2032,7 @@ extension PresentationThemeName: Codable {
     }
 }
 
-extension PresentationBuiltinThemeReference: Codable {
+extension PresentationBuiltinThemeReference: @retroactive Codable {
     public init(from decoder: Decoder) throws {
         let values = try decoder.singleValueContainer()
         if let value = try? values.decode(String.self) {
@@ -2056,7 +2056,7 @@ extension PresentationBuiltinThemeReference: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
-            // MARK: Nicegram DefaultTheme
+            // Nicegram DefaultTheme
             case .nicegram:
                 try container.encode("nicegram")
             //

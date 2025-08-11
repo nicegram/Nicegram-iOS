@@ -3,7 +3,7 @@ import Postbox
 
 public let anonymousSavedMessagesId: Int64 = 2666000
 
-// MARK: Nicegram
+// Nicegram
 public extension CachedPeerData {
     var aboutText: String {
         let text: String? = switch self {
@@ -35,7 +35,7 @@ public extension Peer {
         }
     }
     
-    // MARK: Nicegram
+    // Nicegram
     func restrictionReason(contentSettings: ContentSettings) -> String? {
         restrictionText(platform: "ios", contentSettings: contentSettings, extractReason: true)
     }
@@ -46,7 +46,7 @@ public extension Peer {
     }
     //
     
-    // MARK: Nicegram (extractReason)
+    // Nicegram (extractReason)
     func restrictionText(platform: String, contentSettings: ContentSettings, extractReason: Bool = false) -> String? {
         var restrictionInfo: PeerAccessRestrictionInfo?
         switch self {
@@ -65,7 +65,7 @@ public extension Peer {
                 }
                 if rule.platform == "all" || rule.platform == platform || contentSettings.addContentRestrictionReasons.contains(rule.platform) {
                     if !contentSettings.ignoreContentRestrictionReasons.contains(rule.reason) {
-                        // MARK: Nicegram
+                        // Nicegram
                         if extractReason {
                             return rule.reason
                         }
@@ -93,7 +93,7 @@ public extension Peer {
         }
     }
     
-    // MARK: Nicegram
+    // Nicegram
     var usernameWithAtSign: String {
         addressName.flatMap { "@\($0)" } ?? ""
     }

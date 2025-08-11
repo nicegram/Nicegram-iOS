@@ -137,9 +137,7 @@ public final class ChatMessageSuggestedPostInfoNode: ASDisplayNode {
                     }
                 } else {
                     var channelName = ""
-                    if item.message.author is TelegramChannel {
-                        channelName = item.message.author.flatMap(EnginePeer.init)?.compactDisplayTitle ?? " "
-                    }
+                    channelName = item.message.author.flatMap(EnginePeer.init)?.compactDisplayTitle ?? " "
                     if changedText && changedMedia && changedPrice && changedTime {
                         titleText = item.presentationData.strings.Chat_PostSuggestion_ChannelChangePTC(channelName).string
                     } else if changedText && changedPrice && changedTime {

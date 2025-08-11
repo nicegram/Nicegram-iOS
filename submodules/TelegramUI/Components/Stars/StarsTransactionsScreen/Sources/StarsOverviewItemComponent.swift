@@ -14,14 +14,14 @@ final class StarsOverviewItemComponent: Component {
     let theme: PresentationTheme
     let dateTimeFormat: PresentationDateTimeFormat
     let title: String
-    let value: StarsAmount
+    let value: CurrencyAmount
     let rate: Double
     
     init(
         theme: PresentationTheme,
         dateTimeFormat: PresentationDateTimeFormat,
         title: String,
-        value: StarsAmount,
+        value: CurrencyAmount,
         rate: Double
     ) {
         self.theme = theme
@@ -60,9 +60,7 @@ final class StarsOverviewItemComponent: Component {
         
         override init(frame: CGRect) {
             super.init(frame: frame)
-            
-            self.icon.image = UIImage(bundleImageName: "Premium/Stars/StarMedium")
-            
+                        
             self.addSubview(self.icon)
         }
         
@@ -75,14 +73,24 @@ final class StarsOverviewItemComponent: Component {
             
             let sideInset: CGFloat = 16.0
             
+            let iconY: CGFloat = component.value.currency == .ton ? 13.0 + UIScreenPixel : 10.0
+            if self.icon.image == nil {
+                switch component.value.currency {
+                case .ton:
+                    self.icon.image = generateTintedImage(image: UIImage(bundleImageName: "Ads/TonMedium"), color: component.theme.list.itemAccentColor)
+                case .stars:
+                    self.icon.image = UIImage(bundleImageName: "Premium/Stars/StarMedium")
+                }
+            }
+            
             var valueOffset: CGFloat = 0.0
             if let icon = self.icon.image {
-                self.icon.frame = CGRect(origin: CGPoint(x: sideInset - 1.0, y: 10.0), size: icon.size)
+                self.icon.frame = CGRect(origin: CGPoint(x: sideInset - 1.0, y: iconY), size: icon.size)
                 valueOffset += icon.size.width
             }
             
-            let valueString = formatStarsAmountText(component.value, dateTimeFormat: component.dateTimeFormat)
-            let usdValueString = formatTonUsdValue(component.value.value, divide: false, rate: component.rate, dateTimeFormat: component.dateTimeFormat)
+            let valueString = formatStarsAmountText(component.value.amount, dateTimeFormat: component.dateTimeFormat)
+            let usdValueString = formatTonUsdValue(component.value.amount.value, divide: false, rate: component.rate, dateTimeFormat: component.dateTimeFormat)
             
             let valueSize = self.value.update(
                 transition: .immediate,

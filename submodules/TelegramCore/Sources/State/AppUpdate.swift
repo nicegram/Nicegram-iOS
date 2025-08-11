@@ -10,6 +10,13 @@ public struct AppUpdateInfo: Equatable {
     public let version: String
     public let text: String
     public let entities: [MessageTextEntity]
+    
+    public init(blocking: Bool, version: String, text: String, entities: [MessageTextEntity]) {
+        self.blocking = blocking
+        self.version = version
+        self.text = text
+        self.entities = entities
+    }
 }
 
 extension AppUpdateInfo {

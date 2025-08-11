@@ -181,7 +181,17 @@ public func translateMessageIds(context: AccountContext, messageIds: [EngineMess
             }
         }
         
-        return context.engine.messages.translateMessages(messageIds: messageIdsToTranslate, fromLang: fromLang, toLang: toLang, enableLocalIfPossible: true) //context.sharedContext.immediateExperimentalUISettings.enableLocalTranslation)
+        let translationConfiguration = TranslationConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
+        var enableLocalIfPossible = false
+        switch translationConfiguration.auto {
+        case .system:
+            if #available(iOS 18.0, *) {
+                enableLocalIfPossible = true
+            }
+        default:
+            break
+        }
+        return context.engine.messages.translateMessages(messageIds: messageIdsToTranslate, fromLang: fromLang, toLang: toLang, enableLocalIfPossible: enableLocalIfPossible)
         |> `catch` { _ -> Signal<Never, NoError> in
             return .complete()
         }

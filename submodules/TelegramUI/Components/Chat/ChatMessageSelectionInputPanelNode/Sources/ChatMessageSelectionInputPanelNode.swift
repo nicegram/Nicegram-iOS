@@ -65,7 +65,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     private let deleteButton: HighlightableButtonNode
     private let reportButton: HighlightableButtonNode
     private let forwardButton: HighlightableButtonNode
-    // MARK: Nicegram SelectedMessagesMenu
+    // Nicegram SelectedMessagesMenu
     private let cloudButton: HighlightableButtonNode
     private let copyForwardButton: HighlightableButtonNode
     private let copyButton: HighlightableButtonNode
@@ -112,7 +112,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.forwardButton.isAccessibilityElement = true
         self.forwardButton.accessibilityLabel = strings.VoiceOver_MessageContextForward
 
-        // MARK: Nicegram SelectedMessagesMenu
+        // Nicegram SelectedMessagesMenu
         self.cloudButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
         self.cloudButton.isAccessibilityElement = true
         self.cloudButton.accessibilityLabel = "Save To Favourites"
@@ -174,7 +174,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.forwardButton.addTarget(self, action: #selector(self.forwardButtonPressed), forControlEvents: .touchUpInside)
         self.shareButton.addTarget(self, action: #selector(self.shareButtonPressed), forControlEvents: .touchUpInside)
         
-        // MARK: Nicegram SelectedMessagesMenu
+        // Nicegram SelectedMessagesMenu
         self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
         self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
         
@@ -205,7 +205,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     private func updateActions() {
         self.forwardButton.isEnabled = self.selectedMessages.count != 0
         
-        // MARK: Nicegram SelectedMessagesMenu
+        // Nicegram SelectedMessagesMenu
         self.cloudButton.isEnabled = self.forwardButton.isEnabled
         self.copyForwardButton.isEnabled = self.forwardButton.isEnabled
         self.copyButton.isEnabled = self.forwardButton.isEnabled
@@ -240,7 +240,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
             self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
             self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            // MARK: Nicegram SelectedMessagesMenu
+            // Nicegram SelectedMessagesMenu
             self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
             self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
             self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
@@ -276,7 +276,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         }
     }
     
-    // MARK: Nicegram SelectedMessagesMenu
+    // Nicegram SelectedMessagesMenu
     @objc func cloudButtonPressed() {
         if let _ = self.presentationInterfaceState?.renderedPeer?.peer as? TelegramSecretChat {
             return
@@ -454,7 +454,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.deleteButton.isEnabled = false
             self.reportButton.isEnabled = false
             self.forwardButton.isImplicitlyDisabled = !actions.options.contains(.forward)
-            // MARK: Nicegram SelectedMessagesMenu
+            // Nicegram SelectedMessagesMenu
             self.cloudButton.isImplicitlyDisabled = self.forwardButton.isImplicitlyDisabled
             self.copyForwardButton.isImplicitlyDisabled = self.forwardButton.isImplicitlyDisabled
             self.copyButton.isImplicitlyDisabled = self.forwardButton.isImplicitlyDisabled
@@ -495,7 +495,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             self.forwardButton.isImplicitlyDisabled = true
             self.shareButton.isImplicitlyDisabled = true
             
-            // MARK: Nicegram SelectedMessagesMenu
+            // Nicegram SelectedMessagesMenu
             self.copyForwardButton.isImplicitlyDisabled = self.forwardButton.isImplicitlyDisabled
             self.cloudButton.isImplicitlyDisabled = self.forwardButton.isImplicitlyDisabled
             self.copyButton.isImplicitlyDisabled = self.forwardButton.isImplicitlyDisabled
@@ -527,11 +527,11 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             tagButton = self.tagEditButton
         }
         
-        // MARK: Nicegram SelectedMessagesMenu
+        // Nicegram SelectedMessagesMenu
         reportButton.isHidden = true
         //
         
-        // MARK: Nicegram SelectedMessagesMenu, change let to var
+        // Nicegram SelectedMessagesMenu, change let to var
         var buttons: [HighlightableButtonNode]
         if self.reportButton.isHidden {
             if let tagButton {

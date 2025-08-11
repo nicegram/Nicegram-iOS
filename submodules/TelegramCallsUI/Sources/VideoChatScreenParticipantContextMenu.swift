@@ -313,14 +313,17 @@ extension VideoChatScreenComponent.View {
                                     
                                     if groupCall.isConference {
                                         groupCall.kickPeer(id: peer.id)
+                                        
+                                        //TODO:localize
+                                        self.presentUndoOverlay(content: .banned(text: "You removed \(peer.displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)) from this call. They will no longer be able to join using the invite link."), action: { _ in return false })
                                     } else {
                                         if let callPeerId = groupCall.peerId {
                                             let _ = groupCall.accountContext.peerChannelMemberCategoriesContextsManager.updateMemberBannedRights(engine: groupCall.accountContext.engine, peerId: callPeerId, memberId: peer.id, bannedRights: TelegramChatBannedRights(flags: [.banReadMessages], untilDate: Int32.max)).start()
                                             groupCall.removedPeer(peer.id)
                                         }
+                                        
+                                        self.presentUndoOverlay(content: .banned(text: environment.strings.VoiceChat_RemovedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)).string), action: { _ in return false })
                                     }
-                                    
-                                    self.presentUndoOverlay(content: .banned(text: environment.strings.VoiceChat_RemovedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)).string), action: { _ in return false })
                                 }))
 
                                 actionSheet.setItemGroups([

@@ -237,7 +237,7 @@ final class ComposeTodoScreenComponent: Component {
                         self.reorderingItem = nil
                         for (itemId, itemView) in self.todoItemsSectionContainer.itemViews {
                             if itemId == reorderingItem.id, let view = itemView.contents.view {
-                                let viewFrame = view.convert(view.bounds, to: self)
+                                let viewFrame = view.convert(view.bounds, to: self.scrollView)
                                 let transition = ComponentTransition.spring(duration: 0.3)
                                 transition.setPosition(view: reorderingItem.snapshotView, position: viewFrame.center)
                                 transition.setAlpha(view: reorderingItem.backgroundView, alpha: 0.0, completion: { _ in
@@ -260,13 +260,14 @@ final class ComposeTodoScreenComponent: Component {
                 
                 snapshotView.center = targetPosition
                 
+                let localPoint = self.todoItemsSectionContainer.convert(targetPosition, from: self.scrollView)
                 for (itemId, itemView) in self.todoItemsSectionContainer.itemViews {
                     if itemId == id {
                         continue
                     }
                     if let view = itemView.contents.view {
-                        let viewFrame = view.convert(view.bounds, to: self)
-                        if viewFrame.contains(targetPosition) {
+                        let viewFrame = view.convert(view.bounds, to: self.todoItemsSectionContainer)
+                        if viewFrame.contains(localPoint) {
                             if let targetIndex = self.todoItems.firstIndex(where: { AnyHashable($0.id) == itemId }), let reorderingItem = self.todoItems.first(where: { AnyHashable($0.id) == id }) {
                                 self.reorderIfPossible(item: reorderingItem, toIndex: targetIndex)
                             }
@@ -1662,7 +1663,7 @@ public class ComposeTodoScreen: ViewControllerComponentContainer, AttachmentCont
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         if !initialData.canEdit && initialData.existingTodo != nil {
-            self.title = presentationData.strings.CreateTodo_Title
+            self.title = presentationData.strings.CreateTodo_AddTitle
         } else {
             self.title = initialData.existingTodo != nil ? presentationData.strings.CreateTodo_EditTitle : presentationData.strings.CreateTodo_Title
         }

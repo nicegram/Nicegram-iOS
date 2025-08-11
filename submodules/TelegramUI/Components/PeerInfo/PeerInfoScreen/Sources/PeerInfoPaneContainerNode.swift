@@ -15,7 +15,7 @@ import PeerInfoChatListPaneNode
 import PeerInfoChatPaneNode
 import TextFormat
 import EmojiTextAttachmentView
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
 import NGStrings
 import NGUtils
 //
@@ -288,7 +288,7 @@ final class PeerInfoPaneTabsContainerNode: ASDisplayNode {
                     self.paneNodes[specifier.key] = paneNode
                 }
                 paneNode.updateText(context: self.context, title: specifier.title, icons: specifier.icons, isSelected: selectedPane == specifier.key, presentationData: presentationData)
-                // MARK: Nicegram NCG-7303 Spy on friends
+                // Nicegram NCG-7303 Spy on friends
                 if #available(iOS 15.0, *),
                    selectedPane == specifier.key &&
                    specifier.key == .spyOnFriends {
@@ -536,15 +536,43 @@ private final class PeerInfoPendingPane {
         peerId: PeerId,
         chatLocation: ChatLocation,
         chatLocationContextHolder: Atomic<ChatLocationContextHolder?>,
+        sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?,
+        initialStoryFolderId: Int64?,
+        initialGiftCollectionId: Int64?,
         key: PeerInfoPaneKey,
         hasBecomeReady: @escaping (PeerInfoPaneKey) -> Void,
         parentController: ViewController?,
         openMediaCalendar: @escaping () -> Void,
         openAddStory: @escaping () -> Void,
         paneDidScroll: @escaping () -> Void,
+        expandIfNeeded: @escaping () -> Void,
         ensureRectVisible: @escaping (UIView, CGRect) -> Void,
-        externalDataUpdated: @escaping (ContainedViewLayoutTransition) -> Void
+        externalDataUpdated: @escaping (ContainedViewLayoutTransition) -> Void,
+        openShareLink: @escaping (String) -> Void
     ) {
+        var chatLocationPeerId = peerId
+        var chatLocation = chatLocation
+        var chatLocationContextHolder = chatLocationContextHolder
+        if let sharedMediaFromForumTopic {
+            chatLocationPeerId = sharedMediaFromForumTopic.0
+            chatLocation = .replyThread(message: ChatReplyThreadMessage(
+                peerId: sharedMediaFromForumTopic.0,
+                threadId: sharedMediaFromForumTopic.1,
+                channelMessageId: nil,
+                isChannelPost: false,
+                isForumPost: true,
+                isMonoforumPost: true,
+                maxMessage: nil,
+                maxReadIncomingMessageId: nil,
+                maxReadOutgoingMessageId: nil,
+                unreadCount: 0,
+                initialFilledHoles: IndexSet(),
+                initialAnchor: .automatic,
+                isNotAvailable: false
+            ))
+            chatLocationContextHolder = Atomic(value: nil)
+        }
+        
         var captureProtected = data.peer?.isCopyProtectionEnabled ?? false
         let paneNode: PeerInfoPaneNode
         switch key {
@@ -561,7 +589,9 @@ private final class PeerInfoPendingPane {
                     }
                 }
             }
-            paneNode = PeerInfoGiftsPaneNode(context: context, peerId: peerId, chatControllerInteraction: chatControllerInteraction, profileGifts: data.profileGiftsContext!, canManage: canManage, canGift: canGift)
+            let giftPaneNode = PeerInfoGiftsPaneNode(context: context, peerId: peerId, chatControllerInteraction: chatControllerInteraction, profileGiftsCollections: data.profileGiftsCollectionsContext!, profileGifts: data.profileGiftsContext!, canManage: canManage, canGift: canGift, initialGiftCollectionId: initialGiftCollectionId)
+            giftPaneNode.openShareLink = openShareLink
+            paneNode = giftPaneNode
         case .stories, .storyArchive, .botPreview:
             var canManage = false
             if let peer = data.peer {
@@ -594,13 +624,16 @@ private final class PeerInfoPendingPane {
                 listContext = data.storyListContext
             }
             
-            let visualPaneNode = PeerInfoStoryPaneNode(context: context, scope: scope, captureProtected: captureProtected, isProfileEmbedded: true, canManageStories: canManage, navigationController: chatControllerInteraction.navigationController, listContext: listContext)
+            let visualPaneNode = PeerInfoStoryPaneNode(context: context, scope: scope, captureProtected: captureProtected, isProfileEmbedded: true, canManageStories: canManage, navigationController: chatControllerInteraction.navigationController, listContext: listContext, initialStoryFolderId: initialStoryFolderId)
             paneNode = visualPaneNode
             visualPaneNode.openCurrentDate = {
                 openMediaCalendar()
             }
             visualPaneNode.paneDidScroll = {
                 paneDidScroll()
+            }
+            visualPaneNode.expandIfNeeded = {
+                expandIfNeeded()
             }
             visualPaneNode.ensureRectVisible = { sourceView, rect in
                 ensureRectVisible(sourceView, rect)
@@ -609,7 +642,7 @@ private final class PeerInfoPendingPane {
                 openAddStory()
             }
         case .media:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .photoOrVideo, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .photoOrVideo, captureProtected: captureProtected)
             paneNode = visualPaneNode
             visualPaneNode.openCurrentDate = {
                 openMediaCalendar()
@@ -618,18 +651,18 @@ private final class PeerInfoPendingPane {
                 paneDidScroll()
             }
         case .files:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .files, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .files, captureProtected: captureProtected)
             paneNode = visualPaneNode
         case .links:
-            paneNode = PeerInfoListPaneNode(context: context, updatedPresentationData: updatedPresentationData, chatControllerInteraction: chatControllerInteraction, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, tagMask: .webPage)
+            paneNode = PeerInfoListPaneNode(context: context, updatedPresentationData: updatedPresentationData, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, tagMask: .webPage)
         case .voice:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .voiceAndVideoMessages, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .voiceAndVideoMessages, captureProtected: captureProtected)
             paneNode = visualPaneNode
         case .music:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .music, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .music, captureProtected: captureProtected)
             paneNode = visualPaneNode
         case .gifs:
-            let visualPaneNode = PeerInfoGifPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: peerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .gifs)
+            let visualPaneNode = PeerInfoGifPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .gifs)
             paneNode = visualPaneNode
         case .groupsInCommon:
             paneNode = PeerInfoGroupsInCommonPaneNode(context: context, peerId: peerId, chatControllerInteraction: chatControllerInteraction, openPeerContextAction: openPeerContextAction, groupsInCommonContext: data.groupsInCommon!)
@@ -649,7 +682,7 @@ private final class PeerInfoPendingPane {
             paneNode = PeerInfoChatListPaneNode(context: context, navigationController: chatControllerInteraction.navigationController)
         case .savedMessages:
             paneNode = PeerInfoChatPaneNode(context: context, peerId: peerId, navigationController: chatControllerInteraction.navigationController)
-// MARK: Nicegram NCG-7303 Spy on friends
+// Nicegram NCG-7303 Spy on friends
         case .spyOnFriends:
             if #available(iOS 15.0, *),
                let spyOnFriendsContext = data.spyOnFriends {
@@ -686,6 +719,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     private let chatLocation: ChatLocation
     private let chatLocationContextHolder: Atomic<ChatLocationContextHolder?>
     private let isMediaOnly: Bool
+    private let sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?
     
     weak var parentController: ViewController?
     
@@ -723,6 +757,8 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     private var currentPanes: [PeerInfoPaneKey: PeerInfoPaneWrapper] = [:]
     private var pendingPanes: [PeerInfoPaneKey: PeerInfoPendingPane] = [:]
     private var shouldFadeIn = false
+    private var initialStoryFolderId: Int64?
+    private var initialGiftCollectionId: Int64?
     
     private var transitionFraction: CGFloat = 0.0
     
@@ -739,6 +775,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
 
     var openMediaCalendar: (() -> Void)?
     var openAddStory: (() -> Void)?
+    var openShareLink: ((String) -> Void)?
     var paneDidScroll: (() -> Void)?
     
     var ensurePaneRectVisible: ((UIView, CGRect) -> Void)?
@@ -748,14 +785,17 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     
     private let initialPaneKey: PeerInfoPaneKey?
     
-    init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: PeerId, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, isMediaOnly: Bool, initialPaneKey: PeerInfoPaneKey?) {
+    init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: PeerId, chatLocation: ChatLocation, sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, isMediaOnly: Bool, initialPaneKey: PeerInfoPaneKey?, initialStoryFolderId: Int64?, initialGiftCollectionId: Int64?) {
         self.context = context
         self.updatedPresentationData = updatedPresentationData
         self.peerId = peerId
         self.chatLocation = chatLocation
         self.chatLocationContextHolder = chatLocationContextHolder
+        self.sharedMediaFromForumTopic = sharedMediaFromForumTopic
         self.isMediaOnly = isMediaOnly
         self.initialPaneKey = initialPaneKey
+        self.initialStoryFolderId = initialStoryFolderId
+        self.initialGiftCollectionId = initialGiftCollectionId
         
         self.additionalBackgroundNode = ASDisplayNode()
         
@@ -1082,7 +1122,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                 }
             }
         }
-        if let pendingSwitchToPaneKey = self.pendingSwitchToPaneKey {
+        if let pendingSwitchToPaneKey = self.pendingSwitchToPaneKey, availablePanes.contains(pendingSwitchToPaneKey) {
             if self.currentPanes[pendingSwitchToPaneKey] == nil && self.pendingPanes[pendingSwitchToPaneKey] == nil {
                 if !requiredPendingKeys.contains(pendingSwitchToPaneKey) {
                     requiredPendingKeys.append(pendingSwitchToPaneKey)
@@ -1093,6 +1133,20 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
         for key in requiredPendingKeys {
             if self.pendingPanes[key] == nil, let data {
                 var leftScope = false
+                var initialStoryFolderId: Int64?
+                var initialGiftCollectionId: Int64?
+                if case .stories = key {
+                    if let initialStoryFolderIdValue = self.initialStoryFolderId {
+                        self.initialStoryFolderId = nil
+                        initialStoryFolderId = initialStoryFolderIdValue
+                    }
+                }
+                if case .gifts = key {
+                    if let initialGiftCollectionIdValue = self.initialGiftCollectionId {
+                        self.initialGiftCollectionId = nil
+                        initialGiftCollectionId = initialGiftCollectionIdValue
+                    }
+                }
                 let pane = PeerInfoPendingPane(
                     context: self.context,
                     updatedPresentationData: self.updatedPresentationData,
@@ -1110,6 +1164,9 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                     peerId: self.peerId,
                     chatLocation: self.chatLocation,
                     chatLocationContextHolder: self.chatLocationContextHolder,
+                    sharedMediaFromForumTopic: self.sharedMediaFromForumTopic,
+                    initialStoryFolderId: initialStoryFolderId,
+                    initialGiftCollectionId: initialGiftCollectionId,
                     key: key,
                     hasBecomeReady: { [weak self] key in
                         let apply: () -> Void = {
@@ -1138,6 +1195,9 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                     paneDidScroll: { [weak self] in
                         self?.paneDidScroll?()
                     },
+                    expandIfNeeded: { [weak self] in
+                        let _ = self?.requestExpandTabs?()
+                    },
                     ensureRectVisible: { [weak self] sourceView, rect in
                         guard let self else {
                             return
@@ -1149,6 +1209,12 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                             return
                         }
                         self.requestUpdate?(transition)
+                    },
+                    openShareLink: { [weak self] url in
+                        guard let self else {
+                            return
+                        }
+                        self.openShareLink?(url)
                     }
                 )
                 self.pendingPanes[key] = pane
@@ -1330,7 +1396,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                 if let gifts = data?.profileGiftsContext?.currentState?.gifts.prefix(3) {
                     icons = Array(gifts)
                 }
-            // MARK: Nicegram NCG-7303 Spy on friends
+            // Nicegram NCG-7303 Spy on friends
             case .spyOnFriends:
                 title = l("SpyOnFriends.Title")
             //
@@ -1346,7 +1412,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
         
         var removeKeys: [PeerInfoPaneKey] = []
         for (key, paneNode) in self.pendingPanes {
-            if !availablePanes.contains(key) {
+            if !availablePanes.contains(key) && self.pendingSwitchToPaneKey != key {
                 removeKeys.append(key)
                 paneNode.pane.node.removeFromSupernode()
             }
@@ -1357,7 +1423,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
         removeKeys.removeAll()
         
         for (key, paneNode) in self.currentPanes {
-            if !availablePanes.contains(key) {
+            if !availablePanes.contains(key) && self.pendingSwitchToPaneKey != key {
                 removeKeys.append(key)
                 paneNode.node.removeFromSupernode()
             }

@@ -64,7 +64,7 @@ public final class EmojiStatusComponent: Component {
     public let roundMask: Bool
     public let isVisibleForAnimations: Bool
     public let useSharedAnimation: Bool
-    // MARK: Nicegram ColorAlign
+    // Nicegram ColorAlign
     public var ngDisableAnimations: Bool
     //
     public let action: (() -> Void)?
@@ -81,7 +81,7 @@ public final class EmojiStatusComponent: Component {
         roundMask: Bool = false,
         isVisibleForAnimations: Bool,
         useSharedAnimation: Bool = false,
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         ngDisableAnimations: Bool = false,
         //
         action: (() -> Void)?,
@@ -102,7 +102,7 @@ public final class EmojiStatusComponent: Component {
             roundMask: roundMask,
             isVisibleForAnimations: isVisibleForAnimations,
             useSharedAnimation: useSharedAnimation,
-            // MARK: Nicegram ColorAlign
+            // Nicegram ColorAlign
             ngDisableAnimations: ngDisableAnimations,
             //
             action: action,
@@ -123,7 +123,7 @@ public final class EmojiStatusComponent: Component {
         roundMask: Bool = false,
         isVisibleForAnimations: Bool,
         useSharedAnimation: Bool = false,
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         ngDisableAnimations: Bool = false,
         //
         action: (() -> Void)?,
@@ -141,7 +141,7 @@ public final class EmojiStatusComponent: Component {
         self.roundMask = roundMask
         self.isVisibleForAnimations = isVisibleForAnimations
         self.useSharedAnimation = useSharedAnimation
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         self.ngDisableAnimations = ngDisableAnimations
         //
         self.action = action
@@ -162,7 +162,7 @@ public final class EmojiStatusComponent: Component {
             roundMask: self.roundMask,
             isVisibleForAnimations: isVisibleForAnimations,
             useSharedAnimation: self.useSharedAnimation,
-            // MARK: Nicegram ColorAlign
+            // Nicegram ColorAlign
             ngDisableAnimations: self.ngDisableAnimations,
             //
             action: self.action,
@@ -626,7 +626,7 @@ public final class EmojiStatusComponent: Component {
                     
                     animationLayer.frame = CGRect(origin: CGPoint(), size: size)
                     animationLayer.isVisibleForAnimations = component.isVisibleForAnimations
-                    // MARK: Nicegram ColorAlign
+                    // Nicegram ColorAlign
                     if component.ngDisableAnimations {
                         animationLayer.isVisibleForAnimations = false
                     }

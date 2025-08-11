@@ -57,6 +57,33 @@ public extension [TelegramAccountManagerTypes.Attribute] {
     }
 }
 
+public extension [TelegramAccountManagerTypes.Attribute] {
+    var sortOrder: Int32 {
+        get {
+            for attribute in self {
+                if case let .sortOrder(sortOrder) = attribute {
+                    return sortOrder.order
+                }
+            }
+            return .min
+        } set {
+            let newAttr = TelegramAccountManagerTypes.Attribute.sortOrder(.init(order: newValue))
+            
+            var found = false
+            for (index, attribute) in self.enumerated() {
+                if case let .sortOrder(sortOrder) = attribute {
+                    self[index] = newAttr
+                    found = true
+                }
+            }
+            
+            if !found {
+                self.append(newAttr)
+            }
+        }
+    }
+}
+
 public extension AccountRecord {
     func with(attributes: [Attribute]) -> AccountRecord {
         AccountRecord(id: id, attributes: attributes, temporarySessionId: temporarySessionId)

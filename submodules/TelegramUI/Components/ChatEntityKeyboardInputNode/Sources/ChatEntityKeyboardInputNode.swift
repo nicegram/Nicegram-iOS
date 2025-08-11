@@ -353,7 +353,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
     private let stateContext: StateContext?
     private let entityKeyboardView: ComponentHostView<Empty>
     
-    // MARK: Nicegram OpenGifsShortcut
+    // Nicegram OpenGifsShortcut
     private let defaultTab: EntityKeyboardInputTab?
     //
     
@@ -470,9 +470,9 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         |> distinctUntilChanged
     }
     
-    // MARK: Nicegram OpenGifsShortcut, defaultTab param added
+    // Nicegram OpenGifsShortcut, defaultTab param added
     public init(defaultTab: EntityKeyboardInputTab? = nil, context: AccountContext, currentInputData: InputData, updatedInputData: Signal<InputData, NoError>, defaultToEmojiTab: Bool, opaqueTopPanelBackground: Bool = false, useOpaqueTheme: Bool = false, interaction: ChatEntityKeyboardInputNode.Interaction?, chatPeerId: PeerId?, stateContext: StateContext?, forceHasPremium: Bool = false) {
-        // MARK: Nicegram OpenGifsShortcut
+        // Nicegram OpenGifsShortcut
         self.defaultTab = defaultTab
         //
         self.context = context
@@ -1843,7 +1843,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         let entityKeyboardSize = self.entityKeyboardView.update(
             transition: mappedTransition,
             component: AnyComponent(EntityKeyboardComponent(
-                // MARK: Nicegram OpenGifsShortcut
+                // Nicegram OpenGifsShortcut
                 defaultTab: self.defaultTab,
                 //
                 theme: interfaceState.theme,

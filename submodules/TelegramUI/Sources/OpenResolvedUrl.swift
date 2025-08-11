@@ -883,6 +883,15 @@ func openResolvedUrlImpl(
                     navigationController.pushViewController(controller, animated: true)
                 }
             }
+        case .ton:
+            dismissInput()
+            if let tonContext = context.tonContext {
+                let controller = context.sharedContext.makeStarsTransactionsScreen(context: context, starsContext: tonContext)
+                controller.navigationPresentation = .modal
+                if let navigationController {
+                    navigationController.pushViewController(controller, animated: true)
+                }
+            }
         case let .joinVoiceChat(peerId, invite):
             let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
             |> deliverOnMainQueue).start(next: { peer in
@@ -1497,6 +1506,48 @@ func openResolvedUrlImpl(
                 }
             } else {
                 present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.BusinessLink_ErrorExpired, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+            }
+        case let .storyFolder(peerId, id):
+            Task { @MainActor [weak navigationController] in
+                guard let peer = await context.engine.data.get(
+                    TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)
+                ).get() else {
+                    return
+                }
+                
+                guard let controller = context.sharedContext.makePeerInfoController(
+                    context: context,
+                    updatedPresentationData: updatedPresentationData,
+                    peer: peer._asPeer(),
+                    mode: .storyAlbum(id: id),
+                    avatarInitiallyExpanded: false,
+                    fromChat: false,
+                    requestsContext: nil
+                ) else {
+                    return
+                }
+                navigationController?.pushViewController(controller)
+            }
+        case let .giftCollection(peerId, id):
+            Task { @MainActor [weak navigationController] in
+                guard let peer = await context.engine.data.get(
+                    TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)
+                ).get() else {
+                    return
+                }
+                
+                guard let controller = context.sharedContext.makePeerInfoController(
+                    context: context,
+                    updatedPresentationData: updatedPresentationData,
+                    peer: peer._asPeer(),
+                    mode: .giftCollection(id: id),
+                    avatarInitiallyExpanded: false,
+                    fromChat: false,
+                    requestsContext: nil
+                ) else {
+                    return
+                }
+                navigationController?.pushViewController(controller)
             }
     }
 }

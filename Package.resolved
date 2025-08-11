@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
       "state" : {
-        "revision" : "428d8bb138e00f9a3f4f61cc6cd8863607524f65",
-        "version" : "2.1.0"
+        "revision" : "973bd67929bfbe465f63c05cd5a4b113765fbc7f",
+        "version" : "2.2.1"
       }
     },
     {
@@ -249,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "92990e6a084bd610f88251872c41abad6c13b3cc"
+        "revision" : "64b4c5475a2508c48154c607187cba9051413091"
       }
     },
     {
@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "bb8a357189d81a42a5bb7d876087b8b1a1d16423"
+        "revision" : "243431d38fc82180a2ffdb590818bd00b8a93751"
       }
     },
     {
@@ -374,8 +374,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "c1805596154bb3a265fd91b8ac0c4433b4348fb0",
-        "version" : "1.2.0"
+        "revision" : "8c0c0a8b49e080e54e5e328cc552821ff07cd341",
+        "version" : "1.2.1"
       }
     },
     {
@@ -563,8 +563,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "39de59b2d47f7ef3ca88a039dff3084688fe27f4",
-        "version" : "1.5.2"
+        "revision" : "b2ed9eabefe56202ee4939dd9fc46b6241c88317",
+        "version" : "1.6.1"
       }
     }
   ],

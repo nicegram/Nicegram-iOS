@@ -1,9 +1,12 @@
 import Foundation
 import UIKit
 import Postbox
-// MARK: Nicegram Imports
+// Nicegram Imports
 import class Combine.CurrentValueSubject
+import Factory
+import FeatAdsgram
 import FeatAssistant
+import FeatChatListWidget
 import FeatPinnedChats
 import NGAiChat
 import NGAiChatUI
@@ -112,6 +115,11 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
 public class ChatListControllerImpl: TelegramBaseController, ChatListController {
     private var validLayout: ContainerViewLayout?
     
+    // Nicegram, ChatListWidget
+    @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
+    private var chatListWidgetViewModel
+    //
+    
     public let context: AccountContext
     private let controlsHistoryPreload: Bool
     private let hideNetworkActivityStatus: Bool
@@ -177,10 +185,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private var tabContainerData: ([ChatListFilterTabEntry], Bool, Int32?)?
     var hasTabs: Bool {
         if let tabContainerData = self.tabContainerData {
-            // MARK: Nicegram NCG-7581 Folder for keywords
+            // Nicegram NCG-7581 Folder for keywords
             let id = self.context.account.peerId.toInt64()
             let count = ((getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1)
-            // MARK: Nicegram NCG-7581 Folder for keywords, count
+            // Nicegram NCG-7581 Folder for keywords, count
             let isEmpty = tabContainerData.0.count <= count || tabContainerData.1
             return !isEmpty
         } else {
@@ -284,7 +292,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 
         super.init(context: context, navigationBarPresentationData: nil, mediaAccessoryPanelVisibility: .always, locationBroadcastPanelSource: .summary, groupCallPanelSource: groupCallPanelSource)
         
-        // MARK: Nicegram NCG-7581 Folder for keywords
+        // Nicegram NCG-7581 Folder for keywords
         self.tabContainerNode.openKeywords = { [weak self] in
             if #available(iOS 15.0, *) {
                 let presentationData = (context.sharedContext.currentPresentationData.with { $0 })
@@ -391,7 +399,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         }
                     )))
                     
-                    // MARK: Nicegram Assistant
+                    // Nicegram Assistant
                     if #available(iOS 15.0, *) {
                         self.primaryContext?.nicegramButton = AnyComponentWithIdentity(
                             id: "nicegram",
@@ -480,7 +488,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         self.badgeDisposable = (combineLatest(renderedTotalUnreadCount(accountManager: context.sharedContext.accountManager, engine: context.engine), self.presentationDataValue.get()) |> deliverOnMainQueue).startStrict(next: { [weak self] count, presentationData in
             if let strongSelf = self {
-// MARK: Nicegram NCG-6652 Hide UI notifications, NGSettings.hideUnreadCounters
+// Nicegram NCG-6652 Hide UI notifications, NGSettings.hideUnreadCounters
                 if count.0 == 0 || NGSettings.hideUnreadCounters {
                     strongSelf.tabBarItem.badgeValue = ""
                 } else {
@@ -812,17 +820,17 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
                 if force {
                     strongSelf.tabContainerNode.cancelAnimations()
-                    // MARK: Nicegram FoldersAtBottom
+                    // Nicegram FoldersAtBottom
                     strongSelf.chatListDisplayNode.inlineTabContainerNode.cancelAnimations()
                     //
                 }
                 strongSelf.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: tabContainerData.0, selectedFilter: filter, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing, canReorderAllChats: strongSelf.isPremium, filtersLimit: tabContainerData.2, transitionFraction: fraction, presentationData: strongSelf.presentationData, transition: transition)
-                // MARK: Nicegram FoldersAtBottom
+                // Nicegram FoldersAtBottom
                 strongSelf.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: tabContainerData.0, selectedFilter: filter, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: fraction, presentationData: strongSelf.presentationData, transition: transition)
                 //
                 
                 
-                // MARK: Nicegram Switch to filter id
+                // Nicegram Switch to filter id
                 var switchingToFilterId: Int32
                 switch (filter) {
                 case let .filter(filterId):
@@ -858,7 +866,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         self.updateNavigationMetadata()
         
-// MARK: Nicegram NCG-7102 bottom folders fix
+// Nicegram NCG-7102 bottom folders fix
         _ = (self.ready.get() |> deliverOnMainQueue)
             .start { [weak self] flag in
                 guard let self else { return }
@@ -1042,7 +1050,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         if let layout = self.validLayout {
             self.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.effectiveContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing, canReorderAllChats: self.isPremium, filtersLimit: self.tabContainerData?.2, transitionFraction: self.chatListDisplayNode.effectiveContainerNode.transitionFraction, presentationData: self.presentationData, transition: .immediate)
-            // MARK: Nicegram FoldersAtBottom
+            // Nicegram FoldersAtBottom
             self.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: self.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .immediate)
             //
         }
@@ -1359,7 +1367,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 simple: true,
                 source: .generic,
                 skipTermsOfService: true,
-                payload: nil
+                payload: nil,
+                verifyAgeCompletion: nil
             )
         }
         
@@ -2157,7 +2166,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             })
         }
         
-        // MARK: Nicegram FoldersAtBottom
+        // Nicegram FoldersAtBottom
         self.chatListDisplayNode.inlineTabContainerNode.tabSelected = { [weak self] id in
             self?.selectTab(id: id)
         }
@@ -2468,7 +2477,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         updateChatListNode(isVisible: true)
         //
         if self.powerSavingMonitoringDisposable == nil {
@@ -2824,7 +2833,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     return
                 }
                 
-                // MARK: Nicegram NCG-7581 Folder for keywords
+                // Nicegram NCG-7581 Folder for keywords
                 Foundation.Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
                     self?.showKeywordTooltip()
                 }
@@ -2896,7 +2905,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     override public func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         
-        // MARK: Nicegram PinnedChats
+        // Nicegram PinnedChats
         updateChatListNode(isVisible: false)
         //
         
@@ -2919,7 +2928,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
     }
     
-    // MARK: Nicegram PinnedChats
+    // Nicegram PinnedChats
     lazy var chatListNicegramData: ChatListNicegramData = {
         let controller = { [weak self] in
             self
@@ -2944,6 +2953,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private func updateChatListNode(isVisible: Bool) {
         let oldIsVisible = self.chatListNicegramData.isChatListVisible.value
         self.chatListNicegramData.isChatListVisible.value = isVisible
+        
+        self.chatListWidgetViewModel.set(isViewVisible: isVisible)
         
         if isVisible, !oldIsVisible {
             chatListDisplayNode.effectiveContainerNode.currentItemNode.forEachItemNode { itemNode in
@@ -3635,13 +3646,13 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         if !skipTabContainerUpdate {
             self.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing, canReorderAllChats: self.isPremium, filtersLimit: self.tabContainerData?.2, transitionFraction: self.chatListDisplayNode.effectiveContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         }
-        // MARK: Nicegram FoldersAtBottom
+        // Nicegram FoldersAtBottom
         let showFoldersAtBottom: Bool
         if let tabContainerData = self.tabContainerData {
-            // MARK: Nicegram NCG-7581 Folder for keywords
+            // Nicegram NCG-7581 Folder for keywords
             let id = self.context.account.peerId.toInt64()
             let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
-            // MARK: Nicegram NCG-7581 Folder for keywords, count
+            // Nicegram NCG-7581 Folder for keywords, count
             showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > count
         } else {
             showFoldersAtBottom = false
@@ -3735,7 +3746,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
         
         var reorderedFilterIdsValue: [Int32]?
-        // MARK: Nicegram FoldersAtBottom, check first inlineTabContainerNode.reorderedFilterIds
+        // Nicegram FoldersAtBottom, check first inlineTabContainerNode.reorderedFilterIds
         if let reorderedFilterIds = self.chatListDisplayNode.inlineTabContainerNode.reorderedFilterIds, reorderedFilterIds != defaultFilterIds {
             reorderedFilterIdsValue = reorderedFilterIds
         } else if let reorderedFilterIds = self.tabContainerNode.reorderedFilterIds {
@@ -4068,7 +4079,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     private var initializedFilters = false
     private func reloadFilters(firstUpdate: (() -> Void)? = nil) {
-        // MARK: Nicegram
+        // Nicegram
         let preferencesKey: PostboxViewKey = .preferences(keys: Set([
             ApplicationSpecificPreferencesKeys.chatListFilterSettings
         ]))
@@ -4084,7 +4095,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         let filterItems = chatListFilterItems(context: self.context)
         var notifiedFirstUpdate = false
         self.filterDisposable.set((combineLatest(queue: .mainQueue(),
-            // MARK: Nicegram
+            // Nicegram
             context.account.postbox.combinedView(keys: [preferencesKey]),
             displayTabsAtBottom,
             //
@@ -4092,7 +4103,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             self.context.account.postbox.peerView(id: self.context.account.peerId),
             self.context.engine.data.get(TelegramEngine.EngineData.Item.Configuration.UserLimits(isPremium: false))
         )
-        // MARK: Nicegram (_, displayTabsAtBottom)
+        // Nicegram (_, displayTabsAtBottom)
         |> deliverOnMainQueue).startStrict(next: { [weak self] _, displayTabsAtBottom, countAndFilterItems, peerView, limits in
             guard let strongSelf = self else {
                 return
@@ -4125,10 +4136,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
-                // MARK: Nicegram NCG-7581 Folder for keywords
+                // Nicegram NCG-7581 Folder for keywords
                 let id = self?.context.account.peerId.toInt64() ?? 0
                 let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
-                // MARK: Nicegram NCG-7581 Folder for keywords, count
+                // Nicegram NCG-7581 Folder for keywords, count
                 wasEmpty = tabContainerData.0.count <= count || tabContainerData.1
             } else {
                 wasEmpty = true
@@ -4166,7 +4177,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
             let filtersLimit = isPremium == false ? limits.maxFoldersCount : nil
-// MARK: Nicegram NCG-6652 Hide UI notifications
+// Nicegram NCG-6652 Hide UI notifications
             resolvedItems = resolvedItems.map { filter -> ChatListFilterTabEntry in
                 switch filter {
                 case let .all(unreadCount):
@@ -4183,7 +4194,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
 //
-            // MARK: Nicegram (displayTabsAtBottom instead false)
+            // Nicegram (displayTabsAtBottom instead false)
             strongSelf.tabContainerData = (resolvedItems, displayTabsAtBottom, filtersLimit)
             var availableFilters: [ChatListContainerNodeFilter] = []
             var hasAllChats = false
@@ -4220,10 +4231,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 strongSelf.initializedFilters = true
             }
             
-            // MARK: Nicegram NCG-7581 Folder for keywords
+            // Nicegram NCG-7581 Folder for keywords
             let id = self?.context.account.peerId.toInt64() ?? 0
             let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
-            // MARK: Nicegram (|| displayTabsAtBottom), count
+            // Nicegram (|| displayTabsAtBottom), count
             let isEmpty = resolvedItems.count <= count || displayTabsAtBottom
             
             let animated = strongSelf.didSetupTabs
@@ -4237,7 +4248,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     (strongSelf.parent as? TabBarController)?.updateLayout(transition: transition)
                 } else {
                     strongSelf.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: resolvedItems, selectedFilter: selectedEntryId, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing, canReorderAllChats: strongSelf.isPremium, filtersLimit: filtersLimit, transitionFraction: strongSelf.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: strongSelf.presentationData, transition: .animated(duration: 0.4, curve: .spring))
-                    // MARK: Nicegram FoldersAtBottom
+                    // Nicegram FoldersAtBottom
                     strongSelf.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: resolvedItems, selectedFilter: selectedEntryId, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: strongSelf.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: strongSelf.presentationData, transition: .animated(duration: 0.4, curve: .spring))
                     //
                 }
@@ -4253,7 +4264,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             }
         }))
     }
-    // MARK: Nicegram NCG-7102 bottom folders fix, preselected
+    // Nicegram NCG-7102 bottom folders fix, preselected
     private func selectTab(id: ChatListFilterTabEntryId, switchToChatsIfNeeded: Bool = true, preselected: Bool = false) {
         if self.parent == nil, switchToChatsIfNeeded {
             if let navigationController = self.context.sharedContext.mainWindow?.viewController as? NavigationController {
@@ -4300,7 +4311,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     strongSelf.setInlineChatList(location: nil)
                 }
                 
-                // MARK: Nicegram NCG-7102 bottom folders fix, preselected
+                // Nicegram NCG-7102 bottom folders fix, preselected
                 strongSelf.chatListDisplayNode.mainContainerNode.switchToFilter(
                     id: updatedFilter.flatMap { .filter($0.id) } ?? .all,
                     preselected: preselected
@@ -6689,7 +6700,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             return false
         }
     }
-    // MARK: Nicegram NCG-7581 Folder for keywords
+    // Nicegram NCG-7581 Folder for keywords
     private var isShowTooltip = false
     private func showKeywordTooltip() {
         let id = context.account.peerId.toInt64()
@@ -6759,25 +6770,18 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         with id: Int32,
         peerId: Int64
     ) {
-        guard let navigationController = self.context.sharedContext.mainWindow?.viewController as? NavigationController else { return }
-        
-        _ = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: PeerId(peerId)))
-            .start { [weak self] result in
-                if let result, let self {
-                    self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(
-                        navigationController: navigationController,
-                        context: self.context,
-                        chatLocation: .peer(EnginePeer(result._asPeer())),
-                        subject: .message(
-                            id: .id(EngineMessage.Id(peerId: result.id, namespace: 0, id: id)),
-                            highlight: ChatControllerSubject.MessageHighlight(quote: nil),
-                            timecode: nil,
-                            setupReply: false
-                        ),
-                        keepStack: .always
-                    ))
-                }
-            }
+        Task {
+            let peerId = PeerId(peerId)
+            let messageId = MessageId(peerId: peerId, namespace: 0, id: id)
+            
+            let link = try await context.engine.messages.exportMessageLink(
+                peerId: peerId,
+                messageId: messageId,
+                isThread: true
+            ).awaitForFirstValue().unwrap()
+            
+            CoreContainer.shared.urlOpener().open(link)
+        }
     }
     //
 }
@@ -6870,7 +6874,7 @@ private final class ChatListLocationContext {
     private(set) var chatTitleComponent: ChatTitleComponent?
     private(set) var chatListTitle: NetworkStatusTitle?
     
-    // MARK: Nicegram Assistant
+    // Nicegram Assistant
     var nicegramButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
     //
     var leftButton: AnyComponentWithIdentity<NavigationButtonComponentEnvironment>?
@@ -6889,7 +6893,7 @@ private final class ChatListLocationContext {
         if let proxyButton = self.proxyButton {
             result.append(proxyButton)
         }
-        // MARK: Nicegram Assistant
+        // Nicegram Assistant
         if let nicegramButton = self.nicegramButton {
             result.append(nicegramButton)
         }
@@ -7473,7 +7477,7 @@ private final class ChatListLocationContext {
             self.parentController?.maybeDisplayStoryTooltip()
         })
         
-        // MARK: Nicegram waiting network bug
+        // Nicegram waiting network bug
         if case .waitingForNetwork = networkState {
             context.account.network.simulateDisconnection()
         }

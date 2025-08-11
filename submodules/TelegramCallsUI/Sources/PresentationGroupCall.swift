@@ -349,8 +349,8 @@ private final class ConferenceCallE2EContextStateImpl: ConferenceCallE2EContextS
         return self.call.participants().map { $0.userId }
     }
 
-    func applyBlock(block: Data) {
-        self.call.applyBlock(block)
+    func applyBlock(block: Data) -> Bool {
+        return self.call.applyBlock(block)
     }
 
     func applyBroadcastBlock(block: Data) {
@@ -636,6 +636,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     }
     
     private var participantsContextStateDisposable = MetaDisposable()
+    private var isFailedEventDisposable: Disposable?
     private var temporaryParticipantsContext: GroupCallParticipantsContext?
     private var participantsContext: GroupCallParticipantsContext?
     
@@ -1244,6 +1245,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         self.peerUpdatesSubscription?.dispose()
         self.screencastStateDisposable?.dispose()
         self.pendingDisconnedUpgradedConferenceCallTimer?.invalidate()
+        self.participantsContextStateDisposable.dispose()
+        self.isFailedEventDisposable?.dispose()
     }
     
     private func switchToTemporaryParticipantsContext(sourceContext: GroupCallParticipantsContext?, oldMyPeerId: PeerId) {
@@ -2616,6 +2619,16 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     }
                 }))
                 
+                self.isFailedEventDisposable = (participantsContext.isFailedEvent
+                |> filter { $0 }
+                |> take(1)
+                |> deliverOnMainQueue).startStrict(next: { [weak self] isFailed in
+                    guard let self, isFailed else {
+                        return
+                    }
+                    let _ = self.leave(terminateIfPossible: false).startStandalone()
+                })
+                
                 let engine = self.accountContext.engine
                 self.memberEventsPipeDisposable.set((participantsContext.memberEvents
                 |> mapToSignal { event -> Signal<PresentationGroupCallMemberEvent, NoError> in
@@ -3659,7 +3672,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     case let .privacy(peer):
                         if let peer {
                             if let currentInviteLinks = self.currentInviteLinks {
-                                let inviteLinkScreen = self.accountContext.sharedContext.makeSendInviteLinkScreen(context: self.accountContext, subject: .groupCall(link: currentInviteLinks.listenerLink), peers: [TelegramForbiddenInvitePeer(peer: peer, canInviteWithPremium: false, premiumRequiredToContact: false)], theme: defaultDarkColorPresentationTheme)
+                                let inviteLinkScreen = self.accountContext.sharedContext.makeSendInviteLinkScreen(context: self.accountContext, subject: .groupCall(.existing(link: currentInviteLinks.listenerLink)), peers: [TelegramForbiddenInvitePeer(peer: peer, canInviteWithPremium: false, premiumRequiredToContact: false)], theme: defaultDarkColorPresentationTheme)
                                 if let navigationController = self.accountContext.sharedContext.mainWindow?.viewController as? NavigationController {
                                     navigationController.pushViewController(inviteLinkScreen)
                                 }
@@ -3748,6 +3761,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
             self.conferenceInvitationContexts.removeValue(forKey: peerId)
             if let messageId = conferenceInvitationContext.messageId {
                 self.accountContext.engine.account.callSessionManager.dropOutgoingConferenceRequest(messageId: messageId)
+                let _ = self.accountContext.engine.messages.deleteMessagesInteractively(messageIds: [messageId], type: .forEveryone).startStandalone()
             }
         }
     }

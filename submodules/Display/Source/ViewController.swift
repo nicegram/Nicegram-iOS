@@ -565,7 +565,7 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     
     override open func dismiss(animated flag: Bool, completion: (() -> Void)? = nil) {
-        // MARK: Nicegram
+        // Nicegram
         if presentedViewController != nil {
             super.dismiss(animated: flag, completion: completion)
             return

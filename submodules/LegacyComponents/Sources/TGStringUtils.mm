@@ -1139,7 +1139,12 @@ int32_t legacy_murMurHashBytes32(void *bytes, int length)
 int32_t phoneMatchHash(NSString *phone)
 {
     int length = (int)phone.length;
+#pragma clang diagnostic push
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#pragma clang diagnostic ignored "-Wvla-cxx-extension"
+#endif
     char cleanString[length];
+#pragma clang diagnostic pop
     int cleanLength = 0;
     
     for (int i = 0; i < length; i++)

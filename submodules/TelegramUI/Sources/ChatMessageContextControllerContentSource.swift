@@ -72,7 +72,7 @@ final class ChatMessageContextExtractedContentSource: ContextExtractedContentSou
         self.snapshot = snapshot
     }
     
-    private var snapshotView: UIView?
+    private(set) var snapshotView: UIView?
     
     func takeView() -> ContextControllerTakeViewInfo? {
         guard let chatNode = self.chatNode else {
@@ -89,12 +89,10 @@ final class ChatMessageContextExtractedContentSource: ContextExtractedContentSou
             }
             if item.content.contains(where: { $0.0.stableId == self.message.stableId }), let contentNode = itemNode.getMessageContextSourceNode(stableId: self.selectAll ? nil : self.message.stableId) {
                 result = ContextControllerTakeViewInfo(containingItem: .node(contentNode), contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil))
-                
-                Queue.mainQueue().justDispatch {
-                    if self.snapshot, let snapshotView = contentNode.contentNode.view.snapshotContentTree(unhide: false, keepPortals: true, keepTransform: true) {
-                        contentNode.view.superview?.addSubview(snapshotView)
-                        self.snapshotView = snapshotView
-                    }
+            
+                if self.snapshot, let snapshotView = contentNode.contentNode.view.snapshotContentTree(unhide: false, keepPortals: true, keepTransform: true) {
+                    contentNode.view.superview?.addSubview(snapshotView)
+                    self.snapshotView = snapshotView
                 }
             }
         }
@@ -116,12 +114,6 @@ final class ChatMessageContextExtractedContentSource: ContextExtractedContentSou
             }
             if item.content.contains(where: { $0.0.stableId == self.message.stableId }) {
                 result = ContextControllerPutBackViewInfo(contentAreaInScreenSpace: chatNode.convert(chatNode.frameForVisibleArea(), to: nil))
-            }
-        }
-        
-        if let snapshotView = self.snapshotView {
-            Queue.mainQueue().after(0.4) {
-                snapshotView.removeFromSuperview()
             }
         }
         

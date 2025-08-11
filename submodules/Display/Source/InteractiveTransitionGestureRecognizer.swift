@@ -143,7 +143,15 @@ public class InteractiveTransitionGestureRecognizer: UIPanGestureRecognizer {
         
         if self.currentAllowedDirections.contains(.down) {
             if !self.validatedGesture {
-                if absTranslationX > 2.0 && absTranslationX > absTranslationY * 2.0 {
+                let totalMovement = sqrt(absTranslationX * absTranslationX + absTranslationY * absTranslationY)
+                if totalMovement > 10.0 {
+                    // Force dominant direction after 10pt movement
+                    if absTranslationY >= absTranslationX {
+                        self.validatedGesture = true
+                    } else {
+                        self.state = .failed
+                    }
+                } else if absTranslationX > 2.0 && absTranslationX > absTranslationY * 2.0 {
                     self.state = .failed
                 } else if absTranslationY > 2.0 && absTranslationX * 2.0 < absTranslationY {
                     self.validatedGesture = true
@@ -176,11 +184,22 @@ public class InteractiveTransitionGestureRecognizer: UIPanGestureRecognizer {
                     self.state = .failed
                 } else if !self.currentAllowedDirections.contains(.rightCenter) && translation.x > 0.0 {
                     self.state = .failed
-                } else if absTranslationY > 2.0 && absTranslationY > absTranslationX * 2.0 {
-                    self.state = .failed
-                } else if absTranslationX > 2.0 && absTranslationY * 2.0 < absTranslationX {
-                    self.validatedGesture = true
-                    fireBegan = true
+                } else {
+                    let totalMovement = sqrt(absTranslationX * absTranslationX + absTranslationY * absTranslationY)
+                    if totalMovement > 10.0 {
+                        // Force dominant direction after 10pt movement
+                        if absTranslationX >= absTranslationY {
+                            self.validatedGesture = true
+                            fireBegan = true
+                        } else {
+                            self.state = .failed
+                        }
+                    } else if absTranslationY > 2.0 && absTranslationY > absTranslationX * 2.0 {
+                        self.state = .failed
+                    } else if absTranslationX > 2.0 && absTranslationY * 2.0 < absTranslationX {
+                        self.validatedGesture = true
+                        fireBegan = true
+                    }
                 }
             }
         }

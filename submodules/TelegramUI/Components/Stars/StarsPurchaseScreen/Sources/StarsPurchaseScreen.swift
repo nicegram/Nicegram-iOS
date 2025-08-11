@@ -1,4 +1,4 @@
-// MARK: Nicegram StarsPurchase
+// Nicegram StarsPurchase
 import ButtonComponent
 import NGStrings
 //
@@ -89,7 +89,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
     let products: [StarsProduct]?
     let expanded: Bool
     let peers: [EnginePeer.Id: EnginePeer]
-    // MARK: Nicegram StarsPurchase
+    // Nicegram StarsPurchase
     let openLink: (String, Bool) -> Void
     //
     let stateUpdated: (ComponentTransition) -> Void
@@ -108,7 +108,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
         products: [StarsProduct]?,
         expanded: Bool,
         peers: [EnginePeer.Id: EnginePeer],
-        // MARK: Nicegram StarsPurchase
+        // Nicegram StarsPurchase
         openLink: @escaping (String, Bool) -> Void,
         //
         stateUpdated: @escaping (ComponentTransition) -> Void,
@@ -126,7 +126,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
         self.products = products
         self.expanded = expanded
         self.peers = peers
-        // MARK: Nicegram StarsPurchase
+        // Nicegram StarsPurchase
         self.openLink = openLink
         //
         self.stateUpdated = stateUpdated
@@ -194,7 +194,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
         let list = Child(VStack<Empty>.self)
         let termsText = Child(BalancedTextComponent.self)
         
-        // MARK: Nicegram StarsPurchase
+        // Nicegram StarsPurchase
         let getOnFragmentButton = Child(ButtonComponent.self)
         let getOnTelegramButton = Child(Button.self)
         //
@@ -225,7 +225,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
             let textFont = Font.regular(15.0)
             let boldTextFont = Font.semibold(15.0)
             
-            // MARK: Nicegram StarsPurchase
+            // Nicegram StarsPurchase
             let showNicegramContent = true
             if showNicegramContent {
                 let buttonSize = CGSize(
@@ -587,7 +587,7 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
     let options: [Any]
     let purpose: StarsPurchasePurpose
     let forceDark: Bool
-    // MARK: Nicegram StarsPurchase
+    // Nicegram StarsPurchase
     let openLink: (String, Bool) -> Void
     //
     let openAppExamples: () -> Void
@@ -601,7 +601,7 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
         options: [Any],
         purpose: StarsPurchasePurpose,
         forceDark: Bool,
-        // MARK: Nicegram StarsPurchase
+        // Nicegram StarsPurchase
         openLink: @escaping (String, Bool) -> Void,
         //
         openAppExamples: @escaping () -> Void,
@@ -614,7 +614,7 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
         self.options = options
         self.purpose = purpose
         self.forceDark = forceDark
-        // MARK: Nicegram StarsPurchase
+        // Nicegram StarsPurchase
         self.openLink = openLink
         //
         self.openAppExamples = openAppExamples
@@ -993,7 +993,7 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
                         products: state.products,
                         expanded: state.isExpanded,
                         peers: state.peers,
-                        // MARK: Nicegram StarsPurchase
+                        // Nicegram StarsPurchase
                         openLink: context.component.openLink,
                         //
                         stateUpdated: { [weak state] transition in
@@ -1117,7 +1117,7 @@ public final class StarsPurchaseScreen: ViewControllerComponentContainer {
         self.context = context
         self.starsContext = starsContext
             
-        // MARK: Nicegram StarsPurchase
+        // Nicegram StarsPurchase
         var openLinkImpl: ((String, Bool) -> Void)?
         //
         var openAppExamplesImpl: (() -> Void)?
@@ -1130,7 +1130,7 @@ public final class StarsPurchaseScreen: ViewControllerComponentContainer {
             options: options,
             purpose: purpose,
             forceDark: false,
-            // MARK: Nicegram StarsPurchase
+            // Nicegram StarsPurchase
             openLink: {
                 openLinkImpl?($0, $1)
             },
@@ -1155,7 +1155,7 @@ public final class StarsPurchaseScreen: ViewControllerComponentContainer {
         self.navigationItem.setLeftBarButton(cancelItem, animated: false)
         self.navigationPresentation = .modal
         
-        // MARK: Nicegram StarsPurchase
+        // Nicegram StarsPurchase
         openLinkImpl = { [weak self] url, forceExternal in
             let navigationController = self?.navigationController as? NavigationController
             context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: url, forceExternal: forceExternal, presentationData: context.sharedContext.currentPresentationData.with { $0 }, navigationController: navigationController, dismissInput: {})

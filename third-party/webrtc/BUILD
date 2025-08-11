@@ -3061,7 +3061,7 @@ objc_library(
         "webrtc/rtc_base/system/gcd_helpers.m",
     ],
     copts = [
-        "-Wno-all",
+        "-w",
         "-Ithird-party/webrtc/webrtc/",
         "-Ithird-party/webrtc/webrtc/sdk/objc",
         "-Ithird-party/webrtc/webrtc/sdk/objc/base",
@@ -3124,7 +3124,7 @@ objc_library(
     module_name = "webrtc",
     srcs = combined_sources,
     copts = [
-        "-Wno-all",
+        "-w",
         "-Ithird-party/webrtc/libsrtp/third_party/libsrtp/include",
         "-Ithird-party/webrtc/libsrtp/third_party/libsrtp/crypto/include",
         "-Ithird-party/webrtc/libsrtp",

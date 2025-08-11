@@ -1550,7 +1550,7 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
                 context: context,
                 initialPrivacy: EngineStoryPrivacy(base: .nobody, additionallyIncludePeers: state.peers),
                 stateContext: stateContext,
-                completion: { _, privacy ,_, _, _, _ in
+                completion: { _, privacy ,_, _, _, _, _ in
                     updateState { state in
                         var updatedState = state
                         updatedState.peers = privacy.additionallyIncludePeers
@@ -1589,7 +1589,7 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
                 context: context,
                 initialPrivacy: EngineStoryPrivacy(base: .nobody, additionallyIncludePeers: state.peers),
                 stateContext: stateContext,
-                completion: { _, privacy ,_, _, _, _ in
+                completion: { _, privacy ,_, _, _, _, _ in
                     updateState { state in
                         var updatedState = state
                         updatedState.channels = privacy.additionallyIncludePeers

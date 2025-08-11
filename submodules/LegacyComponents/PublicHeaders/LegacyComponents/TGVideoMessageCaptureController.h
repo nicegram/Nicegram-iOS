@@ -33,7 +33,7 @@
 @property (nonatomic, copy) void(^displaySlowmodeTooltip)(void);
 @property (nonatomic, copy) void (^presentScheduleController)(void (^)(int32_t));
     
-// MARK: Nicegram (useRearCamTelescopy)
+// Nicegram (useRearCamTelescopy)
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context forStory:(bool)forStory assets:(TGVideoMessageCaptureControllerAssets *)assets transitionInView:(UIView *(^)(void))transitionInView parentController:(TGViewController *)parentController controlsFrame:(CGRect)controlsFrame isAlreadyLocked:(bool (^)(void))isAlreadyLocked liveUploadInterface:(id<TGLiveUploadInterface>)liveUploadInterface pallete:(TGModernConversationInputMicPallete *)pallete slowmodeTimestamp:(int32_t)slowmodeTimestamp slowmodeView:(UIView *(^)(void))slowmodeView canSendSilently:(bool)canSendSilently canSchedule:(bool)canSchedule reminder:(bool)reminder useRearCamTelescopy:(bool)useRearCamTelescopy;
     
 - (void)buttonInteractionUpdate:(CGPoint)value;

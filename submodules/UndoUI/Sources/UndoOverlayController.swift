@@ -40,7 +40,7 @@ public enum UndoOverlayContent {
     case copy(text: String)
     case mediaSaved(text: String)
     case paymentSent(currencyValue: String, itemTitle: String)
-    case starsSent(context: AccountContext, title: String, text: [AnimatedTextComponent.Item])
+    case starsSent(context: AccountContext, title: String, text: [AnimatedTextComponent.Item], hasUndo: Bool)
     case inviteRequestSent(title: String, text: String)
     case image(image: UIImage, title: String?, text: String, round: Bool, undoText: String?)
     case notificationSoundAdded(title: String, text: String, action: (() -> Void)?)

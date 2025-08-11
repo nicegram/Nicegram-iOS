@@ -1,4 +1,4 @@
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 import NGRoundedVideos
 //
 import Foundation
@@ -372,7 +372,7 @@ public struct LegacyAssetPickerEnqueueMessage {
     public var isFile: Bool
 }
 
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 private func ngMapLegacyAssetPickerValues(
     _ values: Any?,
     sendAsRoundedVideo: Bool
@@ -468,7 +468,7 @@ private func ngMapLegacyAssetPickerValues(
 
 public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: Account, signals: [Any]) -> Signal<[LegacyAssetPickerEnqueueMessage], Void> {
     
-    // MARK: Nicegram RoundedVideos
+    // Nicegram RoundedVideos
     let sendAsRoundedVideo = NGRoundedVideos.sendAsRoundedVideo
     NGRoundedVideos.sendAsRoundedVideo = false
     //
@@ -486,7 +486,7 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
             
             var paidMessage: EnqueuePaidMessage?
             
-            // MARK: Nicegram RoundedVideos
+            // Nicegram RoundedVideos
             let anyValues = ngMapLegacyAssetPickerValues(
                 anyValues,
                 sendAsRoundedVideo: sendAsRoundedVideo
@@ -1001,7 +1001,7 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                 fileAttributes.append(.Animated)
                             }
                             
-                            // MARK: Nicegram RoundedVideos
+                            // Nicegram RoundedVideos
                             let videoFlags: TelegramMediaVideoFlags = if sendAsRoundedVideo {
                                 [.instantRoundVideo]
                             } else {
@@ -1014,7 +1014,7 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                             //
                         
                             if !asFile {
-                                // MARK: Nicegram RoundedVideos, change to 'flags: videoFlags'
+                                // Nicegram RoundedVideos, change to 'flags: videoFlags'
                                 fileAttributes.append(.Video(duration: finalDuration, size: PixelDimensions(finalDimensions), flags: videoFlags, preloadSize: nil, coverTime: nil, videoCodec: nil))
                                 if let adjustments = adjustments {
                                     if adjustments.sendAsGif {
@@ -1085,7 +1085,7 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                 }
                             }
                         
-                            // MARK: Nicegram RoundedVideos
+                            // Nicegram RoundedVideos
                             let localGroupingKey: Int64? = if sendAsRoundedVideo {
                                 nil
                             } else {
@@ -1116,10 +1116,10 @@ public func legacyAssetPickerEnqueueMessages(context: AccountContext, account: A
                                     )
                                 }
                             } else {
-                                // MARK: Nicegram RoundedVideos, change (text, localGroupingKey)
+                                // Nicegram RoundedVideos, change (text, localGroupingKey)
                                 messages.append(LegacyAssetPickerEnqueueMessage(message: .message(text: messageText, attributes: attributes, inlineStickers: [:], mediaReference: .standalone(media: media), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: localGroupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets), uniqueId: item.uniqueId, isFile: asFile))
                                 
-                                // MARK: Nicegram RoundedVideos
+                                // Nicegram RoundedVideos
                                 if sendAsRoundedVideo {
                                     let videoMessageText = text
                                         .string

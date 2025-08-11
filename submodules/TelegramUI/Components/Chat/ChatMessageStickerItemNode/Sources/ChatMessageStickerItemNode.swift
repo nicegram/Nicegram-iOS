@@ -665,6 +665,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
                 reactionPeers: dateReactionsAndPeers.peers,
                 displayAllReactionPeers: item.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                 areReactionsTags: item.message.areReactionsTags(accountPeerId: item.context.account.peerId),
+                areStarReactionsEnabled: item.associatedData.areStarReactionsEnabled,
                 messageEffect: item.message.messageEffect(availableMessageEffects: item.associatedData.availableMessageEffects),
                 replyCount: dateReplies,
                 starsCount: starsCount,
@@ -705,6 +706,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
             var replyMessage: Message?
             var replyForward: QuotedReplyMessageAttribute?
             var replyQuote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
+            var replyTodoItemId: Int32?
             var replyStory: StoryId?
             for attribute in item.message.attributes {
                 if let attribute = attribute as? InlineBotMessageAttribute {
@@ -733,6 +735,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
                         replyMessage = item.message.associatedMessages[replyAttribute.messageId]
                     }
                     replyQuote = replyAttribute.quote.flatMap { ($0, replyAttribute.isQuote) }
+                    replyTodoItemId = replyAttribute.todoItemId
                 } else if let attribute = attribute as? QuotedReplyMessageAttribute {
                     replyForward = attribute
                 } else if let attribute = attribute as? ReplyStoryAttribute {
@@ -772,6 +775,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
                     message: replyMessage,
                     replyForward: replyForward,
                     quote: replyQuote,
+                    todoItemId: replyTodoItemId,
                     story: replyStory,
                     parentMessage: item.message,
                     constrainedSize: CGSize(width: availableWidth, height: CGFloat.greatestFiniteMagnitude),
@@ -1507,7 +1511,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        // MARK: Nicegram HideReactions, account added
+                        // Nicegram HideReactions, account added
                         if canAddMessageReactions(message: item.message, account: item.context.account) {
                             item.controllerInteraction.updateMessageReaction(openContextMenu.tapMessage, .default, false, nil)
                         } else {

@@ -164,7 +164,8 @@ extension ChatControllerImpl {
                                     var updatedState = state.updatedInterfaceState({ state in
                                         return state.withUpdatedReplyMessageSubject(ChatInterfaceState.ReplyMessageSubject(
                                             messageId: message.id,
-                                            quote: nil
+                                            quote: nil,
+                                            todoItemId: nil
                                         ))
                                     })
                                     if updatedState.inputMode == .none {
@@ -184,7 +185,8 @@ extension ChatControllerImpl {
                                         return state.withUpdatedReplyMessageSubject((lastMessage?.id).flatMap { id in
                                             return ChatInterfaceState.ReplyMessageSubject(
                                                 messageId: id,
-                                                quote: nil
+                                                quote: nil,
+                                                todoItemId: nil
                                             )
                                         })
                                     })
@@ -218,7 +220,7 @@ extension ChatControllerImpl {
                             if replyMessageSubject.messageId == lastMessage?.id {
                                 updatedReplyMessageSubject = nil
                             } else if let message = strongSelf.chatDisplayNode.historyNode.messageInCurrentHistoryView(after: replyMessageSubject.messageId) {
-                                updatedReplyMessageSubject = ChatInterfaceState.ReplyMessageSubject(messageId: message.id, quote: nil)
+                                updatedReplyMessageSubject = ChatInterfaceState.ReplyMessageSubject(messageId: message.id, quote: nil, todoItemId: nil)
                             }
                             
                             strongSelf.updateChatPresentationInterfaceState(interactive: true, { state in

@@ -522,21 +522,21 @@ final class StarsStatisticsScreenComponent: Component {
                             theme: environment.theme,
                             dateTimeFormat: environment.dateTimeFormat,
                             title: strings.Stars_BotRevenue_Proceeds_Available,
-                            value: starsState?.balances.availableBalance.amount ?? StarsAmount.zero,
+                            value: starsState?.balances.availableBalance ?? CurrencyAmount(amount: .zero, currency: .stars),
                             rate: starsState?.usdRate ?? 0.0
                         ))),
                         AnyComponentWithIdentity(id: 1, component: AnyComponent(StarsOverviewItemComponent(
                             theme: environment.theme,
                             dateTimeFormat: environment.dateTimeFormat,
                             title: strings.Stars_BotRevenue_Proceeds_Current,
-                            value: starsState?.balances.currentBalance.amount ?? StarsAmount.zero,
+                            value: starsState?.balances.currentBalance ?? CurrencyAmount(amount: .zero, currency: .stars),
                             rate: starsState?.usdRate ?? 0.0
                         ))),
                         AnyComponentWithIdentity(id: 2, component: AnyComponent(StarsOverviewItemComponent(
                             theme: environment.theme,
                             dateTimeFormat: environment.dateTimeFormat,
                             title: strings.Stars_BotRevenue_Proceeds_Total,
-                            value: starsState?.balances.overallRevenue.amount ?? StarsAmount.zero,
+                            value: starsState?.balances.overallRevenue ?? CurrencyAmount(amount: .zero, currency: .stars),
                             rate: starsState?.usdRate ?? 0.0
                         )))
                     ],

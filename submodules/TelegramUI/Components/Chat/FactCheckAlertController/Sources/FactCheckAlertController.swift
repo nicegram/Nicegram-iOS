@@ -53,7 +53,7 @@ private final class FactCheckAlertContentNode: AlertContentNode {
         return self.isUserInteractionEnabled
     }
     
-    init(context: AccountContext, theme: AlertControllerTheme, presentationTheme: PresentationTheme, strings: PresentationStrings, actions: [TextAlertAction], text: String, value: String, entities: [MessageTextEntity], characterLimit: Int) {
+    init(context: AccountContext, theme: AlertControllerTheme, presentationTheme: PresentationTheme, strings: PresentationStrings, actions: [TextAlertAction], text: String, value: String, entities: [MessageTextEntity]) {
         self.context = context
         self.theme = theme
         self.presentationTheme = presentationTheme
@@ -362,7 +362,7 @@ private final class FactCheckAlertContentNode: AlertContentNode {
     }
 }
 
-public func factCheckAlertController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, value: String, entities: [MessageTextEntity], characterLimit: Int = 1000, apply: @escaping (String, [MessageTextEntity]) -> Void) -> AlertController {
+public func factCheckAlertController(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, value: String, entities: [MessageTextEntity], apply: @escaping (String, [MessageTextEntity]) -> Void) -> AlertController {
     let presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
     
     var dismissImpl: ((Bool) -> Void)?
@@ -375,7 +375,7 @@ public func factCheckAlertController(context: AccountContext, updatedPresentatio
         applyImpl?()
     })]
     
-    let contentNode = FactCheckAlertContentNode(context: context, theme: AlertControllerTheme(presentationData: presentationData), presentationTheme: presentationData.theme, strings: presentationData.strings, actions: actions, text: presentationData.strings.FactCheck_Title, value: value, entities: entities, characterLimit: characterLimit)
+    let contentNode = FactCheckAlertContentNode(context: context, theme: AlertControllerTheme(presentationData: presentationData), presentationTheme: presentationData.theme, strings: presentationData.strings, actions: actions, text: presentationData.strings.FactCheck_Title, value: value, entities: entities)
     contentNode.complete = {
         applyImpl?()
     }

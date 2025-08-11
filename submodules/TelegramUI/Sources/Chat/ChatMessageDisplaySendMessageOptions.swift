@@ -1,4 +1,4 @@
-// MARK: Nicegram TranslateEnteredMessage
+// Nicegram TranslateEnteredMessage
 import NGTranslate
 import NGUI
 //
@@ -88,7 +88,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
             return
         }
         
-        // MARK: Nicegram TranslateEnteredMessage
+        // Nicegram TranslateEnteredMessage
         let isSecretChat = (peerId.namespace == Namespaces.Peer.SecretChat)
         
         let inputText = selfController.presentationInterfaceState.interfaceState.effectiveInputState.inputText.string
@@ -178,7 +178,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
             }
             
             let controller = makeChatSendMessageActionSheetController(
-                // MARK: Nicegram TranslateEnteredMessage
+                // Nicegram TranslateEnteredMessage
                 nicegramData: nicegramData,
                 //
                 initialData: initialData,
@@ -272,7 +272,7 @@ func chatMessageDisplaySendMessageOptions(selfController: ChatControllerImpl, no
             }
             
             let controller = makeChatSendMessageActionSheetController(
-                // MARK: Nicegram TranslateEnteredMessage
+                // Nicegram TranslateEnteredMessage
                 nicegramData: nicegramData,
                 //
                 initialData: initialData,

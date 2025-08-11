@@ -1,4 +1,4 @@
-// MARK: Nicegram RoundedVideos
+// Nicegram RoundedVideos
 import NGRoundedVideos
 import TooltipUI
 //
@@ -2163,6 +2163,12 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
                 strongSelf.controllerNode.dismissInput()
             }
         }, selectionState: selectionContext, editingState: editingContext ?? TGMediaEditingContext())
+        
+        let highQualityPhoto = UserDefaults.standard.bool(forKey: "TG_photoHighQuality_v0")
+        if highQualityPhoto {
+            self.interaction?.editingState.setHighQualityPhoto(highQualityPhoto)
+        }
+        
         self.interaction?.selectionState?.grouping = true
         
         self.interaction?.editingState.sendPaidMessageStars = sendPaidMessageStars ?? 0
@@ -2264,7 +2270,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         })
     }
     
-    // MARK: Nicegram RoundedVideos
+    // Nicegram RoundedVideos
     private func maybeShowRoundedVideoTooltip() {
         Queue.mainQueue().after(0.3) { [weak self] in
             guard let self else {
@@ -2458,7 +2464,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
             moreIsVisible = count > 0
         }
         
-        // MARK: Nicegram RoundedVideos
+        // Nicegram RoundedVideos
         maybeShowRoundedVideoTooltip()
         //
         
@@ -2793,7 +2799,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
                         })))
                     }
                     
-                    // MARK: Nicegram RoundedVideos
+                    // Nicegram RoundedVideos
                     if canSendAsRoundedVideo(
                         currentItem: nil,
                         editingContext: self.interaction?.editingState,

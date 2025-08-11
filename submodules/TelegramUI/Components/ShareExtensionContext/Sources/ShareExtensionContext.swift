@@ -269,11 +269,11 @@ public class ShareRootControllerImpl {
             }, forceOrientation: { _ in
             })
             
-            // MARK: Nicegram DB
+            // Nicegram DB
             let hiddenAccountManager = HiddenAccountManagerImpl()
             //
             
-            // MARK: Nicegram DB, hiddenAccountManager added
+            // Nicegram DB, hiddenAccountManager added
             let accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: true, isReadOnly: false, useCaches: false, removeDatabaseOnError: false, hiddenAccountManager: hiddenAccountManager)
             initializeAccountManagement()
             
@@ -509,7 +509,7 @@ public class ShareRootControllerImpl {
                     var cancelImpl: (() -> Void)?
                     
                     let beginShare: () -> Void = {
-                        // MARK: Nicegram DB
+                        // Nicegram DB
                         let filteredAccounts: [ShareControllerSwitchableAccount]
                         if let appEnv = environment as? ShareControllerAppEnvironment,
                            let unlockedHiddenAccountRecordId = appEnv.sharedContext.accountManager.hiddenAccountManager.unlockedAccountRecordId {
@@ -611,7 +611,7 @@ public class ShareRootControllerImpl {
                             } else {
                                 return .single(.done)
                             }
-                            // MARK: Nicegram DB, switchableAccounts: filteredAccounts
+                            // Nicegram DB, switchableAccounts: filteredAccounts
                         }), fromForeignApp: true, externalShare: false, switchableAccounts: filteredAccounts, immediatePeerId: immediatePeerId)
                         shareController.presentationArguments = ViewControllerPresentationArguments(presentationAnimation: .modalSheet)
                         shareController.dismissed = { _ in
@@ -620,9 +620,11 @@ public class ShareRootControllerImpl {
                         }
                         
                         var canShareToStory = true
+                        var canSendInHighQuality = false
                         if let inputItems = self?.getExtensionContext()?.inputItems, inputItems.count == 1, let item = inputItems[0] as? NSExtensionItem, let attachments = item.attachments {
                             for attachment in attachments {
                                 if attachment.hasItemConformingToTypeIdentifier(kUTTypeImage as String) {
+                                    canSendInHighQuality = true
                                 } else if attachment.hasItemConformingToTypeIdentifier(kUTTypeMovie as String) {
                                 } else {
                                     canShareToStory = false
@@ -631,6 +633,7 @@ public class ShareRootControllerImpl {
                         }
                         
                         if canShareToStory {
+                            shareController.canSendInHighQuality = canSendInHighQuality
                             shareController.shareStory = { [weak self] in
                                 guard let self else {
                                     return

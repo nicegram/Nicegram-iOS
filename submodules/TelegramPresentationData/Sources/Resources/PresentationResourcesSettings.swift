@@ -26,7 +26,7 @@ private func addRoundedRectPath(context: CGContext, rect: CGRect, radius: CGFloa
     context.restoreGState()
 }
 
-// MARK: Nicegram, customSize added
+// Nicegram, customSize added
 private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColors: [UIColor]? = nil, customSize: CGSize? = nil) -> UIImage? {
     return generateImage(CGSize(width: 29.0, height: 29.0), contextGenerator: { size, context in
         let bounds = CGRect(origin: CGPoint(), size: size)
@@ -64,7 +64,7 @@ private func renderIcon(name: String, scaleFactor: CGFloat = 1.0, backgroundColo
 }
 
 public struct PresentationResourcesSettings {
-    // MARK: Nicegram
+    // Nicegram
     public static let ngAiChatIcon = renderIcon(name: "ng-settings/ai-chatbot")
     public static let ngAuditIcon = renderIcon(name: "ng-settings/audit")
     public static let ngPremiumIcon = renderIcon(name: "ng-settings/premium")

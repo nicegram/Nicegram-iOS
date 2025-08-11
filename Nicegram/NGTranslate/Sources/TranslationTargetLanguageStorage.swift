@@ -1,6 +1,6 @@
 import Foundation
 
-//  MARK: Nicegram Translate
+// Nicegram Translate
 
 private let savedTranslationTargetLanguageKey = "ng:savedTranslationTargetLanguage"
 

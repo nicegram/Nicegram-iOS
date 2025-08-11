@@ -236,7 +236,7 @@ static NSString *hexStringFromData(NSData *data) {
     return @{};
 }
 
-- (void)applyBlock:(NSData *)block {
+- (bool)applyBlock:(NSData *)block {
     std::string mappedBlock((uint8_t *)block.bytes, ((uint8_t *)block.bytes) + block.length);
     
     #if DEBUG
@@ -260,8 +260,9 @@ static NSString *hexStringFromData(NSData *data) {
     
     auto result = tde2e_api::call_apply_block(_callId, mappedBlock);
     if (!result.is_ok()) {
-        return;
+        return false;
     }
+    return true;
 }
 
 - (void)applyBroadcastBlock:(NSData *)block {

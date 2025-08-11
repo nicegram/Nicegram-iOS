@@ -90,13 +90,13 @@ static int is_opus(ogg_page *og) {
         return nil;
     }
     
-    int pages = 0;
-    int packetsout = 0;
-    int invalid = 0;
+    __unused int pages = 0;
+    __unused int packetsout = 0;
+    __unused int invalid = 0;
     int eos = 0;
     
     int headers = 0;
-    int serialno = 0;
+    __unused int serialno = 0;
     
     /* LOOP START */
     while (ogg_sync_pageout(&ostate, &opage) == 1) {
@@ -145,7 +145,7 @@ static int is_opus(ogg_page *og) {
             }
             
             /* get packet duration */
-            samples = opus_packet_get_nb_samples(opacket.packet, opacket.bytes, sampleRate);
+            samples = opus_packet_get_nb_samples(opacket.packet, (int)opacket.bytes, sampleRate);
             if (samples <= 0) {
                 invalid++;
                 continue; // skipping invalid packet

@@ -7,6 +7,8 @@ import TelegramUIPreferences
 import DeviceAccess
 import AccountContext
 import PhoneNumberFormat
+import ContactsHelper
+import AccountContext
 
 private protocol DeviceContactDataContext {
     func personNameDisplayOrder() -> PresentationPersonNameOrder
@@ -17,62 +19,222 @@ private protocol DeviceContactDataContext {
     func deleteContactWithAppSpecificReference(peerId: PeerId)
 }
 
-@available(iOSApplicationExtension 9.0, iOS 9.0, *)
 private final class DeviceContactDataModernContext: DeviceContactDataContext {
+    let queue: Queue
+    let accountManager: AccountManager<TelegramAccountManagerTypes>
     let store = CNContactStore()
     var updateHandle: NSObjectProtocol?
     var currentContacts: [DeviceContactStableId: DeviceContactBasicData] = [:]
     var currentAppSpecificReferences: [PeerId: DeviceContactBasicDataWithReference] = [:]
     
-    init(queue: Queue, updated: @escaping ([DeviceContactStableId: DeviceContactBasicData]) -> Void, appSpecificReferencesUpdated: @escaping ([PeerId: DeviceContactBasicDataWithReference]) -> Void) {
-        let (contacts, references) = self.retrieveContacts()
-        self.currentContacts = contacts
-        self.currentAppSpecificReferences = references
-        updated(self.currentContacts)
-        appSpecificReferencesUpdated(self.currentAppSpecificReferences)
-        let handle = NotificationCenter.default.addObserver(forName: NSNotification.Name.CNContactStoreDidChange, object: nil, queue: nil, using: { [weak self] _ in
-            queue.async {
-                guard let strongSelf = self else {
-                    return
-                }
-                let (contacts, references) = strongSelf.retrieveContacts()
-                if strongSelf.currentContacts != contacts {
-                    strongSelf.currentContacts = contacts
-                    updated(strongSelf.currentContacts)
-                }
-                if strongSelf.currentAppSpecificReferences != references {
-                    strongSelf.currentAppSpecificReferences = references
-                    appSpecificReferencesUpdated(strongSelf.currentAppSpecificReferences)
-                }
+    private var retrieveContactsDisposable: Disposable?
+    
+    init(queue: Queue, accountManager: AccountManager<TelegramAccountManagerTypes>, updated: @escaping ([DeviceContactStableId: DeviceContactBasicData]) -> Void, appSpecificReferencesUpdated: @escaping ([PeerId: DeviceContactBasicDataWithReference]) -> Void) {
+        self.queue = queue
+        self.accountManager = accountManager
+        
+        self.retrieveContactsDisposable?.dispose()
+        self.retrieveContactsDisposable = (self.retrieveContacts()
+        |> deliverOn(self.queue)).startStrict(next: { [weak self] contacts, references in
+            guard let self else {
+                return
             }
+            
+            self.currentContacts = contacts
+            self.currentAppSpecificReferences = references
+            updated(self.currentContacts)
+            appSpecificReferencesUpdated(self.currentAppSpecificReferences)
+            let handle = NotificationCenter.default.addObserver(forName: NSNotification.Name.CNContactStoreDidChange, object: nil, queue: nil, using: { [weak self] _ in
+                queue.async {
+                    guard let self else {
+                        return
+                    }
+                    self.retrieveContactsDisposable?.dispose()
+                    self.retrieveContactsDisposable = (self.retrieveContacts()
+                    |> deliverOn(self.queue)).startStrict(next: { [weak self] contacts, references in
+                        guard let self else {
+                            return
+                        }
+                        
+                        if self.currentContacts != contacts {
+                            self.currentContacts = contacts
+                            updated(self.currentContacts)
+                        }
+                        if self.currentAppSpecificReferences != references {
+                            self.currentAppSpecificReferences = references
+                            appSpecificReferencesUpdated(self.currentAppSpecificReferences)
+                        }
+                    })
+                }
+            })
+            self.updateHandle = handle
         })
-        self.updateHandle = handle
     }
     
     deinit {
-        if let updateHandle = updateHandle {
+        self.retrieveContactsDisposable?.dispose()
+        if let updateHandle = self.updateHandle {
             NotificationCenter.default.removeObserver(updateHandle)
         }
     }
     
-    private func retrieveContacts() -> ([DeviceContactStableId: DeviceContactBasicData], [PeerId: DeviceContactBasicDataWithReference]) {
-        let keysToFetch: [CNKeyDescriptor] = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName), CNContactPhoneNumbersKey as CNKeyDescriptor, CNContactUrlAddressesKey as CNKeyDescriptor]
-        
-        let request = CNContactFetchRequest(keysToFetch: keysToFetch)
-        request.unifyResults = true
-        
-        var result: [DeviceContactStableId: DeviceContactBasicData] = [:]
-        var references: [PeerId: DeviceContactBasicDataWithReference] = [:]
-        let _ = try? self.store.enumerateContacts(with: request, usingBlock: { contact, _ in
-            let stableIdAndContact = DeviceContactDataModernContext.parseContact(contact)
-            result[stableIdAndContact.0] = stableIdAndContact.1
-            for address in contact.urlAddresses {
-                if address.label == "Telegram", let peerId = parseAppSpecificContactReference(address.value as String) {
-                    references[peerId] = DeviceContactBasicDataWithReference(stableId: stableIdAndContact.0, basicData: stableIdAndContact.1)
+    private func retrieveContacts() -> Signal<([DeviceContactStableId: DeviceContactBasicData], [PeerId: DeviceContactBasicDataWithReference]), NoError> {
+        return self.accountManager.transaction { transaction -> DeviceContactDataState? in
+            return transaction.getSharedData(SharedDataKeys.deviceContacts)?.get(DeviceContactDataState.self)
+        }
+        |> deliverOn(self.queue)
+        |> map { currentData -> ([DeviceContactStableId: DeviceContactBasicData], [PeerId: DeviceContactBasicDataWithReference]) in
+            if let currentData, let stateToken = currentData.stateToken, !sharedDisableDeviceContactDataDiffing {
+                final class ChangeVisitor: NSObject, CNChangeHistoryEventVisitor {
+                    let onDropEverything: () -> Void
+                    let onAdd: (CNContact) -> Void
+                    let onUpdate: (CNContact) -> Void
+                    let onDelete: (String) -> Void
+                    
+                    init(onDropEverything: @escaping () -> Void, onAdd: @escaping (CNContact) -> Void, onUpdate: @escaping (CNContact) -> Void, onDelete: @escaping (String) -> Void) {
+                        self.onDropEverything = onDropEverything
+                        self.onAdd = onAdd
+                        self.onUpdate = onUpdate
+                        self.onDelete = onDelete
+                        
+                        super.init()
+                    }
+                    
+                    func visit(_ event: CNChangeHistoryDropEverythingEvent) {
+                        self.onDropEverything()
+                    }
+                    
+                    func visit(_ event: CNChangeHistoryAddContactEvent) {
+                        self.onAdd(event.contact)
+                    }
+                    
+                    func visit(_ event: CNChangeHistoryUpdateContactEvent) {
+                        self.onUpdate(event.contact)
+                    }
+                    
+                    func visit(_ event: CNChangeHistoryDeleteContactEvent) {
+                        self.onDelete(event.contactIdentifier)
+                    }
                 }
+                
+                let changeRequest = CNChangeHistoryFetchRequest()
+                changeRequest.startingToken = stateToken
+                changeRequest.additionalContactKeyDescriptors = [
+                    CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+                    CNContactPhoneNumbersKey as CNKeyDescriptor,
+                    CNContactUrlAddressesKey as CNKeyDescriptor
+                ]
+                
+                var contacts: [DeviceContactStableId: DeviceContactBasicData] = currentData.contacts
+                var telegramReferences: [PeerId: String] = currentData.telegramReferences
+                var reverseTelegramReferences: [String: Set<PeerId>] = [:]
+                for (peerId, id) in telegramReferences {
+                    if reverseTelegramReferences[id] == nil {
+                        reverseTelegramReferences[id] = Set()
+                    }
+                    reverseTelegramReferences[id]?.insert(peerId)
+                }
+                
+                let visitor = ChangeVisitor(
+                    onDropEverything: {
+                        contacts.removeAll()
+                        telegramReferences.removeAll()
+                        reverseTelegramReferences.removeAll()
+                    },
+                    onAdd: { contact in
+                        let stableIdAndContact = DeviceContactDataModernContext.parseContact(contact)
+                        contacts[stableIdAndContact.0] = stableIdAndContact.1
+                        for address in contact.urlAddresses {
+                            if address.label == "Telegram", let peerId = parseAppSpecificContactReference(address.value as String) {
+                                telegramReferences[peerId] = stableIdAndContact.0
+                                if reverseTelegramReferences[stableIdAndContact.0] == nil {
+                                    reverseTelegramReferences[stableIdAndContact.0] = Set()
+                                }
+                                reverseTelegramReferences[stableIdAndContact.0]?.insert(peerId)
+                            }
+                        }
+                    },
+                    onUpdate: { contact in
+                        let stableIdAndContact = DeviceContactDataModernContext.parseContact(contact)
+                        contacts[stableIdAndContact.0] = stableIdAndContact.1
+                        for address in contact.urlAddresses {
+                            if address.label == "Telegram", let peerId = parseAppSpecificContactReference(address.value as String) {
+                                telegramReferences[peerId] = stableIdAndContact.0
+                                telegramReferences[peerId] = stableIdAndContact.0
+                                if reverseTelegramReferences[stableIdAndContact.0] == nil {
+                                    reverseTelegramReferences[stableIdAndContact.0] = Set()
+                                }
+                                reverseTelegramReferences[stableIdAndContact.0]?.insert(peerId)
+                            }
+                        }
+                    },
+                    onDelete: { contactId in
+                        contacts.removeValue(forKey: contactId)
+                        if let peerIds = reverseTelegramReferences[contactId] {
+                            for peerId in peerIds {
+                                telegramReferences.removeValue(forKey: peerId)
+                            }
+                            reverseTelegramReferences.removeValue(forKey: contactId)
+                        }
+                    }
+                )
+                
+                let resultState = ContactsEnumerateChangeRequest(self.store, changeRequest, visitor)
+                
+                let _ = self.accountManager.transaction({ transaction -> Void in
+                    transaction.updateSharedData(SharedDataKeys.deviceContacts, { _ in
+                        return PreferencesEntry(DeviceContactDataState(
+                            contacts: contacts, telegramReferences: telegramReferences, stateToken: resultState?.stateToken))
+                    })
+                }).startStandalone()
+                
+                var references: [PeerId: DeviceContactBasicDataWithReference] = [:]
+                for (peerId, id) in telegramReferences {
+                    if let basicData = contacts[id] {
+                        references[peerId] = DeviceContactBasicDataWithReference(stableId: id, basicData: basicData)
+                    }
+                }
+                
+                return (contacts, references)
+            } else {
+                let keysToFetch: [CNKeyDescriptor] = [
+                    CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+                    CNContactPhoneNumbersKey as CNKeyDescriptor,
+                    CNContactUrlAddressesKey as CNKeyDescriptor
+                ]
+                
+                let request = CNContactFetchRequest(keysToFetch: keysToFetch)
+                request.unifyResults = true
+                
+                var contacts: [String: DeviceContactBasicData] = [:]
+                var telegramReferences: [EnginePeer.Id: String] = [:]
+                let resultState = ContactsEnumerateRequest(self.store, request, { contact in
+                    let stableIdAndContact = DeviceContactDataModernContext.parseContact(contact)
+                    contacts[stableIdAndContact.0] = stableIdAndContact.1
+                    for address in contact.urlAddresses {
+                        if address.label == "Telegram", let peerId = parseAppSpecificContactReference(address.value as String) {
+                            telegramReferences[peerId] = stableIdAndContact.0
+                        }
+                    }
+                })
+                
+                let _ = self.accountManager.transaction({ transaction -> Void in
+                    transaction.updateSharedData(SharedDataKeys.deviceContacts, { _ in
+                        return PreferencesEntry(DeviceContactDataState(
+                            contacts: contacts, telegramReferences: telegramReferences, stateToken: resultState?.stateToken))
+                    })
+                }).startStandalone()
+                
+                var references: [PeerId: DeviceContactBasicDataWithReference] = [:]
+                for (peerId, id) in telegramReferences {
+                    if let basicData = contacts[id] {
+                        references[peerId] = DeviceContactBasicDataWithReference(stableId: id, basicData: basicData)
+                    }
+                }
+                
+                return (contacts, references)
             }
-        })
-        return (result, references)
+        }
     }
     
     private static func parseContact(_ contact: CNContact) -> (DeviceContactStableId, DeviceContactBasicData) {
@@ -323,6 +485,7 @@ private final class BasicDataForNormalizedNumberContext {
 
 private final class DeviceContactDataManagerPrivateImpl {
     private let queue: Queue
+    private let accountManager: AccountManager<TelegramAccountManagerTypes>
     
     private var accessInitialized = false
     
@@ -345,8 +508,9 @@ private final class DeviceContactDataManagerPrivateImpl {
     private let importableContactsSubscribers = Bag<([DeviceContactNormalizedPhoneNumber: ImportableDeviceContactData]) -> Void>()
     private let appSpecificReferencesSubscribers = Bag<([PeerId: DeviceContactBasicDataWithReference]) -> Void>()
     
-    init(queue: Queue) {
+    init(queue: Queue, accountManager: AccountManager<TelegramAccountManagerTypes>) {
         self.queue = queue
+        self.accountManager = accountManager
         self.accessDisposable = (DeviceAccess.authorizationStatus(subject: .contacts)
         |> delay(2.0, queue: .mainQueue())
         |> deliverOn(self.queue)).startStrict(next: { [weak self] authorizationStatus in
@@ -355,7 +519,7 @@ private final class DeviceContactDataManagerPrivateImpl {
             }
             strongSelf.accessInitialized = true
             if authorizationStatus == .allowed {
-                let dataContext = DeviceContactDataModernContext(queue: strongSelf.queue, updated: { stableIdToBasicContactData in
+                let dataContext = DeviceContactDataModernContext(queue: strongSelf.queue, accountManager: strongSelf.accountManager, updated: { stableIdToBasicContactData in
                     guard let strongSelf = self else {
                         return
                     }
@@ -605,10 +769,10 @@ public final class DeviceContactDataManagerImpl: DeviceContactDataManager {
     private let queue = Queue()
     private let impl: QueueLocalObject<DeviceContactDataManagerPrivateImpl>
     
-    init() {
+    init(accountManager: AccountManager<TelegramAccountManagerTypes>) {
         let queue = self.queue
         self.impl = QueueLocalObject(queue: queue, generate: {
-            return DeviceContactDataManagerPrivateImpl(queue: queue)
+            return DeviceContactDataManagerPrivateImpl(queue: queue, accountManager: accountManager)
         })
     }
     
@@ -722,7 +886,7 @@ public final class DeviceContactDataManagerImpl: DeviceContactDataManager {
             return disposable
         }
     }
-    // MARK: Nicegram DB Changes
+    // Nicegram DB Changes
     public func createContactWithData(_ contactData: DeviceContactExtendedData, account: Account) -> Signal<(DeviceContactStableId, DeviceContactExtendedData)?, NoError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()

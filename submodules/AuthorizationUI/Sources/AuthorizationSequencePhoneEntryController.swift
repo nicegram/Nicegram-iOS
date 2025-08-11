@@ -1,16 +1,16 @@
-// MARK: Nicegram AccountBackup
+// Nicegram AccountBackup
 import FeatAccountBackup
 //
-// MARK: Nicegram PhoneEntryBanner
+// Nicegram PhoneEntryBanner
 import FeatPhoneEntryBanner
 //
-// MARK: Nicegram Auth
+// Nicegram Auth
 import FeatAuth
 //
-// MARK: Nicegram DailyLoginLimit
+// Nicegram DailyLoginLimit
 import class CoreSwiftUI.DailyLoginLimitPopupPresenter
 //
-// MARK: Nicegram Onboarding
+// Nicegram Onboarding
 import FeatOnboarding
 //
 import Foundation
@@ -158,7 +158,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
             }
             strongSelf.view.endEditing(true)
             self?.present(debugController(sharedContext: strongSelf.sharedContext, context: nil, modal: true), in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
         }, hasOtherAccounts: self.otherAccountPhoneNumbers.0 != nil || self.otherAccountPhoneNumbers.1.contains(where: { !$0.0.isEmpty }))
         self.controllerNode.accountUpdated = { [weak self] account in
             guard let strongSelf = self else {
@@ -204,7 +204,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
             self.controllerNode.updateCountryCode()
         }
         
-        // MARK: Nicegram PhoneEntryBanner
+        // Nicegram PhoneEntryBanner
         if #available(iOS 15.0, *) {
             setupPhoneEntryBanner(
                 view: self.controllerNode.ngBannerNode.view,
@@ -213,7 +213,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         //
         
-        // MARK: Nicegram Onboarding
+        // Nicegram Onboarding
         if #available(iOS 15.0, *) {
             let proceedNode = self.controllerNode.proceedNode
             setupPhoneEntryGuideButton(
@@ -252,11 +252,11 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
     }
     
-    // MARK: Nicegram DailyLoginLimit
+    // Nicegram DailyLoginLimit
     private var sawDailyLoginLimitPopup = false
     //
     
-    // MARK: Nicegram AccountBackup
+    // Nicegram AccountBackup
     private var sawImportAccounts = false
     //
     
@@ -267,7 +267,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
             self.controllerNode.activateInput()
         }
         
-        // MARK: Nicegram AccountBackup
+        // Nicegram AccountBackup
         if #available(iOS 15.0, *),
            !self.sawImportAccounts,
            self.otherAccountPhoneNumbers.1.isEmpty {
@@ -276,13 +276,13 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         //
         
-        // MARK: Nicegram AppReviewLogin
+        // Nicegram AppReviewLogin
         if AppReviewLogin.isActive {
             self.loginWithNumber?(AppReviewLogin.phone, self.controllerNode.syncContacts)
         }
         //
         
-        // MARK: Nicegram DailyLoginLimit
+        // Nicegram DailyLoginLimit
         if #available(iOS 15.0, *) {
             if self.otherAccountPhoneNumbers.1.count >= 3, !self.sawDailyLoginLimitPopup {
                 self.sawDailyLoginLimitPopup = true
@@ -353,7 +353,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 actions.append(TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {}))
                 self.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: self.presentationData.strings.Login_PhoneNumberAlreadyAuthorized, actions: actions), in: .window(.root))
             } else {
-                // MARK: Nicegram AppReviewLogin
+                // Nicegram AppReviewLogin
                 let tryLoginWithNumber: () -> Void = { [weak self] in
                     guard let self = self else { return }
 
@@ -376,7 +376,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     let (code, formattedNumber) = self.controllerNode.formattedCodeAndNumber
 
                     let confirmationController = PhoneConfirmationController(theme: self.presentationData.theme, strings: self.presentationData.strings, code: code, number: formattedNumber, sourceController: self)
-                    // MARK: Nicegram AppReviewLogin, call tryLoginWithNumber instead of strongSelf.loginWithNumber
+                    // Nicegram AppReviewLogin, call tryLoginWithNumber instead of strongSelf.loginWithNumber
                     confirmationController.proceed = {
                         tryLoginWithNumber()
                     }
@@ -385,7 +385,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 } else {
                     var actions: [TextAlertAction] = []
                     actions.append(TextAlertAction(type: .genericAction, title: self.presentationData.strings.Login_Edit, action: {}))
-                    // MARK: Nicegram AppReviewLogin, call tryLoginWithNumber instead of strongSelf.loginWithNumber
+                    // Nicegram AppReviewLogin, call tryLoginWithNumber instead of strongSelf.loginWithNumber
                     actions.append(TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Login_Yes, action: {
                         tryLoginWithNumber()
                     }))

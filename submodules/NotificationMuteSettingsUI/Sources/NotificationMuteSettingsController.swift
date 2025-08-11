@@ -42,7 +42,7 @@ public func notificationMuteSettingsController(presentationData: PresentationDat
         updateSettings(muteInterval)
     }
     
-    // MARK: Nicegram More Mute Options
+    // Nicegram More Mute Options
     let options: [NotificationMuteOption] = [
         .enable,
         .interval(1 * 60 * 60),

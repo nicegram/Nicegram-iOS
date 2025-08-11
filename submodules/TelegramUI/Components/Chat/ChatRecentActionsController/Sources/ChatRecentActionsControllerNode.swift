@@ -1454,7 +1454,13 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                         break
                     case .stars:
                         break
+                    case .ton:
+                        break
                     case .shareStory:
+                        break
+                    case .storyFolder:
+                        break
+                    case .giftCollection:
                         break
                 }
             }

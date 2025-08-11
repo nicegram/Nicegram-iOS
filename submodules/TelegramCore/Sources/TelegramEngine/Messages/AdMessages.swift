@@ -440,15 +440,14 @@ private class AdMessagesHistoryContextImpl {
         }
     }
 
+    private var isActivated: Bool = false
     private let disposable = MetaDisposable()
     
-    init(queue: Queue, account: Account, peerId: EnginePeer.Id, messageId: EngineMessage.Id?) {
+    init(queue: Queue, account: Account, peerId: EnginePeer.Id, messageId: EngineMessage.Id?, activateManually: Bool) {
         self.queue = queue
         self.account = account
         self.peerId = peerId
         self.messageId = messageId
-        
-        let accountPeerId = account.peerId
 
         self.stateValue = State(interPostInterval: nil, messages: [])
 
@@ -467,6 +466,27 @@ private class AdMessagesHistoryContextImpl {
             })
         }
 
+        if !activateManually {
+            self.activate()
+        }
+    }
+    
+    deinit {
+        self.disposable.dispose()
+        self.maskAsSeenDisposables.dispose()
+    }
+    
+    func activate() {
+        if self.isActivated {
+            return
+        }
+        self.isActivated = true
+        
+        let peerId = self.peerId
+        let accountPeerId = self.account.peerId
+        let account = self.account
+        let messageId = self.messageId
+        
         let signal: Signal<(interPostInterval: Int32?, startDelay: Int32?, betweenDelay: Int32?, messages: [Message]), NoError> = account.postbox.transaction { transaction -> Api.InputPeer? in
             return transaction.getPeer(peerId).flatMap(apiInputPeer)
         }
@@ -563,11 +583,6 @@ private class AdMessagesHistoryContextImpl {
             strongSelf.stateValue = State(interPostInterval: interPostInterval, startDelay: startDelay, betweenDelay: betweenDelay, messages: messages)
         }))
     }
-    
-    deinit {
-        self.disposable.dispose()
-        self.maskAsSeenDisposables.dispose()
-    }
 
     func markAsSeen(opaqueId: Data) {
         let signal: Signal<Never, NoError> = self.account.network.request(Api.functions.messages.viewSponsoredMessage(randomId: Buffer(data: opaqueId)))
@@ -629,13 +644,13 @@ public class AdMessagesHistoryContext {
         }
     }
     
-    public init(account: Account, peerId: EnginePeer.Id, messageId: EngineMessage.Id? = nil) {
+    public init(account: Account, peerId: EnginePeer.Id, messageId: EngineMessage.Id? = nil, activateManually: Bool = false) {
         self.peerId = peerId
         self.messageId = messageId
         
         let queue = self.queue
         self.impl = QueueLocalObject(queue: queue, generate: {
-            return AdMessagesHistoryContextImpl(queue: queue, account: account, peerId: peerId, messageId: messageId)
+            return AdMessagesHistoryContextImpl(queue: queue, account: account, peerId: peerId, messageId: messageId, activateManually: activateManually)
         })
     }
 
@@ -654,6 +669,12 @@ public class AdMessagesHistoryContext {
     public func remove(opaqueId: Data) {
         self.impl.with { impl in
             impl.remove(opaqueId: opaqueId)
+        }
+    }
+    
+    public func activate() {
+        self.impl.with { impl in
+            impl.activate()
         }
     }
 }

@@ -27,7 +27,8 @@ func openWebAppImpl(
     simple: Bool,
     source: ChatOpenWebViewSource,
     skipTermsOfService: Bool,
-    payload: String?
+    payload: String?,
+    verifyAgeCompletion: ((Int) -> Void)?
 ) {
     if context.isFrozen {
         parentController.push(context.sharedContext.makeAccountFreezeInfoScreen(context: context))
@@ -246,7 +247,7 @@ func openWebAppImpl(
                             navigationController = parentController.effectiveNavigationController
                         }
                         return navigationController ?? (context.sharedContext.mainWindow?.viewController as? NavigationController)
-                    })
+                    }, verifyAgeCompletion: verifyAgeCompletion)
                     controller.navigationPresentation = .flatModal
                     parentController.push(controller)
                     
@@ -351,7 +352,21 @@ public extension ChatControllerImpl {
         }
         self.chatDisplayNode.dismissInput()
         
-        self.context.sharedContext.openWebApp(context: self.context, parentController: self, updatedPresentationData: self.updatedPresentationData, botPeer: EnginePeer(peer), chatPeer: EnginePeer(peer), threadId: self.chatLocation.threadId, buttonText: buttonText, url: url, simple: simple, source: source, skipTermsOfService: false, payload: nil)
+        self.context.sharedContext.openWebApp(
+            context: self.context,
+            parentController: self,
+            updatedPresentationData: self.updatedPresentationData,
+            botPeer: EnginePeer(peer),
+            chatPeer: EnginePeer(peer),
+            threadId: self.chatLocation.threadId,
+            buttonText: buttonText,
+            url: url,
+            simple: simple,
+            source: source,
+            skipTermsOfService: false,
+            payload: nil,
+            verifyAgeCompletion: nil
+        )
     }
     
     fileprivate static func botRequestSwitchInline(context: AccountContext, controller: ChatControllerImpl?, peerId: EnginePeer.Id, botAddress: String, query: String, chatTypes: [ReplyMarkupButtonRequestPeerType]?, completion:  @escaping () -> Void) -> Void {
@@ -616,7 +631,21 @@ public extension ChatControllerImpl {
                 }
             })
         } else {
-            context.sharedContext.openWebApp(context: context, parentController: parentController, updatedPresentationData: updatedPresentationData, botPeer: botPeer, chatPeer: nil, threadId: nil, buttonText: "", url: "", simple: true, source: .generic, skipTermsOfService: false, payload: payload)
+            context.sharedContext.openWebApp(
+                context: context,
+                parentController: parentController,
+                updatedPresentationData: updatedPresentationData,
+                botPeer: botPeer,
+                chatPeer: nil,
+                threadId: nil,
+                buttonText: "",
+                url: "",
+                simple: true,
+                source: .generic,
+                skipTermsOfService: false,
+                payload: payload,
+                verifyAgeCompletion: nil
+            )
         }
     }
 }

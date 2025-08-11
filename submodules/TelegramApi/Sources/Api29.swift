@@ -1,5 +1,6 @@
 public extension Api {
     indirect enum WebPageAttribute: TypeConstructorDescription {
+        case webPageAttributeStarGiftCollection(icons: [Api.Document])
         case webPageAttributeStickerSet(flags: Int32, stickers: [Api.Document])
         case webPageAttributeStory(flags: Int32, peer: Api.Peer, id: Int32, story: Api.StoryItem?)
         case webPageAttributeTheme(flags: Int32, documents: [Api.Document]?, settings: Api.ThemeSettings?)
@@ -7,6 +8,16 @@ public extension Api {
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
+                case .webPageAttributeStarGiftCollection(let icons):
+                    if boxed {
+                        buffer.appendInt32(835375875)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(icons.count))
+                    for item in icons {
+                        item.serialize(buffer, true)
+                    }
+                    break
                 case .webPageAttributeStickerSet(let flags, let stickers):
                     if boxed {
                         buffer.appendInt32(1355547603)
@@ -50,6 +61,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
+                case .webPageAttributeStarGiftCollection(let icons):
+                return ("webPageAttributeStarGiftCollection", [("icons", icons as Any)])
                 case .webPageAttributeStickerSet(let flags, let stickers):
                 return ("webPageAttributeStickerSet", [("flags", flags as Any), ("stickers", stickers as Any)])
                 case .webPageAttributeStory(let flags, let peer, let id, let story):
@@ -61,6 +74,19 @@ public extension Api {
     }
     }
     
+        public static func parse_webPageAttributeStarGiftCollection(_ reader: BufferReader) -> WebPageAttribute? {
+            var _1: [Api.Document]?
+            if let _ = reader.readInt32() {
+                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Document.self)
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.WebPageAttribute.webPageAttributeStarGiftCollection(icons: _1!)
+            }
+            else {
+                return nil
+            }
+        }
         public static func parse_webPageAttributeStickerSet(_ reader: BufferReader) -> WebPageAttribute? {
             var _1: Int32?
             _1 = reader.readInt32()
@@ -1320,42 +1346,6 @@ public extension Api.account {
             let _c2 = _2 != nil
             if _c1 && _c2 {
                 return Api.account.SentEmailCode.sentEmailCode(emailPattern: _1!, length: _2!)
-            }
-            else {
-                return nil
-            }
-        }
-    
-    }
-}
-public extension Api.account {
-    enum Takeout: TypeConstructorDescription {
-        case takeout(id: Int64)
-    
-    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-    switch self {
-                case .takeout(let id):
-                    if boxed {
-                        buffer.appendInt32(1304052993)
-                    }
-                    serializeInt64(id, buffer: buffer, boxed: false)
-                    break
-    }
-    }
-    
-    public func descriptionFields() -> (String, [(String, Any)]) {
-        switch self {
-                case .takeout(let id):
-                return ("takeout", [("id", id as Any)])
-    }
-    }
-    
-        public static func parse_takeout(_ reader: BufferReader) -> Takeout? {
-            var _1: Int64?
-            _1 = reader.readInt64()
-            let _c1 = _1 != nil
-            if _c1 {
-                return Api.account.Takeout.takeout(id: _1!)
             }
             else {
                 return nil

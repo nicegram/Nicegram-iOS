@@ -478,5 +478,23 @@ public extension TelegramEngine.EngineData.Item {
                 return view.info?.data.get(MessageHistoryThreadData.self)
             }
         }
+        
+        public struct GlobalPostSearchState: TelegramEngineDataItem, PostboxViewDataItem {
+            public typealias Result = TelegramGlobalPostSearchState?
+            
+            public init() {
+            }
+
+            var key: PostboxViewKey {
+                return .preferences(keys: Set([PreferencesKeys.globalPostSearchState()]))
+            }
+
+            func extract(view: PostboxView) -> Result {
+                guard let view = view as? PreferencesView else {
+                    preconditionFailure()
+                }
+                return view.values[PreferencesKeys.globalPostSearchState()]?.get(TelegramGlobalPostSearchState.self)
+            }
+        }
     }
 }

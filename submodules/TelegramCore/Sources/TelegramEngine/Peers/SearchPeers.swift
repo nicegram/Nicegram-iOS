@@ -18,11 +18,12 @@ public struct FoundPeer: Equatable {
     }
 }
 
-public enum TelegramSearchPeersScope {
+public enum TelegramSearchPeersScope: Equatable {
     case everywhere
     case channels
     case groups
     case privateChats
+    case globalPosts(allowPaidStars: Int?)
 }
 
 public func _internal_searchPeers(accountPeerId: PeerId, postbox: Postbox, network: Network, query: String, scope: TelegramSearchPeersScope) -> Signal<([FoundPeer], [FoundPeer]), NoError> {
@@ -138,6 +139,9 @@ public func _internal_searchPeers(accountPeerId: PeerId, postbox: Postbox, netwo
                                 return false
                             }
                         }
+                    case .globalPosts:
+                        renderedMyPeers = []
+                        renderedPeers = []
                     }
                     
                     return (renderedMyPeers, renderedPeers)

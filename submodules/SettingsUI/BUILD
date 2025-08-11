@@ -132,6 +132,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Settings/ThemeAccentColorScreen",
         "//submodules/TelegramUI/Components/Settings/GenerateThemeName",
         "//submodules/TelegramUI/Components/Settings/PeerNameColorItem",
+        "//submodules/TelegramUI/Components/FaceScanScreen",
     ],
     visibility = [
         "//visibility:public",

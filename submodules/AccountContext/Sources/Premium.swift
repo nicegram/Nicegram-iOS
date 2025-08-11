@@ -44,6 +44,7 @@ public enum PremiumIntroSource {
     case messageEffects
     case todo
     case auth(String)
+    case premiumGift(TelegramMediaFile)
 }
 
 public enum PremiumGiftSource: Equatable {

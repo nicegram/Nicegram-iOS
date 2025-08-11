@@ -67,12 +67,15 @@ static const int kMaxLayoutElementBoolExtensions = 1;
 static const int kMaxLayoutElementStateIntegerExtensions = 4;
 static const int kMaxLayoutElementStateEdgeInsetExtensions = 1;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-folding-constant"
 typedef struct ASLayoutElementStyleExtensions {
   // Values to store extensions
   BOOL boolExtensions[kMaxLayoutElementBoolExtensions];
   NSInteger integerExtensions[kMaxLayoutElementStateIntegerExtensions];
   UIEdgeInsets edgeInsetsExtensions[kMaxLayoutElementStateEdgeInsetExtensions];
 } ASLayoutElementStyleExtensions;
+#pragma clang diagnostic pop
 
 #define ASLayoutElementStyleExtensibilityForwarding \
 - (void)setLayoutOptionExtensionBool:(BOOL)value atIndex:(int)idx\

@@ -350,7 +350,8 @@ private final class StoryStatsPublicForwardsContextImpl {
                                             isMy: item.isMy,
                                             myReaction: item.myReaction,
                                             forwardInfo: item.forwardInfo.flatMap { EngineStoryItem.ForwardInfo($0, transaction: transaction) },
-                                            author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) }
+                                            author: item.authorId.flatMap { transaction.getPeer($0).flatMap(EnginePeer.init) },
+                                            folderIds: item.folderIds
                                         )
                                         resultForwards.append(.story(EnginePeer(peer), mappedItem))
                                     }

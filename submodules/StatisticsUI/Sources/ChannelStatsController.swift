@@ -2127,7 +2127,7 @@ public func channelStatsController(
     }
     messagesPromise.set(.single(nil) |> then(messageView))
     
-    let storyList = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false)
+    let storyList = PeerStoryListContext(account: context.account, peerId: peerId, isArchived: false, folderId: nil)
     storyList.loadMore()
     storiesPromise.set(
         .single(nil) 

@@ -1,4 +1,4 @@
-// MARK: Nicegram SaveAvatar
+// Nicegram SaveAvatar
 import ShareController
 import UndoUI
 //
@@ -889,7 +889,7 @@ public final class PeerInfoAvatarListContainerNode: ASDisplayNode {
     private let activeStripImage: UIImage
     private var appliedStripNodeCurrentIndex: Int?
     var currentIndex: Int = 0
-    // MARK: Nicegram SaveAvatar
+    // Nicegram SaveAvatar
     private var currentItem: PeerInfoAvatarListItem? {
         return items.indices.contains(currentIndex) ? items[currentIndex] : nil
     }
@@ -1141,7 +1141,7 @@ public final class PeerInfoAvatarListContainerNode: ASDisplayNode {
         }
         self.view.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(self.panGesture(_:))))
         
-        // MARK: Nicegram SaveAvatar, copied from PeerAvatarImageGalleryItemNode
+        // Nicegram SaveAvatar, copied from PeerAvatarImageGalleryItemNode
         let avatarListLongTapGesture = ContextGesture()
         avatarListLongTapGesture.activated = { [weak self] _, _ in
             guard let self = self,

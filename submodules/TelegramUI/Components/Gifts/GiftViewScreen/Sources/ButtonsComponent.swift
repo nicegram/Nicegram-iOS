@@ -3,23 +3,28 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import ComponentFlow
+import TelegramCore
 import BundleIconComponent
 import MultilineTextComponent
 import MoreButtonNode
 import AccountContext
 import TelegramPresentationData
+import TelegramStringFormatting
 
 final class PriceButtonComponent: Component {
-    let price: String
+    let price: CurrencyAmount
+    let dateTimeFormat: PresentationDateTimeFormat
 
     init(
-        price: String
+        price: CurrencyAmount,
+        dateTimeFormat: PresentationDateTimeFormat
     ) {
         self.price = price
+        self.dateTimeFormat = dateTimeFormat
     }
 
     static func ==(lhs: PriceButtonComponent, rhs: PriceButtonComponent) -> Bool {
-        return lhs.price == rhs.price
+        return lhs.price == rhs.price && lhs.dateTimeFormat == rhs.dateTimeFormat
     }
 
     final class View: UIView {
@@ -37,7 +42,6 @@ final class PriceButtonComponent: Component {
             self.backgroundView.clipsToBounds = true
             self.addSubview(self.backgroundView)
             
-            self.icon.image = UIImage(bundleImageName: "Premium/Stars/ButtonStar")?.withRenderingMode(.alwaysTemplate)
             self.backgroundView.addSubview(self.icon)
         }
         
@@ -46,15 +50,25 @@ final class PriceButtonComponent: Component {
         }
 
         func update(component: PriceButtonComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+            let previousComponent = self.component
             self.component = component
             self.state = state
             
+            if previousComponent?.price.currency != component.price.currency {
+                switch component.price.currency {
+                case .stars:
+                    self.icon.image = UIImage(bundleImageName: "Premium/Stars/ButtonStar")?.withRenderingMode(.alwaysTemplate)
+                case .ton:
+                    self.icon.image = UIImage(bundleImageName: "Ads/TonAbout")?.withRenderingMode(.alwaysTemplate)
+                }
+            }
+                        
             var backgroundSize = CGSize(width: 42.0, height: 30.0)
             let textSize = self.text.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
                     text: .plain(NSAttributedString(
-                        string: component.price,
+                        string: formatCurrencyAmountText(component.price, dateTimeFormat: component.dateTimeFormat),
                         font: Font.semibold(11.0),
                         textColor: UIColor(rgb: 0xffffff)
                     ))

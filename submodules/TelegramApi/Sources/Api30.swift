@@ -1,4 +1,40 @@
 public extension Api.account {
+    enum Takeout: TypeConstructorDescription {
+        case takeout(id: Int64)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .takeout(let id):
+                    if boxed {
+                        buffer.appendInt32(1304052993)
+                    }
+                    serializeInt64(id, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .takeout(let id):
+                return ("takeout", [("id", id as Any)])
+    }
+    }
+    
+        public static func parse_takeout(_ reader: BufferReader) -> Takeout? {
+            var _1: Int64?
+            _1 = reader.readInt64()
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.account.Takeout.takeout(id: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api.account {
     enum Themes: TypeConstructorDescription {
         case themes(hash: Int64, themes: [Api.Theme])
         case themesNotModified

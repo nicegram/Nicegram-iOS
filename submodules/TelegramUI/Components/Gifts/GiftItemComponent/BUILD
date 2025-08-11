@@ -28,9 +28,11 @@ swift_library(
         "//submodules/TextFormat",
         "//submodules/Markdown",
         "//submodules/AvatarNode",
+        "//submodules/CheckNode",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
         "//submodules/TelegramUI/Components/Stars/ItemShimmeringLoadingComponent",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoCoverComponent",
+        "//submodules/Components/BundleIconComponent",
     ],
     visibility = [
         "//visibility:public",

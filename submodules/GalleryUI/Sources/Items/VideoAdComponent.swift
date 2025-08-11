@@ -4,6 +4,7 @@ import Display
 import SwiftSignalKit
 import ComponentFlow
 import MultilineTextComponent
+import MultilineTextWithEntitiesComponent
 import Postbox
 import TelegramCore
 import TelegramPresentationData
@@ -12,6 +13,7 @@ import PlainButtonComponent
 import AvatarNode
 import AccountContext
 import PhotoResources
+import TextFormat
 
 final class VideoAdComponent: Component {
     let context: AccountContext
@@ -138,12 +140,23 @@ final class VideoAdComponent: Component {
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: availableSize.height)
             )
+            
+            let textColor = UIColor.white
+            
+            var entities: [MessageTextEntity] = []
+            if let attribute = component.message.attributes.first(where: { $0 is TextEntitiesMessageAttribute }) as? TextEntitiesMessageAttribute {
+                entities = attribute.entities
+            }
+            let attributedText = stringWithAppliedEntities(component.message.text, entities: entities, baseColor: textColor, linkColor: textColor, baseFont: Font.regular(14.0), linkFont: Font.regular(14.0), boldFont: Font.semibold(14.0), italicFont: Font.italic(14.0), boldItalicFont: Font.semiboldItalic(14.0), fixedFont: Font.monospace(14.0), blockQuoteFont: Font.regular(14.0), message: nil)
             let textSize = self.text.update(
                 transition: .immediate,
                 component: AnyComponent(
-                    MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: component.message.text, font: Font.regular(14.0), textColor: .white)),
-                        maximumNumberOfLines: 0
+                    MultilineTextWithEntitiesComponent(
+                        context: component.context,
+                        animationCache: component.context.animationCache,
+                        animationRenderer: component.context.animationRenderer,
+                        placeholderColor: UIColor.white.withAlphaComponent(0.2),
+                        text: .plain(attributedText)
                     )
                 ),
                 environment: {},

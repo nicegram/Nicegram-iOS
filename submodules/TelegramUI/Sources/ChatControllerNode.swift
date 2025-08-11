@@ -1,4 +1,4 @@
-// MARK: Nicegram
+// Nicegram
 import class Combine.AnyCancellable
 import EntityKeyboard
 import FeatAiShortcuts
@@ -70,7 +70,7 @@ final class VideoNavigationControllerDropContentItem: NavigationControllerDropCo
     }
 }
 
-// Mark: Nicegram imports
+// Nicegram imports
 import NGWebUtils
 import NGStrings
 import NGData
@@ -204,7 +204,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var isLoadingEarlier: Bool = false
     private(set) var loadingPlaceholderNode: ChatLoadingPlaceholderNode?
     
-    // MARK: Nicegram ColorAlign
+    // Nicegram ColorAlign
     private let grayscaleLayer = GrayscaleLayer(
         enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleInChatPublisher()
     )
@@ -286,7 +286,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var inputMediaNodeDataDisposable: Disposable?
     private var inputMediaNodeStateContext = ChatEntityKeyboardInputNode.StateContext()
     
-    // MARK: Nicegram
+    // Nicegram
     private let nicegramOverlayView = TgChatOverlayView()
     lazy var nicegramOverlayNode = ASDisplayNode { [nicegramOverlayView] in
         nicegramOverlayView
@@ -295,7 +295,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var cancellables = Set<AnyCancellable>()
     //
     
-    // MARK: Nicegram AiChat
+    // Nicegram AiChat
     private lazy var tgChatAiViewModel = {
         TgChatAiViewModel(
             peerId: { [weak self] in
@@ -308,7 +308,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }()
     //
     
-    // MARK: Nicegram ChatBanner
+    // Nicegram ChatBanner
     private let ngBannerNode = ASDisplayNode()
     private lazy var ngBannerModel = {
         if #available(iOS 13.0, *) {
@@ -323,7 +323,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }()
     //
     
-    // MARK: Nicegram AiShortcuts
+    // Nicegram AiShortcuts
     private let aiShortcutsModel: AiShortcutsViewModel
     private let aiShortcutsNode: ASDisplayNode
     //
@@ -495,7 +495,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     private var lastSendTimestamp = 0.0
     
-    // MARK: Nicegram OpenGifsShortcut
+    // Nicegram OpenGifsShortcut
     private var defaultEntityKeyboardInputTab: EntityKeyboardInputTab?
     //
     
@@ -504,11 +504,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var displayVideoUnmuteTipDisposable: Disposable?
     
     private var onLayoutCompletions: [(ContainedViewLayoutTransition) -> Void] = []
-// MARK: Nicegram NCG-6373 Feed tab
+// Nicegram NCG-6373 Feed tab
     private let isFeed: Bool
-    // MARK: Nicegram NCG-6373 Feed tab, isFeed
+    // Nicegram NCG-6373 Feed tab, isFeed
     init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?, isFeed: Bool) {
-// MARK: Nicegram NCG-6373 Feed tab
+// Nicegram NCG-6373 Feed tab
         self.isFeed = isFeed
 //
         self.context = context
@@ -541,7 +541,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inputContextPanelContainer = ChatControllerTitlePanelNodeContainer()
         self.inputContextOverTextPanelContainer = ChatControllerTitlePanelNodeContainer()
         
-        // MARK: Nicegram AiShortcuts
+        // Nicegram AiShortcuts
         let aiShortcutsModel = AiShortcutsViewModel()
         self.aiShortcutsNode = ASDisplayNode {
             if #available(iOS 16.0, *) {
@@ -727,7 +727,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                             mappedQuote = EngineMessageReplyQuote(text: quote, offset: nil, entities: [], media: nil)
                         }
                         
-                        attributes.append(ReplyMessageAttribute(messageId: replyMessage.id, threadMessageId: nil, quote: mappedQuote, isQuote: mappedQuote != nil))
+                        attributes.append(ReplyMessageAttribute(messageId: replyMessage.id, threadMessageId: nil, quote: mappedQuote, isQuote: mappedQuote != nil, todoItemId: nil))
                     }
                     
                     let message = Message(
@@ -798,7 +798,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
         }
         if let displayAdPeer {
-            self.adMessagesContext = context.engine.messages.adMessages(peerId: displayAdPeer)
+            self.adMessagesContext = context.engine.messages.adMessages(peerId: displayAdPeer, activateManually: true)
         } else {
             self.adMessagesContext = nil
         }
@@ -936,7 +936,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         self.wrappingNode.contentNode.addSubnode(self.inputContextPanelContainer)
-// MARK: Nicegram NCG-6373 Feed tab
+// Nicegram NCG-6373 Feed tab
         if !isFeed {
             self.wrappingNode.contentNode.addSubnode(self.inputPanelContainerNode)
         }
@@ -949,7 +949,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inputPanelClippingNode.addSubnode(self.inputPanelBackgroundSeparatorNode)
         self.inputPanelBackgroundNode.addSubnode(self.inputPanelBottomBackgroundSeparatorNode)
         
-        // MARK: Nicegram AiShortcuts
+        // Nicegram AiShortcuts
         if #available(iOS 16.0, *) {
             self.contentContainerNode.contentNode.addSubnode(self.aiShortcutsNode)
             
@@ -970,7 +970,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         //
 
-        // MARK: Nicegram
+        // Nicegram
         if #available(iOS 15.0, *) {
             nicegramOverlayView.openAiChat = { [weak self] in
                 guard let self else { return }
@@ -998,11 +998,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         //
         
-        // MARK: Nicegram AiChat
+        // Nicegram AiChat
         tgChatAiViewModel.initialize()
         //
         
-        // MARK: Nicegram ChatBanner
+        // Nicegram ChatBanner
         if #available(iOS 15.0, *), let controller {
             self.addSubnode(self.ngBannerNode)
             ChatBannerTgHelper.show(
@@ -1014,7 +1014,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.ngBannerNode.isHidden = true
         //
         
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         self.layer.addSublayer(self.grayscaleLayer)
         //
         
@@ -1025,7 +1025,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
 
         self.navigationBar?.additionalContentNode.addSubnode(self.titleAccessoryPanelContainer)
         
-        // MARK: Nicegram (sendWithKb)
+        // Nicegram (sendWithKb)
         self.textInputPanelNode = ChatTextInputPanelNode(context: context, presentationInterfaceState: chatPresentationInterfaceState, presentationContext: ChatPresentationContext(context: context, backgroundNode: backgroundNode), presentController: { [weak self] controller in
             self?.interfaceInteraction?.presentController(controller, nil)
         }, sendWithKb: NGSettings.sendWithEnter)
@@ -1124,7 +1124,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.loadMoreSearchResultsDisposable?.dispose()
     }
 
-    // MARK: Nicegram
+    // Nicegram
     @available(iOS 15.0, *)
     @objc private func openNicegramWallet() {
         Task {
@@ -1206,7 +1206,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    // MARK: Nicegram ChatBanner
+    // Nicegram ChatBanner
     @available(iOS 15.0, *)
     private func updateNgBannerVisibility() {
         guard let peer = self.chatPresentationInterfaceState.renderedPeer?.peer else {
@@ -2447,7 +2447,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 inputPanelsHeight = 0.0
             }
         }
-// MARK: Nicegram NCG-6373 Feed tab
+// Nicegram NCG-6373 Feed tab
         if isFeed {
             inputPanelsHeight = 0.0
         }
@@ -2825,7 +2825,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         transition.updateFrame(node: self.navigateButtons, frame: apparentNavigateButtonsFrame)
         self.navigateButtons.update(rect: apparentNavigateButtonsFrame, within: layout.size, transition: transition)
         
-        // MARK: Nicegram
+        // Nicegram
         transition.updateFrame(
             node: self.nicegramOverlayNode,
             frame: CGRect(
@@ -2838,7 +2838,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         )
         //
         
-        // MARK: Nicegram ChatBanner
+        // Nicegram ChatBanner
         let bannerHeight = ChatBannerTgHelper.bannerHeight
         
         transition.updateFrame(
@@ -2856,7 +2856,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         )
         //
         
-        // MARK: Nicegram AiShortcuts
+        // Nicegram AiShortcuts
         let aiShortcutsHeight = AiShortcutsConstants.height
         
         transition.updateFrame(
@@ -3778,7 +3778,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
 
         self.derivedLayoutState = ChatControllerNodeDerivedLayoutState(inputContextPanelsFrame: inputContextPanelsFrame, inputContextPanelsOverMainPanelFrame: inputContextPanelsOverMainPanelFrame, inputNodeHeight: inputNodeHeightAndOverflow?.0, inputNodeAdditionalHeight: inputNodeHeightAndOverflow?.1, upperInputPositionBound: inputNodeHeightAndOverflow?.0 != nil ? self.upperInputPositionBound : nil)
         
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         let grayscaleFrame = CGRect(origin: .zero, size: layout.size)
             .inset(
                 by: UIEdgeInsets(
@@ -3877,7 +3877,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }
     
     func updateChatPresentationInterfaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, transition: ContainedViewLayoutTransition, interactive: Bool, completion: @escaping (ContainedViewLayoutTransition) -> Void) {
-        // MARK: Nicegram AiShortcuts
+        // Nicegram AiShortcuts
         aiShortcutsModel.onChangeText(
             chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string
         )
@@ -3993,7 +3993,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             }
             
-            // MARK: Nicegram
+            // Nicegram
             let contentSettings = context.currentContentSettings.with { $0 }
             var showUnblockButton: Bool = false
             if (restrictionText != chatPresentationInterfaceState.strings.Channel_ErrorAccessDenied || restrictionText != chatPresentationInterfaceState.strings.Group_ErrorAccessDenied) {
@@ -4018,7 +4018,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 showUnblockButton = false
             }
             
-            // MARK: Nicegram ChatBanner
+            // Nicegram ChatBanner
             if #available(iOS 15.0, *) {
                 updateNgBannerVisibility()
             }
@@ -4031,7 +4031,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     self.restrictedNode = restrictedNode
                 }
                 self.restrictedNode?.setup(title: "", text: processedPeerRestrictionText(restrictionText))
-                // MARK: Nicegram Unblock
+                // Nicegram Unblock
                 if showUnblockButton {
                     self.restrictedNode?.setupButton(
                         title: l("NicegramSettings.Unblock.Header"),
@@ -4290,7 +4290,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         let inputNode = ChatEntityKeyboardInputNode(
-            // MARK: Nicegram OpenGifsShortcut
+            // Nicegram OpenGifsShortcut
             defaultTab: self.defaultEntityKeyboardInputTab,
             //
             context: self.context,
@@ -4301,7 +4301,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             chatPeerId: peerId,
             stateContext: self.inputMediaNodeStateContext
         )
-        // MARK: Nicegram OpenGifsShortcut
+        // Nicegram OpenGifsShortcut
         self.defaultEntityKeyboardInputTab = nil
         //
         self.openStickersBeginWithEmoji = false
@@ -4804,9 +4804,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    // MARK: Nicegram OpenGifsShortcut, defaultTab param added
+    // Nicegram OpenGifsShortcut, defaultTab param added
     func openStickers(defaultTab: EntityKeyboardInputTab? = nil, beginWithEmoji: Bool) {
-        // MARK: Nicegram OpenGifsShortcut
+        // Nicegram OpenGifsShortcut
         self.defaultEntityKeyboardInputTab = defaultTab
         //
         self.openStickersBeginWithEmoji = beginWithEmoji
@@ -5095,9 +5095,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 
                 if !messages.isEmpty || postEmptyMessages || self.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil {
                     if let forwardMessageIds = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
-                        // MARK: Nicegram ForwardAsCopy
-                        let asCopy = self.chatPresentationInterfaceState.interfaceState.forwardAsCopy
-                        //
                         var attributes: [MessageAttribute] = []
                         attributes.append(ForwardOptionsMessageAttribute(hideNames: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideNames == true, hideCaptions: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideCaptions == true))
 
@@ -5107,8 +5104,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         }
                         
                         for id in forwardMessageIds.sorted() {
-                            // MARK: Nicegram ForwardAsCopy, asCopy added
-                            messages.append(.forward(source: id, threadId: replyThreadId, grouping: .auto, attributes: attributes, correlationId: nil, asCopy: asCopy))
+                            messages.append(.forward(source: id, threadId: replyThreadId, grouping: .auto, attributes: attributes, correlationId: nil))
                         }
                     }
                                         

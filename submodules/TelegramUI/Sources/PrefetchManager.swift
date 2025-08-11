@@ -179,7 +179,7 @@ private final class PrefetchManagerInnerImpl {
                             } else if let _ = media as? TelegramMediaWebFile {
                                 //strongSelf.fetchDisposable.set(chatMessageWebFileInteractiveFetched(account: context.account, image: image).startStrict())
                             } else if let file = media as? TelegramMediaFile {
-                                // MARK: Nicegram downloading feature, accountContext added
+                                // Nicegram downloading feature, accountContext added
                                 let fetchSignal = messageMediaFileInteractiveFetched(fetchManager: self.fetchManager, messageId: mediaItem.media.index.id, messageReference: MessageReference(peer: mediaItem.media.peer, author: nil, id: mediaItem.media.index.id, timestamp: mediaItem.media.index.timestamp, incoming: true, secret: false, threadId: nil), file: file, userInitiated: false, priority: priority, accountContext: nil)
                                 context.fetchDisposable.set(fetchSignal.startStrict())
                             }
@@ -219,7 +219,7 @@ private final class PrefetchManagerInnerImpl {
                         let priority: FetchManagerPriority = .backgroundPrefetch(locationOrder: HistoryPreloadIndex(index: nil, threadId: nil, hasUnread: false, isMuted: false, isPriority: true), localOrder: EngineMessage.Index(id: EngineMessage.Id(peerId: EnginePeer.Id(0), namespace: 0, id: order), timestamp: 0))
                         
                         if case .full = automaticDownload {
-                            // MARK: Nicegram downloading feature, accountContext added
+                            // Nicegram downloading feature, accountContext added
                             let fetchSignal = freeMediaFileInteractiveFetched(fetchManager: self.fetchManager, fileReference: .standalone(media: media), priority: priority, accountContext: nil)
                             context.fetchDisposable.set(fetchSignal.startStrict())
                         }

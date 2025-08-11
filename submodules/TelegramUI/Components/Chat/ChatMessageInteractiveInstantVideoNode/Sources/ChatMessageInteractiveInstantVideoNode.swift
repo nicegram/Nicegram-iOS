@@ -352,6 +352,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                 var replyMessage: Message?
                 var replyForward: QuotedReplyMessageAttribute?
                 var replyQuote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
+                var replyTodoItemId: Int32?
                 var replyStory: StoryId?
                 
                 for attribute in item.message.attributes {
@@ -382,6 +383,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                             replyMessage = item.message.associatedMessages[replyAttribute.messageId]
                         }
                         replyQuote = replyAttribute.quote.flatMap { ($0, replyAttribute.isQuote) }
+                        replyTodoItemId = replyAttribute.todoItemId
                     } else if let attribute = attribute as? QuotedReplyMessageAttribute {
                         replyForward = attribute
                     } else if let attribute = attribute as? ReplyStoryAttribute {
@@ -400,6 +402,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                             message: replyMessage,
                             replyForward: replyForward,
                             quote: replyQuote,
+                            todoItemId: replyTodoItemId,
                             story: replyStory,
                             parentMessage: item.message,
                             constrainedSize: CGSize(width: availableWidth, height: CGFloat.greatestFiniteMagnitude),
@@ -584,6 +587,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                 reactionPeers: dateReactionsAndPeers.peers,
                 displayAllReactionPeers: item.message.id.peerId.namespace == Namespaces.Peer.CloudUser,
                 areReactionsTags: item.topMessage.areReactionsTags(accountPeerId: item.context.account.peerId),
+                areStarReactionsEnabled: item.associatedData.areStarReactionsEnabled,
                 messageEffect: messageEffect,
                 replyCount: dateReplies,
                 starsCount: starsCount,

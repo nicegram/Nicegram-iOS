@@ -695,6 +695,10 @@ public struct ComponentTransition {
     }
     
     public func setSublayerTransform(layer: CALayer, transform: CATransform3D, completion: ((Bool) -> Void)? = nil) {
+        if CATransform3DEqualToTransform(layer.sublayerTransform, transform) {
+            completion?(true)
+            return
+        }
         switch self.animation {
         case .none:
             layer.sublayerTransform = transform
@@ -1056,6 +1060,34 @@ public struct ComponentTransition {
                 layer.lineDashPattern = pattern
                 completion?(true)
             }
+        }
+    }
+    
+    public func setShapeLayerStrokeColor(layer: CAShapeLayer, color: UIColor, completion: ((Bool) -> Void)? = nil) {
+        if let current = layer.strokeColor, current == color.cgColor {
+            completion?(true)
+            return
+        }
+        
+        switch self.animation {
+        case .none:
+            layer.strokeColor = color.cgColor
+            completion?(true)
+        case let .curve(duration, curve):
+            let previousColor: CGColor = layer.strokeColor ?? UIColor.clear.cgColor
+            layer.strokeColor = color.cgColor
+            
+            layer.animate(
+                from: previousColor,
+                to: color.cgColor,
+                keyPath: "strokeColor",
+                duration: duration,
+                delay: 0.0,
+                curve: curve,
+                removeOnCompletion: true,
+                additive: false,
+                completion: completion
+            )
         }
     }
     

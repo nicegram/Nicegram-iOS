@@ -760,7 +760,17 @@ public final class Camera {
     
     public let metrics: Camera.Metrics
     
-    public init(configuration: Camera.Configuration = Configuration(preset: .hd1920x1080, position: .back, audio: true, photo: false, metadata: false), previewView: CameraSimplePreviewView? = nil, secondaryPreviewView: CameraSimplePreviewView? = nil) {
+    public init(
+        configuration: Camera.Configuration = Configuration(
+            preset: .hd1920x1080,
+            position: .back,
+            audio: true,
+            photo: false,
+            metadata: false
+        ),
+        previewView: CameraSimplePreviewView? = nil,
+        secondaryPreviewView: CameraSimplePreviewView? = nil
+    ) {
         Logger.shared.log("Camera", "Init")
         
         self.metrics = Camera.Metrics(model: DeviceModel.current)

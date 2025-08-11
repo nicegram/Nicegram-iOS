@@ -346,7 +346,7 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
     private var theme: TabBarControllerTheme
     private var validLayout: (CGSize, CGFloat, CGFloat, UIEdgeInsets, CGFloat)?
     private var horizontal: Bool = false
-    // MARK: Nicegram
+    // Nicegram
     public var showTabNames: Bool
     //
     private var centered: Bool = false
@@ -359,13 +359,13 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
     
     private var tapRecognizer: TapLongTapOrDoubleTapGestureRecognizer?
     
-    // MARK: Nicegram (showTabNames)
+    // Nicegram (showTabNames)
     init(theme: TabBarControllerTheme, itemSelected: @escaping (Int, Bool, [ASDisplayNode]) -> Void, contextAction: @escaping (Int, ContextExtractedContentContainingNode, ContextGesture) -> Void, swipeAction: @escaping (Int, TabBarItemSwipeDirection) -> Void, showTabNames: Bool = true) {
         self.itemSelected = itemSelected
         self.contextAction = contextAction
         self.swipeAction = swipeAction
         self.theme = theme
-        // MARK: Nicegram
+        // Nicegram
         self.showTabNames = showTabNames
         //
 
@@ -740,7 +740,7 @@ class TabBarNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 node.textImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
                 node.contextImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
                 node.contextTextImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
-                // MARK: Nicegram
+                // Nicegram
                 if self.showTabNames {
                     node.imageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)
                     node.textImageNode.frame = CGRect(origin: CGPoint(), size: nodeFrame.size)

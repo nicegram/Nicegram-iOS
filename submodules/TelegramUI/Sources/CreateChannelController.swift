@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import Display
+import SSignalKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
@@ -20,6 +21,7 @@ import LegacyMediaPickerUI
 import TextFormat
 import AvatarEditorScreen
 import OldChannelsController
+import AVFoundation
 
 private struct CreateChannelArguments {
     let context: AccountContext

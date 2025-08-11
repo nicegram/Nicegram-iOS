@@ -144,6 +144,7 @@ public struct Namespaces {
         public static let channelsForPublicReaction: Int8 = 45
         public static let cachedGroupsInCommon: Int8 = 46
         public static let groupCallPersistentSettings: Int8 = 47
+        public static let cachedProfileGiftsCollections: Int8 = 48
     }
     
     public struct UnorderedItemList {
@@ -316,6 +317,7 @@ private enum PreferencesKeyValues: Int32 {
     case secureBotStorageState = 43
     case serverSuggestionInfo = 44
     case persistentChatInterfaceData = 45
+    case globalPostSearchState = 46
 }
 
 public func applicationSpecificPreferencesKey(_ value: Int32) -> ValueBoxKey {
@@ -572,6 +574,12 @@ public struct PreferencesKeys {
         key.setInt64(4, value: peerId.toInt64())
         return key
     }
+    
+    public static func globalPostSearchState() -> ValueBoxKey {
+        let key = ValueBoxKey(length: 4 + 8)
+        key.setInt32(0, value: PreferencesKeyValues.globalPostSearchState.rawValue)
+        return key
+    }
 }
 
 private enum SharedDataKeyValues: Int32 {
@@ -584,6 +592,7 @@ private enum SharedDataKeyValues: Int32 {
     case countriesList = 7
     case wallapersState = 8
     case chatThemes = 10
+    case deviceContacts = 11
 }
 
 public struct SharedDataKeys {
@@ -638,6 +647,12 @@ public struct SharedDataKeys {
     public static let chatThemes: ValueBoxKey = {
         let key = ValueBoxKey(length: 4)
         key.setInt32(0, value: SharedDataKeyValues.chatThemes.rawValue)
+        return key
+    }()
+    
+    public static let deviceContacts: ValueBoxKey = {
+        let key = ValueBoxKey(length: 4)
+        key.setInt32(0, value: SharedDataKeyValues.deviceContacts.rawValue)
         return key
     }()
 }

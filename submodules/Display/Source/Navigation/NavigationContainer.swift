@@ -200,7 +200,7 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
     }
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        // MARK: Nicegram
+        // Nicegram
         if otherGestureRecognizer.isNicegramExclusiveGesture() {
             return false
         }
@@ -214,7 +214,7 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
         return false
     }
     
-    // MARK: Nicegram
+    // Nicegram
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         if otherGestureRecognizer.isNicegramExclusiveGesture() {
             return true

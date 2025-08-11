@@ -806,7 +806,7 @@ private:
     });
 }
 
-// MARK: Nicegram NCG-5828 call recording
+// Nicegram NCG-5828 call recording
 -(void)StartNicegramRecording:(void(^_Nullable)(NSString* _Nonnull, double, NSUInteger))completion
                  errorCallback:(void (^_Nullable)(NSString* _Nonnull))errorCallback {
     _audioDeviceModule->perform([completion, errorCallback](tgcalls::SharedAudioDeviceModule *audioDeviceModule) {

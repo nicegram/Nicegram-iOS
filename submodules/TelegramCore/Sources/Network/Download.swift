@@ -37,7 +37,7 @@ private func wrapMethodBody(_ body: (FunctionDescription, Buffer, DeserializeFun
     return body
 }
 
-// MARK: Nicegram, 'public'
+// Nicegram, 'public'
 public class Download: NSObject, MTRequestMessageServiceDelegate {
     let datacenterId: Int
     let isCdn: Bool
@@ -99,7 +99,7 @@ public class Download: NSObject, MTRequestMessageServiceDelegate {
         self.shouldKeepConnectionDisposable?.dispose()
     }
     
-    // MARK: Nicegram, 'public'
+    // Nicegram, 'public'
     public func requestMessageServiceAuthorizationRequired(_ requestMessageService: MTRequestMessageService!) {
         self.context.updateAuthTokenForDatacenter(withId: self.datacenterId, authToken: nil)
         self.context.authTokenForDatacenter(withIdRequired: self.datacenterId, authToken:self.mtProto.requiredAuthToken, masterDatacenterId: self.mtProto.authTokenMasterDatacenterId)
@@ -304,7 +304,7 @@ public class Download: NSObject, MTRequestMessageServiceDelegate {
         |> retryRequest
     }
     
-    // MARK: Nicegram, 'public'
+    // Nicegram, 'public'
     public func request<T>(_ data: (FunctionDescription, Buffer, DeserializeFunctionResponse<T>), expectedResponseSize: Int32? = nil, automaticFloodWait: Bool = true, onFloodWaitError: ((String) -> Void)? = nil) -> Signal<T, MTRpcError> {
         return Signal { subscriber in
             let request = MTRequest()

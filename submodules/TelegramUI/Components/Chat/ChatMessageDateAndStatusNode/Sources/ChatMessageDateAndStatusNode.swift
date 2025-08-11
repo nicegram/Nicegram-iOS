@@ -193,6 +193,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
         var reactionPeers: [(MessageReaction.Reaction, EnginePeer)]
         var displayAllReactionPeers: Bool
         var areReactionsTags: Bool
+        var areStarReactionsEnabled: Bool
         var messageEffect: AvailableMessageEffects.MessageEffect?
         var replyCount: Int
         var starsCount: Int64?
@@ -217,6 +218,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
             reactionPeers: [(MessageReaction.Reaction, EnginePeer)],
             displayAllReactionPeers: Bool,
             areReactionsTags: Bool,
+            areStarReactionsEnabled: Bool,
             messageEffect: AvailableMessageEffects.MessageEffect?,
             replyCount: Int,
             starsCount: Int64?,
@@ -240,6 +242,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
             self.reactionPeers = reactionPeers
             self.displayAllReactionPeers = displayAllReactionPeers
             self.areReactionsTags = areReactionsTags
+            self.areStarReactionsEnabled = areStarReactionsEnabled
             self.messageEffect = messageEffect
             self.replyCount = replyCount
             self.starsCount = starsCount
@@ -775,6 +778,91 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                         totalReactionCount += Int(reaction.count)
                     }
                     
+                    var hadStars = false
+                    var mappedReactions = arguments.reactions.map { reaction in
+                        var centerAnimation: TelegramMediaFile?
+                        var animationFileId: Int64?
+                        
+                        if case .stars = reaction.value {
+                            hadStars = true
+                        }
+                        
+                        switch reaction.value {
+                        case .builtin, .stars:
+                            if let availableReactions = arguments.availableReactions {
+                                for availableReaction in availableReactions.reactions {
+                                    if availableReaction.value == reaction.value {
+                                        centerAnimation = availableReaction.centerAnimation?._parse()
+                                        break
+                                    }
+                                }
+                            }
+                        case let .custom(fileId):
+                            animationFileId = fileId
+                        }
+                        
+                        var peers: [EnginePeer] = []
+                        for (value, peer) in arguments.reactionPeers {
+                            if value == reaction.value {
+                                if !peers.contains(where: { $0.id == peer.id }) {
+                                    peers.append(peer)
+                                }
+                            }
+                        }
+                        if !arguments.displayAllReactionPeers {
+                            if peers.count != Int(reaction.count) || arguments.reactionPeers.count != totalReactionCount {
+                                peers.removeAll()
+                            }
+                        }
+                        
+                        var title: String?
+                        if arguments.areReactionsTags, let savedMessageTags = arguments.savedMessageTags {
+                            for tag in savedMessageTags.tags {
+                                if tag.reaction == reaction.value {
+                                    title = tag.title
+                                }
+                            }
+                        }
+                        
+                        return ReactionButtonsAsyncLayoutContainer.Reaction(
+                            reaction: ReactionButtonComponent.Reaction(
+                                value: reaction.value,
+                                centerAnimation: centerAnimation,
+                                animationFileId: animationFileId,
+                                title: title
+                            ),
+                            count: Int(reaction.count),
+                            peers: arguments.areReactionsTags ? [] : peers,
+                            chosenOrder: reaction.chosenOrder
+                        )
+                    }
+                    
+                    if arguments.areStarReactionsEnabled && !hadStars && !mappedReactions.isEmpty {
+                        var centerAnimation: TelegramMediaFile?
+                        let animationFileId: Int64? = nil
+                        
+                        if let availableReactions = arguments.availableReactions {
+                            for availableReaction in availableReactions.reactions {
+                                if availableReaction.value == .stars {
+                                    centerAnimation = availableReaction.centerAnimation?._parse()
+                                    break
+                                }
+                            }
+                        }
+                        
+                        mappedReactions.insert(ReactionButtonsAsyncLayoutContainer.Reaction(
+                            reaction: ReactionButtonComponent.Reaction(
+                                value: .stars,
+                                centerAnimation: centerAnimation,
+                                animationFileId: animationFileId,
+                                title: nil
+                            ),
+                            count: 0,
+                            peers: [],
+                            chosenOrder: nil
+                        ), at: 0)
+                    }
+                    
                     reactionButtonsResult = reactionButtonsContainer.update(
                         context: arguments.context,
                         action: { itemNode, value, sourceView in
@@ -783,59 +871,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                             }
                             strongSelf.reactionSelected?(itemNode, value, sourceView)
                         },
-                        reactions: arguments.reactions.map { reaction in
-                            var centerAnimation: TelegramMediaFile?
-                            var animationFileId: Int64?
-                            
-                            switch reaction.value {
-                            case .builtin, .stars:
-                                if let availableReactions = arguments.availableReactions {
-                                    for availableReaction in availableReactions.reactions {
-                                        if availableReaction.value == reaction.value {
-                                            centerAnimation = availableReaction.centerAnimation?._parse()
-                                            break
-                                        }
-                                    }
-                                }
-                            case let .custom(fileId):
-                                animationFileId = fileId
-                            }
-                            
-                            var peers: [EnginePeer] = []
-                            for (value, peer) in arguments.reactionPeers {
-                                if value == reaction.value {
-                                    if !peers.contains(where: { $0.id == peer.id }) {
-                                        peers.append(peer)
-                                    }
-                                }
-                            }
-                            if !arguments.displayAllReactionPeers {
-                                if peers.count != Int(reaction.count) || arguments.reactionPeers.count != totalReactionCount {
-                                    peers.removeAll()
-                                }
-                            }
-                            
-                            var title: String?
-                            if arguments.areReactionsTags, let savedMessageTags = arguments.savedMessageTags {
-                                for tag in savedMessageTags.tags {
-                                    if tag.reaction == reaction.value {
-                                        title = tag.title
-                                    }
-                                }
-                            }
-                            
-                            return ReactionButtonsAsyncLayoutContainer.Reaction(
-                                reaction: ReactionButtonComponent.Reaction(
-                                    value: reaction.value,
-                                    centerAnimation: centerAnimation,
-                                    animationFileId: animationFileId,
-                                    title: title
-                                ),
-                                count: Int(reaction.count),
-                                peers: arguments.areReactionsTags ? [] : peers,
-                                chosenOrder: reaction.chosenOrder
-                            )
-                        },
+                        reactions: mappedReactions,
                         colors: reactionColors,
                         isTag: arguments.areReactionsTags,
                         constrainedWidth: arguments.constrainedSize.width

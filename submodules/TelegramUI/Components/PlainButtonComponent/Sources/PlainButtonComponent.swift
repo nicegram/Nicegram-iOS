@@ -25,7 +25,7 @@ public final class PlainButtonComponent: Component {
     public init(
         content: AnyComponent<Empty>,
         background: AnyComponent<Empty>? = nil,
-        effectAlignment: EffectAlignment,
+        effectAlignment: EffectAlignment = .center,
         minSize: CGSize? = nil,
         contentInsets: UIEdgeInsets = UIEdgeInsets(),
         action: @escaping () -> Void,

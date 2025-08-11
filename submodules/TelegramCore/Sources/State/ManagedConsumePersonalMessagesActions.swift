@@ -583,7 +583,7 @@ private func synchronizeMessageHistoryTagSummary(accountPeerId: PeerId, postbox:
                             case let .messagesNotModified(count):
                                 apiMessages = []
                                 apiCount = count
-                            case let .messagesSlice(_, count, _, _, messages, _, _):
+                            case let .messagesSlice(_, count, _, _, _, messages, _, _):
                                 apiMessages = messages
                                 apiCount = count
                             }

@@ -288,7 +288,7 @@ final class ComposePollScreenComponent: Component {
                         self.reorderingItem = nil
                         for (itemId, itemView) in self.pollOptionsSectionContainer.itemViews {
                             if itemId == reorderingItem.id, let view = itemView.contents.view {
-                                let viewFrame = view.convert(view.bounds, to: self)
+                                let viewFrame = view.convert(view.bounds, to: self.scrollView)
                                 let transition = ComponentTransition.spring(duration: 0.3)
                                 transition.setPosition(view: reorderingItem.snapshotView, position: viewFrame.center)
                                 transition.setAlpha(view: reorderingItem.backgroundView, alpha: 0.0, completion: { _ in
@@ -311,13 +311,14 @@ final class ComposePollScreenComponent: Component {
                 
                 snapshotView.center = targetPosition
                 
+                let localPoint = self.pollOptionsSectionContainer.convert(targetPosition, from: self.scrollView)
                 for (itemId, itemView) in self.pollOptionsSectionContainer.itemViews {
                     if itemId == id {
                         continue
                     }
                     if let view = itemView.contents.view {
-                        let viewFrame = view.convert(view.bounds, to: self)
-                        if viewFrame.contains(targetPosition) {
+                        let viewFrame = view.convert(view.bounds, to: self.pollOptionsSectionContainer)
+                        if viewFrame.contains(localPoint) {
                             if let targetIndex = self.pollOptions.firstIndex(where: { AnyHashable($0.id) == itemId }), let reorderingItem = self.pollOptions.first(where: { AnyHashable($0.id) == id }) {
                                 self.reorderIfPossible(item: reorderingItem, toIndex: targetIndex)
                             }

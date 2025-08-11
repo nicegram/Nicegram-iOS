@@ -1,7 +1,7 @@
-// MARK: Nicegram
+// Nicegram
 import NGCore
 //
-// MARK: Nicegram Wallet
+// Nicegram Wallet
 import NicegramWallet
 //
 import Foundation
@@ -223,7 +223,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     
     private var tempFile: TempBoxFile?
     
-    // MARK: Nicegram Wallet
+    // Nicegram Wallet
     private let nicegramWalletJsInjector = WalletJsInjector()
     //
     
@@ -348,7 +348,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             self?.handleScriptMessage(message)
         }
         
-        // MARK: Nicegram Wallet
+        // Nicegram Wallet
         nicegramWalletJsInjector.inject(
             in: self.webView,
             injectTonJs: false,
@@ -814,18 +814,18 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             }
         } else {
             if let url = navigationAction.request.url?.absoluteString {
-                // MARK: Nicegram Wallet
+                // Nicegram Wallet
                 if nicegramWalletJsInjector.handle(url: url) {
                     decisionHandler(.cancel, preferences)
                     return
                 }
                 //
                 
-                // MARK: Nicegram
+                // Nicegram
                 let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
                 //
                 
-                // MARK: Nicegram, added isNicegramDeeplink
+                // Nicegram, added isNicegramDeeplink
                 if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
                     decisionHandler(.cancel, preferences)
                     self.minimize()
@@ -1264,17 +1264,17 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if navigationAction.targetFrame == nil {
             if let url = navigationAction.request.url?.absoluteString {
-                // MARK: Nicegram Wallet
+                // Nicegram Wallet
                 if nicegramWalletJsInjector.handle(url: url) {
                     return nil
                 }
                 //
                 
-                // MARK: Nicegram
+                // Nicegram
                 let isNicegramDeeplink = NGCore.UrlUtils.refersToNicegramApplication(url)
                 //
                 
-                // MARK: Nicegram, added isNicegramDeeplink
+                // Nicegram, added isNicegramDeeplink
                 if isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://") {
                     self.minimize()
                     self.openAppUrl(url)

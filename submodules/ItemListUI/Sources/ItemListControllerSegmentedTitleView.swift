@@ -82,6 +82,7 @@ public final class ItemListControllerSegmentedTitleView: UIView {
                     foreground: self.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.8),
                     selection: self.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.05)
                 ),
+                theme: self.theme,
                 customLayout: TabSelectorComponent.CustomLayout(
                     font: Font.medium(15.0),
                     spacing: 8.0

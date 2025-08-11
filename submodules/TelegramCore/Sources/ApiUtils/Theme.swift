@@ -31,7 +31,7 @@ extension TelegramBaseTheme {
     
     var apiBaseTheme: Api.BaseTheme {
         switch self {
-            // MARK: Nicegram DefaultTheme
+            // Nicegram DefaultTheme
             case .nicegram:
                 return .baseThemeClassic
             //

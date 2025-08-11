@@ -108,7 +108,7 @@ public final class TextNodeWithEntities {
     
     private var enableLooping: Bool = true
     
-    // MARK: Nicegram ColorAlign
+    // Nicegram ColorAlign
     public var disableAnimations: Bool = false
     //
     public var resetEmojiToFirstFrameAutomatically: Bool = false
@@ -164,7 +164,7 @@ public final class TextNodeWithEntities {
     public static func asyncLayout(_ maybeNode: TextNodeWithEntities?) -> (TextNodeLayoutArguments) -> (TextNodeLayout, (TextNodeWithEntities.Arguments?) -> TextNodeWithEntities) {
         let makeLayout = TextNode.asyncLayout(maybeNode?.textNode)
         return { [weak maybeNode] arguments in
-            // MARK: Nicegram ColorAlign
+            // Nicegram ColorAlign
             let arguments = maybeNode?.nicegramAdjust(textNodeLayoutArguments: arguments) ?? arguments
             //
             
@@ -255,7 +255,7 @@ public final class TextNodeWithEntities {
         }
     }
     
-    // MARK: Nicegram ColorAlign
+    // Nicegram ColorAlign
     func nicegramAdjust(textNodeLayoutArguments arguments: TextNodeLayoutArguments) -> TextNodeLayoutArguments {
         guard self.disableAnimations else {
             return arguments

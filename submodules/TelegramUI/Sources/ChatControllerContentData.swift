@@ -142,6 +142,8 @@ extension ChatControllerImpl {
             var isGeneralThreadClosed: Bool?
             var premiumGiftOptions: [CachedPremiumGiftOption] = []
             var removePaidMessageFeeData: ChatPresentationInterfaceState.RemovePaidMessageFeeData?
+            
+            var preloadNextChatPeerId: EnginePeer.Id?
         }
         
         private let presentationData: PresentationData
@@ -152,9 +154,6 @@ extension ChatControllerImpl {
         
         private var preloadHistoryPeerId: PeerId?
         private let preloadHistoryPeerIdDisposable = MetaDisposable()
-
-        private var preloadNextChatPeerId: PeerId?
-        private let preloadNextChatPeerIdDisposable = MetaDisposable()
         
         private var nextChannelToReadDisposable: Disposable?
         private let chatAdditionalDataDisposable = MetaDisposable()
@@ -219,7 +218,7 @@ extension ChatControllerImpl {
             presentationData: PresentationData,
             historyNode: ChatHistoryListNodeImpl,
             inviteRequestsContext: PeerInvitationImportersContext?,
-            // MARK: Nicegram NCG-6373 Feed tab
+            // Nicegram NCG-6373 Feed tab
             isFeed: Bool
             //
         ) {
@@ -949,11 +948,7 @@ extension ChatControllerImpl {
                         explicitelyCanPinMessages = true
                     }
                     
-                    #if DEBUG
-                    peerMonoforumId = nil
-                    #endif
-                    
-                    let preloadHistoryPeerId = peerMonoforumId ?? peerDiscussionId
+                    let preloadHistoryPeerId = peerMonoforumId// ?? peerDiscussionId
                     if strongSelf.preloadHistoryPeerId != preloadHistoryPeerId {
                         strongSelf.preloadHistoryPeerId = preloadHistoryPeerId
                         if let preloadHistoryPeerId, let channel = peerView.peers[peerView.peerId] as? TelegramChannel, case .broadcast = channel.info {
@@ -1014,7 +1009,7 @@ extension ChatControllerImpl {
                     strongSelf.state.renderedPeer = renderedPeer
                     strongSelf.state.adMessage = adMessage
 
-                    // MARK: Nicegram NCG-6373 Feed tab, !isFeed
+                    // Nicegram NCG-6373 Feed tab, !isFeed
                     if case .standard(.default) = mode, let channel = renderedPeer?.chatMainPeer as? TelegramChannel, case .broadcast = channel.info, !isFeed {
                         var isRegularChat = false
                         if let subject = initialSubject {
@@ -1060,18 +1055,8 @@ extension ChatControllerImpl {
                                     }
 
                                     let nextPeerId = nextPeer?.id
-
-                                    if strongSelf.preloadNextChatPeerId != nextPeerId {
-                                        strongSelf.preloadNextChatPeerId = nextPeerId
-                                        if let nextPeerId = nextPeerId {
-                                            let combinedDisposable = DisposableSet()
-                                            strongSelf.preloadNextChatPeerIdDisposable.set(combinedDisposable)
-                                            combinedDisposable.add(context.account.viewTracker.polledChannel(peerId: nextPeerId).startStrict())
-                                            combinedDisposable.add(context.account.addAdditionalPreloadHistoryPeerId(peerId: nextPeerId))
-                                        } else {
-                                            strongSelf.preloadNextChatPeerIdDisposable.set(nil)
-                                        }
-                                    }
+                                    
+                                    strongSelf.state.preloadNextChatPeerId = nextPeerId
                                     
                                     if isUpdated {
                                         strongSelf.onUpdated?(previousState)
@@ -1114,18 +1099,8 @@ extension ChatControllerImpl {
                                 }
 
                                 let nextPeerId = nextPeer?.peer.id
-
-                                if strongSelf.preloadNextChatPeerId != nextPeerId {
-                                    strongSelf.preloadNextChatPeerId = nextPeerId
-                                    if let nextPeerId = nextPeerId {
-                                        let combinedDisposable = DisposableSet()
-                                        strongSelf.preloadNextChatPeerIdDisposable.set(combinedDisposable)
-                                        combinedDisposable.add(context.account.viewTracker.polledChannel(peerId: nextPeerId).startStrict())
-                                        combinedDisposable.add(context.account.addAdditionalPreloadHistoryPeerId(peerId: nextPeerId))
-                                    } else {
-                                        strongSelf.preloadNextChatPeerIdDisposable.set(nil)
-                                    }
-                                }
+                                
+                                strongSelf.state.preloadNextChatPeerId = nextPeerId
                                 
                                 if isUpdated {
                                     strongSelf.onUpdated?(previousState)
@@ -1657,11 +1632,7 @@ extension ChatControllerImpl {
                             explicitelyCanPinMessages = true
                         }
                         
-                        #if DEBUG
-                        peerMonoforumId = nil
-                        #endif
-                        
-                        let preloadHistoryPeerId = peerMonoforumId ?? peerDiscussionId
+                        let preloadHistoryPeerId = peerMonoforumId// ?? peerDiscussionId
                         if strongSelf.preloadHistoryPeerId != preloadHistoryPeerId {
                             strongSelf.preloadHistoryPeerId = preloadHistoryPeerId
                             if let preloadHistoryPeerId {
@@ -2381,7 +2352,6 @@ extension ChatControllerImpl {
             self.titleDisposable?.dispose()
             self.preloadSavedMessagesChatsDisposable?.dispose()
             self.preloadHistoryPeerIdDisposable.dispose()
-            self.preloadNextChatPeerIdDisposable.dispose()
             self.nextChannelToReadDisposable?.dispose()
             self.chatAdditionalDataDisposable.dispose()
             self.premiumOrStarsRequiredDisposable?.dispose()

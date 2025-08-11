@@ -22,6 +22,7 @@ swift_library(
         "//submodules/TelegramStringFormatting",
         "//submodules/TextFormat",
         "//submodules/InvisibleInkDustNode",
+        "//submodules/CheckNode",
         "//submodules/TelegramUI/Components/TextNodeWithEntities",
         "//submodules/TelegramUI/Components/AnimationCache",
         "//submodules/TelegramUI/Components/MultiAnimationRenderer",

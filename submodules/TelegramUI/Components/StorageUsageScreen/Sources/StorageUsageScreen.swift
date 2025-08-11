@@ -1949,7 +1949,7 @@ final class StorageUsageScreenComponent: Component {
                             guard let self, let component = self.component else {
                                 return
                             }
-                            // MARK: Nicegram CacheSettings, 'let value = max(5, value)' commented
+                            // Nicegram CacheSettings, 'let value = max(5, value)' commented
 //                            let value = max(5, value)
                             let _ = updateCacheStorageSettingsInteractively(accountManager: component.context.sharedContext.accountManager, { current in
                                 var current = current

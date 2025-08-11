@@ -255,7 +255,7 @@ public extension Api {
         case inputInvoicePremiumGiftStars(flags: Int32, userId: Api.InputUser, months: Int32, message: Api.TextWithEntities?)
         case inputInvoiceSlug(slug: String)
         case inputInvoiceStarGift(flags: Int32, peer: Api.InputPeer, giftId: Int64, message: Api.TextWithEntities?)
-        case inputInvoiceStarGiftResale(slug: String, toId: Api.InputPeer)
+        case inputInvoiceStarGiftResale(flags: Int32, slug: String, toId: Api.InputPeer)
         case inputInvoiceStarGiftTransfer(stargift: Api.InputSavedStarGift, toId: Api.InputPeer)
         case inputInvoiceStarGiftUpgrade(flags: Int32, stargift: Api.InputSavedStarGift)
         case inputInvoiceStars(purpose: Api.InputStorePaymentPurpose)
@@ -313,10 +313,11 @@ public extension Api {
                     serializeInt64(giftId, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 1) != 0 {message!.serialize(buffer, true)}
                     break
-                case .inputInvoiceStarGiftResale(let slug, let toId):
+                case .inputInvoiceStarGiftResale(let flags, let slug, let toId):
                     if boxed {
-                        buffer.appendInt32(1674298252)
+                        buffer.appendInt32(-1012968668)
                     }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeString(slug, buffer: buffer, boxed: false)
                     toId.serialize(buffer, true)
                     break
@@ -359,8 +360,8 @@ public extension Api {
                 return ("inputInvoiceSlug", [("slug", slug as Any)])
                 case .inputInvoiceStarGift(let flags, let peer, let giftId, let message):
                 return ("inputInvoiceStarGift", [("flags", flags as Any), ("peer", peer as Any), ("giftId", giftId as Any), ("message", message as Any)])
-                case .inputInvoiceStarGiftResale(let slug, let toId):
-                return ("inputInvoiceStarGiftResale", [("slug", slug as Any), ("toId", toId as Any)])
+                case .inputInvoiceStarGiftResale(let flags, let slug, let toId):
+                return ("inputInvoiceStarGiftResale", [("flags", flags as Any), ("slug", slug as Any), ("toId", toId as Any)])
                 case .inputInvoiceStarGiftTransfer(let stargift, let toId):
                 return ("inputInvoiceStarGiftTransfer", [("stargift", stargift as Any), ("toId", toId as Any)])
                 case .inputInvoiceStarGiftUpgrade(let flags, let stargift):
@@ -491,16 +492,19 @@ public extension Api {
             }
         }
         public static func parse_inputInvoiceStarGiftResale(_ reader: BufferReader) -> InputInvoice? {
-            var _1: String?
-            _1 = parseString(reader)
-            var _2: Api.InputPeer?
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: String?
+            _2 = parseString(reader)
+            var _3: Api.InputPeer?
             if let signature = reader.readInt32() {
-                _2 = Api.parse(reader, signature: signature) as? Api.InputPeer
+                _3 = Api.parse(reader, signature: signature) as? Api.InputPeer
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.InputInvoice.inputInvoiceStarGiftResale(slug: _1!, toId: _2!)
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.InputInvoice.inputInvoiceStarGiftResale(flags: _1!, slug: _2!, toId: _3!)
             }
             else {
                 return nil

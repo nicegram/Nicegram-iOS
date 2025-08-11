@@ -142,7 +142,9 @@ Class _Nullable ASGetClassFromType(const char  * _Nullable type)
   size_t resultLength = typeLength - 3;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400
 #pragma clang diagnostic push
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
+#endif
 #endif
   char className[resultLength + 1];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400

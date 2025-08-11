@@ -1,4 +1,4 @@
-// MARK: Nicegram ColorAlign
+// Nicegram ColorAlign
 import NGData
 //
 import Foundation
@@ -178,7 +178,7 @@ private final class WindowRootViewController: UIViewController {
         return self.orientations
     }
     
-    // MARK: Nicegram
+    // Nicegram
     // System theme observation is removed, we do this in UserInterfaceStyleObserverWindow
     
     init() {
@@ -292,7 +292,7 @@ private final class NativeWindow: UIWindow, WindowHost {
         }
     }
     
-    // MARK: Nicegram ColorAlign
+    // Nicegram ColorAlign
     private let grayscaleLayer = GrayscaleLayer(
         enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleAllPublisher()
     )
@@ -315,7 +315,7 @@ private final class NativeWindow: UIWindow, WindowHost {
     override func layoutSubviews() {
         super.layoutSubviews()
         
-        // MARK: Nicegram ColorAlign
+        // Nicegram ColorAlign
         if grayscaleLayer.superlayer == nil {
             self.layer.addSublayer(grayscaleLayer)
         }
@@ -485,7 +485,7 @@ public func nativeWindowHostView() -> (UIWindow & WindowHost, WindowHostView) {
     return (window, hostView)
 }
 
-// MARK: Nicegram Themes
+// Nicegram Themes
 @available(iOS 12.0, *)
 public protocol NGWindowRootViewController {
     func setSystemUserInterfaceStyle(_ style: UIUserInterfaceStyle)

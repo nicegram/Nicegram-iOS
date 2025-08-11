@@ -72,7 +72,7 @@ public enum SendMessageActionSheetControllerParams {
 }
 
 public func makeChatSendMessageActionSheetController(
-    // MARK: Nicegram TranslateEnteredMessage
+    // Nicegram TranslateEnteredMessage
     nicegramData: ChatSendMessageContextNicegramData = .empty,
     //
     initialData: ChatSendMessageContextScreen.InitialData,
@@ -96,7 +96,7 @@ public func makeChatSendMessageActionSheetController(
     isPremium: Bool = false
 ) -> ChatSendMessageActionSheetController {
     return ChatSendMessageContextScreen(
-        // MARK: Nicegram TranslateEnteredMessage
+        // Nicegram TranslateEnteredMessage
         nicegramData: nicegramData,
         //
         initialData: initialData,

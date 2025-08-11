@@ -257,7 +257,7 @@ const CGFloat TGGifConverterMaximumSide = 720.0f;
     
     size_t bytesPerRow = CVPixelBufferGetBytesPerRow(pxBuffer);
     
-    CGContextRef context = CGBitmapContextCreate(pxData, size.width, size.height, 8, bytesPerRow, colorSpace, kCGImageAlphaNoneSkipFirst);
+    CGContextRef context = CGBitmapContextCreate(pxData, size.width, size.height, 8, bytesPerRow, colorSpace, (CGBitmapInfo)kCGImageAlphaNoneSkipFirst);
     NSAssert(context, @"Could not create a context");
     
     CGContextDrawImage(context, CGRectMake(0, 0, size.width, size.height), frame);

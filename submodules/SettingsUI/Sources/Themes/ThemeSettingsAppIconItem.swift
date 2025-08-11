@@ -357,7 +357,7 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                             var name = "Icon"
                             var bordered = true
                             switch icon.name {
-                                // MARK: Nicegram, name changed to "Classic"
+                                // Nicegram, name changed to "Classic"
                                 case "BlueIcon":
                                     name = "Classic"
                                 case "BlackIcon":

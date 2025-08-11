@@ -86,6 +86,8 @@ public extension TelegramEngine {
                             return false
                         }
                     }.map(EngineRenderedPeer.init)
+                case .globalPosts:
+                    return []
                 }
             }
         }

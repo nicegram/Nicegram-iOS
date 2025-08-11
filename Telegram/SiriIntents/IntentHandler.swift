@@ -122,7 +122,7 @@ class DefaultIntentHandler: INExtension, INSendMessageIntentHandling, INSearchFo
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
         
         initializeAccountManagement()
-        // MARK: Nicegram DB Changes
+        // Nicegram DB Changes
         let hiddenAccountManager = HiddenAccountManagerImpl()
         let accountManager = AccountManager<TelegramAccountManagerTypes>(basePath: rootPath + "/accounts-metadata", isTemporary: true, isReadOnly: false, useCaches: false, removeDatabaseOnError: false, hiddenAccountManager: hiddenAccountManager)
         self.accountManager = accountManager
@@ -146,7 +146,7 @@ class DefaultIntentHandler: INExtension, INSendMessageIntentHandling, INSearchFo
                 if isLoggedOut {
                     continue
                 }
-                // MARK: Nicegram DB Changes
+                // Nicegram DB Changes
                 let isHidden = record.attributes.contains(where: { $0.isHiddenAccountAttribute })
                 if isHidden {
                     continue
@@ -926,7 +926,7 @@ private final class WidgetIntentHandler {
             if isLoggedOut {
                 continue
             }
-            // MARK: Nicegram DB Changes
+            // Nicegram DB Changes
             let isHidden = record.attributes.contains(where: { $0.isHiddenAccountAttribute })
             if isHidden {
                 continue

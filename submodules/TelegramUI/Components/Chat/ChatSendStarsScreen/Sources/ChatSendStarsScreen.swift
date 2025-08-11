@@ -1418,6 +1418,7 @@ private final class ChatSendStarsScreenComponent: Component {
                         context: component.context,
                         peerId: component.context.account.peerId,
                         theme: environment.theme,
+                        currency: .stars,
                         action: { [weak self] in
                             guard let self, let starsContext = context.starsContext, let navigationController = self.environment?.controller()?.navigationController as? NavigationController else {
                                 return

@@ -28,6 +28,7 @@ swift_library(
         "//submodules/Components/MultilineTextWithEntitiesComponent",
         "//submodules/Components/MultilineTextComponent",
         "//submodules/ShimmerEffect",
+        "//submodules/UIKitRuntimeUtils",
     ],
     visibility = [
         "//visibility:public",

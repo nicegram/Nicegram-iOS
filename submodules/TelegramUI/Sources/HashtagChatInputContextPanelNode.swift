@@ -31,7 +31,7 @@ private struct HashtagChatInputContextPanelEntry: Comparable, Identifiable {
     let hashtag: String
     let revealed: Bool
     let isAdditionalRecent: Bool
-    // MARK: Nicegram QuickReplies
+    // Nicegram QuickReplies
     let canDelete: Bool
     //
     
@@ -47,7 +47,7 @@ private struct HashtagChatInputContextPanelEntry: Comparable, Identifiable {
     }
     
     func withUpdatedTheme(_ theme: PresentationTheme) -> HashtagChatInputContextPanelEntry {
-        // MARK: Nicegram QuickReplies, canDelete added
+        // Nicegram QuickReplies, canDelete added
         return HashtagChatInputContextPanelEntry(index: self.index, theme: theme, peer: peer, title: self.title, text: self.text, badge: self.badge, hashtag: self.hashtag, revealed: self.revealed, isAdditionalRecent: self.isAdditionalRecent, canDelete: self.canDelete)
     }
     
@@ -60,7 +60,7 @@ private struct HashtagChatInputContextPanelEntry: Comparable, Identifiable {
     }
     
     func item(context: AccountContext, presentationData: PresentationData, setHashtagRevealed: @escaping (String?) -> Void, hashtagSelected: @escaping (String) -> Void, removeRequested: @escaping (String) -> Void) -> ListViewItem {
-        // MARK: Nicegram QuickReplies, canDelete added
+        // Nicegram QuickReplies, canDelete added
         return HashtagChatInputPanelItem(context: context, presentationData: ItemListPresentationData(presentationData), peer: self.peer, title: self.title, text: self.text, badge: self.badge, hashtag: self.hashtag, revealed: self.revealed, isAdditionalRecent: self.isAdditionalRecent, canDelete: self.canDelete, setHashtagRevealed: setHashtagRevealed, hashtagSelected: hashtagSelected, removeRequested: removeRequested)
     }
 }
@@ -112,7 +112,7 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
         self.addSubnode(self.listView)
     }
     
-    // MARK: Nicegram QuickReplies, canDelete added
+    // Nicegram QuickReplies, canDelete added
     func updateResults(_ results: [String], query: String, peer: EnginePeer?, canDelete: Bool = true) {
         self.currentResults = results
         self.currentQuery = query
@@ -138,7 +138,7 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                     hashtag: query,
                     revealed: false,
                     isAdditionalRecent: false,
-                    // MARK: Nicegram QuickReplies
+                    // Nicegram QuickReplies
                     canDelete: canDelete
                     //
                 )
@@ -159,7 +159,7 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                     hashtag: "\(query)@\(addressName)",
                     revealed: false,
                     isAdditionalRecent: false,
-                    // MARK: Nicegram QuickReplies
+                    // Nicegram QuickReplies
                     canDelete: canDelete
                     //
                 )
@@ -187,7 +187,7 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                 hashtag: hashtag,
                 revealed: hashtag == self.revealedHashtag,
                 isAdditionalRecent: isAdditionalRecent && !hashtag.contains("@"),
-                // MARK: Nicegram QuickReplies
+                // Nicegram QuickReplies
                 canDelete: canDelete
                 //
             )
@@ -218,7 +218,7 @@ final class HashtagChatInputContextPanelNode: ChatInputContextPanelNode {
                             hashtagQueryRange = range
                             break inner
                         }
-                        // MARK: Nicegram QuickReplies
+                        // Nicegram QuickReplies
                         if type == [.quickReply] {
                             let location: Int
                             let length: Int

@@ -151,7 +151,7 @@ def load_codesigning_data_from_git(working_dir, repo_url, temp_key_path, branch,
         original_working_dir = os.getcwd()
         os.chdir(encrypted_working_dir)
         if always_fetch:
-            check_run_system('GIT_SSH_COMMAND="{ssh_command}" git fetch'.format(ssh_command=ssh_command))
+            check_run_system('GIT_SSH_COMMAND="{ssh_command}" git fetch --all'.format(ssh_command=ssh_command))
         check_run_system('git checkout "{branch}"'.format(branch=branch))
         if always_fetch:
             check_run_system('GIT_SSH_COMMAND="{ssh_command}" git pull'.format(ssh_command=ssh_command))

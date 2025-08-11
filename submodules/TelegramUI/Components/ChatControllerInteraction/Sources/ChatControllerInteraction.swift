@@ -141,7 +141,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         case groupParticipant(storyStats: PeerStoryStats?, avatarHeaderNode: ASDisplayNode?)
     }
     
-    // MARK: Nicegram Translate
+    // Nicegram Translate
     public let onTranslateButtonLongTap: () -> Void
     //
     
@@ -344,7 +344,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public var isSidePanelOpen: Bool = false
     
     public init(
-        // MARK: Nicegram Translate
+        // Nicegram Translate
         onTranslateButtonLongTap: @escaping () -> Void = {},
         //
         openMessage: @escaping (Message, OpenMessageParams) -> Bool,
@@ -469,7 +469,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         stickerSettings: ChatInterfaceStickerSettings,
         presentationContext: ChatPresentationContext
     ) {
-        // MARK: Nicegram Translate
+        // Nicegram Translate
         self.onTranslateButtonLongTap = onTranslateButtonLongTap
         //
         self.openMessage = openMessage

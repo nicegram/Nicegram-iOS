@@ -25,11 +25,13 @@ extension ActiveAccountsProviderImpl: ActiveAccountsProvider {
             )
             |> map { view, activeAccountContexts in
                 let (_, activeAccounts, _) = activeAccountContexts
-                return view.records.compactMap { record -> (AccountRecord<TelegramAccountManagerTypes.Attribute>, AccountContext)? in
-                    let context = activeAccounts.first{ $0.0 == record.id }?.1
-                    guard let context else { return nil }
-                    return (record, context)
-                }
+                return view.records
+                    .sorted { $0.attributes.sortOrder < $1.attributes.sortOrder }
+                    .compactMap { record -> (AccountRecord<TelegramAccountManagerTypes.Attribute>, AccountContext)? in
+                        let context = activeAccounts.first{ $0.0 == record.id }?.1
+                        guard let context else { return nil }
+                        return (record, context)
+                    }
             }
         }
         |> mapToSignal { [self] recordsWithContext in

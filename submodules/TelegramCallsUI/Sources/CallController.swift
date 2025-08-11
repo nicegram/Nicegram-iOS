@@ -373,7 +373,7 @@ public final class CallController: ViewController {
                 if let view {
                     if let accountPeer = accountView.peers[accountView.peerId], let peer = view.peers[view.peerId] {
                         strongSelf.peer = peer
-                        // MARK: Nicegram DB Changes, 'hasOther' changed
+                        // Nicegram DB Changes, 'hasOther' changed
                         strongSelf.controllerNode.updatePeer(accountPeer: accountPeer, peer: peer, hasOther: activeAccountsWithInfo.accounts.filter { !$0.account.isHidden }.count > 1)
                         strongSelf.isDataReady.set(.single(true))
                     }

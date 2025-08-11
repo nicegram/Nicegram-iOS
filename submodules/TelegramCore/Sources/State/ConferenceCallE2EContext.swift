@@ -7,7 +7,7 @@ public protocol ConferenceCallE2EContextState: AnyObject {
     func getParticipants() -> [ConferenceCallE2EContext.BlockchainParticipant]
     func getParticipantLatencies() -> [Int64: Double]
 
-    func applyBlock(block: Data)
+    func applyBlock(block: Data) -> Bool
     func applyBroadcastBlock(block: Data)
     
     func generateRemoveParticipantsBlock(participantIds: [Int64]) -> Data?
@@ -51,6 +51,7 @@ public final class ConferenceCallE2EContext {
 
         let e2eEncryptionKeyHashValue = ValuePromise<Data?>(nil)
         let blockchainParticipantsValue = ValuePromise<[BlockchainParticipant]>([])
+        let isFailed = ValuePromise<Bool>(false, ignoreRepeated: true)
 
         private var e2ePoll0Offset: Int?
         private var e2ePoll0Timer: Foundation.Timer?
@@ -167,35 +168,38 @@ public final class ConferenceCallE2EContext {
             let keyPair = self.keyPair
             let userId = self.userId
             let initializeState = self.initializeState
-            let (outBlocks, outEmoji, outBlockchainParticipants, participantLatencies) = self.state.with({ callState -> ([Data], Data, [BlockchainParticipant], [Int64: Double]) in
+            let (outBlocks, outEmoji, outBlockchainParticipants, participantLatencies, hadFailure) = self.state.with({ callState -> ([Data], Data, [BlockchainParticipant], [Int64: Double], Bool) in
                 if let state = callState.state {
+                    var hadFailure = false
                     for block in blocks {
                         if subChainId == 0 {
-                            state.applyBlock(block: block)
+                            if !state.applyBlock(block: block) {
+                                hadFailure = true
+                            }
                         } else if subChainId == 1 {
                             state.applyBroadcastBlock(block: block)
                         }
                     }
-                    return (state.takeOutgoingBroadcastBlocks(), state.getEmojiState() ?? Data(), state.getParticipants(), state.getParticipantLatencies())
+                    return (state.takeOutgoingBroadcastBlocks(), state.getEmojiState() ?? Data(), state.getParticipants(), state.getParticipantLatencies(), hadFailure)
                 } else {
                     if subChainId == 0 {
                         guard let block = blocks.last else {
-                            return ([], Data(), [], [:])
+                            return ([], Data(), [], [:], false)
                         }
                         guard let state = initializeState(keyPair, userId, block) else {
-                            return ([], Data(), [], [:])
+                            return ([], Data(), [], [:], false)
                         }
                         callState.state = state
                         for block in callState.pendingIncomingBroadcastBlocks {
                             state.applyBroadcastBlock(block: block)
                         }
                         callState.pendingIncomingBroadcastBlocks.removeAll()
-                        return (state.takeOutgoingBroadcastBlocks(), state.getEmojiState() ?? Data(), state.getParticipants(), state.getParticipantLatencies())
+                        return (state.takeOutgoingBroadcastBlocks(), state.getEmojiState() ?? Data(), state.getParticipants(), state.getParticipantLatencies(), false)
                     } else if subChainId == 1 {
                         callState.pendingIncomingBroadcastBlocks.append(contentsOf: blocks)
-                        return ([], Data(), [], [:])
+                        return ([], Data(), [], [:], false)
                     } else {
-                        return ([], Data(), [], [:])
+                        return ([], Data(), [], [:], false)
                     }
                 }
             })
@@ -209,6 +213,10 @@ public final class ConferenceCallE2EContext {
             #if DEBUG
             print("Latencies: \(participantLatencies)")
             #endif
+            
+            if hadFailure {
+                self.isFailed.set(true)
+            }
         }
     
         private func e2ePoll(subChainId: Int) {
@@ -452,6 +460,12 @@ public final class ConferenceCallE2EContext {
     public var blockchainParticipants: Signal<[BlockchainParticipant], NoError> {
         return self.impl.signalWith { impl, subscriber in
             return impl.blockchainParticipantsValue.get().start(next: subscriber.putNext)
+        }
+    }
+    
+    public var isFailed: Signal<Bool, NoError> {
+        return self.impl.signalWith { impl, subscriber in
+            return impl.isFailed.get().start(next: subscriber.putNext)
         }
     }
 
