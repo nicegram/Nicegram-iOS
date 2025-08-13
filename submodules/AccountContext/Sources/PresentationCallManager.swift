@@ -588,15 +588,6 @@ public protocol PresentationCallManager: AnyObject {
     var hasActiveCall: Bool { get }
     var hasActiveGroupCall: Bool { get }
     
-    // Nicegram NCG-5828 call recording
-    var callCompletion: (() -> Void)? { get set }
-    func startRecordCall(with completion: @escaping () -> Void)
-    func stopRecordCall(needStopPartTimer: Bool)
-    func setupPeer(peer: EnginePeer)
-    func showRecordSaveToast()
-    func stopPartTimer()
-    //
-    
     func requestCall(context: AccountContext, peerId: EnginePeer.Id, isVideo: Bool, endCurrentIfAny: Bool) -> RequestCallResult
     func joinGroupCall(context: AccountContext, peerId: EnginePeer.Id, invite: String?, requestJoinAsPeerId: ((@escaping (EnginePeer.Id?) -> Void) -> Void)?, initialCall: EngineGroupCallDescription, endCurrentIfAny: Bool) -> JoinGroupCallManagerResult
     func scheduleGroupCall(context: AccountContext, peerId: EnginePeer.Id, endCurrentIfAny: Bool, parentController: ViewController) -> RequestScheduleGroupCallResult

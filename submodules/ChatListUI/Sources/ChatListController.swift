@@ -8,7 +8,6 @@ import FeatAdsgram
 import FeatAssistant
 import FeatChatListWidget
 import FeatPinnedChats
-import NGAiChat
 import NGAiChatUI
 import NGAnalytics
 import NGData
@@ -6774,13 +6773,62 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             let peerId = PeerId(peerId)
             let messageId = MessageId(peerId: peerId, namespace: 0, id: id)
             
-            let link = try await context.engine.messages.exportMessageLink(
-                peerId: peerId,
-                messageId: messageId,
-                isThread: true
+            let message = try? await context.engine.messages
+                .getMessagesLoadIfNecessary([messageId])
+                .toPublisher()
+                .compactMap { result in
+                    if case let .result(messages) = result {
+                        messages
+                    } else {
+                        nil
+                    }
+                }
+                .awaitForFirstValue()
+                .first
+            
+            let peer = try await context.engine.data.get(
+                TelegramEngine.EngineData.Item.Peer.Peer(id: peerId)
             ).awaitForFirstValue().unwrap()
             
-            CoreContainer.shared.urlOpener().open(link)
+            let chatLocation: NavigateToChatControllerParams.Location
+            if case let .channel(channel) = peer,
+               channel.isForumOrMonoForum,
+               let threadId = message?.threadId {
+                chatLocation = .replyThread(
+                    .init(
+                        peerId: peerId,
+                        threadId: threadId,
+                        channelMessageId: nil,
+                        isChannelPost: false,
+                        isForumPost: true,
+                        isMonoforumPost: false,
+                        maxMessage: nil,
+                        maxReadIncomingMessageId: nil,
+                        maxReadOutgoingMessageId: nil,
+                        unreadCount: 0,
+                        initialFilledHoles: IndexSet(),
+                        initialAnchor: .automatic,
+                        isNotAvailable: false
+                    )
+                )
+            } else {
+                chatLocation = .peer(peer)
+            }
+            
+            let navigationController = try (self.navigationController as? NavigationController).unwrap()
+            context.sharedContext.navigateToChatController(
+                NavigateToChatControllerParams(
+                    navigationController: navigationController,
+                    context: context,
+                    chatLocation: chatLocation,
+                    subject: .message(
+                        id: .id(messageId),
+                        highlight: .init(),
+                        timecode: nil,
+                        setupReply: false
+                    )
+                )
+            )
         }
     }
     //

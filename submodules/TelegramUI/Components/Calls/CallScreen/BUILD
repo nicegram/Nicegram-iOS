@@ -1,8 +1,8 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
+    "//Nicegram/NGCallRecorder",
     "//Nicegram/NGResources:NGResources",
-    "//Nicegram/NGCallRecorder:NGCallRecorder",
     "//Nicegram/NGData:NGData",
     "//Nicegram/NGUtils:NGUtils"
 ]

@@ -7,9 +7,16 @@ public extension Signal {
     func toPublisher() -> SignalPublisher<T, E> where E: Error {
         SignalPublisher(signal: self)
     }
-
+    
     func toPublisher() -> SignalPublisher<T, Never> where E == NoError {
         SignalPublisher(signal: self |> castError(Never.self))
+    }
+    
+    func toPublisher() -> SignalPublisher<T, ErrorAdapter<E>> {
+        let signal = self |> mapError { error in
+            ErrorAdapter(error: error)
+        }
+        return SignalPublisher(signal: signal)
     }
 }
 

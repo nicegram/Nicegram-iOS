@@ -19,10 +19,6 @@ import TelegramVoip
 import MetalEngine
 import DeviceAccess
 import LibYuvBinding
-// Nicegram NCG-5828 call recording
-import NGStrings
-import UndoUI
-//
 final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeProtocol {
     private struct PanGestureState {
         var offsetFraction: CGFloat
@@ -106,7 +102,10 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
         
         self.containerView = UIView()
         self.containerView.clipsToBounds = true
-        self.callScreen = PrivateCallScreen()
+        // Nicegram NCG-5828 call recording
+        self.callScreen = PrivateCallScreen(
+            callRecorder: (call as? PresentationCallImpl)?.callRecorder
+        )
         
         super.init()
         
@@ -143,9 +142,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
                 return
             }
             self.endCall?()
-// Nicegram NCG-5828 call recording
-            self.sharedContext.callManager?.stopPartTimer()
-//
         }
         self.callScreen.backAction = { [weak self] in
             guard let self else {
@@ -167,29 +163,7 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             }
             self.restoreUIForPictureInPicture?(completion)
         }
-// Nicegram NCG-5828 call recording
-        self.callScreen.recordAction = { [weak self] in
-            guard let self,
-                  let callScreenState else {
-                return
-            }
 
-            let isCallRecord = !callScreenState.isCallRecord
-            if isCallRecord {
-                self.sharedContext.callManager?.startRecordCall { [weak self] in
-                    self?.sharedContext.callManager?.showRecordSaveToast()
-                }
-                self.updateCallRecordButton(with: isCallRecord)
-            } else {
-                self.showRecordSaveAlert { [self] in
-                    self.updateCallRecordButton(with: isCallRecord)
-                }
-            }
-        }
-
-        self.sharedContext.callManager?.callCompletion = { [weak self] in
-            self?.sharedContext.callManager?.showRecordSaveToast()
-        }
         self.callScreen.conferenceAddParticipant = { [weak self] in
             guard let self else {
                 return
@@ -215,9 +189,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             remoteVideo: nil,
             isRemoteBatteryLow: false,
             isEnergySavingEnabled: !self.sharedContext.energyUsageSettings.fullTranslucency,
-            // Nicegram NCG-5828 call recording
-            isCallRecord: false,
-            //
             isConferencePossible: false,
             enableVideoSharpening: enableVideoSharpening
         )
@@ -645,9 +616,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
     
     func updatePeer(accountPeer: Peer, peer: Peer, hasOther: Bool) {
         self.updatePeer(peer: EnginePeer(peer))
-// Nicegram NCG-5828 call recording
-        self.sharedContext.callManager?.setupPeer(peer: EnginePeer(peer))
-//
     }
     
     private func updatePeer(peer: EnginePeer) {
@@ -827,41 +795,6 @@ final class CallControllerNodeV2: ViewControllerTracingNode, CallControllerNodeP
             )
         }
     }
-// Nicegram NCG-5828 call recording
-    private func showRecordSaveAlert(with completion: @escaping () -> Void) {
-        let alertController = UIAlertController(
-            title: l("NicegramCallRecord.StopAlertTitle"),
-            message: l("NicegramCallRecord.StopAlertDescription"),
-            preferredStyle: .alert
-        )
-
-        alertController.addAction(.init(
-            title: l("NicegramCallRecord.StopAlertButtonCancel"),
-            style: .cancel
-        ))
-        alertController.addAction(.init(
-            title: l("NicegramCallRecord.StopAlertButtonStop"),
-            style: .default,
-            handler: { _ in
-                completion()
-                self.callScreen.stopRecordTimer()
-                self.sharedContext.callManager?.stopRecordCall(needStopPartTimer: true)
-            }
-        ))
-
-        sharedContext.mainWindow?.presentNative(alertController)
-    }
-    
-    private func updateCallRecordButton(with isCallRecord: Bool) {
-        guard var callScreenState = self.callScreenState else {
-            return
-        }
-        
-        callScreenState.isCallRecord = isCallRecord
-        self.callScreenState = callScreenState
-        self.update(transition: .animated(duration: 0.3, curve: .spring))
-    }
-//
 }
 
 private func copyI420BufferToNV12Buffer(buffer: OngoingGroupCallContext.VideoFrameData.I420Buffer, pixelBuffer: CVPixelBuffer) -> Bool {

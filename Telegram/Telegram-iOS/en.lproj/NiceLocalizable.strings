@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Contribute to the most comprehensive wikipedia of Telegram channels and groups by automatically submitting channel information and link to our database. We do not connect your telegram profile and channel and do not share your personal data.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "record";
+"NicegramCallRecord.Record" = "Record";
+"NicegramCallRecord.Stop" = "Stop";
 "NicegramCallRecord.StopAlertTitle" = "Stop recording";
 "NicegramCallRecord.StopAlertDescription" = "Do you want to stop recording this call?";
 "NicegramCallRecord.StopAlertButtonStop" = "Stop";

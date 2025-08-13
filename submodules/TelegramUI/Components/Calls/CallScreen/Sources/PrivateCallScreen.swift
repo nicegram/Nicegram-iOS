@@ -9,9 +9,9 @@ import SwiftSignalKit
 import UIKitRuntimeUtils
 import TelegramPresentationData
 // Nicegram NCG-5828 call recording
-import NGData
+import class Combine.AnyCancellable
 import NGCallRecorder
-import NGUtils
+import NGData
 //
 
 public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictureControllerDelegate {
@@ -85,9 +85,6 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
         public var remoteVideo: VideoSource?
         public var isRemoteBatteryLow: Bool
         public var isEnergySavingEnabled: Bool
-        // Nicegram NCG-5828 call recording
-        public var isCallRecord: Bool
-        //
         public var isConferencePossible: Bool
         public var enableVideoSharpening: Bool
         
@@ -104,9 +101,6 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             remoteVideo: VideoSource?,
             isRemoteBatteryLow: Bool,
             isEnergySavingEnabled: Bool,
-            // Nicegram NCG-5828 call recording
-            isCallRecord: Bool,
-            //
             isConferencePossible: Bool,
             enableVideoSharpening: Bool
         ) {
@@ -122,7 +116,6 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             self.remoteVideo = remoteVideo
             self.isRemoteBatteryLow = isRemoteBatteryLow
             self.isEnergySavingEnabled = isEnergySavingEnabled
-            self.isCallRecord = isCallRecord
             self.isConferencePossible = isConferencePossible
             self.enableVideoSharpening = enableVideoSharpening
         }
@@ -164,11 +157,6 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             if lhs.isEnergySavingEnabled != rhs.isEnergySavingEnabled {
                 return false
             }
-// Nicegram NCG-5828 call recording
-            if lhs.isCallRecord != rhs.isCallRecord {
-                return false
-            }
-//
             if lhs.isConferencePossible != rhs.isConferencePossible {
                 return false
             }
@@ -194,6 +182,12 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             self.state = state
         }
     }
+    
+    // Nicegram NCG-5828 call recording
+    let callRecorder: CallRecorder?
+    
+    private var cancellables = Set<AnyCancellable>()
+    //
     
     private var params: Params?
     
@@ -266,7 +260,10 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
     private var pipVideoCallViewController: UIViewController?
     private var pipController: AVPictureInPictureController?
     
-    public override init(frame: CGRect) {
+    // Nicegram NCG-5828 call recording
+    public init(callRecorder: CallRecorder?) {
+        self.callRecorder = callRecorder
+        
         self.overlayContentsView = UIView()
         self.overlayContentsView.isUserInteractionEnabled = false
         
@@ -292,7 +289,8 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
         
         self.pipView = PrivateCallPictureInPictureView(frame: CGRect(origin: CGPoint(), size: CGSize()))
         
-        super.init(frame: frame)
+        // Nicegram, 'frame: .zero'
+        super.init(frame: .zero)
         
         self.clipsToBounds = true
         
@@ -373,6 +371,14 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
         }
 // Nicegram NCG-5828 call recording
         self.buttonGroupView.addSubview(self.recordTimerView)
+        
+        callRecorder?.$state
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.update(transition: .spring(duration: 0.3))
+            }
+            .store(in: &cancellables)
 //
     }
     
@@ -831,9 +837,6 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
                 guard let self else {
                     return
                 }
-// Nicegram NCG-5828 call recording
-                self.stopRecordTimer()
-//
                 self.endCallAction?()
             })
         ]
@@ -854,27 +857,15 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
         }
 // Nicegram NCG-5828 call recording
         if case .active = params.state.lifecycleState,
-           isPremium() {
-            if NGSettings.recordAllCalls &&
-               !params.state.isCallRecord &&
-               isRecordAllCallsFirstStart {
-                isRecordAllCallsFirstStart = false
-                startRecordTimer()
-                recordAction?()
-                sendCallRecorderAnalytics(with: .startAuto)
-            }
+           isPremium(),
+           let callRecorder {
+            let isRecording = callRecorder.state.is(\.recording)
             buttons.insert(
                 ButtonGroupView.Button(
-                    content: .record(isRecord: params.state.isCallRecord),
+                    content: .record(isRecord: isRecording),
                     isEnabled: !isTerminated,
                     action: { [weak self] in
-                        guard let self else {
-                            return
-                        }
-                        if !params.state.isCallRecord {
-                            self.startRecordTimer()
-                        }
-                        self.recordAction?()
+                        self?.callRecorder?.onToggleClick()
                     }
                 ),
                 at: 2
@@ -1569,68 +1560,24 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
             }
         }
 // Nicegram NCG-5828 call recording
-        updateRecordTimerView(with: transition, currentAreControlsHidden: currentAreControlsHidden)
+        updateRecordTimerView(transition: transition, currentAreControlsHidden: currentAreControlsHidden)
 //
     }
 
 // Nicegram NCG-5828 call recording
-    public var recordAction: (() -> Void)?
-
     private let recordTimerView = RecordIndicatorView()
-
-    private var recordTimer: SwiftSignalKit.Timer?
-    private var isRecordAllCallsFirstStart: Bool = true
-    
-    private func startRecordTimer() {
-        var duration: Int = 1
-        
-        let recordTimer = SwiftSignalKit.Timer(timeout: 1.0, repeat: true, completion: { [weak self] in
-            guard let self else {
-                return
-            }
-
-            let size = self.recordTimerView.update(
-                text: self.stringForDuration(duration),
-                transition: .immediate
-            )
- 
-            self.recordTimerView.frame = .init(
-                origin: self.recordTimerView.frame.origin,
-                size: size
-            )
-            duration += 1
-        }, queue: .mainQueue())
-        self.recordTimer = recordTimer
-        recordTimer.start()
-        recordTimerView.animateIn()
-    }
-    
-    public func stopRecordTimer() {
-        if let recordTimer {
-            recordTimer.invalidate()
-            self.recordTimer = nil
-            
-            recordTimerView.animateOut { [weak self] in
-                _ = self?.recordTimerView.update(
-                    text: "0:00",
-                    transition: .immediate
-                )
-            }
-        }
-    }
     
     private func updateRecordTimerView(
-        with transition: ComponentTransition,
+        transition: ComponentTransition,
         currentAreControlsHidden: Bool
     ) {
+        guard let callRecorder else { return }
+        
+        recordTimerView.set(state: callRecorder.state)
+        recordTimerView.isHidden = !callRecorder.state.is(\.recording)
+        
         let center = buttonGroupView.frame.center
-        var size = recordTimerView.frame.size
-        if size == .zero {
-            size = recordTimerView.update(
-                text: "0:00",
-                transition: .immediate
-            )
-        }
+        let size = CGSize(width: 80, height: 28)
         
         var recordTimerViewY = frame.height - (size.height + 30.0)
         if currentAreControlsHidden {
@@ -1641,18 +1588,10 @@ public final class PrivateCallScreen: OverlayMaskContainerView, AVPictureInPictu
                 x: center.x - size.width / 2,
                 y: recordTimerViewY
             ),
-            size: recordTimerView.frame.size
+            size: size
         )
-
+        
         transition.setFrame(view: recordTimerView, frame: recordTimerViewFrame)
-    }
-    
-    private func stringForDuration(_ duration: Int) -> String {
-        let minutes = duration / 60
-        let seconds = duration % 60
-        
-        
-        return String(format: "%d:%02d", minutes, seconds)
     }
 //
 }
