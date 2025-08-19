@@ -1,6 +1,3 @@
-// Nicegram
-import class NGCore.CoreContainer
-//
 import Foundation
 import UIKit
 import Display
@@ -98,19 +95,26 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
         
         // Nicegram
         private func nicegramProceed() {
-            Task { @MainActor in
-                guard let component else { return }
+            let alert = UIAlertController(
+                title: "Telegram Login Issue",
+                message: """
+                This login issue is caused by a temporary bug on Telegram’s servers. In normal conditions, you wouldn’t need any subscription to log in.
                 
-                try? await component.sharedContext.accountManager
-                    .transaction { transaction in
-                        if !transaction.getRecords().isEmpty {
-                            transaction.removeAuth()
-                        }
-                    }
-                    .awaitForFirstValue()
-                
-                CoreContainer.shared.urlOpener().open("https://t.me/PremiumBot")
-            }
+                Please try again later — the issue may be fixed soon.
+
+                If you can’t wait, you may try subscribing to Telegram Premium on the account you are logging into using the official Telegram app, though this may not always solve the problem.
+                """,
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(
+                UIAlertAction(
+                    title: "OK",
+                    style: .default
+                )
+            )
+            
+            UIApplication.topViewController?.present(alert, animated: true)
         }
         //
         
