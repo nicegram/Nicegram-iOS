@@ -3,6 +3,7 @@ import Factory
 import FeatAdsgram
 import FeatChatListWidget
 import MemberwiseInit
+import NGAnalytics
 import NGUtils
 import Postbox
 import SwiftSignalKit
@@ -12,6 +13,9 @@ import WebUI
 @MemberwiseInit
 class AdsgramPinWebViewLoader {
     @Init(.internal) private let contextProvider: ContextProvider
+    
+    @Injected(\AnalyticsContainer.analyticsManager)
+    private var analyticsManager
     
     @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
     private var chatListWidgetViewModel
@@ -32,7 +36,12 @@ extension AdsgramPinWebViewLoader {
                 .removeDuplicates { $0.account.id == $1.account.id }
                 .asyncStream(.bufferingNewest(1))
             for await context in stream {
-                try? await loadAdsgramWebview(context: context)
+                do {
+                    try await loadAdsgramWebview(context: context)
+                    analyticsManager.trackEvent(AdsgramEvents.loadSuccess)
+                } catch {
+                    analyticsManager.trackEvent(AdsgramEvents.loadError)
+                }
             }
         }
     }

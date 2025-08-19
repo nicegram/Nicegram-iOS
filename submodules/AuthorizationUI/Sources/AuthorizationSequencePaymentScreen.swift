@@ -1,3 +1,6 @@
+// Nicegram
+import class NGCore.CoreContainer
+//
 import Foundation
 import UIKit
 import Display
@@ -93,7 +96,30 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
             self.productsDisposable?.dispose()
         }
         
+        // Nicegram
+        private func nicegramProceed() {
+            Task { @MainActor in
+                guard let component else { return }
+                
+                try? await component.sharedContext.accountManager
+                    .transaction { transaction in
+                        if !transaction.getRecords().isEmpty {
+                            transaction.removeAuth()
+                        }
+                    }
+                    .awaitForFirstValue()
+                
+                CoreContainer.shared.urlOpener().open("https://t.me/PremiumBot")
+            }
+        }
+        //
+        
         private func proceed() {
+            // Nicegram
+            nicegramProceed()
+            return
+            //
+            
             guard let component = self.component, let storeProduct = self.products.first(where: { $0.id == component.storeProduct }), !self.inProgress else {
                 return
             }
@@ -256,6 +282,11 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                         iconName: "Premium/Authorization/Support",
                         iconColor: linkColor,
                         action: { [weak self] in
+                            // Nicegram
+                            self?.nicegramProceed()
+                            return
+                            //
+                                
                             guard let self, let controller = self.environment?.controller(), let product = self.products.first(where: { $0.id == component.storeProduct }) else {
                                 return
                             }
@@ -406,6 +437,10 @@ public final class AuthorizationSequencePaymentScreen: ViewControllerComponentCo
         self.navigationBar?.backPressed = {
             back()
         }
+        
+        // Nicegram, show 'back' button
+        self.navigationPresentation = .flatModal
+        //
     }
     
     public override func loadDisplayNode() {

@@ -29,9 +29,8 @@ extension TelegramMediaFetcherImpl: TelegramMediaFetcher {
         location: TelegramMediaApiLocation
     ) async throws -> URL {
         let context = try contextProvider.context().unwrap()
-        return try await fetchMediaDirectlyFromApi(
-            network: context.account.network,
-            location: location
-        )
+        
+        return try await ApiMediaFetcher(context: context)
+            .fetch(location: location)
     }
 }
