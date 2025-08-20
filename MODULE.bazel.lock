@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "O9f9KZzKDY2k1O7DX2SJQoktdgrpTrnNNZs8JlD3zXU=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "4e71782e68b50259ddcf8e6be5f2eeecb45e9513761ac910c43e3a26de09858b"
+          "@@//Package.resolved": "f0ee4fa4cdedcb529df55e3167acec7d44b1e37919277c6c64bf5e8f72004ef3"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "4b2951cc4ef1350dde002930925bc72912bc9ac9",
+              "commit": "a99a0ff8d391be804b043579c3e3c32fb40fad41",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -569,7 +569,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "243431d38fc82180a2ffdb590818bd00b8a93751",
+              "commit": "9e567874c2fa09ec0ebe00684b76d2e5de297f64",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,
@@ -785,9 +785,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_google_ads_on_device_conversion_ios_sdk",
-              "commit": "973bd67929bfbe465f63c05cd5a4b113765fbc7f",
+              "commit": "a2d0f1f1666de591eb1a811f40b1706f5c63a2ed",
               "remote": "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
-              "version": "2.2.1",
+              "version": "2.3.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1523,7 +1523,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_ton_swift",
-              "commit": "e08680928f8fd83319c47f1f48301a52ba502b8b",
+              "commit": "f2b6363f15ec2374e13449d381fcb10506ec019f",
               "remote": "https://github.com/denis15yo/ton-swift.git",
               "version": "",
               "init_submodules": false,

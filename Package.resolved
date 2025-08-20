@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
       "state" : {
-        "revision" : "973bd67929bfbe465f63c05cd5a4b113765fbc7f",
-        "version" : "2.2.1"
+        "revision" : "a2d0f1f1666de591eb1a811f40b1706f5c63a2ed",
+        "version" : "2.3.0"
       }
     },
     {
@@ -249,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "4b2951cc4ef1350dde002930925bc72912bc9ac9"
+        "revision" : "a99a0ff8d391be804b043579c3e3c32fb40fad41"
       }
     },
     {
@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "243431d38fc82180a2ffdb590818bd00b8a93751"
+        "revision" : "9e567874c2fa09ec0ebe00684b76d2e5de297f64"
       }
     },
     {
@@ -510,7 +510,7 @@
       "location" : "https://github.com/denis15yo/ton-swift.git",
       "state" : {
         "branch" : "main",
-        "revision" : "e08680928f8fd83319c47f1f48301a52ba502b8b"
+        "revision" : "f2b6363f15ec2374e13449d381fcb10506ec019f"
       }
     },
     {
