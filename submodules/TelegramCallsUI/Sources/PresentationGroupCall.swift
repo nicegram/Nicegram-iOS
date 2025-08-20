@@ -1,3 +1,6 @@
+// Nicegram NCG-5828 call recording
+import NGCallRecorder
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -514,6 +517,10 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         }
     }
     
+    // Nicegram NCG-5828 call recording
+    let callRecorder: CallRecorder
+    //
+    
     public let account: Account
     public let accountContext: AccountContext
     private let audioSession: ManagedAudioSession
@@ -801,7 +808,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     private var screencastStateDisposable: Disposable?
     
     public let isStream: Bool
-    private let sharedAudioContext: SharedCallAudioContext?
+    // Nicegram NCG-5828 call recording, removed 'private'
+    let sharedAudioContext: SharedCallAudioContext?
     
     public let isConference: Bool
     private let beginWithVideo: Bool
@@ -825,6 +833,9 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     private var lastErrorAlertTimestamp: Double = 0.0
     
     init(
+        // Nicegram NCG-5828 call recording
+        callRecorder: CallRecorder,
+        //
         accountContext: AccountContext,
         audioSession: ManagedAudioSession,
         callKitIntegration: CallKitIntegration?,
@@ -843,6 +854,9 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         sharedAudioContext: SharedCallAudioContext?,
         unmuteByDefault: Bool? = nil
     ) {
+        // Nicegram NCG-5828 call recording
+        self.callRecorder = callRecorder
+        //
         self.account = accountContext.account
         self.accountContext = accountContext
         self.audioSession = audioSession

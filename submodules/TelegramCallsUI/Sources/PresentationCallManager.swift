@@ -1,3 +1,6 @@
+// Nicegram NCG-5828 call recording
+import NGCallRecorder
+//
 import Foundation
 import AsyncDisplayKit
 import Postbox
@@ -12,14 +15,6 @@ import TelegramUIPreferences
 import AccountContext
 import CallKit
 import PhoneNumberFormat
-// Nicegram NCG-5828 call recording
-import NGLogging
-import NGData
-import NGStrings
-import UndoUI
-import NGUtils
-import FeatCallRecorder
-//
 private func callKitIntegrationIfEnabled(_ integration: CallKitIntegration?, settings: VoiceCallSettings?) -> CallKitIntegration?  {
     let enabled = settings?.enableSystemIntegration ?? true
     return enabled ? integration : nil
@@ -347,8 +342,10 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let autodownloadSettings = sharedData.entries[SharedDataKeys.autodownloadSettings]?.get(AutodownloadSettings.self) ?? .defaultSettings
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
                     let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
-                    // Nicegram NCG-5828 call recording, callActiveState
                     let call = PresentationCallImpl(
+                        // Nicegram NCG-5828 call recording
+                        callRecorder: CallRecorder(),
+                        //
                         context: firstState.0,
                         audioSession: strongSelf.audioSession,
                         callSessionManager: firstState.0.account.callSessionManager,
@@ -370,14 +367,11 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         isVideoPossible: firstState.2.isVideoPossible,
                         enableStunMarking: shouldEnableStunMarking(appConfiguration: appConfiguration),
                         enableTCP: experimentalSettings.enableVoipTcp,
-                        preferredVideoCodec: experimentalSettings.preferredVideoCodec,
-                        callActiveState: {  [strongSelf] audioDevice in
-                            strongSelf.callActiveState(
-                                with: audioDevice,
-                                accountContext: firstState.0
-                            )
-                        }
+                        preferredVideoCodec: experimentalSettings.preferredVideoCodec
                     )
+                    // Nicegram NCG-5828 call recording
+                    call.callRecorder.updateCall(CallRecordable(call))
+                    //
 
                     strongSelf.updateCurrentCall(call)
                 }))
@@ -402,6 +396,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     let appConfiguration = preferences.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
                     
                     let call = PresentationCallImpl(
+                        // Nicegram NCG-5828 call recording
+                        callRecorder: CallRecorder(),
+                        //
                         context: firstState.0,
                         audioSession: strongSelf.audioSession,
                         callSessionManager: firstState.0.account.callSessionManager,
@@ -423,14 +420,11 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         isVideoPossible: firstState.2.isVideoPossible,
                         enableStunMarking: shouldEnableStunMarking(appConfiguration: appConfiguration),
                         enableTCP: experimentalSettings.enableVoipTcp,
-                        preferredVideoCodec: experimentalSettings.preferredVideoCodec,
-                        callActiveState: { [strongSelf] audioDevice in
-                            strongSelf.callActiveState(
-                                with: audioDevice,
-                                accountContext: firstState.0
-                            )
-                        }
+                        preferredVideoCodec: experimentalSettings.preferredVideoCodec
                     )
+                    // Nicegram NCG-5828 call recording
+                    call.callRecorder.updateCall(CallRecordable(call))
+                    //
                     strongSelf.updateCurrentCall(call)
                     
                     call.answer()
@@ -672,8 +666,10 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                     
                     let experimentalSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.experimentalUISettings]?.get(ExperimentalUISettings.self) ?? .defaultSettings
 
-                    // Nicegram NCG-5828 call recording, callActiveState
                     let call = PresentationCallImpl(
+                        // Nicegram NCG-5828 call recording
+                        callRecorder: CallRecorder(),
+                        //
                         context: context,
                         audioSession: strongSelf.audioSession,
                         callSessionManager: context.account.callSessionManager,
@@ -698,14 +694,11 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         isVideoPossible: isVideoPossible,
                         enableStunMarking: shouldEnableStunMarking(appConfiguration: appConfiguration),
                         enableTCP: experimentalSettings.enableVoipTcp,
-                        preferredVideoCodec: experimentalSettings.preferredVideoCodec,
-                        callActiveState: {  [strongSelf] audioDevice in
-                            strongSelf.callActiveState(
-                                with: audioDevice,
-                                accountContext: context
-                            )
-                        }
+                        preferredVideoCodec: experimentalSettings.preferredVideoCodec
                     )
+                    // Nicegram NCG-5828 call recording
+                    call.callRecorder.updateCall(CallRecordable(call))
+                    //
 
                     strongSelf.updateCurrentCall(call)
                 }
@@ -915,6 +908,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                         }
                         
                         let call = PresentationGroupCallImpl(
+                            // Nicegram NCG-5828 call recording
+                            callRecorder: CallRecorder(),
+                            //
                             accountContext: accountContext,
                             audioSession: self.audioSession,
                             callKitIntegration: nil,
@@ -932,6 +928,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                             beginWithVideo: false,
                             sharedAudioContext: nil
                         )
+                        // Nicegram NCG-5828 call recording
+                        call.callRecorder.updateCall(CallRecordable(call))
+                        //
                         call.schedule(timestamp: timestamp)
                         
                         self.updateCurrentGroupCall(.group(call))
@@ -1138,6 +1137,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         }
                 
         let call = PresentationGroupCallImpl(
+            // Nicegram NCG-5828 call recording
+            callRecorder: CallRecorder(),
+            //
             accountContext: accountContext,
             audioSession: self.audioSession,
             callKitIntegration: nil,
@@ -1155,6 +1157,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             beginWithVideo: false,
             sharedAudioContext: nil
         )
+        // Nicegram NCG-5828 call recording
+        call.callRecorder.updateCall(CallRecordable(call))
+        //
         self.updateCurrentGroupCall(.group(call))
     }
     
@@ -1179,6 +1184,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
             keyPair = keyPairValue
             
             let call = PresentationGroupCallImpl(
+                // Nicegram NCG-5828 call recording
+                callRecorder: CallRecorder(),
+                //
                 accountContext: accountContext,
                 audioSession: self.audioSession,
                 callKitIntegration: nil,
@@ -1197,6 +1205,9 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
                 sharedAudioContext: nil,
                 unmuteByDefault: unmuteByDefault
             )
+            // Nicegram NCG-5828 call recording
+            call.callRecorder.updateCall(CallRecordable(call))
+            //
             for peerId in invitePeerIds {
                 let _ = call.invitePeer(peerId, isVideo: beginWithVideo)
             }
@@ -1244,217 +1255,4 @@ public final class PresentationCallManagerImpl: PresentationCallManager {
         }
         return .joined
     }
-    
-// Nicegram NCG-5828 call recording
-    public var callCompletion: (() -> Void)?
-
-    private weak var audioDevice: OngoingCallContext.AudioDevice?
-    private var accountContext: AccountContext?
-    private var enginePeer: EnginePeer?
-    private var userDisplayName: String {
-        guard let enginePeer else { return "" }
-
-        switch enginePeer {
-        case let .user(telegramUser):
-            if let firstName = telegramUser.firstName, !firstName.isEmpty {
-                if let lastName = telegramUser.lastName, !lastName.isEmpty {
-                    return "\(firstName) \(lastName)"
-                } else {
-                    return firstName
-                }
-            } else if let username = telegramUser.username, !username.isEmpty {
-                return username
-            } else {
-                return ""
-            }
-        default: return ""
-        }
-    }
-    private var partTimer: Foundation.Timer?
-    private var partNumber: Int = 1
-    
-    private let setCallRecorderHistoryUseCase = FeatCallRecorderModule.shared.setCallRecorderHistoryUseCase()
-    private let dateFormatter: DateFormatter = {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd-MM-yyyy"
-        
-        return dateFormatter
-    }()
-    private let partLength: TimeInterval = 30 * 60
-
-    public func startRecordCall(
-        with completion: @escaping () -> Void
-    ) {
-        audioDevice?.startNicegramRecording(callback: { [weak self] path, duration, size in
-            self?.writeAudioToSaved(
-                from: path,
-                duration: duration,
-                size: size,
-                completion: completion
-            )
-        }, errorCallback: { error in
-            sendCallRecorderAnalytics(with: .error)
-        })
-        sendCallRecorderAnalytics(with: .start)
-        startPartTimer()
-    }
-
-    public func stopRecordCall(needStopPartTimer: Bool) {
-        audioDevice?.stopNicegramRecording()
-        if needStopPartTimer {
-            stopPartTimer()
-        }
-    }
-
-    public func setupPeer(peer: EnginePeer) {
-        self.enginePeer = peer
-    }
-
-    public func showRecordSaveToast() {
-        let (presentationData, _, _) = getDeviceAccessData()
-        guard let image = UIImage(bundleImageName: "RecordSave") else { return }
-
-        let content: UndoOverlayContent = .image(
-            image: image,
-            title: nil,
-            text: l("NicegramCallRecord.SavedMessage"),
-            round: true,
-            undoText: nil
-        )
-
-        DispatchQueue.main.async {
-            let controller = UndoOverlayController(
-                presentationData: presentationData,
-                content: content,
-                elevatedLayout: false,
-                position: .top,
-                animateInAsReplacement: false,
-                action: { _ in return false }
-            )
-
-            self.accountContext?.sharedContext.mainWindow?.present(controller, on: .root)
-        }
-    }
-    
-    private func deleteFile(from path: String) {
-        let fileManager = FileManager.default
-        
-        if fileManager.fileExists(atPath: path) {
-            do {
-                let fileURL = URL(fileURLWithPath: path)
-                try fileManager.removeItem(at: fileURL)
-            } catch {
-                ngLog("[Call Recorder] Error remove call file: \(error.localizedDescription)")
-            }
-        } else {
-            ngLog("[Call Recorder] Call file not found at path \(path)")
-        }
-    }
-
-    private func writeAudioToSaved(
-        from path: String,
-        duration: Double,
-        size: UInt,
-        completion: (() -> Void)? = nil
-    ) {
-        let date = Date()
-
-        let id = Int64.random(in: 0 ... Int64.max)
-        let resource = LocalFileReferenceMediaResource(
-            localFilePath: path,
-            randomId: id
-        )
-        let text = if partNumber > 1 {
-            "\(userDisplayName)-\(dateFormatter.string(from: date))-part-\(partNumber)"
-        } else {
-            "\(userDisplayName)-\(dateFormatter.string(from: date))"
-        }
-
-        let file = TelegramMediaFile(
-            fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id),
-            partialReference: nil,
-            resource: resource,
-            previewRepresentations: [],
-            videoThumbnails: [],
-            immediateThumbnailData: nil,
-            mimeType: "audio/ogg",
-            size: Int64(size),
-            attributes: [
-                .Audio(
-                    isVoice: true,
-                    duration: Int(duration),
-                    title: "",
-                    performer: nil,
-                    waveform: nil
-                )
-            ],
-            alternativeRepresentations: []
-        )
-
-        let message: EnqueueMessage = .message(
-            text: text,
-            attributes: [],
-            inlineStickers: [:],
-            mediaReference: .standalone(media: file),
-            threadId: nil,
-            replyToMessageId: nil,
-            replyToStoryId: nil,
-            localGroupingKey: nil,
-            correlationId: nil,
-            bubbleUpEmojiOrStickersets: []
-        )
-
-        DispatchQueue.main.async {
-            if let account = self.accountContext?.account {
-                let _ = enqueueMessages(
-                    account: account,
-                    peerId: account.peerId,
-                    messages: [message]
-                ).start(next: { messagesIds in
-                    if let messageId = messagesIds.compactMap({ $0 }).first {
-                        self.setCallRecorderHistoryUseCase(
-                            with: account.peerId.toInt64(),
-                            id: messageId.id,
-                            text: text
-                        )
-                    }
-                }, completed: { [weak self] in
-                    self?.partNumber += 1
-                    self?.deleteFile(from: path)
-                    self?.showRecordSaveToast()
-                    sendCallRecorderAnalytics(with: .end)
-                    completion?()
-                })
-            }
-        }
-    }
-
-    private func callActiveState(
-        with audioDevice: OngoingCallContext.AudioDevice?,
-        accountContext: AccountContext
-    ) {
-        if let audioDevice {
-            self.audioDevice = audioDevice
-            self.accountContext = accountContext
-        }
-    }
-
-    private func startPartTimer() {
-        guard partTimer == nil else { return }
-                
-        partNumber = 1
-
-        let timer = Foundation.Timer(timeInterval: partLength, repeats: true) { [weak self] _ in
-            self?.stopRecordCall(needStopPartTimer: false)
-            self?.startRecordCall {}
-        }
-        self.partTimer = timer
-        RunLoop.main.add(timer, forMode: .common)
-    }
-    
-    public func stopPartTimer() {
-        partTimer?.invalidate()
-        partTimer = nil
-    }
-    //
 }

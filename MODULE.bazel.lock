@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "O9f9KZzKDY2k1O7DX2SJQoktdgrpTrnNNZs8JlD3zXU=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "4c1e677196cf99ed14cb4d75d7a838ec2d3fde20c0b7aaf790c761de10e0939c"
+          "@@//Package.resolved": "4e71782e68b50259ddcf8e6be5f2eeecb45e9513761ac910c43e3a26de09858b"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "7065db0084f7c6c574844933e271d8f8752c8498",
+              "commit": "4b2951cc4ef1350dde002930925bc72912bc9ac9",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1379,9 +1379,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_protobuf",
-              "commit": "102a647b573f60f73afdce5613a51d71349fe507",
+              "commit": "e3f69fd321d0c9fcdc16fb576a0cdd956675face",
               "remote": "https://github.com/apple/swift-protobuf.git",
-              "version": "1.30.0",
+              "version": "1.31.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

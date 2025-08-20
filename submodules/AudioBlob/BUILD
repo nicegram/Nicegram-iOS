@@ -14,7 +14,7 @@ swift_library(
         "//submodules/Display",
         "//submodules/LegacyComponents",
         "//submodules/MetalEngine",
-        "//submodules/TelegramUI/Components/Calls/CallScreen",
+        # Nicegram, removed 'submodules/TelegramUI/Components/Calls/CallScreen'
     ],
     visibility = [
         "//visibility:public",

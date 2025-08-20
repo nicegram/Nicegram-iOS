@@ -23,7 +23,7 @@ extension ChatParserFromLocal {
     func parse(id: PeerId) async throws -> ShareChatOnOpeningUseCase.Peer {
         let peerView = try await getPeerView(id)
         let peer = try peerView.peers[id].unwrap()
-        let cachedData = peerView.cachedData
+        let cachedData = try peerView.cachedData.unwrap()
         
         switch peer {
         case let user as TelegramUser:

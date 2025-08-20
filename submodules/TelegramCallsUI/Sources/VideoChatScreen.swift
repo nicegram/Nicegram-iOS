@@ -1,3 +1,7 @@
+// Nicegram NCG-5828 call recording
+import NGCallRecorder
+import NGData
+//
 import Foundation
 import AVFoundation
 import UIKit
@@ -207,6 +211,10 @@ final class VideoChatScreenComponent: Component {
 
     final class View: UIView, UIGestureRecognizerDelegate {
         let containerView: UIView
+        
+        // Nicegram NCG-5828 call recording
+        var recordingStateView: RecordingStateView?
+        //
         
         var component: VideoChatScreenComponent?
         var environment: ViewControllerComponentContainer.Environment?
@@ -2398,12 +2406,26 @@ final class VideoChatScreenComponent: Component {
                 }
             }
             
-            let microphoneButtonFrame: CGRect
+            // Nicegram NCG-5828 call recording, changed to var
+            var microphoneButtonFrame: CGRect
             if areButtonsCollapsed {
                 microphoneButtonFrame = expandedMicrophoneButtonFrame
             } else {
                 microphoneButtonFrame = collapsedMicrophoneButtonFrame
             }
+            
+            // Nicegram NCG-5828 call recording
+            let recordingStateFrame = updateRecordingStateView(
+                component: component,
+                availableSize: availableSize,
+                maxY: microphoneButtonFrame.maxY + 40,
+                transition: transition
+            )
+            if let recordingStateFrame {
+                let spacing = 16.0
+                microphoneButtonFrame.origin.y -= (recordingStateFrame.height + spacing)
+            }
+            //
             
             let collapsedParticipantsClippingY: CGFloat
             if buttonsOnTheSide {
@@ -3021,6 +3043,59 @@ final class VideoChatScreenComponent: Component {
             
             return availableSize
         }
+        
+        // Nicegram NCG-5828 call recording
+        func updateRecordingStateView(
+            component: VideoChatScreenComponent,
+            availableSize: CGSize,
+            maxY: CGFloat,
+            transition: ComponentTransition
+        ) -> CGRect? {
+            do {
+                let callRecorder = try (currentCall?.callRecorder).unwrap()
+                
+                if recordingStateView?.callRecorder !== callRecorder {
+                    recordingStateView?.removeFromSuperview()
+                    recordingStateView = RecordingStateView(callRecorder: callRecorder)
+                }
+                
+                let recordingStateView = try recordingStateView.unwrap()
+                if recordingStateView.superview == nil {
+                    containerView.addSubview(recordingStateView)
+                }
+                containerView.bringSubviewToFront(recordingStateView)
+                
+                let size = CGSize(
+                    width: availableSize.width,
+                    height: RecordingStateView.Constants.height
+                )
+                let frame = CGRect(
+                    origin: CGPoint(
+                        x: 0,
+                        y: maxY - size.height
+                    ),
+                    size: size
+                )
+                
+                transition.setFrame(view: recordingStateView, frame: frame)
+                
+                let show: Bool
+                if #available(iOS 16.0, *),
+                   self.callState?.networkState == .connected,
+                   isPremium() {
+                    show = true
+                } else {
+                    show = false
+                }
+                
+                transition.setAlpha(view: recordingStateView, alpha: show ? 1 : 0)
+                
+                return show ? frame : nil
+            } catch {
+                return nil
+            }
+        }
+        //
     }
 
     func makeView() -> View {

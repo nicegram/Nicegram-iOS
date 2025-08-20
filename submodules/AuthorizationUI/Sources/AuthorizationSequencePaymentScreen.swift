@@ -93,7 +93,37 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
             self.productsDisposable?.dispose()
         }
         
+        // Nicegram
+        private func nicegramProceed() {
+            let alert = UIAlertController(
+                title: "Telegram Login Issue",
+                message: """
+                This login issue is caused by a temporary bug on Telegram’s servers. In normal conditions, you wouldn’t need any subscription to log in.
+                
+                Please try again later — the issue may be fixed soon.
+
+                If you can’t wait, you may try subscribing to Telegram Premium on the account you are logging into using the official Telegram app, though this may not always solve the problem.
+                """,
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(
+                UIAlertAction(
+                    title: "OK",
+                    style: .default
+                )
+            )
+            
+            UIApplication.topViewController?.present(alert, animated: true)
+        }
+        //
+        
         private func proceed() {
+            // Nicegram
+            nicegramProceed()
+            return
+            //
+            
             guard let component = self.component, let storeProduct = self.products.first(where: { $0.id == component.storeProduct }), !self.inProgress else {
                 return
             }
@@ -256,6 +286,11 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                         iconName: "Premium/Authorization/Support",
                         iconColor: linkColor,
                         action: { [weak self] in
+                            // Nicegram
+                            self?.nicegramProceed()
+                            return
+                            //
+                                
                             guard let self, let controller = self.environment?.controller(), let product = self.products.first(where: { $0.id == component.storeProduct }) else {
                                 return
                             }
@@ -406,6 +441,10 @@ public final class AuthorizationSequencePaymentScreen: ViewControllerComponentCo
         self.navigationBar?.backPressed = {
             back()
         }
+        
+        // Nicegram, show 'back' button
+        self.navigationPresentation = .flatModal
+        //
     }
     
     public override func loadDisplayNode() {

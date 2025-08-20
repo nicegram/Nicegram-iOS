@@ -1,3 +1,6 @@
+// Nicegram NCG-5828 call recording
+import NGCallRecorder
+//
 import Foundation
 import UIKit
 import Postbox
@@ -23,6 +26,10 @@ public final class PresentationCallImpl: PresentationCall {
     public var isIntegratedWithCallKit: Bool {
         return self.callKitIntegration != nil
     }
+    
+    // Nicegram NCG-5828 call recording
+    let callRecorder: CallRecorder
+    //
     
     private let getDeviceAccessData: () -> (presentationData: PresentationData, present: (ViewController, Any?) -> Void, openSettings: () -> Void)
     
@@ -175,8 +182,10 @@ public final class PresentationCallImpl: PresentationCall {
     
     private var isMovedToConference: Bool = false
     
-    // Nicegram NCG-5828 call recording, callActiveState
     init(
+        // Nicegram NCG-5828 call recording
+        callRecorder: CallRecorder,
+        //
         context: AccountContext,
         audioSession: ManagedAudioSession,
         callSessionManager: CallSessionManager,
@@ -198,9 +207,11 @@ public final class PresentationCallImpl: PresentationCall {
         isVideoPossible: Bool,
         enableStunMarking: Bool,
         enableTCP: Bool,
-        preferredVideoCodec: String?,
-        callActiveState: ((OngoingCallContext.AudioDevice?) -> Void)?
+        preferredVideoCodec: String?
     ) {
+        // Nicegram NCG-5828 call recording
+        self.callRecorder = callRecorder
+        //
         self.context = context
         self.audioSession = audioSession
         self.callSessionManager = callSessionManager
@@ -443,10 +454,6 @@ public final class PresentationCallImpl: PresentationCall {
             self.proximityManagerIndex = DeviceProximityManager.shared().add { _ in
             }
         }
-        
-        // Nicegram NCG-5828 call recording
-        callActiveState?(sharedAudioContext?.audioDevice)
-        //
     }
     
     deinit {
@@ -853,6 +860,9 @@ public final class PresentationCallImpl: PresentationCall {
                     }
                     
                     let conferenceCall = PresentationGroupCallImpl(
+                        // Nicegram NCG-5828 call recording
+                        callRecorder: self.callRecorder,
+                        //
                         accountContext: self.context,
                         audioSession: self.audioSession,
                         callKitIntegration: self.callKitIntegration,
@@ -877,6 +887,9 @@ public final class PresentationCallImpl: PresentationCall {
                         beginWithVideo: false,
                         sharedAudioContext: self.sharedAudioContext
                     )
+                    // Nicegram NCG-5828 call recording
+                    conferenceCall.callRecorder.updateCall(CallRecordable(conferenceCall))
+                    //
                     self.conferenceCallImpl = conferenceCall
                     conferenceCall.upgradedConferenceCall = self
                     

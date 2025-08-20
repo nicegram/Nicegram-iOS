@@ -6,9 +6,16 @@ swift_library(
     srcs = glob([
         "Sources/**/*.swift",
     ]),
+    copts = [
+        #"-warnings-as-errors",
+    ],
     deps = [
-        "//submodules/ComponentFlow",
-        "//submodules/Display"
+        "//Nicegram/NGData",
+        "//Nicegram/NGStrings",
+        "//submodules/AccountContext",
+        "//submodules/SSignalKit/SwiftSignalKit",
+        "//submodules/TelegramVoip",
+        "//submodules/UndoUI",
     ],
     visibility = [
         "//visibility:public",

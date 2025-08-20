@@ -41,7 +41,7 @@ apple_resource_bundle(
 )
 
 NGDEPS = [
-    "@swiftpkg_nicegram_assistant_ios//:FeatCallRecorder"
+    "@swiftpkg_nicegram_assistant_ios//:NGCore"
 ]
 
 swift_library(

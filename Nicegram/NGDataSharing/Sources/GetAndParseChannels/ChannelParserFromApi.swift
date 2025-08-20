@@ -3,6 +3,7 @@ import Factory
 import FeatDataSharing
 import Foundation
 import NGCore
+import NGUtils
 import TelegramApi
 import TelegramCore
 
@@ -23,7 +24,7 @@ extension ChannelParserFromApi {
     ) async throws -> Channel {
         let apiChat = try await resolveUsername(username)
         let channel = try apiChat.wrapped().channel.unwrap()
-        let channelFull = try? await getFullChannel(channel)
+        let channelFull = try await getFullChannel(channel)
         
         let messages = (try? await getLastMessages(channel)) ?? []
         
@@ -35,7 +36,7 @@ extension ChannelParserFromApi {
             peer: peer(with: apiChat),
             channelFull: .init(channelFull),
             icon: icon,
-            inviteLinks: .init(channelFull?.exportedInvite),
+            inviteLinks: .init(channelFull.exportedInvite),
             messages: messages,
             similarChannels: recommendedChannels
         )
@@ -137,22 +138,22 @@ private extension ChannelParserFromApi {
             throw UnexpectedError()
         }
         
-        let file = try await getFile(
-            with: context.account.network,
-            peer: .inputPeerChannel(
-                channelId: channel.id,
-                accessHash: channel.accessHash ?? 0
-            ),
-            flags: flags,
-            photoId: photoId,
-            datacenterId: dcId,
-            limit: 256 * 256
-        ).awaitForFirstValue()
-        
-        guard case let .file(_, _, bytes) = file else {
-            throw UnexpectedError()
+        let url = try await ApiMediaFetcher(context: context)
+            .fetch(
+                datacenterId: Int(dcId),
+                location: .inputPeerPhotoFileLocation(
+                    flags: flags,
+                    peer: .inputPeerChannel(
+                        channelId: channel.id,
+                        accessHash: channel.accessHash ?? 0
+                    ),
+                    photoId: photoId
+                )
+            )
+        defer {
+            try? FileManager.default.removeItem(at: url)
         }
-        return bytes.makeData()
+        return try Data(contentsOf: url)
     }
     
     func getSimilarChannels(
