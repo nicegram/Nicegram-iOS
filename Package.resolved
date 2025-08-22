@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "a99a0ff8d391be804b043579c3e3c32fb40fad41"
+        "branch" : "feat/ai-voice-assistant",
+        "revision" : "9f499c340a7147934d7ea6641ebc732cf29db390"
       }
     },
     {
@@ -349,6 +349,15 @@
       "state" : {
         "revision" : "309a47b2b1d9b5e991f36961c983ecec72275be3",
         "version" : "1.6.1"
+      }
+    },
+    {
+      "identity" : "swift-async-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/swift-async-algorithms.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23"
       }
     },
     {

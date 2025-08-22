@@ -506,7 +506,7 @@
         "bzlTransitiveDigest": "O9f9KZzKDY2k1O7DX2SJQoktdgrpTrnNNZs8JlD3zXU=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "f0ee4fa4cdedcb529df55e3167acec7d44b1e37919277c6c64bf5e8f72004ef3"
+          "@@//Package.resolved": "b1653b91daff6069b6bcc67f4282346f3808e30275ad89aaf02f0fc43e50af7f"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -551,7 +551,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "a99a0ff8d391be804b043579c3e3c32fb40fad41",
+              "commit": "9f499c340a7147934d7ea6641ebc732cf29db390",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1202,6 +1202,24 @@
               "commit": "309a47b2b1d9b5e991f36961c983ecec72275be3",
               "remote": "https://github.com/apple/swift-argument-parser",
               "version": "1.6.1",
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": []
+            }
+          },
+          "swiftpkg_swift_async_algorithms": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_swift_async_algorithms",
+              "commit": "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23",
+              "remote": "https://github.com/denis15yo/swift-async-algorithms.git",
+              "version": "",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [

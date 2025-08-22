@@ -479,6 +479,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramMediaFetcher: {
                 TelegramMediaFetcherImpl(contextProvider: contextProvider)
             },
+            telegramMediaManager: {
+                TelegramMediaManagerImpl(contextProvider: contextProvider)
+            },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
