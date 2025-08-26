@@ -19,15 +19,6 @@
       }
     },
     {
-      "identity" : "applovin-max-swift-package",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/AppLovin/AppLovin-MAX-Swift-Package.git",
-      "state" : {
-        "revision" : "1939e7903783a0991acf0abab9b16697a08b73ca",
-        "version" : "13.2.0"
-      }
-    },
-    {
       "identity" : "bigdecimal",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Zollerboy1/BigDecimal.git",
@@ -167,8 +158,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/grpc-binary.git",
       "state" : {
-        "revision" : "cc0001a0cf963aa40501d9c2b181e7fc9fd8ec71",
-        "version" : "1.69.0"
+        "revision" : "75b31c842f664a0f46a2e590a570e370249fd8f6",
+        "version" : "1.69.1"
       }
     },
     {
@@ -226,15 +217,6 @@
       }
     },
     {
-      "identity" : "navigation-stack-backport",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/navigation-stack-backport.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "66716ce9c31198931c2275a0b69de2fdaa687e74"
-      }
-    },
-    {
       "identity" : "networkimage",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gonzalezreal/NetworkImage",
@@ -248,8 +230,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/ai-voice-assistant",
-        "revision" : "9f499c340a7147934d7ea6641ebc732cf29db390"
+        "branch" : "develop",
+        "revision" : "d7e85b47836cfe93dc8cca19878a821798e5a1cc"
       }
     },
     {
@@ -258,7 +240,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "9e567874c2fa09ec0ebe00684b76d2e5de297f64"
+        "revision" : "c8cf36e82fdaed960322e9d1e9c8add21689ccb1"
       }
     },
     {
@@ -294,7 +276,7 @@
       "location" : "https://github.com/denis15yo/rive-ios",
       "state" : {
         "branch" : "main",
-        "revision" : "a97fb4cf6ebd520a17995f7ecfd8064db0267cc8"
+        "revision" : "08d4d27d5e293d12da480df228935b0c2e0fea0b"
       }
     },
     {
@@ -349,15 +331,6 @@
       "state" : {
         "revision" : "309a47b2b1d9b5e991f36961c983ecec72275be3",
         "version" : "1.6.1"
-      }
-    },
-    {
-      "identity" : "swift-async-algorithms",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/swift-async-algorithms.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23"
       }
     },
     {
@@ -545,8 +518,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "16f5cc53015044d06ea812bdebd971343c625f7e",
-        "version" : "4.2.21"
+        "revision" : "385185ddf9b896c32f5e55b1199795b0edf05223",
+        "version" : "4.3.6"
       }
     },
     {

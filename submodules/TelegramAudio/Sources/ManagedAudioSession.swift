@@ -223,10 +223,6 @@ public final class ManagedAudioSessionClientParams {
 }
 
 public protocol ManagedAudioSession: AnyObject {
-    // Nicegram
-    func pushExternalHolder() -> Disposable
-    //
-    
     func getIsHeadsetPluggedIn() -> Bool
     func headsetConnected() -> Signal<Bool, NoError>
     func isActive() -> Signal<Bool, NoError>
@@ -808,34 +804,7 @@ public final class ManagedAudioSessionImpl: NSObject, ManagedAudioSession {
         return false
     }
     
-    // Nicegram
-    private class ExternalHolder {}
-    private var externalHolders = [ExternalHolder]()
-    public func pushExternalHolder() -> Disposable {
-        let holder = ExternalHolder()
-        
-        externalHolders.append(holder)
-        
-        return ActionDisposable { [weak self] in
-            guard let self else { return }
-            
-            let index = externalHolders.firstIndex { $0 === holder }
-            if let index {
-                externalHolders.remove(at: index)
-            }
-            
-            queue.async {
-                self.updateHolders()
-            }
-        }
-    }
-    //
-    
     private func applyNone() {
-        // Nicegram
-        guard externalHolders.isEmpty else { return }
-        //
-        
         self.deactivateTimer?.invalidate()
         self.deactivateTimer = nil
         

@@ -4,7 +4,6 @@ import FeatAttentionEconomy
 //
 // Nicegram HideReactions, HideStories
 import FeatPinnedChats
-import FeatPumpAds
 import NGData
 //
 import Foundation
@@ -483,7 +482,6 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
     let nicegramItem: PinnedChatToDisplay?
     
     let attBannerFeature = AttBannerFeature()
-    let pumpAdViewModel = PumpAdViewModel()
     //
     
     let presentationData: ChatListPresentationData
@@ -602,8 +600,6 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
                         case .plain:
                             let openPinnedChatUseCase = PinnedChatsContainer.shared.openPinnedChatUseCase()
                             openPinnedChatUseCase(nicegramItem.chat)
-                        case let .pump(ad):
-                            pumpAdViewModel.onClick(ad: ad)
                         }
                         
                         interaction.clearHighlightAnimated(true)
@@ -1644,8 +1640,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             item.attBannerFeature.onView(ad: attAd)
         case .plain:
             PinnedChatsUI.trackChatView(nicegramItem.chat)
-        case let .pump(ad):
-            item.pumpAdViewModel.onView(ad: ad)
         }
     }
     //
@@ -5320,8 +5314,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         item.attBannerFeature.onRemoveAdClick(ad: attAd)
                     case .plain:
                         PinnedChatsUI.unpin(nicegramItem.chat)
-                    case let .pump(ad):
-                        item.pumpAdViewModel.onUnpin(ad: ad)
                     }
                 }
             default:

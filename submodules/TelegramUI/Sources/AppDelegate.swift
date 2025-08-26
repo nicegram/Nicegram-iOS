@@ -1,5 +1,4 @@
 // Nicegram imports
-import AppLovinAdProvider
 import FeatAccountBackup
 import FeatOnboarding
 import NGAiChat
@@ -444,17 +443,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 termsUrl: URL(string: "https://nicegram.app/terms-of-use")!,
                 webSocketUrl: NGENV.websocket_url
             ),
-            appLovinAdProvider: {
-                if #available(iOS 13.0, *) {
-                    AppLovinAdProvider(
-                        apiKey: NGENV.applovin_api_key,
-                        adUnitIdentifier: NGENV.applovin_ad_unit_id,
-                        userRepository: RepoUserTgHelper.resolveUserRepository()
-                    )
-                } else {
-                    AdProviderMock()
-                }
-            },
             chatListPeersProvider: {
                 ChatListPeersProviderImpl(contextProvider: contextProvider)
             },
@@ -478,9 +466,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             telegramMediaFetcher: {
                 TelegramMediaFetcherImpl(contextProvider: contextProvider)
-            },
-            telegramMediaManager: {
-                TelegramMediaManagerImpl(contextProvider: contextProvider)
             },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)

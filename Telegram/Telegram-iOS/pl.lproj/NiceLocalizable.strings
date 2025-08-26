@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Przyczyn się do najbardziej kompleksowej wikipedii kanałów i grup Telegrama, automatycznie przesyłając informacje o kanale i link do naszej bazy danych. Nie łączymy Twojego profilu na Telegramie z kanałem i nie udostępniamy Twoich danych osobowych.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "nagraj";
+"NicegramCallRecord.Record" = "Nagraj";
+"NicegramCallRecord.Stop" = "Zatrzymaj";
 "NicegramCallRecord.StopAlertTitle" = "Zatrzymaj nagrywanie";
 "NicegramCallRecord.StopAlertDescription" = "Czy chcesz zatrzymać nagrywanie tego połączenia?";
 "NicegramCallRecord.StopAlertButtonStop" = "Zatrzymaj";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "Rozpoznawanie mowy na tekst jest niedostępne z powodu ustawień uprawnień. Zezwól na dostęp do Nicegram w ustawieniach urządzenia → Prywatność i bezpieczeństwo → Rozpoznawanie mowy";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Zdobądź gwiazdki (Wielołańcuchowe i bez KYC)";
 "StarsPurchase.GetOnFragment" = "Kup w Fragment";
 "StarsPurchase.GetOnTelegram" = "Kup w Telegram";
 

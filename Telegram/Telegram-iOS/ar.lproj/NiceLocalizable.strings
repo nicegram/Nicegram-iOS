@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "ساهم في أكثر ويكيبيديا شمولية لقنوات ومجموعات تليغرام من خلال إرسال معلومات القناة والرابط تلقائيًا إلى قاعدة بياناتنا. نحن لا نربط ملفك الشخصي في تليغرام والقناة ولا نشارك بياناتك الشخصية.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "تسجيل";
+"NicegramCallRecord.Record" = "تسجيل";
+"NicegramCallRecord.Stop" = "توقف";
 "NicegramCallRecord.StopAlertTitle" = "إيقاف التسجيل";
 "NicegramCallRecord.StopAlertDescription" = "هل تريد إيقاف تسجيل هذه المكالمة؟";
 "NicegramCallRecord.StopAlertButtonStop" = "توقف";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "التعرف على الكلام غير متاح بسبب إعدادات الأذونات. اسمح بالوصول لـ Nicegram في إعدادات الجهاز ← الخصوصية والأمان ← التعرف على الكلام";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "احصل على النجوم (متعدد السلاسل وبدون تحقق من الهوية)";
 "StarsPurchase.GetOnFragment" = "اشترِ في Fragment";
 "StarsPurchase.GetOnTelegram" = "اشترِ في Telegram";
 

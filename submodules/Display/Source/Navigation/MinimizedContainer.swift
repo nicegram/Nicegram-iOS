@@ -2,18 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 
-// Nicegram DockWidget
-public struct MinimizedContainerNicegramWidget {
-    public let model: Any
-    public let view: UIView
-    
-    public init(model: Any, view: UIView) {
-        self.model = model
-        self.view = view
-    }
-}
-//
-
 public protocol MinimizedContainer: ASDisplayNode {
     var navigationController: NavigationController? { get set }
     var controllers: [MinimizableController] { get }
@@ -34,13 +22,6 @@ public protocol MinimizedContainer: ASDisplayNode {
     
     func updateLayout(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition)
     func collapsedHeight(layout: ContainerViewLayout) -> CGFloat
-    
-    // Nicegram DockWidget
-    var nicegramWidget: MinimizedContainerNicegramWidget? { get set }
-    func updateNicegramWidget(height: CGFloat, transition: ContainedViewLayoutTransition)
-    
-    func dismissOnlyControllers()
-    //
 }
 
 public protocol MinimizableController: ViewController {

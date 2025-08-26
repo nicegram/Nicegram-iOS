@@ -157,6 +157,8 @@ private extension ChatParserFromLocal {
                     count: config.messagesFetchLimit,
                     fixedCombinedReadStates: nil
                 )
+                .toPublisher()
+                .filter { !$0.0.isLoading }
                 .awaitForFirstValue()
             
             let messages = result.0.entries.map(\.message)

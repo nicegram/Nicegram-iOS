@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Kanal bilgileri ve bağlantısını otomatik olarak göndererek Telegram kanalları ve gruplarının en kapsamlı vikipedisine katkıda bulunun. Telegram profilinizle ve kanalınızla bağlantı kurmuyoruz ve kişisel verilerinizi paylaşmıyoruz.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "kaydet";
+"NicegramCallRecord.Record" = "Kaydet";
+"NicegramCallRecord.Stop" = "Durdur";
 "NicegramCallRecord.StopAlertTitle" = "Kaydı durdur";
 "NicegramCallRecord.StopAlertDescription" = "Bu çağrıyı kaydetmeyi durdurmak istiyor musunuz?";
 "NicegramCallRecord.StopAlertButtonStop" = "Durdur";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "Konuşma metni tanıma, izin ayarları nedeniyle kullanılamıyor. Cihaz Ayarlarında Nicegram için erişime izin verin → Gizlilik ve Güvenlik → Konuşma Tanıma";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Yıldızları Al (Çok Zincirli ve KYC'siz)";
 "StarsPurchase.GetOnFragment" = "Fragment'tan al";
 "StarsPurchase.GetOnTelegram" = "Telegram'dan al";
 

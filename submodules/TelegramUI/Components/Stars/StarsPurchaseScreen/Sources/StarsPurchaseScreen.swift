@@ -195,7 +195,8 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
         let termsText = Child(BalancedTextComponent.self)
         
         // Nicegram StarsPurchase
-        let getOnFragmentButton = Child(ButtonComponent.self)
+        let getStarsButton = Child(ButtonComponent.self)
+        let getOnFragmentButton = Child(Button.self)
         let getOnTelegramButton = Child(Button.self)
         //
              
@@ -235,20 +236,21 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                 
                 let openLink = component.openLink
                 
-                let getOnFragmentButton = getOnFragmentButton.update(
+                let accentButtonForeground = environment.theme.list.itemInputField.primaryColor
+                let getStarsButton = getStarsButton.update(
                     component: ButtonComponent(
                         background: ButtonComponent.Background(
                             color: environment.theme.list.itemCheckColors.fillColor,
-                            foreground: environment.theme.list.itemCheckColors.foregroundColor,
+                            foreground: accentButtonForeground,
                             pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
                         ),
                         content: AnyComponentWithIdentity(
                             id: 0,
                             component: AnyComponent(
                                 Text(
-                                    text: l("StarsPurchase.GetOnFragment"),
-                                    font: Font.semibold(17),
-                                    color: environment.theme.list.itemCheckColors.foregroundColor
+                                    text: l("StarsPurchase.GetStars"),
+                                    font: Font.medium(17),
+                                    color: accentButtonForeground
                                 )
                             )
                         ),
@@ -256,9 +258,27 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                         allowActionWhenDisabled: false,
                         displaysProgress: false,
                         action: {
-                            openLink("https://fragment.com/stars", false)
+                            openLink("https://nicestars.pro/?utm_source=nicegram", false)
                         }
                     ),
+                    environment: {},
+                    availableSize: buttonSize,
+                    transition: context.transition
+                )
+                
+                let getOnFragmentButton = getOnFragmentButton.update(
+                    component: Button(
+                        content: AnyComponent(
+                            Text(
+                                text: l("StarsPurchase.GetOnFragment"),
+                                font: Font.regular(17),
+                                color: environment.theme.list.itemAccentColor
+                            )
+                        ),
+                        action: {
+                            openLink("https://fragment.com/stars", false)
+                        }
+                    ).minSize(buttonSize),
                     environment: {},
                     availableSize: buttonSize,
                     transition: context.transition
@@ -276,17 +296,26 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                         action: {
                             openLink("https://t.me/PremiumBot", true)
                         }
-                    ),
+                    ).minSize(buttonSize),
                     environment: {},
                     availableSize: buttonSize,
                     transition: context.transition
                 )
+                
+                let buttonSpacing: CGFloat = 4
+                
+                size.height += 10
+                
+                context.add(getStarsButton
+                    .position(CGPoint(x: availableWidth / 2, y: size.height + getStarsButton.size.height / 2))
+                    .cornerRadius(10)
+                )
+                size.height += getStarsButton.size.height + buttonSpacing
 
                 context.add(getOnFragmentButton
                     .position(CGPoint(x: availableWidth / 2, y: size.height + getOnFragmentButton.size.height / 2))
-                    .cornerRadius(10)
                 )
-                size.height += getOnFragmentButton.size.height + 16
+                size.height += getOnFragmentButton.size.height + buttonSpacing
                             
                 context.add(getOnTelegramButton
                     .position(CGPoint(x: availableWidth / 2, y: size.height + getOnTelegramButton.size.height / 2))
