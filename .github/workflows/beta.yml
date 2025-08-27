@@ -13,6 +13,11 @@ jobs:
     runs-on: macos-15
 
     steps:
+      - name: List installed simulator runtimes
+        run: |
+          simctl list runtimes
+          exit 1
+        
       - uses: webfactory/ssh-agent@v0.5.4
         with:
            ssh-private-key: ${{ secrets.SSH_KEY }}

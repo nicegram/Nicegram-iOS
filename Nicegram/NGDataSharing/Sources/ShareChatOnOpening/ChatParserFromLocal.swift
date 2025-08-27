@@ -158,7 +158,11 @@ private extension ChatParserFromLocal {
                     fixedCombinedReadStates: nil
                 )
                 .toPublisher()
-                .filter { !$0.0.isLoading }
+                .filter {
+                    let view = $0.0
+                    let isLoading = view.isLoading || view.isLoadingEarlier
+                    return !isLoading
+                }
                 .awaitForFirstValue()
             
             let messages = result.0.entries.map(\.message)

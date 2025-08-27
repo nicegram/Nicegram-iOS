@@ -294,7 +294,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                             )
                         ),
                         action: {
-                            openLink("https://t.me/PremiumBot", true)
+                            openLink("https://t.me/PremiumBot", false)
                         }
                     ).minSize(buttonSize),
                     environment: {},

@@ -511,7 +511,7 @@
         "bzlTransitiveDigest": "O9f9KZzKDY2k1O7DX2SJQoktdgrpTrnNNZs8JlD3zXU=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "5bc1aa3c2c0beb0b081f4a292c685f374caf055ee6a1d67929158b92b6b1fc37"
+          "@@//Package.resolved": "739c4216d6a1093f97cbee9a0fa2b1ed0f2c6fc6f875b62b7ddb35424606bdce"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -538,7 +538,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "d7e85b47836cfe93dc8cca19878a821798e5a1cc",
+              "commit": "aee494b079b18e24859b8c44af9302af216d5210",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -1060,9 +1060,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_rive_ios",
-              "commit": "08d4d27d5e293d12da480df228935b0c2e0fea0b",
-              "remote": "https://github.com/denis15yo/rive-ios",
-              "version": "",
+              "commit": "6baeee45ad83d2c11ab5b95b10cbb9742edd1a3d",
+              "remote": "https://github.com/rive-app/rive-ios.git",
+              "version": "6.11.2",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1186,7 +1186,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_case_paths",
-              "commit": "a2f9f1eba577968f85fa839d61794e0af22f2bee",
+              "commit": "89ed3596547f5258f480d7e8c548c8f0333cf9ed",
               "remote": "https://github.com/denis15yo/swift-case-paths.git",
               "version": "",
               "init_submodules": false,
@@ -1420,7 +1420,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swiftui_flow",
-              "commit": "3086a602b98155eec28b4be79210d6cb1a43e339",
+              "commit": "ac8c3cde34e658bb371dac7c3af0de1e7adbe0de",
               "remote": "https://github.com/denis15yo/SwiftUI-Flow.git",
               "version": "",
               "init_submodules": false,

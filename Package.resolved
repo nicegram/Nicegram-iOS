@@ -231,7 +231,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "d7e85b47836cfe93dc8cca19878a821798e5a1cc"
+        "revision" : "aee494b079b18e24859b8c44af9302af216d5210"
       }
     },
     {
@@ -273,10 +273,10 @@
     {
       "identity" : "rive-ios",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/rive-ios",
+      "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "08d4d27d5e293d12da480df228935b0c2e0fea0b"
+        "revision" : "6baeee45ad83d2c11ab5b95b10cbb9742edd1a3d",
+        "version" : "6.11.2"
       }
     },
     {
@@ -339,7 +339,7 @@
       "location" : "https://github.com/denis15yo/swift-case-paths.git",
       "state" : {
         "branch" : "main",
-        "revision" : "a2f9f1eba577968f85fa839d61794e0af22f2bee"
+        "revision" : "89ed3596547f5258f480d7e8c548c8f0333cf9ed"
       }
     },
     {
@@ -456,7 +456,7 @@
       "location" : "https://github.com/denis15yo/SwiftUI-Flow.git",
       "state" : {
         "branch" : "main",
-        "revision" : "3086a602b98155eec28b4be79210d6cb1a43e339"
+        "revision" : "ac8c3cde34e658bb371dac7c3af0de1e7adbe0de"
       }
     },
     {
