@@ -10,14 +10,9 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-14
 
     steps:
-      - name: List installed simulator runtimes
-        run: |
-          xcrun simctl list runtimes
-          exit 1
-        
       - uses: webfactory/ssh-agent@v0.5.4
         with:
            ssh-private-key: ${{ secrets.SSH_KEY }}
