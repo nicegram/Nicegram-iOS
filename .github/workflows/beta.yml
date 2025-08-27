@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: List installed simulator runtimes
         run: |
-          simctl list runtimes
+          xcrun simctl list runtimes
           exit 1
         
       - uses: webfactory/ssh-agent@v0.5.4
