@@ -201,8 +201,10 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                     }
                     
                     if popAndComplete {
-                        if let _ = params.navigationController.viewControllers.last as? AttachmentController, let controller = params.navigationController.viewControllers[params.navigationController.viewControllers.count - 2] as? ChatControllerImpl, controller.chatLocation == params.chatLocation.asChatLocation {
-                            
+                        if let attachmentController = params.navigationController.viewControllers.last as? AttachmentController, let controller = params.navigationController.viewControllers[params.navigationController.viewControllers.count - 2] as? ChatControllerImpl, controller.chatLocation == params.chatLocation.asChatLocation {
+                            // Nicegram
+                            attachmentController.requestMinimize(topEdgeOffset: nil, initialVelocity: nil)
+                            //
                         } else {
                             let _ = params.navigationController.popToViewController(controller, animated: params.animated)
                         }
