@@ -1,7 +1,6 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "//Nicegram/AppLovinAdProvider:AppLovinAdProvider",
     "//Nicegram/NGLottie:NGLottie",
     "//Nicegram/NGLogging:NGLogging",
     "//Nicegram/NGData:NGData",
@@ -22,7 +21,6 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",
     "@swiftpkg_nicegram_assistant_ios//:FeatAuth",
-    "@swiftpkg_nicegram_assistant_ios//:FeatAvatarGeneratorUI",
     "@swiftpkg_nicegram_assistant_ios//:FeatChatBanner",
     "@swiftpkg_nicegram_assistant_ios//:FeatLaunchOverlays",
     "@swiftpkg_nicegram_assistant_ios//:FeatOnboarding",

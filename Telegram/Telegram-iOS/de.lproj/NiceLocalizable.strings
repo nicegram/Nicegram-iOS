@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Tragen Sie zur umfassendsten Wikipedia von Telegram-Kanälen und -Gruppen bei, indem Sie automatisch Kanalinformationen und Links zu unserer Datenbank übermitteln. Wir verbinden Ihr Telegram-Profil und Ihren Kanal nicht und teilen Ihre persönlichen Daten nicht.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "aufnehmen";
+"NicegramCallRecord.Record" = "Aufnehmen";
+"NicegramCallRecord.Stop" = "Stopp";
 "NicegramCallRecord.StopAlertTitle" = "Aufnahme stoppen";
 "NicegramCallRecord.StopAlertDescription" = "Möchten Sie die Aufnahme dieses Anrufs stoppen?";
 "NicegramCallRecord.StopAlertButtonStop" = "Stopp";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "Sprach-zu-Text ist aufgrund der Berechtigungseinstellungen nicht verfügbar. Erlauben Sie den Zugriff für Nicegram in den Geräteeinstellungen → Datenschutz & Sicherheit → Spracherkennung";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Sterne erhalten (Multichain und ohne KYC)";
 "StarsPurchase.GetOnFragment" = "Kaufen auf Fragment";
 "StarsPurchase.GetOnTelegram" = "Kaufen auf Telegram";
 

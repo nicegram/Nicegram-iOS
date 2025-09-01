@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Contribuisci all'enciclopedia più completa di canali e gruppi Telegram inviando automaticamente informazioni e link sul canale al nostro database. Non collegiamo il tuo profilo Telegram e il canale e non condividiamo i tuoi dati personali.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "registrare";
+"NicegramCallRecord.Record" = "Registrare";
+"NicegramCallRecord.Stop" = "Ferma";
 "NicegramCallRecord.StopAlertTitle" = "Ferma la registrazione";
 "NicegramCallRecord.StopAlertDescription" = "Vuoi interrompere la registrazione di questa chiamata?";
 "NicegramCallRecord.StopAlertButtonStop" = "Ferma";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "La conversione da voce a testo non è disponibile a causa delle impostazioni di autorizzazione. Consenti l'accesso a Nicegram in Impostazioni dispositivo → Privacy e sicurezza → Riconoscimento vocale";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Ottieni stelle (Multichain e senza KYC)";
 "StarsPurchase.GetOnFragment" = "Acquista su Fragment";
 "StarsPurchase.GetOnTelegram" = "Acquista su Telegram";
 

@@ -3,7 +3,6 @@ import FeatChatListWidget
 //
 // Nicegram PinnedChats
 import Combine
-import FeatImagesHubUI
 import FeatPinnedChats
 import NGAiChatUI
 import NGUI

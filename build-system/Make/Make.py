@@ -61,7 +61,7 @@ class BazelCommandLine:
             # repository), but disabling it also causes a noticeable build time regression
             # so it can be explicitly re-enabled by users who are not affected by those
             # crashes.
-            #'--features=swift.use_global_module_cache',
+            '--features=swift.use_global_module_cache',
 
             # https://docs.bazel.build/versions/master/command-line-reference.html
             # Print the subcommand details in case of failure.
@@ -672,7 +672,7 @@ def build(bazel, arguments):
         os.makedirs(artifacts_path + '/DSYMs', exist_ok=True)
 
         built_ipa_path_prefix = 'bazel-bin/Telegram'
-        ipa_paths = glob.glob('{}/Telegram.ipa'.format(built_ipa_path_prefix)) 
+        ipa_paths = glob.glob('{}/Telegram.ipa'.format(built_ipa_path_prefix))
         if len(ipa_paths) == 0:
             print(f'Could not find the IPA at {built_ipa_path_prefix}/Telegram.ipa')
             sys.exit(1)

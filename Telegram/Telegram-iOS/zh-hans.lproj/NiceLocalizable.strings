@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "通过自动提交频道信息和链接到我们的数据库，为最全面的Telegram频道和群组维基百科做出贡献。我们不会连接您的Telegram个人资料和频道，也不会分享您的个人数据。";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "记录";
+"NicegramCallRecord.Record" = "记录";
+"NicegramCallRecord.Stop" = "停止";
 "NicegramCallRecord.StopAlertTitle" = "停止录音";
 "NicegramCallRecord.StopAlertDescription" = "您想停止录制这个通话吗？";
 "NicegramCallRecord.StopAlertButtonStop" = "停止";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "由于权限设置，语音转文字不可用。在设备设置中允许 Nicegram 访问 → 隐私和安全 → 语音识别";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "获取星星（多链且无需KYC）";
 "StarsPurchase.GetOnFragment" = "购买于 Fragment";
 "StarsPurchase.GetOnTelegram" = "购买于 Telegram";
 

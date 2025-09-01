@@ -9,8 +9,6 @@ public struct NGEnvObj: Decodable {
     public let remote_config_cache_duration_seconds: Double
     public let tapjoy_api_key: String
     public let telegram_auth_bot: String
-    public let applovin_api_key: String
-    public let applovin_ad_unit_id: String
     public let websocket_url: URL
     
     public let wallet: Wallet

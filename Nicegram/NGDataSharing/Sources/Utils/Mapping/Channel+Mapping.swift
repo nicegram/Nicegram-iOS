@@ -10,6 +10,7 @@ extension Channel {
         icon: String? = nil,
         inviteLinks: [InviteLink] = [],
         messages: [FeatDataSharing.Message] = [],
+        participantsCount: Int32? = nil,
         similarChannels: [Channel] = []
     ) throws -> Channel {
         let channel = try (peer as? TelegramChannel).unwrap()
@@ -31,7 +32,7 @@ extension Channel {
             hasGeo: flags.contains(.hasGeo),
             lastMessageLang: lastMessageLang,
             messages: prepareForSharing(messages: messages),
-            participantsCount: channelFull?.participantsCount ?? 0,
+            participantsCount: channelFull?.participantsCount ?? participantsCount ?? 0,
             photo: .init(channel.photo),
             restrictions: .init(channel.restrictionInfo),
             scam: flags.contains(.isScam),

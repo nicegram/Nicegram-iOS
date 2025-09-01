@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Tham gia đóng góp vào wikipedia toàn diện nhất về các kênh và nhóm Telegram bằng cách tự động gửi thông tin kênh và liên kết vào cơ sở dữ liệu của chúng tôi. Chúng tôi không kết nối hồ sơ telegram của bạn và kênh và không chia sẻ dữ liệu cá nhân của bạn.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "ghi";
+"NicegramCallRecord.Record" = "Ghi";
+"NicegramCallRecord.Stop" = "Dừng";
 "NicegramCallRecord.StopAlertTitle" = "Dừng ghi âm";
 "NicegramCallRecord.StopAlertDescription" = "Bạn có muốn dừng ghi âm cuộc gọi này không?";
 "NicegramCallRecord.StopAlertButtonStop" = "Dừng";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "Nhận diện nói thành văn bản không khả dụng do cài đặt quyền. Hãy cho phép truy cập cho Nicegram trong Cài đặt thiết bị → Quyền riêng tư & Bảo mật → Nhận diện Giọng nói";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Nhận sao (Đa chuỗi & không cần KYC)";
 "StarsPurchase.GetOnFragment" = "Lấy trên Fragment";
 "StarsPurchase.GetOnTelegram" = "Lấy trên Telegram";
 

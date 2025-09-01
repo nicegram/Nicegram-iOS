@@ -92,12 +92,18 @@ private extension ChatParserFromLocal {
     
     func getSimilarChannels(_ id: PeerId) async -> [Channel] {
         do {
+            try? await context.engine.peers.requestRecommendedChannels(peerId: id)
+                .awaitForCompletion()
+            
             let result = try await context.engine.peers
                 .recommendedChannels(peerId: id)
                 .awaitForFirstValue()
                 .unwrap()
             return result.channels.compactMap { channel in
-                try? Channel.build(peer: channel.peer._asPeer())
+                try? Channel.build(
+                    peer: channel.peer._asPeer(),
+                    participantsCount: channel.subscribers
+                )
             }
         } catch {
             return []
@@ -151,6 +157,12 @@ private extension ChatParserFromLocal {
                     count: config.messagesFetchLimit,
                     fixedCombinedReadStates: nil
                 )
+                .toPublisher()
+                .filter {
+                    let view = $0.0
+                    let isLoading = view.isLoading || view.isLoadingEarlier
+                    return !isLoading
+                }
                 .awaitForFirstValue()
             
             let messages = result.0.entries.map(\.message)

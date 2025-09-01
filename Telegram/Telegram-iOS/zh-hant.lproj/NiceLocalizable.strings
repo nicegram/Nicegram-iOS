@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "通過自動提交頻道資訊和連結到我們的數據庫，貢獻給最全面的Telegram頻道和群組維基百科。我們不會連接您的Telegram個人檔案和頻道，也不會分享您的個人資料。";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "記錄";
+"NicegramCallRecord.Record" = "記錄";
+"NicegramCallRecord.Stop" = "停止";
 "NicegramCallRecord.StopAlertTitle" = "停止錄音";
 "NicegramCallRecord.StopAlertDescription" = "您想停止錄製這個通話嗎？";
 "NicegramCallRecord.StopAlertButtonStop" = "停止";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "由於權限設置，語音轉文字不可用。在設備設置中允許 Nicegram 訪問 → 隱私和安全 → 語音識別";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "獲取星星（多鏈且無需KYC）";
 "StarsPurchase.GetOnFragment" = "購買於 Fragment";
 "StarsPurchase.GetOnTelegram" = "購買於 Telegram";
 

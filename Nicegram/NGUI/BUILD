@@ -36,7 +36,6 @@ swift_library(
         "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
         "@swiftpkg_nicegram_assistant_ios//:FeatAdsgram",
         "@swiftpkg_nicegram_assistant_ios//:FeatDataSharing",
-        "@swiftpkg_nicegram_assistant_ios//:FeatImagesHubUI",
         "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",
         "@swiftpkg_nicegram_assistant_ios//:FeatSpeechToText",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",

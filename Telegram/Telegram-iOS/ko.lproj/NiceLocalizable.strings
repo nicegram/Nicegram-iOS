@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "자동으로 채널 정보와 링크를 제출함으로써 Telegram 채널과 그룹들의 가장 포괄적인 위키백과에 기여하세요. 우리는 여러분의 Telegram 프로필과 채널을 연결하거나 개인 데이터를 공유하지 않습니다.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "녹음";
+"NicegramCallRecord.Record" = "녹음";
+"NicegramCallRecord.Stop" = "중지";
 "NicegramCallRecord.StopAlertTitle" = "녹음 중지";
 "NicegramCallRecord.StopAlertDescription" = "이 통화 녹음을 중지하시겠습니까?";
 "NicegramCallRecord.StopAlertButtonStop" = "중지";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "권한 설정으로 인해 음성 인식을 사용할 수 없습니다. 기기 설정 → 개인정보 및 보안 → 음성 인식에서 Nicegram에 대한 액세스를 허용하세요";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "별 얻기 (멀티체인 및 KYC 불필요)";
 "StarsPurchase.GetOnFragment" = "Fragment에서 구입";
 "StarsPurchase.GetOnTelegram" = "Telegram에서 구입";
 

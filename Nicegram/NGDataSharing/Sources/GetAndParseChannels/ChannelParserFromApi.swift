@@ -38,6 +38,7 @@ extension ChannelParserFromApi {
             icon: icon,
             inviteLinks: .init(channelFull.exportedInvite),
             messages: messages,
+            participantsCount: channel.participantsCount,
             similarChannels: recommendedChannels
         )
     }
@@ -182,7 +183,8 @@ private extension ChannelParserFromApi {
         
         return chats.compactMap { apiChat in
             try? Channel.build(
-                peer: peer(with: apiChat)
+                peer: peer(with: apiChat),
+                participantsCount: apiChat.wrapped().channel?.participantsCount
             )
         }
     }

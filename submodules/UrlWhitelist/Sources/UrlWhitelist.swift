@@ -38,7 +38,7 @@ public func parseUrl(url: String, wasConcealed: Bool) -> (string: String, concea
     var parsedUrlValue: URL?
     if url.hasPrefix("tel:") {
         return (url, false)
-    } else if let parsed = URL(string: url), parsed.host == "nicegram.app" {
+    } else if let parsed = URL(string: url), (parsed.host ?? "").contains("nicegram.app") {
         return (url, false)
     } else if url.lowercased().hasPrefix("http://") || url.lowercased().hasPrefix("https://"), let parsed = URL(string: url) {
         parsedUrlValue = parsed

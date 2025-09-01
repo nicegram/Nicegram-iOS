@@ -4,8 +4,6 @@ import FeatAttentionEconomy
 import Foundation
 import AccountContext
 import Display
-import FeatAvatarGeneratorUI
-import FeatImagesHubUI
 import FeatOnboarding
 import FeatPremiumUI
 import NGAiChatUI
@@ -71,23 +69,7 @@ class NGDeeplinkHandler {
             if #available(iOS 15.0, *) {
                 AttPresenter().present()
             }
-            return true
-        case "avatarGenerator":
-            if #available(iOS 15.0, *) {
-                if let topController = UIApplication.topViewController {
-                    AvatarGeneratorUIHelper().navigateToGenerationFlow(
-                        from: topController
-                    )
-                }
-            }
-            return true
-        case "avatarMyGenerations":
-            if #available(iOS 15.0, *) {
-                AvatarGeneratorUIHelper().navigateToGenerator()
-            }
-            return true    
-        case "generateImage":
-            return handleGenerateImage(url: url)
+            return true 
         case "nicegramPremium":
             return handleNicegramPremium(url: url)
         case "onboarding":
@@ -121,16 +103,6 @@ private extension NGDeeplinkHandler {
     
     func handleAi(url: URL) -> Bool {
         AiChatUITgHelper.tryRouteToAiChatBotFromDeeplink()
-        return true
-    }
-    
-    func handleGenerateImage(url: URL) -> Bool {
-        if #available(iOS 15.0, *) {
-            ImagesHubUITgHelper.showFeed(
-                source: .deeplink,
-                forceGeneration: true
-            )
-        }
         return true
     }
     

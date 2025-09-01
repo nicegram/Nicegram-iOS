@@ -243,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "Speech-to-text is unavailable due to permission settings. Allow access for Nicegram in device Settings → Privacy & Security → Speech Recognition";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Get Stars (Multichain & non-KYC)";
 "StarsPurchase.GetOnFragment" = "Get on Fragment";
 "StarsPurchase.GetOnTelegram" = "Get on Telegram";
 

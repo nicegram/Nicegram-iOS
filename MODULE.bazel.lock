@@ -331,7 +331,7 @@
     },
     "@@rules_apple+//apple:apple.bzl%provisioning_profile_repository_extension": {
       "general": {
-        "bzlTransitiveDigest": "V59tWpM+e8OaU/9xAdw1TjTYxJdObpCnORx6N2VArDQ=",
+        "bzlTransitiveDigest": "HeXrftjbn5Ch8zGdtSffr07wqaVdE0f2QJkdaglNfWc=",
         "usagesDigest": "El+GojAYounwa3ygP80lfJLtYJY1JPbW11AiXfg2CCw=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -377,6 +377,11 @@
             "rules_cc+",
             "bazel_tools",
             "bazel_tools"
+          ],
+          [
+            "rules_cc+",
+            "rules_cc",
+            "rules_cc+"
           ],
           [
             "rules_swift+",
@@ -506,29 +511,11 @@
         "bzlTransitiveDigest": "O9f9KZzKDY2k1O7DX2SJQoktdgrpTrnNNZs8JlD3zXU=",
         "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "4e71782e68b50259ddcf8e6be5f2eeecb45e9513761ac910c43e3a26de09858b"
+          "@@//Package.resolved": "739c4216d6a1093f97cbee9a0fa2b1ed0f2c6fc6f875b62b7ddb35424606bdce"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
         "generatedRepoSpecs": {
-          "swiftpkg_applovin_max_swift_package": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_applovin_max_swift_package",
-              "commit": "1939e7903783a0991acf0abab9b16697a08b73ca",
-              "remote": "https://github.com/AppLovin/AppLovin-MAX-Swift-Package.git",
-              "version": "13.2.0",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_firebase_ios_sdk": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -551,7 +538,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "4b2951cc4ef1350dde002930925bc72912bc9ac9",
+              "commit": "aee494b079b18e24859b8c44af9302af216d5210",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "init_submodules": false,
@@ -569,7 +556,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "243431d38fc82180a2ffdb590818bd00b8a93751",
+              "commit": "c8cf36e82fdaed960322e9d1e9c8add21689ccb1",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "init_submodules": false,
@@ -785,9 +772,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_google_ads_on_device_conversion_ios_sdk",
-              "commit": "973bd67929bfbe465f63c05cd5a4b113765fbc7f",
+              "commit": "a2d0f1f1666de591eb1a811f40b1706f5c63a2ed",
               "remote": "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
-              "version": "2.2.1",
+              "version": "2.3.0",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -875,9 +862,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_grpc_binary",
-              "commit": "cc0001a0cf963aa40501d9c2b181e7fc9fd8ec71",
+              "commit": "75b31c842f664a0f46a2e590a570e370249fd8f6",
               "remote": "https://github.com/google/grpc-binary.git",
-              "version": "1.69.0",
+              "version": "1.69.1",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -997,24 +984,6 @@
               "patches": []
             }
           },
-          "swiftpkg_navigation_stack_backport": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_navigation_stack_backport",
-              "commit": "66716ce9c31198931c2275a0b69de2fdaa687e74",
-              "remote": "https://github.com/denis15yo/navigation-stack-backport.git",
-              "version": "",
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": []
-            }
-          },
           "swiftpkg_networkimage": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -1091,9 +1060,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_rive_ios",
-              "commit": "a97fb4cf6ebd520a17995f7ecfd8064db0267cc8",
-              "remote": "https://github.com/denis15yo/rive-ios",
-              "version": "",
+              "commit": "6baeee45ad83d2c11ab5b95b10cbb9742edd1a3d",
+              "remote": "https://github.com/rive-app/rive-ios.git",
+              "version": "6.11.2",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1217,7 +1186,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_case_paths",
-              "commit": "a2f9f1eba577968f85fa839d61794e0af22f2bee",
+              "commit": "89ed3596547f5258f480d7e8c548c8f0333cf9ed",
               "remote": "https://github.com/denis15yo/swift-case-paths.git",
               "version": "",
               "init_submodules": false,
@@ -1451,7 +1420,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swiftui_flow",
-              "commit": "3086a602b98155eec28b4be79210d6cb1a43e339",
+              "commit": "ac8c3cde34e658bb371dac7c3af0de1e7adbe0de",
               "remote": "https://github.com/denis15yo/SwiftUI-Flow.git",
               "version": "",
               "init_submodules": false,
@@ -1523,7 +1492,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_ton_swift",
-              "commit": "e08680928f8fd83319c47f1f48301a52ba502b8b",
+              "commit": "f2b6363f15ec2374e13449d381fcb10506ec019f",
               "remote": "https://github.com/denis15yo/ton-swift.git",
               "version": "",
               "init_submodules": false,
@@ -1577,9 +1546,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "16f5cc53015044d06ea812bdebd971343c625f7e",
+              "commit": "385185ddf9b896c32f5e55b1199795b0edf05223",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.2.21",
+              "version": "4.3.6",
               "init_submodules": false,
               "recursive_init_submodules": true,
               "patch_args": [
@@ -1648,7 +1617,6 @@
         },
         "moduleExtensionMetadata": {
           "explicitRootModuleDirectDeps": [
-            "swiftpkg_applovin_max_swift_package",
             "swiftpkg_firebase_ios_sdk",
             "swiftpkg_nicegram_assistant_ios",
             "swiftpkg_nicegram_wallet_ios"

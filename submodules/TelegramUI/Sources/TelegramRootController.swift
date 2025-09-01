@@ -6,9 +6,6 @@ import var NGCoreUI.strings
 import NGUI
 import SwiftUI
 //
-// Nicegram Grum
-import NGGrumUI
-//
 // Nicegram imports
 import NGData
 import NGStrings

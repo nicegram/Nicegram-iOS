@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Внесите свой вклад в самую полную википедию каналов и групп Telegram, автоматически отправляя информацию о канале и ссылку в нашу базу данных. Мы не связываем ваш профиль Telegram и канал и не делимся вашими личными данными.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "записать";
+"NicegramCallRecord.Record" = "Записать";
+"NicegramCallRecord.Stop" = "Стоп";
 "NicegramCallRecord.StopAlertTitle" = "Остановить запись";
 "NicegramCallRecord.StopAlertDescription" = "Вы хотите остановить запись этого звонка?";
 "NicegramCallRecord.StopAlertButtonStop" = "Стоп";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "Распознавание речи в текст недоступно из-за настроек разрешений. Разрешите доступ в Настройках вашего устройства: Nicegram → Конфиденциальность и безопасность → Распознавание речи";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Получить звезды (мультичейн и без KYC)";
 "StarsPurchase.GetOnFragment" = "Купить в Fragment";
 "StarsPurchase.GetOnTelegram" = "Купить в Telegram";
 

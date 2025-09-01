@@ -221,7 +221,8 @@
 "NicegramSettings.ShareData.Note" = "Contribuez au Wikipédia le plus complet de chaînes et de groupes Telegram en soumettant automatiquement des informations sur les chaînes et un lien vers notre base de données. Nous ne connectons pas votre profil de télégramme et votre canal et ne partageons pas vos données personnelles.";
 
 /*Call Record*/
-"NicegramCallRecord.Title" = "enregistrer";
+"NicegramCallRecord.Record" = "Enregistrer";
+"NicegramCallRecord.Stop" = "Arrêter";
 "NicegramCallRecord.StopAlertTitle" = "Arrêter l'enregistrement";
 "NicegramCallRecord.StopAlertDescription" = "Voulez-vous arrêter d'enregistrer cet appel ?";
 "NicegramCallRecord.StopAlertButtonStop" = "Arrêter";
@@ -242,6 +243,7 @@
 "NicegramSpeechToText.AuthorisationError" = "La reconnaissance vocale est indisponible en raison des paramètres d'autorisation. Autorisez l'accès à Nicegram dans les paramètres de l'appareil → Confidentialité et sécurité → Reconnaissance vocale";
 
 /*Stars Purchase*/
+"StarsPurchase.GetStars" = "Obtenez des étoiles (Multichaîne et sans KYC)";
 "StarsPurchase.GetOnFragment" = "Achetez sur Fragment";
 "StarsPurchase.GetOnTelegram" = "Achetez sur Telegram";
 
