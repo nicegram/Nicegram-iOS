@@ -787,15 +787,6 @@ public final class OngoingCallContextPresentationCallVideoView {
     }
 }
 
-// Nicegram TcpOnlyCalls
-public struct NicegramCallSettings {
-    public static var tcpOnly: Bool {
-        get { UserDefaults.standard.bool(forKey: "tcpOnly") }
-        set { UserDefaults.standard.set(newValue, forKey: "tcpOnly") }
-    }
-}
-//
-
 public final class OngoingCallContext {
     public struct AuxiliaryServer {
         public enum Connection {
@@ -923,13 +914,6 @@ public final class OngoingCallContext {
         result.append(contentsOf: OngoingCallThreadLocalContextWebrtc.versions(withIncludeReference: includeReference).map { version -> (version: String, supportsVideo: Bool) in
             return (version, true)
         })
-        
-        // Nicegram TcpOnlyCalls
-        if NicegramCallSettings.tcpOnly {
-            result = result.filter { $0.version == "12.0.0" }
-        }
-        //
-        
         return result
     }
 
@@ -1076,19 +1060,8 @@ public final class OngoingCallContext {
                     directConnection = nil
                 }
                 
-                func log(_ message: String) {
-                    let logger = Logger(
-                        subsystem: Bundle.main.bundleIdentifier ?? "",
-                        category: "tcp-call"
-                    )
-                    logger.log("\(message, privacy: .public)")
-                }
-                
-                log("version=\(version), connections=\(filteredConnections.count), tcp=\(filteredConnections.filter(\.hasTcp).count)")
-                
-                // Nicegram TcpOnlyCalls, removed DEBUG check, added enableTCP
+                #if DEBUG && true
                 var customParameters = customParameters
-                var enableTCP = enableTCP
                 if let initialCustomParameters = try? JSONSerialization.jsonObject(with: (customParameters ?? "{}").data(using: .utf8)!) as? [String: Any] {
                     var customParametersValue: [String: Any]
                     customParametersValue = initialCustomParameters
@@ -1105,13 +1078,9 @@ public final class OngoingCallContext {
                             return false
                         }
                         allowP2P = false
-                        // Nicegram TcpOnlyCalls
-                        enableTCP = true
-                        //
                     }
                 }
-                
-                log("allowP2P=\(allowP2P), enableTCP=\(enableTCP), connections=\(filteredConnections.count)")
+                #endif
                 
                 /*#if DEBUG
                 if let initialCustomParameters = try? JSONSerialization.jsonObject(with: (customParameters ?? "{}").data(using: .utf8)!) as? [String: Any] {

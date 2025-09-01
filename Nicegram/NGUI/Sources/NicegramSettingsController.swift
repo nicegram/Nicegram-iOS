@@ -27,7 +27,6 @@ import TelegramCore
 import TelegramNotices
 import TelegramPresentationData
 import TelegramUIPreferences
-import TelegramVoip
 import UIKit
 import class NGCoreUI.SharedLoadingView
 import NGEnv
@@ -66,7 +65,6 @@ private final class NicegramSettingsControllerArguments {
 // MARK: Sections
 
 private enum NicegramSettingsControllerSection: Int32 {
-    case Calls
     case Unblock
     case Tabs
     case Folders
@@ -102,8 +100,6 @@ private enum EasyToggleType {
 // MARK: ItemListNodeEntry
 
 private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
-    case tcpOnlyCalls(Bool)
-    
     case TabsHeader(String)
     case showContactsTab(String, Bool)
     case showCallsTab(String, Bool)
@@ -161,8 +157,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .tcpOnlyCalls:
-            return NicegramSettingsControllerSection.Calls.rawValue
         case .TabsHeader, .showContactsTab, .showCallsTab, .showTabNames, .showFeedTab:
             return NicegramSettingsControllerSection.Tabs.rawValue
         case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice, .foldersKeywords:
@@ -192,9 +186,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var stableId: Int32 {
         switch self {
-        case .tcpOnlyCalls:
-            return 700
-            
         case .unblockHeader:
             return 800
             
@@ -304,10 +295,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         let arguments = arguments as! NicegramSettingsControllerArguments
         switch self {
-        case let .tcpOnlyCalls(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: "TCP only calls", value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                NicegramCallSettings.tcpOnly = value
-            })
         case let .TabsHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
             
@@ -599,8 +586,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     let nicegramSettings = getNicegramSettings()
     
     var entries: [NicegramSettingsControllerEntry] = []
-    
-    entries.append(.tcpOnlyCalls(NicegramCallSettings.tcpOnly))
     
     if !hideUnblock {
         entries.append(.unblockHeader(l("NicegramSettings.Unblock.Header").uppercased()))
