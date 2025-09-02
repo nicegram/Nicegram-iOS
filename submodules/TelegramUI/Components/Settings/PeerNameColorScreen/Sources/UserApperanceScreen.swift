@@ -449,6 +449,7 @@ final class UserAppearanceScreenComponent: Component {
                         if let file = self.cachedIconFiles[fileId], let patternFile = self.cachedIconFiles[patternFileId], let numberString = slugComponents.last, let number = Int32(numberString) {
                             let gift = StarGift.UniqueGift(
                                 id: id,
+                                giftId: 0,
                                 title: title,
                                 number: number,
                                 slug: slug,
@@ -462,7 +463,11 @@ final class UserAppearanceScreenComponent: Component {
                                 giftAddress: nil,
                                 resellAmounts: nil,
                                 resellForTonOnly: false,
-                                releasedBy: nil
+                                releasedBy: nil,
+                                valueAmount: nil,
+                                valueCurrency: nil,
+                                flags: [],
+                                themePeerId: nil
                             )
                             signal = component.context.engine.accountData.setStarGiftStatus(starGift: gift, expirationDate: emojiStatus.expirationDate)
                         } else {

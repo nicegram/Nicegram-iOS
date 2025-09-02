@@ -137,7 +137,7 @@ public struct PresentationResourcesChat {
     
     public static func chatBubbleArrowFreeImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatBubbleArrowFreeImage.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/HeaderArrow"), color: UIColor(white: 1.0, alpha: 0.3))
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/HeaderArrow"), color: UIColor(white: 1.0, alpha: 0.4))
         })
     }
     

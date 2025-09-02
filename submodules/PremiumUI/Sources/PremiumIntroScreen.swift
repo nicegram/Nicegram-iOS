@@ -935,10 +935,10 @@ struct PremiumIntroConfiguration {
 
 private struct PremiumProduct: Equatable {
     let option: PremiumPromoConfiguration.PremiumProductOption
-    let storeProduct: InAppPurchaseManager.Product
+    let storeProduct: InAppPurchaseManager.Product?
     
     var id: String {
-        return self.option.storeProductId ?? self.storeProduct.id
+        return self.storeProduct?.id ?? self.option.botUrl
     }
     
     var months: Int32 {
@@ -946,11 +946,39 @@ private struct PremiumProduct: Equatable {
     }
     
     var price: String {
-        return self.storeProduct.price
+        if let storeProduct = self.storeProduct {
+            return storeProduct.price
+        } else {
+            return formatCurrencyAmount(self.option.amount, currency: self.option.currency)
+        }
     }
     
     var pricePerMonth: String {
-        return self.storeProduct.pricePerMonth(Int(self.months))
+        if let storeProduct = self.storeProduct {
+            return storeProduct.pricePerMonth(Int(self.months))
+        } else {
+            return formatCurrencyAmount(self.option.amount / Int64(self.months), currency: self.option.currency)
+        }
+    }
+    
+    var priceCurrencyAndAmount: (currency: String, amount: Int64) {
+        if let priceCurrencyAndAmount = self.storeProduct?.priceCurrencyAndAmount {
+            return priceCurrencyAndAmount
+        } else {
+            return (self.option.currency, self.option.amount)
+        }
+    }
+    
+    var priceValue: NSDecimalNumber {
+        if let priceValue = self.storeProduct?.priceValue {
+            return priceValue
+        } else {
+            return self.optionPriceValue
+        }
+    }
+    
+    var optionPriceValue: NSDecimalNumber {
+        return currencyToFractionalAmount(value: self.option.amount, currency: self.option.currency).flatMap { NSDecimalNumber(floatLiteral: $0) } ?? 0.0
     }
     
     var isCurrent: Bool {
@@ -1556,7 +1584,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
         }
         
         var isBiannual: Bool {
-            return self.products?.first(where: { $0.id == self.selectedProductId })?.id.hasSuffix(".biannual") ?? false
+            return self.products?.first(where: { $0.id == self.selectedProductId })?.months == 24
         }
         
         var canUpgrade: Bool {
@@ -1783,7 +1811,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
             state.selectedProductId = context.component.selectedProductId
             state.validPurchases = context.component.validPurchases
             state.isPremium = context.component.isPremium
-            
+                        
             let theme = environment.theme
             let strings = environment.strings
             let presentationData = context.component.screenContext.presentationData
@@ -1961,14 +1989,22 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 if let products = state.products, products.count > 1, state.isPremium == false || (!context.component.justBought && state.canUpgrade) {
                     var optionsItems: [SectionGroupComponent.Item] = []
                     
-                    let shortestOptionPrice: (Int64, NSDecimalNumber)
+                    let shortestProductPrice: (Int64, NSDecimalNumber)
                     if let product = products.first(where: { $0.id.hasSuffix(".monthly") }) {
-                        shortestOptionPrice = (Int64(Float(product.storeProduct.priceCurrencyAndAmount.amount)), product.storeProduct.priceValue)
+                        shortestProductPrice = (Int64(Float(product.priceCurrencyAndAmount.amount)), product.priceValue)
                     } else {
-                        shortestOptionPrice = (1, NSDecimalNumber(decimal: 1))
+                        shortestProductPrice = (1, NSDecimalNumber(decimal: 1))
                     }
                     
                     let currentProductMonths = state.products?.first(where: { $0.isCurrent })?.months ?? 0
+                    
+                    var referenceProduct: InAppPurchaseManager.Product?
+                    for product in products {
+                        if let storeProduct = product.storeProduct {
+                            referenceProduct = storeProduct
+                            break
+                        }
+                    }
                     
                     var i = 0
                     for product in products {
@@ -1977,13 +2013,13 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             giftTitle = strings.Premium_Monthly
                         } else if product.id.hasSuffix(".semiannual") {
                             giftTitle = strings.Premium_Semiannual
-                        } else if product.id.hasSuffix(".biannual") {
+                        } else if product.months == 24 {
                             giftTitle = strings.Premium_Biannual
                         } else {
                             giftTitle = strings.Premium_Annual
                         }
                         
-                        let fraction = Float(product.storeProduct.priceCurrencyAndAmount.amount) / Float(product.months) / Float(shortestOptionPrice.0)
+                        let fraction = Float(product.priceCurrencyAndAmount.amount) / Float(product.months) / Float(shortestProductPrice.0)
                         let discountValue = Int(round((1.0 - fraction) * 20.0) * 5.0)
                         let discount: String
                         if discountValue > 0 {
@@ -1992,13 +2028,16 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                             discount = ""
                         }
                         
-                        let defaultPrice = product.storeProduct.defaultPrice(shortestOptionPrice.1, monthsCount: Int(product.months))
+                        var defaultPrice: String = ""
+                        if let referenceProduct {
+                            defaultPrice = referenceProduct.defaultPrice(shortestProductPrice.1, monthsCount: Int(product.months))
+                        }
                         
                         var subtitle = ""
                         var accessibilitySubtitle = ""
                         var pricePerMonth = product.price
                         if product.months > 1 {
-                            pricePerMonth = product.storeProduct.pricePerMonth(Int(product.months))
+                            pricePerMonth = product.pricePerMonth
                             
                             if discountValue > 0 {
                                 subtitle = "**\(defaultPrice)** \(product.price)"
@@ -2968,6 +3007,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
         private let source: PremiumSource
         private let updateInProgress: (Bool) -> Void
         private let present: (ViewController) -> Void
+        var navigationController: (() -> NavigationController?)?
         private let completion: () -> Void
         
         var topContentOffset: CGFloat?
@@ -2991,7 +3031,6 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
         var emojiPackTitle: String?
         private var emojiFileDisposable: Disposable?
         
-        
         private var disposable: Disposable?
         private var paymentDisposable = MetaDisposable()
         private var activationDisposable = MetaDisposable()
@@ -3006,7 +3045,7 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
         }
         
         var isBiannual: Bool {
-            return self.products?.first(where: { $0.id == self.selectedProductId })?.id.hasSuffix(".biannual") ?? false
+            return self.products?.first(where: { $0.id == self.selectedProductId })?.months == 24
         }
         
         var canUpgrade: Bool {
@@ -3021,7 +3060,14 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             }
         }
         
-        init(screenContext: PremiumIntroScreen.ScreenContext, source: PremiumSource, forceHasPremium: Bool, updateInProgress: @escaping (Bool) -> Void, present: @escaping (ViewController) -> Void, completion: @escaping () -> Void) {
+        init(
+            screenContext: PremiumIntroScreen.ScreenContext,
+            source: PremiumSource,
+            forceHasPremium: Bool,
+            updateInProgress: @escaping (Bool) -> Void,
+            present: @escaping (ViewController) -> Void,
+            completion: @escaping () -> Void
+        ) {
             self.screenContext = screenContext
             self.source = source
             self.updateInProgress = updateInProgress
@@ -3097,6 +3143,8 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
                     for option in promoConfiguration.premiumProductOptions {
                         if let product = availableProducts.first(where: { $0.id == option.storeProductId }), product.isSubscription {
                             products.append(PremiumProduct(option: option, storeProduct: product))
+                        } else {
+                            products.append(PremiumProduct(option: option, storeProduct: nil))
                         }
                     }
                                         
@@ -3244,117 +3292,127 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             self.updateInProgress(true)
             self.updated(transition: .immediate)
             
-            let purpose: AppStoreTransactionPurpose = isUpgrade ? .upgrade : .subscription
-            
-            let canPurchasePremium: Signal<Bool, NoError>
-            switch self.screenContext {
-            case let .accountContext(context):
-                canPurchasePremium = context.engine.payments.canPurchasePremium(purpose: purpose)
-            case let .sharedContext(_, engine, _):
-                canPurchasePremium = engine.payments.canPurchasePremium(purpose: purpose)
-            }
-            let _ = (canPurchasePremium
-            |> deliverOnMainQueue).start(next: { [weak self] available in
-                guard let self else {
-                    return
+            if let storeProduct = premiumProduct.storeProduct {
+                let purpose: AppStoreTransactionPurpose = isUpgrade ? .upgrade : .subscription
+                
+                let canPurchasePremium: Signal<Bool, NoError>
+                switch self.screenContext {
+                case let .accountContext(context):
+                    canPurchasePremium = context.engine.payments.canPurchasePremium(purpose: purpose)
+                case let .sharedContext(_, engine, _):
+                    canPurchasePremium = engine.payments.canPurchasePremium(purpose: purpose)
                 }
-                if available {
-                    self.paymentDisposable.set((inAppPurchaseManager.buyProduct(premiumProduct.storeProduct, purpose: purpose)
-                    |> deliverOnMainQueue).start(next: { [weak self] status in
-                        if let self, case .purchased = status {
-                            let activation: Signal<Never, AssignAppStoreTransactionError>
-                            if let context = self.screenContext.context {
-                                activation = context.account.postbox.peerView(id: context.account.peerId)
-                                |> castError(AssignAppStoreTransactionError.self)
-                                |> take(until: { view in
-                                    if let peer = view.peers[view.peerId], peer.isPremium {
-                                        return SignalTakeAction(passthrough: false, complete: true)
-                                    } else {
-                                        return SignalTakeAction(passthrough: false, complete: false)
+                let _ = (canPurchasePremium
+                |> deliverOnMainQueue).start(next: { [weak self] available in
+                    guard let self else {
+                        return
+                    }
+                    if available {
+                        self.paymentDisposable.set((inAppPurchaseManager.buyProduct(storeProduct, purpose: purpose)
+                        |> deliverOnMainQueue).start(next: { [weak self] status in
+                            if let self, case .purchased = status {
+                                let activation: Signal<Never, AssignAppStoreTransactionError>
+                                if let context = self.screenContext.context {
+                                    activation = context.account.postbox.peerView(id: context.account.peerId)
+                                    |> castError(AssignAppStoreTransactionError.self)
+                                    |> take(until: { view in
+                                        if let peer = view.peers[view.peerId], peer.isPremium {
+                                            return SignalTakeAction(passthrough: false, complete: true)
+                                        } else {
+                                            return SignalTakeAction(passthrough: false, complete: false)
+                                        }
+                                    })
+                                    |> mapToSignal { _ -> Signal<Never, AssignAppStoreTransactionError> in
+                                        return .never()
                                     }
-                                })
-                                |> mapToSignal { _ -> Signal<Never, AssignAppStoreTransactionError> in
-                                    return .never()
+                                    |> timeout(15.0, queue: Queue.mainQueue(), alternate: .fail(.timeout))
+                                } else {
+                                    activation = .complete()
                                 }
-                                |> timeout(15.0, queue: Queue.mainQueue(), alternate: .fail(.timeout))
-                            } else {
-                                activation = .complete()
-                            }
-                            
-                            self.activationDisposable.set((activation
-                            |> deliverOnMainQueue).start(error: { [weak self] _ in
-                                if let self {
+                                
+                                self.activationDisposable.set((activation
+                                |> deliverOnMainQueue).start(error: { [weak self] _ in
+                                    if let self {
+                                        self.inProgress = false
+                                        self.updateInProgress(false)
+                                        
+                                        self.updated(transition: .immediate)
+                                        
+                                        if let context = self.screenContext.context {
+                                            addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_fail")
+                                        }
+                                        
+                                        let errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
+                                        let alertController = textAlertController(sharedContext: self.screenContext.sharedContext, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
+                                        self.present(alertController)
+                                    }
+                                }, completed: { [weak self] in
+                                    guard let self else {
+                                        return
+                                    }
+                                    if let context = self.screenContext.context {
+                                        let _ = updatePremiumPromoConfigurationOnce(account: context.account).start()
+                                    }
                                     self.inProgress = false
                                     self.updateInProgress(false)
                                     
-                                    self.updated(transition: .immediate)
+                                    self.isPremium = true
+                                    self.justBought = true
                                     
-                                    if let context = self.screenContext.context {
-                                        addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_fail")
-                                    }
-                                    
-                                    let errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
-                                    let alertController = textAlertController(sharedContext: self.screenContext.sharedContext, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
-                                    self.present(alertController)
-                                }
-                            }, completed: { [weak self] in
-                                guard let self else {
-                                    return
-                                }
+                                    self.updated(transition: .easeInOut(duration: 0.25))
+                                    self.completion()
+                                }))
+                            }
+                        }, error: { [weak self] error in
+                            guard let self else {
+                                return
+                            }
+                            self.inProgress = false
+                            self.updateInProgress(false)
+                            self.updated(transition: .immediate)
+                            
+                            var errorText: String?
+                            switch error {
+                            case .generic:
+                                errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
+                            case .network:
+                                errorText = presentationData.strings.Premium_Purchase_ErrorNetwork
+                            case .notAllowed:
+                                errorText = presentationData.strings.Premium_Purchase_ErrorNotAllowed
+                            case .cantMakePayments:
+                                errorText = presentationData.strings.Premium_Purchase_ErrorCantMakePayments
+                            case .assignFailed:
+                                errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
+                            case .tryLater:
+                                errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
+                            case .cancelled:
+                                break
+                            }
+                            
+                            if let errorText = errorText {
                                 if let context = self.screenContext.context {
-                                    let _ = updatePremiumPromoConfigurationOnce(account: context.account).start()
+                                    addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_fail")
                                 }
-                                self.inProgress = false
-                                self.updateInProgress(false)
                                 
-                                self.isPremium = true
-                                self.justBought = true
-                                                                        
-                                self.updated(transition: .easeInOut(duration: 0.25))
-                                self.completion()
-                            }))
-                        }
-                    }, error: { [weak self] error in
-                        guard let self else {
-                            return
-                        }
+                                let alertController = textAlertController(sharedContext: self.screenContext.sharedContext, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
+                                self.present(alertController)
+                            }
+                        }))
+                    } else {
                         self.inProgress = false
                         self.updateInProgress(false)
                         self.updated(transition: .immediate)
-                        
-                        var errorText: String?
-                        switch error {
-                        case .generic:
-                            errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
-                        case .network:
-                            errorText = presentationData.strings.Premium_Purchase_ErrorNetwork
-                        case .notAllowed:
-                            errorText = presentationData.strings.Premium_Purchase_ErrorNotAllowed
-                        case .cantMakePayments:
-                            errorText = presentationData.strings.Premium_Purchase_ErrorCantMakePayments
-                        case .assignFailed:
-                            errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
-                        case .tryLater:
-                            errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
-                        case .cancelled:
-                            break
-                        }
-                        
-                        if let errorText = errorText {
-                            if let context = self.screenContext.context {
-                                addAppLogEvent(postbox: context.account.postbox, type: "premium.promo_screen_fail")
-                            }
-                            
-                            let alertController = textAlertController(sharedContext: self.screenContext.sharedContext, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
-                            self.present(alertController)
-                        }
-                    }))
-                } else {
+                    }
+                })
+            } else if case let .accountContext(context) = self.screenContext, let navigationController = self.navigationController?() {
+                context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: premiumProduct.option.botUrl, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: {})
+                
+                Queue.mainQueue().after(3.0) {
                     self.inProgress = false
                     self.updateInProgress(false)
                     self.updated(transition: .immediate)
                 }
-            })
+            }
         }
         
         func updateIsFocused(_ isFocused: Bool) {
@@ -3391,6 +3449,9 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
         return { context in
             let environment = context.environment[EnvironmentType.self].value
             let state = context.state
+            state.navigationController = { [weak environment] in
+                return environment?.controller()?.navigationController as? NavigationController
+            }
                         
             let background = background.update(component: Rectangle(color: environment.theme.list.blocksBackgroundColor), environment: {}, availableSize: context.availableSize, transition: context.transition)
             

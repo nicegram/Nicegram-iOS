@@ -1,4 +1,228 @@
 public extension Api {
+    enum InputBusinessGreetingMessage: TypeConstructorDescription {
+        case inputBusinessGreetingMessage(shortcutId: Int32, recipients: Api.InputBusinessRecipients, noActivityDays: Int32)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .inputBusinessGreetingMessage(let shortcutId, let recipients, let noActivityDays):
+                    if boxed {
+                        buffer.appendInt32(26528571)
+                    }
+                    serializeInt32(shortcutId, buffer: buffer, boxed: false)
+                    recipients.serialize(buffer, true)
+                    serializeInt32(noActivityDays, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .inputBusinessGreetingMessage(let shortcutId, let recipients, let noActivityDays):
+                return ("inputBusinessGreetingMessage", [("shortcutId", shortcutId as Any), ("recipients", recipients as Any), ("noActivityDays", noActivityDays as Any)])
+    }
+    }
+    
+        public static func parse_inputBusinessGreetingMessage(_ reader: BufferReader) -> InputBusinessGreetingMessage? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.InputBusinessRecipients?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.InputBusinessRecipients
+            }
+            var _3: Int32?
+            _3 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.InputBusinessGreetingMessage.inputBusinessGreetingMessage(shortcutId: _1!, recipients: _2!, noActivityDays: _3!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum InputBusinessIntro: TypeConstructorDescription {
+        case inputBusinessIntro(flags: Int32, title: String, description: String, sticker: Api.InputDocument?)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .inputBusinessIntro(let flags, let title, let description, let sticker):
+                    if boxed {
+                        buffer.appendInt32(163867085)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeString(title, buffer: buffer, boxed: false)
+                    serializeString(description, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {sticker!.serialize(buffer, true)}
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .inputBusinessIntro(let flags, let title, let description, let sticker):
+                return ("inputBusinessIntro", [("flags", flags as Any), ("title", title as Any), ("description", description as Any), ("sticker", sticker as Any)])
+    }
+    }
+    
+        public static func parse_inputBusinessIntro(_ reader: BufferReader) -> InputBusinessIntro? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: String?
+            _2 = parseString(reader)
+            var _3: String?
+            _3 = parseString(reader)
+            var _4: Api.InputDocument?
+            if Int(_1!) & Int(1 << 0) != 0 {if let signature = reader.readInt32() {
+                _4 = Api.parse(reader, signature: signature) as? Api.InputDocument
+            } }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.InputBusinessIntro.inputBusinessIntro(flags: _1!, title: _2!, description: _3!, sticker: _4)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum InputBusinessRecipients: TypeConstructorDescription {
+        case inputBusinessRecipients(flags: Int32, users: [Api.InputUser]?)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .inputBusinessRecipients(let flags, let users):
+                    if boxed {
+                        buffer.appendInt32(1871393450)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 4) != 0 {buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(users!.count))
+                    for item in users! {
+                        item.serialize(buffer, true)
+                    }}
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .inputBusinessRecipients(let flags, let users):
+                return ("inputBusinessRecipients", [("flags", flags as Any), ("users", users as Any)])
+    }
+    }
+    
+        public static func parse_inputBusinessRecipients(_ reader: BufferReader) -> InputBusinessRecipients? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: [Api.InputUser]?
+            if Int(_1!) & Int(1 << 4) != 0 {if let _ = reader.readInt32() {
+                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputUser.self)
+            } }
+            let _c1 = _1 != nil
+            let _c2 = (Int(_1!) & Int(1 << 4) == 0) || _2 != nil
+            if _c1 && _c2 {
+                return Api.InputBusinessRecipients.inputBusinessRecipients(flags: _1!, users: _2)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    indirect enum InputChannel: TypeConstructorDescription {
+        case inputChannel(channelId: Int64, accessHash: Int64)
+        case inputChannelEmpty
+        case inputChannelFromMessage(peer: Api.InputPeer, msgId: Int32, channelId: Int64)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .inputChannel(let channelId, let accessHash):
+                    if boxed {
+                        buffer.appendInt32(-212145112)
+                    }
+                    serializeInt64(channelId, buffer: buffer, boxed: false)
+                    serializeInt64(accessHash, buffer: buffer, boxed: false)
+                    break
+                case .inputChannelEmpty:
+                    if boxed {
+                        buffer.appendInt32(-292807034)
+                    }
+                    
+                    break
+                case .inputChannelFromMessage(let peer, let msgId, let channelId):
+                    if boxed {
+                        buffer.appendInt32(1536380829)
+                    }
+                    peer.serialize(buffer, true)
+                    serializeInt32(msgId, buffer: buffer, boxed: false)
+                    serializeInt64(channelId, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .inputChannel(let channelId, let accessHash):
+                return ("inputChannel", [("channelId", channelId as Any), ("accessHash", accessHash as Any)])
+                case .inputChannelEmpty:
+                return ("inputChannelEmpty", [])
+                case .inputChannelFromMessage(let peer, let msgId, let channelId):
+                return ("inputChannelFromMessage", [("peer", peer as Any), ("msgId", msgId as Any), ("channelId", channelId as Any)])
+    }
+    }
+    
+        public static func parse_inputChannel(_ reader: BufferReader) -> InputChannel? {
+            var _1: Int64?
+            _1 = reader.readInt64()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.InputChannel.inputChannel(channelId: _1!, accessHash: _2!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_inputChannelEmpty(_ reader: BufferReader) -> InputChannel? {
+            return Api.InputChannel.inputChannelEmpty
+        }
+        public static func parse_inputChannelFromMessage(_ reader: BufferReader) -> InputChannel? {
+            var _1: Api.InputPeer?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.InputPeer
+            }
+            var _2: Int32?
+            _2 = reader.readInt32()
+            var _3: Int64?
+            _3 = reader.readInt64()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.InputChannel.inputChannelFromMessage(peer: _1!, msgId: _2!, channelId: _3!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
     enum InputChatPhoto: TypeConstructorDescription {
         case inputChatPhoto(id: Api.InputPhoto)
         case inputChatPhotoEmpty
@@ -82,6 +306,74 @@ public extension Api {
             let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.InputChatPhoto.inputChatUploadedPhoto(flags: _1!, file: _2, video: _3, videoStartTs: _4, videoEmojiMarkup: _5)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum InputChatTheme: TypeConstructorDescription {
+        case inputChatTheme(emoticon: String)
+        case inputChatThemeEmpty
+        case inputChatThemeUniqueGift(slug: String)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .inputChatTheme(let emoticon):
+                    if boxed {
+                        buffer.appendInt32(-918689444)
+                    }
+                    serializeString(emoticon, buffer: buffer, boxed: false)
+                    break
+                case .inputChatThemeEmpty:
+                    if boxed {
+                        buffer.appendInt32(-2094627709)
+                    }
+                    
+                    break
+                case .inputChatThemeUniqueGift(let slug):
+                    if boxed {
+                        buffer.appendInt32(-2014978076)
+                    }
+                    serializeString(slug, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .inputChatTheme(let emoticon):
+                return ("inputChatTheme", [("emoticon", emoticon as Any)])
+                case .inputChatThemeEmpty:
+                return ("inputChatThemeEmpty", [])
+                case .inputChatThemeUniqueGift(let slug):
+                return ("inputChatThemeUniqueGift", [("slug", slug as Any)])
+    }
+    }
+    
+        public static func parse_inputChatTheme(_ reader: BufferReader) -> InputChatTheme? {
+            var _1: String?
+            _1 = parseString(reader)
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.InputChatTheme.inputChatTheme(emoticon: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_inputChatThemeEmpty(_ reader: BufferReader) -> InputChatTheme? {
+            return Api.InputChatTheme.inputChatThemeEmpty
+        }
+        public static func parse_inputChatThemeUniqueGift(_ reader: BufferReader) -> InputChatTheme? {
+            var _1: String?
+            _1 = parseString(reader)
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.InputChatTheme.inputChatThemeUniqueGift(slug: _1!)
             }
             else {
                 return nil

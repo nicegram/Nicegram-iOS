@@ -202,7 +202,11 @@ public enum CreateForumChannelTopicError {
 }
 
 func _internal_createForumChannelTopic(account: Account, peerId: PeerId, title: String, iconColor: Int32, iconFileId: Int64?) -> Signal<Int64, CreateForumChannelTopicError> {
-    return account.postbox.transaction { transaction -> Peer? in
+    return _internal_createForumChannelTopic(postbox: account.postbox, network: account.network, stateManager: account.stateManager, accountPeerId: account.peerId, peerId: peerId, title: title, iconColor: iconColor, iconFileId: iconFileId)
+}
+    
+func _internal_createForumChannelTopic(postbox: Postbox, network: Network, stateManager: AccountStateManager, accountPeerId: PeerId, peerId: PeerId, title: String, iconColor: Int32, iconFileId: Int64?) -> Signal<Int64, CreateForumChannelTopicError> {
+    return postbox.transaction { transaction -> Peer? in
         return transaction.getPeer(peerId)
     }
     |> castError(CreateForumChannelTopicError.self)
@@ -218,7 +222,7 @@ func _internal_createForumChannelTopic(account: Account, peerId: PeerId, title: 
             flags |= (1 << 3)
         }
         flags |= (1 << 0)
-        return account.network.request(Api.functions.channels.createForumTopic(
+        return network.request(Api.functions.channels.createForumTopic(
             flags: flags,
             channel: inputChannel,
             title: title,
@@ -231,14 +235,14 @@ func _internal_createForumChannelTopic(account: Account, peerId: PeerId, title: 
             return .generic
         }
         |> mapToSignal { result -> Signal<Int64, CreateForumChannelTopicError> in
-            account.stateManager.addUpdates(result)
+            stateManager.addUpdates(result)
             
             var topicId: Int64?
             topicId = nil
             for update in result.allUpdates {
                 switch update {
                 case let .updateNewChannelMessage(message, _, _):
-                    if let message = StoreMessage(apiMessage: message, accountPeerId: account.peerId, peerIsForum: peer.isForum) {
+                    if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum) {
                         if case let .Id(id) = message.id {
                             topicId = Int64(id.id)
                         }
@@ -249,12 +253,12 @@ func _internal_createForumChannelTopic(account: Account, peerId: PeerId, title: 
             }
             
             if let topicId {
-                return account.postbox.transaction { transaction -> Void in
+                return postbox.transaction { transaction -> Void in
                     transaction.removeHole(peerId: peerId, threadId: topicId, namespace: Namespaces.Message.Cloud, space: .everywhere, range: 1 ... (Int32.max - 1))
                 }
                 |> castError(CreateForumChannelTopicError.self)
                 |> mapToSignal { _ -> Signal<Int64, CreateForumChannelTopicError> in
-                    return resolveForumThreads(accountPeerId: account.peerId, postbox: account.postbox, source: .network(account.network), additionalPeers: AccumulatedPeers(), ids: [PeerAndBoundThreadId(peerId: peerId, threadId: topicId)])
+                    return resolveForumThreads(accountPeerId: accountPeerId, postbox: postbox, source: .network(network), additionalPeers: AccumulatedPeers(), ids: [PeerAndBoundThreadId(peerId: peerId, threadId: topicId)])
                     |> castError(CreateForumChannelTopicError.self)
                     |> map { _ -> Int64 in
                         return topicId

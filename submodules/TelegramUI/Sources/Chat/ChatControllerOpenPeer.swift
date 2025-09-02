@@ -123,6 +123,7 @@ import ChatEmptyNode
 import ChatMediaInputStickerGridItem
 import AdsInfoScreen
 import FaceScanScreen
+import ForumCreateTopicScreen
 
 extension ChatControllerImpl {
     func openPeer(peer: EnginePeer?, navigation: ChatControllerInteractionNavigateToPeer, fromMessage: MessageReference?, fromReactionMessageId: MessageId? = nil, expandAvatar: Bool = false, peerTypes: ReplyMarkupButtonAction.PeerTypes? = nil, skipAgeVerification: Bool = false) {
@@ -327,5 +328,107 @@ extension ChatControllerImpl {
                 }
             }
         })
+    }
+    
+    func openBotForumMoreMenu(sourceView: UIView, gesture: ContextGesture?) {
+        Task { @MainActor [weak self] in
+            guard let self, let peerId = self.chatLocation.peerId else {
+                return
+            }
+            guard let forumPeerId = await (self.context.engine.data.subscribe(
+                TelegramEngine.EngineData.Item.Peer.LinkedBotForumPeerId(id: peerId)
+            )
+            |> map { value -> EnginePeer.Id? in
+                if case let .known(value) = value {
+                    return value
+                } else {
+                    return nil
+                }
+            }).get() else {
+                return
+            }
+            
+            let strings = self.presentationData.strings
+            
+            var items: [ContextMenuItem] = []
+            
+            //TODO:localize
+            items.append(.action(ContextMenuActionItem(text: "Open Profile", icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.contextMenu.primaryColor)
+            }, action: { [weak self] _, f in
+                f(.default)
+                
+                guard let self, let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer else {
+                    return
+                }
+                
+                guard let controller = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) else {
+                        return
+                    }
+                (self.navigationController as? NavigationController)?.pushViewController(controller)
+            })))
+            
+            items.append(.separator)
+            items.append(.action(ContextMenuActionItem(text: strings.Conversation_Search, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Search"), color: theme.contextMenu.primaryColor)
+            }, action: { [weak self] action in
+                action.dismissWithResult(.default)
+                
+                self?.beginMessageSearch("")
+            })))
+            
+            items.append(.action(ContextMenuActionItem(text: strings.Chat_CreateTopic, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.contextMenu.primaryColor)
+            }, action: { [weak self] action in
+                guard let self else {
+                    return
+                }
+                
+                action.dismissWithResult(.default)
+                
+                let controller = ForumCreateTopicScreen(context: self.context, peerId: forumPeerId, mode: .create)
+                controller.navigationPresentation = .modal
+                
+                controller.completion = { [weak self, weak controller] title, fileId, iconColor, _ in
+                    controller?.isInProgress = true
+                    controller?.view.endEditing(true)
+                    
+                    guard let self else {
+                        return
+                    }
+                    
+                    let _ = (self.context.engine.peers.createForumChannelTopic(id: forumPeerId, title: title, iconColor: iconColor, iconFileId: fileId)
+                    |> deliverOnMainQueue).startStandalone(next: { [weak self, weak controller] topicId in
+                        guard let self else {
+                            return
+                        }
+                        self.updateChatLocationThread(threadId: topicId)
+                        controller?.dismiss()
+                    }, error: { _ in
+                        controller?.isInProgress = false
+                    })
+                }
+                self.push(controller)
+            })))
+
+            let presentationData = self.presentationData
+            
+            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            self.presentInGlobalOverlay(contextController)
+        }
+    }
+}
+
+private final class HeaderContextReferenceContentSource: ContextReferenceContentSource {
+    private let controller: ViewController
+    private let sourceView: UIView
+
+    init(controller: ViewController, sourceView: UIView) {
+        self.controller = controller
+        self.sourceView = sourceView
+    }
+
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds)
     }
 }

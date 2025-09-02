@@ -450,7 +450,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
                         continue
                     }
                     
-                    let title = strings.Stars_Purchase_Stars(Int32(product.count))
+                    let title = strings.Stars_Purchase_Stars(Int32(clamping: product.count))
                     let price = product.price
                     
                     let titleComponent = AnyComponent(MultilineTextComponent(
@@ -804,7 +804,7 @@ private final class StarsPurchaseScreenComponent: CombinedComponent {
             case let .gift(peerId):
                 purpose = .starsGift(peerId: peerId, count: product.count, currency: currency, amount: amount)
             default:
-                purpose = .stars(count: product.count, currency: currency, amount: amount)
+                purpose = .stars(count: product.count, currency: currency, amount: amount, peerId: self.purpose.commercialPeerId)
             }
             
             let _ = (self.context.engine.payments.canPurchasePremium(purpose: purpose)
@@ -1407,6 +1407,21 @@ private extension StarsPurchasePurpose {
             return [peerId]
         default:
             return []
+        }
+    }
+    
+    var commercialPeerId: EnginePeer.Id? {
+        switch self {
+        case let .transfer(peerId, _):
+            return peerId
+        case let .reactions(peerId, _):
+            return peerId
+        case let .subscription(peerId, _, _):
+            return peerId
+        case let .sendMessage(peerId, _):
+            return peerId
+        default:
+            return nil
         }
     }
     

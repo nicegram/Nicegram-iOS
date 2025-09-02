@@ -203,6 +203,14 @@ public struct OngoingCallContextState: Equatable {
     public let remoteVideoState: RemoteVideoState
     public let remoteAudioState: RemoteAudioState
     public let remoteBatteryLevel: RemoteBatteryLevel
+    
+    public init(state: State, videoState: VideoState, remoteVideoState: RemoteVideoState, remoteAudioState: RemoteAudioState, remoteBatteryLevel: RemoteBatteryLevel) {
+        self.state = state
+        self.videoState = videoState
+        self.remoteVideoState = remoteVideoState
+        self.remoteAudioState = remoteAudioState
+        self.remoteBatteryLevel = remoteBatteryLevel
+    }
 }
 
 private final class OngoingCallThreadLocalContextQueueImpl: NSObject, OngoingCallThreadLocalContextQueue, OngoingCallThreadLocalContextQueueWebrtc {

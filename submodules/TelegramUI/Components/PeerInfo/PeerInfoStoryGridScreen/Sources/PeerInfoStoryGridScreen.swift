@@ -385,7 +385,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                             }
                             
                             if let selectionModeCompletion = component.selectionModeCompletion {
-                                selectionModeCompletion(Array(paneNode.selectedItems.values))
+                                selectionModeCompletion(Array(paneNode.selectedItems.sorted(by: { $0.key < $1.key }).map(\.value)))
                                 environment.controller()?.dismiss()
                                 return
                             }

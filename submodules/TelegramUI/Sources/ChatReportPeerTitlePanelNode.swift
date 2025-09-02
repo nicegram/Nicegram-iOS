@@ -381,6 +381,7 @@ final class ChatReportPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
         
         self.textNode = ImmediateTextNode()
         self.textNode.maximumNumberOfLines = 3
+        self.textNode.truncationType = .middle
         self.textNode.textAlignment = .center
         
         super.init()
@@ -556,7 +557,7 @@ final class ChatReportPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
             
             transition.updateAlpha(node: self.textNode, alpha: 1.0)
             
-            let textSize = self.textNode.updateLayout(CGSize(width: width - leftInset - rightInset - 80.0, height: 40.0))
+            let textSize = self.textNode.updateLayout(CGSize(width: width - leftInset - rightInset - 80.0, height: 80.0))
             self.textNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((width - textSize.width) / 2.0), y: 10.0), size: textSize)
             
             for (_, view) in self.buttons {
@@ -565,7 +566,7 @@ final class ChatReportPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
             
             self.tapGestureRecognizer?.isEnabled = true
             
-            panelHeight += 15.0
+            panelHeight += max(15.0, textSize.height - 19.0)
         } else {
             transition.updateAlpha(node: self.textNode, alpha: 0.0)
             

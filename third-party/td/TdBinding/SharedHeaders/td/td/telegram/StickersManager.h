@@ -75,6 +75,8 @@ class StickersManager final : public Actor {
 
   StickerFormat get_sticker_format(FileId file_id) const;
 
+  int64 get_sticker_id(FileId sticker_id) const;
+
   bool is_premium_custom_emoji(CustomEmojiId custom_emoji_id, bool default_result) const;
 
   bool have_sticker(StickerSetId sticker_set_id, int64 sticker_id);
@@ -464,9 +466,9 @@ class StickersManager final : public Actor {
   static constexpr int32 MAX_FEATURED_STICKER_SET_VIEW_DELAY = 5;
   static constexpr int32 OLD_FEATURED_STICKER_SET_SLICE_SIZE = 20;
 
-  static constexpr int32 MAX_FOUND_STICKERS = 100;                 // server side limit
-  static constexpr size_t MAX_STICKER_SET_TITLE_LENGTH = 64;       // server side limit
-  static constexpr size_t MAX_STICKER_SET_SHORT_NAME_LENGTH = 64;  // server side limit
+  static constexpr int32 MAX_FOUND_STICKERS = 100;                 // server-side limit
+  static constexpr size_t MAX_STICKER_SET_TITLE_LENGTH = 64;       // server-side limit
+  static constexpr size_t MAX_STICKER_SET_SHORT_NAME_LENGTH = 64;  // server-side limit
   static constexpr size_t MAX_GET_CUSTOM_EMOJI_STICKERS = 200;     // server-side limit
 
   static constexpr int32 EMOJI_KEYWORDS_UPDATE_DELAY = 3600;
@@ -606,8 +608,6 @@ class StickersManager final : public Actor {
   class StickerSetListLogEvent;
 
   class UploadStickerFileCallback;
-
-  int64 get_sticker_id(FileId sticker_id) const;
 
   CustomEmojiId get_custom_emoji_id(FileId sticker_id) const;
 

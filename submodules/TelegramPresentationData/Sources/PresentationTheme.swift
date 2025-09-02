@@ -1578,6 +1578,7 @@ public final class PresentationTheme: Equatable {
     public let chart: PresentationThemeChart
     public let preview: Bool
     public var forceSync: Bool = false
+    public var starGift: StarGift?
     
     public let resourceCache: PresentationsResourceCache = PresentationsResourceCache()
     

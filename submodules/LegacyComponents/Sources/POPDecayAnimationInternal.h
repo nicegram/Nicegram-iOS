@@ -27,7 +27,7 @@ static void decay_position(CGFloat *x, CGFloat *v, NSUInteger count, CFTimeInter
   // x0 = x;
   // x = x0 + v0 * deceleration * (1 - powf(deceleration, dt)) / (1 - deceleration)
 #pragma clang diagnostic push
-#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 180500
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
 #endif
   float v0[count];

@@ -145,6 +145,8 @@ public struct Namespaces {
         public static let cachedGroupsInCommon: Int8 = 46
         public static let groupCallPersistentSettings: Int8 = 47
         public static let cachedProfileGiftsCollections: Int8 = 48
+        public static let cachedProfileSavedMusic: Int8 = 49
+        public static let cachedChatThemes: Int8 = 50
     }
     
     public struct UnorderedItemList {
@@ -318,6 +320,7 @@ private enum PreferencesKeyValues: Int32 {
     case serverSuggestionInfo = 44
     case persistentChatInterfaceData = 45
     case globalPostSearchState = 46
+    case savedMusicIds = 47
 }
 
 public func applicationSpecificPreferencesKey(_ value: Int32) -> ValueBoxKey {
@@ -576,8 +579,14 @@ public struct PreferencesKeys {
     }
     
     public static func globalPostSearchState() -> ValueBoxKey {
-        let key = ValueBoxKey(length: 4 + 8)
+        let key = ValueBoxKey(length: 4)
         key.setInt32(0, value: PreferencesKeyValues.globalPostSearchState.rawValue)
+        return key
+    }
+    
+    public static func savedMusicIds() -> ValueBoxKey {
+        let key = ValueBoxKey(length: 4)
+        key.setInt32(0, value: PreferencesKeyValues.savedMusicIds.rawValue)
         return key
     }
 }

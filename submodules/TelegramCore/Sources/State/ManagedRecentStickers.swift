@@ -343,6 +343,7 @@ func managedUniqueStarGifts(accountPeerId: PeerId, postbox: Postbox, network: Ne
                             if let file = files[fileId], let patternFile = files[patternFileId], let numberString = slugComponents.last, let number = Int32(numberString) {
                                 let gift = StarGift.UniqueGift(
                                     id: id,
+                                    giftId: 0,
                                     title: title,
                                     number: number,
                                     slug: slug,
@@ -356,7 +357,11 @@ func managedUniqueStarGifts(accountPeerId: PeerId, postbox: Postbox, network: Ne
                                     giftAddress: nil,
                                     resellAmounts: nil,
                                     resellForTonOnly: false,
-                                    releasedBy: nil
+                                    releasedBy: nil,
+                                    valueAmount: nil,
+                                    valueCurrency: nil,
+                                    flags: [],
+                                    themePeerId: nil
                                 )
                                 if let entry = CodableEntry(RecentStarGiftItem(gift)) {
                                     items.append(OrderedItemListEntry(id: RecentStarGiftItemId(id).rawValue, contents: entry))

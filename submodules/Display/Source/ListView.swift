@@ -194,6 +194,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
     public private(set) final var visibleSize: CGSize = CGSize()
     public private(set) final var insets = UIEdgeInsets()
     public final var visualInsets: UIEdgeInsets?
+    private var itemOffsetInsets: UIEdgeInsets?
     public final var dynamicVisualInsets: (() -> UIEdgeInsets)?
     public private(set) final var headerInsets = UIEdgeInsets()
     public private(set) final var scrollIndicatorInsets = UIEdgeInsets()
@@ -348,10 +349,13 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
     public final var beganInteractiveDragging: (CGPoint) -> Void = { _ in }
     public final var endedInteractiveDragging: (CGPoint) -> Void = { _ in }
     public final var didEndScrolling: ((Bool) -> Void)?
+    public final var didEndScrollingWithOverscroll: (() -> Void)?
+    
     
     private var currentGeneralScrollDirection: GeneralScrollDirection?
     public final var generalScrollDirectionUpdated: (GeneralScrollDirection) -> Void = { _ in }
     
+    public var autoScrollWhenReordering = true
     public private(set) var isReordering = false
     public final var willBeginReorder: (CGPoint) -> Void = { _ in }
     public final var reorderBegan: () -> Void = { }
@@ -668,6 +672,12 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
     
     private func updateReordering(offset: CGFloat) {
         if let reorderNode = self.reorderNode {
+            if !self.autoScrollWhenReordering, case let .known(contentOffset) = self.visibleContentOffset() {
+                let updatedLocation = reorderNode.initialLocation.y + offset
+                if updatedLocation < self.insets.top - contentOffset {
+                    return
+                }
+            }
             reorderNode.updateOffset(offset: offset)
             self.checkItemReordering()
         }
@@ -883,6 +893,10 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
             self.resetScrollIndicatorFlashTimer(start: false)
             
             self.isAuxiliaryDisplayLinkEnabled = true
+            
+            if scrollView.contentOffset.y < -48.0 {
+                self.didEndScrollingWithOverscroll?()
+            }
         } else {
             self.isDeceleratingAfterTracking = false
             self.resetHeaderItemsFlashTimer(start: true)
@@ -1520,10 +1534,14 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
             topItemFound = true
         }
         
+        if !topItemFound, self.stackFromBottom && !self.autoScrollWhenReordering, let itemNode = self.itemNodes.first, itemNode.apparentFrame.minY > 0.0 {
+            topItemFound = true
+        }
+        
         var topOffset: CGFloat
         
         if topItemFound {
-            let realTopItemEdge = itemNodes.first!.apparentFrame.origin.y
+            let realTopItemEdge = self.itemNodes.first!.apparentFrame.origin.y
             let realTopItemEdgeOffset = max(0.0, realTopItemEdge)
 
             topOffset = realTopItemEdgeOffset
@@ -1848,7 +1866,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                 nodes.append(.Placeholder(frame: node.apparentFrame))
             }
         }
-        return ListViewState(insets: self.insets, visibleSize: self.visibleSize, invisibleInset: self.invisibleInset, nodes: nodes, scrollPosition: nil, stationaryOffset: nil, stackFromBottom: self.stackFromBottom)
+        return ListViewState(insets: self.insets, itemOffsetInsets: self.itemOffsetInsets ?? self.insets, visibleSize: self.visibleSize, invisibleInset: self.invisibleInset, nodes: nodes, scrollPosition: nil, stationaryOffset: nil, stackFromBottom: self.stackFromBottom)
     }
     
     public func addAfterTransactionsCompleted(_ f: @escaping () -> Void) {
@@ -1886,6 +1904,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                 self.insets = updateSizeAndInsets.insets
                 self.headerInsets = updateSizeAndInsets.headerInsets ?? self.insets
                 self.scrollIndicatorInsets = updateSizeAndInsets.scrollIndicatorInsets ?? self.insets
+                self.itemOffsetInsets = updateSizeAndInsets.itemOffsetInsets
                 self.ensureTopInsetForOverlayHighlightedItems = updateSizeAndInsets.ensureTopInsetForOverlayHighlightedItems
                 
                 let wasIgnoringScrollingEvents = self.ignoreScrollingEvents
@@ -2474,14 +2493,14 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                         takenAnimation = true
                         
                         if abs(layout.size.height - previousApparentHeight) > CGFloat.ulpOfOne {
-                            node.addApparentHeightAnimation(layout.size.height, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp, invertOffsetDirection: invertOffsetDirection, update: { [weak node] progress, currentValue in
+                            node.addApparentHeightAnimation(layout.size.height, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp, invertOffsetDirection: invertOffsetDirection, update: { [weak node] progress, currentValue in
                                 if let node = node {
                                     node.animateFrameTransition(progress, currentValue)
                                 }
                             })
                             if node.rotated {
                                 node.transitionOffset += previousApparentHeight - layout.size.height
-                                node.addTransitionOffsetAnimation(0.0, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp)
+                                node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp)
                             }
                         }
                     }
@@ -2523,16 +2542,16 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                     } else {
                         node.transitionOffset += transitionOffsetDelta
                     }
-                    node.addTransitionOffsetAnimation(0.0, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp)
+                    node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp)
                     if previousInsets != layout.insets {
                         node.insets = previousInsets
-                        node.addInsetsAnimationToValue(layout.insets, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp)
+                        node.addInsetsAnimationToValue(layout.insets, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp)
                     }
                 }
             } else {
                 if !nodeFrame.size.height.isEqual(to: node.apparentHeight) {
                     let addAnimation = previousFrame?.height != nodeFrame.size.height
-                    node.addApparentHeightAnimation(nodeFrame.size.height, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp, invertOffsetDirection: invertOffsetDirection, update: { [weak node] progress, currentValue in
+                    node.addApparentHeightAnimation(nodeFrame.size.height, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp, invertOffsetDirection: invertOffsetDirection, update: { [weak node] progress, currentValue in
                         if let node = node, addAnimation {
                             node.animateFrameTransition(progress, currentValue)
                         }
@@ -2550,10 +2569,10 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                     } else {
                         node.transitionOffset += transitionOffsetDelta
                     }
-                    node.addTransitionOffsetAnimation(0.0, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp)
+                    node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp)
                     if previousInsets != layout.insets {
                         node.insets = previousInsets
-                        node.addInsetsAnimationToValue(layout.insets, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp)
+                        node.addInsetsAnimationToValue(layout.insets, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp)
                     }
                 } else {
                     if self.debugInfo {
@@ -2562,21 +2581,21 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                     if !node.rotated {
                         if !node.insets.top.isZero {
                             node.transitionOffset += node.insets.top
-                            node.addTransitionOffsetAnimation(0.0, duration: insertionAnimationDuration * UIView.animationDurationFactor(), beginAt: timestamp)
+                            node.addTransitionOffsetAnimation(0.0, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), beginAt: timestamp)
                         }
                     }
-                    node.animateInsertion(timestamp, duration: insertionAnimationDuration * UIView.animationDurationFactor(), options: ListViewItemAnimationOptions(short: invertOffsetDirection))
+                    node.animateInsertion(timestamp, duration: (node.updateAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), options: ListViewItemAnimationOptions(short: invertOffsetDirection))
                 }
             }
         } else if animateAlpha {
             if previousFrame == nil {
                 if forceAnimateInsertion {
-                    node.animateInsertion(timestamp, duration: insertionAnimationDuration * UIView.animationDurationFactor(), options: ListViewItemAnimationOptions(short: true))
+                    node.animateInsertion(timestamp, duration: (node.insertionAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor(), options: ListViewItemAnimationOptions(short: true))
                 } else if animateFullTransition {
                     node.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.1)
                     node.layer.animateScale(from: 0.7, to: 1.0, duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring)
                 } else {
-                    node.animateAdded(timestamp, duration: insertionAnimationDuration * UIView.animationDurationFactor())
+                    node.animateAdded(timestamp, duration: (node.insertionAnimationDuration() ?? insertionAnimationDuration) * UIView.animationDurationFactor())
                 }
             }
         }
@@ -3186,6 +3205,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                 self.insets = updateSizeAndInsets.insets
                 self.headerInsets = updateSizeAndInsets.headerInsets ?? self.insets
                 self.scrollIndicatorInsets = updateSizeAndInsets.scrollIndicatorInsets ?? self.insets
+                self.itemOffsetInsets = updateSizeAndInsets.itemOffsetInsets
                 self.ensureTopInsetForOverlayHighlightedItems = updateSizeAndInsets.ensureTopInsetForOverlayHighlightedItems
                 self.visibleSize = updateSizeAndInsets.size
                 
@@ -4662,7 +4682,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
         var offsetRanges = OffsetRanges()
         
         var scrollingForReorder = false
-        if let reorderOffset = self.reorderNode?.currentOffset(), !self.itemNodes.isEmpty {
+        if self.autoScrollWhenReordering, let reorderOffset = self.reorderNode?.currentOffset(), !self.itemNodes.isEmpty {
             let effectiveInsets = self.visualInsets ?? self.insets
             
             var offset: CGFloat = 6.0

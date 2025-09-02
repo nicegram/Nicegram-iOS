@@ -532,7 +532,7 @@ extension EngineChatList.Item {
             }
             
             var forumTopicDataValue: EngineChatList.ForumTopicData?
-            if let forumTopicData = forumTopicData {
+            if let forumTopicData {
                 let id = forumTopicData.id
                 if let forumTopicInfo = forumTopicData.info.data.get(MessageHistoryThreadData.self) {
                     forumTopicDataValue = EngineChatList.ForumTopicData(id: id, title: forumTopicInfo.info.title, iconFileId: forumTopicInfo.info.icon, iconColor: forumTopicInfo.info.iconColor, maxOutgoingReadMessageId: MessageId(peerId: index.messageIndex.id.peerId, namespace: Namespaces.Message.Cloud, id: forumTopicInfo.maxOutgoingReadId), isUnread: forumTopicInfo.incomingUnreadCount > 0, threadPeer: forumTopicData.threadPeer.flatMap(EnginePeer.init))

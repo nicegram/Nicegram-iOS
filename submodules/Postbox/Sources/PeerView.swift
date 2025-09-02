@@ -149,7 +149,7 @@ final class MutablePeerView: MutablePostboxView {
         var peersUpdated = false
         var updateMessages = false
         
-        if let cachedData = updatedCachedPeerData[self.contactPeerId], self.cachedData == nil || !self.cachedData!.isEqual(to: cachedData) {
+        if let cachedData = updatedCachedPeerData[self.contactPeerId]?.updated, self.cachedData == nil || !self.cachedData!.isEqual(to: cachedData) {
             if self.cachedData?.messageIds != cachedData.messageIds {
                 updateMessages = true
             }
@@ -286,7 +286,7 @@ final class MutablePeerView: MutablePostboxView {
             }
             
             if let associatedPeerId = peer.associatedPeerId {
-                if let value = updatedCachedPeerData[associatedPeerId] {
+                if let value = updatedCachedPeerData[associatedPeerId]?.updated {
                     if let current = self.associatedCachedData[associatedPeerId] {
                         if !current.isEqual(to: value) {
                             self.associatedCachedData[associatedPeerId] = value

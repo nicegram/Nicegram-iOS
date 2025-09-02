@@ -75,7 +75,7 @@ final class MessageCustomTagHoleIndexTable: Table {
         if !self.metadataTable.isPeerCustomTagInitialized(peerId: peerId, threadId: threadId, tag: tag) {
             self.metadataTable.setPeerCustomTagInitialized(peerId: peerId, threadId: threadId, tag: tag)
             
-            if let namespaces = self.seedConfiguration.messageThreadHoles[peerId.namespace] {
+            if let namespaces = self.seedConfiguration.messageThreadHoles(peerId.namespace, threadId) {
                 for namespace in namespaces {
                     var operations: [MessageHistoryIndexHoleOperationKey: [MessageHistoryIndexHoleOperation]] = [:]
                     self.addInternal(peerId: peerId, threadId: threadId, tag: tag, tagValue: tagValue, namespace: namespace, range: 1 ... (Int32.max - 1), operations: &operations)

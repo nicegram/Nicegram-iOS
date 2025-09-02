@@ -100,10 +100,23 @@ func openWebAppImpl(
             }
         }
     }
+    
+    var botPeer = botPeer
+    if case let .inline(bot) = source {
+        botPeer = bot
+    }
             
-    let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.BotAppSettings(id: botPeer.id))
-    |> deliverOnMainQueue).start(next: { appSettings in
-        let openWebView = { [weak parentController] in
+    let _ = combineLatest(queue: Queue.mainQueue(),
+        context.engine.data.get(TelegramEngine.EngineData.Item.Peer.BotAppSettings(id: botPeer.id)),
+        ApplicationSpecificNotice.getBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id),
+        context.engine.messages.attachMenuBots(),
+        context.engine.messages.getAttachMenuBot(botId: botPeer.id, cached: true)
+        |> map(Optional.init)
+        |> `catch` { _ -> Signal<AttachMenuBot?, NoError> in
+          return .single(nil)
+        }
+    ).start(next: { appSettings, noticed, attachMenuBots, attachMenuBot in
+        let openWebView: (Bool) -> Void = { [weak parentController] justInstalled in
             guard let parentController else {
                 return
             }
@@ -305,6 +318,11 @@ func openWebAppImpl(
                     presentImpl = { [weak controller] c, a in
                         controller?.present(c, in: .window(.root), with: a)
                     }
+                    
+                    if justInstalled {
+                        let content: UndoOverlayContent = .succeed(text: presentationData.strings.WebApp_ShortcutsSettingsAdded(botPeer.compactDisplayTitle).string, timeout: 5.0, customUndoText: nil)
+                        controller.present(UndoOverlayController(presentationData: presentationData, content: content, elevatedLayout: false, position: .top, action: { _ in return false }), in: .current)
+                    }
                 }, error: { [weak parentController] error in
                     if let parentController {
                         parentController.present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {
@@ -314,25 +332,37 @@ func openWebAppImpl(
             }
         }
         
-        if skipTermsOfService {
-            openWebView()
-        } else {
-            var botPeer = botPeer
-            if case let .inline(bot) = source {
-                botPeer = bot
+        var isAttachMenuBotInstalled: Bool?
+        if let _ = attachMenuBot {
+            if let _ = attachMenuBots.first(where: { $0.peer.id == botPeer.id && !$0.flags.contains(.notActivated) }) {
+                isAttachMenuBotInstalled = true
+            } else {
+                isAttachMenuBotInstalled = false
             }
-            let _ = (ApplicationSpecificNotice.getBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id)
-            |> deliverOnMainQueue).startStandalone(next: { [weak parentController] value in
-                guard let parentController else {
-                    return
+        }
+        
+        if !noticed || attachMenuBot?.flags.contains(.notActivated) == true || isAttachMenuBotInstalled == false {
+            if let isAttachMenuBotInstalled, let attachMenuBot {
+                if !isAttachMenuBotInstalled {
+                    let controller = webAppTermsAlertController(context: context, updatedPresentationData: updatedPresentationData, bot: attachMenuBot, completion: { allowWrite in
+                        let _ = ApplicationSpecificNotice.setBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id).startStandalone()
+                        let _ = (context.engine.messages.addBotToAttachMenu(botId: botPeer.id, allowWrite: allowWrite)
+                        |> deliverOnMainQueue).startStandalone(error: { _ in
+                        }, completed: {
+                            openWebView(true)
+                        })
+                    })
+                    parentController.present(controller, in: .window(.root))
+                } else {
+                    openWebView(false)
                 }
-                
-                if value {
-                    openWebView()
+            } else {
+                if skipTermsOfService {
+                    openWebView(false)
                 } else {
                     let controller = webAppLaunchConfirmationController(context: context, updatedPresentationData: updatedPresentationData, peer: botPeer, completion: { _ in
                         let _ = ApplicationSpecificNotice.setBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id).startStandalone()
-                        openWebView()
+                        openWebView(false)
                     }, showMore: nil, openTerms: {
                         if let navigationController = parentController.navigationController as? NavigationController {
                             context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: presentationData.strings.WebApp_LaunchTermsConfirmation_URL, forceExternal: false, presentationData: presentationData, navigationController: navigationController, dismissInput: {})
@@ -340,7 +370,9 @@ func openWebAppImpl(
                     })
                     parentController.present(controller, in: .window(.root))
                 }
-            })
+            }
+        } else {
+            openWebView(false)
         }
     })
 }

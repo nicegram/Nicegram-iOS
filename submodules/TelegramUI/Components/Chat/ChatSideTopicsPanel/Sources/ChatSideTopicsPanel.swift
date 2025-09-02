@@ -45,12 +45,18 @@ public final class ChatSideTopicsPanel: Component {
         case top
     }
     
+    public enum Kind {
+        case forum
+        case monoforum
+        case botForum
+    }
+    
     let context: AccountContext
     let theme: PresentationTheme
     let strings: PresentationStrings
     let location: Location
     let peerId: EnginePeer.Id
-    let isMonoforum: Bool
+    let kind: Kind
     let topicId: Int64?
     let controller: () -> ViewController?
     let togglePanel: () -> Void
@@ -63,7 +69,7 @@ public final class ChatSideTopicsPanel: Component {
         strings: PresentationStrings,
         location: Location,
         peerId: EnginePeer.Id,
-        isMonoforum: Bool,
+        kind: Kind,
         topicId: Int64?,
         controller: @escaping () -> ViewController?,
         togglePanel: @escaping () -> Void,
@@ -75,7 +81,7 @@ public final class ChatSideTopicsPanel: Component {
         self.strings = strings
         self.location = location
         self.peerId = peerId
-        self.isMonoforum = isMonoforum
+        self.kind = kind
         self.topicId = topicId
         self.controller = controller
         self.togglePanel = togglePanel
@@ -99,7 +105,7 @@ public final class ChatSideTopicsPanel: Component {
         if lhs.peerId != rhs.peerId {
             return false
         }
-        if lhs.isMonoforum != rhs.isMonoforum {
+        if lhs.kind != rhs.kind {
             return false
         }
         if lhs.topicId != rhs.topicId {
@@ -387,6 +393,7 @@ public final class ChatSideTopicsPanel: Component {
                             avatarIconContent = .topic(title: String(threadData.info.title.prefix(1)), color: threadData.info.iconColor, size: iconSize)
                         }
                     } else {
+                        //newTopicTemplateIcon
                         avatarIconContent = .image(image: PresentationResourcesChatList.generalTopicTemplateIcon(component.theme), tintColor: component.isSelected ? component.theme.rootController.navigationBar.accentTextColor : component.theme.rootController.navigationBar.controlColor)
                     }
                 }
@@ -825,6 +832,7 @@ public final class ChatSideTopicsPanel: Component {
                             avatarIconContent = .topic(title: String(threadData.info.title.prefix(1)), color: threadData.info.iconColor, size: iconSize)
                         }
                     } else {
+                        //newTopicTemplateIcon
                         avatarIconContent = .image(image: PresentationResourcesChatList.generalTopicTemplateIcon(component.theme), tintColor: component.isSelected ? component.theme.rootController.navigationBar.accentTextColor : component.theme.rootController.navigationBar.controlColor)
                     }
                 }
@@ -1144,12 +1152,14 @@ public final class ChatSideTopicsPanel: Component {
     
     private final class VerticalAllItemComponent: Component, AllItemComponent {
         let isSelected: Bool
+        let kind: ChatSideTopicsPanel.Kind
         let theme: PresentationTheme
         let strings: PresentationStrings
         let action: (() -> Void)?
         
-        init(isSelected: Bool, theme: PresentationTheme, strings: PresentationStrings, action: (() -> Void)?) {
+        init(isSelected: Bool, kind: ChatSideTopicsPanel.Kind, theme: PresentationTheme, strings: PresentationStrings, action: (() -> Void)?) {
             self.isSelected = isSelected
+            self.kind = kind
             self.theme = theme
             self.strings = strings
             self.action = action
@@ -1160,6 +1170,9 @@ public final class ChatSideTopicsPanel: Component {
                 return true
             }
             if lhs.isSelected != rhs.isSelected {
+                return false
+            }
+            if lhs.kind != rhs.kind {
                 return false
             }
             if lhs.theme !== rhs.theme {
@@ -1234,7 +1247,13 @@ public final class ChatSideTopicsPanel: Component {
                     containerSize: CGSize(width: 100.0, height: 100.0)
                 )
                 
-                let titleText: String = component.strings.Chat_InlineTopicMenu_AllTab
+                let titleText: String
+                if case .botForum = component.kind {
+                    //TODO:localize
+                    titleText = "New Chat"
+                } else {
+                    titleText = component.strings.Chat_InlineTopicMenu_AllTab
+                }
                 let titleSize = self.title.update(
                     transition: .immediate,
                     component: AnyComponent(MultilineTextComponent(
@@ -1284,12 +1303,14 @@ public final class ChatSideTopicsPanel: Component {
     
     private final class HorizontalAllItemComponent: Component, AllItemComponent {
         let isSelected: Bool
+        let kind: ChatSideTopicsPanel.Kind
         let theme: PresentationTheme
         let strings: PresentationStrings
         let action: (() -> Void)?
         
-        init(isSelected: Bool, theme: PresentationTheme, strings: PresentationStrings, action: (() -> Void)?) {
+        init(isSelected: Bool, kind: ChatSideTopicsPanel.Kind, theme: PresentationTheme, strings: PresentationStrings, action: (() -> Void)?) {
             self.isSelected = isSelected
+            self.kind = kind
             self.theme = theme
             self.strings = strings
             self.action = action
@@ -1300,6 +1321,9 @@ public final class ChatSideTopicsPanel: Component {
                 return true
             }
             if lhs.isSelected != rhs.isSelected {
+                return false
+            }
+            if lhs.kind != rhs.kind {
                 return false
             }
             if lhs.theme !== rhs.theme {
@@ -1361,7 +1385,13 @@ public final class ChatSideTopicsPanel: Component {
                 let leftInset: CGFloat = 6.0
                 let rightInset: CGFloat = 12.0
                 
-                let titleText: String = component.strings.Chat_InlineTopicMenu_AllTab
+                let titleText: String
+                if case .botForum = component.kind {
+                    //TODO:localize
+                    titleText = "New Chat"
+                } else {
+                    titleText = component.strings.Chat_InlineTopicMenu_AllTab
+                }
                 let titleSize = self.title.update(
                     transition: .immediate,
                     component: AnyComponent(MultilineTextComponent(
@@ -1372,7 +1402,7 @@ public final class ChatSideTopicsPanel: Component {
                     containerSize: CGSize(width: 400.0, height: 200.0)
                 )
                 
-                let contentSize: CGFloat = leftInset + rightInset + titleSize.height
+                let contentSize: CGFloat = leftInset + rightInset + titleSize.width
                 let size = CGSize(width: contentSize, height: availableSize.height)
                 
                 let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((size.height - titleSize.height) * 0.5)), size: titleSize)
@@ -1422,6 +1452,7 @@ public final class ChatSideTopicsPanel: Component {
         
         private var tabItemView: TabItemView?
         
+        private var peerId: EnginePeer.Id?
         private var rawItems: [Item] = []
         private var reorderingItems: [Item]?
         private var resetReorderingOnNextUpdate: Bool = false
@@ -1653,13 +1684,54 @@ public final class ChatSideTopicsPanel: Component {
             }
             
             if self.component == nil {
-                let threadListSignal: Signal<EngineChatList, NoError> = component.context.sharedContext.subscribeChatListData(context: component.context, location: component.isMonoforum ? .savedMessagesChats(peerId: component.peerId) : .forum(peerId: component.peerId))
+                let threadListSignal: Signal<(EnginePeer.Id, EngineChatList), NoError>
+                
+                switch component.kind {
+                case .botForum:
+                    let forumPeerId: Signal<EnginePeer.Id?, NoError>
+                    if component.peerId.namespace == Namespaces.Peer.CloudUser {
+                        forumPeerId = component.context.engine.data.subscribe(
+                            TelegramEngine.EngineData.Item.Peer.LinkedBotForumPeerId(id: component.peerId)
+                        )
+                        |> map { value -> EnginePeer.Id? in
+                            if case let .known(value) = value {
+                                return value
+                            } else {
+                                return nil
+                            }
+                        }
+                        |> distinctUntilChanged
+                    } else {
+                        forumPeerId = .single(component.peerId)
+                    }
+                    
+                    let defaultPeerId = component.peerId
+                    threadListSignal = forumPeerId
+                    |> mapToSignal { forumPeerId -> Signal<(EnginePeer.Id, EngineChatList), NoError> in
+                        if let forumPeerId {
+                            return component.context.sharedContext.subscribeChatListData(context: component.context, location: .forum(peerId: forumPeerId))
+                            |> map { value in
+                                return (forumPeerId, value)
+                            }
+                        } else {
+                            return .single((defaultPeerId, EngineChatList(items: [], groupItems: [], additionalItems: [], hasEarlier: false, hasLater: false, isLoading: false)))
+                        }
+                    }
+                default:
+                    let defaultPeerId = component.peerId
+                    threadListSignal = component.context.sharedContext.subscribeChatListData(context: component.context, location: component.kind == .monoforum ? .savedMessagesChats(peerId: component.peerId) : .forum(peerId: component.peerId))
+                    |> map { value in
+                        return (defaultPeerId, value)
+                    }
+                }
                 
                 self.itemsDisposable = (threadListSignal
-                |> deliverOnMainQueue).startStrict(next: { [weak self] chatList in
-                    guard let self else {
+                |> deliverOnMainQueue).startStrict(next: { [weak self] peerId, chatList in
+                    guard let self, let _ = self.component else {
                         return
                     }
+                    
+                    self.peerId = peerId
                     
                     let wasEmpty = self.rawItems.isEmpty
                     
@@ -1786,7 +1858,7 @@ public final class ChatSideTopicsPanel: Component {
                     itemTransition = .immediate
                     animateIn = true
                     itemView = TabItemView(context: component.context, action: { [weak self] in
-                        guard let self, let component = self.component else {
+                        guard let self, let peerId = self.peerId, let component = self.component else {
                             return
                         }
                         if self.isReordering {
@@ -1806,7 +1878,7 @@ public final class ChatSideTopicsPanel: Component {
                                 }
                                 
                                 if threadIds != currentThreadIds {
-                                    let _ = component.context.engine.peers.setForumChannelPinnedTopics(id: component.peerId, threadIds: threadIds).startStandalone()
+                                    let _ = component.context.engine.peers.setForumChannelPinnedTopics(id: peerId, threadIds: threadIds).startStandalone()
                                     self.resetReorderingOnNextUpdate = true
                                 } else {
                                     self.reorderingItems = nil
@@ -1880,6 +1952,7 @@ public final class ChatSideTopicsPanel: Component {
                     id: ScrollId.all,
                     component: AnyComponent(VerticalAllItemComponent(
                         isSelected: component.topicId == nil,
+                        kind: component.kind,
                         theme: component.theme,
                         strings: component.strings,
                         action: { [weak self] in
@@ -1895,6 +1968,7 @@ public final class ChatSideTopicsPanel: Component {
                     id: ScrollId.all,
                     component: AnyComponent(HorizontalAllItemComponent(
                         isSelected: component.topicId == nil,
+                        kind: component.kind,
                         theme: component.theme,
                         strings: component.strings,
                         action: { [weak self] in
@@ -1937,10 +2011,10 @@ public final class ChatSideTopicsPanel: Component {
                     component.updateTopicId(topicId, direction)
                 }
                 var itemContextGesture: ((ContextGesture, ContextExtractedContentContainingNode) -> Void)?
-                if !self.isReordering && component.isMonoforum {
+                if !self.isReordering, case .monoforum = component.kind {
                     itemContextGesture = { [weak self] gesture, sourceNode in
                         Task { @MainActor in
-                            guard let self, let component = self.component else {
+                            guard let self, let peerId = self.peerId, let component = self.component else {
                                 return
                             }
                             guard let controller = component.controller() else {
@@ -1964,18 +2038,18 @@ public final class ChatSideTopicsPanel: Component {
                             var items: [ContextMenuItem] = []
                             
                             let threadInfo = await component.context.engine.data.get(
-                                TelegramEngine.EngineData.Item.Messages.ThreadInfo(peerId: component.peerId, threadId: topicId)
+                                TelegramEngine.EngineData.Item.Messages.ThreadInfo(peerId: peerId, threadId: topicId)
                             ).get()
                             
                             if let threadInfo, threadInfo.isMessageFeeRemoved {
                                 items.append(.action(ContextMenuActionItem(text: presentationData.strings.Chat_ReinstatePaidMessages, textColor: .primary, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Rate"), color: theme.contextMenu.primaryColor) }, action: { [weak self] c, _ in
-                                    guard let self, let component = self.component else {
+                                    guard let self, let peerId = self.peerId, let component = self.component else {
                                         return
                                     }
                                     
                                     c?.dismiss(completion: {})
                                     
-                                    let _ = component.context.engine.peers.reinstateNoPaidMessagesException(scopePeerId: component.peerId, peerId: EnginePeer.Id(topicId)).startStandalone()
+                                    let _ = component.context.engine.peers.reinstateNoPaidMessagesException(scopePeerId: peerId, peerId: EnginePeer.Id(topicId)).startStandalone()
                                 })))
                             }
                             
@@ -2011,7 +2085,7 @@ public final class ChatSideTopicsPanel: Component {
                     }
                 } else if !self.isReordering {
                     itemContextGesture = { [weak self] gesture, sourceNode in
-                        guard let self, let component = self.component else {
+                        guard let self, let peerId = self.peerId, let component = self.component else {
                             return
                         }
                         guard let controller = component.controller() else {
@@ -2043,7 +2117,7 @@ public final class ChatSideTopicsPanel: Component {
                         
                         let _ = (chatForumTopicMenuItems(
                             context: component.context,
-                            peerId: component.peerId,
+                            peerId: peerId,
                             threadId: topicId,
                             isPinned: isPinned,
                             isClosed: isClosed,
@@ -2052,12 +2126,12 @@ public final class ChatSideTopicsPanel: Component {
                             canSelect: false,
                             customEdit: { [weak self] contextController in
                                 contextController.dismiss(completion: {
-                                    guard let self, let component = self.component, let threadData else {
+                                    guard let self, let peerId = self.peerId, let component = self.component, let threadData else {
                                         return
                                     }
                                     let editController = component.context.sharedContext.makeEditForumTopicScreen(
                                         context: component.context,
-                                        peerId: component.peerId,
+                                        peerId: peerId,
                                         threadId: topicId,
                                         threadInfo: threadData.info,
                                         isHidden: threadData.isHidden
@@ -2066,7 +2140,7 @@ public final class ChatSideTopicsPanel: Component {
                                 })
                             },
                             customPinUnpin: { [weak self] contextController in
-                                guard let self, let component = self.component else {
+                                guard let self, let peerId = self.peerId, let component = self.component else {
                                     contextController.dismiss(completion: {})
                                     return
                                 }
@@ -2074,7 +2148,7 @@ public final class ChatSideTopicsPanel: Component {
                                 self.isTogglingPinnedItem = true
                                 self.dismissContextControllerOnNextUpdate = contextController
                                 
-                                let _ = (component.context.engine.peers.toggleForumChannelTopicPinned(id: component.peerId, threadId: topicId)
+                                let _ = (component.context.engine.peers.toggleForumChannelTopicPinned(id: peerId, threadId: topicId)
                                          |> deliverOnMainQueue).startStandalone(error: { [weak self, weak contextController] error in
                                     guard let self, let component = self.component else {
                                         contextController?.dismiss(completion: {})
@@ -2099,6 +2173,12 @@ public final class ChatSideTopicsPanel: Component {
                                     return
                                 }
                                 self.updateIsReordering(isReordering: true)
+                            },
+                            onDeleted: { [weak self] in
+                                guard let self, let component = self.component else {
+                                    return
+                                }
+                                component.updateTopicId(nil, false)
                             }
                         )
                         |> take(1)

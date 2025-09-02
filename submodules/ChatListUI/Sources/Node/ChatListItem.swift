@@ -617,6 +617,9 @@ public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
                 if threadId == nil, self.interaction.searchTextHighightState != nil, case let .channel(channel) = peerData.peer.peer, channel.isForumOrMonoForum {
                     threadId = message.threadId
                 }
+                if case let .user(user) = peer, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum), let forumTopicData = peerData.forumTopicData {
+                    threadId = forumTopicData.id
+                }
                 self.interaction.messageSelected(peer, threadId, message, peerData.promoInfo)
             } else if let peer = peerData.peer.peer {
                 self.interaction.peerSelected(peer, nil, nil, peerData.promoInfo, false)
@@ -2632,6 +2635,9 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             forumThread = (threadInfo.id, threadInfo.info.title, threadInfo.info.icon, threadInfo.info.iconColor, nil, false)
                         }
                     }
+                    if let forumTopicData, forumThread == nil, case let .user(user) = itemPeer.chatMainPeer, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum) {
+                        forumThread = (forumTopicData.id, forumTopicData.title, forumTopicData.iconFileId, forumTopicData.iconColor, forumTopicData.threadPeer, forumTopicData.isUnread)
+                    }
                     
                     let messageText: String
                     if let currentChatListText = currentChatListText, currentChatListText.0 == text {
@@ -3557,7 +3563,12 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 }
             } else if forumThread != nil || !topForumTopicItems.isEmpty {
                 if let forumThread = forumThread {
-                    isFirstForumThreadSelectable = forumThread.isUnread
+                    if case let .peer(peer) = item.content, case .user = peer.peer.chatMainPeer {
+                        isFirstForumThreadSelectable = false
+                    } else {
+                        isFirstForumThreadSelectable = forumThread.isUnread
+                    }
+                    
                     forumThreads.append((id: forumThread.id, threadPeer: forumThread.threadPeer, title: NSAttributedString(string: forumThread.title, font: textFont, textColor: forumThread.isUnread || isSearching ? theme.authorNameColor : theme.messageTextColor), iconId: forumThread.iconId, iconColor: forumThread.iconColor))
                 }
                 for topicItem in topForumTopicItems {
@@ -3611,7 +3622,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 textMaxWidth -= 18.0
             }
             
-            let (textLayout, textApply) = textLayout(TextNodeLayoutArguments(attributedString: textAttributedString, backgroundColor: nil, maximumNumberOfLines: (authorAttributedString == nil && itemTags.isEmpty) ? 2 : 1, truncationType: .end, constrainedSize: CGSize(width: textMaxWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: textCutout, insets: UIEdgeInsets(top: 2.0, left: 1.0, bottom: 2.0, right: 1.0)))
+            let (textLayout, textApply) = textLayout(TextNodeLayoutArguments(attributedString: textAttributedString, backgroundColor: nil, maximumNumberOfLines: (authorAttributedString == nil && itemTags.isEmpty && forumThread == nil) ? 2 : 1, truncationType: .end, constrainedSize: CGSize(width: textMaxWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: textCutout, insets: UIEdgeInsets(top: 2.0, left: 1.0, bottom: 2.0, right: 1.0)))
             
             let maxTitleLines: Int
             switch item.index {

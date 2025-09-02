@@ -413,9 +413,9 @@ private final class SheetContent: CombinedComponent {
             let amount = component.invoice.totalAmount
             let infoText: String
             if case .starsChatSubscription = context.component.source {
-                infoText = strings.Stars_Transfer_SubscribeInfo(state.botPeer?.compactDisplayTitle ?? "", strings.Stars_Transfer_Info_Stars(Int32(amount))).string
+                infoText = strings.Stars_Transfer_SubscribeInfo(state.botPeer?.compactDisplayTitle ?? "", strings.Stars_Transfer_Info_Stars(Int32(clamping: amount))).string
             } else if let _ = component.invoice.subscriptionPeriod {
-                infoText = strings.Stars_Transfer_BotSubscribeInfo(component.invoice.title, state.botPeer?.compactDisplayTitle ?? "", strings.Stars_Transfer_BotSubscribeInfo_Stars(Int32(amount))).string
+                infoText = strings.Stars_Transfer_BotSubscribeInfo(component.invoice.title, state.botPeer?.compactDisplayTitle ?? "", strings.Stars_Transfer_BotSubscribeInfo_Stars(Int32(clamping: amount))).string
             } else if !component.extendedMedia.isEmpty {
                 var description: String = ""
                 var photoCount: Int32 = 0
@@ -447,26 +447,26 @@ private final class SheetContent: CombinedComponent {
                     infoText = strings.Stars_Transfer_UnlockBotInfo(
                         description,
                         authorPeerName,
-                        strings.Stars_Transfer_Info_Stars(Int32(amount))
+                        strings.Stars_Transfer_Info_Stars(Int32(clamping: amount))
                     ).string
                 } else if let botPeerName = state.botPeer?.compactDisplayTitle {
                     infoText = strings.Stars_Transfer_UnlockBotInfo(
                         description,
                         botPeerName,
-                        strings.Stars_Transfer_Info_Stars(Int32(amount))
+                        strings.Stars_Transfer_Info_Stars(Int32(clamping: amount))
                     ).string
                 } else {
                     infoText = strings.Stars_Transfer_UnlockInfo(
                         description,
                         state.chatPeer?.compactDisplayTitle ?? "",
-                        strings.Stars_Transfer_Info_Stars(Int32(amount))
+                        strings.Stars_Transfer_Info_Stars(Int32(clamping: amount))
                     ).string
                 }
             } else {
                 infoText = strings.Stars_Transfer_Info(
                     component.invoice.title,
                     state.botPeer?.compactDisplayTitle ?? "",
-                    strings.Stars_Transfer_Info_Stars(Int32(amount))
+                    strings.Stars_Transfer_Info_Stars(Int32(clamping: amount))
                 ).string
             }
             
@@ -611,11 +611,11 @@ private final class SheetContent: CombinedComponent {
                                 let text: String
                                 if isSubscription {
                                     title = presentationData.strings.Stars_Transfer_Subscribe_Successful_Title
-                                    text = presentationData.strings.Stars_Transfer_Subscribe_Successful_Text(presentationData.strings.Stars_Transfer_Purchased_Stars(Int32(invoice.totalAmount)), botTitle).string
+                                    text = presentationData.strings.Stars_Transfer_Subscribe_Successful_Text(presentationData.strings.Stars_Transfer_Purchased_Stars(Int32(clamping: invoice.totalAmount)), botTitle).string
                                 } else if let _ = component.invoice.extendedMedia {
-                                    text = presentationData.strings.Stars_Transfer_UnlockedText( presentationData.strings.Stars_Transfer_Purchased_Stars(Int32(invoice.totalAmount))).string
+                                    text = presentationData.strings.Stars_Transfer_UnlockedText( presentationData.strings.Stars_Transfer_Purchased_Stars(Int32(clamping: invoice.totalAmount))).string
                                 } else {
-                                    text = presentationData.strings.Stars_Transfer_PurchasedText(invoice.title, botTitle, presentationData.strings.Stars_Transfer_Purchased_Stars(Int32(invoice.totalAmount))).string
+                                    text = presentationData.strings.Stars_Transfer_PurchasedText(invoice.title, botTitle, presentationData.strings.Stars_Transfer_Purchased_Stars(Int32(clamping: invoice.totalAmount))).string
                                 }
                                 
                                 if let navigationController = controller?.navigationController {

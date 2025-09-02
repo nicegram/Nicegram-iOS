@@ -87,7 +87,8 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                 extractedForeground: presentationData.theme.theme.contextMenu.primaryColor.argb,
                 extractedSelectedForeground: presentationData.theme.theme.overallDarkAppearance ? themeColors.reactionActiveForeground.argb : presentationData.theme.theme.list.itemCheckColors.foregroundColor.argb,
                 deselectedMediaPlaceholder: themeColors.reactionInactiveMediaPlaceholder.argb,
-                selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb
+                selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb,
+                isDark: presentationData.theme.theme.overallDarkAppearance
             )
         case .outgoing:
             themeColors = bubbleColorComponents(theme: presentationData.theme.theme, incoming: false, wallpaper: !presentationData.theme.wallpaper.isEmpty)
@@ -105,7 +106,8 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                 extractedForeground: presentationData.theme.theme.contextMenu.primaryColor.argb,
                 extractedSelectedForeground: presentationData.theme.theme.overallDarkAppearance ? themeColors.reactionActiveForeground.argb : presentationData.theme.theme.list.itemCheckColors.foregroundColor.argb,
                 deselectedMediaPlaceholder: themeColors.reactionInactiveMediaPlaceholder.argb,
-                selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb
+                selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb,
+                isDark: presentationData.theme.theme.overallDarkAppearance
             )
         case .freeform:
             if presentationData.theme.wallpaper.isEmpty {
@@ -128,7 +130,8 @@ public final class MessageReactionButtonsNode: ASDisplayNode {
                 extractedForeground: presentationData.theme.theme.contextMenu.primaryColor.argb,
                 extractedSelectedForeground: presentationData.theme.theme.contextMenu.primaryColor.argb,
                 deselectedMediaPlaceholder: themeColors.reactionInactiveMediaPlaceholder.argb,
-                selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb
+                selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb,
+                isDark: presentationData.theme.theme.overallDarkAppearance
             )
         }
         

@@ -287,6 +287,20 @@ public final class LottieComponent: Component {
             }
         }
         
+        public func setFrameIndex(index: Int) {
+            guard let _ = self.animationInstance, let animationFrameRange = self.animationFrameRange else {
+                self.scheduledPlayOnce = true
+                return
+            }
+            
+            let currentFrame = max(animationFrameRange.lowerBound, min(animationFrameRange.upperBound, index))
+            
+            if self.currentFrame != currentFrame {
+                self.currentFrame = currentFrame
+                self.updateImage()
+            }
+        }
+        
         private func loadPlaceholder(data: Data) {
             guard let component = self.component, let placeholderColor = component.placeholderColor else {
                 return

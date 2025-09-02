@@ -12,7 +12,7 @@ public enum GalleryControllerItemSource {
 }
 
 public final class GalleryControllerActionInteraction {
-    public let openUrl: (String, Bool) -> Void
+    public let openUrl: (String, Bool, Bool) -> Void
     public let openUrlIn: (String) -> Void
     public let openPeerMention: (String) -> Void
     public let openPeer: (EnginePeer) -> Void
@@ -25,7 +25,7 @@ public final class GalleryControllerActionInteraction {
     public let updateCanReadHistory: (Bool) -> Void
 
     public init(
-        openUrl: @escaping (String, Bool) -> Void,
+        openUrl: @escaping (String, Bool, Bool) -> Void,
         openUrlIn: @escaping (String) -> Void,
         openPeerMention: @escaping (String) -> Void,
         openPeer: @escaping (EnginePeer) -> Void,

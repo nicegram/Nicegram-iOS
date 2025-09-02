@@ -388,6 +388,8 @@ private enum MultipartFetchSource {
                         |> mapError { error -> MultipartFetchDownloadError in
                             if error.errorDescription == "WEBFILE_NOT_AVAILABLE" {
                                 return .webfileNotAvailable
+                            } else if error.errorDescription.hasPrefix("FILE_REFERENCE_EXPIRED") {
+                                return .revalidateMediaReference
                             }
                             return .fatal
                         }

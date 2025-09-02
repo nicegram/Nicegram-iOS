@@ -349,7 +349,7 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
                 } else {
                     updatedFilter.insert(value)
                 }
-                if !updatedFilter.contains(.unlimited) && !updatedFilter.contains(.limited) && !updatedFilter.contains(.unique) {
+                if !updatedFilter.contains(.unlimited) && !updatedFilter.contains(.limitedUpgradable) && !updatedFilter.contains(.limitedNonUpgradable) && !updatedFilter.contains(.unique) {
                     updatedFilter.insert(.unlimited)
                 }
                 if !updatedFilter.contains(.displayed) && !updatedFilter.contains(.hidden) {
@@ -365,7 +365,8 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
             let switchToFilter: (ProfileGiftsContext.Filters) -> Void = { [weak giftsContext] value in
                 var updatedFilter = filter
                 updatedFilter.remove(.unlimited)
-                updatedFilter.remove(.limited)
+                updatedFilter.remove(.limitedUpgradable)
+                updatedFilter.remove(.limitedNonUpgradable)
                 updatedFilter.remove(.unique)
                 updatedFilter.insert(value)
                 giftsContext?.updateFilter(updatedFilter)
@@ -387,11 +388,18 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
                 switchToFilter(.unlimited)
             })))
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Limited, icon: { theme in
-                return filter.contains(.limited) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+                return filter.contains(.limitedNonUpgradable) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
             }, action: { _, f in
-                toggleFilter(.limited)
+                toggleFilter(.limitedNonUpgradable)
             }, longPressAction: { _, f in
-                switchToFilter(.limited)
+                switchToFilter(.limitedNonUpgradable)
+            })))
+            items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Upgradable, icon: { theme in
+                return filter.contains(.limitedUpgradable) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
+            }, action: { _, f in
+                toggleFilter(.limitedUpgradable)
+            }, longPressAction: { _, f in
+                switchToFilter(.limitedUpgradable)
             })))
             items.append(.action(ContextMenuActionItem(text: strings.PeerInfo_Gifts_Unique, icon: { theme in
                 return filter.contains(.unique) ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil

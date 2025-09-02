@@ -61,6 +61,7 @@ import ComponentFlow
 import ChatEmptyNode
 import SpaceWarpView
 import ChatSideTopicsPanel
+import ChatThemeScreen
 
 final class VideoNavigationControllerDropContentItem: NavigationControllerDropContentItem {
     let itemNode: OverlayMediaItemNode
@@ -644,7 +645,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     
                     return (messages, Int32(messages.count), false)
                 }
-                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, loadMore: nil)
+                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, isSavedMusic: false, canReorder: false, loadMore: nil)
             case let .reply(reply):
                 let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), context.account.postbox.loadedPeerWithId(context.account.peerId))
                 |> map { messages, accountPeer -> ([Message], Int32, Bool) in
@@ -658,7 +659,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     
                     return (messages, Int32(messages.count), false)
                 }
-                source = .custom(messages: messages, messageId: messageIds.first ?? MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: reply.quote.flatMap { quote in ChatHistoryListSource.Quote(text: quote.text, offset: quote.offset) }, loadMore: nil)
+                source = .custom(messages: messages, messageId: messageIds.first ?? MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: reply.quote.flatMap { quote in ChatHistoryListSource.Quote(text: quote.text, offset: quote.offset) }, isSavedMusic: false, canReorder: false, loadMore: nil)
             case let .link(link):
                 let messages = link.options
                 |> mapToSignal { options -> Signal<(ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]), NoError> in
@@ -759,13 +760,13 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     
                     return ([message], 1, false)
                 }
-                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, loadMore: nil)
+                source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, isSavedMusic: false, canReorder: false, loadMore: nil)
             }
         } else if case .customChatContents = chatLocation {
             if case let .customChatContents(customChatContents) = subject {
                 source = .customView(historyView: customChatContents.historyView)
             } else {
-                source = .custom(messages: .single(([], 0, false)), messageId: nil, quote: nil, loadMore: nil)
+                source = .custom(messages: .single(([], 0, false)), messageId: nil, quote: nil, isSavedMusic: false, canReorder: false, loadMore: nil)
             }
         } else {
             source = .default
@@ -2280,7 +2281,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     previousHistoryNode?.removeFromSupernode()
                 })
                 
-                transition.animatePosition(layer: self.messageTransitionNode.layer, from: CGPoint(x: offsetMultiplier.x * layout.size.width, y: offsetMultiplier.y * layout.size.height), to: CGPoint(), removeOnCompletion: true, additive: true)
+                //transition.animatePosition(layer: self.messageTransitionNode.layer, from: CGPoint(x: offsetMultiplier.x * layout.size.width, y: offsetMultiplier.y * layout.size.height), to: CGPoint(), removeOnCompletion: true, additive: true)
                 transition.animatePosition(layer: previousMessageTransitionNode.layer, from: CGPoint(), to: CGPoint(x: -offsetMultiplier.x * layout.size.width, y: -offsetMultiplier.y * layout.size.height), removeOnCompletion: false, additive: true, completion: { [weak previousMessageTransitionNode] _ in
                     previousMessageTransitionNode?.removeFromSupernode()
                 })
@@ -3903,7 +3904,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             
             let themeUpdated = presentationReadyUpdated || (self.chatPresentationInterfaceState.theme !== chatPresentationInterfaceState.theme)
             
-            self.backgroundNode.update(wallpaper: chatPresentationInterfaceState.chatWallpaper, animated: true)
+            self.backgroundNode.update(wallpaper: chatPresentationInterfaceState.chatWallpaper, starGift: chatPresentationInterfaceState.theme.starGift, animated: true)
             
             self.historyNode.verticalScrollIndicatorColor = UIColor(white: 0.5, alpha: 0.8)
             if self.pendingSwitchToChatLocation == nil {
@@ -4838,282 +4839,296 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }
     
     func sendCurrentMessage(silentPosting: Bool? = nil, scheduleTime: Int32? = nil, postpone: Bool = false, messageEffect: ChatSendMessageEffect? = nil, completion: @escaping () -> Void = {}) {
-        if let textInputPanelNode = self.inputPanelNode as? ChatTextInputPanelNode {
-            self.historyNode.justSentTextMessage = true
-            
-            if let textInputNode = textInputPanelNode.textInputNode, textInputNode.isFirstResponder() {
-                Keyboard.applyAutocorrection(textView: textInputNode.textView)
+        
+        guard let textInputPanelNode = self.inputPanelNode as? ChatTextInputPanelNode else {
+            return
+        }
+        self.historyNode.justSentTextMessage = true
+        
+        if let textInputNode = textInputPanelNode.textInputNode, textInputNode.isFirstResponder() {
+            Keyboard.applyAutocorrection(textView: textInputNode.textView)
+        }
+        
+        var effectivePresentationInterfaceState = self.chatPresentationInterfaceState
+        
+        if let textInputPanelNode = self.textInputPanelNode {
+            effectivePresentationInterfaceState = effectivePresentationInterfaceState.updatedInterfaceState { $0.withUpdatedEffectiveInputState(textInputPanelNode.inputTextState) }
+        }
+        
+        if let _ = effectivePresentationInterfaceState.interfaceState.editMessage, effectivePresentationInterfaceState.interfaceState.postSuggestionState == nil {
+            self.interfaceInteraction?.editMessage()
+        } else {
+            var isScheduledMessages = false
+            if case .scheduledMessages = effectivePresentationInterfaceState.subject {
+                isScheduledMessages = true
             }
             
-            var effectivePresentationInterfaceState = self.chatPresentationInterfaceState
-            
-            if let textInputPanelNode = self.textInputPanelNode {
-                effectivePresentationInterfaceState = effectivePresentationInterfaceState.updatedInterfaceState { $0.withUpdatedEffectiveInputState(textInputPanelNode.inputTextState) }
+            if let _ = effectivePresentationInterfaceState.slowmodeState, !isScheduledMessages && scheduleTime == nil {
+                if let rect = self.frameForInputActionButton() {
+                    self.interfaceInteraction?.displaySlowmodeTooltip(self.view, rect)
+                }
+                return
             }
             
-            if let _ = effectivePresentationInterfaceState.interfaceState.editMessage, effectivePresentationInterfaceState.interfaceState.postSuggestionState == nil {
-                self.interfaceInteraction?.editMessage()
+            var messages: [EnqueueMessage] = []
+            
+            let effectiveInputText: NSAttributedString
+            
+            if effectivePresentationInterfaceState.interfaceState.editMessage != nil && effectivePresentationInterfaceState.interfaceState.postSuggestionState != nil {
+                effectiveInputText = expandedInputStateAttributedString(effectivePresentationInterfaceState.interfaceState.effectiveInputState.inputText)
             } else {
-                var isScheduledMessages = false
-                if case .scheduledMessages = effectivePresentationInterfaceState.subject {
-                    isScheduledMessages = true
-                }
-                
-                if let _ = effectivePresentationInterfaceState.slowmodeState, !isScheduledMessages && scheduleTime == nil {
-                    if let rect = self.frameForInputActionButton() {
-                        self.interfaceInteraction?.displaySlowmodeTooltip(self.view, rect)
-                    }
-                    return
-                }
-                
-                var messages: [EnqueueMessage] = []
-                
-                let effectiveInputText: NSAttributedString
-                
-                if effectivePresentationInterfaceState.interfaceState.editMessage != nil && effectivePresentationInterfaceState.interfaceState.postSuggestionState != nil {
-                    effectiveInputText = expandedInputStateAttributedString(effectivePresentationInterfaceState.interfaceState.effectiveInputState.inputText)
-                } else {
-                    effectiveInputText = expandedInputStateAttributedString(effectivePresentationInterfaceState.interfaceState.composeInputState.inputText)
-                }
-                
-                let peerSpecificEmojiPack = (self.controller?.contentData?.state.peerView?.cachedData as? CachedChannelData)?.emojiPack
-                
-                var inlineStickers: [MediaId: Media] = [:]
-                var firstLockedPremiumEmoji: TelegramMediaFile?
-                var bubbleUpEmojiOrStickersetsById: [Int64: ItemCollectionId] = [:]
-                effectiveInputText.enumerateAttribute(ChatTextInputAttributes.customEmoji, in: NSRange(location: 0, length: effectiveInputText.length), using: { value, _, _ in
-                    if let value = value as? ChatTextInputTextCustomEmojiAttribute {
-                        if let file = value.file {
-                            inlineStickers[file.fileId] = file
-                            if let packId = value.interactivelySelectedFromPackId {
-                                bubbleUpEmojiOrStickersetsById[file.fileId.id] = packId
-                            }
-                            
-                            var isPeerSpecific = false
-                            for attribute in file.attributes {
-                                if case let .CustomEmoji(_, _, _, packReference) = attribute, case let .id(id, _) = packReference {
-                                    isPeerSpecific = id == peerSpecificEmojiPack?.id.id
-                                }
-                            }
-                            
-                            if file.isPremiumEmoji && !self.chatPresentationInterfaceState.isPremium && self.chatPresentationInterfaceState.chatLocation.peerId != self.context.account.peerId && !isPeerSpecific {
-                                if firstLockedPremiumEmoji == nil {
-                                    firstLockedPremiumEmoji = file
-                                }
-                            }
+                effectiveInputText = expandedInputStateAttributedString(effectivePresentationInterfaceState.interfaceState.composeInputState.inputText)
+            }
+            
+            let peerSpecificEmojiPack = (self.controller?.contentData?.state.peerView?.cachedData as? CachedChannelData)?.emojiPack
+            
+            var inlineStickers: [MediaId: Media] = [:]
+            var firstLockedPremiumEmoji: TelegramMediaFile?
+            var bubbleUpEmojiOrStickersetsById: [Int64: ItemCollectionId] = [:]
+            effectiveInputText.enumerateAttribute(ChatTextInputAttributes.customEmoji, in: NSRange(location: 0, length: effectiveInputText.length), using: { value, _, _ in
+                if let value = value as? ChatTextInputTextCustomEmojiAttribute {
+                    if let file = value.file {
+                        inlineStickers[file.fileId] = file
+                        if let packId = value.interactivelySelectedFromPackId {
+                            bubbleUpEmojiOrStickersetsById[file.fileId.id] = packId
                         }
-                    }
-                })
-                
-                if let firstLockedPremiumEmoji = firstLockedPremiumEmoji {
-                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-                    self.controllerInteraction.displayUndo(.sticker(context: context, file: firstLockedPremiumEmoji, loop: true, title: nil, text: presentationData.strings.EmojiInput_PremiumEmojiToast_Text, undoText: presentationData.strings.EmojiInput_PremiumEmojiToast_Action, customAction: { [weak self] in
-                        guard let strongSelf = self else {
-                            return
-                        }
-                        strongSelf.dismissTextInput()
                         
-                        var replaceImpl: ((ViewController) -> Void)?
-                        let controller = PremiumDemoScreen(context: strongSelf.context, subject: .animatedEmoji, action: {
-                            let controller = PremiumIntroScreen(context: strongSelf.context, source: .animatedEmoji)
-                            replaceImpl?(controller)
-                        })
-                        replaceImpl = { [weak controller] c in
-                            controller?.replace(with: c)
+                        var isPeerSpecific = false
+                        for attribute in file.attributes {
+                            if case let .CustomEmoji(_, _, _, packReference) = attribute, case let .id(id, _) = packReference {
+                                isPeerSpecific = id == peerSpecificEmojiPack?.id.id
+                            }
                         }
-                        strongSelf.controller?.present(controller, in: .window(.root), with: nil)
-                    }))
-                    
-                    return
+                        
+                        if file.isPremiumEmoji && !self.chatPresentationInterfaceState.isPremium && self.chatPresentationInterfaceState.chatLocation.peerId != self.context.account.peerId && !isPeerSpecific {
+                            if firstLockedPremiumEmoji == nil {
+                                firstLockedPremiumEmoji = file
+                            }
+                        }
+                    }
                 }
+            })
+            
+            if let firstLockedPremiumEmoji = firstLockedPremiumEmoji {
+                let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                self.controllerInteraction.displayUndo(.sticker(context: context, file: firstLockedPremiumEmoji, loop: true, title: nil, text: presentationData.strings.EmojiInput_PremiumEmojiToast_Text, undoText: presentationData.strings.EmojiInput_PremiumEmojiToast_Action, customAction: { [weak self] in
+                    guard let strongSelf = self else {
+                        return
+                    }
+                    strongSelf.dismissTextInput()
+                    
+                    var replaceImpl: ((ViewController) -> Void)?
+                    let controller = PremiumDemoScreen(context: strongSelf.context, subject: .animatedEmoji, action: {
+                        let controller = PremiumIntroScreen(context: strongSelf.context, source: .animatedEmoji)
+                        replaceImpl?(controller)
+                    })
+                    replaceImpl = { [weak controller] c in
+                        controller?.replace(with: c)
+                    }
+                    strongSelf.controller?.present(controller, in: .window(.root), with: nil)
+                }))
                 
-                if let replyMessageSubject = self.chatPresentationInterfaceState.interfaceState.replyMessageSubject, let quote = replyMessageSubject.quote {
-                    if let replyMessage = self.chatPresentationInterfaceState.replyMessage {
-                        let nsText = replyMessage.text as NSString
-                        var startIndex = 0
-                        var found = false
-                        while true {
-                            let range = nsText.range(of: quote.text, range: NSRange(location: startIndex, length: nsText.length - startIndex))
-                            if range.location != NSNotFound {
-                                let subEntities = messageTextEntitiesInRange(entities: replyMessage.textEntitiesAttribute?.entities ?? [], range: range, onlyQuoteable: true)
-                                if subEntities == quote.entities {
-                                    found = true
-                                    break
-                                }
-                                
-                                startIndex = range.upperBound
-                            } else {
+                return
+            }
+            
+            if let replyMessageSubject = self.chatPresentationInterfaceState.interfaceState.replyMessageSubject, let quote = replyMessageSubject.quote {
+                if let replyMessage = self.chatPresentationInterfaceState.replyMessage {
+                    let nsText = replyMessage.text as NSString
+                    var startIndex = 0
+                    var found = false
+                    while true {
+                        let range = nsText.range(of: quote.text, range: NSRange(location: startIndex, length: nsText.length - startIndex))
+                        if range.location != NSNotFound {
+                            let subEntities = messageTextEntitiesInRange(entities: replyMessage.textEntitiesAttribute?.entities ?? [], range: range, onlyQuoteable: true)
+                            if subEntities == quote.entities {
+                                found = true
                                 break
                             }
+                            
+                            startIndex = range.upperBound
+                        } else {
+                            break
                         }
+                    }
+                    
+                    if !found {
+                        let authorName: String = (replyMessage.author.flatMap(EnginePeer.init))?.compactDisplayTitle ?? ""
+                        let errorTextData =  self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedText(authorName)
+                        let errorText = errorTextData.string
+                        self.controller?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.context.sharedContext.currentPresentationData.with({ $0 })), title: self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedTitle, text: errorText, actions: [
+                            TextAlertAction(type: .genericAction, title: self.chatPresentationInterfaceState.strings.Common_Cancel, action: {}),
+                            TextAlertAction(type: .defaultAction, title: self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedActionEdit, action: { [weak self] in
+                                guard let self, let controller = self.controller else {
+                                    return
+                                }
+                                controller.updateChatPresentationInterfaceState(interactive: false, { presentationInterfaceState in
+                                    return presentationInterfaceState.updatedInterfaceState { interfaceState in
+                                        guard var replyMessageSubject = interfaceState.replyMessageSubject else {
+                                            return interfaceState
+                                        }
+                                        replyMessageSubject.quote = nil
+                                        return interfaceState.withUpdatedReplyMessageSubject(replyMessageSubject)
+                                    }
+                                })
+                                presentChatLinkOptions(selfController: controller, sourceNode: controller.displayNode)
+                            }),
+                        ], parseMarkdown: true), in: .window(.root))
                         
-                        if !found {
-                            let authorName: String = (replyMessage.author.flatMap(EnginePeer.init))?.compactDisplayTitle ?? ""
-                            let errorTextData =  self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedText(authorName)
-                            let errorText = errorTextData.string
-                            self.controller?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.context.sharedContext.currentPresentationData.with({ $0 })), title: self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedTitle, text: errorText, actions: [
-                                TextAlertAction(type: .genericAction, title: self.chatPresentationInterfaceState.strings.Common_Cancel, action: {}),
-                                TextAlertAction(type: .defaultAction, title: self.chatPresentationInterfaceState.strings.Chat_ErrorQuoteOutdatedActionEdit, action: { [weak self] in
-                                    guard let self, let controller = self.controller else {
-                                        return
-                                    }
-                                    controller.updateChatPresentationInterfaceState(interactive: false, { presentationInterfaceState in
-                                        return presentationInterfaceState.updatedInterfaceState { interfaceState in
-                                            guard var replyMessageSubject = interfaceState.replyMessageSubject else {
-                                                return interfaceState
-                                            }
-                                            replyMessageSubject.quote = nil
-                                            return interfaceState.withUpdatedReplyMessageSubject(replyMessageSubject)
-                                        }
-                                    })
-                                    presentChatLinkOptions(selfController: controller, sourceNode: controller.displayNode)
-                                }),
-                            ], parseMarkdown: true), in: .window(.root))
-                            
-                            return
-                        }
+                        return
                     }
                 }
+            }
+            
+            let timestamp = CACurrentMediaTime()
+            if self.lastSendTimestamp + 0.15 > timestamp {
+                return
+            }
+            self.lastSendTimestamp = timestamp
+            
+            self.updateTypingActivity(false)
+            
+            let trimmedInputText = effectiveInputText.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            let peerId = effectivePresentationInterfaceState.chatLocation.peerId
+            if peerId?.namespace != Namespaces.Peer.SecretChat, let interactiveEmojis = self.interactiveEmojis, interactiveEmojis.emojis.contains(trimmedInputText), effectiveInputText.attribute(ChatTextInputAttributes.customEmoji, at: 0, effectiveRange: nil) == nil {
+                messages.append(.message(text: "", attributes: [], inlineStickers: [:], mediaReference: AnyMediaReference.standalone(media: TelegramMediaDice(emoji: trimmedInputText)), threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+            } else {
+                let inputText = convertMarkdownToAttributes(effectiveInputText)
                 
-                let timestamp = CACurrentMediaTime()
-                if self.lastSendTimestamp + 0.15 > timestamp {
-                    return
-                }
-                self.lastSendTimestamp = timestamp
-                
-                self.updateTypingActivity(false)
-                
-                let trimmedInputText = effectiveInputText.string.trimmingCharacters(in: .whitespacesAndNewlines)
-                let peerId = effectivePresentationInterfaceState.chatLocation.peerId
-                if peerId?.namespace != Namespaces.Peer.SecretChat, let interactiveEmojis = self.interactiveEmojis, interactiveEmojis.emojis.contains(trimmedInputText), effectiveInputText.attribute(ChatTextInputAttributes.customEmoji, at: 0, effectiveRange: nil) == nil {
-                    messages.append(.message(text: "", attributes: [], inlineStickers: [:], mediaReference: AnyMediaReference.standalone(media: TelegramMediaDice(emoji: trimmedInputText)), threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
-                } else {
-                    let inputText = convertMarkdownToAttributes(effectiveInputText)
-                    
-                    var mediaReference: AnyMediaReference?
-                    var webpage: TelegramMediaWebpage?
-                    if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
-                        if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
-                        } else {
-                            webpage = urlPreview.webPage
-                        }
+                var mediaReference: AnyMediaReference?
+                var webpage: TelegramMediaWebpage?
+                if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
+                    if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
+                    } else {
+                        webpage = urlPreview.webPage
                     }
-                    mediaReference = webpage.flatMap(AnyMediaReference.standalone)
-                    
-                    if let postSuggestionState = effectivePresentationInterfaceState.interfaceState.postSuggestionState, let editingOriginalMessageId = postSuggestionState.editingOriginalMessageId {
-                        if let editMessageState = effectivePresentationInterfaceState.editMessageState, let mediaReferenceValue = editMessageState.mediaReference {
-                            mediaReference = mediaReferenceValue
-                        } else {
-                            if let message = self.historyNode.messageInCurrentHistoryView(editingOriginalMessageId) {
-                                for media in message.media {
-                                    if media is TelegramMediaFile || media is TelegramMediaImage {
-                                        mediaReference = .message(message: MessageReference(message), media: media)
-                                    }
+                }
+                mediaReference = webpage.flatMap(AnyMediaReference.standalone)
+                
+                if let postSuggestionState = effectivePresentationInterfaceState.interfaceState.postSuggestionState, let editingOriginalMessageId = postSuggestionState.editingOriginalMessageId {
+                    if let editMessageState = effectivePresentationInterfaceState.editMessageState, let mediaReferenceValue = editMessageState.mediaReference {
+                        mediaReference = mediaReferenceValue
+                    } else {
+                        if let message = self.historyNode.messageInCurrentHistoryView(editingOriginalMessageId) {
+                            for media in message.media {
+                                if media is TelegramMediaFile || media is TelegramMediaImage {
+                                    mediaReference = .message(message: MessageReference(message), media: media)
                                 }
                             }
                         }
                     }
-                    
-                    for text in breakChatInputText(trimChatInputText(inputText)) {
-                        if text.length != 0 {
-                            var attributes: [MessageAttribute] = []
-                            let entities: [MessageTextEntity]
-                            if case let .customChatContents(customChatContents) = self.chatPresentationInterfaceState.subject, case .businessLinkSetup = customChatContents.kind {
-                                entities = generateChatInputTextEntities(text, generateLinks: false)
-                            } else {
-                                entities = generateTextEntities(text.string, enabledTypes: .all, currentEntities: generateChatInputTextEntities(text, maxAnimatedEmojisInText: 0))
-                            }
-                            if !entities.isEmpty {
-                                attributes.append(TextEntitiesMessageAttribute(entities: entities))
-                            }
-                                                        
-                            if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
-                                if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
-                                    attributes.append(OutgoingContentInfoMessageAttribute(flags: [.disableLinkPreviews]))
-                                } else {
-                                    attributes.append(WebpagePreviewMessageAttribute(leadingPreview: !urlPreview.positionBelowText, forceLargeMedia: urlPreview.largeMedia, isManuallyAdded: true, isSafe: false))
-                                }
-                            }
-                            
-                            var bubbleUpEmojiOrStickersets: [ItemCollectionId] = []
-                            for entity in entities {
-                                if case let .CustomEmoji(_, fileId) = entity.type {
-                                    if let packId = bubbleUpEmojiOrStickersetsById[fileId] {
-                                        if !bubbleUpEmojiOrStickersets.contains(packId) {
-                                            bubbleUpEmojiOrStickersets.append(packId)
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            if bubbleUpEmojiOrStickersets.count > 1 {
-                                bubbleUpEmojiOrStickersets.removeAll()
-                            }
-
-                            messages.append(.message(text: text.string, attributes: attributes, inlineStickers: inlineStickers, mediaReference: mediaReference, threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets))
-                            mediaReference = nil
-                        }
-                    }
-                    
-                    if let mediaReferenceValue = mediaReference {
-                        mediaReference = nil
-                        messages.append(.message(text: "", attributes: [], inlineStickers: inlineStickers, mediaReference: mediaReferenceValue, threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
-                    }
-
-                    var forwardingToSameChat = false
-                    if case let .peer(id) = self.chatPresentationInterfaceState.chatLocation, id.namespace == Namespaces.Peer.CloudUser, id != self.context.account.peerId, let forwardMessageIds = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds, forwardMessageIds.count == 1 {
-                        for messageId in forwardMessageIds {
-                            if messageId.peerId == id {
-                                forwardingToSameChat = true
-                            }
-                        }
-                    }
-                    if !messages.isEmpty && forwardingToSameChat {
-                        self.controllerInteraction.displaySwipeToReplyHint()
-                    }
                 }
                 
-                var postEmptyMessages = false
-                if case let .customChatContents(customChatContents) = self.chatPresentationInterfaceState.subject {
-                    switch customChatContents.kind {
-                    case .hashTagSearch:
-                        break
-                    case .quickReplyMessageInput:
-                        break
-                    case .businessLinkSetup:
-                        postEmptyMessages = true
-                    }
-                }
-                
-                if !messages.isEmpty, let messageEffect {
-                    messages[0] = messages[0].withUpdatedAttributes { attributes in
-                        var attributes = attributes
-                        attributes.append(EffectMessageAttribute(id: messageEffect.id))
-                        return attributes
-                    }
-                }
-                
-                if !messages.isEmpty || postEmptyMessages || self.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil {
-                    if let forwardMessageIds = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
+                for text in breakChatInputText(trimChatInputText(inputText)) {
+                    if text.length != 0 {
                         var attributes: [MessageAttribute] = []
-                        attributes.append(ForwardOptionsMessageAttribute(hideNames: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideNames == true, hideCaptions: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideCaptions == true))
-
-                        var replyThreadId: Int64?
-                        if case let .replyThread(replyThreadMessage) = self.chatPresentationInterfaceState.chatLocation {
-                            replyThreadId = replyThreadMessage.threadId
+                        let entities: [MessageTextEntity]
+                        if case let .customChatContents(customChatContents) = self.chatPresentationInterfaceState.subject, case .businessLinkSetup = customChatContents.kind {
+                            entities = generateChatInputTextEntities(text, generateLinks: false)
+                        } else {
+                            entities = generateTextEntities(text.string, enabledTypes: .all, currentEntities: generateChatInputTextEntities(text, maxAnimatedEmojisInText: 0))
+                        }
+                        if !entities.isEmpty {
+                            attributes.append(TextEntitiesMessageAttribute(entities: entities))
+                        }
+                                                    
+                        if let urlPreview = self.chatPresentationInterfaceState.urlPreview {
+                            if self.chatPresentationInterfaceState.interfaceState.composeDisableUrlPreviews.contains(urlPreview.url) {
+                                attributes.append(OutgoingContentInfoMessageAttribute(flags: [.disableLinkPreviews]))
+                            } else {
+                                attributes.append(WebpagePreviewMessageAttribute(leadingPreview: !urlPreview.positionBelowText, forceLargeMedia: urlPreview.largeMedia, isManuallyAdded: true, isSafe: false))
+                            }
                         }
                         
-                        for id in forwardMessageIds.sorted() {
-                            messages.append(.forward(source: id, threadId: replyThreadId, grouping: .auto, attributes: attributes, correlationId: nil))
+                        var bubbleUpEmojiOrStickersets: [ItemCollectionId] = []
+                        for entity in entities {
+                            if case let .CustomEmoji(_, fileId) = entity.type {
+                                if let packId = bubbleUpEmojiOrStickersetsById[fileId] {
+                                    if !bubbleUpEmojiOrStickersets.contains(packId) {
+                                        bubbleUpEmojiOrStickersets.append(packId)
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if bubbleUpEmojiOrStickersets.count > 1 {
+                            bubbleUpEmojiOrStickersets.removeAll()
+                        }
+
+                        messages.append(.message(text: text.string, attributes: attributes, inlineStickers: inlineStickers, mediaReference: mediaReference, threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: bubbleUpEmojiOrStickersets))
+                        mediaReference = nil
+                    }
+                }
+                
+                if let mediaReferenceValue = mediaReference {
+                    mediaReference = nil
+                    messages.append(.message(text: "", attributes: [], inlineStickers: inlineStickers, mediaReference: mediaReferenceValue, threadId: self.chatLocation.threadId, replyToMessageId: self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                }
+
+                var forwardingToSameChat = false
+                if case let .peer(id) = self.chatPresentationInterfaceState.chatLocation, id.namespace == Namespaces.Peer.CloudUser, id != self.context.account.peerId, let forwardMessageIds = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds, forwardMessageIds.count == 1 {
+                    for messageId in forwardMessageIds {
+                        if messageId.peerId == id {
+                            forwardingToSameChat = true
                         }
                     }
-                                        
-                    var usedCorrelationId: Int64?
+                }
+                if !messages.isEmpty && forwardingToSameChat {
+                    self.controllerInteraction.displaySwipeToReplyHint()
+                }
+            }
+            
+            var postEmptyMessages = false
+            if case let .customChatContents(customChatContents) = self.chatPresentationInterfaceState.subject {
+                switch customChatContents.kind {
+                case .hashTagSearch:
+                    break
+                case .quickReplyMessageInput:
+                    break
+                case .businessLinkSetup:
+                    postEmptyMessages = true
+                }
+            }
+            
+            if !messages.isEmpty, let messageEffect {
+                messages[0] = messages[0].withUpdatedAttributes { attributes in
+                    var attributes = attributes
+                    attributes.append(EffectMessageAttribute(id: messageEffect.id))
+                    return attributes
+                }
+            }
+            
+            if !messages.isEmpty || postEmptyMessages || self.chatPresentationInterfaceState.interfaceState.forwardMessageIds != nil {
+                if let forwardMessageIds = self.chatPresentationInterfaceState.interfaceState.forwardMessageIds {
+                    var attributes: [MessageAttribute] = []
+                    attributes.append(ForwardOptionsMessageAttribute(hideNames: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideNames == true, hideCaptions: self.chatPresentationInterfaceState.interfaceState.forwardOptionsState?.hideCaptions == true))
 
+                    var replyThreadId: Int64?
+                    if case let .replyThread(replyThreadMessage) = self.chatPresentationInterfaceState.chatLocation {
+                        replyThreadId = replyThreadMessage.threadId
+                    }
+                    
+                    for id in forwardMessageIds.sorted() {
+                        messages.append(.forward(source: id, threadId: replyThreadId, grouping: .auto, attributes: attributes, correlationId: nil))
+                    }
+                }
+                
+                let doSend: (Int64?) -> Void = { [weak self] overrideThreadId in
+                    guard let self else {
+                        return
+                    }
+                    
+                    var messages = messages
+                    if let overrideThreadId {
+                        messages = messages.map { message in
+                            return message.withUpdatedThreadId(overrideThreadId)
+                        }
+                    }
+                    
+                    var usedCorrelationId: Int64?
                     if !messages.isEmpty, case .message = messages[messages.count - 1] {
                         let correlationId = Int64.random(in: 0 ..< Int64.max)
                         messages[messages.count - 1] = messages[messages.count - 1].withUpdatedCorrelationId(correlationId)
-
+                        
                         var replyPanel: ReplyAccessoryPanelNode?
                         if let accessoryPanelNode = self.accessoryPanelNode as? ReplyAccessoryPanelNode {
                             replyPanel = accessoryPanelNode
@@ -5125,34 +5140,66 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                             })
                         }
                     }
-
+                    
                     self.setupSendActionOnViewUpdate({ [weak self] in
-                        if let strongSelf = self, let textInputPanelNode = strongSelf.inputPanelNode as? ChatTextInputPanelNode {
-                            strongSelf.collapseInput()
-                            
-                            strongSelf.ignoreUpdateHeight = true
-                            textInputPanelNode.text = ""
-                            strongSelf.requestUpdateChatInterfaceState(.immediate, true, { state in
-                                var state = state
-                                state = state.withUpdatedReplyMessageSubject(nil)
-                                state = state.withUpdatedSendMessageEffect(nil)
-                                
-                                if state.postSuggestionState != nil {
-                                    state = state.withUpdatedPostSuggestionState(nil)
-                                    state = state.withUpdatedEditMessage(nil)
-                                }
-                                
-                                state = state.withUpdatedForwardMessageIds(nil)
-                                state = state.withUpdatedForwardOptionsState(nil)
-                                state = state.withUpdatedComposeDisableUrlPreviews([])
-                                return state
-                            })
-                            strongSelf.ignoreUpdateHeight = false
+                        guard let self, let textInputPanelNode = self.inputPanelNode as? ChatTextInputPanelNode else {
+                            return
                         }
+                        self.collapseInput()
+                        
+                        self.ignoreUpdateHeight = true
+                        textInputPanelNode.text = ""
+                        self.requestUpdateChatInterfaceState(.immediate, overrideThreadId == nil, { state in
+                            var state = state
+                            state = state.withUpdatedReplyMessageSubject(nil)
+                            state = state.withUpdatedSendMessageEffect(nil)
+                            
+                            if state.postSuggestionState != nil {
+                                state = state.withUpdatedPostSuggestionState(nil)
+                                state = state.withUpdatedEditMessage(nil)
+                            }
+                            
+                            state = state.withUpdatedForwardMessageIds(nil)
+                            state = state.withUpdatedForwardOptionsState(nil)
+                            state = state.withUpdatedComposeDisableUrlPreviews([])
+                            return state
+                        })
+                        self.ignoreUpdateHeight = false
                     }, usedCorrelationId)
                     completion()
                     
                     self.sendMessages(messages, silentPosting, scheduleTime, messages.count > 1, postpone)
+                }
+                
+                var targetThreadId: Int64?
+                if self.chatLocation.threadId == nil, let channel = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.linkedBotId != nil {
+                    if let message = messages.first {
+                        switch message {
+                        case let .message(_, _, _, _, _, replyToMessageId, _, _, _, _):
+                            if let _ = replyToMessageId {
+                                if let replyMessage = self.chatPresentationInterfaceState.replyMessage {
+                                    targetThreadId = replyMessage.threadId
+                                }
+                            } else {
+                                targetThreadId = EngineMessage.newTopicThreadId
+                            }
+                        case let .forward(_, threadId, _, _, _):
+                            targetThreadId = threadId
+                        }
+                    }
+                }
+                
+                if let targetThreadId {
+                    self.historyNode.stopHistoryUpdates()
+                    self.controller?.updateChatLocationThread(threadId: targetThreadId, animationDirection: .right, transferInputState: true, completion: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        let _ = self
+                        doSend(targetThreadId)
+                    })
+                } else {
+                    doSend(nil)
                 }
             }
         }
@@ -5541,6 +5588,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         self.historyNode.enableExtractedBackgrounds = true
         
+        let chatLocation = self.chatLocation
         self.historyNode.setLoadStateUpdated { [weak self] loadState, animated in
             guard let strongSelf = self else {
                 return
@@ -5567,6 +5615,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             } else if case .messages = loadState {
                 strongSelf.didDisplayEmptyGreeting = true
+            }
+            if chatLocation.threadId == EngineMessage.newTopicThreadId {
+                emptyType = nil
             }
             strongSelf.updateIsEmpty(emptyType, wasLoading: wasLoading, animated: animated)
         }
@@ -5660,109 +5711,15 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         return historyNode
     }
     
-    func prepareSwitchToChatLocation(historyNode: ChatHistoryListNodeImpl, animationDirection: ChatControllerAnimateInnerChatSwitchDirection?) {
+    func prepareSwitchToChatLocation(chatLocation: ChatLocation, historyNode: ChatHistoryListNodeImpl, animationDirection: ChatControllerAnimateInnerChatSwitchDirection?) {
         self.chatLocation = historyNode.chatLocation
-        self.pendingSwitchToChatLocation = PendingSwitchToChatLocation(
-            historyNode: historyNode,
-            animationDirection: animationDirection
-        )
-    }
-    
-    func updateChatLocation(chatLocation: ChatLocation, transition: ContainedViewLayoutTransition, tabSwitchDirection: ChatControllerAnimateInnerChatSwitchDirection?) {
-        if chatLocation == self.chatLocation {
-            return
-        }
-        self.chatLocation = chatLocation
-        
-        self.chatLocationContextHolder = Atomic<ChatLocationContextHolder?>(value: nil)
-        let historyNode = ChatHistoryListNodeImpl(
-            context: self.context,
-            updatedPresentationData: self.controller?.updatedPresentationData ?? (self.context.sharedContext.currentPresentationData.with({ $0 }), self.context.sharedContext.presentationData),
-            chatLocation: chatLocation,
-            chatLocationContextHolder: self.chatLocationContextHolder,
-            adMessagesContext: self.adMessagesContext,
-            tag: nil,
-            source: .default,
-            subject: nil,
-            controllerInteraction: self.controllerInteraction,
-            selectedMessages: self.selectedMessagesPromise.get(),
-            rotated: self.controllerInteraction.chatIsRotated,
-            isChatPreview: false,
-            messageTransitionNode: { [weak self] in
-                return self?.messageTransitionNode
-            }
-        )
-        
-        var getContentAreaInScreenSpaceImpl: (() -> CGRect)?
-        var onTransitionEventImpl: ((ContainedViewLayoutTransition) -> Void)?
-        let messageTransitionNode = ChatMessageTransitionNodeImpl(listNode: historyNode, getContentAreaInScreenSpace: {
-            return getContentAreaInScreenSpaceImpl?() ?? CGRect()
-        }, onTransitionEvent: { transition in
-            onTransitionEventImpl?(transition)
-        })
-        
-        getContentAreaInScreenSpaceImpl = { [weak self] in
-            guard let strongSelf = self else {
-                return CGRect()
-            }
-
-            return strongSelf.view.convert(strongSelf.frameForVisibleArea(), to: nil)
-        }
-
-        onTransitionEventImpl = { [weak self] transition in
-            guard let strongSelf = self else {
-                return
-            }
-            if (strongSelf.context.sharedContext.currentPresentationData.with({ $0 })).reduceMotion {
-                return
-            }
-            if strongSelf.context.sharedContext.energyUsageSettings.fullTranslucency {
-                strongSelf.backgroundNode.animateEvent(transition: transition, extendAnimation: false)
-            }
-        }
-        
-        self.wrappingNode.contentNode.insertSubnode(messageTransitionNode, aboveSubnode: self.messageTransitionNode)
-        self.messageTransitionNode.removeFromSupernode()
-        self.messageTransitionNode = messageTransitionNode
-        
-        let previousHistoryNode = self.historyNode
-        previousHistoryNode.supernode?.insertSubnode(historyNode, aboveSubnode: previousHistoryNode)
-        self.historyNode = historyNode
-        
-        self.setupHistoryNode()
-        
-        historyNode.position = previousHistoryNode.position
-        historyNode.bounds = previousHistoryNode.bounds
-        historyNode.transform = previousHistoryNode.transform
-        
-        if let currentListViewLayout = self.currentListViewLayout {
-            let updateSizeAndInsets = ListViewUpdateSizeAndInsets(size: currentListViewLayout.size, insets: currentListViewLayout.insets, scrollIndicatorInsets: currentListViewLayout.scrollIndicatorInsets, duration: 0.0, curve: .Default(duration: nil), ensureTopInsetForOverlayHighlightedItems: nil, customAnimationTransition: nil)
-            historyNode.updateLayout(transition: .immediate, updateSizeAndInsets: updateSizeAndInsets, additionalScrollDistance: 0.0, scrollToTop: false, completion: {})
-        }
-        
-        if let validLayout = self.validLayout, transition.isAnimated, let tabSwitchDirection {
-            var offsetMultiplier = CGPoint()
-            switch tabSwitchDirection {
-            case .up:
-                offsetMultiplier.y = -1.0
-            case .down:
-                offsetMultiplier.y = 1.0
-            case .left:
-                offsetMultiplier.x = -1.0
-            case .right:
-                offsetMultiplier.x = 1.0
-            }
-            
-            previousHistoryNode.clipsToBounds = true
-            historyNode.clipsToBounds = true
-            
-            transition.animatePosition(layer: historyNode.layer, from: CGPoint(x: offsetMultiplier.x * validLayout.0.size.width, y: offsetMultiplier.y * validLayout.0.size.height), to: CGPoint(), removeOnCompletion: true, additive: true)
-            transition.animatePosition(layer: previousHistoryNode.layer, from: CGPoint(), to: CGPoint(x: -offsetMultiplier.x * validLayout.0.size.width, y: -offsetMultiplier.y * validLayout.0.size.height), removeOnCompletion: false, additive: true, completion: { [weak previousHistoryNode, weak historyNode] _ in
-                previousHistoryNode?.removeFromSupernode()
-                historyNode?.clipsToBounds = false
-            })
+        if historyNode === self.historyNode {
+            historyNode.updateChatLocation(chatLocation: chatLocation)
         } else {
-            previousHistoryNode.removeFromSupernode()
+            self.pendingSwitchToChatLocation = PendingSwitchToChatLocation(
+                historyNode: historyNode,
+                animationDirection: animationDirection
+            )
         }
     }
 }

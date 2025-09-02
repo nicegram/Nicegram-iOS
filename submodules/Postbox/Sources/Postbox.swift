@@ -1403,6 +1403,27 @@ public final class Transaction {
         assert(!self.disposed)
         self.postbox!.reindexSavedMessagesCustomTagsWithTagsIfNeeded(peerId: peerId, threadId: threadId, tag: tag)
     }
+    
+    public func getCurrentTypingDraft(location: PeerAndThreadId) -> (id: Int64, stableId: UInt32, authorId: PeerId, timestamp: Int32, text: String, attributes: [MessageAttribute])? {
+        assert(!self.disposed)
+        if let value = self.postbox!.currentTypingDrafts[location] {
+            return (
+                value.id,
+                value.stableId,
+                value.authorId,
+                value.timestamp,
+                value.text,
+                value.attributes
+            )
+        } else {
+            return nil
+        }
+    }
+    
+    public func combineTypingDrafts(locations: Set<PeerAndThreadId>, update: (PeerAndThreadId, (id: Int64, threadId: Int64?, authorId: PeerId, timestamp: Int32, text: String, attributes: [MessageAttribute])?) -> (id: Int64, threadId: Int64?, authorId: PeerId, timestamp: Int32, text: String, attributes: [MessageAttribute])?) {
+        assert(!self.disposed)
+        self.postbox!.combineTypingDrafts(locations: locations, update: update)
+    }
 }
 
 public enum PostboxResult {
@@ -1604,7 +1625,7 @@ final class PostboxImpl {
     private var currentUpdatedPeers: [PeerId: Peer] = [:]
     private var currentUpdatedPeerNotificationSettings: [PeerId: (PeerNotificationSettings?, PeerNotificationSettings)] = [:]
     private var currentUpdatedPeerNotificationBehaviorTimestamps: [PeerId: PeerNotificationSettingsBehaviorTimestamp] = [:]
-    private var currentUpdatedCachedPeerData: [PeerId: CachedPeerData] = [:]
+    private var currentUpdatedCachedPeerData: [PeerId: (previous: CachedPeerData?, updated: CachedPeerData)] = [:]
     private var currentUpdatedPeerPresences: [PeerId: PeerPresence] = [:]
     private var currentUpdatedPeerChatListEmbeddedStates = Set<PeerId>()
     private var currentUpdatedTotalUnreadStates: [PeerGroupId: ChatListTotalUnreadState] = [:]
@@ -1644,6 +1665,76 @@ final class PostboxImpl {
     private var currentStoryItemsEvents: [StoryItemsTable.Event] = []
     private var currentStoryTopItemEvents: [StoryTopItemsTable.Event] = []
     private var currentStoryEvents: [StoryTable.Event] = []
+    
+    struct TypingDraft: Equatable {
+        var id: Int64
+        var stableId: UInt32
+        var stableVersion: UInt32
+        var threadId: Int64?
+        var authorId: PeerId
+        var timestamp: Int32
+        var text: String
+        var attributes: [MessageAttribute]
+        var addedAtTimestamp: Double
+        
+        init(id: Int64, stableId: UInt32, stableVersion: UInt32, threadId: Int64?, authorId: PeerId, timestamp: Int32, text: String, attributes: [MessageAttribute], addedAtTimestamp: Double) {
+            self.id = id
+            self.stableId = stableId
+            self.stableVersion = stableVersion
+            self.threadId = threadId
+            self.authorId = authorId
+            self.timestamp = timestamp
+            self.text = text
+            self.attributes = attributes
+            self.addedAtTimestamp = addedAtTimestamp
+        }
+        
+        static func ==(lhs: TypingDraft, rhs: TypingDraft) -> Bool {
+            if lhs.id != rhs.id {
+                return false
+            }
+            if lhs.stableId != rhs.stableId {
+                return false
+            }
+            if lhs.stableVersion != rhs.stableVersion {
+                return false
+            }
+            if lhs.threadId != rhs.threadId {
+                return false
+            }
+            if lhs.authorId != rhs.authorId {
+                return false
+            }
+            if lhs.timestamp != rhs.timestamp {
+                return false
+            }
+            if lhs.text != rhs.text {
+                return false
+            }
+            if lhs.attributes.count != rhs.attributes.count {
+                return false
+            }
+            for i in 0 ..< lhs.attributes.count {
+                let lhsEncoder = PostboxEncoder()
+                lhs.attributes[i].encode(lhsEncoder)
+                let rhsEncoder = PostboxEncoder()
+                rhs.attributes[i].encode(rhsEncoder)
+                if lhsEncoder.makeData() != rhsEncoder.makeData() {
+                    return false
+                }
+            }
+            return true
+        }
+    }
+    
+    struct TypingDraftUpdate {
+        var value: TypingDraft?
+    }
+    
+    fileprivate(set) var currentTypingDrafts: [PeerAndThreadId: TypingDraft] = [:]
+    private var currentUpdatedTypingDrafts: [PeerAndThreadId: TypingDraftUpdate] = [:]
+    private var nextTypingDraftExpirationTimestamp: Double?
+    private var nextTypingDraftExpirationTimer: SwiftSignalKit.Timer?
     
     var hiddenChatIds: Set<PeerId> {
         if self.currentHiddenChatIds.isEmpty {
@@ -2018,7 +2109,7 @@ final class PostboxImpl {
                             if let forwardInfo = message.forwardInfo {
                                 storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                             }
-                            return .update(StoreMessage(id: message.id, globallyUniqueId: message.globallyUniqueId, groupingKey: message.groupingKey, threadId: message.threadId, timestamp: message.timestamp, flags: flags, tags: message.tags, globalTags: message.globalTags, localTags: message.localTags, forwardInfo: storeForwardInfo, authorId: message.author?.id, text: message.text, attributes: message.attributes, media: message.media))
+                            return .update(StoreMessage(id: message.id, customStableId: nil, globallyUniqueId: message.globallyUniqueId, groupingKey: message.groupingKey, threadId: message.threadId, timestamp: message.timestamp, flags: flags, tags: message.tags, globalTags: message.globalTags, localTags: message.localTags, forwardInfo: storeForwardInfo, authorId: message.author?.id, text: message.text, attributes: message.attributes, media: message.media))
                         } else {
                             return .skip
                         }
@@ -2029,6 +2120,7 @@ final class PostboxImpl {
     }
     
     deinit {
+        self.nextTypingDraftExpirationTimer?.invalidate()
         if let tempDir = self.tempDir {
             TempBox.shared.dispose(tempDir)
         }
@@ -2426,6 +2518,89 @@ final class PostboxImpl {
         }
     }
     
+    fileprivate func combineTypingDrafts(locations: Set<PeerAndThreadId>, update: (PeerAndThreadId, (id: Int64, threadId: Int64?, authorId: PeerId, timestamp: Int32, text: String, attributes: [MessageAttribute])?) -> (id: Int64, threadId: Int64?, authorId: PeerId, timestamp: Int32, text: String, attributes: [MessageAttribute])?) {
+        for location in locations {
+            var updated: (id: Int64, threadId: Int64?, authorId: PeerId, timestamp: Int32, text: String, attributes: [MessageAttribute])?
+            let current = self.currentTypingDrafts[location]
+            if let current {
+                updated = update(location, (current.id, current.threadId, current.authorId, current.timestamp, current.text, current.attributes))
+            } else {
+                updated = update(location, nil)
+            }
+            if let updated {
+                let stableId: UInt32
+                let stableVersion: UInt32
+                if let current, current.id == updated.id {
+                    stableId = current.stableId
+                    stableVersion = 100000 + current.stableVersion + 1
+                } else {
+                    stableId = self.messageHistoryMetadataTable.getNextStableMessageIndexId()
+                    stableVersion = 100000
+                }
+                let mappedDraft = TypingDraft(id: updated.id, stableId: stableId, stableVersion: stableVersion, threadId: updated.threadId, authorId: updated.authorId, timestamp: updated.timestamp, text: updated.text, attributes: updated.attributes, addedAtTimestamp: CFAbsoluteTimeGetCurrent())
+                if self.currentTypingDrafts[location] != mappedDraft {
+                    self.currentTypingDrafts[location] = mappedDraft
+                    self.currentUpdatedTypingDrafts[location] = TypingDraftUpdate(value: mappedDraft)
+                }
+            } else if self.currentTypingDrafts[location] != nil {
+                self.currentTypingDrafts.removeValue(forKey: location)
+                self.currentUpdatedTypingDrafts[location] = TypingDraftUpdate(value: nil)
+            }
+        }
+    }
+    
+    private func restartTypingDraftExpirationTimerIfNeeded() {
+        let expirationTimeout: Double = 20.0
+        
+        var nextTypingDraftExpirationTimestamp: Double?
+        for (_, draft) in self.currentTypingDrafts {
+            if let nextTypingDraftExpirationTimestampValue = nextTypingDraftExpirationTimestamp {
+                nextTypingDraftExpirationTimestamp = min(draft.addedAtTimestamp + expirationTimeout, nextTypingDraftExpirationTimestampValue)
+            } else {
+                nextTypingDraftExpirationTimestamp = draft.addedAtTimestamp + expirationTimeout
+            }
+        }
+        
+        if let nextTypingDraftExpirationTimestamp {
+            if self.nextTypingDraftExpirationTimer == nil || nextTypingDraftExpirationTimestamp != self.nextTypingDraftExpirationTimestamp {
+                let timeout = nextTypingDraftExpirationTimestamp - CFAbsoluteTimeGetCurrent()
+                
+                self.nextTypingDraftExpirationTimer?.invalidate()
+                self.nextTypingDraftExpirationTimer = SwiftSignalKit.Timer(timeout: max(0.0, timeout - 0.1), repeat: false, completion: { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    let _ = self.transaction { _ in
+                        self.processTypingDraftExpirations(expirationTimeout: expirationTimeout)
+                    }.startStandalone()
+                }, queue: self.queue)
+                self.nextTypingDraftExpirationTimer?.start()
+            }
+        } else {
+            self.nextTypingDraftExpirationTimestamp = nil
+            if let nextTypingDraftExpirationTimer = self.nextTypingDraftExpirationTimer {
+                self.nextTypingDraftExpirationTimer = nil
+                nextTypingDraftExpirationTimer.invalidate()
+            }
+        }
+    }
+    
+    private func processTypingDraftExpirations(expirationTimeout: Double) {
+        let timestamp = CFAbsoluteTimeGetCurrent()
+        var removedKeys: [PeerAndThreadId] = []
+        for (key, draft) in self.currentTypingDrafts {
+            if draft.addedAtTimestamp + expirationTimeout >= timestamp {
+                removedKeys.append(key)
+            }
+        }
+        if !removedKeys.isEmpty {
+            for key in removedKeys {
+                self.currentTypingDrafts.removeValue(forKey: key)
+                self.currentUpdatedTypingDrafts[key] = TypingDraftUpdate(value: nil)
+            }
+        }
+    }
+    
     func renderIntermediateMessage(_ message: IntermediateMessage) -> Message {
         let renderedMessage = self.messageHistoryTable.renderMessage(message, peerTable: self.peerTable, threadIndexTable: self.messageHistoryThreadIndexTable, storyTable: self.storyTable)
         
@@ -2452,7 +2627,7 @@ final class PostboxImpl {
     }
     
     private func beforeCommit(currentTransaction: Transaction) -> (updatedTransactionStateVersion: Int64?, updatedMasterClientId: Int64?) {
-        self.chatListTable.replay(historyOperationsByPeerId: self.currentOperationsByPeerId, updatedPeerChatListEmbeddedStates: self.currentUpdatedPeerChatListEmbeddedStates, updatedChatListInclusions: self.currentUpdatedChatListInclusions, messageHistoryTable: self.messageHistoryTable, peerChatInterfaceStateTable: self.peerChatInterfaceStateTable, operations: &self.currentChatListOperations)
+        self.chatListTable.replay(postbox: self, historyOperationsByPeerId: self.currentOperationsByPeerId, updatedPeerChatListEmbeddedStates: self.currentUpdatedPeerChatListEmbeddedStates, updatedPeerCachedData: self.currentUpdatedCachedPeerData, updatedChatListInclusions: self.currentUpdatedChatListInclusions, messageHistoryTable: self.messageHistoryTable, peerChatInterfaceStateTable: self.peerChatInterfaceStateTable, operations: &self.currentChatListOperations)
         
         self.peerChatTopTaggedMessageIdsTable.replay(historyOperationsByPeerId: self.currentOperationsByPeerId)
         
@@ -2559,7 +2734,8 @@ final class PostboxImpl {
             storySubscriptionsEvents: self.currentStorySubscriptionsEvents,
             storyItemsEvents: self.currentStoryItemsEvents,
             currentStoryTopItemEvents: self.currentStoryTopItemEvents,
-            storyEvents: self.currentStoryEvents
+            storyEvents: self.currentStoryEvents,
+            updatedTypingDrafts: self.currentUpdatedTypingDrafts
         )
         var updatedTransactionState: Int64?
         var updatedMasterClientId: Int64?
@@ -2622,6 +2798,12 @@ final class PostboxImpl {
         self.currentStoryItemsEvents.removeAll()
         self.currentStoryTopItemEvents.removeAll()
         self.currentStoryEvents.removeAll()
+        
+        if !self.currentUpdatedTypingDrafts.isEmpty {
+            self.currentUpdatedTypingDrafts.removeAll()
+            
+            self.restartTypingDraftExpirationTimerIfNeeded()
+        }
         
         for table in self.tables {
             table.beforeCommit()
@@ -2784,7 +2966,7 @@ final class PostboxImpl {
             let currentData = self.cachedPeerDataTable.get(peerId)
             if let updatedData = update(peerId, currentData) {
                 self.cachedPeerDataTable.set(id: peerId, data: updatedData)
-                self.currentUpdatedCachedPeerData[peerId] = updatedData
+                self.currentUpdatedCachedPeerData[peerId] = (currentData, updatedData)
             }
         }
     }

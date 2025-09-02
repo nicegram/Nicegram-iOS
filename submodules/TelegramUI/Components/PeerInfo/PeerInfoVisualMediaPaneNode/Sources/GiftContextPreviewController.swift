@@ -7,6 +7,7 @@ import SwiftSignalKit
 import ViewControllerComponent
 import ComponentDisplayAdapters
 import TelegramPresentationData
+import TelegramStringFormatting
 import AccountContext
 import TelegramCore
 import MultilineTextComponent
@@ -68,7 +69,7 @@ private final class GiftContextPreviewComponent: Component {
             case let .generic(gift):
                 subject = .generic(gift.file)
             case let .unique(gift):
-                subject = .unique(gift)
+                subject = .unique(nil, gift)
             }
             
             let animationSize = self.animation.update(
@@ -81,7 +82,7 @@ private final class GiftContextPreviewComponent: Component {
                     animationScale: nil,
                     displayAnimationStars: false,
                     externalState: self.giftCompositionExternalState,
-                    requestUpdate: { [weak state] in
+                    requestUpdate: { [weak state] _ in
                         state?.updated()
                     }
                 )),
@@ -120,7 +121,7 @@ private final class GiftContextPreviewComponent: Component {
                 let subtitleSize = self.subtitle.update(
                     transition: .immediate,
                     component: AnyComponent(MultilineTextComponent(text: .plain(
-                        NSAttributedString(string: "\(environment.strings.Gift_Unique_Collectible) #\(presentationStringsFormattedNumber(uniqueGift.number, environment.dateTimeFormat.groupingSeparator))", font: Font.regular(13.0), textColor: vibrantColor)
+                        NSAttributedString(string: "\(environment.strings.Gift_Unique_Collectible) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: environment.dateTimeFormat))", font: Font.regular(13.0), textColor: vibrantColor)
                     ))),
                     environment: {},
                     containerSize: availableSize

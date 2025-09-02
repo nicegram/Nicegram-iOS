@@ -1040,19 +1040,71 @@ public final class ChatListView {
         self.groupId = mutableView.groupId
         
         var entries: [ChatListEntry] = []
+        
+        //TODO:release
+        var linkedEntries: [PeerId: [MutableChatListEntry.MessageEntryData]] = [:]
+        if "".isEmpty {
+            for entry in mutableView.sampledState.entries {
+                guard case let .MessageEntry(entryData) = entry else {
+                    continue
+                }
+                if let peer = entryData.renderedPeer.peer, peer.id.namespace._internalGetInt32Value() == 2, let associatedPeerId = peer.associatedPeerId, associatedPeerId.namespace._internalGetInt32Value() == 0 {
+                    if linkedEntries[associatedPeerId] == nil {
+                        linkedEntries[associatedPeerId] = []
+                    }
+                    linkedEntries[associatedPeerId]?.append(entryData)
+                }
+            }
+        }
+        
         for entry in mutableView.sampledState.entries {
             switch entry {
             case let .MessageEntry(entryData):
+                if let peer = entryData.renderedPeer.peer, peer.id.namespace._internalGetInt32Value() == 2, let associatedPeerId = peer.associatedPeerId, associatedPeerId.namespace._internalGetInt32Value() == 0 {
+                    continue
+                }
+                
+                //TODO:release
+                var index = entryData.index
+                var messages = entryData.messages
+                var readState = entryData.readState
+                var forumTopicData = entryData.displayAsRegularChat ? nil : entryData.forumTopicData
+                if let linkedEntries = linkedEntries[entryData.index.messageIndex.id.peerId] {
+                    for entry in linkedEntries {
+                        if entry.index.messageIndex.timestamp >= index.messageIndex.timestamp {
+                            index = ChatListIndex(pinningIndex: index.pinningIndex, messageIndex: MessageIndex(id: index.messageIndex.id, timestamp: entry.index.messageIndex.timestamp))
+                            messages = entry.messages
+                            forumTopicData = entry.forumTopicData
+                        }
+                        if let entryReadState = entry.readState {
+                            if var readStateValue = readState {
+                                var states = readStateValue.state.states
+                                for (namespace, state) in entryReadState.state.states {
+                                    if let index = states.firstIndex(where: { $0.0 == namespace }) {
+                                        states[index] = (namespace, states[index].1.withAddedCount(state.count))
+                                    } else {
+                                        states.append((namespace, state))
+                                    }
+                                }
+                                readStateValue.state = .init(states: states)
+                                readState = readStateValue
+                            } else {
+                                readState = entryReadState
+                            }
+                        }
+                    }
+                }
+                
                 entries.append(.MessageEntry(ChatListEntry.MessageEntryData(
-                    index: entryData.index,
-                    messages: entryData.messages,
-                    readState: entryData.readState,
+                    index: index,
+                    messages: messages,
+                    readState: readState,
                     isRemovedFromTotalUnreadCount: entryData.isRemovedFromTotalUnreadCount,
                     embeddedInterfaceState: entryData.embeddedInterfaceState,
                     renderedPeer: entryData.renderedPeer,
                     presence: entryData.presence,
                     summaryInfo: entryData.tagSummaryInfo,
-                    forumTopicData: entryData.displayAsRegularChat ? nil : entryData.forumTopicData,
+                    forumTopicData: forumTopicData,
                     topForumTopics: entryData.displayAsRegularChat ? [] : entryData.topForumTopics,
                     hasFailed: entryData.hasFailedMessages,
                     isContact: entryData.isContact,
@@ -1061,6 +1113,7 @@ public final class ChatListView {
                     extractedCachedData: entryData.extractedCachedData
                 )))
             case let .HoleEntry(hole):
+                entries.removeAll()
                 entries.append(.HoleEntry(hole))
             case .IntermediateMessageEntry:
                 assertionFailure()

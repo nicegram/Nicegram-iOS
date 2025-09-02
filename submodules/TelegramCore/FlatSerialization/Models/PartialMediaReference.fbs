@@ -41,13 +41,18 @@ table PartialMediaReference_SavedSticker {
 table PartialMediaReference_RecentSticker {
 }
 
+table PartialMediaReference_SavedMusic {
+    peer:PeerReference (id: 0);
+}
+
 union PartialMediaReference_Value {
     PartialMediaReference_Message,
     PartialMediaReference_WebPage,
     PartialMediaReference_StickerPack,
     PartialMediaReference_SavedGif,
     PartialMediaReference_SavedSticker,
-    PartialMediaReference_RecentSticker
+    PartialMediaReference_RecentSticker,
+    PartialMediaReference_SavedMusic
 }
 
 table PartialMediaReference {

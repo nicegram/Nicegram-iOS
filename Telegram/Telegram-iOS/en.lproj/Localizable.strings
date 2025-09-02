@@ -14845,7 +14845,16 @@ Sorry for the inconvenience.";
 "ProfileLevelInfo.MyDescriptionDays_any" = "%@ days";
 "ProfileLevelInfo.MyDescriptionPoints_1" = "%@ point is";
 "ProfileLevelInfo.MyDescriptionPoints_any" = "%@ points are";
-"ProfileLevelInfo.MyDescription" = "The rating updates in %@ after purchases.\n\%@ pending.";
+"ProfileLevelInfo.MyDescriptionPreview" = "The rating will update in %@.\n\%@ pending. [Preview >]()";
+
+"ProfileLevelInfo.MyDescriptionInPreviewDays_1" = "%@ day";
+"ProfileLevelInfo.MyDescriptionInPreviewDays_any" = "%@ days";
+"ProfileLevelInfo.MyDescriptionInPreviewPoints_1" = "%@ point is";
+"ProfileLevelInfo.MyDescriptionInPreviewPoints_any" = "%@ points are";
+"ProfileLevelInfo.MyDescriptionInPreview" = "The rating will update in %1$@,\n after %2$@ added. [Back >]()";
+"ProfileLevelInfo.MyDescriptionInPreviewToday_1" = "This will be your rating today,\n after %@ is added. [Back >]()";
+"ProfileLevelInfo.MyDescriptionInPreviewToday_any" = "This will be your rating today,\n after %@ added. [Back >]()";
+
 "ProfileLevelInfo.OtherDescription" = "The rating reflects **%@'s** activity on Telegram. What affects it:";
 "ProfileLevelInfo.LevelIndex_1" = "Level %@";
 "ProfileLevelInfo.LevelIndex_any" = "Level %@";
@@ -14868,3 +14877,122 @@ Sorry for the inconvenience.";
 "Stories.Post.AlbumAll" = "All Stories";
 "Stories.Post.AlbumCount_1" = "%@ Album";
 "Stories.Post.AlbumCount_any" = "%@ Albums";
+
+"Stories.ToastAddedToFolder_1" = "Story added to folder.";
+"Stories.ToastAddedToFolder_any" = "%@ stories added to folder.";
+"Stories.ToastAlbumNotAvailable" = "The album is no longer available.";
+
+"Gift.Options.Gift.Premium" = "premium";
+
+"Stars.Transaction.FragmentTopUpTon.Title" = "TON Top-Up";
+"Stars.Transaction.FragmentWithdrawalTon.Title" = "TON Withdrawal";
+
+"Stars.Transaction.SearchFee.Title" = "Extra Search Fee";
+"Stars.Intro.Transaction.SearchFee" = "Extra Search Fee";
+
+"PeerInfo.Gifts.Upgradable" = "Upgradable";
+
+"Gift.Upgrade.GiftTitle" = "Make Unique";
+"Gift.Upgrade.GiftDescription" = "Let %@ turn this gift into a unique collectible.";
+"Gift.Upgrade.Unique.GiftDescription" = "%@ will get a unique number, model, backdrop, and symbol for the gift.";
+"Gift.Upgrade.Transferable.GiftDescription" = "%@ will be able to send the gift to anyone Telegram.";
+"Gift.Upgrade.Tradable.GiftDescription" = "%@ will be able to auction the gift on third-party NFT marketplaces.";
+
+"Notification.StarGift.Subtitle.Upgrade.Prepaid" = "%@ can now turn this gift to a unique collectible";
+
+"Notification.StarsGift.SentUpgradeYou" = "You sent an upgrade worth %1$@ for your gift to %2$@";
+"Notification.StarsGift.SentUpgradeYouOther" = "You sent an upgrade worth %1$@ for the gift %2$@ received from %3$@";
+"Notification.StarsGift.SentUpgradeYouUnknown" = "You sent an upgrade worth %1$@ for the gift to %2$@";
+
+"Notification.StarsGift.SentUpgrade" = "%1$@ sent an upgrade worth %2$@ for your gift";
+"Notification.StarsGift.SentUpgradeOther" = "%1$@ sent an upgrade worth %2$@ for the gift you received from %3$@";
+
+"Notification.StarsGift.UpgradePrepaidYou" = "You unpacked the gift that %@ helped upgrade";
+"Notification.StarsGift.UpgradePrepaid" = "%@ unpacked the gift that you helped upgrade";
+
+"Gift.View.Unknown.Title" = "Gift";
+
+"Conversation.StopVoiceMessageTitle" = "Audio Recording";
+"Conversation.StopVoiceMessageDescription" = "Are you sure you want to pause recording?";
+"Conversation.StopVoiceMessageDiscardAction" = "Discard";
+"Conversation.StopVoiceMessagePauseAction" = "Pause";
+
+"Gift.Options.GiftLocked.Title" = "Gift Locked";
+
+"Gift.Unique.Value" = "Value";
+"Gift.Unique.LearnMore" = "learn more";
+
+"Gift.Upgrade.GiftUpgrade" = "Pay %@ for Upgrade";
+"Gift.View.GiftUpgrade" = "Gift an Upgrade";
+
+"Gift.View.OpenChatTheme" = "This gift is the chat's theme. [Change Theme >]()";
+
+"Notification.ChatTheme.Text" = "%1$@ set **%2$@** as a new theme for this chat.";
+"Notification.ChatTheme.TextYou" = "You set **%@** as a new theme for this chat.";
+
+"Notification.ChangedThemeGift" = "%1$@ changed chat theme to %2$@";
+"Notification.YouChangedThemeGift" = "You changed chat theme to %@";
+
+"Conversation.Theme.GiftTransfer.Text" = "This gift is already your theme in the chat with **%@**. Remove it there and use it here instead?";
+"Conversation.Theme.GiftTransfer.Proceed" = "Yes";
+
+"PeerInfo.Tabs.SetMainTab" = "Set as Main Tab";
+"PeerInfo.Tabs.SetMainTab.Succeed" = "Tab order changed.";
+
+"MediaPlayer.SavedMusic.AddToProfile" = "Add to Profile";
+"MediaPlayer.SavedMusic.RemoveFromProfile" = "This audio is visible on your profile. [Remove >]()";
+
+"MediaPlayer.SavedMusic.AddedToProfile.View" = "View";
+"MediaPlayer.SavedMusic.AddedToProfile" = "Audio added to your profile.";
+"MediaPlayer.SavedMusic.RemovedFromProfile" = "Audio removed from your profile.";
+
+"MediaPlayer.ContextMenu.SaveToFiles" = "Save to Files";
+"MediaPlayer.ContextMenu.SaveTo" = "Save to...";
+"MediaPlayer.ContextMenu.SaveTo.Profile" = "Profile";
+"MediaPlayer.ContextMenu.SaveTo.SavedMessages" = "Saved Messages";
+"MediaPlayer.ContextMenu.SaveTo.Files" = "Files";
+"MediaPlayer.ContextMenu.SaveTo.Info" = "Choose where you want this audio to be saved.";
+"MediaPlayer.ContextMenu.ShowInChat" = "Show in Chat";
+"MediaPlayer.ContextMenu.Forward" = "Forward";
+"MediaPlayer.ContextMenu.Delete" = "Delete";
+"MediaPlayer.ContextMenu.Remove" = "Remove";
+
+"MediaPlayer.Playlist.ThisChat" = "AUDIO IN THIS CHAT";
+"MediaPlayer.Playlist.SavedMusic" = "%@'S PLAYLIST";
+"MediaPlayer.Playlist.SavedMusicYou" = "YOUR PLAYLIST";
+
+"Notification.PremiumGift.Stars_1" = "%@ Star";
+"Notification.PremiumGift.Stars_any" = "%@ Stars";
+
+"Ton.ProceedsOverview" = "PROCEEDS OVERVIEW";
+"Ton.AvailableBalance" = "Balance Available to Withdraw";
+"Ton.LifetimeProceeds" = "Total Lifetime Proceeds";
+
+"Ton.WithdrawViaFragment" = "Withdraw via Fragment";
+"Ton.WithdrawViaFragment.Info" = "Collect your TON using Fragment. [Learn More >]()";
+"Ton.WithdrawViaFragment.Info_URL" = "https://telegram.org/tos/bot-developers#6-2-2-tpa-balance";
+
+"MESSAGE_GIFT_THEME" = "%1$@ changed theme to %2$@";
+
+"Gift.Upgrade.Skip" = "Skip";
+"Gift.Upgrade.UpgradeNext" = "Upgrade Next Gift";
+
+"Gift.Value.DescriptionAveragePrice" = "This is the average sale price of **%@** on Telegram and Fragment over the past month.";
+"Gift.Value.DescriptionLastPriceFragment" = "This is the last price at which **%@** was last sold on Fragment.";
+"Gift.Value.DescriptionLastPriceTelegram" = "This is the last price at which **%@** was last sold on Telegram.";
+
+"Gift.Value.LastPriceInfo" = "**%1$@** is the last price for %2$@ gifts listed on Telegram and Fragment.";
+"Gift.Value.MinimumPriceInfo" = "**%1$@** is the floor price for %2$@ gifts listed on Telegram and Fragment.";
+"Gift.Value.AveragePriceInfo" = "**%1$@** is the average sale price for %2$@ gifts listed on Telegram and Fragment over the past month.";
+
+"Gift.Value.AveragePrice" = "Last Sale";
+"Gift.Value.InitialSale" = "Initial Sale";
+"Gift.Value.InitialPrice" = "Initial Price";
+"Gift.Value.LastSale" = "Last Sale";
+"Gift.Value.LastPrice" = "Last Price";
+"Gift.Value.MinimumPrice" = "Minimum Price";
+"Gift.Value.AveragePrice" = "Average Price";
+"Gift.Value.ForSaleOnTelegram" = "for sale on Telegram";
+"Gift.Value.ForSaleOnFragment" = "for sale on Fragment";
+
+"Gift.View.Context.SetAsTheme" = "Set as Theme in...";

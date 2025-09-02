@@ -3252,7 +3252,7 @@ public func playerAlbumArt(postbox: Postbox, engine: TelegramEngine, fileReferen
         |> map { thumbnailData in
             return Tuple(thumbnailData, nil, false)
         }
-    } else if let albumArt = albumArt {
+    } else if let albumArt = albumArt, !albumArt.thumbnailResource.title.isEmpty && !albumArt.thumbnailResource.performer.isEmpty {
         if thumbnail {
             immediateArtworkData = albumArtThumbnailData(engine: engine, thumbnail: albumArt.thumbnailResource, attemptSynchronously: attemptSynchronously)
             |> map { thumbnailData in
@@ -3261,6 +3261,8 @@ public func playerAlbumArt(postbox: Postbox, engine: TelegramEngine, fileReferen
         } else {
             immediateArtworkData = albumArtFullSizeDatas(engine: engine, file: fileReference, thumbnail: albumArt.thumbnailResource, fullSize: albumArt.fullSizeResource)
         }
+    } else {
+        immediateArtworkData = .single(Tuple(nil, nil, false))
     }
     
     return combineLatest(fileArtworkData, immediateArtworkData)

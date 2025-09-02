@@ -783,6 +783,7 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
         let spec: Spec
         
         let backgroundColor: UInt32
+        let isDark: Bool
         let sideInsets: CGFloat
         
         let imageFrame: CGRect
@@ -799,6 +800,7 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
         init(
             spec: Spec,
             backgroundColor: UInt32,
+            isDark: Bool,
             sideInsets: CGFloat,
             imageFrame: CGRect,
             imageSize: CGSize,
@@ -810,6 +812,7 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
         ) {
             self.spec = spec
             self.backgroundColor = backgroundColor
+            self.isDark = isDark
             self.sideInsets = sideInsets
             self.imageFrame = imageFrame
             self.imageSize = imageSize
@@ -853,6 +856,7 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
             }
             
             let backgroundColor = spec.component.chosenOrder != nil ? spec.component.colors.selectedBackground : spec.component.colors.deselectedBackground
+            let isDark = spec.component.colors.isDark
             
             let imageFrame: CGRect
             if spec.component.isTag {
@@ -892,7 +896,11 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
                         )
                     }
                     counterLayout = counterValue
-                    size.width += spacing + counterValue.size.width
+                    if spec.component.count != 0 {
+                        size.width += spacing + counterValue.size.width
+                    } else {
+                        size.width -= 1.0
+                    }
                     if spec.component.isTag {
                         size.width += 5.0
                     }
@@ -957,6 +965,7 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
             return Layout(
                 spec: spec,
                 backgroundColor: backgroundColor,
+                isDark: isDark,
                 sideInsets: sideInsets,
                 imageFrame: imageFrame,
                 imageSize: boundingImageSize,
@@ -1203,6 +1212,8 @@ public final class ReactionButtonAsyncNode: ContextControllerSourceView {
             let starsEffectLayerFrame = CGRect(origin: CGPoint(), size: layout.size)
             animation.animator.updateFrame(layer: starsEffectLayer, frame: starsEffectLayerFrame, completion: nil)
             starsEffectLayer.update(size: starsEffectLayerFrame.size)
+            
+            starsEffectLayer.opacity = layout.isDark ? 0.55 : 1.0
         } else {
             if let starsEffectLayer = self.starsEffectLayer {
                 self.starsEffectLayer = nil
@@ -1366,6 +1377,7 @@ public final class ReactionButtonComponent: Equatable {
         public var extractedSelectedForeground: UInt32
         public var deselectedMediaPlaceholder: UInt32
         public var selectedMediaPlaceholder: UInt32
+        public var isDark: Bool
         
         public init(
             deselectedBackground: UInt32,
@@ -1381,7 +1393,8 @@ public final class ReactionButtonComponent: Equatable {
             extractedForeground: UInt32,
             extractedSelectedForeground: UInt32,
             deselectedMediaPlaceholder: UInt32,
-            selectedMediaPlaceholder: UInt32
+            selectedMediaPlaceholder: UInt32,
+            isDark: Bool
         ) {
             self.deselectedBackground = deselectedBackground
             self.selectedBackground = selectedBackground
@@ -1397,6 +1410,7 @@ public final class ReactionButtonComponent: Equatable {
             self.extractedSelectedForeground = extractedSelectedForeground
             self.deselectedMediaPlaceholder = deselectedMediaPlaceholder
             self.selectedMediaPlaceholder = selectedMediaPlaceholder
+            self.isDark = isDark
         }
     }
     

@@ -9,6 +9,27 @@ private let animationDelay: TimeInterval = 2.5
 private let spacing: CGFloat = 20.0
 
 public final class MarqueeComponent: Component {
+    let attributedText: NSAttributedString
+    let maxWidth: CGFloat?
+    
+    public init(
+        attributedText: NSAttributedString,
+        maxWidth: CGFloat? = nil
+    ) {
+        self.attributedText = attributedText
+        self.maxWidth = maxWidth
+    }
+
+    public static func ==(lhs: MarqueeComponent, rhs: MarqueeComponent) -> Bool {
+        if lhs.attributedText != rhs.attributedText {
+            return false
+        }
+        if lhs.maxWidth != rhs.maxWidth {
+            return false
+        }
+        return true
+    }
+    
     public static let innerPadding: CGFloat = 16.0
     
     private final class MeasureState: Equatable {
@@ -41,7 +62,9 @@ public final class MarqueeComponent: Component {
         private let containerLayer = SimpleLayer()
         private let textLayer = SimpleLayer()
         private let duplicateTextLayer = SimpleLayer()
+        private let maskContainerLayer = SimpleLayer()
         private let gradientMaskLayer = SimpleGradientLayer()
+        private let solidEdgeMaskLayer = SimpleLayer()
         private var isAnimating = false
         private var isOverflowing = false
         
@@ -56,6 +79,9 @@ public final class MarqueeComponent: Component {
             
             self.containerLayer.addSublayer(self.textLayer)
             self.containerLayer.addSublayer(self.duplicateTextLayer)
+            
+            self.maskContainerLayer.addSublayer(self.gradientMaskLayer)
+            self.maskContainerLayer.addSublayer(self.solidEdgeMaskLayer)
         }
         
         required init?(coder: NSCoder) {
@@ -65,6 +91,11 @@ public final class MarqueeComponent: Component {
         public func update(component: MarqueeComponent, availableSize: CGSize) -> CGSize {
             let previousComponent = self.component
             self.component = component
+            
+            var availableSize = availableSize
+            if let maxWidth = component.maxWidth {
+                availableSize.width = maxWidth
+            }
             
             let attributedText = component.attributedText
             if let measureState = self.measureState {
@@ -97,27 +128,34 @@ public final class MarqueeComponent: Component {
                 self.startAnimation(force: previousComponent?.attributedText != attributedText)
             } else {
                 self.stopAnimation()
-                self.textLayer.frame = CGRect(origin: CGPoint(x: innerPadding, y: 0.0), size: boundingRect.size)
+                self.textLayer.frame = CGRect(origin: .zero, size: boundingRect.size)
                 self.textLayer.contents = image.cgImage
                 self.duplicateTextLayer.frame = .zero
                 self.duplicateTextLayer.contents = nil
                 self.layer.mask = nil
             }
             
-            return CGSize(width: min(measureState.size.width + innerPadding * 2.0, availableSize.width), height: measureState.size.height)
+            return CGSize(width: min(measureState.size.width, availableSize.width), height: measureState.size.height)
         }
         
         private func setupMarqueeTextLayers(textImage: CGImage, textWidth: CGFloat, containerWidth: CGFloat) {
-            self.textLayer.frame = CGRect(x: innerPadding, y: 0, width: textWidth, height: self.containerLayer.bounds.height)
+            self.textLayer.frame = CGRect(x: 0.0, y: 0, width: textWidth, height: self.containerLayer.bounds.height)
             self.textLayer.contents = textImage
             
-            self.duplicateTextLayer.frame = CGRect(x: innerPadding + textWidth + spacing, y: 0, width: textWidth, height: self.containerLayer.bounds.height)
+            self.duplicateTextLayer.frame = CGRect(x: textWidth + spacing, y: 0, width: textWidth, height: self.containerLayer.bounds.height)
             self.duplicateTextLayer.contents = textImage
             
             self.containerLayer.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: textWidth * 2.0 + spacing, height: self.containerLayer.bounds.height))
         }
         
         private func setupGradientMask(size: CGSize) {
+            let edgePercentage = innerPadding / size.width
+                        
+            self.maskContainerLayer.frame = CGRect(origin: .zero, size: size)
+            
+            self.solidEdgeMaskLayer.frame = CGRect(origin: .zero, size: CGSize(width: innerPadding, height: size.height))
+            self.solidEdgeMaskLayer.backgroundColor = UIColor.black.cgColor
+            
             self.gradientMaskLayer.frame = CGRect(origin: .zero, size: size)
             self.gradientMaskLayer.colors = [
                 UIColor.clear.cgColor,
@@ -125,22 +163,20 @@ public final class MarqueeComponent: Component {
                 UIColor.black.cgColor,
                 UIColor.black.cgColor,
                 UIColor.clear.cgColor,
-                UIColor.clear.cgColor
+                UIColor.clear.cgColor,
             ]
             self.gradientMaskLayer.startPoint = CGPoint(x: 0.0, y: 0.5)
             self.gradientMaskLayer.endPoint = CGPoint(x: 1.0, y: 0.5)
-            
-            let edgePercentage = innerPadding / size.width
             self.gradientMaskLayer.locations = [
                 0.0,
-                NSNumber(value: edgePercentage * 0.4),
+                NSNumber(value: edgePercentage * 0.1),
                 NSNumber(value: edgePercentage),
                 NSNumber(value: 1.0 - edgePercentage),
-                NSNumber(value: 1.0 - edgePercentage * 0.4),
+                NSNumber(value: 1.0 - edgePercentage * 0.1),
                 1.0
             ]
-            
-            self.layer.mask = self.gradientMaskLayer
+  
+            self.layer.mask = self.maskContainerLayer
         }
         
         private func startAnimation(force: Bool = false) {
@@ -157,6 +193,14 @@ public final class MarqueeComponent: Component {
                 guard self.isAnimating else {
                     return
                 }
+                let values: [NSNumber] = [1.0, 0.0, 0.0, 1.0]
+                let keyTimes: [NSNumber] = [0.0, 0.02, 0.98, 1.0]
+                self.solidEdgeMaskLayer.animateKeyframes(
+                    values: values,
+                    keyTimes: keyTimes,
+                    duration: duration,
+                    keyPath: "opacity"
+                )
                 self.containerLayer.animateBoundsOriginXAdditive(from: 0.0, to: distance, duration: duration, delay: 0.0, timingFunction: CAMediaTimingFunctionName.linear.rawValue, completion: { finished in
                     if finished {
                         self.isAnimating = false
@@ -171,20 +215,7 @@ public final class MarqueeComponent: Component {
             self.isAnimating = false
         }
     }
-    
-    public let attributedText: NSAttributedString
-    
-    public init(attributedText: NSAttributedString) {
-        self.attributedText = attributedText
-    }
-
-    public static func ==(lhs: MarqueeComponent, rhs: MarqueeComponent) -> Bool {
-        if lhs.attributedText != rhs.attributedText {
-            return false
-        }
-        return true
-    }
-    
+        
     public func makeView() -> View {
         return View()
     }

@@ -508,6 +508,8 @@ public func peerViewMonoforumMainPeer(_ view: PeerView) -> Peer? {
     if let peer = peerViewMainPeer(view) {
         if let channel = peer as? TelegramChannel, channel.flags.contains(.isMonoforum), let linkedMonoforumId = channel.linkedMonoforumId {
             return view.peers[linkedMonoforumId]
+        } else if let channel = peer as? TelegramChannel, let linkedBotId = channel.linkedBotId {
+            return view.peers[linkedBotId]
         } else {
             return nil
         }
@@ -548,8 +550,14 @@ public extension RenderedPeer {
     }
     
     var chatOrMonoforumMainPeer: Peer? {
-        if let channel = self.peer as? TelegramChannel, channel.flags.contains(.isMonoforum), let linkedMonoforumId = channel.linkedMonoforumId {
-            return self.peers[linkedMonoforumId]
+        if let channel = self.peer as? TelegramChannel {
+            if channel.flags.contains(.isMonoforum), let linkedMonoforumId = channel.linkedMonoforumId {
+                return self.peers[linkedMonoforumId]
+            } else if let linkedBotId = channel.linkedBotId {
+                return self.peers[linkedBotId]
+            } else {
+                return self.chatMainPeer
+            }
         } else {
             return self.chatMainPeer
         }

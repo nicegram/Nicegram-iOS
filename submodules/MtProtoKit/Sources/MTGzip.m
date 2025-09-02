@@ -11,7 +11,7 @@
     int windowBits = 15 + 32; //Default + gzip header instead of zlib header
     int retCode;
 #pragma clang diagnostic push
-#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 180500
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
 #endif
 #pragma clang diagnostic ignored "-Wgnu-folding-constant"

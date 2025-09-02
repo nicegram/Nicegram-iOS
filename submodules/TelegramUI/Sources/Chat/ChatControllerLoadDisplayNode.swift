@@ -128,10 +128,13 @@ import PostSuggestionsSettingsScreen
 import ChatSendStarsScreen
 
 extension ChatControllerImpl {
-    func reloadChatLocation(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, historyNode: ChatHistoryListNodeImpl, apply: @escaping ((Bool) -> Void) -> Void) {
+    func reloadChatLocation(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, historyNode: ChatHistoryListNodeImpl, apply: @escaping ((ContainedViewLayoutTransition?) -> Void) -> Void) {
         self.contentDataReady.set(false)
         
         self.contentDataDisposable?.dispose()
+        
+        self.newTopicEventsDisposable?.dispose()
+        self.newTopicEventsDisposable = nil
         
         let configuration: Signal<ChatControllerImpl.ContentData.Configuration, NoError> = self.presentationInterfaceStatePromise.get()
         |> map { presentationInterfaceState -> ChatControllerImpl.ContentData.Configuration in
@@ -169,16 +172,27 @@ extension ChatControllerImpl {
                 return
             }
             
-            apply({ [weak self, weak contentData] forceAnimation in
+            if let historyNodeData = contentData.state.historyNodeData {
+                self.subject = nil
+                self.updateChatLocationToOther(chatLocation: historyNodeData.chatLocation)
+                return
+            } else if case let .botForumThread(linkedForumId, threadId) = self.subject {
+                self.subject = nil
+                self.updateInitialChatBotForumLocationThread(linkedForumId: linkedForumId, threadId: threadId)
+                return
+            }
+            
+            apply({ [weak self, weak contentData] forceAnimationTransition in
                 guard let self, let contentData, self.pendingContentData?.contentData === contentData else {
                     return
                 }
                 
                 self.contentData = contentData
                 self.pendingContentData = nil
-                self.contentDataUpdated(synchronous: true, forceAnimation: forceAnimation, previousState: contentData.state)
                 
-                self.chatThemeEmoticonPromise.set(contentData.chatThemeEmoticonPromise.get())
+                self.contentDataUpdated(synchronous: true, forceAnimationTransition: forceAnimationTransition, previousState: contentData.state)
+                
+                self.chatThemePromise.set(contentData.chatThemePromise.get())
                 self.chatWallpaperPromise.set(contentData.chatWallpaperPromise.get())
                 
                 if let historyNode {
@@ -193,13 +207,42 @@ extension ChatControllerImpl {
                     guard let self, let contentData, self.contentData === contentData else {
                         return
                     }
-                    self.contentDataUpdated(synchronous: false, forceAnimation: false, previousState: previousState)
+                    
+                    if let historyNodeData = contentData.state.historyNodeData {
+                        self.updateChatLocationToOther(chatLocation: historyNodeData.chatLocation)
+                        return
+                    }
+                    
+                    self.contentDataUpdated(synchronous: false, forceAnimationTransition: nil, previousState: previousState)
                 }
             })
+            
+            if self.newTopicEventsDisposable == nil, let peerId = chatLocation.peerId, chatLocation.threadId == EngineMessage.newTopicThreadId {
+                self.newTopicEventsDisposable = (self.context.account.pendingMessageManager.newTopicEvents(peerId: peerId)
+                |> mapToSignal { event -> Signal<Int64, NoError> in
+                    if case let .didMove(fromThreadId, toThreadId) = event {
+                        if fromThreadId == EngineMessage.newTopicThreadId {
+                            return .single(toThreadId)
+                        }
+                    }
+                    return .never()
+                }
+                |> take(1)
+                |> deliverOnMainQueue).startStrict(next: { [weak self] threadId in
+                    guard let self else {
+                        return
+                    }
+                    if chatLocation.peerId != peerId {
+                        self.updateInitialChatBotForumLocationThread(linkedForumId: peerId, threadId: threadId)
+                    } else {
+                        self.updateChatLocationThread(threadId: threadId, animationDirection: nil, replaceInline: true, transferInputState: true)
+                    }
+                })
+            }
         })
     }
     
-    func contentDataUpdated(synchronous: Bool, forceAnimation: Bool, previousState: ContentData.State) {
+    func contentDataUpdated(synchronous: Bool, forceAnimationTransition: ContainedViewLayoutTransition?, previousState: ContentData.State) {
         guard let contentData = self.contentData else {
             return
         }
@@ -357,11 +400,15 @@ extension ChatControllerImpl {
         if previousState.pinnedMessage != contentData.state.pinnedMessage {
             animated = true
         }
-        if forceAnimation {
-            animated = true
+        var transition: ContainedViewLayoutTransition = animated ? .animated(duration: 0.4, curve: .spring) : .immediate
+        if let forceAnimationTransition {
+            transition = forceAnimationTransition
+        }
+        if !self.willAppear {
+            transition = .immediate
         }
         
-        self.updateChatPresentationInterfaceState(animated: animated && self.willAppear, interactive: false, { presentationInterfaceState in
+        self.updateChatPresentationInterfaceState(transition: transition, interactive: false, { presentationInterfaceState in
             var presentationInterfaceState = presentationInterfaceState
             presentationInterfaceState = presentationInterfaceState.updatedPeer({ _ in
                 return contentData.state.renderedPeer
@@ -632,7 +679,11 @@ extension ChatControllerImpl {
             if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isForumOrMonoForum, self.presentationInterfaceState.persistentData.topicListPanelLocation == true, self.presentationInterfaceState.chatLocation.threadId != nil {
                 self.updateChatLocationThread(threadId: nil, animationDirection: .left)
             } else {
-                self.dismiss()
+                if self.attemptNavigation({ [weak self] in
+                    self?.dismiss()
+                }) {
+                    self.dismiss()
+                }
             }
         }
         
@@ -804,31 +855,16 @@ extension ChatControllerImpl {
         }
         
         if let peerId = self.chatLocation.peerId {
-            self.chatThemeEmoticonPromise.set(self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ThemeEmoticon(id: peerId)))
+            self.chatThemePromise.set(self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ChatTheme(id: peerId)))
             let chatWallpaper = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Wallpaper(id: peerId))
             |> take(1)
             self.chatWallpaperPromise.set(chatWallpaper)
         } else {
-            self.chatThemeEmoticonPromise.set(.single(nil))
+            self.chatThemePromise.set(.single(nil))
             self.chatWallpaperPromise.set(.single(nil))
         }
         
         self.reloadCachedData()
-        
-        self.historyStateDisposable = self.chatDisplayNode.historyNode.historyState.get().startStrict(next: { [weak self] state in
-            if let strongSelf = self {
-                strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: strongSelf.isViewLoaded && strongSelf.view.window != nil, {
-                    $0.updatedChatHistoryState(state)
-                })
-                
-                if let botStart = strongSelf.botStart, case let .loaded(isEmpty, _) = state {
-                    strongSelf.botStart = nil
-                    if !isEmpty {
-                        strongSelf.startBot(botStart.payload)
-                    }
-                }
-            }
-        })
         
         if self.context.sharedContext.immediateExperimentalUISettings.crashOnLongQueries {
             let _ = (self.ready.get()
@@ -4633,6 +4669,22 @@ extension ChatControllerImpl {
     }
     
     func setupChatHistoryNode(historyNode: ChatHistoryListNodeImpl) {
+        self.historyStateDisposable?.dispose()
+        self.historyStateDisposable = historyNode.historyState.get().startStrict(next: { [weak self] state in
+            if let strongSelf = self {
+                strongSelf.updateChatPresentationInterfaceState(animated: true, interactive: strongSelf.isViewLoaded && strongSelf.view.window != nil, {
+                    $0.updatedChatHistoryState(state)
+                })
+                
+                if let botStart = strongSelf.botStart, case let .loaded(isEmpty, _) = state {
+                    strongSelf.botStart = nil
+                    if !isEmpty {
+                        strongSelf.startBot(botStart.payload)
+                    }
+                }
+            }
+        })
+        
         do {
             let peerId = self.chatLocation.peerId
             if let subject = self.subject, case .scheduledMessages = subject {

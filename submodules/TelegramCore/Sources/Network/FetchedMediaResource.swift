@@ -334,6 +334,7 @@ private enum MediaReferenceRevalidationKey: Hashable {
     case customEmoji(fileId: Int64)
     case story(peer: PeerReference, id: Int32)
     case starsTransaction(transaction: StarsTransactionReference)
+    case savedMusic(peer: PeerReference, fileId: Int64)
 }
 
 private final class MediaReferenceRevalidationItemContext {
@@ -794,6 +795,33 @@ final class MediaReferenceRevalidationContext {
         }
     }
     
+    func savedMusic(accountPeerId: PeerId, postbox: Postbox, network: Network, background: Bool, peer: PeerReference, media: Media) -> Signal<TelegramMediaFile, RevalidateMediaReferenceError> {
+        guard let file = media as? TelegramMediaFile else {
+            return .fail(.generic)
+        }
+        return self.genericItem(key: .savedMusic(peer: peer, fileId: file.fileId.id), background: background, request: { next, error in
+            return (_internal_getSavedMusicById(postbox: postbox, network: network, peer: peer, file: file)
+            |> castError(RevalidateMediaReferenceError.self)
+            |> mapToSignal { result -> Signal<TelegramMediaFile, RevalidateMediaReferenceError> in
+                if let result {
+                    return .single(result)
+                } else {
+                    return .fail(.generic)
+                }
+            }).start(next: { value in
+                next(value)
+            }, error: { _ in
+                error(.generic)
+            })
+        }) |> mapToSignal { next -> Signal<TelegramMediaFile, RevalidateMediaReferenceError> in
+            if let next = next as? TelegramMediaFile {
+                return .single(next)
+            } else {
+                return .fail(.generic)
+            }
+        }
+    }
+    
     func notificationSoundList(postbox: Postbox, network: Network, background: Bool) -> Signal<[TelegramMediaFile], RevalidateMediaReferenceError> {
         return self.genericItem(key: .notificationSoundList, background: background, request: { next, error in
             return (requestNotificationSoundList(network: network, hash: 0)
@@ -990,6 +1018,14 @@ func revalidateMediaResourceReference(accountPeerId: PeerId, postbox: Postbox, n
                             if let updatedResource = findUpdatedMediaResource(media: transactionMedia, previousMedia: nil, resource: resource) {
                                 return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
                             }
+                        }
+                        return .fail(.generic)
+                    }
+                case let .savedMusic(peer, media):
+                    return revalidationContext.savedMusic(accountPeerId: accountPeerId, postbox: postbox, network: network, background: info.preferBackgroundReferenceRevalidation, peer: peer, media: media)
+                    |> mapToSignal { result -> Signal<RevalidatedMediaResource, RevalidateMediaReferenceError> in
+                        if let updatedResource = findUpdatedMediaResource(media: result, previousMedia: media, resource: resource) {
+                            return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
                         }
                         return .fail(.generic)
                     }

@@ -111,7 +111,7 @@ extension ChatControllerImpl {
         }
         
         let title = self.presentationData.strings.Chat_PaidMessage_Sent_Title(count)
-        let text = self.presentationData.strings.Chat_PaidMessage_Sent_Text(self.presentationData.strings.Chat_PaidMessage_Sent_Text_Stars(Int32(amount.value * Int64(count)))).string
+        let text = self.presentationData.strings.Chat_PaidMessage_Sent_Text(self.presentationData.strings.Chat_PaidMessage_Sent_Text_Stars(Int32(clamping: amount.value * Int64(count)))).string
         let textItems: [AnimatedTextComponent.Item] = [
             AnimatedTextComponent.Item(id: 0, content: .text(text))
         ]

@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "update-rules-spm",
-        "revision" : "eef79a2b80584bc0eaf461630ce6d703c5118fee"
+        "branch" : "develop",
+        "revision" : "5a167e4d281284327607607e794d422248916fb7"
       }
     },
     {
@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "update-rules-spm",
-        "revision" : "78d460696f133e72ca20161123e25bc69f952891"
+        "branch" : "develop",
+        "revision" : "1d92d47d2cacba843936663f290a261e09aeba46"
       }
     },
     {

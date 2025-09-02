@@ -15,6 +15,7 @@ import TelegramUniversalVideoContent
 import DeviceProximity
 import MediaResources
 import PhotoResources
+import PeerMessagesMediaPlaylist
 
 enum SharedMediaPlayerGroup: Int {
     case music = 0

@@ -201,8 +201,8 @@ private enum ContactListNodeEntry: Comparable, Identifiable {
                         status = .none
                         itemPeer = .deviceContact(stableId: id, contact: contact)
                 }
-                if isSearch {
-                    status = .none
+                if isSearch, case let .peer(peer, _) = itemPeer, let _ = peer?.addressName {
+                    status = .addressName("")
                 }
                 var itemContextAction: ((ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?
                 if isContextActionEnabled, let contextAction = interaction.contextAction {

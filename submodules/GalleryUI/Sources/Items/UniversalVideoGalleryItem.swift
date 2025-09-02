@@ -368,7 +368,7 @@ private final class UniversalVideoGalleryItemOverlayNode: GalleryOverlayContentN
                                     self.updateLayout(size: validLayout.size, metrics: validLayout.metrics, insets: validLayout.insets, isHidden: false, transition: .immediate)
                                 }
                                 context.engine.messages.markAdAction(opaqueId: ad.opaqueId, media: false, fullscreen: false)
-                                self.performAction?(.url(url: ad.url, concealed: false, dismiss: false))
+                                self.performAction?(.url(url: ad.url, concealed: false, forceExternal: true, dismiss: false))
                             }
                         },
                         moreAction: { [weak self] sourceNode in

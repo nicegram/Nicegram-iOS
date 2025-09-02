@@ -587,6 +587,14 @@ open class ListViewItemNode: ASDisplayNode, AccessibilityFocusableNode {
         self.setAnimationForKey("transitionOffset", animation: animation)
     }
     
+    open func insertionAnimationDuration() -> Double? {
+        return nil
+    }
+    
+    open func updateAnimationDuration() -> Double? {
+        return nil
+    }
+    
     open func animateInsertion(_ currentTimestamp: Double, duration: Double, options: ListViewItemAnimationOptions) {
     }
     

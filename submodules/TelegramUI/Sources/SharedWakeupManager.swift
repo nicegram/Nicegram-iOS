@@ -1,10 +1,13 @@
 import Foundation
+import AVFAudio
 import UIKit
 import SwiftSignalKit
 import Postbox
 import TelegramCore
 import TelegramCallsUI
 import AccountContext
+import UniversalMediaPlayer
+import TelegramAudio
 
 private struct AccountTasks {
     let stateSynchronization: Bool
@@ -68,6 +71,7 @@ public final class SharedWakeupManager {
     
     private var managedPausedInBackgroundPlayer: Disposable?
     private var keepIdleDisposable: Disposable?
+    private var silenceAudioRenderer: MediaPlayerAudioRenderer?
     
     private var accountsAndTasks: [(Account, Bool, AccountTasks)] = []
     
@@ -425,10 +429,42 @@ public final class SharedWakeupManager {
                 keepIdleDisposable.dispose()
             }
         }
+        
+        if !self.inForeground && hasPendingMessages && !self.hasActiveAudioSession {
+            if self.silenceAudioRenderer == nil {
+                let audioSession = AVAudioSession()
+                let _ = try? audioSession.setCategory(.ambient)
+                let _ = try? audioSession.setMode(.default)
+                let silenceAudioRenderer = MediaPlayerAudioRenderer(
+                    audioSession: .custom({ control in
+                        let _ = try? audioSession.setActive(true)
+                        control.activate()
+                        
+                        return EmptyDisposable
+                    }),
+                    forAudioVideoMessage: false,
+                    playAndRecord: false,
+                    useVoiceProcessingMode: false,
+                    soundMuted: false,
+                    ambient: true,
+                    mixWithOthers: true,
+                    forceAudioToSpeaker: false,
+                    baseRate: 1.0,
+                    audioLevelPipe: ValuePipe(),
+                    updatedRate: {},
+                    audioPaused: {}
+                )
+                self.silenceAudioRenderer = silenceAudioRenderer
+                silenceAudioRenderer.start()
+            }
+        } else if let silenceAudioRenderer = self.silenceAudioRenderer {
+            self.silenceAudioRenderer = nil
+            silenceAudioRenderer.stop()
+        }
     }
     
     private func updateAccounts(hasTasks: Bool, endTaskAfterTransactionsComplete: UIBackgroundTaskIdentifier?) {
-        if self.inForeground || self.hasActiveAudioSession || self.isInBackgroundExtension || (hasTasks && self.currentExternalCompletion != nil) || self.activeExplicitExtensionTimer != nil {
+        if self.inForeground || self.hasActiveAudioSession || self.isInBackgroundExtension || (hasTasks && self.currentExternalCompletion != nil) || self.activeExplicitExtensionTimer != nil || self.silenceAudioRenderer != nil {
             Logger.shared.log("Wakeup", "enableBeginTransactions: true (active)")
             
             for (account, primary, tasks) in self.accountsAndTasks {

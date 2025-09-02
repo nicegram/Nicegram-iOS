@@ -684,7 +684,7 @@ private final class PendingInAppPurchaseState: Codable {
         case gift(peerId: EnginePeer.Id)
         case giftCode(peerIds: [EnginePeer.Id], boostPeer: EnginePeer.Id?, text: String?, entities: [MessageTextEntity]?)
         case giveaway(boostPeer: EnginePeer.Id, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32)
-        case stars(count: Int64)
+        case stars(count: Int64, peerId: EnginePeer.Id?)
         case starsGift(peerId: EnginePeer.Id, count: Int64)
         case starsGiveaway(stars: Int64, boostPeer: EnginePeer.Id, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32, users: Int32)
         case authCode(restore: Bool, phoneNumber: String, phoneCodeHash: String)
@@ -724,7 +724,8 @@ private final class PendingInAppPurchaseState: Codable {
                 )
             case .stars:
                 self = .stars(
-                    count: try container.decode(Int64.self, forKey: .stars)
+                    count: try container.decode(Int64.self, forKey: .stars),
+                    peerId: try container.decodeIfPresent(Int64.self, forKey: .peer).flatMap { EnginePeer.Id($0) }
                 )
             case .starsGift:
                 self = .starsGift(
@@ -784,9 +785,10 @@ private final class PendingInAppPurchaseState: Codable {
                 try container.encodeIfPresent(prizeDescription, forKey: .prizeDescription)
                 try container.encode(randomId, forKey: .randomId)
                 try container.encode(untilDate, forKey: .untilDate)
-            case let .stars(count):
+            case let .stars(count, peerId):
                 try container.encode(PurposeType.stars.rawValue, forKey: .type)
                 try container.encode(count, forKey: .stars)
+                try container.encodeIfPresent(peerId?.toInt64(), forKey: .peer)
             case let .starsGift(peerId, count):
                 try container.encode(PurposeType.starsGift.rawValue, forKey: .type)
                 try container.encode(peerId.toInt64(), forKey: .peer)
@@ -825,8 +827,8 @@ private final class PendingInAppPurchaseState: Codable {
                 self = .giftCode(peerIds: peerIds, boostPeer: boostPeer, text: text, entities: entities)
             case let .giveaway(boostPeer, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, _, _):
                 self = .giveaway(boostPeer: boostPeer, additionalPeerIds: additionalPeerIds, countries: countries, onlyNewSubscribers: onlyNewSubscribers, showWinners: showWinners, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate)
-            case let .stars(count, _, _):
-                self = .stars(count: count)
+            case let .stars(count, _, _, peerId):
+                self = .stars(count: count, peerId: peerId)
             case let .starsGift(peerId, count, _, _):
                 self = .starsGift(peerId: peerId, count: count)
             case let .starsGiveaway(stars, boostPeer, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, _, _, users):
@@ -851,8 +853,8 @@ private final class PendingInAppPurchaseState: Codable {
                 return .giftCode(peerIds: peerIds, boostPeer: boostPeer, currency: currency, amount: amount, text: text, entities: entities)
             case let .giveaway(boostPeer, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate):
                 return .giveaway(boostPeer: boostPeer, additionalPeerIds: additionalPeerIds, countries: countries, onlyNewSubscribers: onlyNewSubscribers, showWinners: showWinners, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, currency: currency, amount: amount)
-            case let .stars(count):
-                return .stars(count: count, currency: currency, amount: amount)
+            case let .stars(count, peerId):
+                return .stars(count: count, currency: currency, amount: amount, peerId: peerId)
             case let .starsGift(peerId, count):
                 return .starsGift(peerId: peerId, count: count, currency: currency, amount: amount)
             case let .starsGiveaway(stars, boostPeer, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, users):

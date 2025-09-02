@@ -53,17 +53,15 @@ final class ChatTopicListTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode, C
     
     private let context: AccountContext
     private let peerId: EnginePeer.Id
-    private let isMonoforum: Bool
+    private let kind: ChatSideTopicsPanel.Kind
     private let panel = ComponentView<ChatSidePanelEnvironment>()
     
-    init(context: AccountContext, peerId: EnginePeer.Id, isMonoforum: Bool) {
+    init(context: AccountContext, peerId: EnginePeer.Id, kind: ChatSideTopicsPanel.Kind) {
         self.context = context
         self.peerId = peerId
-        self.isMonoforum = isMonoforum
+        self.kind = kind
         
         super.init()
-        
-        
     }
     
     deinit {
@@ -103,7 +101,7 @@ final class ChatTopicListTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode, C
                 strings: params.interfaceState.strings,
                 location: .top,
                 peerId: self.peerId,
-                isMonoforum: self.isMonoforum,
+                kind: self.kind,
                 topicId: params.interfaceState.chatLocation.threadId,
                 controller: { [weak self] in
                     return self?.interfaceInteraction?.chatController()

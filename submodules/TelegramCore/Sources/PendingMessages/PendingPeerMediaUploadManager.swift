@@ -120,7 +120,7 @@ private func generatePeerMediaMessage(network: Network, accountPeerId: EnginePee
     flags.insert(.Sending)
     
     var attributes: [MessageAttribute] = []
-    attributes.append(OutgoingMessageInfoAttribute(uniqueId: randomId, flags: [], acknowledged: false, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+    attributes.append(OutgoingMessageInfoAttribute(uniqueId: randomId, flags: [], acknowledged: false, correlationId: nil, bubbleUpEmojiOrStickersets: [], partialReference: nil))
     
     var media: [Media] = []
     switch content {
@@ -128,7 +128,7 @@ private func generatePeerMediaMessage(network: Network, accountPeerId: EnginePee
         media.append(TelegramMediaAction(action: .setChatWallpaper(wallpaper: wallpaper, forBoth: forBoth)))
     }
     
-    return StoreMessage(peerId: peerId, namespace: Namespaces.Message.Local, globallyUniqueId: randomId, groupingKey: nil, threadId: nil, timestamp: timestamp, flags: [], tags: [], globalTags: [], localTags: [], forwardInfo: nil, authorId: accountPeerId, text: "", attributes: attributes, media: media)
+    return StoreMessage(peerId: peerId, namespace: Namespaces.Message.Local, customStableId: nil, globallyUniqueId: randomId, groupingKey: nil, threadId: nil, timestamp: timestamp, flags: [], tags: [], globalTags: [], localTags: [], forwardInfo: nil, authorId: accountPeerId, text: "", attributes: attributes, media: media)
 }
 
 private final class PendingPeerMediaUploadContext {

@@ -245,6 +245,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             var giftAvailability: StarGift.Gift.Availability?
             var isRefProgram = false
             var isPaidMessage = false
+            var isPostsSearch = false
             var premiumGiftMonths: Int32?
             
             var delayedCloseOnOpenPeer = true
@@ -254,7 +255,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     fatalError()
                 }
                 let boosts = boost.multiplier
-                titleText = strings.Stars_Transaction_Giveaway_Boost_Stars(Int32(stars))
+                titleText = strings.Stars_Transaction_Giveaway_Boost_Stars(Int32(clamping: stars))
                 descriptionText = ""
                 boostsText = strings.Stars_Transaction_Giveaway_Boost_Boosts(boosts)
                 count = CurrencyAmount(amount: StarsAmount(value: stars, nanos: 0), currency: .stars)
@@ -389,7 +390,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         giftAnimationSubject = .generic(gift.file)
                         giftAvailability = gift.availability
                     case let .unique(gift):
-                        giftAnimationSubject = .unique(gift)
+                        giftAnimationSubject = .unique(nil, gift)
                     }
                     isGiftUpgrade = transaction.flags.contains(.isStarGiftUpgrade)
                 } else if let giveawayMessageIdValue = transaction.giveawayMessageId {
@@ -471,6 +472,13 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     }
                     transactionPeer = transaction.peer
                     isReaction = true
+                } else if transaction.flags.contains(.isPostsSearch) {
+                    titleText = strings.Stars_Transaction_SearchFee_Title
+                    descriptionText = ""
+                    count = transaction.count
+                    transactionId = transaction.id
+                    date = transaction.date
+                    isPostsSearch = true
                 } else {
                     switch transaction.peer {
                     case let .peer(peer):
@@ -497,14 +505,29 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     case .fragment:
                         if parentPeer.id == component.context.account.peerId {
                             if (transaction.count.amount.value < 0 && !transaction.flags.contains(.isRefund)) || (transaction.count.amount.value > 0 && transaction.flags.contains(.isRefund)) {
-                                titleText = strings.Stars_Transaction_FragmentWithdrawal_Title
+                                switch transaction.count.currency {
+                                case .stars:
+                                    titleText = strings.Stars_Transaction_FragmentWithdrawal_Title
+                                case .ton:
+                                    titleText = strings.Stars_Transaction_FragmentWithdrawalTon_Title
+                                }
                                 via = strings.Stars_Transaction_FragmentWithdrawal_Subtitle
                             } else {
-                                titleText = strings.Stars_Transaction_FragmentTopUp_Title
+                                switch transaction.count.currency {
+                                case .stars:
+                                    titleText = strings.Stars_Transaction_FragmentTopUp_Title
+                                case .ton:
+                                    titleText = strings.Stars_Transaction_FragmentTopUpTon_Title
+                                }
                                 via = strings.Stars_Transaction_FragmentTopUp_Subtitle
                             }
                         } else {
-                            titleText = strings.Stars_Transaction_FragmentWithdrawal_Title
+                            switch transaction.count.currency {
+                            case .stars:
+                                titleText = strings.Stars_Transaction_FragmentWithdrawal_Title
+                            case .ton:
+                                titleText = strings.Stars_Transaction_FragmentWithdrawalTon_Title
+                            }
                             via = strings.Stars_Transaction_FragmentWithdrawal_Subtitle
                         }
                     case .ads:
@@ -718,7 +741,9 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             
             let imageSubject: StarsImageComponent.Subject
             var imageIcon: StarsImageComponent.Icon?
-            if let premiumGiftMonths {
+            if isPostsSearch {
+                imageSubject = .search
+            } else if let premiumGiftMonths {
                 imageSubject = .gift(premiumGiftMonths)
             } else if isGift {
                 var value: Int32 = 3
@@ -1034,7 +1059,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     id: "prize",
                     title: strings.Stars_Transaction_Giveaway_Prize,
                     component: AnyComponent(
-                        MultilineTextComponent(text: .plain(NSAttributedString(string: strings.Stars_Transaction_Giveaway_Stars(Int32(count.amount.value)), font: tableFont, textColor: tableTextColor)))
+                        MultilineTextComponent(text: .plain(NSAttributedString(string: strings.Stars_Transaction_Giveaway_Stars(Int32(clamping: count.amount.value)), font: tableFont, textColor: tableTextColor)))
                     )
                 ))
                 
@@ -2379,7 +2404,7 @@ private final class PeerCellComponent: Component {
             let avatarNaturalSize = self.avatar.update(
                 transition: .immediate,
                 component: AnyComponent(
-                    StarsAvatarComponent(context: component.context, theme: component.theme, peer: peer, photo: nil, media: [], uniqueGift: nil, backgroundColor: .clear)
+                    StarsAvatarComponent(context: component.context, theme: component.theme, peer: .transactionPeer(peer), photo: nil, media: [], uniqueGift: nil, backgroundColor: .clear)
                 ),
                 environment: {},
                 containerSize: CGSize(width: 40.0, height: 40.0)

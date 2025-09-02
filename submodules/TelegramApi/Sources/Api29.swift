@@ -569,6 +569,92 @@ public extension Api.account {
     }
 }
 public extension Api.account {
+    enum ChatThemes: TypeConstructorDescription {
+        case chatThemes(flags: Int32, hash: Int64, themes: [Api.ChatTheme], chats: [Api.Chat], users: [Api.User], nextOffset: Int32?)
+        case chatThemesNotModified
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .chatThemes(let flags, let hash, let themes, let chats, let users, let nextOffset):
+                    if boxed {
+                        buffer.appendInt32(373835863)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeInt64(hash, buffer: buffer, boxed: false)
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(themes.count))
+                    for item in themes {
+                        item.serialize(buffer, true)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(chats.count))
+                    for item in chats {
+                        item.serialize(buffer, true)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(users.count))
+                    for item in users {
+                        item.serialize(buffer, true)
+                    }
+                    if Int(flags) & Int(1 << 0) != 0 {serializeInt32(nextOffset!, buffer: buffer, boxed: false)}
+                    break
+                case .chatThemesNotModified:
+                    if boxed {
+                        buffer.appendInt32(-535699004)
+                    }
+                    
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .chatThemes(let flags, let hash, let themes, let chats, let users, let nextOffset):
+                return ("chatThemes", [("flags", flags as Any), ("hash", hash as Any), ("themes", themes as Any), ("chats", chats as Any), ("users", users as Any), ("nextOffset", nextOffset as Any)])
+                case .chatThemesNotModified:
+                return ("chatThemesNotModified", [])
+    }
+    }
+    
+        public static func parse_chatThemes(_ reader: BufferReader) -> ChatThemes? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: [Api.ChatTheme]?
+            if let _ = reader.readInt32() {
+                _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.ChatTheme.self)
+            }
+            var _4: [Api.Chat]?
+            if let _ = reader.readInt32() {
+                _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Chat.self)
+            }
+            var _5: [Api.User]?
+            if let _ = reader.readInt32() {
+                _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
+            }
+            var _6: Int32?
+            if Int(_1!) & Int(1 << 0) != 0 {_6 = reader.readInt32() }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
+                return Api.account.ChatThemes.chatThemes(flags: _1!, hash: _2!, themes: _3!, chats: _4!, users: _5!, nextOffset: _6)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_chatThemesNotModified(_ reader: BufferReader) -> ChatThemes? {
+            return Api.account.ChatThemes.chatThemesNotModified
+        }
+    
+    }
+}
+public extension Api.account {
     enum ConnectedBots: TypeConstructorDescription {
         case connectedBots(connectedBots: [Api.ConnectedBot], users: [Api.User])
     
@@ -1207,6 +1293,60 @@ public extension Api.account {
     }
 }
 public extension Api.account {
+    enum SavedMusicIds: TypeConstructorDescription {
+        case savedMusicIds(ids: [Int64])
+        case savedMusicIdsNotModified
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .savedMusicIds(let ids):
+                    if boxed {
+                        buffer.appendInt32(-1718786506)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(ids.count))
+                    for item in ids {
+                        serializeInt64(item, buffer: buffer, boxed: false)
+                    }
+                    break
+                case .savedMusicIdsNotModified:
+                    if boxed {
+                        buffer.appendInt32(1338514798)
+                    }
+                    
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .savedMusicIds(let ids):
+                return ("savedMusicIds", [("ids", ids as Any)])
+                case .savedMusicIdsNotModified:
+                return ("savedMusicIdsNotModified", [])
+    }
+    }
+    
+        public static func parse_savedMusicIds(_ reader: BufferReader) -> SavedMusicIds? {
+            var _1: [Int64]?
+            if let _ = reader.readInt32() {
+                _1 = Api.parseVector(reader, elementSignature: 570911930, elementType: Int64.self)
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.account.SavedMusicIds.savedMusicIds(ids: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_savedMusicIdsNotModified(_ reader: BufferReader) -> SavedMusicIds? {
+            return Api.account.SavedMusicIds.savedMusicIdsNotModified
+        }
+    
+    }
+}
+public extension Api.account {
     enum SavedRingtone: TypeConstructorDescription {
         case savedRingtone
         case savedRingtoneConverted(document: Api.Document)
@@ -1248,104 +1388,6 @@ public extension Api.account {
             let _c1 = _1 != nil
             if _c1 {
                 return Api.account.SavedRingtone.savedRingtoneConverted(document: _1!)
-            }
-            else {
-                return nil
-            }
-        }
-    
-    }
-}
-public extension Api.account {
-    enum SavedRingtones: TypeConstructorDescription {
-        case savedRingtones(hash: Int64, ringtones: [Api.Document])
-        case savedRingtonesNotModified
-    
-    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-    switch self {
-                case .savedRingtones(let hash, let ringtones):
-                    if boxed {
-                        buffer.appendInt32(-1041683259)
-                    }
-                    serializeInt64(hash, buffer: buffer, boxed: false)
-                    buffer.appendInt32(481674261)
-                    buffer.appendInt32(Int32(ringtones.count))
-                    for item in ringtones {
-                        item.serialize(buffer, true)
-                    }
-                    break
-                case .savedRingtonesNotModified:
-                    if boxed {
-                        buffer.appendInt32(-67704655)
-                    }
-                    
-                    break
-    }
-    }
-    
-    public func descriptionFields() -> (String, [(String, Any)]) {
-        switch self {
-                case .savedRingtones(let hash, let ringtones):
-                return ("savedRingtones", [("hash", hash as Any), ("ringtones", ringtones as Any)])
-                case .savedRingtonesNotModified:
-                return ("savedRingtonesNotModified", [])
-    }
-    }
-    
-        public static func parse_savedRingtones(_ reader: BufferReader) -> SavedRingtones? {
-            var _1: Int64?
-            _1 = reader.readInt64()
-            var _2: [Api.Document]?
-            if let _ = reader.readInt32() {
-                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Document.self)
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.account.SavedRingtones.savedRingtones(hash: _1!, ringtones: _2!)
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_savedRingtonesNotModified(_ reader: BufferReader) -> SavedRingtones? {
-            return Api.account.SavedRingtones.savedRingtonesNotModified
-        }
-    
-    }
-}
-public extension Api.account {
-    enum SentEmailCode: TypeConstructorDescription {
-        case sentEmailCode(emailPattern: String, length: Int32)
-    
-    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-    switch self {
-                case .sentEmailCode(let emailPattern, let length):
-                    if boxed {
-                        buffer.appendInt32(-2128640689)
-                    }
-                    serializeString(emailPattern, buffer: buffer, boxed: false)
-                    serializeInt32(length, buffer: buffer, boxed: false)
-                    break
-    }
-    }
-    
-    public func descriptionFields() -> (String, [(String, Any)]) {
-        switch self {
-                case .sentEmailCode(let emailPattern, let length):
-                return ("sentEmailCode", [("emailPattern", emailPattern as Any), ("length", length as Any)])
-    }
-    }
-    
-        public static func parse_sentEmailCode(_ reader: BufferReader) -> SentEmailCode? {
-            var _1: String?
-            _1 = parseString(reader)
-            var _2: Int32?
-            _2 = reader.readInt32()
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.account.SentEmailCode.sentEmailCode(emailPattern: _1!, length: _2!)
             }
             else {
                 return nil

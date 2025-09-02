@@ -25,6 +25,7 @@ import GalleryData
 import StoryContainerScreen
 import WallpaperGalleryScreen
 import BrowserUI
+import PeerMessagesMediaPlaylist
 
 func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
     var story: TelegramMediaStory?

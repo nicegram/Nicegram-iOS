@@ -662,7 +662,7 @@ final class ChatSendMessageContextScreenComponent: Component {
                     let titleLayout: ContextMenuActionItemTextLayout
                     if let currentPrice {
                         title = environment.strings.Attachment_Paid_EditPrice
-                        titleLayout = .secondLineWithValue(environment.strings.Attachment_Paid_EditPrice_Stars(Int32(currentPrice)))
+                        titleLayout = .secondLineWithValue(environment.strings.Attachment_Paid_EditPrice_Stars(Int32(clamping: currentPrice)))
                     } else {
                         title = environment.strings.Attachment_Paid_Create
                         titleLayout = .twoLinesMax

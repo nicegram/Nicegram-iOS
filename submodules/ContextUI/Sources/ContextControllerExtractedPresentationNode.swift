@@ -586,7 +586,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
         let actionsEdgeInset: CGFloat
         let actionsSideInset: CGFloat
         let topInset: CGFloat = layout.insets(options: .statusBar).top + 8.0
-        let bottomInset: CGFloat = 10.0
+        var bottomInset: CGFloat = 10.0
         
         let itemContentNode: ItemContentNode?
         let controllerContentNode: ControllerContentNode?
@@ -903,6 +903,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
         case let .extracted(source):
             keepInPlace = source.keepInPlace
             actionsHorizontalAlignment = source.actionsHorizontalAlignment
+            bottomInset += source.additionalInsets.bottom
         case .controller:
             //TODO:
             keepInPlace = false

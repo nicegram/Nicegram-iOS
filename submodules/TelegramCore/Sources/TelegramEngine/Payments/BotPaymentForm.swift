@@ -9,7 +9,7 @@ public enum BotPaymentInvoiceSource {
     case slug(String)
     case premiumGiveaway(boostPeer: EnginePeer.Id, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32, currency: String, amount: Int64, option: PremiumGiftCodeOption)
     case giftCode(users: [PeerId], currency: String, amount: Int64, option: PremiumGiftCodeOption, text: String?, entities: [MessageTextEntity]?)
-    case stars(option: StarsTopUpOption)
+    case stars(option: StarsTopUpOption, peerId: EnginePeer.Id?)
     case starsGift(peerId: EnginePeer.Id, count: Int64, currency: String, amount: Int64)
     case starsChatSubscription(hash: String)
     case starsGiveaway(stars: Int64, boostPeer: EnginePeer.Id, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32, currency: String, amount: Int64, users: Int32)
@@ -18,6 +18,7 @@ public enum BotPaymentInvoiceSource {
     case starGiftTransfer(reference: StarGiftReference, toPeerId: EnginePeer.Id)
     case premiumGift(peerId: EnginePeer.Id, option: CachedPremiumGiftOption, text: String?, entities: [MessageTextEntity]?)
     case starGiftResale(slug: String, toPeerId: EnginePeer.Id, ton: Bool)
+    case starGiftPrepaidUpgrade(peerId: EnginePeer.Id, hash: String)
 }
 
 public struct BotPaymentInvoiceFields: OptionSet {
@@ -324,12 +325,14 @@ func _internal_parseInputInvoice(transaction: Transaction, source: BotPaymentInv
         let option: Api.PremiumGiftCodeOption = .premiumGiftCodeOption(flags: flags, users: option.users, months: option.months, storeProduct: option.storeProductId, storeQuantity: option.storeQuantity, currency: option.currency, amount: option.amount)
 
         return .inputInvoicePremiumGiftCode(purpose: inputPurpose, option: option)
-    case let .stars(option):
+    case let .stars(option, peerId):
         var flags: Int32 = 0
-        if let _ = option.storeProductId {
+        var spendPurposePeer: Api.InputPeer?
+        if let peerId, let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer) {
             flags |= (1 << 0)
+            spendPurposePeer = inputPeer
         }
-        return .inputInvoiceStars(purpose: .inputStorePaymentStarsTopup(stars: option.count, currency: option.currency, amount: option.amount))
+        return .inputInvoiceStars(purpose: .inputStorePaymentStarsTopup(flags: flags, stars: option.count, currency: option.currency, amount: option.amount, spendPurposePeer: spendPurposePeer))
     case let .starsGift(peerId, count, currency, amount):
         guard let peer = transaction.getPeer(peerId), let inputUser = apiInputUser(peer) else {
             return nil
@@ -412,6 +415,11 @@ func _internal_parseInputInvoice(transaction: Transaction, source: BotPaymentInv
             flags |= 1 << 0
         }
         return .inputInvoiceStarGiftResale(flags: flags, slug: slug, toId: inputPeer)
+    case let .starGiftPrepaidUpgrade(peerId, hash):
+        guard let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer) else {
+            return nil
+        }
+        return .inputInvoiceStarGiftPrepaidUpgrade(peer: inputPeer, hash: hash)
     }
 }
 
@@ -753,7 +761,7 @@ func _internal_sendBotPaymentForm(account: Account, formId: Int64, source: BotPa
                                                     receiptMessageId = id
                                                 }
                                             }
-                                        case .giftCode, .stars, .starsGift, .starsChatSubscription, .starGift, .starGiftUpgrade, .starGiftTransfer, .premiumGift, .starGiftResale:
+                                        case .giftCode, .stars, .starsGift, .starsChatSubscription, .starGift, .starGiftUpgrade, .starGiftTransfer, .premiumGift, .starGiftResale, .starGiftPrepaidUpgrade:
                                             receiptMessageId = nil
                                         }
                                     }

@@ -386,6 +386,7 @@ swift_library(
         "//submodules/TelegramUI/Components/AudioWaveformNode",
         "//submodules/TelegramUI/Components/Chat/ChatBotInfoItem",
         "//submodules/TelegramUI/Components/Chat/ChatUserInfoItem",
+        "//submodules/TelegramUI/Components/Chat/ChatNewThreadInfoItem",
         "//submodules/TelegramUI/Components/Chat/ChatInputPanelNode",
         "//submodules/TelegramUI/Components/Chat/ChatBotStartInputPanelNode",
         "//submodules/TelegramUI/Components/Chat/ChatButtonKeyboardInputNode",
@@ -516,6 +517,8 @@ swift_library(
         "//submodules/TelegramUI/Components/SuggestedPostApproveAlert",
         "//submodules/TelegramUI/Components/Stars/BalanceNeededScreen",
         "//submodules/TelegramUI/Components/FaceScanScreen",
+        "//submodules/TelegramUI/Components/MediaManager/PeerMessagesMediaPlaylist",
+        "//submodules/TelegramUI/Components/ChatThemeScreen",
         "//submodules/ContactsHelper",
     ] + select({
         "@build_bazel_rules_apple//apple:ios_arm64": appcenter_targets,

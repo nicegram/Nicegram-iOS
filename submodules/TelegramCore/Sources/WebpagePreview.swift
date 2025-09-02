@@ -157,7 +157,7 @@ public func webpagePreviewWithProgress(account: Account, urls: [String], webpage
             
             return account.network.requestWithAdditionalInfo(Api.functions.messages.getWebPagePreview(flags: 0, message: urls.joined(separator: " "), entities: nil), info: .progress)
             |> `catch` { _ -> Signal<NetworkRequestResult<Api.messages.WebPagePreview>, NoError> in
-                return .single(.result(.webPagePreview(media: .messageMediaEmpty, users: [])))
+                return .single(.result(.webPagePreview(media: .messageMediaEmpty, chats: [], users: [])))
             }
             |> mapToSignal { result -> Signal<WebpagePreviewWithProgressResult, NoError> in
                 switch result {
@@ -170,17 +170,17 @@ public func webpagePreviewWithProgress(account: Account, urls: [String], webpage
                         return .complete()
                     }
                 case let .result(result):
-                    if case let .webPagePreview(result, _) = result, let preCachedResources = result.preCachedResources {
+                    if case let .webPagePreview(result, _, _) = result, let preCachedResources = result.preCachedResources {
                         for (resource, data) in preCachedResources {
                             account.postbox.mediaBox.storeResourceData(resource.id, data: data)
                         }
                     }
                     switch result {
-                    case let .webPagePreview(media, users):
+                    case let .webPagePreview(media, chats, users):
                         switch media {
                         case let .messageMediaWebPage(_, webpage):
                             return account.postbox.transaction { transaction -> Signal<WebpagePreviewWithProgressResult, NoError> in
-                                let peers = AccumulatedPeers(users: users)
+                                let peers = AccumulatedPeers(chats: chats, users: users)
                                 updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: peers)
                                 
                                 if let media = telegramMediaWebpageFromApiWebpage(webpage), let url = media.content.url {

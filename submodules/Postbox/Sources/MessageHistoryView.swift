@@ -332,6 +332,7 @@ final class MutableMessageHistoryView: MutablePostboxView {
     private var userId: Int64?
     
     fileprivate var peerStoryStats: [PeerId: PeerStoryStats] = [:]
+    fileprivate var typingDraft: Message?
     
     init(
         postbox: PostboxImpl,
@@ -410,6 +411,8 @@ final class MutableMessageHistoryView: MutablePostboxView {
         self.render(postbox: postbox)
         let _ = self.updateStoryStats(postbox: postbox)
         
+        self.reloadTypingDraft(postbox: postbox)
+        
         let _ = self.updateThreadInfos(postbox: postbox, updatedIds: nil)
     }
     
@@ -436,6 +439,8 @@ final class MutableMessageHistoryView: MutablePostboxView {
         self.sampledState = self.state.sample(postbox: postbox, clipHoles: self.clipHoles)
         
         let _ = self.updateStoryStats(postbox: postbox)
+        
+        self.reloadTypingDraft(postbox: postbox)
     }
     
     func refreshDueToExternalTransaction(postbox: PostboxImpl) -> Bool {
@@ -447,14 +452,14 @@ final class MutableMessageHistoryView: MutablePostboxView {
         switch self.peerIds {
         case let .single(peerId, threadId):
             if threadId == nil {
-                if let updatedData = transaction.currentUpdatedCachedPeerData[peerId] {
+                if let updatedData = transaction.currentUpdatedCachedPeerData[peerId]?.updated {
                     if updatedData.associatedHistoryMessageId != nil {
                         self.peerIds = .associated(peerId, updatedData.associatedHistoryMessageId)
                     }
                 }
             }
         case let .associated(peerId, associatedId):
-            if let updatedData = transaction.currentUpdatedCachedPeerData[peerId] {
+            if let updatedData = transaction.currentUpdatedCachedPeerData[peerId]?.updated {
                 if updatedData.associatedHistoryMessageId != associatedId {
                     self.peerIds = .associated(peerId, updatedData.associatedHistoryMessageId)
                 }
@@ -839,7 +844,7 @@ final class MutableMessageHistoryView: MutablePostboxView {
             switch additionalDatas[i] {
             case let .cachedPeerData(peerId, currentData):
                 currentCachedPeerData = currentData
-                if let updatedData = transaction.currentUpdatedCachedPeerData[peerId] {
+                if let updatedData = transaction.currentUpdatedCachedPeerData[peerId]?.updated {
                     if currentData?.messageIds != updatedData.messageIds {
                         updatedCachedPeerDataMessages = true
                     }
@@ -1039,7 +1044,84 @@ final class MutableMessageHistoryView: MutablePostboxView {
             }
         }
         
+        switch self.peerIds {
+        case let .single(peerId, threadId):
+            let location = PeerAndThreadId(peerId: peerId, threadId: threadId)
+            if let typingDraftUpdate = transaction.updatedTypingDrafts[location] {
+                if let typingDraft = typingDraftUpdate.value {
+                    self.typingDraft = self.renderTypingDraft(postbox: postbox, typingDraft: typingDraft)
+                } else {
+                    self.typingDraft = nil
+                }
+                hasChanges = true
+            }
+        case .external:
+            break
+        case .associated:
+            break
+        }
+        
         return hasChanges
+    }
+    
+    private func reloadTypingDraft(postbox: PostboxImpl) {
+        guard case let .single(peerId, threadId) = self.peerIds else {
+            self.typingDraft = nil
+            return
+        }
+        if let typingDraft = postbox.currentTypingDrafts[PeerAndThreadId(peerId: peerId, threadId: threadId)] {
+            self.typingDraft = self.renderTypingDraft(postbox: postbox, typingDraft: typingDraft)
+        } else {
+            self.typingDraft = nil
+        }
+    }
+    
+    private func renderTypingDraft(postbox: PostboxImpl, typingDraft: PostboxImpl.TypingDraft) -> Message? {
+        guard case let .single(peerId, _) = self.peerIds else {
+            return nil
+        }
+        guard let peer = postbox.peerTable.get(peerId), let author = postbox.peerTable.get(typingDraft.authorId) else {
+            return nil
+        }
+        
+        var peers = SimpleDictionary<PeerId, Peer>()
+        peers[peer.id] = peer
+        peers[author.id] = author
+        
+        var associatedThreadInfo: Message.AssociatedThreadInfo?
+        if let threadId = typingDraft.threadId, let data = postbox.messageHistoryThreadIndexTable.get(peerId: peerId, threadId: threadId) {
+            associatedThreadInfo = postbox.seedConfiguration.decodeMessageThreadInfo(data.data)
+        }
+        
+        return Message(
+            stableId: typingDraft.stableId,
+            stableVersion: typingDraft.stableVersion,
+            id: MessageId(
+                peerId: peerId,
+                namespace: 1,
+                id: Int32.max - 50000),
+            globallyUniqueId: nil,
+            groupingKey: nil,
+            groupInfo: nil,
+            threadId: typingDraft.threadId,
+            timestamp: typingDraft.timestamp,
+            flags: [.Incoming],
+            tags: [],
+            globalTags: [],
+            localTags: [],
+            customTags: [],
+            forwardInfo: nil,
+            author: author,
+            text: typingDraft.text,
+            attributes: typingDraft.attributes,
+            media: [],
+            peers: peers,
+            associatedMessages: SimpleDictionary(),
+            associatedMessageIds: [],
+            associatedMedia: [:],
+            associatedThreadInfo: associatedThreadInfo,
+            associatedStories: [:]
+        )
     }
     
     private func updateThreadInfos(postbox: PostboxImpl, updatedIds: Set<MessageHistoryThreadsTable.ItemId>?) -> Bool {
@@ -1444,6 +1526,16 @@ public final class MessageHistoryView: PostboxView {
             } else {
                 self.maxReadIndex = nil
             }
+        }
+        
+        if !self.holeLater, let typingDraft = mutableView.typingDraft {
+            entries.append(MessageHistoryEntry(
+                message: typingDraft,
+                isRead: false,
+                location: nil,
+                monthLocation: nil,
+                attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false)
+            ))
         }
         
         self.entries = entries

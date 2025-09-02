@@ -4,6 +4,7 @@ import ComponentFlow
 import Display
 import TelegramPresentationData
 import ViewControllerComponent
+import SheetComponent
 import AccountContext
 
 final class GiftPagerComponent: Component {
@@ -34,6 +35,7 @@ final class GiftPagerComponent: Component {
     let items: [Item]
     let index: Int
     let itemSpacing: CGFloat
+    let isSwitching: Bool
     let updated: (CGFloat, Int) -> Void
     
     public init(
@@ -41,12 +43,14 @@ final class GiftPagerComponent: Component {
         items: [Item],
         index: Int = 0,
         itemSpacing: CGFloat = 0.0,
+        isSwitching: Bool = false,
         updated: @escaping (CGFloat, Int) -> Void
     ) {
         self.context = context
         self.items = items
         self.index = index
         self.itemSpacing = itemSpacing
+        self.isSwitching = isSwitching
         self.updated = updated
     }
     
@@ -60,10 +64,14 @@ final class GiftPagerComponent: Component {
         if lhs.itemSpacing != rhs.itemSpacing {
             return false
         }
+        if lhs.isSwitching != rhs.isSwitching {
+            return false
+        }
         return true
     }
     
     final class View: UIView, UIScrollViewDelegate {
+        private let dimView: UIView
         private let scrollView: UIScrollView
         private var itemViews: [AnyHashable: ComponentHostView<EnvironmentType>] = [:]
         
@@ -71,7 +79,11 @@ final class GiftPagerComponent: Component {
         private var environment: Environment<EnvironmentType>?
         
         override init(frame: CGRect) {
+            self.dimView = UIView()
+            self.dimView.backgroundColor = UIColor(white: 0.0, alpha: 0.4)
+            
             self.scrollView = UIScrollView(frame: frame)
+            self.scrollView.clipsToBounds = true
             self.scrollView.isPagingEnabled = true
             self.scrollView.showsHorizontalScrollIndicator = false
             self.scrollView.showsVerticalScrollIndicator = false
@@ -84,13 +96,23 @@ final class GiftPagerComponent: Component {
             
             super.init(frame: frame)
             
-            self.scrollView.delegate = self
+            self.addSubview(self.dimView)
             
+            self.scrollView.delegate = self
             self.addSubview(self.scrollView)
         }
         
         required init?(coder: NSCoder) {
             fatalError("init(coder:) has not been implemented")
+        }
+        
+        private func animateIn() {
+            self.dimView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
+            
+        }
+        
+        private func animateOut() {
+            self.dimView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
         }
         
         private var isSwiping: Bool = false
@@ -128,33 +150,43 @@ final class GiftPagerComponent: Component {
             self.ignoreContentOffsetChange = false
         }
         
+        private var previousIsDisplaying: Bool = false
+        
         private var isUpdating = true
         func update(component: GiftPagerComponent, availableSize: CGSize, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
             self.isUpdating = true
             defer {
                 self.isUpdating = false
             }
+            
+            transition.setFrame(view: self.dimView, frame: CGRect(origin: CGPoint(), size: availableSize), completion: nil)
+            
             var validIds: [AnyHashable] = []
             
+            let previousComponent = self.component
             self.component = component
             self.environment = environment
             
-            let firstTime = self.itemViews.isEmpty
+            var countDecreased = false
+            if let previousComponent, previousComponent.items.count != component.items.count {
+                countDecreased = true
+            }
+            let firstTime = self.itemViews.isEmpty || countDecreased
             
             let itemWidth = availableSize.width
-            let totalWidth = itemWidth * CGFloat(component.items.count) + component.itemSpacing * CGFloat(max(0, component.items.count - 1))
+            let totalWidth = itemWidth * CGFloat(component.items.count) + component.itemSpacing * 2.0 * CGFloat(max(0, component.items.count))
                     
             let contentSize = CGSize(width: totalWidth, height: availableSize.height)
             if self.scrollView.contentSize != contentSize {
                 self.scrollView.contentSize = contentSize
             }
-            let scrollFrame = CGRect(origin: .zero, size: availableSize)
+            let scrollFrame = CGRect(origin: CGPoint(x: -component.itemSpacing / 2.0, y: 0.0), size: CGSize(width: availableSize.width + component.itemSpacing * 2.0, height: availableSize.height))
             if self.scrollView.frame != scrollFrame {
                 self.scrollView.frame = scrollFrame
             }
             
             if firstTime {
-                let initialOffset = CGFloat(component.index) * (itemWidth + component.itemSpacing)
+                let initialOffset = CGFloat(component.index) * (itemWidth + component.itemSpacing * 2.0)
                 self.scrollView.contentOffset = CGPoint(x: initialOffset, y: 0.0)
                 
                 var position: CGFloat
@@ -172,7 +204,7 @@ final class GiftPagerComponent: Component {
             
             var i = 0
             for item in component.items {
-                let itemOriginX = (itemWidth + component.itemSpacing) * CGFloat(i)
+                let itemOriginX = component.itemSpacing * 0.5 + (itemWidth + component.itemSpacing * 2.0) * CGFloat(i)
                 let itemFrame = CGRect(origin: CGPoint(x: itemOriginX, y: 0.0), size: CGSize(width: itemWidth, height: availableSize.height))
                 
                 let centerDelta = itemFrame.midX - viewportCenter
@@ -216,17 +248,39 @@ final class GiftPagerComponent: Component {
                 itemView.frame = itemFrame
             }
             
+            var animateTransitionMovement = false
             var removeIds: [AnyHashable] = []
             for (id, itemView) in self.itemViews {
                 if !validIds.contains(id) {
                     removeIds.append(id)
-                    itemView.removeFromSuperview()
+                    if countDecreased && !transition.animation.isImmediate {
+                        self.addSubview(itemView)
+                        itemView.center = CGPoint(x: self.scrollView.frame.width / 2.0 - component.itemSpacing, y: self.scrollView.frame.height / 2.0)
+                        transition.setPosition(view: itemView, position: CGPoint(x: itemView.center.x - itemView.frame.width, y: itemView.center.y), completion: { _ in
+                            itemView.removeFromSuperview()
+                        })
+                        animateTransitionMovement = true
+                    } else {
+                        itemView.removeFromSuperview()
+                    }
                 }
             }
             for id in removeIds {
                 self.itemViews.removeValue(forKey: id)
             }
-                
+            
+            if animateTransitionMovement {
+                transition.animatePosition(view: self.scrollView, from: CGPoint(x: self.scrollView.frame.width, y: 0.0), to: .zero, additive: true)
+            }
+            
+            let viewEnvironment = environment[ViewControllerComponentContainer.Environment.self].value
+            if let _ = transition.userData(ViewControllerComponentContainer.AnimateInTransition.self) {
+                self.animateIn()
+            } else if self.previousIsDisplaying, let _ = transition.userData(ViewControllerComponentContainer.AnimateOutTransition.self) {
+                self.animateOut()
+            }
+            self.previousIsDisplaying = viewEnvironment.isVisible
+            
             return availableSize
         }
     }

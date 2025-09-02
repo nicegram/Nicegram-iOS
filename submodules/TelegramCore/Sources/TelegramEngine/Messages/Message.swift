@@ -1,6 +1,8 @@
 import Postbox
 
 public final class EngineMessage: Equatable {
+    public static let newTopicThreadId: Int64 = Message.newTopicThreadId
+    
     public typealias Id = MessageId
     public typealias StableId = UInt32
     public typealias Index = MessageIndex

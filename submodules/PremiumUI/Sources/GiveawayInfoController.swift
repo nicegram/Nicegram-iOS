@@ -154,7 +154,7 @@ public func presentGiveawayInfoController(
             
             let intro: String
             if stars > 0 {
-                let starsString = presentationData.strings.Chat_Giveaway_Info_Stars_Stars(Int32(stars))
+                let starsString = presentationData.strings.Chat_Giveaway_Info_Stars_Stars(Int32(clamping: stars))
                 if case .almostOver = status {
                     if isGroup {
                         intro = presentationData.strings.Chat_Giveaway_Info_Stars_Group_EndedIntro(peerName, starsString).string
@@ -280,7 +280,7 @@ public func presentGiveawayInfoController(
             
             let intro: String
             if stars > 0 {
-                let starsString = presentationData.strings.Chat_Giveaway_Info_Stars_Stars(Int32(stars))
+                let starsString = presentationData.strings.Chat_Giveaway_Info_Stars_Stars(Int32(clamping: stars))
                 if isGroup {
                     intro = presentationData.strings.Chat_Giveaway_Info_Stars_Group_EndedIntro(peerName, starsString).string
                 } else {

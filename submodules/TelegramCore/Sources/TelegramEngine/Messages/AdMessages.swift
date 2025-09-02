@@ -276,7 +276,8 @@ private class AdMessagesHistoryContextImpl {
                 subscriptionUntilDate: nil,
                 verificationIconFileId: nil,
                 sendPaidMessageStars: nil,
-                linkedMonoforumId: nil
+                linkedMonoforumId: nil,
+                linkedBotId: nil
             )
             messagePeers[author.id] = author
             

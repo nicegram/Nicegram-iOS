@@ -106,6 +106,15 @@ public extension PartialMediaReference {
             self = .savedSticker
         case .partialmediareferenceRecentsticker:
             self = .recentSticker
+        case .partialmediareferenceSavedmusic:
+            guard let value = flatBuffersObject.value(type: TelegramCore_PartialMediaReference_SavedMusic.self) else {
+                throw FlatBuffersError.missingRequiredField()
+            }
+            if let peer = value.peer {
+                self = .savedMusic(peer: try PeerReference(flatBuffersObject: peer))
+            } else {
+                return nil
+            }
         case .none_:
             throw FlatBuffersError.missingRequiredField()
         }
@@ -149,6 +158,12 @@ public extension PartialMediaReference {
             let start = TelegramCore_PartialMediaReference_RecentSticker.startPartialMediaReference_RecentSticker(&builder)
             valueType = .partialmediareferenceRecentsticker
             valueOffset = TelegramCore_PartialMediaReference_RecentSticker.endPartialMediaReference_RecentSticker(&builder, start: start)
+        case let .savedMusic(peer):
+            let peerOffset = peer.encodeToFlatBuffers(builder: &builder)
+            let start = TelegramCore_PartialMediaReference_SavedMusic.startPartialMediaReference_SavedMusic(&builder)
+            TelegramCore_PartialMediaReference_SavedMusic.add(peer: peerOffset, &builder)
+            valueType = .partialmediareferenceSavedmusic
+            valueOffset = TelegramCore_PartialMediaReference_SavedMusic.endPartialMediaReference_SavedMusic(&builder, start: start)
         }
         
         return TelegramCore_PartialMediaReference.createPartialMediaReference(&builder, valueType: valueType, valueOffset: valueOffset)

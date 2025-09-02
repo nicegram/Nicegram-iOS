@@ -19,6 +19,7 @@ public final class BalancedTextComponent: Component {
     public let lineSpacing: CGFloat
     public let cutout: TextNodeCutout?
     public let insets: UIEdgeInsets
+    public let tintColor: UIColor?
     public let textShadowColor: UIColor?
     public let textShadowBlur: CGFloat?
     public let textStroke: (UIColor, CGFloat)?
@@ -38,6 +39,7 @@ public final class BalancedTextComponent: Component {
         lineSpacing: CGFloat = 0.0,
         cutout: TextNodeCutout? = nil,
         insets: UIEdgeInsets = UIEdgeInsets(),
+        tintColor: UIColor? = nil,
         textShadowColor: UIColor? = nil,
         textShadowBlur: CGFloat? = nil,
         textStroke: (UIColor, CGFloat)? = nil,
@@ -56,6 +58,7 @@ public final class BalancedTextComponent: Component {
         self.lineSpacing = lineSpacing
         self.cutout = cutout
         self.insets = insets
+        self.tintColor = tintColor
         self.textShadowColor = textShadowColor
         self.textShadowBlur = textShadowBlur
         self.textStroke = textStroke
@@ -94,7 +97,9 @@ public final class BalancedTextComponent: Component {
         if lhs.insets != rhs.insets {
             return false
         }
-        
+        if lhs.tintColor != rhs.tintColor {
+            return false
+        }
         if let lhsTextShadowColor = lhs.textShadowColor, let rhsTextShadowColor = rhs.textShadowColor {
             if !lhsTextShadowColor.isEqual(rhsTextShadowColor) {
                 return false
@@ -200,6 +205,10 @@ public final class BalancedTextComponent: Component {
                 
                 let bestInfo = self.textView.updateLayoutFullInfo(CGSize(width: bestSize.availableWidth, height: availableSize.height))
                 bestSize = (availableSize.width, bestInfo)
+            }
+            
+            if let tintColor = component.tintColor {
+                transition.setTintColor(layer: self.textView.layer, color: tintColor)
             }
             
             self.textView.frame = CGRect(origin: CGPoint(), size: bestSize.info.size)

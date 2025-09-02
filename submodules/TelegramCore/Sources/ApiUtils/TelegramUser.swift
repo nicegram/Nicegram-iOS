@@ -118,6 +118,9 @@ public extension TelegramUser {
                 if (flags2 & (1 << 13)) != 0 {
                     botFlags.insert(.hasWebApp)
                 }
+                if (flags2 & (1 << 16)) != 0 {
+                    botFlags.insert(.hasForum)
+                }
                 botInfo = BotUserInfo(flags: botFlags, inlinePlaceholder: botInlinePlaceholder)
             }
             

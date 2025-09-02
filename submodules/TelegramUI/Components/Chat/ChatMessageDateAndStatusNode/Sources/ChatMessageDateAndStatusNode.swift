@@ -376,7 +376,8 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                     extractedForeground: arguments.presentationData.theme.theme.contextMenu.primaryColor.argb,
                     extractedSelectedForeground: arguments.presentationData.theme.theme.overallDarkAppearance ? themeColors.reactionActiveForeground.argb : arguments.presentationData.theme.theme.contextMenu.primaryColor.argb,
                     deselectedMediaPlaceholder: themeColors.reactionInactiveMediaPlaceholder.argb,
-                    selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb
+                    selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb,
+                    isDark: arguments.presentationData.theme.theme.overallDarkAppearance
                 )
             case .BubbleOutgoing, .ImageOutgoing, .FreeOutgoing:
                 let themeColors = bubbleColorComponents(theme: arguments.presentationData.theme.theme, incoming: false, wallpaper: !arguments.presentationData.theme.wallpaper.isEmpty)
@@ -395,7 +396,8 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                     extractedForeground: arguments.presentationData.theme.theme.contextMenu.primaryColor.argb,
                     extractedSelectedForeground: arguments.presentationData.theme.theme.overallDarkAppearance ? themeColors.reactionActiveForeground.argb : arguments.presentationData.theme.theme.list.itemCheckColors.foregroundColor.argb,
                     deselectedMediaPlaceholder: themeColors.reactionInactiveMediaPlaceholder.argb,
-                    selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb
+                    selectedMediaPlaceholder: themeColors.reactionActiveMediaPlaceholder.argb,
+                    isDark: arguments.presentationData.theme.theme.overallDarkAppearance
                 )
             }
             
