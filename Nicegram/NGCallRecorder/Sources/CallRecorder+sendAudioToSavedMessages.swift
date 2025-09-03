@@ -10,6 +10,10 @@ extension CallRecorder {
             deleteFile(path: audio.path)
         }
         
+        if call == nil {
+            log("sendAudioToSavedMessages call=nil")
+        }
+        
         let context = try call.unwrap().accountContext
         
         let text = try await makeText(
@@ -32,11 +36,15 @@ extension CallRecorder {
         )
 
         let account = context.account
-        _ = try await enqueueMessages(
-            account: account,
-            peerId: account.peerId,
-            messages: [message]
-        ).awaitForFirstValue()
+        do {
+            _ = try await enqueueMessages(
+                account: account,
+                peerId: account.peerId,
+                messages: [message]
+            ).awaitForFirstValue()
+        } catch {
+            log("enqueueMessages error: \(error)")
+        }
     }
 }
 

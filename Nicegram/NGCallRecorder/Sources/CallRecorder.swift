@@ -1,6 +1,7 @@
 import CasePaths
 import Combine
 import Foundation
+import NGCore
 import NGData
 
 @preconcurrency @MainActor
@@ -26,6 +27,8 @@ public class CallRecorder: ObservableObject {
     let partLength: TimeInterval = 30 * .minute
     var partNumber = 1
     var partsTimer: AnyCancellable?
+    
+    let log = Log(category: "call-recorder")
     
     //  MARK: - Lifecycle
     
@@ -102,8 +105,14 @@ extension CallRecorder {
 
 private extension CallRecorder {
     func startRecordAudioDevice() {
-        call?.audioDevice?.startNicegramRecording(
+        guard let audioDevice = call?.audioDevice else {
+            return
+        }
+        
+        log("start recording audio device")
+        audioDevice.startNicegramRecording(
             callback: { [self] path, duration, size in
+                log("audio device success")
                 processRecordedAudio(
                     RecordedAudio(
                         path: path,
@@ -113,13 +122,17 @@ private extension CallRecorder {
                 )
             },
             errorCallback: { _ in
+                self.log("audio device error")
                 trackCallRecorderEvent(.error)
             }
         )
     }
     
     func stopRecordAudioDevice() {
-        call?.audioDevice?.stopNicegramRecording()
+        if let audioDevice = call?.audioDevice {
+            log("stop recording audio device")
+            audioDevice.stopNicegramRecording()
+        }
     }
     
     func processRecordedAudio(_ audio: RecordedAudio) {
@@ -132,6 +145,7 @@ private extension CallRecorder {
                 partNumber: partNumber
             )
             showRecordSavedToast()
+            log("record saved")
         }
     }
     
