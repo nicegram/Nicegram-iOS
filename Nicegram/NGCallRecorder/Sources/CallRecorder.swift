@@ -106,6 +106,7 @@ extension CallRecorder {
 private extension CallRecorder {
     func startRecordAudioDevice() {
         guard let audioDevice = call?.audioDevice else {
+            log("audio device not found (start)")
             return
         }
         
@@ -121,18 +122,21 @@ private extension CallRecorder {
                     )
                 )
             },
-            errorCallback: { _ in
-                self.log("audio device error")
+            errorCallback: { [self] _ in
+                log("audio device error")
                 trackCallRecorderEvent(.error)
             }
         )
     }
     
     func stopRecordAudioDevice() {
-        if let audioDevice = call?.audioDevice {
-            log("stop recording audio device")
-            audioDevice.stopNicegramRecording()
+        guard let audioDevice = call?.audioDevice else {
+            log("audio device not found (stop)")
+            return
         }
+        
+        log("stop recording audio device")
+        audioDevice.stopNicegramRecording()
     }
     
     func processRecordedAudio(_ audio: RecordedAudio) {
