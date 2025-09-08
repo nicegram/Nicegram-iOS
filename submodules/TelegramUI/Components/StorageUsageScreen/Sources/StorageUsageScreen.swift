@@ -2802,7 +2802,7 @@ final class StorageUsageScreenComponent: Component {
                 sendEmoji: nil,
                 setupTemporaryHiddenMedia: { _, _, _ in },
                 chatAvatarHiddenMedia: { _, _ in },
-                actionInteraction: GalleryControllerActionInteraction(openUrl: { [weak self] url, concealed in
+                actionInteraction: GalleryControllerActionInteraction(openUrl: { [weak self] url, concealed, forceExternal in
                     guard let self else {
                         return
                     }

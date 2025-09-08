@@ -14,9 +14,14 @@ import MultilineTextComponent
 import GiftItemComponent
 
 public final class StarsAvatarComponent: Component {
+    public enum Peer: Equatable {
+        case transactionPeer(StarsContext.State.Transaction.Peer)
+        case search
+    }
+    
     let context: AccountContext
     let theme: PresentationTheme
-    let peer: StarsContext.State.Transaction.Peer?
+    let peer: StarsAvatarComponent.Peer?
     let photo: TelegramMediaWebFile?
     let media: [Media]
     let uniqueGift: StarGift.UniqueGift?
@@ -26,7 +31,7 @@ public final class StarsAvatarComponent: Component {
     public init(
         context: AccountContext,
         theme: PresentationTheme,
-        peer: StarsContext.State.Transaction.Peer?,
+        peer: StarsAvatarComponent.Peer?,
         photo: TelegramMediaWebFile?,
         media: [Media],
         uniqueGift: StarGift.UniqueGift?,
@@ -250,108 +255,125 @@ public final class StarsAvatarComponent: Component {
             switch component.peer {
             case .none:
                 break
-            case let .peer(peer):
-                 if !didSetup {
-                    self.avatarNode.setPeer(
-                        context: component.context,
-                        theme: component.theme,
-                        peer: peer,
-                        synchronousLoad: true
+            case let .transactionPeer(peer):
+                switch peer {
+                case let .peer(peer):
+                    if !didSetup {
+                        self.avatarNode.setPeer(
+                            context: component.context,
+                            theme: component.theme,
+                            peer: peer,
+                            synchronousLoad: true
+                        )
+                        self.backgroundView.isHidden = true
+                        self.iconView.isHidden = true
+                        self.avatarNode.isHidden = false
+                    }
+                case .appStore:
+                    self.backgroundView.image = generateGradientFilledCircleImage(
+                        diameter: size.width,
+                        colors: [
+                            UIColor(rgb: 0x2a9ef1).cgColor,
+                            UIColor(rgb: 0x72d5fd).cgColor
+                        ],
+                        direction: .mirroredDiagonal
                     )
-                    self.backgroundView.isHidden = true
-                    self.iconView.isHidden = true
-                    self.avatarNode.isHidden = false
+                    self.backgroundView.isHidden = false
+                    self.iconView.isHidden = false
+                    self.avatarNode.isHidden = true
+                    self.iconView.image = UIImage(bundleImageName: "Premium/Stars/Apple")
+                case .playMarket:
+                    self.backgroundView.image = generateGradientFilledCircleImage(
+                        diameter: size.width,
+                        colors: [
+                            UIColor(rgb: 0x54cb68).cgColor,
+                            UIColor(rgb: 0xa0de7e).cgColor
+                        ],
+                        direction: .mirroredDiagonal
+                    )
+                    self.backgroundView.isHidden = false
+                    self.iconView.isHidden = false
+                    self.avatarNode.isHidden = true
+                    self.iconView.image = UIImage(bundleImageName: "Premium/Stars/Google")
+                case .fragment:
+                    self.backgroundView.image = generateFilledCircleImage(diameter: size.width, color: UIColor(rgb: 0x1b1f24))
+                    self.backgroundView.isHidden = false
+                    self.iconView.isHidden = false
+                    self.avatarNode.isHidden = true
+                    self.iconView.image = UIImage(bundleImageName: "Premium/Stars/Fragment")
+                    iconOffset = 2.0
+                case .ads:
+                    self.backgroundView.image = generateGradientFilledCircleImage(
+                        diameter: size.width,
+                        colors: [
+                            UIColor(rgb: 0xffa85c).cgColor,
+                            UIColor(rgb: 0xffcd6a).cgColor
+                        ],
+                        direction: .mirroredDiagonal
+                    )
+                    self.backgroundView.isHidden = false
+                    self.iconView.isHidden = false
+                    self.avatarNode.isHidden = true
+                    self.iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/Filters/Channel"), color: .white)
+                case .premiumBot:
+                    iconInset = 7.0
+                    self.backgroundView.image = generateGradientFilledCircleImage(
+                        diameter: size.width,
+                        colors: [
+                            UIColor(rgb: 0x6b93ff).cgColor,
+                            UIColor(rgb: 0x6b93ff).cgColor,
+                            UIColor(rgb: 0x8d77ff).cgColor,
+                            UIColor(rgb: 0xb56eec).cgColor,
+                            UIColor(rgb: 0xb56eec).cgColor
+                        ],
+                        direction: .mirroredDiagonal
+                    )
+                    self.backgroundView.isHidden = false
+                    self.iconView.isHidden = false
+                    self.avatarNode.isHidden = true
+                    self.iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Media/EntityInputPremiumIcon"), color: .white)
+                case .apiLimitExtension:
+                    self.backgroundView.image = generateGradientFilledCircleImage(
+                        diameter: size.width,
+                        colors: [
+                            UIColor(rgb: 0x32b83b).cgColor,
+                            UIColor(rgb: 0x87d93b).cgColor
+                        ],
+                        direction: .vertical
+                    )
+                    self.backgroundView.isHidden = false
+                    self.iconView.isHidden = false
+                    self.avatarNode.isHidden = true
+                    self.iconView.image = UIImage(bundleImageName: "Premium/Stars/PaidBroadcast")
+                case .unsupported:
+                    iconInset = 7.0
+                    self.backgroundView.image = generateGradientFilledCircleImage(
+                        diameter: size.width,
+                        colors: [
+                            UIColor(rgb: 0xb1b1b1).cgColor,
+                            UIColor(rgb: 0xcdcdcd).cgColor
+                        ],
+                        direction: .mirroredDiagonal
+                    )
+                    self.backgroundView.isHidden = false
+                    self.iconView.isHidden = false
+                    self.avatarNode.isHidden = true
+                    self.iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Media/EntityInputPremiumIcon"), color: .white)
                 }
-            case .appStore:
+            case .search:
+                iconInset = 6.0
                 self.backgroundView.image = generateGradientFilledCircleImage(
                     diameter: size.width,
                     colors: [
                         UIColor(rgb: 0x2a9ef1).cgColor,
                         UIColor(rgb: 0x72d5fd).cgColor
                     ],
-                    direction: .mirroredDiagonal
-                )
-                self.backgroundView.isHidden = false
-                self.iconView.isHidden = false
-                self.avatarNode.isHidden = true
-                self.iconView.image = UIImage(bundleImageName: "Premium/Stars/Apple")
-            case .playMarket:
-                self.backgroundView.image = generateGradientFilledCircleImage(
-                    diameter: size.width,
-                    colors: [
-                        UIColor(rgb: 0x54cb68).cgColor,
-                        UIColor(rgb: 0xa0de7e).cgColor
-                    ],
-                    direction: .mirroredDiagonal
-                )
-                self.backgroundView.isHidden = false
-                self.iconView.isHidden = false
-                self.avatarNode.isHidden = true
-                self.iconView.image = UIImage(bundleImageName: "Premium/Stars/Google")
-            case .fragment:
-                self.backgroundView.image = generateFilledCircleImage(diameter: size.width, color: UIColor(rgb: 0x1b1f24))
-                self.backgroundView.isHidden = false
-                self.iconView.isHidden = false
-                self.avatarNode.isHidden = true
-                self.iconView.image = UIImage(bundleImageName: "Premium/Stars/Fragment")
-                iconOffset = 2.0
-            case .ads:
-                self.backgroundView.image = generateGradientFilledCircleImage(
-                    diameter: size.width,
-                    colors: [
-                        UIColor(rgb: 0xffa85c).cgColor,
-                        UIColor(rgb: 0xffcd6a).cgColor
-                    ],
-                    direction: .mirroredDiagonal
-                )
-                self.backgroundView.isHidden = false
-                self.iconView.isHidden = false
-                self.avatarNode.isHidden = true
-                self.iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/Filters/Channel"), color: .white)
-            case .premiumBot:
-                iconInset = 7.0
-                self.backgroundView.image = generateGradientFilledCircleImage(
-                    diameter: size.width,
-                    colors: [
-                        UIColor(rgb: 0x6b93ff).cgColor,
-                        UIColor(rgb: 0x6b93ff).cgColor,
-                        UIColor(rgb: 0x8d77ff).cgColor,
-                        UIColor(rgb: 0xb56eec).cgColor,
-                        UIColor(rgb: 0xb56eec).cgColor
-                    ],
-                    direction: .mirroredDiagonal
-                )
-                self.backgroundView.isHidden = false
-                self.iconView.isHidden = false
-                self.avatarNode.isHidden = true
-                self.iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Media/EntityInputPremiumIcon"), color: .white)
-            case .apiLimitExtension:
-                self.backgroundView.image = generateGradientFilledCircleImage(
-                    diameter: size.width,
-                    colors: [
-                        UIColor(rgb: 0x32b83b).cgColor,
-                        UIColor(rgb: 0x87d93b).cgColor
-                    ],
                     direction: .vertical
                 )
                 self.backgroundView.isHidden = false
                 self.iconView.isHidden = false
                 self.avatarNode.isHidden = true
-                self.iconView.image = UIImage(bundleImageName: "Premium/Stars/PaidBroadcast")
-            case .unsupported:
-                iconInset = 7.0
-                self.backgroundView.image = generateGradientFilledCircleImage(
-                    diameter: size.width,
-                    colors: [
-                        UIColor(rgb: 0xb1b1b1).cgColor,
-                        UIColor(rgb: 0xcdcdcd).cgColor
-                    ],
-                    direction: .mirroredDiagonal
-                )
-                self.backgroundView.isHidden = false
-                self.iconView.isHidden = false
-                self.avatarNode.isHidden = true
-                self.iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Media/EntityInputPremiumIcon"), color: .white)
+                self.iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/SearchInlineButtonIcon"), color: .white)
             }
             
             self.avatarNode.frame = CGRect(origin: .zero, size: size)

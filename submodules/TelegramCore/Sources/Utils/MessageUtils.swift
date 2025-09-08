@@ -246,6 +246,18 @@ func locallyRenderedMessage(message: StoreMessage, peers: [PeerId: Peer], associ
                 }
             }
         }
+        
+        if let channel = peer as? TelegramChannel, let linkedBotId = channel.linkedBotId {
+            if let channelPeer = peers[linkedBotId] {
+                messagePeers[linkedBotId] = channelPeer
+            }
+            
+            if let threadId = message.threadId {
+                if let threadPeer = peers[PeerId(threadId)] {
+                    messagePeers[threadPeer.id] = threadPeer
+                }
+            }
+        }
     }
     
     for media in message.media {

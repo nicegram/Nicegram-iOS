@@ -479,7 +479,7 @@ private final class ChatMessagePeerContentNode: ASDisplayNode {
                     avatarIconContent = .topic(title: String(info.title.prefix(1)), color: info.iconColor, size: CGSize(width: 16.0, height: 16.0))
                 }
             } else {
-                avatarIconContent = .image(image: PresentationResourcesChatList.generalTopicIcon(presentationData.theme.theme)?.withRenderingMode(.alwaysTemplate), tintColor: bubbleVariableColor(variableColor: presentationData.theme.theme.chat.serviceMessage.dateTextColor, wallpaper: presentationData.theme.wallpaper))
+                avatarIconContent = .image(image: PresentationResourcesChatList.generalTopicTemplateIcon(presentationData.theme.theme), tintColor: bubbleVariableColor(variableColor: presentationData.theme.theme.chat.serviceMessage.dateTextColor, wallpaper: presentationData.theme.wallpaper))
             }
             
             let avatarIconComponent = EmojiStatusComponent(

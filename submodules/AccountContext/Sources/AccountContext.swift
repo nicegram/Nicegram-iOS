@@ -333,6 +333,7 @@ public enum ResolvedUrl {
     case shareStory(Int64)
     case storyFolder(peerId: PeerId, id: Int64)
     case giftCollection(peerId: PeerId, id: Int64)
+    case sendGift(peerId: PeerId?)
 }
 
 public enum ResolveUrlResult {
@@ -552,7 +553,42 @@ public final class NavigateToChatControllerParams {
     public let customChatNavigationStack: [EnginePeer.Id]?
     public let skipAgeVerification: Bool
     
-    public init(navigationController: NavigationController, chatController: ChatController? = nil, context: AccountContext, chatLocation: Location, chatLocationContextHolder: Atomic<ChatLocationContextHolder?> = Atomic<ChatLocationContextHolder?>(value: nil), subject: ChatControllerSubject? = nil, botStart: ChatControllerInitialBotStart? = nil, attachBotStart: ChatControllerInitialAttachBotStart? = nil, botAppStart: ChatControllerInitialBotAppStart? = nil, updateTextInputState: ChatTextInputState? = nil, activateInput: ChatControllerActivateInput? = nil, keepStack: NavigateToChatKeepStack = .default, useExisting: Bool = true, useBackAnimation: Bool = false, purposefulAction: (() -> Void)? = nil, scrollToEndIfExists: Bool = false, activateMessageSearch: (ChatSearchDomain, String)? = nil, peekData: ChatPeekTimeout? = nil, peerNearbyData: ChatPeerNearbyData? = nil, reportReason: NavigateToChatControllerParams.ReportReason? = nil, animated: Bool = true, forceAnimatedScroll: Bool = false, options: NavigationAnimationOptions = [], parentGroupId: PeerGroupId? = nil, chatListFilter: Int32? = nil, chatNavigationStack: [ChatNavigationStackItem] = [], changeColors: Bool = false, setupController: @escaping (ChatController) -> Void = { _ in }, pushController: ((ChatController, Bool, @escaping () -> Void) -> Void)? = nil, completion: @escaping (ChatController) -> Void = { _ in }, chatListCompletion: @escaping (ChatListController) -> Void = { _ in }, forceOpenChat: Bool = false, customChatNavigationStack: [EnginePeer.Id]? = nil, skipAgeVerification: Bool = false) {
+    public init(
+        navigationController: NavigationController,
+        chatController: ChatController? = nil,
+        context: AccountContext,
+        chatLocation: Location,
+        chatLocationContextHolder: Atomic<ChatLocationContextHolder?> = Atomic<ChatLocationContextHolder?>(value: nil),
+        subject: ChatControllerSubject? = nil,
+        botStart: ChatControllerInitialBotStart? = nil,
+        attachBotStart: ChatControllerInitialAttachBotStart? = nil,
+        botAppStart: ChatControllerInitialBotAppStart? = nil,
+        updateTextInputState: ChatTextInputState? = nil,
+        activateInput: ChatControllerActivateInput? = nil,
+        keepStack: NavigateToChatKeepStack = .default,
+        useExisting: Bool = true,
+        useBackAnimation: Bool = false,
+        purposefulAction: (() -> Void)? = nil,
+        scrollToEndIfExists: Bool = false,
+        activateMessageSearch: (ChatSearchDomain, String)? = nil,
+        peekData: ChatPeekTimeout? = nil,
+        peerNearbyData: ChatPeerNearbyData? = nil,
+        reportReason: NavigateToChatControllerParams.ReportReason? = nil,
+        animated: Bool = true,
+        forceAnimatedScroll: Bool = false,
+        options: NavigationAnimationOptions = [],
+        parentGroupId: PeerGroupId? = nil,
+        chatListFilter: Int32? = nil,
+        chatNavigationStack: [ChatNavigationStackItem] = [],
+        changeColors: Bool = false,
+        setupController: @escaping (ChatController) -> Void = { _ in },
+        pushController: ((ChatController, Bool, @escaping () -> Void) -> Void)? = nil,
+        completion: @escaping (ChatController) -> Void = { _ in },
+        chatListCompletion: @escaping (ChatListController) -> Void = { _ in },
+        forceOpenChat: Bool = false,
+        customChatNavigationStack: [EnginePeer.Id]? = nil,
+        skipAgeVerification: Bool = false
+    ) {
         self.navigationController = navigationController
         self.chatController = chatController
         self.chatLocationContextHolder = chatLocationContextHolder
@@ -1296,7 +1332,7 @@ public protocol SharedAccountContext: AnyObject {
     func makeStarsGiveawayBoostScreen(context: AccountContext, peerId: EnginePeer.Id, boost: ChannelBoostersContext.State.Boost) -> ViewController
     func makeStarsIntroScreen(context: AccountContext) -> ViewController
     func makeGiftViewScreen(context: AccountContext, message: EngineMessage, shareStory: ((StarGift.UniqueGift) -> Void)?) -> ViewController
-    func makeGiftViewScreen(context: AccountContext, gift: StarGift.UniqueGift, shareStory: ((StarGift.UniqueGift) -> Void)?, dismissed: (() -> Void)?) -> ViewController
+    func makeGiftViewScreen(context: AccountContext, gift: StarGift.UniqueGift, shareStory: ((StarGift.UniqueGift) -> Void)?, openChatTheme: (() -> Void)?, dismissed: (() -> Void)?) -> ViewController
     func makeGiftWearPreviewScreen(context: AccountContext, gift: StarGift.UniqueGift) -> ViewController
     
     func makeStorySharingScreen(context: AccountContext, subject: StorySharingSubject, parentController: ViewController) -> ViewController

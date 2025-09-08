@@ -22,6 +22,10 @@ import PremiumCoinComponent
 import Markdown
 import CountrySelectionUI
 import AccountContext
+import AlertUI
+import MessageUI
+import CoreTelephony
+import PhoneNumberFormat
 
 final class AuthorizationSequencePaymentScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -33,6 +37,8 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
     let phoneNumber: String
     let phoneCodeHash: String
     let storeProduct: String
+    let supportEmailAddress: String
+    let supportEmailSubject: String
     
     init(
         sharedContext: SharedAccountContext,
@@ -41,7 +47,9 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
         presentationData: PresentationData,
         phoneNumber: String,
         phoneCodeHash: String,
-        storeProduct: String
+        storeProduct: String,
+        supportEmailAddress: String,
+        supportEmailSubject: String
     ) {
         self.sharedContext = sharedContext
         self.engine = engine
@@ -50,6 +58,8 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
         self.phoneNumber = phoneNumber
         self.phoneCodeHash = phoneCodeHash
         self.storeProduct = storeProduct
+        self.supportEmailAddress = supportEmailAddress
+        self.supportEmailSubject = supportEmailSubject
     }
 
     static func ==(lhs: AuthorizationSequencePaymentScreenComponent, rhs: AuthorizationSequencePaymentScreenComponent) -> Bool {
@@ -154,30 +164,55 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                         self.state?.updated(transition: .immediate)
 
                         var errorText: String?
+                        var errorCode: Int32?
                         switch error {
                             case .generic:
                                 errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
+                                errorCode = 1001
                             case .network:
                                 errorText = presentationData.strings.Premium_Purchase_ErrorNetwork
+                                errorCode = 1002
                             case .notAllowed:
                                 errorText = presentationData.strings.Premium_Purchase_ErrorNotAllowed
+                                errorCode = 1003
                             case .cantMakePayments:
                                 errorText = presentationData.strings.Premium_Purchase_ErrorCantMakePayments
+                                errorCode = 1004
                             case .assignFailed:
                                 errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
+                                errorCode = 1005
                             case .tryLater:
                                 errorText = presentationData.strings.Premium_Purchase_ErrorUnknown
+                                errorCode = 1006
                             case .cancelled:
                                 break
                         }
                         
-                        if let errorText {
-                            //addAppLogEvent(postbox: component.engine.account.postbox, type: "premium_gift.promo_screen_fail")
-                            
-                            let _ = errorText
-                            let _ = controller
-                            //let alertController = textAlertController(context: component.context, title: nil, text: errorText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})])
-                            //controller.present(alertController, in: .window(.root))
+                        if let errorText, let errorCode {
+                            let theme = AlertControllerTheme(presentationData: presentationData)
+                            let alertController = textAlertController(
+                                alertContext: AlertControllerContext(theme: theme, themeSignal: .single(theme)),
+                                title: nil,
+                                text: errorText,
+                                actions: [
+                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {}),
+                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Login_PhoneNumberHelp, action: { [weak controller] in
+                                        guard let controller else {
+                                            return
+                                        }
+                                        let formattedNumber = formatPhoneNumber(component.phoneNumber)
+                                        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
+                                        let systemVersion = UIDevice.current.systemVersion
+                                        let locale = Locale.current.identifier
+                                        let carrier = CTCarrier()
+                                        let mnc = carrier.mobileNetworkCode ?? "none"
+                                        let errorString: String = "\(errorCode): \(errorText)"
+                                        
+                                        AuthorizationSequenceController.presentEmailComposeController(address: component.supportEmailAddress, subject: component.supportEmailSubject, body: presentationData.strings.Login_PhoneGenericEmailBody(formattedNumber, errorString, appVersion, systemVersion, locale, mnc).string, from: controller, presentationData: presentationData)
+                                    })
+                                ]
+                            )
+                            controller.present(alertController, in: .window(.root))
                         }
                     }))
                 } else {
@@ -414,6 +449,8 @@ public final class AuthorizationSequencePaymentScreen: ViewControllerComponentCo
         phoneNumber: String,
         phoneCodeHash: String,
         storeProduct: String,
+        supportEmailAddress: String,
+        supportEmailSubject: String,
         back: @escaping () -> Void
     ) {
         super.init(component: AuthorizationSequencePaymentScreenComponent(
@@ -423,12 +460,14 @@ public final class AuthorizationSequencePaymentScreen: ViewControllerComponentCo
             presentationData: presentationData,
             phoneNumber: phoneNumber,
             phoneCodeHash: phoneCodeHash,
-            storeProduct: storeProduct
+            storeProduct: storeProduct,
+            supportEmailAddress: supportEmailAddress,
+            supportEmailSubject: supportEmailSubject
         ), navigationBarAppearance: .transparent, theme: .default, updatedPresentationData: (initial: presentationData, signal: .single(presentationData)))
         
         loadServerCountryCodes(accountManager: sharedContext.accountManager, engine: engine, completion: { [weak self] in
             if let strongSelf = self {
-                strongSelf.requestLayout(forceUpdate: true, transition: .immediate)
+                strongSelf.requestLayout(forceUpdate: true, transition: ContainedViewLayoutTransition.immediate)
             }
         })
         

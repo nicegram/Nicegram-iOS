@@ -853,7 +853,8 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
                     }
                     if let id = state.id as? PeerMessagesMediaPlaylistItemId, let playlistLocation = strongSelf.playlistLocation as? PeerMessagesPlaylistLocation {
                         if type == .music {
-                            if case .custom = playlistLocation {
+                            switch playlistLocation {
+                            case .custom, .savedMusic:
                                 let controllerContext: AccountContext
                                 if account.id == strongSelf.context.account.id {
                                     controllerContext = strongSelf.context
@@ -863,7 +864,7 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
                                 let controller = strongSelf.context.sharedContext.makeOverlayAudioPlayerController(context: controllerContext, chatLocation: .peer(id: id.messageId.peerId), type: type, initialMessageId: id.messageId, initialOrder: order, playlistLocation: playlistLocation, parentNavigationController: strongSelf.navigationController as? NavigationController)
                                 strongSelf.displayNode.view.window?.endEditing(true)
                                 strongSelf.present(controller, in: .window(.root))
-                            } else if case let .messages(chatLocation, _, _) = playlistLocation {
+                            case let .messages(chatLocation, _, _):
                                 let signal = strongSelf.context.sharedContext.messageFromPreloadedChatHistoryViewForLocation(id: id.messageId, location: ChatHistoryLocationInput(content: .InitialSearch(subject: MessageHistoryInitialSearchSubject(location: .id(id.messageId)), count: 60, highlight: true, setupReply: false), id: 0), context: strongSelf.context, chatLocation: chatLocation, subject: nil, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>(value: nil), tag: .tag(MessageTags.music))
                                 
                                 var cancelImpl: (() -> Void)?
@@ -915,6 +916,8 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
                                 cancelImpl = {
                                     self?.playlistPreloadDisposable?.dispose()
                                 }
+                            default:
+                                break
                             }
                         } else {
                             strongSelf.context.sharedContext.navigateToChat(accountId: strongSelf.context.account.id, peerId: id.messageId.peerId, messageId: id.messageId)

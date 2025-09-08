@@ -18,6 +18,7 @@ public final class MultilineTextComponent: Component {
     public let lineSpacing: CGFloat
     public let cutout: TextNodeCutout?
     public let insets: UIEdgeInsets
+    public let tintColor: UIColor?
     public let textShadowColor: UIColor?
     public let textShadowBlur: CGFloat?
     public let textStroke: (UIColor, CGFloat)?
@@ -36,6 +37,7 @@ public final class MultilineTextComponent: Component {
         lineSpacing: CGFloat = 0.0,
         cutout: TextNodeCutout? = nil,
         insets: UIEdgeInsets = UIEdgeInsets(),
+        tintColor: UIColor? = nil,
         textShadowColor: UIColor? = nil,
         textShadowBlur: CGFloat? = nil,
         textStroke: (UIColor, CGFloat)? = nil,
@@ -53,6 +55,7 @@ public final class MultilineTextComponent: Component {
         self.lineSpacing = lineSpacing
         self.cutout = cutout
         self.insets = insets
+        self.tintColor = tintColor
         self.textShadowColor = textShadowColor
         self.textShadowBlur = textShadowBlur
         self.textStroke = textStroke
@@ -88,7 +91,9 @@ public final class MultilineTextComponent: Component {
         if lhs.insets != rhs.insets {
             return false
         }
-        
+        if lhs.tintColor != rhs.tintColor {
+            return false
+        }
         if let lhsTextShadowColor = lhs.textShadowColor, let rhsTextShadowColor = rhs.textShadowColor {
             if !lhsTextShadowColor.isEqual(rhsTextShadowColor) {
                 return false
@@ -169,6 +174,12 @@ public final class MultilineTextComponent: Component {
             
             let size = self.updateLayout(availableSize)
                  
+            if let tintColor = component.tintColor {
+                transition.setTintColor(layer: self.layer, color: tintColor)
+            } else {
+                self.layer.layerTintColor = nil
+            }
+            
             return size
         }
     }

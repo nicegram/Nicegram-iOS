@@ -16,7 +16,6 @@ import ChatMessageBubbleContentNode
 import CountrySelectionUI
 import TelegramStringFormatting
 import MergedAvatarsNode
-import ChatControllerInteraction
 import TextNodeWithEntities
 
 public final class ChatUserInfoItem: ListViewItem {

@@ -19,6 +19,11 @@ import ContextUI
 import SliderContextItem
 import UndoUI
 import MarqueeComponent
+import MultilineTextComponent
+import BundleIconComponent
+import ButtonComponent
+import Markdown
+import TextFormat
 
 private func normalizeValue(_ value: CGFloat) -> CGFloat {
     return round(value * 10.0) / 10.0
@@ -106,8 +111,8 @@ private func timestampLabelWidthForDuration(_ timestamp: Double) -> CGFloat {
     return size.width
 }
 
-private let titleFont = Font.semibold(18.0)
-private let descriptionFont = Font.regular(18.0)
+private let titleFont = Font.semibold(19.0)
+private let descriptionFont = Font.regular(17.0)
 
 private func stringsForDisplayData(_ data: SharedMediaPlaybackDisplayData?, presentationData: PresentationData) -> (NSAttributedString?, NSAttributedString?, Bool, NSAttributedString?) {
     var titleString: NSAttributedString?
@@ -141,6 +146,8 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     private let account: Account
     private let engine: TelegramEngine
     private var presentationData: PresentationData
+    private let chatLocation: ChatLocation
+    private let source: ChatHistoryListSource
     
     private let backgroundNode: ASImageNode
     
@@ -153,6 +160,9 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     private let descriptionNode: TextNode
     private let shareNode: HighlightableButtonNode
     private let artistButton: HighlightTrackingButtonNode
+    
+    private var profileAudio: ComponentView<Empty>?
+    private var cachedChevronImage: (UIImage, PresentationTheme)?
     
     private let scrubberNode: MediaPlayerScrubbingNode
     private let leftDurationLabel: MediaPlayerTimeTextNode
@@ -181,12 +191,18 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     
     let separatorNode: ASDisplayNode
     
+    private let sectionBackground: ASDisplayNode
+    private let sectionTitle: ComponentView<Empty>
+    
     var isExpanded = false
     var updateIsExpanded: (() -> Void)?
     
     var requestCollapse: (() -> Void)?
-    var requestShare: ((MessageId) -> Void)?
+    var requestShare: ((ShareControllerSubject) -> Void)?
     var requestSearchByArtist: ((String) -> Void)?
+    var requestSaveToProfile: ((FileMediaReference) -> Void)?
+    var requestRemoveFromProfile: ((FileMediaReference) -> Void)?
+    var requestLayout: ((ContainedViewLayoutTransition) -> Void)?
     
     var updateOrder: ((MusicPlaybackSettingsOrder) -> Void)?
     var control: ((SharedMediaPlayerControlAction) -> Void)?
@@ -197,9 +213,12 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     private var displayData: SharedMediaPlaybackDisplayData?
     private var currentAlbumArtInitialized = false
     private var currentAlbumArt: SharedMediaPlaybackAlbumArt?
-    private var currentFileReference: FileMediaReference?
+    private(set) var currentFileReference: FileMediaReference?
     private var statusDisposable: Disposable?
     private var chapterDisposable: Disposable?
+    
+    private var peerName: String?
+    private var peerDisposable: Disposable?
     
     private var previousCaption: NSAttributedString?
     private var chaptersPromise = ValuePromise<[MediaPlayerScrubbingChapter]>([])
@@ -215,13 +234,15 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     private var currentDuration: Double = 0.0
     private var currentPosition: Double = 0.0
     
-    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat)?
+    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, hasSectionHeader: Bool, savedMusic: Bool?)?
     
-    init(account: Account, engine: TelegramEngine, accountManager: AccountManager<TelegramAccountManagerTypes>, presentationData: PresentationData, status: Signal<(Account, SharedMediaPlayerItemPlaybackStateOrLoading, MediaManagerPlayerType)?, NoError>) {
+    init(account: Account, engine: TelegramEngine, accountManager: AccountManager<TelegramAccountManagerTypes>, presentationData: PresentationData, status: Signal<(Account, SharedMediaPlayerItemPlaybackStateOrLoading, MediaManagerPlayerType)?, NoError>, chatLocation: ChatLocation, source: ChatHistoryListSource) {
         self.accountManager = accountManager
         self.account = account
         self.engine = engine
         self.presentationData = presentationData
+        self.chatLocation = chatLocation
+        self.source = source
         
         self.backgroundNode = ASImageNode()
         self.backgroundNode.isLayerBacked = true
@@ -240,7 +261,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.titleNode.displaysAsynchronously = false
         
         self.title = ComponentView<Empty>()
-        
+                
         self.descriptionNode = TextNode()
         self.descriptionNode.isUserInteractionEnabled = false
         self.descriptionNode.displaysAsynchronously = false
@@ -293,6 +314,11 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.separatorNode.isLayerBacked = true
         self.separatorNode.backgroundColor = presentationData.theme.list.itemPlainSeparatorColor
         
+        self.sectionBackground = ASDisplayNode()
+        self.sectionBackground.backgroundColor = presentationData.theme.chatList.sectionHeaderFillColor
+        
+        self.sectionTitle = ComponentView<Empty>()
+        
         super.init()
         
         self.addSubnode(self.backgroundNode)
@@ -318,6 +344,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.addSubnode(self.playPauseButton)
         self.playPauseButton.addSubnode(self.playPauseIconNode)
         
+        self.addSubnode(self.sectionBackground)
         self.addSubnode(self.separatorNode)
         
         let accountId = account.id
@@ -369,7 +396,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
                 strongSelf.infoNodePushed = infoNodePushed
                 
                 if let layout = strongSelf.validLayout {
-                    let _ = strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, transition: .animated(duration: 0.35, curve: .spring))
+                    let _ = strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, hasSectionHeader: layout.4, savedMusic: layout.5, transition: .animated(duration: 0.35, curve: .spring))
                 }
             }
         })
@@ -379,6 +406,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
             guard let strongSelf = self else {
                 return
             }
+            var itemUpdated = false
             var valueItemId: SharedMediaPlaylistItemId?
             if let (_, value, _) = value, case let .state(state) = value {
                 valueItemId = state.item.id
@@ -386,6 +414,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
             if !areSharedMediaPlaylistItemIdsEqual(valueItemId, strongSelf.currentItemId) {
                 strongSelf.currentItemId = valueItemId
                 strongSelf.scrubberNode.ignoreSeekId = nil
+                itemUpdated = true
             }
             
             var rateButtonIsHidden = true
@@ -445,7 +474,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
                 if duration != strongSelf.currentDuration && !duration.isZero {
                     strongSelf.currentDuration = duration
                     if let layout = strongSelf.validLayout {
-                        let _ = strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, transition: .immediate)
+                        let _ = strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, hasSectionHeader: layout.4, savedMusic: layout.5, transition: .immediate)
                     }
                 }
                 
@@ -485,7 +514,24 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
                 
                 strongSelf.shareNode.isHidden = !canShare
             }
+            
+            if itemUpdated {
+                strongSelf.requestLayout?(.animated(duration: 0.2, curve: .easeInOut))
+            }
         })
+        
+        if case .custom = self.source, case let .peer(peerId) = self.chatLocation, peerId != account.peerId {
+            self.peerDisposable = (engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            |> deliverOnMainQueue).start(next: { [weak self] peer in
+                guard let self, let peer else {
+                    return
+                }
+                self.peerName = peer.compactDisplayTitle
+                if let layout = self.validLayout {
+                    let _ = self.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, hasSectionHeader: layout.4, savedMusic: layout.5, transition: .immediate)
+                }
+            })
+        }
         
         self.chapterDisposable = combineLatest(queue: Queue.mainQueue(), mappedStatus, self.chaptersPromise.get())
         .startStrict(next: { [weak self] status, chapters in
@@ -533,7 +579,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
                     strongSelf.infoNode.attributedText = NSAttributedString(string: chapter.title, font: Font.regular(13.0), textColor: strongSelf.presentationData.theme.list.itemSecondaryTextColor)
                     
                     if let layout = strongSelf.validLayout {
-                        let _ = strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, transition: .immediate)
+                        let _ = strongSelf.updateLayout(width: layout.0, leftInset: layout.1, rightInset: layout.2, maxHeight: layout.3, hasSectionHeader: layout.4, savedMusic: layout.5, transition: .immediate)
                     }
                 }
             }
@@ -578,6 +624,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         self.statusDisposable?.dispose()
         self.chapterDisposable?.dispose()
         self.scrubbingDisposable?.dispose()
+        self.peerDisposable?.dispose()
     }
     
     override func didLoad() {
@@ -704,14 +751,15 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
             self.updateRateButton(rate)
         }
         self.separatorNode.backgroundColor = presentationData.theme.list.itemPlainSeparatorColor
+        self.sectionBackground.backgroundColor = presentationData.theme.chatList.sectionHeaderFillColor
     }
     
     private func updateLabels(transition: ContainedViewLayoutTransition) {
-        guard let (width, leftInset, rightInset, maxHeight) = self.validLayout else {
+        guard let (width, leftInset, rightInset, maxHeight, _, _) = self.validLayout else {
             return
         }
         
-        let panelHeight = OverlayPlayerControlsNode.heightForLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isExpanded: self.isExpanded)
+        let panelHeight = OverlayPlayerControlsNode.heightForLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isExpanded: self.isExpanded, hasSectionHeader: false, savedMusic: nil)
         
         let sideInset: CGFloat = 20.0
         
@@ -740,13 +788,13 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
                 MarqueeComponent(attributedText: titleString ?? NSAttributedString())
             ),
             environment: {},
-            containerSize: CGSize(width: width - sideInset * 2.0 - leftInset - rightInset - infoLabelsLeftInset - infoLabelsRightInset + MarqueeComponent.innerPadding, height: CGFloat.greatestFiniteMagnitude)
+            containerSize: CGSize(width: width - sideInset * 2.0 - leftInset - rightInset - infoLabelsLeftInset - infoLabelsRightInset, height: CGFloat.greatestFiniteMagnitude)
         )
         if let titleView = self.title.view {
             if titleView.superview == nil {
                 self.view.addSubview(titleView)
             }
-            transition.updateFrame(view: titleView, frame: CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - titleSize.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset) - MarqueeComponent.innerPadding, y: infoVerticalOrigin + 1.0), size: titleSize))
+            transition.updateFrame(view: titleView, frame: CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - titleSize.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset), y: infoVerticalOrigin), size: titleSize))
         }
         
         let makeDescriptionLayout = TextNode.asyncLayout(self.descriptionNode)
@@ -755,7 +803,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - titleLayout.size.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset), y: infoVerticalOrigin + 1.0), size: titleLayout.size))
         let _ = titleApply()
         
-        let descriptionFrame = CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - descriptionLayout.size.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset), y: infoVerticalOrigin + 24.0), size: descriptionLayout.size)
+        let descriptionFrame = CGRect(origin: CGPoint(x: self.isExpanded ? floor((width - descriptionLayout.size.width) / 2.0) : (leftInset + sideInset + infoLabelsLeftInset), y: infoVerticalOrigin + 25.0), size: descriptionLayout.size)
         transition.updateFrame(node: self.descriptionNode, frame: descriptionFrame)
         let _ = descriptionApply()
         
@@ -819,20 +867,30 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     }
     
     static let basePanelHeight: CGFloat = 220.0
+    static let sectionHeaderHeight: CGFloat = 28.0
     
-    static func heightForLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, isExpanded: Bool) -> CGFloat {
+    static func heightForLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, isExpanded: Bool, hasSectionHeader: Bool, savedMusic: Bool?) -> CGFloat {
         var panelHeight: CGFloat = OverlayPlayerControlsNode.basePanelHeight
         if isExpanded {
             let sideInset: CGFloat = 20.0
             panelHeight += width - leftInset - rightInset - sideInset * 2.0 + 24.0
         }
-        return min(panelHeight, maxHeight)
+        var height = min(panelHeight, maxHeight)
+        if hasSectionHeader {
+            height += sectionHeaderHeight
+        }
+        if let savedMusic {
+            height += savedMusic ? 38.0 : 70.0
+        }
+        return height
     }
     
-    func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
-        self.validLayout = (width, leftInset, rightInset, maxHeight)
+    func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, maxHeight: CGFloat, hasSectionHeader: Bool, savedMusic: Bool?, transition: ContainedViewLayoutTransition) -> CGFloat {
+        let previousSavedMusic = self.validLayout?.savedMusic
+        self.validLayout = (width, leftInset, rightInset, maxHeight, hasSectionHeader, savedMusic)
     
-        let panelHeight = OverlayPlayerControlsNode.heightForLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isExpanded: self.isExpanded)
+        let finalPanelHeight = OverlayPlayerControlsNode.heightForLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isExpanded: self.isExpanded, hasSectionHeader: hasSectionHeader, savedMusic: savedMusic)
+        let panelHeight = OverlayPlayerControlsNode.heightForLayout(width: width, leftInset: leftInset, rightInset: rightInset, maxHeight: maxHeight, isExpanded: self.isExpanded, hasSectionHeader: false, savedMusic: nil)
         
         transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: 0.0, y: panelHeight), size: CGSize(width: width, height: UIScreenPixel)))
         
@@ -840,6 +898,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         
         let sideInset: CGFloat = 20.0
         let sideButtonsInset: CGFloat = sideInset + 36.0
+        
         
         let infoVerticalOrigin: CGFloat = panelHeight - OverlayPlayerControlsNode.basePanelHeight + 36.0
         
@@ -849,7 +908,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         
         let albumArtSize = CGSize(width: 48.0, height: 48.0)
         let makeAlbumArtLayout = self.albumArtNode.asyncLayout()
-        let applyAlbumArt = makeAlbumArtLayout(TransformImageArguments(corners: ImageCorners(radius: 4.0), imageSize: albumArtSize, boundingSize: albumArtSize, intrinsicInsets: UIEdgeInsets()))
+        let applyAlbumArt = makeAlbumArtLayout(TransformImageArguments(corners: ImageCorners(radius: 10.0), imageSize: albumArtSize, boundingSize: albumArtSize, intrinsicInsets: UIEdgeInsets()))
         applyAlbumArt()
         let albumArtFrame = CGRect(origin: CGPoint(x: leftInset + sideInset, y: infoVerticalOrigin - 1.0), size: albumArtSize)
         let previousAlbumArtNodeFrame = self.albumArtNode.frame
@@ -941,7 +1000,7 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         let rateRightOffset = timestampLabelWidthForDuration(self.currentDuration)
         transition.updateFrame(node: self.rateButton, frame: CGRect(origin: CGPoint(x: width - sideInset - rightInset - rateRightOffset - 28.0, y: scrubberVerticalOrigin + 10.0 + rightLabelVerticalOffset - 10.0), size: CGSize(width: 24.0, height: 44.0)))
         
-        transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -8.0), size: CGSize(width: width, height: panelHeight + 8.0)))
+        transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -8.0), size: CGSize(width: width, height: finalPanelHeight + 8.0)))
         
         let buttonSize = CGSize(width: 64.0, height: 64.0)
         let buttonsWidth = min(width - leftInset - rightInset - sideButtonsInset * 2.0, 320.0)
@@ -956,8 +1015,162 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
         let playPauseFrame = CGRect(origin: CGPoint(x: buttonsRect.minX + floor((buttonsRect.width - buttonSize.width) / 2.0), y: buttonsRect.minY), size: buttonSize)
         transition.updateFrame(node: self.playPauseButton, frame: playPauseFrame)
         transition.updateFrame(node: self.playPauseIconNode, frame: CGRect(origin: CGPoint(x: -6.0, y: -6.0), size: CGSize(width: 76.0, height: 76.0)))
+                 
+        var sectionHeaderTransition = transition
+        if self.sectionTitle.view?.superview == nil {
+            sectionHeaderTransition = .immediate
+        }
         
-        return panelHeight
+        sectionHeaderTransition.updateFrame(node: self.sectionBackground, frame: CGRect(origin: CGPoint(x: 0.0, y: finalPanelHeight - OverlayPlayerControlsNode.sectionHeaderHeight), size: CGSize(width: width, height: OverlayPlayerControlsNode.sectionHeaderHeight)))
+        
+        self.separatorNode.isHidden = hasSectionHeader
+        
+        if hasSectionHeader {
+            let sideInset: CGFloat = 16.0
+            var sectionTitle = self.presentationData.strings.MediaPlayer_Playlist_ThisChat
+            if let peerName = self.peerName {
+                sectionTitle = self.presentationData.strings.MediaPlayer_Playlist_SavedMusic(peerName.uppercased()).string
+            } else if case .custom = self.source {
+                sectionTitle = self.presentationData.strings.MediaPlayer_Playlist_SavedMusicYou
+            }
+            let sectionTitleSize = self.sectionTitle.update(
+                transition: .immediate,
+                component: AnyComponent(
+                    MultilineTextComponent(
+                        text: .plain(NSAttributedString(string: sectionTitle, font: Font.regular(13.0), textColor: self.presentationData.theme.chatList.sectionHeaderTextColor)),
+                        truncationType: .middle
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: width - leftInset - rightInset - sideInset * 2.0, height: OverlayPlayerControlsNode.sectionHeaderHeight)
+            )
+            if let sectionTitleView = self.sectionTitle.view {
+                if sectionTitleView.superview == nil {
+                    self.view.addSubview(sectionTitleView)
+                }
+                sectionTitleView.bounds = CGRect(origin: .zero, size: sectionTitleSize)
+                sectionHeaderTransition.updateFrame(view: sectionTitleView, frame: CGRect(origin: CGPoint(x: leftInset + sideInset, y: finalPanelHeight - OverlayPlayerControlsNode.sectionHeaderHeight + 6.0 + UIScreenPixel), size: sectionTitleSize))
+            }
+        } else if let sectionTitleView = self.sectionTitle.view, sectionTitleView.superview != nil {
+            sectionTitleView.removeFromSuperview()
+        }
+        
+        if let savedMusic {
+            var profileAudioTransition = transition
+            var animateIn = false
+            if previousSavedMusic != savedMusic, let profileAudio {
+                self.profileAudio = nil
+                if let profileAudioView = profileAudio.view {
+                    if transition.isAnimated {
+                        profileAudioView.layer.animateScale(from: 1.0, to: 0.0, duration: 0.25)
+                        profileAudioView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
+                            profileAudioView.removeFromSuperview()
+                        })
+                        animateIn = true
+                    } else {
+                        profileAudioView.removeFromSuperview()
+                    }
+                }
+            }
+            
+            if self.profileAudio == nil {
+                profileAudioTransition = .immediate
+            }
+            let profileAudio: ComponentView<Empty> = self.profileAudio ?? {
+                let componentView = ComponentView<Empty>()
+                self.profileAudio = componentView
+                return componentView
+            }()
+            
+            let profileAudioComponent: AnyComponent<Empty>
+            var profileAudioOffset: CGFloat = 0.0
+            if savedMusic {
+                if self.cachedChevronImage == nil || self.cachedChevronImage?.1 !== self.presentationData.theme {
+                    self.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: self.presentationData.theme.list.itemAccentColor)!, self.presentationData.theme)
+                }
+                let textFont = Font.regular(13.0)
+                let textColor = self.presentationData.theme.list.itemSecondaryTextColor
+                let linkColor = self.presentationData.theme.list.itemAccentColor
+                let markdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: textColor), bold: MarkdownAttributeSet(font: textFont, textColor: textColor), link: MarkdownAttributeSet(font: textFont, textColor: linkColor), linkAttribute: { contents in
+                    return (TelegramTextAttributes.URL, contents)
+                })
+                
+                let attributedString = parseMarkdownIntoAttributedString(self.presentationData.strings.MediaPlayer_SavedMusic_RemoveFromProfile, attributes: markdownAttributes, textAlignment: .center).mutableCopy() as! NSMutableAttributedString
+                if let range = attributedString.string.range(of: ">"), let chevronImage = self.cachedChevronImage?.0 {
+                    attributedString.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: attributedString.string))
+                    attributedString.addAttribute(.baselineOffset, value: 1.0, range: NSRange(range, in: attributedString.string))
+                }
+                profileAudioComponent = AnyComponent(MultilineTextComponent(
+                    text: .plain(attributedString),
+                    horizontalAlignment: .center,
+                    maximumNumberOfLines: 5,
+                    lineSpacing: 0.2,
+                    highlightColor: linkColor.withAlphaComponent(0.1),
+                    highlightInset: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: -8.0),
+                    highlightAction: { attributes in
+                        if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] {
+                            return NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)
+                        } else {
+                            return nil
+                        }
+                    },
+                    tapAction: { [weak self] attributes, _ in
+                        if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] as? String {
+                            if let file = self?.currentFileReference {
+                                self?.requestRemoveFromProfile?(file)
+                            }
+                        }
+                    }
+                ))
+                profileAudioOffset = 18.0
+            } else {
+                profileAudioComponent = AnyComponent(ButtonComponent(
+                    background: ButtonComponent.Background(
+                        color: self.presentationData.theme.list.itemCheckColors.fillColor,
+                        foreground: self.presentationData.theme.list.itemCheckColors.foregroundColor,
+                        pressedColor: self.presentationData.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                        cornerRadius: 10.0
+                    ),
+                    content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
+                        HStack([
+                            AnyComponentWithIdentity(id: "icon", component: AnyComponent(
+                                BundleIconComponent(name: "Peer Info/SaveMusic", tintColor: self.presentationData.theme.list.itemCheckColors.foregroundColor)
+                            )),
+                            AnyComponentWithIdentity(id: "label", component: AnyComponent(
+                                MultilineTextComponent(text: .plain(NSAttributedString(string: self.presentationData.strings.MediaPlayer_SavedMusic_AddToProfile, font: Font.semibold(17.0), textColor: self.presentationData.theme.list.itemCheckColors.foregroundColor)))
+                            ))
+                        ], spacing: 8.0)
+                    )),
+                    action: { [weak self] in
+                        if let file = self?.currentFileReference {
+                            self?.requestSaveToProfile?(file)
+                        }
+                    }
+                ))
+            }
+            
+            let profileAudioSize = profileAudio.update(
+                transition: .immediate,
+                component: profileAudioComponent,
+                environment: {},
+                containerSize: CGSize(width: width - leftInset - rightInset - 32.0, height: 50.0)
+            )
+            let profileAudioOrigin: CGFloat = finalPanelHeight + profileAudioOffset - (hasSectionHeader ? OverlayPlayerControlsNode.sectionHeaderHeight : 0.0) - 42.0 - floorToScreenPixels(profileAudioSize.height / 2.0)
+            let profileAudioFrame = CGRect(origin: CGPoint(x: floor((width - profileAudioSize.width) / 2.0), y: profileAudioOrigin), size: profileAudioSize)
+            if let profileAudioView = profileAudio.view {
+                if profileAudioView.superview == nil {
+                    self.view.addSubview(profileAudioView)
+                    
+                    if animateIn {
+                        profileAudioView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                        profileAudioView.layer.animateScale(from: 0.0, to: 1.0, duration: 0.3)
+                    }
+                }
+                profileAudioTransition.updateFrame(view: profileAudioView, frame: profileAudioFrame)
+            }
+        }
+        
+        return finalPanelHeight
     }
     
     func collapse() {
@@ -973,7 +1186,17 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
     
     @objc func sharePressed() {
         if let itemId = self.currentItemId as? PeerMessagesMediaPlaylistItemId {
-            self.requestShare?(itemId.messageId)
+            if itemId.messageId.namespace == Namespaces.Message.Cloud {
+                let _ = (self.engine.data.get(TelegramEngine.EngineData.Item.Messages.Message(id: itemId.messageId))
+                |> deliverOnMainQueue).startStandalone(next: { [weak self] message in
+                    guard let message else {
+                        return
+                    }
+                    self?.requestShare?(.messages([message._asMessage()]))
+                })
+            } else if let fileReference = self.currentFileReference {
+                self.requestShare?(.media(fileReference.abstract, nil))
+            }
         }
     }
     

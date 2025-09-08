@@ -1019,7 +1019,7 @@ private enum StatsEntry: ItemListNodeEntry {
                         icon = .image(color: color, name: "Premium/Unclaimed")
                     } else if boost.flags.contains(.isGiveaway) {
                         if let stars = boost.stars {
-                            title = presentationData.strings.Stats_Boosts_Stars(Int32(stars))
+                            title = presentationData.strings.Stats_Boosts_Stars(Int32(clamping: stars))
                             icon = .image(color: .stars, name: "Premium/PremiumStar")
                             expiresString = expiresValue
                         } else {
@@ -1476,7 +1476,7 @@ private func boostsEntries(
                 title = presentationData.strings.Stats_Boosts_PrepaidGiveawayCount(giveaway.quantity)
                 text = presentationData.strings.Stats_Boosts_PrepaidGiveawayMonths("\(months)").string
             case let .stars(stars, _):
-                title = presentationData.strings.Stats_Boosts_Stars(Int32(stars))
+                title = presentationData.strings.Stats_Boosts_Stars(Int32(clamping: stars))
                 text = presentationData.strings.Stats_Boosts_StarsWinners(giveaway.quantity)
             }
             entries.append(.boostPrepaid(i, presentationData.theme, title, text, giveaway))

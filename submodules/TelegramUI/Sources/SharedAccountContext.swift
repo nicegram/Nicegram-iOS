@@ -3899,8 +3899,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return GiftViewScreen(context: context, subject: .message(message), shareStory: shareStory)
     }
     
-    public func makeGiftViewScreen(context: AccountContext, gift: StarGift.UniqueGift, shareStory: ((StarGift.UniqueGift) -> Void)?, dismissed: (() -> Void)?) -> ViewController {
-        let controller = GiftViewScreen(context: context, subject: .uniqueGift(gift, nil), shareStory: shareStory)
+    public func makeGiftViewScreen(context: AccountContext, gift: StarGift.UniqueGift, shareStory: ((StarGift.UniqueGift) -> Void)?, openChatTheme: (() -> Void)?, dismissed: (() -> Void)?) -> ViewController {
+        let controller = GiftViewScreen(context: context, subject: .uniqueGift(gift, nil), shareStory: shareStory, openChatTheme: openChatTheme)
         controller.disposed = {
             dismissed?()
         }
@@ -4072,6 +4072,7 @@ private func peerInfoControllerImpl(context: AccountContext, updatedPresentation
         var switchToRecommendedChannels = false
         var switchToGifts = false
         var switchToGroupsInCommon = false
+        var switchToStoryFolder: Int64?
         switch mode {
         case let .forumTopic(thread):
             forumTopicThread = thread
@@ -4081,10 +4082,12 @@ private func peerInfoControllerImpl(context: AccountContext, updatedPresentation
             switchToGifts = true
         case .groupsInCommon:
             switchToGroupsInCommon = true
+        case let .storyAlbum(id):
+            switchToStoryFolder = id
         default:
             break
         }
-        return PeerInfoScreenImpl(context: context, updatedPresentationData: updatedPresentationData, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, nearbyPeerDistance: nil, reactionSourceMessageId: nil, callMessages: [], forumTopicThread: forumTopicThread, switchToRecommendedChannels: switchToRecommendedChannels, switchToGifts: switchToGifts, switchToGroupsInCommon: switchToGroupsInCommon)
+        return PeerInfoScreenImpl(context: context, updatedPresentationData: updatedPresentationData, peerId: peer.id, avatarInitiallyExpanded: avatarInitiallyExpanded, isOpenedFromChat: isOpenedFromChat, nearbyPeerDistance: nil, reactionSourceMessageId: nil, callMessages: [], forumTopicThread: forumTopicThread, switchToRecommendedChannels: switchToRecommendedChannels, switchToGifts: switchToGifts, switchToGroupsInCommon: switchToGroupsInCommon, switchToStoryFolder: switchToStoryFolder)
     } else if peer is TelegramUser {
         var nearbyPeerDistance: Int32?
         var reactionSourceMessageId: MessageId?

@@ -278,8 +278,38 @@ public final class PeerInfoCoverComponent: Component {
             }
         }
         
-        public func animateTransition() {
+        public func animateSwipeTransition() {
             if let gradientSnapshotLayer = self.backgroundGradientLayer.snapshotContentTree() {
+                let backgroundSnapshotLayer = SimpleLayer()
+                backgroundSnapshotLayer.masksToBounds = true
+                backgroundSnapshotLayer.allowsGroupOpacity = true
+                backgroundSnapshotLayer.backgroundColor = self.backgroundView.backgroundColor?.cgColor
+                backgroundSnapshotLayer.frame = self.backgroundView.frame
+                self.layer.insertSublayer(backgroundSnapshotLayer, above: self.backgroundGradientLayer)
+               
+                gradientSnapshotLayer.frame = self.backgroundGradientLayer.convert(self.backgroundGradientLayer.bounds, to: self.backgroundView.layer)
+                backgroundSnapshotLayer.addSublayer(gradientSnapshotLayer)
+                
+                let mask = CAGradientLayer()
+                mask.startPoint = CGPoint(x: 0.0, y: 0.5)
+                mask.endPoint = CGPoint(x: 1.0, y: 0.5)
+                mask.frame = CGRect(origin: CGPoint(x: backgroundSnapshotLayer.bounds.width, y: 0.0), size: CGSize(width: backgroundSnapshotLayer.bounds.width * 2.0, height: backgroundSnapshotLayer.bounds.height))
+                mask.colors = [
+                    UIColor.white.withAlphaComponent(0.0).cgColor,
+                    UIColor.white.cgColor,
+                    UIColor.white.cgColor,
+                ]
+                mask.locations = [0.0, 0.5, 1.0]
+                backgroundSnapshotLayer.mask = mask
+                
+                mask.animatePosition(from: CGPoint(x: -backgroundSnapshotLayer.bounds.width * 2.0, y: 0.0), to: .zero, duration: 0.35, timingFunction: CAMediaTimingFunctionName.linear.rawValue, additive: true, completion: { [weak backgroundSnapshotLayer] _ in
+                    backgroundSnapshotLayer?.removeFromSuperlayer()
+                })
+            }
+        }
+        
+        public func animateTransition(background: Bool = true, bounce: Bool = true) {
+            if background, let gradientSnapshotLayer = self.backgroundGradientLayer.snapshotContentTree() {
                 let backgroundSnapshotLayer = SimpleLayer()
                 backgroundSnapshotLayer.allowsGroupOpacity = true
                 backgroundSnapshotLayer.backgroundColor = self.backgroundView.backgroundColor?.cgColor
@@ -301,8 +331,10 @@ public final class PeerInfoCoverComponent: Component {
                 }
                 layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
             }
-            let values: [NSNumber] = [1.0, 1.08, 1.0]
-            self.avatarBackgroundPatternContentsLayer.animateKeyframes(values: values, duration: 0.25, keyPath: "sublayerTransform.scale")
+            if bounce {
+                let values: [NSNumber] = [1.0, 1.14, 1.0]
+                self.avatarBackgroundPatternContentsLayer.animateKeyframes(values: values, duration: 0.4, keyPath: "sublayerTransform.scale")
+            }
         }
         
         private func loadPatternFromFile() {

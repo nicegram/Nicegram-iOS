@@ -235,6 +235,8 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     iconImage = PresentationResourcesChat.messageButtonsPostApprove(theme.theme)
                 case .suggestedPostEdit:
                     iconImage = PresentationResourcesChat.messageButtonsPostEdit(theme.theme)
+                case .actionArrow:
+                    iconImage = PresentationResourcesChat.chatBubbleArrowFreeImage(theme.theme)
                 }
                 tintColor = titleColor
             } else {
@@ -453,7 +455,11 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     
                     var titleFrame = CGRect(origin: CGPoint(x: floor((width - titleSize.size.width) / 2.0), y: floor((42.0 - titleSize.size.height) / 2.0) + 1.0), size: titleSize.size)
                     if let image = node.iconNode?.image, customInfo?.icon != nil {
-                        titleFrame.origin.x = floorToScreenPixels((width - titleSize.size.width - image.size.width - 3.0) * 0.5) + 3.0 + image.size.width
+                        if customInfo?.icon == .actionArrow {
+                            titleFrame.origin.x = floorToScreenPixels((width - titleSize.size.width - image.size.width + 1.0) * 0.5) - 0.0
+                        } else {
+                            titleFrame.origin.x = floorToScreenPixels((width - titleSize.size.width - image.size.width - 3.0) * 0.5) + 3.0 + image.size.width
+                        }
                     }
                     titleNode.layer.bounds = CGRect(origin: CGPoint(), size: titleFrame.size)
                     animation.animator.updatePosition(layer: titleNode.layer, position: CGPoint(x: titleFrame.midX, y: titleFrame.midY), completion: nil)
@@ -464,7 +470,11 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     if let iconNode = node.iconNode {
                         let iconFrame: CGRect
                         if customInfo?.icon != nil, let image = iconNode.image {
-                            iconFrame = CGRect(x: titleFrame.minX - 3.0 - image.size.width, y: titleFrame.minY + floorToScreenPixels((titleFrame.height - image.size.height) * 0.5) - 1.0, width: image.size.width, height: image.size.height)
+                            if customInfo?.icon == .actionArrow {
+                                iconFrame = CGRect(x: titleFrame.maxX + 4.0, y: titleFrame.minY + floorToScreenPixels((titleFrame.height - image.size.height) * 0.5) - 1.0, width: image.size.width, height: image.size.height)
+                            } else {
+                                iconFrame = CGRect(x: titleFrame.minX - 3.0 - image.size.width, y: titleFrame.minY + floorToScreenPixels((titleFrame.height - image.size.height) * 0.5) - 1.0, width: image.size.width, height: image.size.height)
+                            }
                         } else {
                             iconFrame = CGRect(x: width - 16.0, y: 4.0, width: 12.0, height: 12.0)
                         }
@@ -502,6 +512,7 @@ public final class ChatMessageActionButtonsNode: ASDisplayNode {
         case suggestedPostApprove
         case suggestedPostReject
         case suggestedPostEdit
+        case actionArrow
     }
     
     public struct CustomInfo {

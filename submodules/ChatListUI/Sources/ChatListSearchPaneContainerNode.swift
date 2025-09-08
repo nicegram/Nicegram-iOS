@@ -9,6 +9,7 @@ import AccountContext
 import ContextUI
 import AnimationCache
 import MultiAnimationRenderer
+import TelegramNotices
 
 protocol ChatListSearchPaneNode: ASDisplayNode {
     var isReady: Signal<Bool, NoError> { get }
@@ -238,6 +239,11 @@ final class ChatListSearchPaneContainerNode: ASDisplayNode, ASGestureRecognizerD
             }
             return
         }
+        
+        if key == .globalPosts {
+            let _ = ApplicationSpecificNotice.incrementGlobalPostsSearch(accountManager: self.context.sharedContext.accountManager).startStandalone()
+        }
+        
         #if DEBUG
         #else
         self.isAdjacentLoadingEnabled = true

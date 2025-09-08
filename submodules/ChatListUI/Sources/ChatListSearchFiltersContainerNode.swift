@@ -71,7 +71,7 @@ private final class ItemNode: ASDisplayNode {
         self.pressed()
     }
     
-    func update(type: ChatListSearchFilter, presentationData: PresentationData, selectionFraction: CGFloat, transition: ContainedViewLayoutTransition) {
+    func update(type: ChatListSearchFilter, displayNewBadge: Bool, presentationData: PresentationData, selectionFraction: CGFloat, transition: ContainedViewLayoutTransition) {
         self.selectionFraction = selectionFraction
         
         let title: String
@@ -94,7 +94,9 @@ private final class ItemNode: ASDisplayNode {
             icon = nil
         case .globalPosts:
             title = presentationData.strings.ChatList_Search_FilterGlobalPosts
-            titleBadge = presentationData.strings.ChatList_ContextMenuBadgeNew
+            if displayNewBadge {
+                titleBadge = presentationData.strings.ChatList_ContextMenuBadgeNew
+            }
             icon = nil
         case .media:
             title = presentationData.strings.ChatList_Search_FilterMedia
@@ -271,7 +273,7 @@ final class ChatListSearchFiltersContainerNode: ASDisplayNode {
         self.scrollNode.layer.removeAllAnimations()
     }
     
-    func update(size: CGSize, sideInset: CGFloat, filters: [ChatListSearchFilterEntry], selectedFilter: ChatListSearchFilterEntryId?, transitionFraction: CGFloat, presentationData: PresentationData, transition proposedTransition: ContainedViewLayoutTransition) {
+    func update(size: CGSize, sideInset: CGFloat, filters: [ChatListSearchFilterEntry], displayGlobalPostsNewBadge: Bool, selectedFilter: ChatListSearchFilterEntryId?, transitionFraction: CGFloat, presentationData: PresentationData, transition proposedTransition: ContainedViewLayoutTransition) {
         let isFirstTime = self.currentParams == nil
         let transition: ContainedViewLayoutTransition = isFirstTime ? .immediate : proposedTransition
         
@@ -321,7 +323,12 @@ final class ChatListSearchFiltersContainerNode: ASDisplayNode {
                     selectionFraction = 0.0
                 }
                 
-                itemNode.update(type: type, presentationData: presentationData, selectionFraction: selectionFraction, transition: itemNodeTransition)
+                var displayNewBadge = false
+                if case .globalPosts = type {
+                    displayNewBadge = displayGlobalPostsNewBadge
+                }
+                
+                itemNode.update(type: type, displayNewBadge: displayNewBadge, presentationData: presentationData, selectionFraction: selectionFraction, transition: itemNodeTransition)
             }
         }
         

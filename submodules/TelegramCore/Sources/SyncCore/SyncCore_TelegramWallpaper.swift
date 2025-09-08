@@ -230,6 +230,37 @@ public enum TelegramWallpaper: Equatable {
             self.file = file
             self.settings = settings
         }
+        
+        public static func ==(lhs: File, rhs: File) -> Bool {
+            if lhs.id != rhs.id {
+                return false
+            }
+            if lhs.accessHash != rhs.accessHash {
+                return false
+            }
+            if lhs.isCreator != rhs.isCreator {
+                return false
+            }
+            if lhs.isDefault != rhs.isDefault {
+                return false
+            }
+            if lhs.isPattern != rhs.isPattern {
+                return false
+            }
+            if lhs.isDark != rhs.isDark {
+                return false
+            }
+            if lhs.slug != rhs.slug {
+                return false
+            }
+            if lhs.file.fileId != rhs.file.fileId {
+                return false
+            }
+            if lhs.settings != rhs.settings {
+                return false
+            }
+            return true
+        }
     }
 
     case builtin(WallpaperSettings)

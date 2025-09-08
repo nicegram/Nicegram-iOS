@@ -1661,7 +1661,7 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
                                                 return patternWallpaperImage(account: context.account, accountManager: context.sharedContext.accountManager, representations: representations, mode: .screen)
                                                 |> mapToSignal { value -> Signal<(TransformImageArguments) -> DrawingContext?, NoError> in
                                                     if let value = value {
-                                                        return .single(value)
+                                                        return .single(value.generator)
                                                     } else {
                                                         return .complete()
                                                     }

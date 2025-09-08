@@ -236,7 +236,7 @@ final class GiftSetupScreenComponent: Component {
                             title: environment.strings.Gift_Send_Premium_Confirmation_Title,
                             text: environment.strings.Gift_Send_Premium_Confirmation_Text(
                                 peer.compactDisplayTitle,
-                                environment.strings.Gift_Send_Premium_Confirmation_Text_Stars(Int32(starsPrice))
+                                environment.strings.Gift_Send_Premium_Confirmation_Text_Stars(Int32(clamping: starsPrice))
                             ).string,
                             actions: [
                                 TextAlertAction(type: .genericAction, title: environment.strings.Common_Cancel, action: {}),
@@ -427,7 +427,7 @@ final class GiftSetupScreenComponent: Component {
                                 file: starGift.file,
                                 loop: true,
                                 title: nil,
-                                text: presentationData.strings.Gift_Send_Success(self.peerMap[peerId]?.compactDisplayTitle ?? "", presentationData.strings.Gift_Send_Success_Stars(Int32(starGift.price))).string,
+                                text: presentationData.strings.Gift_Send_Success(self.peerMap[peerId]?.compactDisplayTitle ?? "", presentationData.strings.Gift_Send_Success_Stars(Int32(clamping: starGift.price))).string,
                                 undoText: nil,
                                 customAction: nil
                             ),
@@ -752,6 +752,10 @@ final class GiftSetupScreenComponent: Component {
             } else if isChannelGift {
                 navigationTitleString = environment.strings.Gift_SendChannel_Title
             } else {
+                var peerName = peerName
+                if peerName.count > 22 {
+                    peerName = "\(peerName.prefix(22))…"
+                }
                 navigationTitleString = environment.strings.Gift_Send_TitleTo(peerName).string
             }
             let navigationTitleSize = self.navigationTitle.update(

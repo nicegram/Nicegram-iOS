@@ -54,6 +54,7 @@ public enum ApiChatFullWrapped {
         public let botVerification: Api.BotVerification?
         public let stargiftsCount: Int32?
         public let sendPaidMessagesStars: Int64?
+        public let mainTab: Api.ProfileTab?
     }
 
     public struct ChatFull {
@@ -79,7 +80,7 @@ public enum ApiChatFullWrapped {
 
     public init(_ apiChatFull: Api.ChatFull) {
         switch apiChatFull {
-        case let .channelFull(flags, flags2, id, about, participantsCount, adminsCount, kickedCount, bannedCount, onlineCount, readInboxMaxId, readOutboxMaxId, unreadCount, chatPhoto, notifySettings, exportedInvite, botInfo, migratedFromChatId, migratedFromMaxId, pinnedMsgId, stickerset, availableMinId, folderId, linkedChatId, location, slowmodeSeconds, slowmodeNextSendDate, statsDc, pts, call, ttlPeriod, pendingSuggestions, groupcallDefaultJoinAs, themeEmoticon, requestsPending, recentRequesters, defaultSendAs, availableReactions, reactionsLimit, stories, wallpaper, boostsApplied, boostsUnrestrict, emojiset, botVerification, stargiftsCount, sendPaidMessagesStars):
+        case let .channelFull(flags, flags2, id, about, participantsCount, adminsCount, kickedCount, bannedCount, onlineCount, readInboxMaxId, readOutboxMaxId, unreadCount, chatPhoto, notifySettings, exportedInvite, botInfo, migratedFromChatId, migratedFromMaxId, pinnedMsgId, stickerset, availableMinId, folderId, linkedChatId, location, slowmodeSeconds, slowmodeNextSendDate, statsDc, pts, call, ttlPeriod, pendingSuggestions, groupcallDefaultJoinAs, themeEmoticon, requestsPending, recentRequesters, defaultSendAs, availableReactions, reactionsLimit, stories, wallpaper, boostsApplied, boostsUnrestrict, emojiset, botVerification, stargiftsCount, sendPaidMessagesStars, mainTab):
             self = .channelFull(ChannelFull(
                 flags: flags,
                 flags2: flags2,
@@ -126,7 +127,8 @@ public enum ApiChatFullWrapped {
                 emojiset: emojiset,
                 botVerification: botVerification,
                 stargiftsCount: stargiftsCount,
-                sendPaidMessagesStars: sendPaidMessagesStars
+                sendPaidMessagesStars: sendPaidMessagesStars,
+                mainTab: mainTab
             ))
         case let .chatFull(flags, id, about, participants, chatPhoto, notifySettings, exportedInvite, botInfo, pinnedMsgId, folderId, call, ttlPeriod, groupcallDefaultJoinAs, themeEmoticon, requestsPending, recentRequesters, availableReactions, reactionsLimit):
             self = .chatFull(ChatFull(

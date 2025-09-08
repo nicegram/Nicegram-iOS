@@ -90,7 +90,6 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
     private let tabSelector = ComponentView<Empty>()
     public private(set) var currentCollection: GiftCollection = .all
     
-    private var footerText: ComponentView<Empty>?
     private var panelBackground: NavigationBackgroundNode?
     private var panelSeparator: ASDisplayNode?
     private var panelButton: ComponentView<Empty>?
@@ -383,7 +382,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 var replacingTitle = ""
                 for gift in pinnedGifts {
                     if gift.reference == unpinnedReference, case let .unique(uniqueGift) = gift.gift {
-                        replacingTitle = "\(uniqueGift.title) #\(presentationStringsFormattedNumber(uniqueGift.number, presentationData.dateTimeFormat.groupingSeparator))"
+                        replacingTitle = "\(uniqueGift.title) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: presentationData.dateTimeFormat))"
                     }
                 }
                 
@@ -395,7 +394,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 
                 var title = ""
                 if case let .unique(uniqueGift) = gift.gift {
-                    title = "\(uniqueGift.title) #\(presentationStringsFormattedNumber(uniqueGift.number, presentationData.dateTimeFormat.groupingSeparator))"
+                    title = "\(uniqueGift.title) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: presentationData.dateTimeFormat))"
                 }
                                                        
                 let _ = self.scrollToTop()
@@ -1058,7 +1057,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             case let .generic(gift):
                                 giftFile = gift.file
                             case let .unique(uniqueGift):
-                                giftTitle = uniqueGift.title + " #\(presentationStringsFormattedNumber(uniqueGift.number, currentParams.presentationData.dateTimeFormat.groupingSeparator))"
+                                giftTitle = uniqueGift.title + " #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: currentParams.presentationData.dateTimeFormat))"
                                 for attribute in uniqueGift.attributes {
                                     if case let .model(_, file, _) = attribute {
                                         giftFile = file
@@ -1126,7 +1125,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                         } else {
                             var title = ""
                             if case let .unique(uniqueGift) = gift.gift {
-                                title = "\(uniqueGift.title) #\(presentationStringsFormattedNumber(uniqueGift.number, presentationData.dateTimeFormat.groupingSeparator))"
+                                title = "\(uniqueGift.title) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: presentationData.dateTimeFormat))"
                             }
                             toastTitle = strings.PeerInfo_Gifts_ToastPinned_TitleNew(title).string
                             toastText = strings.PeerInfo_Gifts_ToastPinned_Text
@@ -1378,7 +1377,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 case let .generic(gift):
                     giftFile = gift.file
                 case let .unique(uniqueGift):
-                    giftTitle = uniqueGift.title + " #\(presentationStringsFormattedNumber(uniqueGift.number, currentParams.presentationData.dateTimeFormat.groupingSeparator))"
+                    giftTitle = uniqueGift.title + " #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: currentParams.presentationData.dateTimeFormat))"
                     for attribute in uniqueGift.attributes {
                         if case let .model(_, file, _) = attribute {
                             giftFile = file

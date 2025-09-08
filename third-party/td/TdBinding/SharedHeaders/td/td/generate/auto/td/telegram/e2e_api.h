@@ -412,7 +412,6 @@ class e2e_personalContactState final : public e2e_Personal {
  public:
   int32 flags_;
   bool is_contact_;
-  enum Flags : std::int32_t { IS_CONTACT_MASK = 1 };
 
   e2e_personalContactState();
 
@@ -798,7 +797,6 @@ class e2e_chain_groupParticipant final : public Object {
   bool add_users_;
   bool remove_users_;
   int32 version_;
-  enum Flags : std::int32_t { ADD_USERS_MASK = 1, REMOVE_USERS_MASK = 2 };
 
   e2e_chain_groupParticipant();
 

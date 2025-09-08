@@ -233,7 +233,7 @@ private class ReplyThreadHistoryContextImpl {
                                         )
                                     }
                                 }
-                                return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
+                                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
                             })
                         }
                         
@@ -343,6 +343,8 @@ private class ReplyThreadHistoryContextImpl {
                 return (nil, nil, nil, nil)
             }
             
+            var markMainAsRead = false
+            
             if var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: threadId)?.data.get(MessageHistoryThreadData.self) {
                 if messageIndex.id.id >= data.maxIncomingReadId {
                     if let count = transaction.getThreadMessageCount(peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, fromIdExclusive: data.maxIncomingReadId, toIndex: messageIndex) {
@@ -365,7 +367,28 @@ private class ReplyThreadHistoryContextImpl {
                     if let entry = StoredMessageHistoryThreadInfo(data) {
                         transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
                     }
+                    
+                    if data.incomingUnreadCount == 0, let channel = peer as? TelegramChannel, channel.linkedBotId != nil {
+                        var hasOtherUnread = false
+                        for item in transaction.getMessageHistoryThreadIndex(peerId: peerId, limit: 20) {
+                            guard let data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: item.threadId)?.data.get(MessageHistoryThreadData.self) else {
+                                continue
+                            }
+                            if data.incomingUnreadCount != 0 {
+                                hasOtherUnread = true
+                                break
+                            }
+                        }
+                        
+                        if !hasOtherUnread {
+                            markMainAsRead = true
+                        }
+                    }
                 }
+            }
+            
+            if markMainAsRead {
+                _internal_applyMaxReadIndexInteractively(transaction: transaction, stateManager: account.stateManager, index: messageIndex)
             }
             
             var subPeerId: Api.InputPeer?
@@ -400,7 +423,7 @@ private class ReplyThreadHistoryContextImpl {
                                                 attributes[j] = updatedAttribute
                                             }
                                         }
-                                        return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
+                                        return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init), authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
                                     })
                                 }
                             }

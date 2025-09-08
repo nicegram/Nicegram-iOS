@@ -13,8 +13,8 @@ public extension TelegramEngine {
             return _internal_getChatThemes(accountManager: accountManager, network: self.account.network, forceUpdate: forceUpdate, onlyCached: onlyCached)
         }
         
-        public func setChatTheme(peerId: PeerId, emoticon: String?) -> Signal<Void, NoError> {
-            return _internal_setChatTheme(account: self.account, peerId: peerId, emoticon: emoticon)
+        public func setChatTheme(peerId: PeerId, chatTheme: ChatTheme?) -> Signal<Void, NoError> {
+            return _internal_setChatTheme(account: self.account, peerId: peerId, chatTheme: chatTheme)
         }
         
         public func setChatWallpaper(peerId: PeerId, wallpaper: TelegramWallpaper?, forBoth: Bool) -> Signal<Never, SetChatWallpaperError> {

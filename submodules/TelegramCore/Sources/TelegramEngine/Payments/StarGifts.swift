@@ -57,6 +57,7 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             case upgradeStars
             case releasedBy
             case perUserLimit
+            case lockedUntilDate
         }
         
         public struct Availability: Equatable, Codable, PostboxCoding {
@@ -179,8 +180,9 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
         public let upgradeStars: Int64?
         public let releasedBy: EnginePeer.Id?
         public let perUserLimit: PerUserLimit?
+        public let lockedUntilDate: Int32?
         
-        public init(id: Int64, title: String?, file: TelegramMediaFile, price: Int64, convertStars: Int64, availability: Availability?, soldOut: SoldOut?, flags: Flags, upgradeStars: Int64?, releasedBy: EnginePeer.Id?, perUserLimit: PerUserLimit?) {
+        public init(id: Int64, title: String?, file: TelegramMediaFile, price: Int64, convertStars: Int64, availability: Availability?, soldOut: SoldOut?, flags: Flags, upgradeStars: Int64?, releasedBy: EnginePeer.Id?, perUserLimit: PerUserLimit?, lockedUntilDate: Int32?) {
             self.id = id
             self.title = title
             self.file = file
@@ -192,6 +194,7 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             self.upgradeStars = upgradeStars
             self.releasedBy = releasedBy
             self.perUserLimit = perUserLimit
+            self.lockedUntilDate = lockedUntilDate
         }
         
         public init(from decoder: Decoder) throws {
@@ -213,6 +216,7 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             self.upgradeStars = try container.decodeIfPresent(Int64.self, forKey: .upgradeStars)
             self.releasedBy = try container.decodeIfPresent(EnginePeer.Id.self, forKey: .releasedBy)
             self.perUserLimit = try container.decodeIfPresent(PerUserLimit.self, forKey: .perUserLimit)
+            self.lockedUntilDate = try container.decodeIfPresent(Int32.self, forKey: .lockedUntilDate)
         }
         
         public init(decoder: PostboxDecoder) {
@@ -227,6 +231,7 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             self.upgradeStars = decoder.decodeOptionalInt64ForKey(CodingKeys.upgradeStars.rawValue)
             self.releasedBy = decoder.decodeOptionalInt64ForKey(CodingKeys.releasedBy.rawValue).flatMap { EnginePeer.Id($0) }
             self.perUserLimit = decoder.decodeObjectForKey(CodingKeys.perUserLimit.rawValue, decoder: { StarGift.Gift.PerUserLimit(decoder: $0) }) as? StarGift.Gift.PerUserLimit
+            self.lockedUntilDate = decoder.decodeOptionalInt32ForKey(CodingKeys.lockedUntilDate.rawValue)
         }
         
         public func encode(to encoder: Encoder) throws {
@@ -247,6 +252,7 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             try container.encodeIfPresent(self.upgradeStars, forKey: .upgradeStars)
             try container.encodeIfPresent(self.releasedBy, forKey: .releasedBy)
             try container.encodeIfPresent(self.perUserLimit, forKey: .perUserLimit)
+            try container.encodeIfPresent(self.lockedUntilDate, forKey: .lockedUntilDate)
         }
         
         public func encode(_ encoder: PostboxEncoder) {
@@ -285,12 +291,18 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             } else {
                 encoder.encodeNil(forKey: CodingKeys.perUserLimit.rawValue)
             }
+            if let lockedUntilDate = self.lockedUntilDate {
+                encoder.encodeInt32(lockedUntilDate, forKey: CodingKeys.lockedUntilDate.rawValue)
+            } else {
+                encoder.encodeNil(forKey: CodingKeys.lockedUntilDate.rawValue)
+            }
         }
     }
     
     public struct UniqueGift: Equatable, Codable, PostboxCoding {
         enum CodingKeys: String, CodingKey {
             case id
+            case giftId
             case title
             case number
             case slug
@@ -304,6 +316,20 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             case resellAmounts
             case resellForTonOnly
             case releasedBy
+            case valueAmount
+            case valueCurrency
+            case flags
+            case themePeerId
+        }
+        
+        public struct Flags: OptionSet {
+            public var rawValue: Int32
+            
+            public init(rawValue: Int32) {
+                self.rawValue = rawValue
+            }
+            
+            public static let isThemeAvailable = Flags(rawValue: 1 << 0)
         }
         
         public enum Attribute: Equatable, Codable, PostboxCoding {
@@ -543,12 +569,30 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
                 return nil
             }
         }
+        
+        public struct ValueInfo: Equatable {
+            public let isLastSaleOnFragment: Bool
+            public let valueIsAverage: Bool
+            public let value: Int64
+            public let currency: String
+            public let initialSaleDate: Int32
+            public let initialSaleStars: Int64
+            public let initialSalePrice: Int64
+            public let lastSaleDate: Int32?
+            public let lastSalePrice: Int64?
+            public let floorPrice: Int64?
+            public let averagePrice: Int64?
+            public let listedCount: Int32?
+            public let fragmentListedCount: Int32?
+            public let fragmentListedUrl: String?
+        }
                 
         public enum DecodingError: Error {
             case generic
         }
         
         public let id: Int64
+        public let giftId: Int64
         public let title: String
         public let number: Int32
         public let slug: String
@@ -559,9 +603,14 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
         public let resellAmounts: [CurrencyAmount]?
         public let resellForTonOnly: Bool
         public let releasedBy: EnginePeer.Id?
+        public let valueAmount: Int64?
+        public let valueCurrency: String?
+        public let flags: Flags
+        public let themePeerId: EnginePeer.Id?
         
-        public init(id: Int64, title: String, number: Int32, slug: String, owner: Owner, attributes: [Attribute], availability: Availability, giftAddress: String?, resellAmounts: [CurrencyAmount]?, resellForTonOnly: Bool, releasedBy: EnginePeer.Id?) {
+        public init(id: Int64, giftId: Int64, title: String, number: Int32, slug: String, owner: Owner, attributes: [Attribute], availability: Availability, giftAddress: String?, resellAmounts: [CurrencyAmount]?, resellForTonOnly: Bool, releasedBy: EnginePeer.Id?, valueAmount: Int64?, valueCurrency: String?, flags: Flags, themePeerId: EnginePeer.Id?) {
             self.id = id
+            self.giftId = giftId
             self.title = title
             self.number = number
             self.slug = slug
@@ -572,11 +621,16 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             self.resellAmounts = resellAmounts
             self.resellForTonOnly = resellForTonOnly
             self.releasedBy = releasedBy
+            self.valueAmount = valueAmount
+            self.valueCurrency = valueCurrency
+            self.flags = flags
+            self.themePeerId = themePeerId
         }
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.id = try container.decode(Int64.self, forKey: .id)
+            self.giftId = try container.decode(Int64.self, forKey: .giftId)
             self.title = try container.decode(String.self, forKey: .title)
             self.number = try container.decode(Int32.self, forKey: .number)
             self.slug = try container.decodeIfPresent(String.self, forKey: .slug) ?? ""
@@ -601,10 +655,15 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             }
             self.resellForTonOnly = try container.decodeIfPresent(Bool.self, forKey: .resellForTonOnly) ?? false
             self.releasedBy = try container.decodeIfPresent(EnginePeer.Id.self, forKey: .releasedBy)
+            self.valueAmount = try container.decodeIfPresent(Int64.self, forKey: .valueAmount)
+            self.valueCurrency = try container.decodeIfPresent(String.self, forKey: .valueCurrency)
+            self.flags = try container.decodeIfPresent(Int32.self, forKey: .flags).flatMap { Flags(rawValue: $0) } ?? []
+            self.themePeerId = try container.decodeIfPresent(Int64.self, forKey: .themePeerId).flatMap { EnginePeer.Id($0) }
         }
         
         public init(decoder: PostboxDecoder) {
             self.id = decoder.decodeInt64ForKey(CodingKeys.id.rawValue, orElse: 0)
+            self.giftId = decoder.decodeInt64ForKey(CodingKeys.giftId.rawValue, orElse: 0)
             self.title = decoder.decodeStringForKey(CodingKeys.title.rawValue, orElse: "")
             self.number = decoder.decodeInt32ForKey(CodingKeys.number.rawValue, orElse: 0)
             self.slug = decoder.decodeStringForKey(CodingKeys.slug.rawValue, orElse: "")
@@ -629,11 +688,16 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             }
             self.resellForTonOnly = decoder.decodeBoolForKey(CodingKeys.resellForTonOnly.rawValue, orElse: false)
             self.releasedBy = decoder.decodeOptionalInt64ForKey(CodingKeys.releasedBy.rawValue).flatMap { EnginePeer.Id($0) }
+            self.valueAmount = decoder.decodeOptionalInt64ForKey(CodingKeys.valueAmount.rawValue)
+            self.valueCurrency = decoder.decodeOptionalStringForKey(CodingKeys.valueCurrency.rawValue)
+            self.flags = decoder.decodeOptionalInt32ForKey(CodingKeys.flags.rawValue).flatMap { Flags(rawValue: $0) } ?? []
+            self.themePeerId = decoder.decodeOptionalInt64ForKey(CodingKeys.themePeerId.rawValue).flatMap { EnginePeer.Id($0) }
         }
         
         public func encode(to encoder: Encoder) throws {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(self.id, forKey: .id)
+            try container.encode(self.giftId, forKey: .giftId)
             try container.encode(self.title, forKey: .title)
             try container.encode(self.number, forKey: .number)
             try container.encode(self.slug, forKey: .slug)
@@ -651,10 +715,15 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             try container.encodeIfPresent(self.resellAmounts, forKey: .resellAmounts)
             try container.encode(self.resellForTonOnly, forKey: .resellForTonOnly)
             try container.encodeIfPresent(self.releasedBy, forKey: .releasedBy)
+            try container.encodeIfPresent(self.valueAmount, forKey: .valueAmount)
+            try container.encodeIfPresent(self.valueCurrency, forKey: .valueCurrency)
+            try container.encode(self.flags.rawValue, forKey: .flags)
+            try container.encodeIfPresent(self.themePeerId?.toInt64(), forKey: .themePeerId)
         }
         
         public func encode(_ encoder: PostboxEncoder) {
             encoder.encodeInt64(self.id, forKey: CodingKeys.id.rawValue)
+            encoder.encodeInt64(self.giftId, forKey: CodingKeys.giftId.rawValue)
             encoder.encodeString(self.title, forKey: CodingKeys.title.rawValue)
             encoder.encodeInt32(self.number, forKey: CodingKeys.number.rawValue)
             encoder.encodeString(self.slug, forKey: CodingKeys.slug.rawValue)
@@ -684,11 +753,25 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
             } else {
                 encoder.encodeNil(forKey: CodingKeys.releasedBy.rawValue)
             }
+            if let valueAmount = self.valueAmount, let valueCurrency = self.valueCurrency {
+                encoder.encodeInt64(valueAmount, forKey: CodingKeys.valueAmount.rawValue)
+                encoder.encodeString(valueCurrency, forKey: CodingKeys.valueCurrency.rawValue)
+            } else {
+                encoder.encodeNil(forKey: CodingKeys.valueAmount.rawValue)
+                encoder.encodeNil(forKey: CodingKeys.valueCurrency.rawValue)
+            }
+            encoder.encodeInt32(self.flags.rawValue, forKey: CodingKeys.flags.rawValue)
+            if let themePeerId = self.themePeerId {
+                encoder.encodeInt64(themePeerId.toInt64(), forKey: CodingKeys.themePeerId.rawValue)
+            } else {
+                encoder.encodeNil(forKey: CodingKeys.themePeerId.rawValue)
+            }
         }
         
         public func withResellAmounts(_ resellAmounts: [CurrencyAmount]?) -> UniqueGift {
             return UniqueGift(
                 id: self.id,
+                giftId: self.giftId,
                 title: self.title,
                 number: self.number,
                 slug: self.slug,
@@ -698,13 +781,18 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
                 giftAddress: self.giftAddress,
                 resellAmounts: resellAmounts,
                 resellForTonOnly: self.resellForTonOnly,
-                releasedBy: self.releasedBy
+                releasedBy: self.releasedBy,
+                valueAmount: self.valueAmount,
+                valueCurrency: self.valueCurrency,
+                flags: self.flags,
+                themePeerId: self.themePeerId
             )
         }
         
         public func withResellForTonOnly(_ resellForTonOnly: Bool) -> UniqueGift {
             return UniqueGift(
                 id: self.id,
+                giftId: self.giftId,
                 title: self.title,
                 number: self.number,
                 slug: self.slug,
@@ -714,7 +802,32 @@ public enum StarGift: Equatable, Codable, PostboxCoding {
                 giftAddress: self.giftAddress,
                 resellAmounts: self.resellAmounts,
                 resellForTonOnly: resellForTonOnly,
-                releasedBy: self.releasedBy
+                releasedBy: self.releasedBy,
+                valueAmount: self.valueAmount,
+                valueCurrency: self.valueCurrency,
+                flags: self.flags,
+                themePeerId: self.themePeerId
+            )
+        }
+        
+        public func withThemePeerId(_ themePeerId: EnginePeer.Id?) -> UniqueGift {
+            return UniqueGift(
+                id: self.id,
+                giftId: self.giftId,
+                title: self.title,
+                number: self.number,
+                slug: self.slug,
+                owner: self.owner,
+                attributes: self.attributes,
+                availability: self.availability,
+                giftAddress: self.giftAddress,
+                resellAmounts: self.resellAmounts,
+                resellForTonOnly: self.resellForTonOnly,
+                releasedBy: self.releasedBy,
+                valueAmount: self.valueAmount,
+                valueCurrency: self.valueCurrency,
+                flags: self.flags,
+                themePeerId: themePeerId
             )
         }
     }
@@ -794,7 +907,7 @@ public extension StarGift {
 extension StarGift {
     init?(apiStarGift: Api.StarGift) {
         switch apiStarGift {
-        case let .starGift(apiFlags, id, sticker, stars, availabilityRemains, availabilityTotal, availabilityResale, convertStars, firstSale, lastSale, upgradeStars, minResaleStars, title, releasedBy, perUserTotal, perUserRemains):
+        case let .starGift(apiFlags, id, sticker, stars, availabilityRemains, availabilityTotal, availabilityResale, convertStars, firstSale, lastSale, upgradeStars, minResaleStars, title, releasedBy, perUserTotal, perUserRemains, lockedUntilDate):
             var flags = StarGift.Gift.Flags()
             if (apiFlags & (1 << 2)) != 0 {
                 flags.insert(.isBirthdayGift)
@@ -823,8 +936,8 @@ extension StarGift {
             guard let file = telegramMediaFileFromApiDocument(sticker, altDocuments: nil) else {
                 return nil
             }
-            self = .generic(StarGift.Gift(id: id, title: title, file: file, price: stars, convertStars: convertStars, availability: availability, soldOut: soldOut, flags: flags, upgradeStars: upgradeStars, releasedBy: releasedBy?.peerId, perUserLimit: perUserLimit))
-        case let .starGiftUnique(flags, id, title, slug, num, ownerPeerId, ownerName, ownerAddress, attributes, availabilityIssued, availabilityTotal, giftAddress, resellAmounts, releasedBy):
+            self = .generic(StarGift.Gift(id: id, title: title, file: file, price: stars, convertStars: convertStars, availability: availability, soldOut: soldOut, flags: flags, upgradeStars: upgradeStars, releasedBy: releasedBy?.peerId, perUserLimit: perUserLimit, lockedUntilDate: lockedUntilDate))
+        case let .starGiftUnique(apiFlags, id, giftId, title, slug, num, ownerPeerId, ownerName, ownerAddress, attributes, availabilityIssued, availabilityTotal, giftAddress, resellAmounts, releasedBy, valueAmount, valueCurrency, themePeer):
             let owner: StarGift.UniqueGift.Owner
             if let ownerAddress {
                 owner = .address(ownerAddress)
@@ -836,7 +949,11 @@ extension StarGift {
                 return nil
             }
             let resellAmounts = resellAmounts?.compactMap { CurrencyAmount(apiAmount: $0) }
-            self = .unique(StarGift.UniqueGift(id: id, title: title, number: num, slug: slug, owner: owner, attributes: attributes.compactMap { UniqueGift.Attribute(apiAttribute: $0) }, availability: UniqueGift.Availability(issued: availabilityIssued, total: availabilityTotal), giftAddress: giftAddress, resellAmounts: resellAmounts, resellForTonOnly: (flags & (1 << 7)) != 0, releasedBy: releasedBy?.peerId))
+            var flags = StarGift.UniqueGift.Flags()
+            if (apiFlags & (1 << 9)) != 0 {
+                flags.insert(.isThemeAvailable)
+            }
+            self = .unique(StarGift.UniqueGift(id: id, giftId: giftId, title: title, number: num, slug: slug, owner: owner, attributes: attributes.compactMap { UniqueGift.Attribute(apiAttribute: $0) }, availability: UniqueGift.Availability(issued: availabilityIssued, total: availabilityTotal), giftAddress: giftAddress, resellAmounts: resellAmounts, resellForTonOnly: (apiFlags & (1 << 7)) != 0, releasedBy: releasedBy?.peerId, valueAmount: valueAmount, valueCurrency: valueCurrency, flags: flags, themePeerId: themePeer?.peerId))
         }
     }
 }
@@ -1108,7 +1225,7 @@ func _internal_upgradeStarGift(account: Account, formId: Int64?, reference: Star
                     case let .updateNewMessage(message, _, _):
                         if let message = StoreMessage(apiMessage: message, accountPeerId: account.peerId, peerIsForum: false) {
                             for media in message.media {
-                                if let action = media as? TelegramMediaAction, case let .starGiftUnique(gift, _, _, savedToProfile, canExportDate, transferStars, _, peerId, _, savedId, _, canTransferDate, canResaleDate) = action.action, case let .Id(messageId) = message.id {
+                                if let action = media as? TelegramMediaAction, case let .starGiftUnique(gift, _, _, savedToProfile, canExportDate, transferStars, _, _, peerId, _, savedId, _, canTransferDate, canResaleDate) = action.action, case let .Id(messageId) = message.id {
                                     let reference: StarGiftReference
                                     if let peerId, let savedId {
                                         reference = .peer(peerId: peerId, id: savedId)
@@ -1132,7 +1249,9 @@ func _internal_upgradeStarGift(account: Account, formId: Int64?, reference: Star
                                         transferStars: transferStars,
                                         canTransferDate: canTransferDate,
                                         canResaleDate: canResaleDate,
-                                        collectionIds: nil
+                                        collectionIds: nil,
+                                        prepaidUpgradeHash: nil,
+                                        upgradeSeparate: false
                                     ))
                                 }
                             }
@@ -1160,6 +1279,34 @@ func _internal_starGiftUpgradePreview(account: Account, giftId: Int64) -> Signal
         switch result {
         case let .starGiftUpgradePreview(sampleAttributes):
             return sampleAttributes.compactMap { StarGift.UniqueGift.Attribute(apiAttribute: $0) }
+        }
+    }
+}
+
+public enum CanSendGiftResult {
+    case available
+    case unavailable(text: String, entities: [MessageTextEntity])
+    case failed
+}
+
+func _internal_checkCanSendStarGift(account: Account, giftId: Int64) -> Signal<CanSendGiftResult, NoError> {
+    return account.network.request(Api.functions.payments.checkCanSendGift(giftId: giftId))
+    |> map(Optional.init)
+    |> `catch` { _ -> Signal<Api.payments.CheckCanSendGiftResult?, NoError> in
+        return .single(nil)
+    }
+    |> map { result in
+        guard let result else {
+            return .unavailable(text: "", entities: [])
+        }
+        switch result {
+        case .checkCanSendGiftResultOk:
+            return .available
+        case let .checkCanSendGiftResultFail(reason):
+            switch reason {
+            case let .textWithEntities(text, entities):
+                return .unavailable(text: text, entities: messageTextEntitiesFromApiEntities(entities))
+            }
         }
     }
 }
@@ -1232,6 +1379,7 @@ private final class ProfileGiftsContextImpl {
     
     private var sorting: ProfileGiftsContext.Sorting
     private var filter: ProfileGiftsContext.Filters
+    private var limit: Int32
     
     private var gifts: [ProfileGiftsContext.State.StarGift] = []
     private var count: Int32?
@@ -1255,7 +1403,8 @@ private final class ProfileGiftsContextImpl {
         peerId: EnginePeer.Id,
         collectionId: Int32?,
         sorting: ProfileGiftsContext.Sorting,
-        filter: ProfileGiftsContext.Filters
+        filter: ProfileGiftsContext.Filters,
+        limit: Int32
     ) {
         self.queue = queue
         self.account = account
@@ -1263,6 +1412,7 @@ private final class ProfileGiftsContextImpl {
         self.collectionId = collectionId
         self.sorting = sorting
         self.filter = filter
+        self.limit = limit
         
         self.loadMore()
     }
@@ -1287,6 +1437,7 @@ private final class ProfileGiftsContextImpl {
         let postbox = self.account.postbox
         let filter = self.filter
         let sorting = self.sorting
+        let limit = self.limit
         
         let isFiltered = self.filter != .All || self.sorting != .date
         if !isFiltered {
@@ -1297,149 +1448,149 @@ private final class ProfileGiftsContextImpl {
         
         let dataState = isFiltered ? self.filteredDataState : self.dataState
         
-        if case let .ready(true, initialNextOffset) = dataState {
-            if !isFiltered || isUniqueOnlyFilter, self.gifts.isEmpty, initialNextOffset == nil, !reload {
-                self.cacheDisposable.set((self.account.postbox.transaction { transaction -> CachedProfileGifts? in
-                    let cachedGifts = transaction.retrieveItemCacheEntry(id: giftsEntryId(peerId: peerId, collectionId: collectionId))?.get(CachedProfileGifts.self)
-                    cachedGifts?.render(transaction: transaction)
-                    return cachedGifts
-                } |> deliverOn(self.queue)).start(next: { [weak self] cachedGifts in
-                    guard let self, let cachedGifts else {
-                        return
-                    }
-                    if isUniqueOnlyFilter, case .loading = self.filteredDataState {
-                        var gifts = cachedGifts.gifts
-                        if isUniqueOnlyFilter {
-                            gifts = gifts.filter({ gift in
-                                if case .unique = gift.gift {
-                                    return true
-                                } else {
-                                    return false
-                                }
-                            })
-                        }
-                        self.gifts = gifts
-                        self.count = cachedGifts.count
-                        self.notificationsEnabled = cachedGifts.notificationsEnabled
-                        self.pushState()
-                    } else if case .loading = self.dataState {
-                        self.gifts = cachedGifts.gifts
-                        self.count = cachedGifts.count
-                        self.notificationsEnabled = cachedGifts.notificationsEnabled
-                        self.pushState()
-                    }
-                }))
-            }
-            
-            if isFiltered {
-                self.filteredDataState = .loading
-            } else {
-                self.dataState = .loading
-            }
-            if !reload {
-                self.pushState()
-            }
-            
-            let signal: Signal<([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?), NoError> = self.account.postbox.transaction { transaction -> Api.InputPeer? in
-                return transaction.getPeer(peerId).flatMap(apiInputPeer)
-            }
-            |> mapToSignal { inputPeer -> Signal<([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?), NoError> in
-                guard let inputPeer else {
-                    return .single(([], 0, nil, nil))
-                }
-                var flags: Int32 = 0
-                if let _ = collectionId {
-                    flags |= (1 << 6)
-                }
-                if case .value = sorting {
-                    flags |= (1 << 5)
-                }
-                if !filter.contains(.hidden) {
-                    flags |= (1 << 0)
-                }
-                if !filter.contains(.displayed) {
-                    flags |= (1 << 1)
-                }
-                if !filter.contains(.unlimited) {
-                    flags |= (1 << 2)
-                }
-                if !filter.contains(.limited) {
-                    flags |= (1 << 3)
-                }
-                if !filter.contains(.unique) {
-                    flags |= (1 << 4)
-                }
-                return network.request(Api.functions.payments.getSavedStarGifts(flags: flags, peer: inputPeer, collectionId: collectionId, offset: initialNextOffset ?? "", limit: 36))
-                |> map(Optional.init)
-                |> `catch` { _ -> Signal<Api.payments.SavedStarGifts?, NoError> in
-                    return .single(nil)
-                }
-                |> mapToSignal { result -> Signal<([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?), NoError> in
-                    guard let result else {
-                        return .single(([], 0, nil, nil))
-                    }
-                    return postbox.transaction { transaction -> ([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?) in
-                        switch result {
-                        case let .savedStarGifts(_, count, apiNotificationsEnabled, apiGifts, nextOffset, chats, users):
-                            let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-                            updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
-                            
-                            var notificationsEnabled: Bool?
-                            if let apiNotificationsEnabled {
-                                if case .boolTrue = apiNotificationsEnabled {
-                                    notificationsEnabled = true
-                                } else {
-                                    notificationsEnabled = false
-                                }
-                            }
-                            
-                            let gifts = apiGifts.compactMap { ProfileGiftsContext.State.StarGift(apiSavedStarGift: $0, peerId: peerId, transaction: transaction) }
-                            return (gifts, count, nextOffset, notificationsEnabled)
-                        }
-                    }
-                }
-            }
-            
-            self.disposable.set((signal
-            |> deliverOn(self.queue)).start(next: { [weak self] (gifts, count, nextOffset, notificationsEnabled) in
-                guard let self else {
+        guard case let .ready(true, initialNextOffset) = dataState else {
+            return
+        }
+        if !isFiltered || isUniqueOnlyFilter, self.gifts.isEmpty, initialNextOffset == nil, !reload {
+            self.cacheDisposable.set((self.account.postbox.transaction { transaction -> CachedProfileGifts? in
+                let cachedGifts = transaction.retrieveItemCacheEntry(id: giftsEntryId(peerId: peerId, collectionId: collectionId))?.get(CachedProfileGifts.self)
+                cachedGifts?.render(transaction: transaction)
+                return cachedGifts
+            } |> deliverOn(self.queue)).start(next: { [weak self] cachedGifts in
+                guard let self, let cachedGifts else {
                     return
                 }
-                if isFiltered {
-                    if initialNextOffset == nil || reload {
-                        self.filteredGifts = gifts
-                    } else {
-                        for gift in gifts {
-                            self.filteredGifts.append(gift)
-                        }
-                    }
-                    
-                    let updatedCount = max(Int32(self.filteredGifts.count), count)
-                    self.filteredCount = updatedCount
-                    self.filteredDataState = .ready(canLoadMore: count != 0 && updatedCount > self.filteredGifts.count && nextOffset != nil, nextOffset: nextOffset)
-                } else {
-                    if initialNextOffset == nil || reload {
-                        self.gifts = gifts
-                        self.cacheDisposable.set(self.account.postbox.transaction { transaction in
-                            if let entry = CodableEntry(CachedProfileGifts(gifts: gifts, count: count, notificationsEnabled: notificationsEnabled)) {
-                                transaction.putItemCacheEntry(id: giftsEntryId(peerId: peerId, collectionId: collectionId), entry: entry)
+                if isUniqueOnlyFilter, case .loading = self.filteredDataState {
+                    var gifts = cachedGifts.gifts
+                    if isUniqueOnlyFilter {
+                        gifts = gifts.filter({ gift in
+                            if case .unique = gift.gift {
+                                return true
+                            } else {
+                                return false
                             }
-                        }.start())
-                    } else {
-                        for gift in gifts {
-                            self.gifts.append(gift)
-                        }
+                        })
                     }
-                    
-                    let updatedCount = max(Int32(self.gifts.count), count)
-                    self.count = updatedCount
-                    self.dataState = .ready(canLoadMore: count != 0 && updatedCount > self.gifts.count && nextOffset != nil, nextOffset: nextOffset)
+                    self.gifts = gifts
+                    self.count = cachedGifts.count
+                    self.notificationsEnabled = cachedGifts.notificationsEnabled
+                    self.pushState()
+                } else if case .loading = self.dataState {
+                    self.gifts = cachedGifts.gifts
+                    self.count = cachedGifts.count
+                    self.notificationsEnabled = cachedGifts.notificationsEnabled
+                    self.pushState()
                 }
-                
-                self.notificationsEnabled = notificationsEnabled
-                self.pushState()
             }))
         }
+        
+        if isFiltered {
+            self.filteredDataState = .loading
+        } else {
+            self.dataState = .loading
+        }
+        if !reload {
+            self.pushState()
+        }
+        
+        let signal: Signal<([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?), NoError> = self.account.postbox.transaction { transaction -> Api.InputPeer? in
+            return transaction.getPeer(peerId).flatMap(apiInputPeer)
+        }
+        |> mapToSignal { inputPeer -> Signal<([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?), NoError> in
+            guard let inputPeer else {
+                return .single(([], 0, nil, nil))
+            }
+            var flags: Int32 = 0
+            if let _ = collectionId {
+                flags |= (1 << 6)
+            }
+            if case .value = sorting {
+                flags |= (1 << 5)
+            }
+            if !filter.contains(.hidden) {
+                flags |= (1 << 0)
+            }
+            if !filter.contains(.displayed) {
+                flags |= (1 << 1)
+            }
+            if !filter.contains(.unlimited) {
+                flags |= (1 << 2)
+            }
+            if !filter.contains(.limitedUpgradable) {
+                flags |= (1 << 7)
+            }
+            if !filter.contains(.limitedNonUpgradable) {
+                flags |= (1 << 8)
+            }
+            if !filter.contains(.unique) {
+                flags |= (1 << 4)
+            }
+            return network.request(Api.functions.payments.getSavedStarGifts(flags: flags, peer: inputPeer, collectionId: collectionId, offset: initialNextOffset ?? "", limit: limit))
+            |> map(Optional.init)
+            |> `catch` { _ -> Signal<Api.payments.SavedStarGifts?, NoError> in
+                return .single(nil)
+            }
+            |> mapToSignal { result -> Signal<([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?), NoError> in
+                guard let result else {
+                    return .single(([], 0, nil, nil))
+                }
+                return postbox.transaction { transaction -> ([ProfileGiftsContext.State.StarGift], Int32, String?, Bool?) in
+                    switch result {
+                    case let .savedStarGifts(_, count, apiNotificationsEnabled, apiGifts, nextOffset, chats, users):
+                        let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                        updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
+                        
+                        var notificationsEnabled: Bool?
+                        if let apiNotificationsEnabled {
+                            if case .boolTrue = apiNotificationsEnabled {
+                                notificationsEnabled = true
+                            } else {
+                                notificationsEnabled = false
+                            }
+                        }
+                        
+                        let gifts = apiGifts.compactMap { ProfileGiftsContext.State.StarGift(apiSavedStarGift: $0, peerId: peerId, transaction: transaction) }
+                        return (gifts, count, nextOffset, notificationsEnabled)
+                    }
+                }
+            }
+        }
+        
+        self.disposable.set((signal
+        |> deliverOn(self.queue)).start(next: { [weak self] (gifts, count, nextOffset, notificationsEnabled) in
+            guard let self else {
+                return
+            }
+            if isFiltered {
+                if initialNextOffset == nil || reload {
+                    self.filteredGifts = gifts
+                } else {
+                    self.filteredGifts.append(contentsOf: gifts)
+                }
+                
+                let updatedCount = max(Int32(self.filteredGifts.count), count)
+                self.filteredCount = updatedCount
+                self.filteredDataState = .ready(canLoadMore: count != 0 && updatedCount > self.filteredGifts.count && nextOffset != nil, nextOffset: nextOffset)
+            } else {
+                if initialNextOffset == nil || reload {
+                    self.gifts = gifts
+                    self.cacheDisposable.set(self.account.postbox.transaction { transaction in
+                        if let entry = CodableEntry(CachedProfileGifts(gifts: gifts, count: count, notificationsEnabled: notificationsEnabled)) {
+                            transaction.putItemCacheEntry(id: giftsEntryId(peerId: peerId, collectionId: collectionId), entry: entry)
+                        }
+                    }.start())
+                } else {
+                    self.gifts.append(contentsOf: gifts)
+                }
+                
+                let updatedCount = max(Int32(self.gifts.count), count)
+                self.count = updatedCount
+                self.dataState = .ready(canLoadMore: count != 0 && updatedCount > self.gifts.count && nextOffset != nil, nextOffset: nextOffset)
+            }
+            
+            self.notificationsEnabled = notificationsEnabled
+            self.pushState()
+        }))
     }
     
     func updateStarGiftAddedToProfile(reference: StarGiftReference, added: Bool) {
@@ -1948,13 +2099,14 @@ public final class ProfileGiftsContext {
         }
         
         public static let unlimited = Filters(rawValue: 1 << 0)
-        public static let limited = Filters(rawValue: 1 << 1)
-        public static let unique = Filters(rawValue: 1 << 2)
-        public static let displayed = Filters(rawValue: 1 << 3)
-        public static let hidden = Filters(rawValue: 1 << 4)
+        public static let limitedUpgradable = Filters(rawValue: 1 << 1)
+        public static let limitedNonUpgradable = Filters(rawValue: 1 << 2)
+        public static let unique = Filters(rawValue: 1 << 3)
+        public static let displayed = Filters(rawValue: 1 << 4)
+        public static let hidden = Filters(rawValue: 1 << 5)
         
         public static var All: Filters {
-            return [.unlimited, .limited, .unique, .displayed, .hidden]
+            return [.unlimited, .limitedUpgradable, .limitedNonUpgradable, .unique, .displayed, .hidden]
         }
     }
     
@@ -1985,6 +2137,8 @@ public final class ProfileGiftsContext {
                 case canTransferDate
                 case canResaleDate
                 case collectionIds
+                case prepaidUpgradeHash
+                case upgradeSeparate
             }
             
             public let gift: TelegramCore.StarGift
@@ -2004,6 +2158,8 @@ public final class ProfileGiftsContext {
             public let canTransferDate: Int32?
             public let canResaleDate: Int32?
             public let collectionIds: [Int32]?
+            public let prepaidUpgradeHash: String?
+            public let upgradeSeparate: Bool
 
             fileprivate let _fromPeerId: EnginePeer.Id?
             
@@ -2028,7 +2184,9 @@ public final class ProfileGiftsContext {
                 transferStars: Int64?,
                 canTransferDate: Int32?,
                 canResaleDate: Int32?,
-                collectionIds: [Int32]?
+                collectionIds: [Int32]?,
+                prepaidUpgradeHash: String?,
+                upgradeSeparate: Bool
             ) {
                 self.gift = gift
                 self.reference = reference
@@ -2048,6 +2206,8 @@ public final class ProfileGiftsContext {
                 self.canTransferDate = canTransferDate
                 self.canResaleDate = canResaleDate
                 self.collectionIds = collectionIds
+                self.prepaidUpgradeHash = prepaidUpgradeHash
+                self.upgradeSeparate = upgradeSeparate
             }
             
             public init(from decoder: Decoder) throws {
@@ -2077,6 +2237,8 @@ public final class ProfileGiftsContext {
                 self.canTransferDate = try container.decodeIfPresent(Int32.self, forKey: .canTransferDate)
                 self.canResaleDate = try container.decodeIfPresent(Int32.self, forKey: .canResaleDate)
                 self.collectionIds = try container.decodeIfPresent([Int32].self, forKey: .collectionIds)
+                self.prepaidUpgradeHash = try container.decodeIfPresent(String.self, forKey: .prepaidUpgradeHash)
+                self.upgradeSeparate = try container.decodeIfPresent(Bool.self, forKey: .upgradeSeparate) ?? false
             }
             
             public func encode(to encoder: Encoder) throws {
@@ -2099,6 +2261,8 @@ public final class ProfileGiftsContext {
                 try container.encodeIfPresent(self.canTransferDate, forKey: .canTransferDate)
                 try container.encodeIfPresent(self.canResaleDate, forKey: .canResaleDate)
                 try container.encodeIfPresent(self.collectionIds, forKey: .collectionIds)
+                try container.encodeIfPresent(self.prepaidUpgradeHash, forKey: .prepaidUpgradeHash)
+                try container.encode(self.upgradeSeparate, forKey: .upgradeSeparate)
             }
             
             public func withGift(_ gift: TelegramCore.StarGift) -> StarGift {
@@ -2119,7 +2283,9 @@ public final class ProfileGiftsContext {
                     transferStars: self.transferStars,
                     canTransferDate: self.canTransferDate,
                     canResaleDate: self.canResaleDate,
-                    collectionIds: self.collectionIds
+                    collectionIds: self.collectionIds,
+                    prepaidUpgradeHash: self.prepaidUpgradeHash,
+                    upgradeSeparate: self.upgradeSeparate
                 )
             }
             
@@ -2141,7 +2307,9 @@ public final class ProfileGiftsContext {
                     transferStars: self.transferStars,
                     canTransferDate: self.canTransferDate,
                     canResaleDate: self.canResaleDate,
-                    collectionIds: self.collectionIds
+                    collectionIds: self.collectionIds,
+                    prepaidUpgradeHash: self.prepaidUpgradeHash,
+                    upgradeSeparate: self.upgradeSeparate
                 )
             }
             
@@ -2163,7 +2331,9 @@ public final class ProfileGiftsContext {
                     transferStars: self.transferStars,
                     canTransferDate: self.canTransferDate,
                     canResaleDate: self.canResaleDate,
-                    collectionIds: self.collectionIds
+                    collectionIds: self.collectionIds,
+                    prepaidUpgradeHash: self.prepaidUpgradeHash,
+                    upgradeSeparate: self.upgradeSeparate
                 )
             }
             fileprivate func withFromPeer(_ fromPeer: EnginePeer?) -> StarGift {
@@ -2184,7 +2354,9 @@ public final class ProfileGiftsContext {
                     transferStars: self.transferStars,
                     canTransferDate: self.canTransferDate,
                     canResaleDate: self.canResaleDate,
-                    collectionIds: self.collectionIds
+                    collectionIds: self.collectionIds,
+                    prepaidUpgradeHash: self.prepaidUpgradeHash,
+                    upgradeSeparate: self.upgradeSeparate
                 )
             }
             
@@ -2206,7 +2378,9 @@ public final class ProfileGiftsContext {
                     transferStars: self.transferStars,
                     canTransferDate: self.canTransferDate,
                     canResaleDate: self.canResaleDate,
-                    collectionIds: collectionIds
+                    collectionIds: collectionIds,
+                    prepaidUpgradeHash: self.prepaidUpgradeHash,
+                    upgradeSeparate: self.upgradeSeparate
                 )
             }
         }
@@ -2215,7 +2389,6 @@ public final class ProfileGiftsContext {
             case loading
             case ready(canLoadMore: Bool, nextOffset: String?)
         }
-        
         
         public var filter: Filters
         public var sorting: Sorting
@@ -2251,14 +2424,15 @@ public final class ProfileGiftsContext {
         peerId: EnginePeer.Id,
         collectionId: Int32? = nil,
         sorting: ProfileGiftsContext.Sorting = .date,
-        filter: ProfileGiftsContext.Filters = .All
+        filter: ProfileGiftsContext.Filters = .All,
+        limit: Int32 = 36
     ) {
         self.peerId = peerId
         self.collectionId = collectionId
         
         let queue = self.queue
         self.impl = QueueLocalObject(queue: queue, generate: {
-            return ProfileGiftsContextImpl(queue: queue, account: account, peerId: peerId, collectionId: collectionId, sorting: sorting, filter: filter)
+            return ProfileGiftsContextImpl(queue: queue, account: account, peerId: peerId, collectionId: collectionId, sorting: sorting, filter: filter, limit: limit)
         })
     }
     
@@ -2410,7 +2584,7 @@ public final class ProfileGiftsContext {
 extension ProfileGiftsContext.State.StarGift {
     init?(apiSavedStarGift: Api.SavedStarGift, peerId: EnginePeer.Id, transaction: Transaction) {
         switch apiSavedStarGift {
-        case let .savedStarGift(flags, fromId, date, apiGift, message, msgId, savedId, convertStars, upgradeStars, canExportDate, transferStars, canTransferAt, canResaleAt, collectionIds):
+        case let .savedStarGift(flags, fromId, date, apiGift, message, msgId, savedId, convertStars, upgradeStars, canExportDate, transferStars, canTransferAt, canResaleAt, collectionIds, prepaidUpgradeHash):
             guard let gift = StarGift(apiStarGift: apiGift) else {
                 return nil
             }
@@ -2457,6 +2631,8 @@ extension ProfileGiftsContext.State.StarGift {
             self.canTransferDate = canTransferAt
             self.canResaleDate = canResaleAt
             self.collectionIds = collectionIds
+            self.prepaidUpgradeHash = prepaidUpgradeHash
+            self.upgradeSeparate = (flags & (1 << 17)) != 0
         }
     }
 }
@@ -2498,9 +2674,9 @@ func _internal_getUniqueStarGift(account: Account, slug: String) -> Signal<StarG
     |> mapToSignal { result -> Signal<StarGift.UniqueGift?, NoError> in
         if let result = result {
             switch result {
-            case let .uniqueStarGift(gift, users):
+            case let .uniqueStarGift(gift, chats, users):
                 return account.postbox.transaction { transaction in
-                    let parsedPeers = AccumulatedPeers(users: users)
+                    let parsedPeers = AccumulatedPeers(chats: chats, users: users)
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: parsedPeers)
                     guard case let .unique(uniqueGift) = StarGift(apiStarGift: gift) else {
                         return nil
@@ -2510,6 +2686,41 @@ func _internal_getUniqueStarGift(account: Account, slug: String) -> Signal<StarG
             }
         } else {
             return .single(nil)
+        }
+    }
+}
+
+func _internal_getUniqueStarGiftValueInfo(account: Account, slug: String) -> Signal<StarGift.UniqueGift.ValueInfo?, NoError> {
+    return account.network.request(Api.functions.payments.getUniqueStarGiftValueInfo(slug: slug))
+    |> map(Optional.init)
+    |> `catch` { _ -> Signal<Api.payments.UniqueStarGiftValueInfo?, NoError> in
+        return .single(nil)
+    }
+    |> map { result -> StarGift.UniqueGift.ValueInfo? in
+        if let result {
+            switch result {
+            case let .uniqueStarGiftValueInfo(flags, currency, value, initialSaleDate, initialSaleStars, initialSalePrice, lastSaleDate, lastSalePrice, floorPrice, averagePrice, listedCount, fragmentListedCount, fragmentListedUrl):
+                let _ = listedCount
+                let _ = fragmentListedCount
+                return StarGift.UniqueGift.ValueInfo(
+                    isLastSaleOnFragment: flags & (1 << 1) != 0,
+                    valueIsAverage: flags & (1 << 6) != 0,
+                    value: value,
+                    currency: currency,
+                    initialSaleDate: initialSaleDate,
+                    initialSaleStars: initialSaleStars,
+                    initialSalePrice: initialSalePrice,
+                    lastSaleDate: lastSaleDate,
+                    lastSalePrice: lastSalePrice,
+                    floorPrice: floorPrice,
+                    averagePrice: averagePrice,
+                    listedCount: listedCount,
+                    fragmentListedCount: fragmentListedCount,
+                    fragmentListedUrl: fragmentListedUrl
+                )
+            }
+        } else {
+            return nil
         }
     }
 }

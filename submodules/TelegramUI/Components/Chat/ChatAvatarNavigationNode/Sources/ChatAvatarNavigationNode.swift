@@ -26,13 +26,13 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
     private var context: AccountContext?
     
     private let containerNode: ContextControllerSourceNode
-    public let avatarNode: AvatarNode
+    public var avatarNode: AvatarNode
     private var avatarVideoNode: AvatarVideoNode?
     
     public private(set) var avatarStoryView: ComponentView<Empty>?
     public var storyData: (hasUnseen: Bool, hasUnseenCloseFriends: Bool)?
     
-    public let statusView: ComponentView<Empty>
+    public var statusView: ComponentView<Empty>
     private var starView: StarView?
     
     private var cachedDataDisposable = MetaDisposable()
@@ -119,6 +119,13 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
     
     public func setPeer(context: AccountContext, theme: PresentationTheme, peer: EnginePeer?, authorOfMessage: MessageReference? = nil, overrideImage: AvatarNodeImageOverride? = nil, emptyColor: UIColor? = nil, clipStyle: AvatarNodeClipStyle = .round, synchronousLoad: Bool = false, displayDimensions: CGSize = CGSize(width: 60.0, height: 60.0), storeUnrounded: Bool = false) {
         self.context = context
+        
+        if let statusComponentView = self.statusView.view {
+            self.statusView = ComponentView()
+            statusComponentView.removeFromSuperview()
+        }
+        
+        self.avatarNode.isHidden = false
         self.avatarNode.setPeer(context: context, theme: theme, peer: peer, authorOfMessage: authorOfMessage, overrideImage: overrideImage, emptyColor: emptyColor, clipStyle: clipStyle, synchronousLoad: synchronousLoad, displayDimensions: displayDimensions, storeUnrounded: storeUnrounded)
         
         if let peer, peer.isSubscription {

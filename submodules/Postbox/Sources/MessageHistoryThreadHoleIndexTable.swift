@@ -113,7 +113,7 @@ final class MessageHistoryThreadHoleIndexTable: Table {
             postboxLog("MessageHistoryThreadHoleIndexTable: Initializing \(peerId) \(threadId)")
             self.metadataTable.setIsThreadHoleIndexInitialized(peerId: peerId, threadId: threadId)
             
-            if let messageNamespaces = self.seedConfiguration.messageThreadHoles[peerId.namespace] {
+            if let messageNamespaces = self.seedConfiguration.messageThreadHoles(peerId.namespace, threadId) {
                 for namespace in messageNamespaces {
                     var operations: [MessageHistoryIndexHoleOperationKey: [MessageHistoryIndexHoleOperation]] = [:]
                     self.add(peerId: peerId, threadId: threadId, namespace: namespace, space: .everywhere, range: 1 ... (Int32.max - 1), operations: &operations)

@@ -264,6 +264,8 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                 } else if case .joinedChannel = action.action {
                     result.append((message, ChatMessageJoinedChannelBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                     needReactions = false
+                } else if case let .setChatTheme(chatTheme) = action.action, case .gift = chatTheme {
+                    result.append((message, ChatMessageGiftBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else {
                     if !canAddMessageReactions(message: message, account: item.context.account) {
                         needReactions = false
@@ -977,6 +979,14 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         }
 
         process(node: self)
+    }
+    
+    override public func insertionAnimationDuration() -> Double? {
+        return nil
+    }
+    
+    override public func updateAnimationDuration() -> Double? {
+        return nil
     }
     
     override public func animateInsertion(_ currentTimestamp: Double, duration: Double, options: ListViewItemAnimationOptions) {
@@ -2754,7 +2764,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             }*/
                         
             var hasReply = replyMessage != nil || replyForward != nil || replyStory != nil
-            if !isInstantVideo, hasThreadInfo {
+            if !isInstantVideo && hasThreadInfo {
                 if let threadId = item.message.threadId, let replyMessage = replyMessage, Int64(replyMessage.id.id) == threadId {
                     hasReply = false
                 }
@@ -2784,6 +2794,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     headerSize.width = max(headerSize.width, threadInfoSizeApply.0.width + bubbleWidthInsets)
                     headerSize.height += threadInfoSizeApply.0.height + 5.0
                 }*/
+            }
+            if !isInstantVideo, hasReply, let threadId = item.message.threadId, let replyMessage, replyQuote == nil, case let .replyThread(replyThread) = item.chatLocation, replyThread.isChannelPost, replyMessage.id.id == Int32(clamping: threadId) {
+                hasReply = false
             }
             
             if !isInstantVideo, hasReply, (replyMessage != nil || replyForward != nil || replyStory != nil) {
@@ -2948,6 +2961,37 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
             let (minWidth, buttonsLayout) = actionButtonsLayout(item.context, item.presentationData.theme, item.presentationData.chatBubbleCorners, item.presentationData.strings, item.controllerInteraction.presentationContext.backgroundNode, replyMarkup, [:], item.message, maximumNodeWidth)
             maxContentWidth = max(maxContentWidth, minWidth)
             actionButtonsFinalize = buttonsLayout
+        } else if item.content.firstMessageAttributes.displayContinueThreadFooter {
+            var buttonValue: UInt8 = 3
+            let button = MemoryBuffer(data: Data(bytes: &buttonValue, count: 1))
+            
+            let customInfos: [MemoryBuffer: ChatMessageActionButtonsNode.CustomInfo] = [
+                button: ChatMessageActionButtonsNode.CustomInfo(
+                    isEnabled: true,
+                    icon: .actionArrow
+                ),
+            ]
+            
+            //TODO:localize
+            let (minWidth, buttonsLayout) = actionButtonsLayout(
+                item.context,
+                item.presentationData.theme,
+                item.presentationData.chatBubbleCorners,
+                item.presentationData.strings,
+                item.controllerInteraction.presentationContext.backgroundNode,
+                ReplyMarkupMessageAttribute(
+                    rows: [
+                        ReplyMarkupRow(buttons: [
+                            ReplyMarkupButton(title: "Continue last thread", titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: button))
+                        ])
+                    ],
+                    flags: [],
+                    placeholder: nil
+            ), customInfos, item.message, baseWidth)
+            maxContentWidth = max(maxContentWidth, minWidth)
+            actionButtonsFinalize = buttonsLayout
+            
+            lastNodeTopPosition = .None(.Both)
         }
         
         var reactionButtonsFinalize: ((CGFloat) -> (CGSize, (_ animation: ListViewItemUpdateAnimation) -> ChatMessageReactionButtonsNode))?
@@ -4544,6 +4588,13 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         }
                         
                         strongSelf.internalUpdateLayout()
+                    }
+                    contentNode.requestFullUpdate = { [weak strongSelf] in
+                        guard let strongSelf, let item = strongSelf.item else {
+                            return
+                        }
+                        
+                        item.controllerInteraction.requestMessageUpdate(item.message.id, false)
                     }
                 }
             }

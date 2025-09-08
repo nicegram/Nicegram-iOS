@@ -161,7 +161,7 @@ ASLayoutElementStyleExtensibilityForwarding
     // Use tiny descriptions because these trees can get nested very deep.
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400
 #pragma clang diagnostic push
-#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 180500
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
 #endif
 #endif
@@ -301,7 +301,7 @@ ASSynthesizeLockingMethodsWithMutex(__instanceLock__)
   const auto count = children.count;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 180400
 #pragma clang diagnostic push
-#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 180500
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
 #endif
 #endif

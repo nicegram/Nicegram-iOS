@@ -387,7 +387,7 @@ public class ChatMessageWallpaperBubbleContentNode: ChatMessageBubbleContentNode
                                         updateImageSignal = patternWallpaperImage(account: item.context.account, accountManager: item.context.sharedContext.accountManager, representations: representations, mode: .thumbnail)
                                         |> mapToSignal { value -> Signal<(TransformImageArguments) -> DrawingContext?, NoError> in
                                             if let value {
-                                                return .single(value)
+                                                return .single(value.generator)
                                             } else {
                                                 return .complete()
                                             }

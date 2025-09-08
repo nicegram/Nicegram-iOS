@@ -10,7 +10,7 @@ func _internal_applyMaxReadIndexInteractively(postbox: Postbox, stateManager: Ac
     }
 }
     
-func _internal_applyMaxReadIndexInteractively(transaction: Transaction, stateManager: AccountStateManager, index: MessageIndex)  {
+func _internal_applyMaxReadIndexInteractively(transaction: Transaction, stateManager: AccountStateManager, index: MessageIndex) {
     let messageIds = transaction.applyInteractiveReadMaxIndex(index)
     
     if let channel = transaction.getPeer(index.id.peerId) as? TelegramChannel, channel.isForumOrMonoForum {
@@ -55,7 +55,7 @@ func _internal_applyMaxReadIndexInteractively(transaction: Transaction, stateMan
                                         return currentAttribute
                                     }
                                 })
-                                return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: currentMessage.media))
+                                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: currentMessage.media))
                             })
                         }
                         break
@@ -123,7 +123,7 @@ func applySecretOutgoingMessageReadActions(transaction: Transaction, id: Message
                                     return currentAttribute
                                 }
                             })
-                            return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: currentMessage.media))
+                            return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: currentMessage.media))
                         })
                     }
                     break
@@ -305,6 +305,12 @@ func _internal_togglePeerUnreadMarkInteractively(transaction: Transaction, netwo
             if setToValue == nil || setToValue! {
                 transaction.applyMarkUnread(peerId: peerId, namespace: principalNamespace, value: true, interactive: true)
             }
+        }
+    }
+    
+    if let user = peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum) {
+        if let cachedData = transaction.getPeerCachedData(peerId: user.id) as? CachedUserData, case let .known(linkedBotChannelId) = cachedData.linkedBotChannelId, let linkedBotChannelId {
+            _internal_togglePeerUnreadMarkInteractively(transaction: transaction, network: network, viewTracker: viewTracker, peerId: linkedBotChannelId, setToValue: false)
         }
     }
 }

@@ -127,7 +127,7 @@ public class UnauthorizedAccount {
                     if let nextType = nextType {
                         parsedNextType = AuthorizationCodeNextType(apiType: nextType)
                     }
-                    if let state = transaction.getState() as? UnauthorizedAccountState, case let .payment(phoneNumber, _, _, syncContacts) = state.contents {
+                    if let state = transaction.getState() as? UnauthorizedAccountState, case let .payment(phoneNumber, _, _, _, _, syncContacts) = state.contents {
                         transaction.setState(UnauthorizedAccountState(isTestingEnvironment: testingEnvironment, masterDatacenterId: masterDatacenterId, contents: .confirmationCodeEntry(number: phoneNumber, type: SentAuthorizationCodeType(apiType: type), hash: phoneCodeHash, timeout: codeTimeout, nextType: parsedNextType, syncContacts: syncContacts, previousCodeEntry: nil, usePrevious: false)))
                     }
                 }).start()
@@ -136,7 +136,7 @@ public class UnauthorizedAccount {
                 case let .authorization(_, _, _, futureAuthToken, user):
                     let _ = postbox.transaction({ [weak self] transaction in
                         var syncContacts = true
-                        if let state = transaction.getState() as? UnauthorizedAccountState, case let .payment(_, _, _, syncContactsValue) = state.contents {
+                        if let state = transaction.getState() as? UnauthorizedAccountState, case let .payment(_, _, _, _, _, syncContactsValue) = state.contents {
                             syncContacts = syncContactsValue
                         }
                         
@@ -162,7 +162,7 @@ public class UnauthorizedAccount {
                 case let .authorizationSignUpRequired(_, termsOfService):
                     let _ = postbox.transaction({ [weak self] transaction in
                         if let self {
-                            if let state = transaction.getState() as? UnauthorizedAccountState, case let .payment(number, codeHash, _, syncContacts) = state.contents {
+                            if let state = transaction.getState() as? UnauthorizedAccountState, case let .payment(number, codeHash, _, _, _, syncContacts) = state.contents {
                                 let _ = beginSignUp(
                                     account: self,
                                     data: AuthorizationSignUpData(

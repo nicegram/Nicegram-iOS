@@ -2213,6 +2213,7 @@ public protocol ContextExtractedContentSource: AnyObject {
     var keepDefaultContentTouches: Bool { get }
     var blurBackground: Bool { get }
     var shouldBeDismissed: Signal<Bool, NoError> { get }
+    var additionalInsets: UIEdgeInsets { get }
     
     var actionsHorizontalAlignment: ContextActionsHorizontalAlignment { get }
     
@@ -2235,6 +2236,10 @@ public extension ContextExtractedContentSource {
     
     var adjustContentForSideInset: Bool {
         return false
+    }
+    
+    var additionalInsets: UIEdgeInsets {
+        return .zero
     }
     
     var actionsHorizontalAlignment: ContextActionsHorizontalAlignment {

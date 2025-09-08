@@ -5,12 +5,12 @@ import SwiftSignalKit
 import UniversalMediaPlayer
 import AccountContext
 
-private func internalMessageFileMediaPlaybackStatus(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isGlobalSearch: Bool, isDownloadList: Bool) -> Signal<MediaPlayerStatus?, NoError> {
+private func internalMessageFileMediaPlaybackStatus(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isGlobalSearch: Bool, isDownloadList: Bool, isSavedMusic: Bool) -> Signal<MediaPlayerStatus?, NoError> {
     guard let playerType = peerMessageMediaPlayerType(message) else {
         return .single(nil)
     }
     
-    if let (playlistId, itemId) = peerMessagesMediaPlaylistAndItemId(message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList) {
+    if let (playlistId, itemId) = peerMessagesMediaPlaylistAndItemId(message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList, isSavedMusic: isSavedMusic) {
         return context.sharedContext.mediaManager.filteredPlaylistState(accountId: context.account.id, playlistId: playlistId, itemId: itemId, type: playerType)
         |> mapToSignal { state -> Signal<MediaPlayerStatus?, NoError> in
             return .single(state?.status)
@@ -20,32 +20,32 @@ private func internalMessageFileMediaPlaybackStatus(context: AccountContext, fil
     }
 }
 
-public func messageFileMediaPlaybackStatus(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isGlobalSearch: Bool, isDownloadList: Bool) -> Signal<MediaPlayerStatus, NoError> {
+public func messageFileMediaPlaybackStatus(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isGlobalSearch: Bool, isDownloadList: Bool, isSavedMusic: Bool) -> Signal<MediaPlayerStatus, NoError> {
     var duration = 0.0
     if let value = file.duration {
         duration = Double(value)
     }
     let defaultStatus = MediaPlayerStatus(generationTimestamp: 0.0, duration: duration, dimensions: CGSize(), timestamp: 0.0, baseRate: 1.0, seekId: 0, status: .paused, soundEnabled: true)
-    return internalMessageFileMediaPlaybackStatus(context: context, file: file, message: message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList)
+    return internalMessageFileMediaPlaybackStatus(context: context, file: file, message: message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList, isSavedMusic: isSavedMusic)
     |> map { status in
         return status ?? defaultStatus
     }
 }
 
-public func messageFileMediaPlaybackAudioLevelEvents(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isGlobalSearch: Bool, isDownloadList: Bool) -> Signal<Float, NoError> {
+public func messageFileMediaPlaybackAudioLevelEvents(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isGlobalSearch: Bool, isDownloadList: Bool, isSavedMusic: Bool) -> Signal<Float, NoError> {
     guard let playerType = peerMessageMediaPlayerType(message) else {
         return .never()
     }
     
-    if let (playlistId, itemId) = peerMessagesMediaPlaylistAndItemId(message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList) {
+    if let (playlistId, itemId) = peerMessagesMediaPlaylistAndItemId(message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList, isSavedMusic: isSavedMusic) {
         return context.sharedContext.mediaManager.filteredPlayerAudioLevelEvents(accountId: context.account.id, playlistId: playlistId, itemId: itemId, type: playerType)
     } else {
         return .never()
     }
 }
 
-public func messageFileMediaResourceStatus(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isSharedMedia: Bool = false, isGlobalSearch: Bool = false, isDownloadList: Bool = false) -> Signal<FileMediaResourceStatus, NoError> {
-    let playbackStatus = internalMessageFileMediaPlaybackStatus(context: context, file: file, message: message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList) |> map { status -> MediaPlayerPlaybackStatus? in
+public func messageFileMediaResourceStatus(context: AccountContext, file: TelegramMediaFile, message: EngineMessage, isRecentActions: Bool, isSharedMedia: Bool = false, isGlobalSearch: Bool = false, isDownloadList: Bool = false, isSavedMusic: Bool = false) -> Signal<FileMediaResourceStatus, NoError> {
+    let playbackStatus = internalMessageFileMediaPlaybackStatus(context: context, file: file, message: message, isRecentActions: isRecentActions, isGlobalSearch: isGlobalSearch, isDownloadList: isDownloadList, isSavedMusic: isSavedMusic) |> map { status -> MediaPlayerPlaybackStatus? in
         return status?.status
     }
     

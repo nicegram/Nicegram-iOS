@@ -2061,7 +2061,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
         }
         
         var defaultFoundRemoteMessagesSignal: Signal<([FoundRemoteMessages], Bool), NoError> = .single(([FoundRemoteMessages(messages: [], readCounters: [:], threadsData: [:], totalCount: 0)], false))
-        if key == .globalPosts {
+        if key == .globalPosts, let data = context.currentAppConfiguration.with({ $0 }).data, let value = data["ios_load_empty_global_posts"] as? Double, value != 0.0 {
             let searchSignal = context.engine.messages.searchMessages(location: .general(scope: .globalPosts(allowPaidStars: nil), tags: nil, minDate: nil, maxDate: nil), query: "", state: nil, limit: 50)
             |> map { resultData -> ChatListSearchMessagesResult in
                 let (result, updatedState) = resultData
@@ -2580,7 +2580,9 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
                 foundRemotePeers = .single(([], [], [], false))
             }
             let searchLocations: [SearchMessagesLocation]
-            if let options = options {
+            if key == .globalPosts {
+                searchLocations = [SearchMessagesLocation.general(scope: .globalPosts(allowPaidStars: approvedGlobalPostQueryState?.price), tags: nil, minDate: nil, maxDate: nil)]
+            } else if let options = options {
                 if case let .forum(peerId) = location {
                     searchLocations = [.peer(peerId: peerId, fromId: nil, tags: tagMask, reactions: nil, threadId: nil, minDate: options.date?.0, maxDate: options.date?.1), .general(scope: .everywhere, tags: tagMask, minDate: options.date?.0, maxDate: options.date?.1)]
                 } else if let (peerId, _, _) = options.peer {
@@ -3527,7 +3529,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
             } else {
                 playlistLocation = .custom(messages: foundMessages |> map { message, a, b in
                     return (message.map { $0._asMessage() }, a, b)
-                }, at: message.id, loadMore: {
+                }, canReorder: false, at: message.id, loadMore: {
                     loadMore()
                 })
             }
@@ -6187,6 +6189,7 @@ private final class EmptyResultsButtonSearchContent: Component {
         }
         
         func update(component: EmptyResultsButtonSearchContent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+            let sideInset: CGFloat = 8.0
             let iconSpacing: CGFloat = 2.0
             let arrowSpacing: CGFloat = 4.0
             
@@ -6235,7 +6238,7 @@ private final class EmptyResultsButtonSearchContent: Component {
                     text: .plain(string)
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - iconSize.width - iconSpacing - arrowSize.width - arrowSpacing, height: 100.0)
+                containerSize: CGSize(width: availableSize.width - iconSize.width - iconSpacing - arrowSize.width - arrowSpacing - sideInset * 2.0, height: 100.0)
             )
             let textFrame = CGRect(origin: CGPoint(x: iconSize.width + iconSpacing, y: 0.0), size: textSize)
             if let textView = self.text.view {

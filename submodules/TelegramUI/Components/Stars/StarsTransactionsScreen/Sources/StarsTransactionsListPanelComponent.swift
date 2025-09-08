@@ -299,7 +299,7 @@ final class StarsTransactionsListPanelComponent: Component {
                     var itemTitle: String
                     let itemSubtitle: String?
                     var itemDate: String
-                    var itemPeer = item.peer
+                    var itemPeer: StarsAvatarComponent.Peer = .transactionPeer(item.peer)
                     var itemFile: TelegramMediaFile?
                     var uniqueGift: StarGift.UniqueGift?
                     switch item.peer {
@@ -307,6 +307,10 @@ final class StarsTransactionsListPanelComponent: Component {
                         if let months = item.premiumGiftMonths {
                             itemTitle = peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)
                             itemSubtitle = environment.strings.Stars_Intro_Transaction_TelegramPremium(months)
+                        } else if item.flags.contains(.isPostsSearch) {
+                            itemTitle = environment.strings.Stars_Intro_Transaction_SearchFee
+                            itemSubtitle = ""
+                            itemPeer = .search
                         } else if item.flags.contains(.isPaidMessage) {
                             itemTitle = peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)
                             itemSubtitle = environment.strings.Stars_Intro_Transaction_PaidMessage(item.paidMessageCount ?? 1)
@@ -371,7 +375,7 @@ final class StarsTransactionsListPanelComponent: Component {
                             if item.flags.contains(.isGift) {
                                 itemTitle = environment.strings.Stars_Intro_Transaction_Gift_UnknownUser
                                 itemSubtitle = environment.strings.Stars_Intro_Transaction_Gift_Title
-                                itemPeer = .fragment
+                                itemPeer = .transactionPeer(.fragment)
                             } else {
                                 if (item.count.amount.value < 0 && !item.flags.contains(.isRefund)) || (item.count.amount.value > 0 && item.flags.contains(.isRefund)) {
                                     itemTitle = environment.strings.Stars_Intro_Transaction_FragmentWithdrawal_Title

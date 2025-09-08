@@ -522,7 +522,7 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
             accountPeer: nil
         )
         
-        let entryAttributes = ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil)
+        let entryAttributes = ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)
         
         let items = self.messages.map { message -> ChatMessageBubbleContentItem in
             return ChatMessageBubbleContentItem(

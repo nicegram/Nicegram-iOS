@@ -134,6 +134,7 @@ public final class GiftItemComponent: Component {
         case preview
         case grid
         case select
+        case buttonIcon
     }
     
     let context: AccountContext
@@ -153,6 +154,7 @@ public final class GiftItemComponent: Component {
     let isSelected: Bool
     let isPinned: Bool
     let isEditing: Bool
+    let isDateLocked: Bool
     let mode: Mode
     let action: (() -> Void)?
     let contextAction: ((UIView, ContextGesture) -> Void)?
@@ -175,6 +177,7 @@ public final class GiftItemComponent: Component {
         isSelected: Bool = false,
         isPinned: Bool = false,
         isEditing: Bool = false,
+        isDateLocked: Bool = false,
         mode: Mode = .generic,
         action: (() -> Void)? = nil,
         contextAction: ((UIView, ContextGesture) -> Void)? = nil
@@ -196,6 +199,7 @@ public final class GiftItemComponent: Component {
         self.isSelected = isSelected
         self.isPinned = isPinned
         self.isEditing = isEditing
+        self.isDateLocked = isDateLocked
         self.mode = mode
         self.action = action
         self.contextAction = contextAction
@@ -253,6 +257,9 @@ public final class GiftItemComponent: Component {
         if lhs.isEditing != rhs.isEditing {
             return false
         }
+        if lhs.isDateLocked != rhs.isDateLocked {
+            return false
+        }
         if lhs.mode != rhs.mode {
             return false
         }
@@ -297,6 +304,7 @@ public final class GiftItemComponent: Component {
         private var iconBackground: UIVisualEffectView?
         private var hiddenIcon: UIImageView?
         private var pinnedIcon: UIImageView?
+        private var dateLockedIcon: UIImageView?
         
         private var resellBackground: BlurredBackgroundView?
         private let reselLabel = ComponentView<Empty>()
@@ -375,6 +383,10 @@ public final class GiftItemComponent: Component {
                 size = availableSize
                 iconSize = CGSize(width: floor(size.width * 0.6), height: floor(size.width * 0.6))
                 cornerRadius = 4.0
+            case .buttonIcon:
+                size = CGSize(width: 26.0, height: 26.0)
+                iconSize = size
+                cornerRadius = 0.0
             }
             var backgroundSize = size
             if case .grid = component.mode {
@@ -464,7 +476,7 @@ public final class GiftItemComponent: Component {
                         break
                     }
                 }
-                
+                                
                 if let animationFile {
                     emoji = ChatTextInputTextCustomEmojiAttribute(
                         interactivelySelectedFromPackId: nil,
@@ -474,6 +486,13 @@ public final class GiftItemComponent: Component {
                 } else {
                     emoji = nil
                 }
+            }
+            
+            if case .buttonIcon = component.mode {
+                backgroundColor = nil
+                secondBackgroundColor = nil
+                patternColor = nil
+                placeholderColor = component.theme.list.mediaPlaceholderColor
             }
             
             var animationTransition = transition
@@ -889,6 +908,22 @@ public final class GiftItemComponent: Component {
                     pinnedIcon.removeFromSuperview()
                 })
                 pinnedIcon.layer.animateScale(from: 1.0, to: 0.01, duration: 0.2, removeOnCompletion: false)
+            }
+            
+            if component.isDateLocked {
+                let dateLockedIcon: UIImageView
+                if let currentIcon = self.dateLockedIcon {
+                    dateLockedIcon = currentIcon
+                } else {
+                    dateLockedIcon = UIImageView(image: UIImage(bundleImageName: "Peer Info/DateLockedIcon")?.withRenderingMode(.alwaysTemplate))
+                    self.dateLockedIcon = dateLockedIcon
+                    self.addSubview(dateLockedIcon)
+                }
+                dateLockedIcon.frame = CGRect(origin: CGPoint(x: 3.0, y: 3.0), size: CGSize(width: 24.0, height: 24.0))
+                dateLockedIcon.tintColor = component.theme.list.itemDestructiveColor
+            } else if let dateLockedIcon = self.dateLockedIcon {
+                self.dateLockedIcon = nil
+                dateLockedIcon.removeFromSuperview()
             }
                         
             if component.isHidden && !component.isEditing {

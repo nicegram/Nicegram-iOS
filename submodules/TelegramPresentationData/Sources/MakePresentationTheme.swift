@@ -61,11 +61,34 @@ public func makePresentationTheme(cloudTheme: TelegramTheme, dark: Bool = false)
     } else {
         settings = nil
     }
-    guard let settings = settings else {
+    guard let settings else {
         return nil
     }
     let defaultTheme = makeDefaultPresentationTheme(reference: PresentationBuiltinThemeReference(baseTheme: settings.baseTheme), extendingThemeReference: .cloud(PresentationCloudTheme(theme: cloudTheme, resolvedWallpaper: nil, creatorAccountId: nil)), serviceBackgroundColor: nil, preview: false)
     return customizePresentationTheme(defaultTheme, editing: true, accentColor: UIColor(argb: settings.accentColor), outgoingAccentColor: settings.outgoingAccentColor.flatMap { UIColor(argb: $0) }, backgroundColors: [], bubbleColors: settings.messageColors, animateBubbleColors: settings.animateMessageColors, wallpaper: settings.wallpaper)
+}
+
+public func makePresentationTheme(chatTheme: ChatTheme, dark: Bool = false) -> PresentationTheme? {
+    guard case let .gift(_, themeSettings) = chatTheme else {
+        return nil
+    }
+    let settings: TelegramThemeSettings?
+    if let exactSettings = themeSettings.first(where: { dark ? ($0.baseTheme == .night || $0.baseTheme == .tinted) : ($0.baseTheme == .classic || $0.baseTheme == .day) }) {
+        settings = exactSettings
+    } else if let firstSettings = themeSettings.first {
+        settings = firstSettings
+    } else {
+        settings = nil
+    }
+    guard let settings else {
+        return nil
+    }
+    let defaultTheme = makeDefaultPresentationTheme(reference: PresentationBuiltinThemeReference(baseTheme: settings.baseTheme), serviceBackgroundColor: nil, preview: false)
+    let theme = customizePresentationTheme(defaultTheme, editing: false, accentColor: UIColor(rgb: settings.accentColor), outgoingAccentColor: settings.outgoingAccentColor.flatMap { UIColor(rgb: $0) }, backgroundColors: [], bubbleColors: settings.messageColors, animateBubbleColors: settings.animateMessageColors, wallpaper: settings.wallpaper)
+    if case let .gift(starGiftValue, _) = chatTheme {
+        theme.starGift = starGiftValue
+    }
+    return theme
 }
 
 public func makePresentationTheme(cloudTheme: TelegramTheme, baseTheme: TelegramBaseTheme? = nil) -> PresentationTheme? {

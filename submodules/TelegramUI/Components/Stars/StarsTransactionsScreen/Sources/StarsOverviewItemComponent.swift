@@ -89,8 +89,8 @@ final class StarsOverviewItemComponent: Component {
                 valueOffset += icon.size.width
             }
             
-            let valueString = formatStarsAmountText(component.value.amount, dateTimeFormat: component.dateTimeFormat)
-            let usdValueString = formatTonUsdValue(component.value.amount.value, divide: false, rate: component.rate, dateTimeFormat: component.dateTimeFormat)
+            let valueString = formatCurrencyAmountText(component.value, dateTimeFormat: component.dateTimeFormat, maxDecimalPositions: nil)
+            let usdValueString = formatTonUsdValue(component.value.amount.value, divide: component.value.currency == .ton, rate: component.rate, dateTimeFormat: component.dateTimeFormat)
             
             let valueSize = self.value.update(
                 transition: .immediate,

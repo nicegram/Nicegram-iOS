@@ -1979,6 +1979,8 @@ class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDelegate, Ch
                             } else if let channel = peer as? TelegramChannel, channel.isForumOrMonoForum, let forumTopicData = interfaceState.forumTopicData {
                                 if let replyMessage = interfaceState.replyMessage, let threadInfo = replyMessage.associatedThreadInfo {
                                     placeholder = interfaceState.strings.Chat_InputPlaceholderReplyInTopic(threadInfo.title).string
+                                } else if let _ = channel.linkedBotId, interfaceState.chatLocation.threadId == nil {
+                                    placeholder = interfaceState.strings.Conversation_InputTextPlaceholder
                                 } else {
                                     placeholder = interfaceState.strings.Chat_InputPlaceholderMessageInTopic(forumTopicData.title).string
                                 }

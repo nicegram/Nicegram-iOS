@@ -449,7 +449,7 @@ class UserManager final : public Actor {
 
   void on_deleted_contacts(const vector<UserId> &deleted_contact_user_ids);
 
-  int32 get_imported_contact_count(Promise<Unit> &&promise);
+  void get_imported_contact_count(Promise<int32> &&promise);
 
   std::pair<vector<UserId>, vector<int32>> change_imported_contacts(vector<Contact> &contacts, int64 &random_id,
                                                                     Promise<Unit> &&promise);
@@ -752,8 +752,8 @@ class UserManager final : public Actor {
   class UserLogEvent;
   class SecretChatLogEvent;
 
-  static constexpr int32 MAX_GET_PROFILE_PHOTOS = 100;  // server side limit
-  static constexpr size_t MAX_NAME_LENGTH = 64;         // server side limit for first/last name
+  static constexpr int32 MAX_GET_PROFILE_PHOTOS = 100;  // server-side limit
+  static constexpr size_t MAX_NAME_LENGTH = 64;         // server-side limit for first/last name
 
   static constexpr int32 MAX_ACTIVE_STORY_ID_RELOAD_TIME = 3600;  // some reasonable limit
 

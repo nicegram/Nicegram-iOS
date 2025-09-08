@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tkey/curvelib.swift",
       "state" : {
-        "revision" : "9f88bd5e56d1df443a908f7a7e81ae4f4d9170ea",
-        "version" : "1.0.1"
+        "revision" : "432bf1abe7ff505fc2ac9fcf697341ff5b2dc6d0",
+        "version" : "2.0.0"
       }
     },
     {
@@ -84,10 +84,10 @@
     {
       "identity" : "fetch-node-details-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/torusresearch/fetch-node-details-swift.git",
+      "location" : "https://github.com/torusresearch/fetch-node-details-swift",
       "state" : {
-        "revision" : "4bd96c33ba8d02d9e27190c5c7cedf09cfdfd656",
-        "version" : "6.0.3"
+        "revision" : "5b42dd1675f8a51ffe64feb688db7b1d764d5fc0",
+        "version" : "8.0.1"
       }
     },
     {
@@ -95,8 +95,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "fdc352fabaf5916e7faa1f96ad02b1957e93e5a5",
-        "version" : "11.15.0"
+        "revision" : "e2a3c3fbcaa1df3fd549b5b3f1175bc8a11912fd",
+        "version" : "12.2.0"
       }
     },
     {
@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "1d2e3a0304d5d56bae7d0c0bb861921374390bb0",
-        "version" : "2.8.8"
+        "revision" : "a2646dd2704656fa5a679af68953249a70c77f40",
+        "version" : "3.0.1"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "45ce435e9406d3c674dd249a042b932bee006f60",
-        "version" : "11.15.0"
+        "revision" : "1c7edd5cc6e4ad22d2b81166bb9b208b9e63058a",
+        "version" : "12.2.0"
       }
     },
     {
@@ -167,8 +167,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/gtm-session-fetcher.git",
       "state" : {
-        "revision" : "c756a29784521063b6a1202907e2cc47f41b667c",
-        "version" : "4.5.0"
+        "revision" : "fb7f2740b1570d2f7599c6bb9531bf4fad6974b7",
+        "version" : "5.0.0"
       }
     },
     {
@@ -178,6 +178,15 @@
       "state" : {
         "revision" : "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
         "version" : "101.0.0"
+      }
+    },
+    {
+      "identity" : "jwtdecode.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/auth0/JWTDecode.swift.git",
+      "state" : {
+        "revision" : "36a5ce735a61c4bc119593f43ce2c027b4ca7392",
+        "version" : "3.3.0"
       }
     },
     {
@@ -231,7 +240,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "aee494b079b18e24859b8c44af9302af216d5210"
+        "revision" : "5a167e4d281284327607607e794d422248916fb7"
       }
     },
     {
@@ -240,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "c8cf36e82fdaed960322e9d1e9c8add21689ccb1"
+        "revision" : "1d92d47d2cacba843936663f290a261e09aeba46"
       }
     },
     {
@@ -275,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "6baeee45ad83d2c11ab5b95b10cbb9742edd1a3d",
-        "version" : "6.11.2"
+        "revision" : "8263c4223a6d09fd172cdf7c389b73e1422b89cb",
+        "version" : "6.11.3"
       }
     },
     {
@@ -284,8 +293,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "b62cb63bf4ed1f04c961a56c9c6c9d5ab8524ec6",
-        "version" : "5.21.1"
+        "revision" : "34cf2423a2c4088d06a3b08655603b5bc3eeeb3a",
+        "version" : "5.21.2"
       }
     },
     {
@@ -293,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Web3Auth/session-manager-swift.git",
       "state" : {
-        "revision" : "67d5f7db655d02778861057fb280ecf47c923b09",
-        "version" : "5.0.0"
+        "revision" : "de18a6b3d98f67b3c77f84ebab73f7a51807a503",
+        "version" : "6.1.0"
       }
     },
     {
@@ -302,8 +311,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Web3Auth/single-factor-auth-swift.git",
       "state" : {
-        "revision" : "44e222ea3fcec4faf17c5813f832cfc1d2d06d4b",
-        "version" : "8.0.0"
+        "revision" : "b1da4f048dc77771e806e8fe09b5d8cca5d3049a",
+        "version" : "9.1.0"
       }
     },
     {
@@ -392,8 +401,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-numerics.git",
       "state" : {
-        "revision" : "e0ec0f5f3af6f3e4d5e7a19d2af26b481acb6ba8",
-        "version" : "1.0.3"
+        "revision" : "bbadd4b853a33fd78c4ae977d17bb2af15eb3f2a",
+        "version" : "1.1.0"
       }
     },
     {
@@ -473,8 +482,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tkey/tkey-ios.git",
       "state" : {
-        "revision" : "c107450f0675351a9a1eaaefe60bcfa285ff1f9e",
-        "version" : "0.2.1"
+        "revision" : "384f5d911dbb4d28aadbcd4f20f16dcf0fede27d",
+        "version" : "2.0.0"
       }
     },
     {
@@ -500,8 +509,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/torusresearch/torus-utils-swift.git",
       "state" : {
-        "revision" : "0ac2810afef07283ae324eb1a2b17c5d6f7511d6",
-        "version" : "9.0.2"
+        "revision" : "235a70839d3ff5723402df95d665b15b8c551ad8",
+        "version" : "10.0.1"
       }
     },
     {

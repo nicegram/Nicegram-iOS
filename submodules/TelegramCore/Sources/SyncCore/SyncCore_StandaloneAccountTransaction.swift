@@ -10,13 +10,6 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
         ]
     }
     
-    var messageThreadHoles: [PeerId.Namespace: [MessageId.Namespace]] = [:]
-    for peerNamespace in peerIdNamespacesWithInitialCloudMessageHoles {
-        messageThreadHoles[peerNamespace] = [
-            Namespaces.Message.Cloud
-        ]
-    }
-    
     // To avoid upgrading the database, **new** tags can be added here
     // Uninitialized peers will fill the info using messageHoles
     var upgradedMessageHoles: [PeerId.Namespace: [MessageId.Namespace: Set<MessageTags>]] = [:]
@@ -42,7 +35,15 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
         ),
         messageHoles: messageHoles,
         upgradedMessageHoles: upgradedMessageHoles,
-        messageThreadHoles: messageThreadHoles,
+        messageThreadHoles: { peerIdNamespace, threadId in
+            if threadId == Message.newTopicThreadId {
+                return nil
+            }
+            if peerIdNamespacesWithInitialCloudMessageHoles.contains(peerIdNamespace) {
+                return [Namespaces.Message.Cloud]
+            }
+            return nil
+        },
         existingMessageTags: MessageTags.all,
         messageTagsWithSummary: [.unseenPersonalMessage, .pinned, .video, .photo, .gif, .music, .voiceOrInstantVideo, .webPage, .file, .unseenReaction],
         messageTagsWithThreadSummary: [.unseenPersonalMessage, .unseenReaction],
@@ -76,10 +77,14 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
         peerSummaryIsThreadBased: { peer, associatedPeer in
             if let channel = peer as? TelegramChannel {
                 if channel.flags.contains(.isForum) {
-                    if channel.flags.contains(.displayForumAsTabs) {
-                        return (false, false)
-                    } else {
+                    if channel.linkedBotId != nil {
                         return (true, false)
+                    } else {
+                        if channel.flags.contains(.displayForumAsTabs) {
+                            return (false, false)
+                        } else {
+                            return (true, false)
+                        }
                     }
                 } else if channel.flags.contains(.isMonoforum) {
                     if let associatedPeer = associatedPeer as? TelegramChannel, associatedPeer.hasPermission(.manageDirect) {
@@ -182,6 +187,14 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
                 }
             }
             return false
+        },
+        decodeAssociatedChatListPeerId: { cachedData in
+            if let cachedData = cachedData as? CachedUserData {
+                if case let .known(value) = cachedData.linkedBotChannelId {
+                    return value
+                }
+            }
+            return nil
         },
         isPeerUpgradeMessage: { message in
             for media in message.media {

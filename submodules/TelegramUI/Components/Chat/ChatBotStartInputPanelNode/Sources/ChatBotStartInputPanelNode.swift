@@ -122,7 +122,7 @@ public final class ChatBotStartInputPanelNode: ChatInputPanelNode {
         
         self.button.frame = CGRect(origin: CGPoint(x: leftInset + floor((width - leftInset - rightInset - buttonSize.width) / 2.0), y: 8.0), size: buttonSize)
         
-        if !self.tooltipDismissed, let context = self.context {
+        if !self.tooltipDismissed, let context = self.context, let user = self.presentationInterfaceState?.renderedPeer?.peer as? TelegramUser, let botInfo = user.botInfo, !botInfo.flags.contains(.hasForum) {
             let absoluteFrame = self.button.view.convert(self.button.bounds, to: nil)
             let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: absoluteFrame.minY - 1.0), size: CGSize())
             

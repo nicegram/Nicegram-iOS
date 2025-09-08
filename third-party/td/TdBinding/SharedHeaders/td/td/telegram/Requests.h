@@ -94,7 +94,11 @@ class Requests {
 
   Promise<string> create_text_request_promise(uint64 id);
 
+  Promise<string> create_data_request_promise(uint64 id);
+
   Promise<string> create_http_url_request_promise(uint64 id);
+
+  Promise<int32> create_count_request_promise(uint64 id);
 
   template <class T>
   void on_request(uint64 id, const T &) = delete;
@@ -627,11 +631,11 @@ class Requests {
 
   void on_request(uint64 id, const td_api::getStory &request);
 
-  void on_request(uint64 id, const td_api::getChatsToSendStories &request);
+  void on_request(uint64 id, const td_api::getChatsToPostStories &request);
 
-  void on_request(uint64 id, const td_api::canSendStory &request);
+  void on_request(uint64 id, const td_api::canPostStory &request);
 
-  void on_request(uint64 id, td_api::sendStory &request);
+  void on_request(uint64 id, td_api::postStory &request);
 
   void on_request(uint64 id, td_api::editStory &request);
 
@@ -711,7 +715,7 @@ class Requests {
 
   void on_request(uint64 id, td_api::sendCallSignalingData &request);
 
-  void on_request(uint64 id, const td_api::discardCall &request);
+  void on_request(uint64 id, td_api::discardCall &request);
 
   void on_request(uint64 id, td_api::sendCallRating &request);
 
@@ -725,7 +729,7 @@ class Requests {
 
   void on_request(uint64 id, td_api::createVideoChat &request);
 
-  void on_request(uint64 id, const td_api::createGroupCall &request);
+  void on_request(uint64 id, td_api::createGroupCall &request);
 
   void on_request(uint64 id, const td_api::getVideoChatRtmpUrl &request);
 
@@ -733,25 +737,33 @@ class Requests {
 
   void on_request(uint64 id, const td_api::getGroupCall &request);
 
-  void on_request(uint64 id, const td_api::startScheduledGroupCall &request);
+  void on_request(uint64 id, const td_api::startScheduledVideoChat &request);
 
-  void on_request(uint64 id, const td_api::toggleGroupCallEnabledStartNotification &request);
+  void on_request(uint64 id, const td_api::toggleVideoChatEnabledStartNotification &request);
 
   void on_request(uint64 id, td_api::joinGroupCall &request);
+
+  void on_request(uint64 id, td_api::joinVideoChat &request);
 
   void on_request(uint64 id, td_api::startGroupCallScreenSharing &request);
 
   void on_request(uint64 id, const td_api::endGroupCallScreenSharing &request);
 
-  void on_request(uint64 id, td_api::setGroupCallTitle &request);
+  void on_request(uint64 id, td_api::setVideoChatTitle &request);
 
-  void on_request(uint64 id, const td_api::toggleGroupCallMuteNewParticipants &request);
+  void on_request(uint64 id, const td_api::toggleVideoChatMuteNewParticipants &request);
 
   void on_request(uint64 id, const td_api::revokeGroupCallInviteLink &request);
 
-  void on_request(uint64 id, const td_api::inviteGroupCallParticipants &request);
+  void on_request(uint64 id, const td_api::inviteGroupCallParticipant &request);
 
-  void on_request(uint64 id, const td_api::getGroupCallInviteLink &request);
+  void on_request(uint64 id, const td_api::declineGroupCallInvitation &request);
+
+  void on_request(uint64 id, const td_api::banGroupCallParticipants &request);
+
+  void on_request(uint64 id, const td_api::inviteVideoChatParticipants &request);
+
+  void on_request(uint64 id, const td_api::getVideoChatInviteLink &request);
 
   void on_request(uint64 id, td_api::startGroupCallRecording &request);
 
@@ -771,15 +783,21 @@ class Requests {
 
   void on_request(uint64 id, const td_api::toggleGroupCallParticipantIsHandRaised &request);
 
+  void on_request(uint64 id, td_api::getGroupCallParticipants &request);
+
   void on_request(uint64 id, const td_api::loadGroupCallParticipants &request);
 
   void on_request(uint64 id, const td_api::leaveGroupCall &request);
 
   void on_request(uint64 id, const td_api::endGroupCall &request);
 
-  void on_request(uint64 id, const td_api::getGroupCallStreams &request);
+  void on_request(uint64 id, const td_api::getVideoChatStreams &request);
 
-  void on_request(uint64 id, td_api::getGroupCallStreamSegment &request);
+  void on_request(uint64 id, td_api::getVideoChatStreamSegment &request);
+
+  void on_request(uint64 id, td_api::encryptGroupCallData &request);
+
+  void on_request(uint64 id, td_api::decryptGroupCallData &request);
 
   void on_request(uint64 id, const td_api::upgradeBasicGroupChatToSupergroupChat &request);
 
@@ -1245,6 +1263,8 @@ class Requests {
 
   void on_request(uint64 id, const td_api::toggleSupergroupCanHaveSponsoredMessages &request);
 
+  void on_request(uint64 id, const td_api::toggleSupergroupHasAutomaticTranslation &request);
+
   void on_request(uint64 id, const td_api::toggleSupergroupHasHiddenMembers &request);
 
   void on_request(uint64 id, const td_api::toggleSupergroupHasAggressiveAntiSpamEnabled &request);
@@ -1451,7 +1471,7 @@ class Requests {
 
   void on_request(uint64 id, td_api::stopPoll &request);
 
-  void on_request(uint64 id, const td_api::hideSuggestedAction &request);
+  void on_request(uint64 id, td_api::hideSuggestedAction &request);
 
   void on_request(uint64 id, const td_api::hideContactCloseBirthdays &request);
 
@@ -1539,6 +1559,8 @@ class Requests {
 
   void on_request(uint64 id, td_api::transferGift &request);
 
+  void on_request(uint64 id, td_api::sendResoldGift &request);
+
   void on_request(uint64 id, td_api::getReceivedGifts &request);
 
   void on_request(uint64 id, const td_api::getReceivedGift &request);
@@ -1546,6 +1568,10 @@ class Requests {
   void on_request(uint64 id, td_api::getUpgradedGift &request);
 
   void on_request(uint64 id, const td_api::getUpgradedGiftWithdrawalUrl &request);
+
+  void on_request(uint64 id, const td_api::setGiftResalePrice &request);
+
+  void on_request(uint64 id, td_api::searchGiftsForResale &request);
 
   void on_request(uint64 id, td_api::createInvoiceLink &request);
 

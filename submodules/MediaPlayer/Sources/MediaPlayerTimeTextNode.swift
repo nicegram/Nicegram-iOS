@@ -193,7 +193,7 @@ public final class MediaPlayerTimeTextNode: ASDisplayNode {
                 self.state = MediaPlayerTimeTextNodeState(hours: timestamp / (60 * 60), minutes: timestamp % (60 * 60) / 60, seconds: timestamp % 60)
             } else {
                 let timestampSeconds: Double
-                if !statusValue.generationTimestamp.isZero {
+                if !statusValue.generationTimestamp.isZero && isPlaying {
                     timestampSeconds = timestamp + (CACurrentMediaTime() - statusValue.generationTimestamp)
                 } else {
                     timestampSeconds = timestamp

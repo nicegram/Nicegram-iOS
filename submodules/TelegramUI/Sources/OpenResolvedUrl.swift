@@ -343,7 +343,7 @@ func openResolvedUrlImpl(
                             if let photoRepresentation = invite.photoRepresentation {
                                 photo.append(photoRepresentation)
                             }
-                            let channel = TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(0)), accessHash: .genericPublic(0), title: invite.title, username: nil, photo: photo, creationDate: 0, version: 0, participationStatus: .left, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: invite.nameColor, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil, sendPaidMessageStars: nil, linkedMonoforumId: nil)
+                            let channel = TelegramChannel(id: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(0)), accessHash: .genericPublic(0), title: invite.title, username: nil, photo: photo, creationDate: 0, version: 0, participationStatus: .left, info: .broadcast(TelegramChannelBroadcastInfo(flags: [])), flags: [], restrictionInfo: nil, adminRights: nil, bannedRights: nil, defaultBannedRights: nil, usernames: [], storiesHidden: nil, nameColor: invite.nameColor, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, emojiStatus: nil, approximateBoostLevel: nil, subscriptionUntilDate: nil, verificationIconFileId: nil, sendPaidMessageStars: nil, linkedMonoforumId: nil, linkedBotId: nil)
                             let invoice = TelegramMediaInvoice(title: "", description: "", photo: nil, receiptMessageId: nil, currency: "XTR", totalAmount: subscriptionPricing.amount.value, startParam: "", extendedMedia: nil, subscriptionPeriod: nil, flags: [], version: 0)
                             
                             inputData.set(.single(BotCheckoutController.InputData(
@@ -1481,7 +1481,7 @@ func openResolvedUrlImpl(
                             navigationController?.pushViewController(controller)
                         }
                     }
-                }, dismissed: {
+                }, openChatTheme: nil, dismissed: {
                     dismissedImpl?()
                 })
                 navigationController?.pushViewController(controller)
@@ -1548,6 +1548,20 @@ func openResolvedUrlImpl(
                     return
                 }
                 navigationController?.pushViewController(controller)
+            }
+        case let .sendGift(peerId):
+            Task { @MainActor [weak navigationController] in
+                if let peerId {
+                    let giftOptions = await (context.engine.payments.premiumGiftCodeOptions(peerId: nil, onlyCached: true) |> filter { !$0.isEmpty }).get()
+                    
+                    let premiumOptions = giftOptions.filter { $0.users == 1 }.map { CachedPremiumGiftOption(months: $0.months, currency: $0.currency, amount: $0.amount, botUrl: "", storeProductId: $0.storeProductId) }
+                    let controller = context.sharedContext.makeGiftOptionsController(context: context, peerId: peerId, premiumOptions: premiumOptions, hasBirthday: false, completion: nil)
+                    controller.navigationPresentation = .modal
+                    navigationController?.pushViewController(controller)
+                } else {
+                    let controller = context.sharedContext.makePremiumGiftController(context: context, source: .settings(nil), completion: nil)
+                    navigationController?.pushViewController(controller)
+                }
             }
     }
 }

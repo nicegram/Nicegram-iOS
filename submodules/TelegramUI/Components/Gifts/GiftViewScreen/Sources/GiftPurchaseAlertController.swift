@@ -135,31 +135,11 @@ private final class GiftPurchaseAlertContentNode: AlertContentNode {
     }
     
     override func updateLayout(size: CGSize, transition: ContainedViewLayoutTransition) -> CGSize {
+        let containerSize = size
         var size = size
         size.width = min(size.width, 270.0)
-        self.validLayout = size
         
-        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        
-        var origin: CGPoint = CGPoint(x: 0.0, y: 20.0)
-        
-        var resellPrice: CurrencyAmount?
-        if let actionNode = self.actionNodes.first {
-            switch self.currency {
-            case .stars:
-                if let resellAmount = self.gift.resellAmounts?.first(where: { $0.currency == .stars }) {
-                    resellPrice = resellAmount
-                    actionNode.action = TextAlertAction(type: .defaultAction, title: self.strings.Gift_Buy_Confirm_BuyFor(Int32(resellAmount.amount.value)), action: actionNode.action.action)
-                }
-            case .ton:
-                if let resellAmount = self.gift.resellAmounts?.first(where: { $0.currency == .ton }) {
-                    resellPrice = resellAmount
-                    let valueString = formatTonAmountText(resellAmount.amount.value, dateTimeFormat: presentationData.dateTimeFormat)
-                    actionNode.action = TextAlertAction(type: .defaultAction, title: self.strings.Gift_Buy_Confirm_BuyForTon(valueString).string, action: actionNode.action.action)
-                }
-            }
-        }
-        
+        var origin = CGPoint(x: 0.0, y: 20.0)
         if self.gift.resellForTonOnly {
             let headerSize = self.header.update(
                 transition: .immediate,
@@ -173,6 +153,7 @@ private final class GiftPurchaseAlertContentNode: AlertContentNode {
                 environment: {},
                 containerSize: CGSize(width: size.width - 32.0, height: size.height)
             )
+            
             let headerFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - headerSize.width) / 2.0), y: origin.y), size: headerSize)
             if let view = self.header.view {
                 if view.superview == nil {
@@ -226,8 +207,11 @@ private final class GiftPurchaseAlertContentNode: AlertContentNode {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: size.width - 16.0 * 2.0, height: 100.0)
+                containerSize: CGSize(width: containerSize.width - 16.0 * 2.0, height: 100.0)
             )
+            
+            size.width = min(containerSize.width, max(270.0, headerSize.width + 32.0))
+            
             let headerFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - headerSize.width) / 2.0), y: origin.y), size: headerSize)
             if let view = self.header.view {
                 if view.superview == nil {
@@ -236,6 +220,27 @@ private final class GiftPurchaseAlertContentNode: AlertContentNode {
                 view.frame = headerFrame
             }
             origin.y += headerSize.height + 17.0
+        }
+        
+        self.validLayout = size
+        
+        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                
+        var resellPrice: CurrencyAmount?
+        if let actionNode = self.actionNodes.first {
+            switch self.currency {
+            case .stars:
+                if let resellAmount = self.gift.resellAmounts?.first(where: { $0.currency == .stars }) {
+                    resellPrice = resellAmount
+                    actionNode.action = TextAlertAction(type: .defaultAction, title: self.strings.Gift_Buy_Confirm_BuyFor(Int32(resellAmount.amount.value)), action: actionNode.action.action)
+                }
+            case .ton:
+                if let resellAmount = self.gift.resellAmounts?.first(where: { $0.currency == .ton }) {
+                    resellPrice = resellAmount
+                    let valueString = formatTonAmountText(resellAmount.amount.value, dateTimeFormat: presentationData.dateTimeFormat)
+                    actionNode.action = TextAlertAction(type: .defaultAction, title: self.strings.Gift_Buy_Confirm_BuyForTon(valueString).string, action: actionNode.action.action)
+                }
+            }
         }
         
         let avatarSize = CGSize(width: 60.0, height: 60.0)
@@ -310,7 +315,7 @@ private final class GiftPurchaseAlertContentNode: AlertContentNode {
         if let resellPrice {
             switch resellPrice.currency {
             case .stars:
-                priceString = self.strings.Gift_Buy_Confirm_Text_Stars(Int32(resellPrice.amount.value))
+                priceString = self.strings.Gift_Buy_Confirm_Text_Stars(Int32(clamping: resellPrice.amount.value))
             case .ton:
                 priceString = "**\(formatTonAmountText(resellPrice.amount.value, dateTimeFormat: presentationData.dateTimeFormat)) TON**"
             }
@@ -495,9 +500,13 @@ public func giftPurchaseAlertController(
     
     if !gift.resellForTonOnly {
         Queue.mainQueue().after(0.3) {
-            if let headerView = contentNode?.header.view {
+            if let headerView = contentNode?.header.view as? TabSelectorComponent.View {
                 let absoluteFrame = headerView.convert(headerView.bounds, to: nil)
-                let location = CGRect(origin: CGPoint(x: absoluteFrame.minX + floor(absoluteFrame.width * 0.75), y: absoluteFrame.minY - 8.0), size: CGSize())
+                var originX = absoluteFrame.width * 0.75
+                if let itemFrame = headerView.frameForItem(AnyHashable(1)) {
+                    originX = itemFrame.midX
+                }
+                let location = CGRect(origin: CGPoint(x: absoluteFrame.minX + floor(originX), y: absoluteFrame.minY - 8.0), size: CGSize())
                 let tooltipController = TooltipScreen(account: context.account, sharedContext: context.sharedContext, text: .plain(text: presentationData.strings.Gift_Buy_PayInTon_Tooltip), style: .wide, location: .point(location, .bottom), displayDuration: .default, inset: 16.0, shouldDismissOnTouch: { _, _ in
                     return .dismiss(consume: false)
                 })

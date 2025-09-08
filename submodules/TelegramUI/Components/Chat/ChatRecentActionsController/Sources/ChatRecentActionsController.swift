@@ -191,31 +191,43 @@ public final class ChatRecentActionsController: TelegramBaseController {
         
         self.titleView.title = CounterControllerTitle(title: EnginePeer(peer).compactDisplayTitle, counter: self.presentationData.strings.Channel_AdminLog_TitleAllEvents)
         
-        let themeEmoticon = self.context.account.postbox.peerView(id: peer.id)
-        |> map { view -> String? in
+        let chatTheme = self.context.account.postbox.peerView(id: peer.id)
+        |> map { view -> ChatTheme? in
             let cachedData = view.cachedData
             if let cachedData = cachedData as? CachedUserData {
-                return cachedData.themeEmoticon
+                return cachedData.chatTheme
             } else if let cachedData = cachedData as? CachedGroupData {
-                return cachedData.themeEmoticon
+                return cachedData.chatTheme
             } else if let cachedData = cachedData as? CachedChannelData {
-                return cachedData.themeEmoticon
+                return cachedData.chatTheme
             } else {
                 return nil
             }
         }
         |> distinctUntilChanged
         
-        self.presentationDataDisposable = combineLatest(queue: Queue.mainQueue(), context.sharedContext.presentationData, context.engine.themes.getChatThemes(accountManager: context.sharedContext.accountManager, onlyCached: true), themeEmoticon).startStrict(next: { [weak self] presentationData, chatThemes, themeEmoticon in
+        self.presentationDataDisposable = combineLatest(
+            queue: Queue.mainQueue(),
+            context.sharedContext.presentationData,
+            context.engine.themes.getChatThemes(accountManager: context.sharedContext.accountManager, onlyCached: true),
+            chatTheme
+        ).startStrict(next: { [weak self] presentationData, chatThemes, chatTheme in
             if let strongSelf = self {
                 let previousTheme = strongSelf.presentationData.theme
                 let previousStrings = strongSelf.presentationData.strings
                 
                 var presentationData = presentationData
-                if let themeEmoticon = themeEmoticon, let theme = chatThemes.first(where: { $0.emoticon == themeEmoticon }) {
-                    if let theme = makePresentationTheme(cloudTheme: theme, dark: presentationData.theme.overallDarkAppearance) {
-                        presentationData = presentationData.withUpdated(theme: theme)
-                        presentationData = presentationData.withUpdated(chatWallpaper: theme.chat.defaultWallpaper)
+                if let chatTheme {
+                    switch chatTheme {
+                    case let .emoticon(emoticon):
+                        if let theme = chatThemes.first(where: { $0.emoticon == emoticon }), let theme = makePresentationTheme(cloudTheme: theme, dark: presentationData.theme.overallDarkAppearance) {
+                            presentationData = presentationData.withUpdated(theme: theme)
+                            presentationData = presentationData.withUpdated(chatWallpaper: theme.chat.defaultWallpaper)
+                        }
+                    case let .gift(gift, wallpaper):
+                        let _ = gift
+                        let _ = wallpaper
+                        //TODO:release
                     }
                 }
                 

@@ -70,6 +70,8 @@ func messageContentToUpload(accountPeerId: PeerId, network: Network, postbox: Po
     var contextResult: OutgoingChatContextResultMessageAttribute?
     var autoremoveMessageAttribute: AutoremoveTimeoutMessageAttribute?
     var autoclearMessageAttribute: AutoclearTimeoutMessageAttribute?
+    var forwardInfo: ForwardSourceInfoAttribute?
+    var explicitPartialReference: PartialMediaReference?
     for attribute in attributes {
         if let attribute = attribute as? OutgoingChatContextResultMessageAttribute {
             if peerId.namespace != Namespaces.Peer.SecretChat {
@@ -79,18 +81,17 @@ func messageContentToUpload(accountPeerId: PeerId, network: Network, postbox: Po
             autoremoveMessageAttribute = attribute
         } else if let attribute = attribute as? AutoclearTimeoutMessageAttribute {
             autoclearMessageAttribute = attribute
-        }
-    }
-    
-    var forwardInfo: ForwardSourceInfoAttribute?
-    for attribute in attributes {
-        if let attribute = attribute as? ForwardSourceInfoAttribute {
+        } else if let attribute = attribute as? OutgoingMessageInfoAttribute {
+            if let partialReference = attribute.partialReference {
+                explicitPartialReference = partialReference
+            }
+        } else if let attribute = attribute as? ForwardSourceInfoAttribute {
             if peerId.namespace != Namespaces.Peer.SecretChat {
                 forwardInfo = attribute
             }
         }
     }
-    
+
     if let media = media.first as? TelegramMediaAction, media.action == .historyScreenshot {
         return .immediate(.content(PendingMessageUploadedContentAndReuploadInfo(content: .messageScreenshot, reuploadInfo: nil, cacheReferenceKey: nil)), .none)
     } else if let forwardInfo = forwardInfo {
@@ -121,14 +122,14 @@ func messageContentToUpload(accountPeerId: PeerId, network: Network, postbox: Po
             return .content(PendingMessageUploadedContentAndReuploadInfo(content: .media(.inputMediaWebPage(flags: flags, url: content.url), text), reuploadInfo: nil, cacheReferenceKey: nil))
         }
         |> castError(PendingMessageUploadError.self), .text)
-    } else if let media = media.first, let mediaResult = mediaContentToUpload(accountPeerId: accountPeerId, network: network, postbox: postbox, auxiliaryMethods: auxiliaryMethods, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messageMediaPreuploadManager: messageMediaPreuploadManager, revalidationContext: revalidationContext, forceReupload: forceReupload, isGrouped: isGrouped, passFetchProgress: passFetchProgress, forceNoBigParts: forceNoBigParts, peerId: peerId, media: media, text: text, autoremoveMessageAttribute: autoremoveMessageAttribute, autoclearMessageAttribute: autoclearMessageAttribute, messageId: messageId, attributes: attributes, mediaReference: mediaReference) {
+    } else if let media = media.first, let mediaResult = mediaContentToUpload(accountPeerId: accountPeerId, network: network, postbox: postbox, auxiliaryMethods: auxiliaryMethods, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messageMediaPreuploadManager: messageMediaPreuploadManager, revalidationContext: revalidationContext, forceReupload: forceReupload, isGrouped: isGrouped, passFetchProgress: passFetchProgress, forceNoBigParts: forceNoBigParts, peerId: peerId, media: media, text: text, autoremoveMessageAttribute: autoremoveMessageAttribute, autoclearMessageAttribute: autoclearMessageAttribute, messageId: messageId, attributes: attributes, mediaReference: mediaReference, explicitPartialReference: explicitPartialReference) {
         return .signal(mediaResult, .media)
     } else {
         return .signal(.single(.content(PendingMessageUploadedContentAndReuploadInfo(content: .text(text), reuploadInfo: nil, cacheReferenceKey: nil))), .text)
     }
 }
 
-func mediaContentToUpload(accountPeerId: PeerId, network: Network, postbox: Postbox, auxiliaryMethods: AccountAuxiliaryMethods, transformOutgoingMessageMedia: TransformOutgoingMessageMedia?, messageMediaPreuploadManager: MessageMediaPreuploadManager, revalidationContext: MediaReferenceRevalidationContext, forceReupload: Bool, isGrouped: Bool, passFetchProgress: Bool, forceNoBigParts: Bool, peerId: PeerId, media: Media, text: String, autoremoveMessageAttribute: AutoremoveTimeoutMessageAttribute?, autoclearMessageAttribute: AutoclearTimeoutMessageAttribute?, messageId: MessageId?, attributes: [MessageAttribute], mediaReference: AnyMediaReference?) -> Signal<PendingMessageUploadedContentResult, PendingMessageUploadError>? {
+func mediaContentToUpload(accountPeerId: PeerId, network: Network, postbox: Postbox, auxiliaryMethods: AccountAuxiliaryMethods, transformOutgoingMessageMedia: TransformOutgoingMessageMedia?, messageMediaPreuploadManager: MessageMediaPreuploadManager, revalidationContext: MediaReferenceRevalidationContext, forceReupload: Bool, isGrouped: Bool, passFetchProgress: Bool, forceNoBigParts: Bool, peerId: PeerId, media: Media, text: String, autoremoveMessageAttribute: AutoremoveTimeoutMessageAttribute?, autoclearMessageAttribute: AutoclearTimeoutMessageAttribute?, messageId: MessageId?, attributes: [MessageAttribute], mediaReference: AnyMediaReference?, explicitPartialReference: PartialMediaReference?) -> Signal<PendingMessageUploadedContentResult, PendingMessageUploadError>? {
     if let paidContent = media as? TelegramMediaPaidContent {
         var signals: [Signal<PendingMessageUploadedContentResult, PendingMessageUploadError>] = []
         var mediaIds: [MediaId] = []
@@ -217,6 +218,8 @@ func mediaContentToUpload(accountPeerId: PeerId, network: Network, postbox: Post
                                 return .standalone(media: file)
                             }
                         }
+                    } else if let explicitPartialReference {
+                        finalMediaReference = .single(explicitPartialReference.mediaReference(file))
                     } else {
                         finalMediaReference = .single(.savedGif(media: file))
                     }
@@ -580,11 +583,11 @@ if "".isEmpty {
                                             let attribute = updatedAttributes[index] as! OutgoingMessageInfoAttribute
                                             updatedAttributes[index] = attribute.withUpdatedFlags(attribute.flags.union([.transformedMedia]))
                                         } else {
-                                            updatedAttributes.append(OutgoingMessageInfoAttribute(uniqueId: Int64.random(in: Int64.min ... Int64.max), flags: [.transformedMedia], acknowledged: false, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                                            updatedAttributes.append(OutgoingMessageInfoAttribute(uniqueId: Int64.random(in: Int64.min ... Int64.max), flags: [.transformedMedia], acknowledged: false, correlationId: nil, bubbleUpEmojiOrStickersets: [], partialReference: nil))
                                         }
                                     }
                                     
-                                    return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: updatedMedia))
+                                    return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: updatedMedia))
                                 })
                             }
                             return .done(media)
@@ -1031,11 +1034,11 @@ private func uploadedMediaFileContent(network: Network, postbox: Postbox, auxili
                                         let attribute = updatedAttributes[index] as! OutgoingMessageInfoAttribute
                                         updatedAttributes[index] = attribute.withUpdatedFlags(attribute.flags.union([.transformedMedia]))
                                     } else {
-                                        updatedAttributes.append(OutgoingMessageInfoAttribute(uniqueId: Int64.random(in: Int64.min ... Int64.max), flags: [.transformedMedia], acknowledged: false, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                                        updatedAttributes.append(OutgoingMessageInfoAttribute(uniqueId: Int64.random(in: Int64.min ... Int64.max), flags: [.transformedMedia], acknowledged: false, correlationId: nil, bubbleUpEmojiOrStickersets: [], partialReference: nil))
                                     }
                                 }
                                 
-                                return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: updatedMedia))
+                                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: updatedAttributes, media: updatedMedia))
                             })
                         }
                         return .done(media)

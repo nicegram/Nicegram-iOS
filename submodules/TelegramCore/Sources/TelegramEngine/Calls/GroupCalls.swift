@@ -3353,6 +3353,7 @@ func _internal_refreshInlineGroupCall(account: Account, messageId: MessageId) ->
                 }
                 return .update(StoreMessage(
                     id: currentMessage.id,
+                    customStableId: nil,
                     globallyUniqueId: currentMessage.globallyUniqueId,
                     groupingKey: currentMessage.groupingKey,
                     threadId: currentMessage.threadId,

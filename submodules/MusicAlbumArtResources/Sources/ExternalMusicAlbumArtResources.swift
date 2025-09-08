@@ -16,7 +16,7 @@ public struct ExternalMusicAlbumArtResourceId {
     }
     
     public var uniqueId: String {
-        return "ext-album-art-\(isThumbnail ? "thump" : "full")-\(self.title.replacingOccurrences(of: "/", with: "_"))-\(self.performer.replacingOccurrences(of: "/", with: "_"))"
+        return "ext-album-art-\(self.isThumbnail ? "thumb" : "full")-\(self.title.replacingOccurrences(of: "/", with: "_"))-\(self.performer.replacingOccurrences(of: "/", with: "_"))"
     }
     
     public var hashValue: Int {

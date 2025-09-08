@@ -1228,9 +1228,9 @@ public final class StarsWithdrawScreen: ViewControllerComponentContainer {
     
     func presentMinAmountTooltip(_ minAmount: Int64, currency: CurrencyAmount.Currency) {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        var text = presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum(presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum_Stars(Int32(minAmount))).string
+        var text = presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum(presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum_Stars(Int32(clamping: minAmount))).string
         if case .starGiftResell = self.mode {
-            text = presentationData.strings.Stars_SellGiftMinAmountToast_Text("\(presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum_Stars(Int32(minAmount)))").string
+            text = presentationData.strings.Stars_SellGiftMinAmountToast_Text("\(presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum_Stars(Int32(clamping: minAmount)))").string
         } else if case let .suggestedPost(mode, _, _, _) = self.mode {
             let resaleConfiguration = StarsSubscriptionConfiguration.with(appConfiguration: self.context.currentAppConfiguration.with { $0 })
             switch currency {

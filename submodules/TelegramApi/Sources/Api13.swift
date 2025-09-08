@@ -123,7 +123,7 @@ public extension Api {
         case inputStorePaymentPremiumSubscription(flags: Int32)
         case inputStorePaymentStarsGift(userId: Api.InputUser, stars: Int64, currency: String, amount: Int64)
         case inputStorePaymentStarsGiveaway(flags: Int32, stars: Int64, boostPeer: Api.InputPeer, additionalPeers: [Api.InputPeer]?, countriesIso2: [String]?, prizeDescription: String?, randomId: Int64, untilDate: Int32, currency: String, amount: Int64, users: Int32)
-        case inputStorePaymentStarsTopup(stars: Int64, currency: String, amount: Int64)
+        case inputStorePaymentStarsTopup(flags: Int32, stars: Int64, currency: String, amount: Int64, spendPurposePeer: Api.InputPeer?)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
@@ -221,13 +221,15 @@ public extension Api {
                     serializeInt64(amount, buffer: buffer, boxed: false)
                     serializeInt32(users, buffer: buffer, boxed: false)
                     break
-                case .inputStorePaymentStarsTopup(let stars, let currency, let amount):
+                case .inputStorePaymentStarsTopup(let flags, let stars, let currency, let amount, let spendPurposePeer):
                     if boxed {
-                        buffer.appendInt32(-572715178)
+                        buffer.appendInt32(-106780981)
                     }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt64(stars, buffer: buffer, boxed: false)
                     serializeString(currency, buffer: buffer, boxed: false)
                     serializeInt64(amount, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {spendPurposePeer!.serialize(buffer, true)}
                     break
     }
     }
@@ -248,8 +250,8 @@ public extension Api {
                 return ("inputStorePaymentStarsGift", [("userId", userId as Any), ("stars", stars as Any), ("currency", currency as Any), ("amount", amount as Any)])
                 case .inputStorePaymentStarsGiveaway(let flags, let stars, let boostPeer, let additionalPeers, let countriesIso2, let prizeDescription, let randomId, let untilDate, let currency, let amount, let users):
                 return ("inputStorePaymentStarsGiveaway", [("flags", flags as Any), ("stars", stars as Any), ("boostPeer", boostPeer as Any), ("additionalPeers", additionalPeers as Any), ("countriesIso2", countriesIso2 as Any), ("prizeDescription", prizeDescription as Any), ("randomId", randomId as Any), ("untilDate", untilDate as Any), ("currency", currency as Any), ("amount", amount as Any), ("users", users as Any)])
-                case .inputStorePaymentStarsTopup(let stars, let currency, let amount):
-                return ("inputStorePaymentStarsTopup", [("stars", stars as Any), ("currency", currency as Any), ("amount", amount as Any)])
+                case .inputStorePaymentStarsTopup(let flags, let stars, let currency, let amount, let spendPurposePeer):
+                return ("inputStorePaymentStarsTopup", [("flags", flags as Any), ("stars", stars as Any), ("currency", currency as Any), ("amount", amount as Any), ("spendPurposePeer", spendPurposePeer as Any)])
     }
     }
     
@@ -449,17 +451,25 @@ public extension Api {
             }
         }
         public static func parse_inputStorePaymentStarsTopup(_ reader: BufferReader) -> InputStorePaymentPurpose? {
-            var _1: Int64?
-            _1 = reader.readInt64()
-            var _2: String?
-            _2 = parseString(reader)
-            var _3: Int64?
-            _3 = reader.readInt64()
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: String?
+            _3 = parseString(reader)
+            var _4: Int64?
+            _4 = reader.readInt64()
+            var _5: Api.InputPeer?
+            if Int(_1!) & Int(1 << 0) != 0 {if let signature = reader.readInt32() {
+                _5 = Api.parse(reader, signature: signature) as? Api.InputPeer
+            } }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            if _c1 && _c2 && _c3 {
-                return Api.InputStorePaymentPurpose.inputStorePaymentStarsTopup(stars: _1!, currency: _2!, amount: _3!)
+            let _c4 = _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 {
+                return Api.InputStorePaymentPurpose.inputStorePaymentStarsTopup(flags: _1!, stars: _2!, currency: _3!, amount: _4!, spendPurposePeer: _5)
             }
             else {
                 return nil

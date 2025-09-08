@@ -1041,7 +1041,7 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         let sharedData = self.context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.presentationThemeSettings])
         |> take(1)
         if case let .peer(peer, _, _) = controller.subject, peer.id != self.context.account.peerId {
-            let themeEmoticon = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ThemeEmoticon(id: peer.id))
+            let themeEmoticon = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.ChatTheme(id: peer.id))
             initiallySelectedEmoticon = combineLatest(themeEmoticon, sharedData)
             |> map { themeEmoticon, sharedData -> String in
                 let themeSettings: PresentationThemeSettings
@@ -1051,8 +1051,7 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
                     themeSettings = PresentationThemeSettings.defaultSettings
                 }
                 let currentDefaultEmoticon = themeSettings.theme.emoticon ?? defaultEmoticon
-                
-                return themeEmoticon ?? currentDefaultEmoticon
+                return themeEmoticon?.id ?? currentDefaultEmoticon
             }
         } else {
             initiallySelectedEmoticon = sharedData

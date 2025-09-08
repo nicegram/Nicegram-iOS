@@ -174,7 +174,7 @@ private final class GiftWithdrawAlertContentNode: AlertContentNode {
                 StarsAvatarComponent(
                     context: self.context,
                     theme: self.presentationTheme,
-                    peer: .fragment,
+                    peer: .transactionPeer(.fragment),
                     photo: nil,
                     media: [],
                     uniqueGift: nil,

@@ -32,21 +32,24 @@ private enum PendingMessageState {
     case uploading(groupId: Int64?)
     case waitingToBeSent(groupId: Int64?, content: PendingMessageUploadedContentAndReuploadInfo)
     case sending(groupId: Int64?)
+    case waitingForNewTopic(message: Message)
     
     var groupId: Int64? {
         switch self {
-            case .none:
-                return nil
-            case let .collectingInfo(message):
-                return message.groupingKey
-            case let .waitingForUploadToStart(groupId, _):
-                return groupId
-            case let .uploading(groupId):
-                return groupId
-            case let .waitingToBeSent(groupId, _):
-                return groupId
-            case let .sending(groupId):
-                return groupId
+        case .none:
+            return nil
+        case let .collectingInfo(message):
+            return message.groupingKey
+        case let .waitingForUploadToStart(groupId, _):
+            return groupId
+        case let .uploading(groupId):
+            return groupId
+        case let .waitingToBeSent(groupId, _):
+            return groupId
+        case let .sending(groupId):
+            return groupId
+        case let .waitingForNewTopic(message):
+            return message.groupingKey
         }
     }
 }
@@ -115,6 +118,20 @@ public struct PeerPendingMessageDelivered {
 private final class PeerPendingMessagesSummaryContext {
     var messageDeliveredSubscribers = Bag<([PeerPendingMessageDelivered]) -> Void>()
     var messageFailedSubscribers = Bag<(PendingMessageFailureReason) -> Void>()
+    var newTopicEvents = Bag<(PendingMessageManager.NewTopicEvent) -> Void>()
+    
+    var isEmpty: Bool {
+        if !self.messageDeliveredSubscribers.isEmpty {
+            return false
+        }
+        if !self.messageFailedSubscribers.isEmpty {
+            return false
+        }
+        if !self.newTopicEvents.isEmpty {
+            return false
+        }
+        return true
+    }
 }
 
 private enum PendingMessageResult {
@@ -158,7 +175,7 @@ private func failMessages(postbox: Postbox, ids: [MessageId]) -> Signal<Void, No
                 if let forwardInfo = currentMessage.forwardInfo {
                     storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                 }
-                return .update(StoreMessage(id: id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
+                return .update(StoreMessage(id: id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
             })
         }
     }
@@ -186,6 +203,11 @@ private final class CorrelationIdToSentMessageId {
 }
 
 public final class PendingMessageManager {
+    public enum NewTopicEvent {
+        case willMove(fromThreadId: Int64, toThreadId: Int64)
+        case didMove(fromThreadId: Int64, toThreadId: Int64)
+    }
+    
     private let network: Network
     private let postbox: Postbox
     private let accountPeerId: PeerId
@@ -205,6 +227,8 @@ public final class PendingMessageManager {
     private var messageContexts: [MessageId: PendingMessageContext] = [:]
     private var pendingMessageIds = Set<MessageId>()
     private let beginSendingMessagesDisposables = DisposableSet()
+    
+    private var newTopicDisposables: [PeerId: Disposable] = [:]
     
     private var peerSummaryContexts: [PeerId: PeerPendingMessagesSummaryContext] = [:]
     
@@ -226,6 +250,9 @@ public final class PendingMessageManager {
     
     deinit {
         self.beginSendingMessagesDisposables.dispose()
+        for (_, disposable) in self.newTopicDisposables {
+            disposable.dispose()
+        }
     }
     
     func updatePendingMessageIds(_ messageIds: Set<MessageId>) {
@@ -422,9 +449,7 @@ public final class PendingMessageManager {
                 assert(strongSelf.queue.isCurrent())
                 
                 Logger.shared.log("PendingMessageManager", "begin sending, continued: \(ids)")
-                
                 Logger.shared.log("PendingMessageManager", "beginSendingMessages messages.count: \(messages.count)")
-
                 
                 for message in messages.filter({ !$0.flags.contains(.Sending) }).sorted(by: { $0.id < $1.id }) {
                     guard let messageContext = strongSelf.messageContexts[message.id] else {
@@ -435,14 +460,110 @@ public final class PendingMessageManager {
                         messageContext.activityType = uploadActivityTypeForMessage(message)
                     }
                     messageContext.threadId = message.threadId
-                    strongSelf.collectUploadingInfo(messageContext: messageContext, message: message)
+                    
+                    if messageContext.threadId == Message.newTopicThreadId {
+                        strongSelf.createNewTopic(messageContext: messageContext, message: message)
+                    } else {
+                        strongSelf.collectUploadingInfo(messageContext: messageContext, message: message)
+                    }
                 }
                 
                 var messagesToUpload: [(PendingMessageContext, Message, PendingMessageUploadedContentType, Signal<PendingMessageUploadedContentResult, PendingMessageUploadError>)] = []
                 var messagesToForward: [PeerIdAndNamespace: [(PendingMessageContext, Message, ForwardSourceInfoAttribute)]] = [:]
                 
                 Logger.shared.log("PendingMessageManager", "beginSendingMessages messageContexts.count: \(strongSelf.messageContexts.count)")
-
+                
+                for (messageContext, _) in strongSelf.messageContexts.values.compactMap({ messageContext -> (PendingMessageContext, Message)? in
+                    if case let .waitingForNewTopic(message) = messageContext.state {
+                        return (messageContext, message)
+                    } else {
+                        return nil
+                    }
+                }).sorted(by: { lhs, rhs in
+                    return lhs.1.index < rhs.1.index
+                }) {
+                    if case let .waitingForNewTopic(message) = messageContext.state {
+                        let messagePeerId = message.id.peerId
+                        if strongSelf.newTopicDisposables[messagePeerId] == nil {
+                            let disposable = MetaDisposable()
+                            strongSelf.newTopicDisposables[messagePeerId] = disposable
+                            
+                            disposable.set(_internal_createForumChannelTopic(
+                                postbox: strongSelf.postbox,
+                                network: strongSelf.network,
+                                stateManager: strongSelf.stateManager,
+                                accountPeerId: strongSelf.accountPeerId,
+                                peerId: message.id.peerId,
+                                title: "Topic #\(message.stableId)",
+                                iconColor: 0,
+                                iconFileId: nil
+                            ).startStrict(next: { [weak strongSelf] topicId in
+                                guard let strongSelf else {
+                                    return
+                                }
+                                var moveMessageIds: [MessageId] = []
+                                for (_, messageContext) in strongSelf.messageContexts {
+                                    if case let .waitingForNewTopic(message) = messageContext.state {
+                                        if message.id.peerId == messagePeerId {
+                                            moveMessageIds.append(message.id)
+                                        }
+                                    }
+                                }
+                                if !moveMessageIds.isEmpty {
+                                    if let context = strongSelf.peerSummaryContexts[messagePeerId] {
+                                        for subscriber in context.newTopicEvents.copyItems() {
+                                            subscriber(.willMove(fromThreadId: Message.newTopicThreadId, toThreadId: topicId))
+                                        }
+                                    }
+                                    
+                                    let _ = (strongSelf.postbox.transaction { transaction -> [Message] in
+                                        var result: [Message] = []
+                                        for id in moveMessageIds {
+                                            transaction.updateMessage(id, update: { currentMessage in
+                                                var storeForwardInfo: StoreMessageForwardInfo?
+                                                if let forwardInfo = currentMessage.forwardInfo {
+                                                    storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
+                                                }
+                                                var attributes = currentMessage.attributes
+                                                if !attributes.contains(where: { $0 is ReplyMessageAttribute }) {
+                                                    attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: id.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: topicId)), threadMessageId: nil, quote: nil, isQuote: false, todoItemId: nil))
+                                                }
+                                                return .update(StoreMessage(id: id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: topicId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
+                                            })
+                                            if let message = transaction.getMessage(id) {
+                                                result.append(message)
+                                            }
+                                        }
+                                        return result
+                                    }
+                                    |> deliverOn(strongSelf.queue)).startStandalone(next: { [weak strongSelf] messages in
+                                        guard let strongSelf else {
+                                            return
+                                        }
+                                        for message in messages {
+                                            if let context = strongSelf.messageContexts[message.id] {
+                                                if case .waitingForNewTopic = context.state {
+                                                    context.state = .collectingInfo(message: message)
+                                                }
+                                            }
+                                        }
+                                        strongSelf.newTopicDisposables[messagePeerId]?.dispose()
+                                        strongSelf.newTopicDisposables[messagePeerId] = nil
+                                        strongSelf.beginSendingMessages(messages.map(\.id))
+                                        
+                                        if let context = strongSelf.peerSummaryContexts[messagePeerId] {
+                                            for subscriber in context.newTopicEvents.copyItems() {
+                                                subscriber(.didMove(fromThreadId: Message.newTopicThreadId, toThreadId: topicId))
+                                            }
+                                        }
+                                    })
+                                }
+                            }, error: { _ in
+                                //TODO:release handle errors
+                            }))
+                        }
+                    }
+                }
                 
                 for (messageContext, _) in strongSelf.messageContexts.values.compactMap({ messageContext -> (PendingMessageContext, Message)? in
                     if case let .collectingInfo(message) = messageContext.state {
@@ -486,7 +607,6 @@ public final class PendingMessageManager {
                 }
                 
                 Logger.shared.log("PendingMessageManager", "beginSendingMessages messagesToUpload.count: \(messagesToUpload.count)")
-
                 
                 for (messageContext, message, type, contentUploadSignal) in messagesToUpload {
                     if let paidStarsAttribute = message.paidStarsAttribute, paidStarsAttribute.postponeSending {
@@ -596,28 +716,32 @@ public final class PendingMessageManager {
         
         loop: for (id, context) in self.messageContexts {
             switch context.state {
-                case .none:
-                    continue loop
-                case let .collectingInfo(message):
-                    if message.groupingKey == groupId {
-                        return nil
-                    }
-                case let .waitingForUploadToStart(contextGroupId, _):
-                    if contextGroupId == groupId {
-                        return nil
-                    }
-                case let .uploading(contextGroupId):
-                    if contextGroupId == groupId {
-                        return nil
-                    }
-                case let .waitingToBeSent(contextGroupId, content):
-                    if contextGroupId == groupId {
-                        result.append((context, id, content))
-                    }
-                case let .sending(contextGroupId):
-                    if contextGroupId == groupId {
-                        return nil
-                    }
+            case .none:
+                continue loop
+            case let .collectingInfo(message):
+                if message.groupingKey == groupId {
+                    return nil
+                }
+            case let .waitingForUploadToStart(contextGroupId, _):
+                if contextGroupId == groupId {
+                    return nil
+                }
+            case let .uploading(contextGroupId):
+                if contextGroupId == groupId {
+                    return nil
+                }
+            case let .waitingToBeSent(contextGroupId, content):
+                if contextGroupId == groupId {
+                    result.append((context, id, content))
+                }
+            case let .sending(contextGroupId):
+                if contextGroupId == groupId {
+                    return nil
+                }
+            case let .waitingForNewTopic(message):
+                if message.groupingKey == groupId {
+                    return nil
+                }
             }
         }
         
@@ -663,6 +787,10 @@ public final class PendingMessageManager {
                 }
             }
         }))
+    }
+    
+    private func createNewTopic(messageContext: PendingMessageContext, message: Message) {
+        messageContext.state = .waitingForNewTopic(message: message)
     }
     
     private func collectUploadingInfo(messageContext: PendingMessageContext, message: Message) {
@@ -724,7 +852,7 @@ public final class PendingMessageManager {
                         if let forwardInfo = currentMessage.forwardInfo {
                             storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                         }
-                        return .update(StoreMessage(id: id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
+                        return .update(StoreMessage(id: id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
                     })
                 }
                 return modify
@@ -1307,7 +1435,7 @@ public final class PendingMessageManager {
                     if let forwardInfo = currentMessage.forwardInfo {
                         storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                     }
-                    return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: flags, tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
+                    return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: flags, tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
                 })
             } else {
                 let updatedState = addSecretChatOutgoingOperation(transaction: transaction, peerId: message.id.peerId, operation: .sendMessage(layer: layer, id: message.id, file: secretFile), state: state)
@@ -1323,7 +1451,7 @@ public final class PendingMessageManager {
                     if let forwardInfo = currentMessage.forwardInfo {
                         storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                     }
-                    return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: flags, tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
+                    return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: flags, tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
                 })
             }
         } else {
@@ -1332,7 +1460,7 @@ public final class PendingMessageManager {
                 if let forwardInfo = currentMessage.forwardInfo {
                     storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                 }
-                return .update(StoreMessage(id: message.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
+                return .update(StoreMessage(id: message.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
             })
         }
     }
@@ -1850,7 +1978,7 @@ public final class PendingMessageManager {
                                 if let forwardInfo = currentMessage.forwardInfo {
                                     storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                                 }
-                                return .update(StoreMessage(id: message.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
+                                return .update(StoreMessage(id: message.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
                             })
                         }).start()
                     }
@@ -1864,7 +1992,7 @@ public final class PendingMessageManager {
                         if let forwardInfo = currentMessage.forwardInfo {
                             storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                         }
-                        return .update(StoreMessage(id: message.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
+                        return .update(StoreMessage(id: message.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: [.Failed], tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: currentMessage.media))
                     })
                 }
             }
@@ -1892,7 +2020,7 @@ public final class PendingMessageManager {
                 if let forwardInfo = currentMessage.forwardInfo {
                     storeForwardInfo = StoreMessageForwardInfo(authorId: forwardInfo.author?.id, sourceId: forwardInfo.source?.id, sourceMessageId: forwardInfo.sourceMessageId, date: forwardInfo.date, authorSignature: forwardInfo.authorSignature, psaType: forwardInfo.psaType, flags: forwardInfo.flags)
                 }
-                return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
+                return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
             })
         }
     }
@@ -2030,7 +2158,7 @@ public final class PendingMessageManager {
                     self.queue.async {
                         if let current = self.peerSummaryContexts[peerId] {
                             current.messageDeliveredSubscribers.remove(index)
-                            if current.messageDeliveredSubscribers.isEmpty {
+                            if current.isEmpty {
                                 self.peerSummaryContexts.removeValue(forKey: peerId)
                             }
                         }
@@ -2063,7 +2191,40 @@ public final class PendingMessageManager {
                     self.queue.async {
                         if let current = self.peerSummaryContexts[peerId] {
                             current.messageFailedSubscribers.remove(index)
-                            if current.messageFailedSubscribers.isEmpty {
+                            if current.isEmpty {
+                                self.peerSummaryContexts.removeValue(forKey: peerId)
+                            }
+                        }
+                    }
+                })
+            }
+            
+            return disposable
+        }
+    }
+    
+    public func newTopicEvents(peerId: PeerId) -> Signal<NewTopicEvent, NoError> {
+        return Signal { subscriber in
+            let disposable = MetaDisposable()
+            
+            self.queue.async {
+                let summaryContext: PeerPendingMessagesSummaryContext
+                if let current = self.peerSummaryContexts[peerId] {
+                    summaryContext = current
+                } else {
+                    summaryContext = PeerPendingMessagesSummaryContext()
+                    self.peerSummaryContexts[peerId] = summaryContext
+                }
+                
+                let index = summaryContext.newTopicEvents.add({ reason in
+                    subscriber.putNext(reason)
+                })
+                
+                disposable.set(ActionDisposable {
+                    self.queue.async {
+                        if let current = self.peerSummaryContexts[peerId] {
+                            current.newTopicEvents.remove(index)
+                            if current.isEmpty {
                                 self.peerSummaryContexts.removeValue(forKey: peerId)
                             }
                         }

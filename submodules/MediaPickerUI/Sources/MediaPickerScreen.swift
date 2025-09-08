@@ -2877,7 +2877,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
                             let titleLayout: ContextMenuActionItemTextLayout
                             if let price {
                                 title = strings.Attachment_Paid_EditPrice
-                                titleLayout = .secondLineWithValue(strings.Attachment_Paid_EditPrice_Stars(Int32(price)))
+                                titleLayout = .secondLineWithValue(strings.Attachment_Paid_EditPrice_Stars(Int32(clamping: price)))
                             } else {
                                 title = strings.Attachment_Paid_Create
                                 titleLayout = .twoLinesMax

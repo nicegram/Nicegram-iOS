@@ -31,6 +31,167 @@ public final class ChatThemes: Codable, Equatable {
     }
 }
 
+public enum ChatTheme: PostboxCoding, Codable, Equatable {
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case emoticon
+        case gift
+        case themeSettings
+    }
+    
+    case emoticon(String)
+    case gift(StarGift, [TelegramThemeSettings])
+    
+    public init(decoder: PostboxDecoder) {
+        let type = decoder.decodeInt32ForKey(CodingKeys.type.rawValue, orElse: 0)
+        switch type {
+        case 0:
+            self = .emoticon(decoder.decodeStringForKey(CodingKeys.emoticon.rawValue, orElse: ""))
+        case 1:
+            self = .gift(decoder.decodeObjectForKey(CodingKeys.gift.rawValue, decoder: { StarGift(decoder: $0) }) as! StarGift, decoder.decodeCodable([TelegramThemeSettings].self, forKey: CodingKeys.themeSettings.rawValue) ?? [])
+        default:
+            assertionFailure()
+            self = .emoticon("")
+        }
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        let type = try container.decode(Int32.self, forKey: .type)
+        switch type {
+        case 0:
+            self = .emoticon(try container.decode(String.self, forKey: .emoticon))
+        case 1:
+            self = .gift(try container.decode(StarGift.self, forKey: .gift), try container.decode([TelegramThemeSettings].self, forKey: .themeSettings))
+        default:
+            assertionFailure()
+            self = .emoticon("")
+        }
+    }
+                                                    
+    public func encode(_ encoder: PostboxEncoder) {
+        switch self {
+        case let .emoticon(emoticon):
+            encoder.encodeInt32(0, forKey: CodingKeys.type.rawValue)
+            encoder.encodeString(emoticon, forKey: CodingKeys.emoticon.rawValue)
+        case let .gift(gift, themeSettings):
+            encoder.encodeInt32(1, forKey: CodingKeys.type.rawValue)
+            encoder.encodeObject(gift, forKey: CodingKeys.gift.rawValue)
+            encoder.encodeCodable(themeSettings, forKey: CodingKeys.themeSettings.rawValue)
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        switch self {
+        case let .emoticon(emoticon):
+            try container.encode(0 as Int32, forKey: .type)
+            try container.encode(emoticon, forKey: .emoticon)
+        case let .gift(gift, themeSettings):
+            try container.encode(1 as Int32, forKey: .type)
+            try container.encode(gift, forKey: .gift)
+            try container.encode(themeSettings, forKey: .themeSettings)
+        }
+    }
+    
+    public static func ==(lhs: ChatTheme, rhs: ChatTheme) -> Bool {
+        switch lhs {
+        case let .emoticon(emoticon):
+            if case .emoticon(emoticon) = rhs {
+                return true
+            } else {
+                return false
+            }
+        case let .gift(lhsGift, _):
+            if case let .gift(rhsGift, _) = rhs {
+                switch lhsGift {
+                case .generic(let lhsGeneric):
+                    switch rhsGift {
+                    case .generic(let rhsGeneric):
+                        return lhsGeneric == rhsGeneric
+                    default:
+                        return false
+                    }
+                case .unique(let lhsUnique):
+                    switch rhsGift {
+                    case .unique(let rhsUnique):
+                        return lhsUnique.slug == rhsUnique.slug
+                    default:
+                        return false
+                    }
+                }
+            } else {
+                return false
+            }
+        }
+    }
+    
+    public var isEmpty: Bool {
+        if case .emoticon("") = self {
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    public var id: String {
+        switch self {
+        case let .emoticon(emoticon):
+            return emoticon.strippedEmoji
+        case let .gift(gift, _):
+            if case let .unique(uniqueGift) = gift {
+                return uniqueGift.slug
+            } else {
+                fatalError()
+            }
+        }
+    }
+    
+    public func withThemePeerId(_ themePeerId: EnginePeer.Id?) -> ChatTheme {
+        switch self {
+        case .emoticon:
+            return self
+        case let .gift(gift, themeSettings):
+            switch gift {
+            case let .unique(uniqueGift):
+                return .gift(.unique(uniqueGift.withThemePeerId(themePeerId)), themeSettings)
+            case .generic:
+                return self
+            }
+        }
+    }
+}
+
+extension ChatTheme {
+    init?(apiChatTheme: Api.ChatTheme) {
+        switch apiChatTheme {
+        case let .chatTheme(emoticon):
+            self = .emoticon(emoticon)
+        case let .chatThemeUniqueGift(gift, themeSettings):
+            guard let gift = StarGift(apiStarGift: gift) else {
+                return nil
+            }
+            self = .gift(gift, themeSettings.compactMap { TelegramThemeSettings(apiThemeSettings: $0) })
+        }
+    }
+    
+    var apiChatTheme: Api.InputChatTheme {
+        switch self {
+        case let .emoticon(emoticon):
+            return .inputChatTheme(emoticon: emoticon)
+        case let .gift(gift, _):
+            switch gift {
+            case let .unique(uniqueGift):
+                return .inputChatThemeUniqueGift(slug: uniqueGift.slug)
+            default:
+                fatalError()
+            }
+        }
+    }
+}
+
 func _internal_getChatThemes(accountManager: AccountManager<TelegramAccountManagerTypes>, network: Network, forceUpdate: Bool = false, onlyCached: Bool = false) -> Signal<[TelegramTheme], NoError> {
     let fetch: ([TelegramTheme]?, Int64?) -> Signal<[TelegramTheme], NoError> = { current, hash in
         return network.request(Api.functions.account.getChatThemes(hash: hash ?? 0))
@@ -81,27 +242,48 @@ func _internal_getChatThemes(accountManager: AccountManager<TelegramAccountManag
     }
 }
 
-func _internal_setChatTheme(account: Account, peerId: PeerId, emoticon: String?) -> Signal<Void, NoError> {
+func _internal_setChatTheme(account: Account, peerId: PeerId, chatTheme: ChatTheme?) -> Signal<Void, NoError> {
     return account.postbox.loadedPeerWithId(peerId)
     |> mapToSignal { peer in
         guard let inputPeer = apiInputPeer(peer) else {
             return .complete()
         }
-        
         return account.postbox.transaction { transaction -> Signal<Void, NoError> in
+            var chatTheme = chatTheme
+            if case let .gift(gift, _) = chatTheme, case let .unique(uniqueGift) = gift, let previousThemePeerId = uniqueGift.themePeerId {
+                transaction.updatePeerCachedData(peerIds: Set([previousThemePeerId]), update: { _, current in
+                    if let current = current as? CachedUserData {
+                        return current.withUpdatedChatTheme(nil)
+                    } else if let current = current as? CachedGroupData {
+                        return current.withUpdatedChatTheme(nil)
+                    } else if let current = current as? CachedChannelData {
+                        return current.withUpdatedChatTheme(nil)
+                    } else {
+                        return current
+                    }
+                })
+            }
+            chatTheme = chatTheme?.withThemePeerId(peerId)
+            
             transaction.updatePeerCachedData(peerIds: Set([peerId]), update: { _, current in
                 if let current = current as? CachedUserData {
-                    return current.withUpdatedThemeEmoticon(emoticon)
+                    return current.withUpdatedChatTheme(chatTheme)
                 } else if let current = current as? CachedGroupData {
-                    return current.withUpdatedThemeEmoticon(emoticon)
+                    return current.withUpdatedChatTheme(chatTheme)
                 } else if let current = current as? CachedChannelData {
-                    return current.withUpdatedThemeEmoticon(emoticon)
+                    return current.withUpdatedChatTheme(chatTheme)
                 } else {
                     return current
                 }
             })
             
-            return account.network.request(Api.functions.messages.setChatTheme(peer: inputPeer, emoticon: emoticon ?? ""))
+            let inputTheme: Api.InputChatTheme
+            if let chatTheme {
+                inputTheme = chatTheme.apiChatTheme
+            } else {
+                inputTheme = .inputChatThemeEmpty
+            }
+            return account.network.request(Api.functions.messages.setChatTheme(peer: inputPeer, theme: inputTheme))
             |> `catch` { error in
                 return .complete()
             }
@@ -264,5 +446,161 @@ func _internal_setExistingChatWallpaper(account: Account, messageId: MessageId, 
             account.stateManager.addUpdates(updates)
             return .complete()
         }
+    }
+}
+
+private final class CachedUniqueGiftChatThemes: Codable {
+    enum CodingKeys: String, CodingKey {
+        case themes
+    }
+    
+    let themes: [ChatTheme]
+    
+    init(themes: [ChatTheme]) {
+        self.themes = themes
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.themes = try container.decode([ChatTheme].self, forKey: .themes)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(self.themes, forKey: .themes)
+    }
+}
+
+private func entryId() -> ItemCacheEntryId {
+    let cacheKey = ValueBoxKey(length: 8)
+    cacheKey.setInt64(0, value: 0)
+    return ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedChatThemes, key: cacheKey)
+}
+
+public final class UniqueGiftChatThemesContext {
+    public struct State: Equatable {
+        public enum DataState: Equatable {
+            case loading
+            case ready(canLoadMore: Bool)
+        }
+        
+        public var themes: [ChatTheme]
+        public var dataState: DataState
+    }
+    
+    private let queue: Queue = .mainQueue()
+    private let account: Account
+    
+    private let disposable = MetaDisposable()
+    private let cacheDisposable = MetaDisposable()
+    
+    private var themes: [ChatTheme] = []
+    private var nextOffset: Int32 = 0
+    private var dataState: UniqueGiftChatThemesContext.State.DataState = .ready(canLoadMore: true)
+    
+    private let stateValue = Promise<State>()
+    public var state: Signal<State, NoError> {
+        return self.stateValue.get()
+    }
+    
+    public init(account: Account) {
+        self.account = account
+        
+        self.loadMore()
+    }
+    
+    deinit {
+        self.disposable.dispose()
+        self.cacheDisposable.dispose()
+    }
+    
+    public func reload() {
+        self.themes = []
+        self.nextOffset = 0
+        self.dataState = .ready(canLoadMore: true)
+        self.loadMore(reload: true)
+    }
+    
+    public func loadMore(reload: Bool = false) {
+        let network = self.account.network
+        let postbox = self.account.postbox
+        let accountPeerId = self.account.peerId
+        let dataState = self.dataState
+        let offset = self.nextOffset
+        
+        guard case .ready(true) = dataState else {
+            return
+        }
+        if self.themes.isEmpty, !reload {
+            self.cacheDisposable.set((postbox.transaction { transaction -> CachedUniqueGiftChatThemes? in
+                return transaction.retrieveItemCacheEntry(id: entryId())?.get(CachedUniqueGiftChatThemes.self)
+            } |> deliverOn(self.queue)).start(next: { [weak self] cachedUniqueGiftChatThemes in
+                guard let self, let cachedUniqueGiftChatThemes else {
+                    return
+                }
+                self.themes = cachedUniqueGiftChatThemes.themes
+                if case .loading = self.dataState {
+                    self.pushState()
+                }
+            }))
+        }
+        
+        self.dataState = .loading
+        if !reload {
+            self.pushState()
+        }
+        
+        let signal = network.request(Api.functions.account.getUniqueGiftChatThemes(offset: offset, limit: 50, hash: 0))
+        |> map(Optional.init)
+        |> `catch` { error in
+            return .single(nil)
+        }
+        |> mapToSignal { result -> Signal<([ChatTheme], Int32?), NoError> in
+            guard let result else {
+                return .single(([], nil))
+            }
+            return postbox.transaction { transaction -> ([ChatTheme], Int32?) in
+                switch result {
+                case let .chatThemes(_, _, themes, chats, users, nextOffset):
+                    let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
+                    updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
+                    return (themes.compactMap { ChatTheme(apiChatTheme: $0) }, nextOffset)
+                case .chatThemesNotModified:
+                    return ([], nil)
+                }
+            }
+        }
+        
+        self.disposable.set((signal
+        |> deliverOn(self.queue)).start(next: { [weak self] themes, nextOffset in
+            guard let self else {
+                return
+            }
+            if offset == 0 || reload {
+                self.themes = themes
+                self.cacheDisposable.set(self.account.postbox.transaction { transaction in
+                    if let entry = CodableEntry(CachedUniqueGiftChatThemes(themes: themes)) {
+                        transaction.putItemCacheEntry(id: entryId(), entry: entry)
+                    }
+                }.start())
+            } else {
+                self.themes.append(contentsOf: themes)
+            }
+            if let nextOffset {
+                self.nextOffset = nextOffset
+            }
+            self.dataState = .ready(canLoadMore: nextOffset != nil)
+            self.pushState()
+        }))
+    }
+    
+    private func pushState() {
+        let state = State(
+            themes: self.themes,
+            dataState: self.dataState
+        )
+        self.stateValue.set(.single(state))
     }
 }

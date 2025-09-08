@@ -2599,6 +2599,11 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                                 if let listSource = self.listSource as? PeerStoryListContext {
                                     let _ = listSource.addToFolder(id: folderPreview.folder.id, items: [item])
                                 }
+                                
+                                let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                                let text: String
+                                text = presentationData.strings.Stories_ToastAddedToFolder(1)
+                                self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: text, cancel: nil, destructive: false), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
                             })))
                         }
                         
@@ -2989,6 +2994,13 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                     self.initialStoryFolderId = nil
                     self.setStoryFolder(id: folder.id, assumeEmpty: false, animated: false)
                 } else {
+                    if self.initialStoryFolderId != nil && !storyFolders.isEmpty {
+                        self.initialStoryFolderId = nil
+                        
+                        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                        self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: presentationData.strings.Stories_ToastAlbumNotAvailable, cancel: nil, destructive: false), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                    }
+                    
                     self.currentListState = state
                     
                     var hasLocalItems = false
@@ -3923,21 +3935,21 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                                         self.presentRenameStoryFolder(id: folder.id, title: folder.title)
                                     })
                                 })))
+                            }
+                            
+                            items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Conversation_ContextMenuShare, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.contextMenu.primaryColor) }, action: { [weak self] c, _ in
+                                guard let self else {
+                                    c?.dismiss(completion: nil)
+                                    return
+                                }
                                 
-                                items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.Conversation_ContextMenuShare, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.contextMenu.primaryColor) }, action: { [weak self] c, _ in
+                                c?.dismiss(completion: { [weak self] in
                                     guard let self else {
-                                        c?.dismiss(completion: nil)
                                         return
                                     }
-                                    
-                                    c?.dismiss(completion: { [weak self] in
-                                        guard let self else {
-                                            return
-                                        }
-                                        self.shareFolder(id: folder.id)
-                                    })
-                                })))
-                            }
+                                    self.shareFolder(id: folder.id)
+                                })
+                            })))
                             
                             if self.canManageStories {
                                 items.append(.action(ContextMenuActionItem(text: self.presentationData.strings.BotPreviews_MenuReorder, icon: { theme in
@@ -5095,6 +5107,10 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 }
                 if let listSource = self.listSource as? PeerStoryListContext {
                     let _ = listSource.addToFolder(id: folderId, items: items)
+                    
+                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                    let text: String = presentationData.strings.Stories_ToastAddedToFolder(Int32(items.count))
+                    self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: text, cancel: nil, destructive: false), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
                 }
             })
             controller.navigationPresentation = .modal
@@ -5392,6 +5408,64 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 collectibleItemInfo: nil
             )
             self.parentController?.present(shareController, in: .window(.root))
+            shareController.completed = { [weak self] peerIds in
+                guard let self else {
+                    return
+                }
+                let _ = (self.context.engine.data.get(
+                    EngineDataList(
+                        peerIds.map(TelegramEngine.EngineData.Item.Peer.Peer.init)
+                    )
+                )
+                |> deliverOnMainQueue).startStandalone(next: { [weak self] peerList in
+                    guard let self else {
+                        return
+                    }
+                    
+                    let peers = peerList.compactMap { $0 }
+                    let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                    
+                    let text: String
+                    var savedMessages = false
+                    if peers.count == 1, let peer = peers.first {
+                        let peerName = peer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        text = presentationData.strings.WebBrowser_LinkForwardTooltip_Chat_One(peerName).string
+                        savedMessages = peer.id == self.context.account.peerId
+                    } else if peers.count == 2, let firstPeer = peers.first, let secondPeer = peers.last {
+                        let firstPeerName = firstPeer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : firstPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        let secondPeerName = secondPeer.id == self.context.account.peerId ? presentationData.strings.DialogList_SavedMessages : secondPeer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        text = presentationData.strings.WebBrowser_LinkForwardTooltip_TwoChats_One(firstPeerName, secondPeerName).string
+                    } else if let peer = peers.first {
+                        let peerName = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                        text = presentationData.strings.WebBrowser_LinkForwardTooltip_ManyChats_One(peerName, "\(peers.count - 1)").string
+                    } else {
+                        text = ""
+                    }
+                    
+                    self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: savedMessages, text: text), elevatedLayout: false, animateInAsReplacement: true, action: { [weak self] action in
+                        if savedMessages, let self, action == .info {
+                            let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
+                            |> deliverOnMainQueue).start(next: { [weak self] peer in
+                                guard let self, let peer else {
+                                    return
+                                }
+                                guard let navigationController = self.parentController?.navigationController as? NavigationController else {
+                                    return
+                                }
+                                self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), forceOpenChat: true))
+                            })
+                        }
+                        return false
+                    }), in: .current)
+                })
+            }
+            shareController.actionCompleted = { [weak self] in
+                guard let self else {
+                    return
+                }
+                let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                self.parentController?.present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .window(.root))
+            }
         }
     }
 }

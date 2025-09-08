@@ -26,7 +26,7 @@ func _internal_requestUpdateTodoMessageItems(account: Account, messageId: Messag
                 updatedCompletions.removeAll(where: { incompletedIds.contains($0.id) })
                 media = [todo.withUpdated(completions: updatedCompletions)]
             }
-            return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: media))
+            return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: media))
         })
         return account.network.request(Api.functions.messages.toggleTodoCompleted(peer: inputPeer, msgId: messageId.id, completed: completedIds, incompleted: incompletedIds))
         |> mapError { _ -> RequestUpdateTodoMessageError in
@@ -59,7 +59,7 @@ func _internal_appendTodoMessageItems(account: Account, messageId: MessageId, it
                 updatedItems.append(contentsOf: items)
                 media = [todo.withUpdated(items: updatedItems)]
             }
-            return .update(StoreMessage(id: currentMessage.id, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: media))
+            return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: currentMessage.attributes, media: media))
         })
         return account.network.request(Api.functions.messages.appendTodoList(peer: inputPeer, msgId: messageId.id, list: items.map { $0.apiItem }))
         |> mapError { _ -> AppendTodoMessageError in

@@ -390,10 +390,10 @@ public extension Api {
         case messageActionScreenshotTaken
         case messageActionSecureValuesSent(types: [Api.SecureValueType])
         case messageActionSecureValuesSentMe(values: [Api.SecureValue], credentials: Api.SecureCredentialsEncrypted)
-        case messageActionSetChatTheme(emoticon: String)
+        case messageActionSetChatTheme(theme: Api.ChatTheme)
         case messageActionSetChatWallPaper(flags: Int32, wallpaper: Api.WallPaper)
         case messageActionSetMessagesTTL(flags: Int32, period: Int32, autoSettingFrom: Int64?)
-        case messageActionStarGift(flags: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, convertStars: Int64?, upgradeMsgId: Int32?, upgradeStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?)
+        case messageActionStarGift(flags: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, convertStars: Int64?, upgradeMsgId: Int32?, upgradeStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?, prepaidUpgradeHash: String?, giftMsgId: Int32?)
         case messageActionStarGiftUnique(flags: Int32, gift: Api.StarGift, canExportAt: Int32?, transferStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?, resaleAmount: Api.StarsAmount?, canTransferAt: Int32?, canResellAt: Int32?)
         case messageActionSuggestProfilePhoto(photo: Api.Photo)
         case messageActionSuggestedPostApproval(flags: Int32, rejectComment: String?, scheduleDate: Int32?, price: Api.StarsAmount?)
@@ -762,11 +762,11 @@ public extension Api {
                     }
                     credentials.serialize(buffer, true)
                     break
-                case .messageActionSetChatTheme(let emoticon):
+                case .messageActionSetChatTheme(let theme):
                     if boxed {
-                        buffer.appendInt32(-1434950843)
+                        buffer.appendInt32(-1189364422)
                     }
-                    serializeString(emoticon, buffer: buffer, boxed: false)
+                    theme.serialize(buffer, true)
                     break
                 case .messageActionSetChatWallPaper(let flags, let wallpaper):
                     if boxed {
@@ -783,9 +783,9 @@ public extension Api {
                     serializeInt32(period, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt64(autoSettingFrom!, buffer: buffer, boxed: false)}
                     break
-                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId):
+                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId, let prepaidUpgradeHash, let giftMsgId):
                     if boxed {
-                        buffer.appendInt32(1192749220)
+                        buffer.appendInt32(-229775366)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     gift.serialize(buffer, true)
@@ -796,6 +796,8 @@ public extension Api {
                     if Int(flags) & Int(1 << 11) != 0 {fromId!.serialize(buffer, true)}
                     if Int(flags) & Int(1 << 12) != 0 {peer!.serialize(buffer, true)}
                     if Int(flags) & Int(1 << 12) != 0 {serializeInt64(savedId!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 14) != 0 {serializeString(prepaidUpgradeHash!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 15) != 0 {serializeInt32(giftMsgId!, buffer: buffer, boxed: false)}
                     break
                 case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars, let fromId, let peer, let savedId, let resaleAmount, let canTransferAt, let canResellAt):
                     if boxed {
@@ -985,14 +987,14 @@ public extension Api {
                 return ("messageActionSecureValuesSent", [("types", types as Any)])
                 case .messageActionSecureValuesSentMe(let values, let credentials):
                 return ("messageActionSecureValuesSentMe", [("values", values as Any), ("credentials", credentials as Any)])
-                case .messageActionSetChatTheme(let emoticon):
-                return ("messageActionSetChatTheme", [("emoticon", emoticon as Any)])
+                case .messageActionSetChatTheme(let theme):
+                return ("messageActionSetChatTheme", [("theme", theme as Any)])
                 case .messageActionSetChatWallPaper(let flags, let wallpaper):
                 return ("messageActionSetChatWallPaper", [("flags", flags as Any), ("wallpaper", wallpaper as Any)])
                 case .messageActionSetMessagesTTL(let flags, let period, let autoSettingFrom):
                 return ("messageActionSetMessagesTTL", [("flags", flags as Any), ("period", period as Any), ("autoSettingFrom", autoSettingFrom as Any)])
-                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId):
-                return ("messageActionStarGift", [("flags", flags as Any), ("gift", gift as Any), ("message", message as Any), ("convertStars", convertStars as Any), ("upgradeMsgId", upgradeMsgId as Any), ("upgradeStars", upgradeStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any)])
+                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId, let prepaidUpgradeHash, let giftMsgId):
+                return ("messageActionStarGift", [("flags", flags as Any), ("gift", gift as Any), ("message", message as Any), ("convertStars", convertStars as Any), ("upgradeMsgId", upgradeMsgId as Any), ("upgradeStars", upgradeStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any), ("prepaidUpgradeHash", prepaidUpgradeHash as Any), ("giftMsgId", giftMsgId as Any)])
                 case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars, let fromId, let peer, let savedId, let resaleAmount, let canTransferAt, let canResellAt):
                 return ("messageActionStarGiftUnique", [("flags", flags as Any), ("gift", gift as Any), ("canExportAt", canExportAt as Any), ("transferStars", transferStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any), ("resaleAmount", resaleAmount as Any), ("canTransferAt", canTransferAt as Any), ("canResellAt", canResellAt as Any)])
                 case .messageActionSuggestProfilePhoto(let photo):
@@ -1685,11 +1687,13 @@ public extension Api {
             }
         }
         public static func parse_messageActionSetChatTheme(_ reader: BufferReader) -> MessageAction? {
-            var _1: String?
-            _1 = parseString(reader)
+            var _1: Api.ChatTheme?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.ChatTheme
+            }
             let _c1 = _1 != nil
             if _c1 {
-                return Api.MessageAction.messageActionSetChatTheme(emoticon: _1!)
+                return Api.MessageAction.messageActionSetChatTheme(theme: _1!)
             }
             else {
                 return nil
@@ -1755,6 +1759,10 @@ public extension Api {
             } }
             var _9: Int64?
             if Int(_1!) & Int(1 << 12) != 0 {_9 = reader.readInt64() }
+            var _10: String?
+            if Int(_1!) & Int(1 << 14) != 0 {_10 = parseString(reader) }
+            var _11: Int32?
+            if Int(_1!) & Int(1 << 15) != 0 {_11 = reader.readInt32() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
@@ -1764,8 +1772,10 @@ public extension Api {
             let _c7 = (Int(_1!) & Int(1 << 11) == 0) || _7 != nil
             let _c8 = (Int(_1!) & Int(1 << 12) == 0) || _8 != nil
             let _c9 = (Int(_1!) & Int(1 << 12) == 0) || _9 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
-                return Api.MessageAction.messageActionStarGift(flags: _1!, gift: _2!, message: _3, convertStars: _4, upgradeMsgId: _5, upgradeStars: _6, fromId: _7, peer: _8, savedId: _9)
+            let _c10 = (Int(_1!) & Int(1 << 14) == 0) || _10 != nil
+            let _c11 = (Int(_1!) & Int(1 << 15) == 0) || _11 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 {
+                return Api.MessageAction.messageActionStarGift(flags: _1!, gift: _2!, message: _3, convertStars: _4, upgradeMsgId: _5, upgradeStars: _6, fromId: _7, peer: _8, savedId: _9, prepaidUpgradeHash: _10, giftMsgId: _11)
             }
             else {
                 return nil

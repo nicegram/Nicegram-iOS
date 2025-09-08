@@ -139,6 +139,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     private var forumPeer: EnginePeer?
     private var hasPublicPostsTab = false
     private var showPublicPostsTab = false
+    public var displayGlobalPostsNewBadge = false
     
     private var shareStatusDisposable: MetaDisposable?
     
@@ -750,7 +751,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                 
                 filters = defaultAvailableSearchPanes(isForum: isForum, hasDownloads: !isForum && self.hasDownloads, hasPublicPosts: self.showPublicPostsTab).map(\.filter)
             }
-            self.filterContainerNode.update(size: CGSize(width: layout.size.width - 40.0, height: 38.0), sideInset: layout.safeInsets.left - 20.0, filters: filters.map { .filter($0) }, selectedFilter: self.selectedFilter?.id, transitionFraction: self.transitionFraction, presentationData: self.presentationData, transition: transition)
+            self.filterContainerNode.update(size: CGSize(width: layout.size.width - 40.0, height: 38.0), sideInset: layout.safeInsets.left - 20.0, filters: filters.map { .filter($0) }, displayGlobalPostsNewBadge: self.displayGlobalPostsNewBadge, selectedFilter: self.selectedFilter?.id, transitionFraction: self.transitionFraction, presentationData: self.presentationData, transition: transition)
         }
     }
     
@@ -821,7 +822,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         }
         
         let overflowInset: CGFloat = 20.0
-        self.filterContainerNode.update(size: CGSize(width: layout.size.width - overflowInset * 2.0, height: 38.0), sideInset: layout.safeInsets.left - overflowInset, filters: filters.map { .filter($0) }, selectedFilter: self.selectedFilter?.id, transitionFraction: self.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
+        self.filterContainerNode.update(size: CGSize(width: layout.size.width - overflowInset * 2.0, height: 38.0), sideInset: layout.safeInsets.left - overflowInset, filters: filters.map { .filter($0) }, displayGlobalPostsNewBadge: self.displayGlobalPostsNewBadge, selectedFilter: self.selectedFilter?.id, transitionFraction: self.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         
         if isFirstTime {
             self.filterContainerNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)

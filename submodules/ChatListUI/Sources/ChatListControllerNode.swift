@@ -29,6 +29,7 @@ import ComponentFlow
 import ChatFolderLinkPreviewScreen
 import ChatListHeaderComponent
 import StoryPeerListComponent
+import TelegramNotices
 
 public enum ChatListContainerNodeFilter: Equatable {
     case all
@@ -1743,7 +1744,8 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         //
     }
     
-    func activateSearch(placeholderNode: SearchBarPlaceholderNode, displaySearchFilters: Bool, hasDownloads: Bool, initialFilter: ChatListSearchFilter, navigationController: NavigationController?) -> (ASDisplayNode, (Bool) -> Void)? {
+    @MainActor
+    func activateSearch(placeholderNode: SearchBarPlaceholderNode, displaySearchFilters: Bool, hasDownloads: Bool, initialFilter: ChatListSearchFilter, navigationController: NavigationController?) async -> (ASDisplayNode, (Bool) -> Void)? {
         guard let (containerLayout, _, _, cleanNavigationBarHeight, _) = self.containerLayout, self.searchDisplayController == nil else {
             return nil
         }
@@ -1781,6 +1783,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         contentNode.openAdInfo = { [weak self] node, adPeer in
             self?.controller?.openAdInfo(node: node, adPeer: adPeer)
         }
+        
+        let searchTips = await ApplicationSpecificNotice.getGlobalPostsSearch(accountManager: self.context.sharedContext.accountManager).get()
+        contentNode.displayGlobalPostsNewBadge = searchTips < 3
         
         self.searchDisplayController = SearchDisplayController(presentationData: self.presentationData, mode: .list, contentNode: contentNode, cancel: { [weak self] in
             if let requestDeactivateSearch = self?.requestDeactivateSearch {

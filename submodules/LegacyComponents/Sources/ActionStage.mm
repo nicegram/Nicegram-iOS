@@ -246,7 +246,7 @@ ActionStage *ActionStageInstance()
     int length = (int)path.length;
 
 #pragma clang diagnostic push
-#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 260000
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 180500
 #pragma clang diagnostic ignored "-Wvla-cxx-extension"
 #endif
     unichar newPath[path.length];

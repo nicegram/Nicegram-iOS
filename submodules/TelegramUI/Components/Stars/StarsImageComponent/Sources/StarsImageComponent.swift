@@ -255,6 +255,7 @@ public final class StarsImageComponent: Component {
         case transactionPeer(StarsContext.State.Transaction.Peer)
         case gift(Int32)
         case color(UIColor)
+        case search
         
         public static func == (lhs: StarsImageComponent.Subject, rhs: StarsImageComponent.Subject) -> Bool {
             switch lhs {
@@ -296,6 +297,12 @@ public final class StarsImageComponent: Component {
                 }
             case let .color(lhsColor):
                 if case let .color(rhsColor) = rhs, lhsColor == rhsColor {
+                    return true
+                } else {
+                    return false
+                }
+            case .search:
+                if case .search = rhs {
                     return true
                 } else {
                     return false
@@ -880,6 +887,36 @@ public final class StarsImageComponent: Component {
                 let animationFrame = imageFrame.insetBy(dx: -imageFrame.width * 0.19, dy: -imageFrame.height * 0.19).offsetBy(dx: 0.0, dy: -14.0)
                 animationNode.frame = animationFrame
                 animationNode.updateLayout(size: animationFrame.size)
+            case .search:
+                let iconBackgroundView: UIImageView
+                let iconView: UIImageView
+                if let currentBackground = self.iconBackgroundView, let current = self.iconView {
+                    iconBackgroundView = currentBackground
+                    iconView = current
+                } else {
+                    iconBackgroundView = UIImageView()
+                    iconView = UIImageView()
+                    
+                    containerNode.view.addSubview(iconBackgroundView)
+                    containerNode.view.addSubview(iconView)
+                    
+                    self.iconBackgroundView = iconBackgroundView
+                    self.iconView = iconView
+                }
+                
+                let iconInset: CGFloat = 11.0
+                let iconOffset: CGFloat = 0.0
+                iconBackgroundView.image = generateGradientFilledCircleImage(
+                    diameter: imageSize.width,
+                    colors: [
+                        UIColor(rgb: 0x2a9ef1).cgColor,
+                        UIColor(rgb: 0x72d5fd).cgColor
+                    ],
+                    direction: .vertical
+                )
+                iconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/SearchInlineButtonIcon"), color: .white)
+                iconBackgroundView.frame = imageFrame
+                iconView.frame = imageFrame.insetBy(dx: iconInset, dy: iconInset).offsetBy(dx: 0.0, dy: iconOffset)
             }
             
             if let icon = component.icon {

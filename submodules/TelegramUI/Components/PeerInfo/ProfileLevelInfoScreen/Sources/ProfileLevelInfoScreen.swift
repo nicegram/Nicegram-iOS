@@ -17,6 +17,7 @@ import PlainButtonComponent
 import Markdown
 import PremiumUI
 import LottieComponent
+import AnimatedTextComponent
 
 private final class ProfileLevelInfoScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -142,7 +143,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
             self.addSubview(self.dimView)
             self.layer.addSublayer(self.backgroundLayer)
             
-            self.scrollView.delaysContentTouches = true
+            self.scrollView.delaysContentTouches = false
             self.scrollView.canCancelContentTouches = true
             self.scrollView.clipsToBounds = false
             self.scrollView.contentInsetAdjustmentBehavior = .never
@@ -283,6 +284,8 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 self.isUpdating = false
             }
             
+            let isChangingPreview = transition.userData(TransitionHint.self)?.isChangingPreview ?? false
+            
             let alphaTransition: ComponentTransition = transition.animation.isImmediate ? .immediate : .easeInOut(duration: 0.16)
             
             let environment = environment[ViewControllerComponentContainer.Environment.self].value
@@ -353,14 +356,19 @@ private final class ProfileLevelInfoScreenComponent: Component {
                     if pendingStarRating.rating.stars > component.starRating.stars {
                         let pendingPoints = pendingStarRating.rating.stars - component.starRating.stars
                         
+                        let dayCount = (pendingStarRating.timestamp - timestamp) / (24 * 60 * 60)
+                        
                         if self.isPreviewingPendingRating {
-                            secondaryDescriptionTextString = "This will be your rating in 21 days,\n after \(pendingPoints) points are added. [Back >]()"
+                            if dayCount == 0 {
+                                secondaryDescriptionTextString = environment.strings.ProfileLevelInfo_MyDescriptionInPreviewToday(Int32(pendingPoints))
+                            } else {
+                                secondaryDescriptionTextString = environment.strings.ProfileLevelInfo_MyDescriptionInPreview(environment.strings.ProfileLevelInfo_MyDescriptionInPreviewDays(Int32(dayCount)), environment.strings.ProfileLevelInfo_MyDescriptionInPreviewPoints(Int32(pendingPoints))).string
+                            }
                         } else {
-                            let dayCount = (pendingStarRating.timestamp - timestamp) / (24 * 60 * 60)
                             if dayCount == 0 {
                                 secondaryDescriptionTextString = environment.strings.ProfileLevelInfo_MyDescriptionToday(Int32(pendingPoints))
                             } else {
-                                secondaryDescriptionTextString = environment.strings.ProfileLevelInfo_MyDescription(environment.strings.ProfileLevelInfo_MyDescriptionDays(Int32(dayCount)), environment.strings.ProfileLevelInfo_MyDescriptionPoints(Int32(pendingPoints))).string
+                                secondaryDescriptionTextString = environment.strings.ProfileLevelInfo_MyDescriptionPreview(environment.strings.ProfileLevelInfo_MyDescriptionDays(Int32(dayCount)), environment.strings.ProfileLevelInfo_MyDescriptionPoints(Int32(pendingPoints))).string
                             }
                         }
                     }
@@ -369,10 +377,38 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 descriptionTextString = environment.strings.ProfileLevelInfo_OtherDescription(component.peer.compactDisplayTitle).string
             }
             
+            //TODO:localize
+            var titleItems: [AnimatedTextComponent.Item] = []
+            if self.isPreviewingPendingRating {
+                titleItems.append(AnimatedTextComponent.Item(
+                    id: AnyHashable(0),
+                    isUnbreakable: false,
+                    content: .text("Future ")
+                ))
+                titleItems.append(AnimatedTextComponent.Item(
+                    id: AnyHashable(1),
+                    isUnbreakable: true,
+                    content: .text("Rating")
+                ))
+            } else {
+                titleItems.append(AnimatedTextComponent.Item(
+                    id: AnyHashable(1),
+                    isUnbreakable: true,
+                    content: .text("Rating")
+                ))
+            }
+            
+            let _ = titleString
             let titleSize = self.title.update(
-                transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: titleString, font: Font.semibold(17.0), textColor: environment.theme.list.itemPrimaryTextColor))
+                transition: transition,
+                component: AnyComponent(AnimatedTextComponent(
+                    font: Font.semibold(17.0),
+                    color: environment.theme.list.itemPrimaryTextColor,
+                    items: titleItems,
+                    noDelay: true,
+                    animateScale: false,
+                    preferredDirectionIsDown: true,
+                    blur: true
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100.0)
@@ -382,7 +418,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 if titleView.superview == nil {
                     self.navigationBarContainer.addSubview(titleView)
                 }
-                titleView.frame = titleFrame
+                transition.setFrame(view: titleView, frame: titleFrame)
             }
             contentHeight += 56.0
             
@@ -398,8 +434,9 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 environment.theme.list.itemCheckColors.fillColor,
                 environment.theme.list.itemCheckColors.fillColor
             ]
+            let _ = gradientColors
             
-            let levelFraction: CGFloat
+            var levelFraction: CGFloat
             
             let badgeText: String
             var badgeTextSuffix: String?
@@ -413,8 +450,8 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 if let nextLevelStars = pendingStarRating.rating.nextLevelStars {
                     badgeTextSuffix = " / \(starCountString(Int64(nextLevelStars), decimalSeparator: "."))"
                 }
-                if let nextLevelStars = pendingStarRating.rating.nextLevelStars {
-                    levelFraction = Double(pendingStarRating.rating.stars) / Double(nextLevelStars)
+                if let nextLevelStars = pendingStarRating.rating.nextLevelStars, nextLevelStars > pendingStarRating.rating.stars {
+                    levelFraction = Double(pendingStarRating.rating.stars - pendingStarRating.rating.currentLevelStars) / Double(nextLevelStars - pendingStarRating.rating.currentLevelStars)
                 } else {
                     levelFraction = 1.0
                 }
@@ -425,53 +462,57 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 if let nextLevelStars = component.starRating.nextLevelStars {
                     badgeTextSuffix = " / \(starCountString(Int64(nextLevelStars), decimalSeparator: "."))"
                 }
-                if let nextLevelStars = component.starRating.nextLevelStars {
-                    levelFraction = Double(component.starRating.stars) / Double(nextLevelStars)
+                if component.starRating.stars < 0 {
+                    levelFraction = 0.5
+                } else if let nextLevelStars = component.starRating.nextLevelStars {
+                    levelFraction = Double(component.starRating.stars - component.starRating.currentLevelStars) / Double(nextLevelStars - component.starRating.currentLevelStars)
                 } else {
                     levelFraction = 1.0
                 }
             }
-
+            
+            levelFraction = max(0.0, levelFraction)
+            
+            //TODO:localize
             let levelInfoSize = self.levelInfo.update(
-                transition: .immediate,
-                component: AnyComponent(PremiumLimitDisplayComponent(
-                    inactiveColor: environment.theme.list.itemBlocksSeparatorColor.withAlphaComponent(0.5),
-                    activeColors: gradientColors,
-                    inactiveTitle: environment.strings.ProfileLevelInfo_LevelIndex(Int32(currentLevel)),
-                    inactiveValue: "",
-                    inactiveTitleColor: environment.theme.list.itemPrimaryTextColor,
-                    activeTitle: "",
-                    activeValue: nextLevel.flatMap { environment.strings.ProfileLevelInfo_LevelIndex(Int32($0)) } ?? "",
-                    activeTitleColor: .white,
-                    badgeIconName: "Peer Info/ProfileLevelProgressIcon",
-                    badgeText: badgeText,
-                    badgeTextSuffix: badgeTextSuffix,
-                    badgePosition: levelFraction,
-                    badgeGraphPosition: levelFraction,
-                    invertProgress: true,
-                    isPremiumDisabled: false
+                transition: isChangingPreview ? ComponentTransition.immediate.withUserData(ProfileLevelRatingBarComponent.TransitionHint(animate: true)) : .immediate,
+                component: AnyComponent(ProfileLevelRatingBarComponent(
+                    theme: environment.theme,
+                    value: levelFraction,
+                    leftLabel: currentLevel < 0 ? "" : environment.strings.ProfileLevelInfo_LevelIndex(Int32(currentLevel)),
+                    rightLabel: currentLevel < 0 ? "Negative rating" : nextLevel.flatMap { environment.strings.ProfileLevelInfo_LevelIndex(Int32($0)) } ?? "",
+                    badgeValue: badgeText,
+                    badgeTotal: badgeTextSuffix,
+                    level: Int(currentLevel)
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 200.0)
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 110.0)
             )
             if let levelInfoView = self.levelInfo.view {
                 if levelInfoView.superview == nil {
                     self.scrollContentView.addSubview(levelInfoView)
                 }
-                levelInfoView.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - levelInfoSize.width) * 0.5), y: contentHeight - 16.0), size: levelInfoSize)
+                levelInfoView.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - levelInfoSize.width) * 0.5), y: contentHeight - 6.0), size: levelInfoSize)
             }
 
             contentHeight += 129.0
             
-            let isChangingPreview = transition.userData(TransitionHint.self)?.isChangingPreview ?? false
-            
             if let secondaryDescriptionTextString {
+                let changingPreviewAnimationOffset: CGFloat = self.isPreviewingPendingRating ? -100.0 : 100.0
+                let transitionBlurRadius: CGFloat = 10.0
+                
                 if isChangingPreview, let secondaryDescriptionTextView = self.secondaryDescriptionText?.view {
                     self.secondaryDescriptionText = nil
-                    transition.setTransform(view: secondaryDescriptionTextView, transform: CATransform3DMakeScale(0.9, 0.9, 1.0))
+                    transition.setTransform(view: secondaryDescriptionTextView, transform: CATransform3DMakeTranslation(changingPreviewAnimationOffset, 0.0, 0.0))
                     alphaTransition.setAlpha(view: secondaryDescriptionTextView, alpha: 0.0, completion: { [weak secondaryDescriptionTextView] _ in
                         secondaryDescriptionTextView?.removeFromSuperview()
                     })
+                    
+                    if let blurFilter = CALayer.blur() {
+                        blurFilter.setValue(transitionBlurRadius as NSNumber, forKey: "inputRadius")
+                        secondaryDescriptionTextView.layer.filters = [blurFilter]
+                        secondaryDescriptionTextView.layer.animate(from: 0.0 as NSNumber, to: transitionBlurRadius as NSNumber, keyPath: "filters.gaussianBlur.inputRadius", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: 0.3, removeOnCompletion: false)
+                    }
                 }
                 
                 contentHeight -= 8.0
@@ -485,9 +526,16 @@ private final class ProfileLevelInfoScreenComponent: Component {
                     self.secondaryDescriptionText = secondaryDescriptionText
                 }
                 
+                let secondaryTextColor: UIColor
+                if currentLevel < 0 {
+                    secondaryTextColor = UIColor(rgb: 0xFF3B30)
+                } else {
+                    secondaryTextColor = environment.theme.list.itemSecondaryTextColor
+                }
+                
                 let secondaryDescriptionAttributedString = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(secondaryDescriptionTextString, attributes: MarkdownAttributes(
-                    body: MarkdownAttributeSet(font: Font.regular(13.0), textColor: environment.theme.list.itemSecondaryTextColor),
-                    bold: MarkdownAttributeSet(font: Font.semibold(13.0), textColor: environment.theme.list.itemSecondaryTextColor),
+                    body: MarkdownAttributeSet(font: Font.regular(13.0), textColor: secondaryTextColor),
+                    bold: MarkdownAttributeSet(font: Font.semibold(13.0), textColor: secondaryTextColor),
                     link: MarkdownAttributeSet(font: Font.regular(13.0), textColor: environment.theme.list.itemAccentColor),
                     linkAttribute: { url in
                         return ("URL", url)
@@ -538,8 +586,16 @@ private final class ProfileLevelInfoScreenComponent: Component {
                     if secondaryDescriptionTextView.superview == nil {
                         self.scrollContentView.addSubview(secondaryDescriptionTextView)
                         if isChangingPreview {
-                            transition.animateScale(view: secondaryDescriptionTextView, from: 0.9, to: 1.0)
+                            transition.animatePosition(view: secondaryDescriptionTextView, from: CGPoint(x: -changingPreviewAnimationOffset, y: 0.0), to: CGPoint(), additive: true)
                             alphaTransition.animateAlpha(view: secondaryDescriptionTextView, from: 0.0, to: 1.0)
+                            
+                            if let blurFilter = CALayer.blur() {
+                                blurFilter.setValue(transitionBlurRadius as NSNumber, forKey: "inputRadius")
+                                secondaryDescriptionTextView.layer.filters = [blurFilter]
+                                secondaryDescriptionTextView.layer.animate(from: transitionBlurRadius as NSNumber, to: 0.0 as NSNumber, keyPath: "filters.gaussianBlur.inputRadius", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: 0.3, removeOnCompletion: false, completion: { [weak secondaryDescriptionTextView] _ in
+                                    secondaryDescriptionTextView?.layer.filters = nil
+                                })
+                            }
                         }
                     }
                     secondaryDescriptionTextTransition.setPosition(view: secondaryDescriptionTextView, position: secondaryDescriptionTextFrame.center)
@@ -594,23 +650,23 @@ private final class ProfileLevelInfoScreenComponent: Component {
             }
             let items: [Item] = [
                 Item(
-                    title: "Gifts from Telegram",
-                    text: "100% of the Stars spent on gifts purchased from Telegram.",
-                    badgeText: "ADDED",
+                    title: environment.strings.ProfileLevelInfo_Item0_Title,
+                    text: environment.strings.ProfileLevelInfo_Item0_Text,
+                    badgeText: environment.strings.ProfileLevelInfo_Item0_Badge,
                     isBadgeAccent: true,
                     icon: "Chat/Input/Accessory Panels/Gift"
                 ),
                 Item(
-                    title: "Gifts and Posts from Users",
-                    text: "20% of the Stars spent on gifts or posts from users and channels.",
-                    badgeText: "ADDED",
+                    title: environment.strings.ProfileLevelInfo_Item1_Title,
+                    text: environment.strings.ProfileLevelInfo_Item1_Text,
+                    badgeText: environment.strings.ProfileLevelInfo_Item1_Badge,
                     isBadgeAccent: true,
                     icon: "Peer Info/ProfileLevelInfo2"
                 ),
                 Item(
-                    title: "Refunds and Conversions",
-                    text: "10x of refunded Stars and 85% of bought gifts converted to Stars.",
-                    badgeText: "DEDUCTED",
+                    title: environment.strings.ProfileLevelInfo_Item2_Title,
+                    text: environment.strings.ProfileLevelInfo_Item2_Text,
+                    badgeText: environment.strings.ProfileLevelInfo_Item2_Badge,
                     isBadgeAccent: false,
                     icon: "Peer Info/ProfileLevelInfo3"
                 )

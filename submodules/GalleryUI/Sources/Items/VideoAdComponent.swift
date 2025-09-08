@@ -156,7 +156,8 @@ final class VideoAdComponent: Component {
                         animationCache: component.context.animationCache,
                         animationRenderer: component.context.animationRenderer,
                         placeholderColor: UIColor.white.withAlphaComponent(0.2),
-                        text: .plain(attributedText)
+                        text: .plain(attributedText),
+                        maximumNumberOfLines: 0
                     )
                 ),
                 environment: {},

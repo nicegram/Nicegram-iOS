@@ -854,7 +854,7 @@ public final class PeerListItemComponent: Component {
                 } else if peer.isFake {
                     statusIcon = .text(color: component.theme.chat.message.incoming.scamColor, string: component.strings.Message_FakeAccount.uppercased())
                 } else if let emojiStatus = peer.emojiStatus {
-                    statusIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: component.theme.list.mediaPlaceholderColor, themeColor: component.theme.list.itemAccentColor, loopMode: .count(2))
+                    statusIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: component.theme.list.mediaPlaceholderColor, themeColor: component.theme.list.itemAccentColor, loopMode: .count(0))
                     if let color = emojiStatus.color {
                         particleColor = UIColor(rgb: UInt32(bitPattern: color))
                     }

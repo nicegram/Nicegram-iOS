@@ -824,15 +824,15 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         |> map { resourceStatus, actualFetchStatus -> (FileMediaResourceStatus, MediaResourceStatus?) in
                             return (resourceStatus, actualFetchStatus)
                         }
-                        updatedAudioLevelEventsSignal = messageFileMediaPlaybackAudioLevelEvents(context: arguments.context, file: arguments.file, message: EngineMessage(arguments.message), isRecentActions: arguments.isRecentActions, isGlobalSearch: false, isDownloadList: false)
+                        updatedAudioLevelEventsSignal = messageFileMediaPlaybackAudioLevelEvents(context: arguments.context, file: arguments.file, message: EngineMessage(arguments.message), isRecentActions: arguments.isRecentActions, isGlobalSearch: false, isDownloadList: false, isSavedMusic: false)
                     } else {
                         updatedStatusSignal = messageFileMediaResourceStatus(context: arguments.context, file: arguments.file, message: EngineMessage(arguments.message), isRecentActions: arguments.isRecentActions)
                         |> map { resourceStatus -> (FileMediaResourceStatus, MediaResourceStatus?) in
                             return (resourceStatus, nil)
                         }
-                        updatedAudioLevelEventsSignal = messageFileMediaPlaybackAudioLevelEvents(context: arguments.context, file: arguments.file, message: EngineMessage(arguments.message), isRecentActions: arguments.isRecentActions, isGlobalSearch: false, isDownloadList: false)
+                        updatedAudioLevelEventsSignal = messageFileMediaPlaybackAudioLevelEvents(context: arguments.context, file: arguments.file, message: EngineMessage(arguments.message), isRecentActions: arguments.isRecentActions, isGlobalSearch: false, isDownloadList: false, isSavedMusic: false)
                     }
-                    updatedPlaybackStatusSignal = messageFileMediaPlaybackStatus(context: arguments.context, file: arguments.file, message: EngineMessage(arguments.message), isRecentActions: arguments.isRecentActions, isGlobalSearch: false, isDownloadList: false)
+                    updatedPlaybackStatusSignal = messageFileMediaPlaybackStatus(context: arguments.context, file: arguments.file, message: EngineMessage(arguments.message), isRecentActions: arguments.isRecentActions, isGlobalSearch: false, isDownloadList: false, isSavedMusic: false)
                 }
                                 
                 var isAudio = false

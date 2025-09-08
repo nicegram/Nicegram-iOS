@@ -134,9 +134,13 @@ open class ViewControllerComponentContainer: ViewController {
     }
     
     public final class AnimateInTransition {
+        public init() {
+        }
     }
     
     public final class AnimateOutTransition {
+        public init() {
+        }
     }
     
     public final class Node: ViewControllerTracingNode {
@@ -356,7 +360,7 @@ open class ViewControllerComponentContainer: ViewController {
                 }
                 
                 if let layout = strongSelf.validLayout {
-                    strongSelf.containerLayoutUpdated(layout, transition: .immediate)
+                    strongSelf.containerLayoutUpdated(layout, transition: ContainedViewLayoutTransition.immediate)
                 }
             }
         }).strict()
@@ -412,6 +416,14 @@ open class ViewControllerComponentContainer: ViewController {
         self.forceNextUpdate = false
     }
     
+    public func requestLayout(forceUpdate: Bool, transition: ComponentTransition) {
+        self.forceNextUpdate = forceUpdate
+        if self.isViewLoaded, let validLayout = self.validLayout {
+            self.containerLayoutUpdated(validLayout, transition: transition)
+        }
+        self.forceNextUpdate = false
+    }
+    
     override open func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
@@ -419,6 +431,15 @@ open class ViewControllerComponentContainer: ViewController {
         
         self.validLayout = layout
         self.node.containerLayoutUpdated(layout: layout, navigationHeight: navigationHeight, transition: ComponentTransition(transition))
+    }
+    
+    public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ComponentTransition) {
+        super.containerLayoutUpdated(layout, transition: transition.containedViewLayoutTransition)
+        
+        let navigationHeight = self.navigationLayout(layout: layout).navigationFrame.maxY
+        
+        self.validLayout = layout
+        self.node.containerLayoutUpdated(layout: layout, navigationHeight: navigationHeight, transition: transition)
     }
     
     public func updateComponent(component: AnyComponent<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) {

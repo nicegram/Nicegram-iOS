@@ -793,7 +793,7 @@ private func createGiveawayControllerEntries(
             if !state.starsExpanded && product.giveawayOption.isExtended {
                 continue
             }
-            let giftTitle: String = presentationData.strings.BoostGift_Stars_Stars(Int32(product.giveawayOption.count))
+            let giftTitle: String = presentationData.strings.BoostGift_Stars_Stars(Int32(clamping: product.giveawayOption.count))
             let maxWinners = product.giveawayOption.winners.sorted(by: { $0.users < $1.users }).last?.users ?? 1
 
             let starsPerUser: Int64
@@ -951,7 +951,7 @@ private func createGiveawayControllerEntries(
             entries.append(.prizeDescriptionText(presentationData.theme, presentationData.strings.BoostGift_AdditionalPrizesPlaceholder, state.prizeDescription, state.subscriptions))
            
             if state.mode == .starsGiveaway {
-                let starsString = presentationData.strings.BoostGift_AdditionalPrizesInfoStars(Int32(state.stars))
+                let starsString = presentationData.strings.BoostGift_AdditionalPrizesInfoStars(Int32(clamping: state.stars))
                 if state.prizeDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     prizeDescriptionInfoText = presentationData.strings.BoostGift_AdditionalPrizesInfoStarsOn(starsString, "").string
                 } else {

@@ -28,8 +28,9 @@ public struct ChatMessageEntryAttributes: Equatable {
     public var isPlaying: Bool
     public var isCentered: Bool
     public var authorStoryStats: PeerStoryStats?
+    public var displayContinueThreadFooter: Bool
     
-    public init(rank: CachedChannelAdminRank?, isContact: Bool, contentTypeHint: ChatMessageEntryContentType, updatingMedia: ChatUpdatingMessageMedia?, isPlaying: Bool, isCentered: Bool, authorStoryStats: PeerStoryStats?) {
+    public init(rank: CachedChannelAdminRank?, isContact: Bool, contentTypeHint: ChatMessageEntryContentType, updatingMedia: ChatUpdatingMessageMedia?, isPlaying: Bool, isCentered: Bool, authorStoryStats: PeerStoryStats?, displayContinueThreadFooter: Bool) {
         self.rank = rank
         self.isContact = isContact
         self.contentTypeHint = contentTypeHint
@@ -37,6 +38,7 @@ public struct ChatMessageEntryAttributes: Equatable {
         self.isPlaying = isPlaying
         self.isCentered = isCentered
         self.authorStoryStats = authorStoryStats
+        self.displayContinueThreadFooter = displayContinueThreadFooter
     }
     
     public init() {
@@ -47,12 +49,14 @@ public struct ChatMessageEntryAttributes: Equatable {
         self.isPlaying = false
         self.isCentered = false
         self.authorStoryStats = nil
+        self.displayContinueThreadFooter = false
     }
 }
 
 public enum ChatInfoData: Equatable {
     case botInfo(title: String, text: String, photo: TelegramMediaImage?, video: TelegramMediaFile?)
     case userInfo(peer: EnginePeer, verification: PeerVerification?, registrationDate: String?, phoneCountry: String?, groupsInCommonCount: Int32)
+    case newThreadInfo
 }
 
 public enum ChatHistoryEntry: Identifiable, Comparable {
@@ -131,8 +135,13 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return index
             case let .ReplyCountEntry(index, _, _, _):
                 return index
-            case .ChatInfoEntry:
-                return MessageIndex.absoluteLowerBound()
+            case let .ChatInfoEntry(infoData, _):
+                switch infoData {
+                case .newThreadInfo:
+                    return MessageIndex.absoluteUpperBound()
+                default:
+                    return MessageIndex.absoluteLowerBound()
+                }
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
             // Nicegram ATT
@@ -152,8 +161,13 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return index
             case let .ReplyCountEntry(index, _, _, _):
                 return index
-            case .ChatInfoEntry:
-                return MessageIndex.absoluteLowerBound()
+            case let .ChatInfoEntry(infoData, _):
+                switch infoData {
+                case .newThreadInfo:
+                    return MessageIndex.absoluteUpperBound()
+                default:
+                    return MessageIndex.absoluteLowerBound()
+                }
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
             // Nicegram ATT

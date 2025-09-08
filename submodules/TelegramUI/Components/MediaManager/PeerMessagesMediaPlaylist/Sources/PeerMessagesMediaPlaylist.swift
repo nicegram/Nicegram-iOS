@@ -47,22 +47,29 @@ private func extractFileMedia(_ message: Message) -> TelegramMediaFile? {
     return file
 }
 
-final class MessageMediaPlaylistItem: SharedMediaPlaylistItem {
-    let id: SharedMediaPlaylistItemId
-    let message: Message
+public final class MessageMediaPlaylistItem: SharedMediaPlaylistItem {
+    public let id: SharedMediaPlaylistItemId
+    public let message: Message
+    public let isSavedMusic: Bool
     
-    init(message: Message) {
+    public init(message: Message, isSavedMusic: Bool) {
         self.id = PeerMessagesMediaPlaylistItemId(messageId: message.id, messageIndex: message.index)
         self.message = message
+        self.isSavedMusic = isSavedMusic
     }
     
-    var stableId: AnyHashable {
+    public var stableId: AnyHashable {
         return MessageMediaPlaylistItemStableId(stableId: message.stableId)
     }
     
-    lazy var playbackData: SharedMediaPlaybackData? = {
+    public lazy var playbackData: SharedMediaPlaybackData? = {
         if let file = extractFileMedia(self.message) {
-            let fileReference = FileMediaReference.message(message: MessageReference(self.message), media: file)
+            let fileReference: FileMediaReference
+            if self.isSavedMusic, let peer = self.message.peers[self.message.id.peerId], let peerReference = PeerReference(peer) {
+                fileReference = .savedMusic(peer: peerReference, media: file)
+            } else {
+                fileReference = .message(message: MessageReference(self.message), media: file)
+            }
             let source = SharedMediaPlaybackDataSource.telegramFile(reference: fileReference, isCopyProtected: self.message.isCopyProtected(), isViewOnce: self.message.minAutoremoveOrClearTimeout == viewOnceTimeout)
             for attribute in file.attributes {
                 switch attribute {
@@ -95,7 +102,7 @@ final class MessageMediaPlaylistItem: SharedMediaPlaylistItem {
         return nil
     }()
 
-    lazy var displayData: SharedMediaPlaybackDisplayData? = {
+    public lazy var displayData: SharedMediaPlaybackDisplayData? = {
         if let file = extractFileMedia(self.message) {
             let text = self.message.text
             var entities: [MessageTextEntity] = []
@@ -385,16 +392,16 @@ private struct PlaybackStack {
     }
 }
 
-final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
-    let context: AccountContext
+public final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
+    public let context: AccountContext
     private let messagesLocation: PeerMessagesPlaylistLocation
     private let chatLocationContextHolder: Atomic<ChatLocationContextHolder?>?
     
-    var location: SharedMediaPlaylistLocation {
+    public var location: SharedMediaPlaylistLocation {
         return self.messagesLocation
     }
     
-    var currentItemDisappeared: (() -> Void)?
+    public var currentItemDisappeared: (() -> Void)?
     
     private let navigationDisposable = MetaDisposable()
     private let loadMoreDisposable = MetaDisposable()
@@ -408,16 +415,16 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
     private var loadingMore: Bool = false
     private var playedToEnd: Bool = false
     private var order: MusicPlaybackSettingsOrder = .regular
-    private(set) var looping: MusicPlaybackSettingsLooping = .none
+    public private(set) var looping: MusicPlaybackSettingsLooping = .none
     
-    let id: SharedMediaPlaylistId
+    public let id: SharedMediaPlaylistId
     
     private let stateValue = Promise<SharedMediaPlaylistState>()
-    var state: Signal<SharedMediaPlaylistState, NoError> {
+    public var state: Signal<SharedMediaPlaylistState, NoError> {
         return self.stateValue.get()
     }
     
-    init(context: AccountContext, location: PeerMessagesPlaylistLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>?) {
+    public init(context: AccountContext, location: PeerMessagesPlaylistLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>?) {
         assert(Queue.mainQueue().isCurrent())
         
         self.id = location.playlistId
@@ -426,13 +433,15 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
         self.chatLocationContextHolder = chatLocationContextHolder
         self.messagesLocation = location
         
-        switch self.messagesLocation {
-        case let .messages(_, _, messageId), let .singleMessage(messageId), let .custom(_, messageId, _):
+        switch self.messagesLocation.effectiveLocation(context: context) {
+        case let .messages(_, _, messageId), let .singleMessage(messageId), let .custom(_, _, messageId, _):
             self.loadItem(anchor: .messageId(messageId), navigation: .later, reversed: self.order == .reversed)
         case let .recentActions(message):
             self.loadingItem = false
             self.currentItem = (message, [])
             self.updateState()
+        case .savedMusic:
+            break
         }
     }
     
@@ -442,7 +451,7 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
         self.currentlyObservedMessageDisposable.dispose()
     }
     
-    func control(_ action: SharedMediaPlaylistControlAction) {
+    public func control(_ action: SharedMediaPlaylistControlAction) {
         assert(Queue.mainQueue().isCurrent())
         
         switch action {
@@ -488,7 +497,7 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
         }
     }
     
-    func setOrder(_ order: MusicPlaybackSettingsOrder) {
+    public func setOrder(_ order: MusicPlaybackSettingsOrder) {
         if self.order != order {
             self.order = order
             self.playbackStack.clear()
@@ -499,7 +508,7 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
         }
     }
     
-    func setLooping(_ looping: MusicPlaybackSettingsLooping) {
+    public func setLooping(_ looping: MusicPlaybackSettingsLooping) {
         if self.looping != looping {
             self.looping = looping
             self.updateState()
@@ -507,21 +516,27 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
     }
     
     private func updateState() {
+        var isSavedMusic = false
+        if case .savedMusic = self.messagesLocation {
+            isSavedMusic = true
+        }
+        
         var item: MessageMediaPlaylistItem?
         var nextItem: MessageMediaPlaylistItem?
         var previousItem: MessageMediaPlaylistItem?
         if let (message, aroundMessages) = self.currentItem {
-            item = MessageMediaPlaylistItem(message: message)
+            item = MessageMediaPlaylistItem(message: message, isSavedMusic: isSavedMusic)
             for around in aroundMessages {
                 if around.index < message.index {
-                    previousItem = MessageMediaPlaylistItem(message: around)
+                    previousItem = MessageMediaPlaylistItem(message: around, isSavedMusic: isSavedMusic)
                 } else {
-                    nextItem = MessageMediaPlaylistItem(message: around)
+                    nextItem = MessageMediaPlaylistItem(message: around, isSavedMusic: isSavedMusic)
                 }
             }
         }
         self.stateValue.set(.single(SharedMediaPlaylistState(loading: self.loadingItem, playedToEnd: self.playedToEnd, item: item, nextItem: nextItem, previousItem: previousItem, order: self.order, looping: self.looping)))
-        if item?.message.id != self.currentlyObservedMessageId {
+        if case .custom = self.messagesLocation.effectiveLocation(context: self.context) {
+        } else if item?.message.id != self.currentlyObservedMessageId {
             self.currentlyObservedMessageId = item?.message.id
             if let id = item?.message.id {
                 self.currentlyObservedMessageDisposable.set((self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Messages.Message(id: id))
@@ -554,10 +569,10 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
         } else {
             namespaces = .not(Namespaces.Message.allNonRegular)
         }
-        
+                
         switch anchor {
             case let .messageId(messageId):
-                switch self.messagesLocation {
+                switch self.messagesLocation.effectiveLocation(context: self.context) {
                     case let .messages(chatLocation, tagMask, _):
                         let historySignal = self.context.account.postbox.messageAtId(messageId)
                         |> take(1)
@@ -593,29 +608,30 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
                                 strongSelf.updateState()
                             }
                         }))
-                    case let .custom(messages, at, _):
+                    case let .custom(messages, _, at, _):
                         self.navigationDisposable.set((messages
                         |> take(1)
                         |> deliverOnMainQueue).startStrict(next: { [weak self] messages in
-                            if let strongSelf = self {
-                                assert(strongSelf.loadingItem)
-                                
-                                strongSelf.loadingItem = false
-                                if let message = messages.0.first(where: { $0.id == at }) {
-                                    strongSelf.playbackStack.clear()
-                                    strongSelf.playbackStack.push(message.id)
-                                    if let (message, aroundMessages, _) = navigatedMessageFromMessages(messages.0, anchorIndex: message.index, position: .exact) {
-                                        strongSelf.currentItem = (message, aroundMessages)
-                                    } else {
-                                        strongSelf.currentItem = (message, [])
-                                    }
-                                    strongSelf.playedToEnd = false
-                                } else {
-                                    strongSelf.currentItem = nil
-                                    strongSelf.playedToEnd = true
-                                }
-                                strongSelf.updateState()
+                            guard let self else {
+                                return
                             }
+                            assert(self.loadingItem)
+                            
+                            self.loadingItem = false
+                            if let message = messages.0.first(where: { $0.id == at }) {
+                                self.playbackStack.clear()
+                                self.playbackStack.push(message.id)
+                                if let (message, aroundMessages, _) = navigatedMessageFromMessages(messages.0, anchorIndex: message.index, position: .exact) {
+                                    self.currentItem = (message, aroundMessages)
+                                } else {
+                                    self.currentItem = (message, [])
+                                }
+                                self.playedToEnd = false
+                            } else {
+                                self.currentItem = nil
+                                self.playedToEnd = true
+                            }
+                            self.updateState()
                         }))
                     default:
                         self.navigationDisposable.set((self.context.account.postbox.messageAtId(messageId)
@@ -637,7 +653,7 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
                         }))
                 }
             case let .index(index):
-                switch self.messagesLocation {
+                switch self.messagesLocation.effectiveLocation(context: self.context) {
                     case let .messages(chatLocation, tagMask, _):
                         var inputIndex: Signal<MessageIndex?, NoError>?
                         let looping = self.looping
@@ -769,7 +785,9 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
                         self.loadingItem = false
                         self.currentItem = (message, [])
                         self.updateState()
-                    case let .custom(messages, _, loadMore):
+                    case .savedMusic:
+                        fatalError()
+                    case let .custom(messages, _, _, loadMore):
                         let inputIndex: Signal<MessageIndex, NoError>
                         let looping = self.looping
                         switch self.order {
@@ -822,6 +840,16 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
                                 }
                                 
                                 if case .all = looping {
+                                    if let first = messages.first {
+                                        if let (message, aroundMessages, _) = navigatedMessageFromMessages(messages, anchorIndex: first.index, position: .exact) {
+                                            switch navigation {
+                                                case .random:
+                                                    return .single(((message, []), messages.count, false))
+                                                default:
+                                                    return .single(((message, aroundMessages), messages.count, false))
+                                            }
+                                        }
+                                    }
                                     return .single((nil, messages.count, false))
                                 } else {
                                     if hasMore {
@@ -879,7 +907,7 @@ final class PeerMessagesMediaPlaylist: SharedMediaPlaylist {
         }
     }
     
-    func onItemPlaybackStarted(_ item: SharedMediaPlaylistItem) {
+    public func onItemPlaybackStarted(_ item: SharedMediaPlaylistItem) {
         if let item = item as? MessageMediaPlaylistItem {
             switch self.messagesLocation {
                 case .recentActions:

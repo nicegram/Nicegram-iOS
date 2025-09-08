@@ -779,7 +779,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
     }
 }
 
-public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, threadId: Int64, isPinned: Bool?, isClosed: Bool?, chatListController: ViewController?, joined: Bool, canSelect: Bool, customEdit: ((ContextController) -> Void)? = nil, customPinUnpin: ((ContextController) -> Void)? = nil, reorder: (() -> Void)? = nil) -> Signal<[ContextMenuItem], NoError> {
+public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, threadId: Int64, isPinned: Bool?, isClosed: Bool?, chatListController: ViewController?, joined: Bool, canSelect: Bool, customEdit: ((ContextController) -> Void)? = nil, customPinUnpin: ((ContextController) -> Void)? = nil, reorder: (() -> Void)? = nil, onDeleted: (() -> Void)? = nil) -> Signal<[ContextMenuItem], NoError> {
     let presentationData = context.sharedContext.currentPresentationData.with({ $0 })
     let strings = presentationData.strings
 
@@ -1106,32 +1106,33 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                 })))
             }
             if channel.hasPermission(.deleteAllMessages) {
-                items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_Delete, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.contextMenu.destructiveColor) }, action: { [weak chatListController] _, f in
-                    f(.default)
-                    
-                    if let chatListController = chatListController as? ChatListControllerImpl {
-                        chatListController.deletePeerThread(peerId: peerId, threadId: threadId)
-                    } else if let chatListController {
-                        let actionSheet = ActionSheetController(presentationData: presentationData)
-                        var items: [ActionSheetItem] = []
-                        
-                        items.append(ActionSheetTextItem(title: presentationData.strings.ChatList_DeleteTopicConfirmationText, parseMarkdown: true))
-                        items.append(ActionSheetButtonItem(title: presentationData.strings.ChatList_DeleteTopicConfirmationAction, color: .destructive, action: { [weak actionSheet] in
-                            actionSheet?.dismissAnimated()
-                            let _ = context.engine.peers.removeForumChannelThread(id: peerId, threadId: threadId).startStandalone(completed: {
-                            })
-                        }))
-                        
-                        actionSheet.setItemGroups([
-                            ActionSheetItemGroup(items: items),
-                            ActionSheetItemGroup(items: [
-                                ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
-                                    actionSheet?.dismissAnimated()
+                items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_Delete, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.contextMenu.destructiveColor) }, action: { [weak chatListController] c, _ in
+                    c?.dismiss(completion: {
+                        if let chatListController = chatListController as? ChatListControllerImpl {
+                            chatListController.deletePeerThread(peerId: peerId, threadId: threadId)
+                        } else if let chatListController {
+                            let actionSheet = ActionSheetController(presentationData: presentationData)
+                            var items: [ActionSheetItem] = []
+                            
+                            items.append(ActionSheetTextItem(title: presentationData.strings.ChatList_DeleteTopicConfirmationText, parseMarkdown: true))
+                            items.append(ActionSheetButtonItem(title: presentationData.strings.ChatList_DeleteTopicConfirmationAction, color: .destructive, action: { [weak actionSheet] in
+                                actionSheet?.dismissAnimated()
+                                onDeleted?()
+                                let _ = context.engine.peers.removeForumChannelThread(id: peerId, threadId: threadId).startStandalone(completed: {
                                 })
+                            }))
+                            
+                            actionSheet.setItemGroups([
+                                ActionSheetItemGroup(items: items),
+                                ActionSheetItemGroup(items: [
+                                    ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
+                                        actionSheet?.dismissAnimated()
+                                    })
+                                ])
                             ])
-                        ])
-                        chatListController.present(actionSheet, in: .window(.root))
-                    }
+                            chatListController.present(actionSheet, in: .window(.root))
+                        }
+                    })
                 })))
             }
         }

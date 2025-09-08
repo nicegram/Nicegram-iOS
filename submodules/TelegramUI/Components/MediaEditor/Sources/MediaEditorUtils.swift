@@ -98,6 +98,7 @@ func loadTexture(image: UIImage, device: MTLDevice) -> MTLTexture? {
     
     let data = dataForImage(image)
     texture?.replace(region: region, mipmapLevel: 0, withBytes: data, bytesPerRow: bytesPerRow)
+    data.deallocate()
     
     return texture
 }

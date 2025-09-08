@@ -505,8 +505,8 @@ public func chatMessagePaymentAlertController(
 
     let text: String
     if peers.count == 1, let peer = peers.first {
-        let amountString = presentationData.strings.Chat_PaidMessage_Confirm_Text_Stars(Int32(amount.value))
-        let totalString = presentationData.strings.Chat_PaidMessage_Confirm_Text_Stars(Int32(amount.value * Int64(count)))
+        let amountString = presentationData.strings.Chat_PaidMessage_Confirm_Text_Stars(Int32(clamping: amount.value))
+        let totalString = presentationData.strings.Chat_PaidMessage_Confirm_Text_Stars(Int32(clamping: amount.value * Int64(count)))
         if case let .channel(channel) = peer.chatOrMonoforumMainPeer, case .broadcast = channel.info {
             text = presentationData.strings.Chat_PaidMessage_Confirm_SingleComment_Text(EnginePeer(channel).compactDisplayTitle, amountString, totalString, messagesString).string
         } else {
@@ -515,7 +515,7 @@ public func chatMessagePaymentAlertController(
     } else {
         let amount = totalAmount ?? amount
         let usersString = presentationData.strings.Chat_PaidMessage_Confirm_Text_Users(Int32(peers.count))
-        let totalString = presentationData.strings.Chat_PaidMessage_Confirm_Text_Stars(Int32(amount.value * Int64(count)))
+        let totalString = presentationData.strings.Chat_PaidMessage_Confirm_Text_Stars(Int32(clamping: amount.value * Int64(count)))
         text = presentationData.strings.Chat_PaidMessage_Confirm_Multiple_Text(usersString, totalString, messagesString).string
     }
     
@@ -573,7 +573,7 @@ public func chatMessageRemovePaymentAlertController(
         text = strings.Chat_PaidMessage_RemoveFee_Text(peer.compactDisplayTitle).string
     }
     
-    let optionText = amount.flatMap { strings.Chat_PaidMessage_RemoveFee_Refund(strings.Chat_PaidMessage_RemoveFee_Refund_Stars(Int32($0.value))).string }
+    let optionText = amount.flatMap { strings.Chat_PaidMessage_RemoveFee_Refund(strings.Chat_PaidMessage_RemoveFee_Refund_Stars(Int32(clamping: $0.value))).string }
     
     let contentNode = ChatMessagePaymentAlertContentNode(theme: AlertControllerTheme(presentationData: presentationData), ptheme: theme, strings: strings, title: title, text: text, optionText: optionText, actions: actions, alignment: .horizontal)
     

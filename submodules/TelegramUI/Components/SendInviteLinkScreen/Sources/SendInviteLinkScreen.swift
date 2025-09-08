@@ -1028,7 +1028,18 @@ private final class SendInviteLinkScreenComponent: Component {
                                                     let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
                                                     controller.present(UndoOverlayController(presentationData: presentationData, content: .forward(savedMessages: false, text: text), elevatedLayout: false, action: { _ in return false }), in: .window(.root))
                                                     
-                                                    controller.dismiss()
+                                                    let navigationController = controller.navigationController as? NavigationController
+                                                    
+                                                    let context = component.context
+                                                    controller.dismiss(completion: { [weak navigationController] in
+                                                        if let navigationController, let peer = selectedPeers.first?.peer {
+                                                            context.sharedContext.navigateToChatController(NavigateToChatControllerParams(
+                                                                navigationController: navigationController,
+                                                                context: context,
+                                                                chatLocation: .peer(peer)
+                                                            ))
+                                                        }
+                                                    })
                                                 }
                                             )
                                         }
