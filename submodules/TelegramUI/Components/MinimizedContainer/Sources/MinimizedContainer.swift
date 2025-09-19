@@ -322,6 +322,17 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
     private let scrollView: ScrollViewImpl
     private var itemNodes: [AnyHashable: ItemNode] = [:]
     
+    // Nicegram DockWidget
+    public var nicegramWidget: MinimizedContainerNicegramWidget?
+    private var nicegramWidgetView: UIView? { nicegramWidget?.view }
+    
+    private var nicegramWidgetHeight: CGFloat = 0
+    public func updateNicegramWidget(height: CGFloat, transition: ContainedViewLayoutTransition) {
+        self.nicegramWidgetHeight = height
+        self.requestUpdate(transition: transition)
+    }
+    //
+    
     private var highlightedItemId: AnyHashable?
     
     private var dismissingItemId: AnyHashable?
@@ -626,6 +637,14 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
         })
     }
     
+    // Nicegram DockWidget
+    public func dismissOnlyControllers() {
+        self.items = []
+        self.itemNodes.values.forEach { $0.removeFromSupernode() }
+        self.requestUpdate(transition: .animated(duration: 0.4, curve: .spring))
+    }
+    //
+    
     public func expand() {
         guard !self.items.isEmpty && !self.isExpanded && self.currentTransition == nil else {
             return
@@ -744,7 +763,37 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
         }
         self.blurView.isUserInteractionEnabled = self.isExpanded
         
-        let bottomEdgeHeight = 24.0 + 33.0 + layout.intrinsicInsets.bottom
+        // Nicegram DockWidget, 'let' to 'var'
+        var bottomEdgeHeight = 24.0 + 33.0 + layout.intrinsicInsets.bottom
+        
+        // Nicegram DockWidget
+        if self.items.isEmpty {
+            bottomEdgeHeight = 13 + layout.intrinsicInsets.bottom
+        }
+        if nicegramWidgetHeight > 0, let nicegramWidgetView {
+            if nicegramWidgetView.superview == nil {
+                self.scrollView.addSubview(nicegramWidgetView)
+            }
+            
+            let widgetSize = CGSize(
+                width: layout.size.width,
+                height: nicegramWidgetHeight + layout.intrinsicInsets.bottom
+            )
+            
+            nicegramWidgetView.frame = CGRect(
+                origin: CGPoint(
+                    x: 0,
+                    y: layout.size.height - widgetSize.height
+                ),
+                size: widgetSize
+            )
+            
+            bottomEdgeHeight += nicegramWidgetHeight
+        } else {
+            nicegramWidgetView?.removeFromSuperview()
+        }
+        //
+        
         let bottomEdgeOrigin = layout.size.height - bottomEdgeHeight
         containerTransition.updateFrame(view: self.bottomEdgeView, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - bottomEdgeHeight), size: CGSize(width: layout.size.width, height: bottomEdgeHeight)))
         
@@ -980,6 +1029,12 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
             
             index += 1
         }
+        // Nicegram DockWidget
+        if let nicegramWidgetView, nicegramWidgetView.superview == scrollView {
+            self.scrollView.bringSubviewToFront(nicegramWidgetView)
+            nicegramWidgetView.layer.zPosition = .greatestFiniteMagnitude
+        }
+        //
         
         let contentSize = CGSize(width: layout.size.width, height: contentHeight)
         if self.scrollView.contentSize != contentSize {
@@ -1210,6 +1265,15 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
     }
     
     public func collapsedHeight(layout: ContainerViewLayout) -> CGFloat {
-        return minimizedNavigationHeight + minimizedTopMargin + layout.intrinsicInsets.bottom
+        var result = minimizedNavigationHeight + minimizedTopMargin + layout.intrinsicInsets.bottom
+        
+        // Nicegram DockWidget
+        if self.items.isEmpty {
+            result = minimizedTopMargin + layout.intrinsicInsets.bottom
+        }
+        result += nicegramWidgetHeight
+        //
+        
+        return result
     }
 }

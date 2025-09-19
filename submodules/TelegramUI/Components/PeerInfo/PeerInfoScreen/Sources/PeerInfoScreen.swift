@@ -49,22 +49,26 @@ import SaveToCameraRoll
 import PeerInfoUI
 // Nicegram Imports
 import FeatAssistant
+import FeatCalls
+import FeatGodsEye
 import struct FeatPremiumUI.PremiumUITgHelper
 import FeatTgUserNotes
 import FeatWallet
 import NGAiChatUI
-import _NGRemoteConfig
-import NGRepoUser
-import NGWebUtils
-import NGStrings
-import NGUI
+import NGAnalytics
 import NGCore
+import NGCoreUI
 import NGData
 import NGEnv
 import NGLab
+import _NGRemoteConfig
+import NGRepoUser
+import NGStrings
+import NGUI
+import NGUtils
+import NGWebUtils
 import NicegramWallet
 import UndoUI
-import FeatGodsEye
 //
 import ListMessageItem
 import GalleryData
@@ -1402,6 +1406,7 @@ private func settingsEditingItems(data: PeerInfoScreenData?, state: PeerInfoStat
 }
 
 private enum InfoSection: Int, CaseIterable {
+    case nicegramCall
     case nicegramWallet
     case nicegram
     case groupLocation
@@ -2211,6 +2216,24 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
             }))
         }
     }
+    
+    // Nicegram Calls
+    if isNicegramCallsEnabled(),
+       let user = data.peer as? TelegramUser {
+        items[.nicegramCall]?.append(
+            PeerInfoScreenActionItem(
+                id: 0,
+                text: FeatCalls.strings.peerInfoCallButton(),
+                icon: NGCoreUI.images.shieldHandset(),
+                spacing: 4,
+                action: {
+                    trackEvent("call_start_click") 
+                    startNicegramCall(context: context, to: user.id)
+                }
+            )
+        )
+    }
+    //
     
     // Nicegram Wallet
     if #available(iOS 16.0, *) {

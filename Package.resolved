@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/devicekit/DeviceKit.git",
       "state" : {
-        "revision" : "513b9d7e7a1bd46504a1009bbab943b75ce2f195",
-        "version" : "5.6.0"
+        "revision" : "581df61650bc457ec00373a592a84be3e7468eb1",
+        "version" : "5.7.0"
       }
     },
     {
@@ -95,8 +95,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "e2a3c3fbcaa1df3fd549b5b3f1175bc8a11912fd",
-        "version" : "12.2.0"
+        "revision" : "1cce11cf94d27e2fc194112cc7ad51e8fb279230",
+        "version" : "12.3.0"
       }
     },
     {
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
       "state" : {
-        "revision" : "a2d0f1f1666de591eb1a811f40b1706f5c63a2ed",
-        "version" : "2.3.0"
+        "revision" : "c7d04b7592d3a1d6f8b7ce4e103cfbcbd766f419",
+        "version" : "3.0.0"
       }
     },
     {
@@ -122,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "1c7edd5cc6e4ad22d2b81166bb9b208b9e63058a",
-        "version" : "12.2.0"
+        "revision" : "34f5306ed8c9d9493f6390b4c2a18f19ecad1da4",
+        "version" : "12.3.0"
       }
     },
     {
@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "5a167e4d281284327607607e794d422248916fb7"
+        "branch" : "feat/calls",
+        "revision" : "11b656f3247fca88149c74db01a49c8881fece76"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "8263c4223a6d09fd172cdf7c389b73e1422b89cb",
-        "version" : "6.11.3"
+        "revision" : "39c3a99bbd05e7b0c4d25b9b2811937c945d7b23",
+        "version" : "6.11.4"
       }
     },
     {
@@ -325,6 +325,15 @@
       }
     },
     {
+      "identity" : "socket.io-client-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/socketio/socket.io-client-swift.git",
+      "state" : {
+        "revision" : "42da871d9369f290d6ec4930636c40672143905b",
+        "version" : "16.1.1"
+      }
+    },
+    {
       "identity" : "starscream",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/daltoniam/Starscream.git",
@@ -356,8 +365,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark",
       "state" : {
-        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
-        "version" : "0.6.0"
+        "revision" : "b97d09472e847a416629f026eceae0e2afcfad65",
+        "version" : "0.7.0"
       }
     },
     {
@@ -428,8 +437,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",
       "state" : {
-        "revision" : "e3f69fd321d0c9fcdc16fb576a0cdd956675face",
-        "version" : "1.31.0"
+        "revision" : "2547102afd04fe49f1b286090f13ebce07284980",
+        "version" : "1.31.1"
       }
     },
     {
@@ -527,8 +536,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "385185ddf9b896c32f5e55b1199795b0edf05223",
-        "version" : "4.3.6"
+        "revision" : "3f9c90c1a99835293dc2a21674ad25687fc9b270",
+        "version" : "4.3.9"
       }
     },
     {

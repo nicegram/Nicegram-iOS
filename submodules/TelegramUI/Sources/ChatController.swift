@@ -6798,6 +6798,17 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
+        // Nicegram Calls
+        if #available(iOS 15.0, *),
+           !self.didAppear,
+           let peerId = self.chatLocation.peerId {
+            maybePresentNicegramCallsOnboarding(
+                context: context,
+                peerId: peerId
+            )
+        }
+        //
+        
         // Nicegram ATTUserActions
         if !self.didAppear {
             AttUserActionsHelper.save(

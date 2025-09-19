@@ -69,8 +69,8 @@ bazel_dep(
 )
 git_override(
     module_name = "rules_swift_package_manager",
-    remote = "https://github.com/denis15yo/rules_swift_package_manager",
     commit = "32ead4e042afc5e7dded0e1a357b4ff077a09a5f",
+    remote = "https://github.com/denis15yo/rules_swift_package_manager",
 )
 
 swift_deps = use_extension(
@@ -78,6 +78,7 @@ swift_deps = use_extension(
     "swift_deps",
 )
 swift_deps.from_package(
+    declare_swift_package = False,
     resolved = "//:Package.resolved",
     swift = "//:Package.swift",
 )

@@ -170,7 +170,9 @@ final class AuthorizedApplicationContext {
         
         self.notificationController = NotificationContainerController(context: context)
         
-        self.rootController = TelegramRootController(context: context)
+        // Nicegram DockWidget
+        let currentNicegramDockWidget = self.sharedApplicationContext.minimizedContainer[context.account.id]?.nicegramWidget?.model
+        self.rootController = TelegramRootController(context: context, currentNicegramDockWidget: currentNicegramDockWidget)
         self.rootController.minimizedContainer = self.sharedApplicationContext.minimizedContainer[context.account.id]
         self.rootController.minimizedContainerUpdated = { [weak self] minimizedContainer in
             guard let self else {

@@ -1,5 +1,6 @@
 // Nicegram imports
 import FeatAccountBackup
+import FeatCalls
 import FeatOnboarding
 import NGAiChat
 import NGAnalytics
@@ -443,6 +444,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 termsUrl: URL(string: "https://nicegram.app/terms-of-use")!,
                 webSocketUrl: NGENV.websocket_url
             ),
+            callKitIntegrationImpl: {
+                nicegramCallKitIntegration
+            },
             chatListPeersProvider: {
                 ChatListPeersProviderImpl(contextProvider: contextProvider)
             },
@@ -484,6 +488,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
+            },
+            webRtcBridge: {
+                WebRtcBridgeImpl()
             },
             walletData: .init(
                 env: {
@@ -2432,6 +2439,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
 
     public func pushRegistry(_ registry: PKPushRegistry, didUpdate credentials: PKPushCredentials, for type: PKPushType) {
+        // Nicegram Calls
+        CallsModule.shared.pushTokenUpdater().onUpdate(pushCredentials: credentials, for: type)
+        //
+        
         if #available(iOS 9.0, *) {
             if case PKPushType.voIP = type {
                 Logger.shared.log("App \(self.episodeId)", "pushRegistry credentials: \(credentials.token as NSData)")
@@ -2455,6 +2466,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     
     private func pushRegistryImpl(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
         Logger.shared.log("App \(self.episodeId) PushRegistry", "pushRegistry processing push notification")
+        
+        // Nicegram Calls
+        let callsManager = CallsModule.shared.callsManager()
+        let handled = callsManager.handleVoipPush(payload: payload.dictionaryPayload)
+        if handled {
+            completion()
+            return
+        }
+        //
         
         var decryptedPayloadAndAccountId: ([AnyHashable: Any], AccountRecordId)?
         
