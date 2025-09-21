@@ -7,12 +7,16 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
     
     private let factory: RTCPeerConnectionFactory
     private let peerConnection: RTCPeerConnection?
+    private let sharedCallAudioContext: Any?
     
     weak var delegate: WebRtcServiceDelegate?
     
     //  MARK: - Lifecycle
     
-    init(callConfiguration: CallConfiguration) {
+    init(
+        callConfiguration: CallConfiguration,
+        sharedCallAudioContext: Any?
+    ) {
         let config = RTCConfiguration()
         config.iceServers = callConfiguration.iceServers.map { .init($0) }
         config.iceTransportPolicy = .relay
@@ -33,6 +37,7 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
         
         self.factory = factory
         self.peerConnection = peerConnection
+        self.sharedCallAudioContext = sharedCallAudioContext
         
         super.init()
         
@@ -117,16 +122,17 @@ extension WebRtcServiceImpl: RTCPeerConnectionDelegate {
 
 private extension WebRtcServiceImpl {
     func configureAudioSession() {
-        let session = AVAudioSession.sharedInstance()
+        let session = RTCAudioSession.sharedInstance()
         
+        session.lockForConfiguration()
         do {
             try session.setCategory(
                 .playAndRecord,
-                mode: .voiceChat,
-                options: [.duckOthers, .allowBluetooth]
+                with: [.allowBluetoothA2DP, .mixWithOthers]
             )
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            try session.setMode(.voiceChat)
         } catch {}
+        session.unlockForConfiguration()
     }
     
     func createMediaSenders() {

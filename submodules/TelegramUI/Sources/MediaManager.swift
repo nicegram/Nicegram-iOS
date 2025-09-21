@@ -22,7 +22,8 @@ enum SharedMediaPlayerGroup: Int {
     case voiceAndInstantVideo = 1
 }
 
-private let sharedAudioSession: ManagedAudioSession = {
+// Nicegram Calls, removed 'private'
+let sharedAudioSession: ManagedAudioSession = {
     let audioSession = ManagedAudioSessionImpl()
     let _ = (audioSession.headsetConnected() |> deliverOnMainQueue).startStandalone(next: { value in
         DeviceProximityManager.shared().setGloballyEnabled(!value)

@@ -437,6 +437,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 apiKey: NGENV.ng_api_key,
                 enableLogging: ngEnableLogging,
                 isAppStoreBuild: buildConfig.isAppStoreBuild,
+                isProd: NGENV.is_prod,
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: "https://nicegram.app/privacy-policy")!,
                 referralBot: NGENV.referral_bot,
@@ -490,7 +491,15 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 UrlOpenerImpl(contextProvider: contextProvider)
             },
             webRtcBridge: {
-                WebRtcBridgeImpl()
+                WebRtcBridgeImpl(
+                    sharedCallAudioContext: {
+                        SharedCallAudioContext.get(
+                            audioSession: sharedAudioSession,
+                            callKitIntegration: .shared,
+                            defaultToSpeaker: false
+                        )
+                    }
+                )
             },
             walletData: .init(
                 env: {
