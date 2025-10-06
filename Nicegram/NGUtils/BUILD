@@ -9,9 +9,11 @@ swift_library(
     deps = [
         "//submodules/AccountContext:AccountContext",
         "//submodules/ItemListUI:ItemListUI",
+        "//third-party/webrtc:webrtc_objc",
         "@swiftpkg_firebase_ios_sdk//:FirebaseAnalytics",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
+        "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
         "@swiftpkg_nicegram_assistant_ios//:NGAnalytics",
         "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
     ],

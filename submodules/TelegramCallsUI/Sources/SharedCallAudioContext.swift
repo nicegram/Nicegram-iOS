@@ -37,7 +37,8 @@ public final class SharedCallAudioContext {
     
     private var proximityManagerIndex: Int?
 
-    static func get(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, reuseCurrent: Bool = false) -> SharedCallAudioContext {
+    // Nicegram Calls, added 'public'
+    public static func get(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, reuseCurrent: Bool = false) -> SharedCallAudioContext {
         if let current = self.current, reuseCurrent {
             return current
         }
@@ -205,7 +206,10 @@ public final class SharedCallAudioContext {
         self.initialSetupTimer?.invalidate()
         
         if let proximityManagerIndex = self.proximityManagerIndex {
-            DeviceProximityManager.shared().remove(proximityManagerIndex)
+            // Nicegram Calls, perform in main queue
+            Queue.mainQueue().async {
+                DeviceProximityManager.shared().remove(proximityManagerIndex)
+            }
         }
     }
     

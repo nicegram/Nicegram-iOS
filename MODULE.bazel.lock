@@ -372,6 +372,83 @@
         "recordedRepoMappingEntries": []
       }
     },
+    "@@rules_apple+//apple:apple.bzl%provisioning_profile_repository_extension": {
+      "general": {
+        "bzlTransitiveDigest": "HeXrftjbn5Ch8zGdtSffr07wqaVdE0f2QJkdaglNfWc=",
+        "usagesDigest": "El+GojAYounwa3ygP80lfJLtYJY1JPbW11AiXfg2CCw=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "local_provisioning_profiles": {
+            "repoRuleId": "@@rules_apple+//apple/internal:local_provisioning_profiles.bzl%provisioning_profile_repository",
+            "attributes": {}
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "apple_support+",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ],
+          [
+            "bazel_tools",
+            "rules_cc",
+            "rules_cc+"
+          ],
+          [
+            "rules_apple+",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ],
+          [
+            "rules_apple+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "rules_apple+",
+            "build_bazel_apple_support",
+            "apple_support+"
+          ],
+          [
+            "rules_apple+",
+            "build_bazel_rules_swift",
+            "rules_swift+"
+          ],
+          [
+            "rules_cc+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "rules_cc+",
+            "rules_cc",
+            "rules_cc+"
+          ],
+          [
+            "rules_swift+",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ],
+          [
+            "rules_swift+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "rules_swift+",
+            "build_bazel_apple_support",
+            "apple_support+"
+          ],
+          [
+            "rules_swift+",
+            "build_bazel_rules_swift",
+            "rules_swift+"
+          ]
+        ]
+      }
+    },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
         "bzlTransitiveDigest": "hUTp2w+RUVdL7ma5esCXZJAFnX7vLbVfLd7FwnQI6bU=",
@@ -475,27 +552,20 @@
     "@@rules_swift_package_manager+//:extensions.bzl%swift_deps": {
       "general": {
         "bzlTransitiveDigest": "9AgzMTHkqmmiKbHik1d1wHV4P2hQJqk+nv3TK1JqA5A=",
-        "usagesDigest": "T4dq2DHED4ab12ozS9tPTQVfZ9Cam3vb0tp0kK63WJQ=",
+        "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "4dbc3998de0c5cc0272b4027df56ae9a8b99d58620b01fabdee468c8b1445faa"
+          "@@//Package.resolved": "44627e829302185f71f8490919a2a52e88b1d5c156deb09dad4e6e6e9f20604a"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
         "generatedRepoSpecs": {
-          "swift_package": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package_tool_repo.bzl%swift_package_tool_repo",
-            "attributes": {
-              "env": {},
-              "package": "/Package.swift"
-            }
-          },
           "swiftpkg_firebase_ios_sdk": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_firebase_ios_sdk",
-              "commit": "e2a3c3fbcaa1df3fd549b5b3f1175bc8a11912fd",
+              "commit": "1cce11cf94d27e2fc194112cc7ad51e8fb279230",
               "remote": "https://github.com/firebase/firebase-ios-sdk.git",
-              "version": "12.2.0",
+              "version": "12.3.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -515,7 +585,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "5a167e4d281284327607607e794d422248916fb7",
+              "commit": "8283b9adc489f7be2d8b0800942d7b25f3e3396e",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -713,9 +783,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_devicekit",
-              "commit": "513b9d7e7a1bd46504a1009bbab943b75ce2f195",
+              "commit": "581df61650bc457ec00373a592a84be3e7468eb1",
               "remote": "https://github.com/devicekit/DeviceKit.git",
-              "version": "5.6.0",
+              "version": "5.7.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -801,9 +871,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_google_ads_on_device_conversion_ios_sdk",
-              "commit": "a2d0f1f1666de591eb1a811f40b1706f5c63a2ed",
+              "commit": "c7d04b7592d3a1d6f8b7ce4e103cfbcbd766f419",
               "remote": "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
-              "version": "2.3.0",
+              "version": "3.0.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -823,9 +893,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_googleappmeasurement",
-              "commit": "1c7edd5cc6e4ad22d2b81166bb9b208b9e63058a",
+              "commit": "34f5306ed8c9d9493f6390b4c2a18f19ecad1da4",
               "remote": "https://github.com/google/GoogleAppMeasurement.git",
-              "version": "12.2.0",
+              "version": "12.3.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1175,9 +1245,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_rive_ios",
-              "commit": "8263c4223a6d09fd172cdf7c389b73e1422b89cb",
+              "commit": "39c3a99bbd05e7b0c4d25b9b2811937c945d7b23",
               "remote": "https://github.com/rive-app/rive-ios.git",
-              "version": "6.11.3",
+              "version": "6.11.4",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1281,6 +1351,28 @@
               "replace_scm_with_registry": false
             }
           },
+          "swiftpkg_socket.io_client_swift": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_socket.io_client_swift",
+              "commit": "42da871d9369f290d6ec4930636c40672143905b",
+              "remote": "https://github.com/socketio/socket.io-client-swift.git",
+              "version": "16.1.1",
+              "env": {},
+              "env_inherit": [],
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": [],
+              "publicly_expose_all_targets": false,
+              "replace_scm_with_registry": false
+            }
+          },
           "swiftpkg_starscream": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -1351,9 +1443,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_cmark",
-              "commit": "b022b08312decdc46585e0b3440d97f6f22ef703",
+              "commit": "b97d09472e847a416629f026eceae0e2afcfad65",
               "remote": "https://github.com/swiftlang/swift-cmark",
-              "version": "0.6.0",
+              "version": "0.7.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1527,9 +1619,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_protobuf",
-              "commit": "e3f69fd321d0c9fcdc16fb576a0cdd956675face",
+              "commit": "2547102afd04fe49f1b286090f13ebce07284980",
               "remote": "https://github.com/apple/swift-protobuf.git",
-              "version": "1.31.0",
+              "version": "1.31.1",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1769,9 +1861,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "385185ddf9b896c32f5e55b1199795b0edf05223",
+              "commit": "3f9c90c1a99835293dc2a21674ad25687fc9b270",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.3.6",
+              "version": "4.3.9",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1858,8 +1950,7 @@
           "explicitRootModuleDirectDeps": [
             "swiftpkg_firebase_ios_sdk",
             "swiftpkg_nicegram_assistant_ios",
-            "swiftpkg_nicegram_wallet_ios",
-            "swift_package"
+            "swiftpkg_nicegram_wallet_ios"
           ],
           "explicitRootModuleDirectDevDeps": [],
           "useAllRepos": "NO",
