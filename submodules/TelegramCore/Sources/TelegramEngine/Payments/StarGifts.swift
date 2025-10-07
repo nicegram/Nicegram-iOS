@@ -976,7 +976,7 @@ func _internal_keepCachedStarGiftsUpdated(postbox: Postbox, network: Network, ac
     let updateSignal = _internal_cachedStarGifts(postbox: postbox)
     |> take(1)
     |> mapToSignal { list -> Signal<Never, NoError> in
-        return network.request(Api.functions.payments.getStarGifts(hash: 0))
+        return network.request(Api.functions.payments.getStarGifts(hash: list?.hashValue ?? 0))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.payments.StarGifts?, NoError> in
             return .single(nil)

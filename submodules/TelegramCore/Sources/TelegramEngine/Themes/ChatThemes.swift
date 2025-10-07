@@ -104,20 +104,20 @@ public enum ChatTheme: PostboxCoding, Codable, Equatable {
             } else {
                 return false
             }
-        case let .gift(lhsGift, _):
-            if case let .gift(rhsGift, _) = rhs {
+        case let .gift(lhsGift, lhsThemeSettings):
+            if case let .gift(rhsGift, rhsThemeSettings) = rhs {
                 switch lhsGift {
-                case .generic(let lhsGeneric):
+                case let .generic(lhsGeneric):
                     switch rhsGift {
-                    case .generic(let rhsGeneric):
-                        return lhsGeneric == rhsGeneric
+                    case let .generic(rhsGeneric):
+                        return lhsGeneric == rhsGeneric && lhsThemeSettings == rhsThemeSettings
                     default:
                         return false
                     }
-                case .unique(let lhsUnique):
+                case let .unique(lhsUnique):
                     switch rhsGift {
-                    case .unique(let rhsUnique):
-                        return lhsUnique.slug == rhsUnique.slug
+                    case let .unique(rhsUnique):
+                        return lhsUnique.slug == rhsUnique.slug && lhsThemeSettings == rhsThemeSettings
                     default:
                         return false
                     }

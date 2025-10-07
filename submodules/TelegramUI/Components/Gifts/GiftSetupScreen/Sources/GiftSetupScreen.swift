@@ -124,7 +124,6 @@ final class GiftSetupScreenComponent: Component {
         
         private var inProgress = false
         
-        
         private var previousHadInputHeight: Bool = false
         private var previousInputHeight: CGFloat?
         private var recenterOnTag: NSObject?
@@ -133,6 +132,8 @@ final class GiftSetupScreenComponent: Component {
         private var sendPaidMessageStars: StarsAmount?
         
         private var starImage: (UIImage, PresentationTheme)?
+        
+        private var updateDisposable: Disposable?
         
         private var optionsDisposable: Disposable?
         private(set) var options: [StarsTopUpOption] = [] {
@@ -173,6 +174,9 @@ final class GiftSetupScreenComponent: Component {
         }
         
         deinit {
+            self.inputMediaNodeDataDisposable?.dispose()
+            self.updateDisposable?.dispose()
+            self.optionsDisposable?.dispose()
         }
 
         func scrollToTop() {
@@ -477,7 +481,12 @@ final class GiftSetupScreenComponent: Component {
                     case .starGiftUserLimit:
                         if let perUserLimit, let giftFile {
                             let text = presentationData.strings.Gift_Options_Gift_BuyLimitReached(perUserLimit)
-                            let undoController = UndoOverlayController(presentationData: presentationData, content: .sticker(context: component.context, file: giftFile, loop: true, title: nil, text: text, undoText: nil, customAction: nil), action: { _ in return false })
+                            let undoController = UndoOverlayController(
+                                presentationData: presentationData,
+                                content: .sticker(context: component.context, file: giftFile, loop: true, title: nil, text: text, undoText: nil, customAction: nil),
+                                elevatedLayout: true,
+                                action: { _ in return false }
+                            )
                             controller.present(undoController, in: .current)
                             return
                         }

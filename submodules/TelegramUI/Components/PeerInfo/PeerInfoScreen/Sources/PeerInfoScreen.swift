@@ -2219,7 +2219,9 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     
     // Nicegram Calls
     if isNicegramCallsEnabled(),
-       let user = data.peer as? TelegramUser {
+       let user = data.peer as? TelegramUser,
+       user.botInfo == nil,
+       user.id != context.account.peerId {
         items[.nicegramCall]?.append(
             PeerInfoScreenActionItem(
                 id: 0,
@@ -5330,8 +5332,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                                 }
                                 profileGifts.convertStarGift(reference: reference)
                             },
-                            transferGift: { [weak profileGifts] prepaid, peerId in
-                                guard let profileGifts, let reference = gift.reference else {
+                            transferGift: { [weak profileGifts] prepaid, reference, peerId in
+                                guard let profileGifts else {
                                     return .complete()
                                 }
                                 return profileGifts.transferStarGift(prepaid: prepaid, reference: reference, peerId: peerId)

@@ -26,6 +26,8 @@ import AlertUI
 import MessageUI
 import CoreTelephony
 import PhoneNumberFormat
+import PlainButtonComponent
+import StoreKit
 
 final class AuthorizationSequencePaymentScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -75,6 +77,7 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
         private let list = ComponentView<Empty>()
         private let check = ComponentView<Empty>()
         private let button = ComponentView<Empty>()
+        private let helpButton = ComponentView<Empty>()
                 
         private var isUpdating: Bool = false
         
@@ -253,6 +256,51 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
             }
             
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
+            
+            let presentationData = component.presentationData
+            let helpButtonSize = self.helpButton.update(
+                transition: transition,
+                component: AnyComponent(PlainButtonComponent(
+                    content: AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(string: environment.strings.Login_PhoneNumberHelp, font: Font.regular(17.0), textColor: environment.theme.list.itemAccentColor))
+                    )),
+                    minSize: CGSize(width: 0.0, height: 44.0),
+                    contentInsets: UIEdgeInsets(top: 0.0, left: 8.0, bottom: 0.0, right: 8.0),
+                    action: { [weak self] in
+                        guard let self, let environment = self.environment, let controller = environment.controller() else {
+                            return
+                        }
+                        let formattedNumber = formatPhoneNumber(component.phoneNumber)
+                        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
+                        let systemVersion = UIDevice.current.systemVersion
+                        let region = SKPaymentQueue.default().storefront?.countryCode ?? ""
+                        let dateFormatter = DateFormatter()
+                        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
+                        let dateString = dateFormatter.string(from: Date())
+                        
+                        let body = environment.strings.Login_PhonePaidEmailBody(
+                            formattedNumber,
+                            appVersion,
+                            systemVersion,
+                            region,
+                            dateString
+                        ).string
+                        
+                        AuthorizationSequenceController.presentEmailComposeController(address: component.supportEmailAddress, subject: environment.strings.Login_PhonePaidEmailSubject, body: body, from: controller, presentationData: presentationData)
+                    },
+                    animateScale: false,
+                    animateContents: false
+                )),
+                environment: {},
+                containerSize: CGSize(width: 200.0, height: 100.0)
+            )
+            let helpButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - 8.0 - helpButtonSize.width, y: environment.statusBarHeight), size: helpButtonSize)
+            if let helpButtonView = self.helpButton.view {
+                if helpButtonView.superview == nil {
+                    self.addSubview(helpButtonView)
+                }
+                transition.setFrame(view: helpButtonView, frame: helpButtonFrame)
+            }
                         
             let animationSize = self.animation.update(
                 transition: transition,

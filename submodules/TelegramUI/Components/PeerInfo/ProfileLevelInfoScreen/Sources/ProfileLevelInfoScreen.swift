@@ -377,24 +377,46 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 descriptionTextString = environment.strings.ProfileLevelInfo_OtherDescription(component.peer.compactDisplayTitle).string
             }
             
-            //TODO:localize
             var titleItems: [AnimatedTextComponent.Item] = []
+            
+            let ratingTitle = environment.strings.ProfileLevelInfo_RatingTitle
+            let futureTitle = environment.strings.ProfileLevelInfo_FutureRatingTitle
+            
             if self.isPreviewingPendingRating {
-                titleItems.append(AnimatedTextComponent.Item(
-                    id: AnyHashable(0),
-                    isUnbreakable: false,
-                    content: .text("Future ")
-                ))
-                titleItems.append(AnimatedTextComponent.Item(
-                    id: AnyHashable(1),
-                    isUnbreakable: true,
-                    content: .text("Rating")
-                ))
+                if let range = futureTitle.range(of: ratingTitle) {
+                    if !futureTitle[..<range.lowerBound].isEmpty {
+                        titleItems.append(AnimatedTextComponent.Item(
+                            id: AnyHashable(0),
+                            isUnbreakable: false,
+                            content: .text(String(futureTitle[..<range.lowerBound]))
+                        ))
+                    }
+                    
+                    titleItems.append(AnimatedTextComponent.Item(
+                        id: AnyHashable(1),
+                        isUnbreakable: true,
+                        content: .text(ratingTitle)
+                    ))
+                    
+                    if !futureTitle[range.upperBound...].isEmpty {
+                        titleItems.append(AnimatedTextComponent.Item(
+                            id: AnyHashable(2),
+                            isUnbreakable: false,
+                            content: .text(String(futureTitle[range.upperBound...]))
+                        ))
+                    }
+                } else {
+                    titleItems.append(AnimatedTextComponent.Item(
+                        id: AnyHashable(0),
+                        isUnbreakable: true,
+                        content: .text(futureTitle)
+                    ))
+                }
             } else {
                 titleItems.append(AnimatedTextComponent.Item(
                     id: AnyHashable(1),
                     isUnbreakable: true,
-                    content: .text("Rating")
+                    content: .text(ratingTitle)
                 ))
             }
             

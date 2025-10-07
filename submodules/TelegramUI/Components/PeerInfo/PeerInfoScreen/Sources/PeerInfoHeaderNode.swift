@@ -619,7 +619,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         }
         
         var currentSavedMusic: TelegramMediaFile?
-        if !self.isSettings, let screenData {
+        if let peer, peer.id != self.context.account.peerId || self.isMyProfile, let screenData {
             if let savedMusicState = screenData.savedMusicState {
                 currentSavedMusic = savedMusicState.files.first
             } else if let cachedUserData = screenData.cachedData as? CachedUserData {
@@ -1944,7 +1944,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         transition.updateFrameAdditive(node: self.avatarListNode, frame: CGRect(origin: apparentAvatarFrame.center, size: CGSize()))
         transition.updateFrameAdditive(node: self.avatarOverlayNode, frame: CGRect(origin: apparentAvatarFrame.center, size: CGSize()))
         
-        let avatarListContainerFrame: CGRect
+        var avatarListContainerFrame: CGRect
         let avatarListContainerScale: CGFloat
         if self.isAvatarExpanded {
             if let transitionSourceAvatarFrame = transitionSourceAvatarFrame {
@@ -1961,6 +1961,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 avatarListContainerFrame = CGRect(origin: CGPoint(x: -expandedAvatarListSize.width / 2.0, y: -expandedAvatarListSize.width / 2.0), size: expandedAvatarListSize)
             }
             avatarListContainerScale = 1.0 + max(0.0, -contentOffset / avatarListContainerFrame.width)
+            let heightDelta = avatarListContainerFrame.height * avatarListContainerScale - avatarListContainerFrame.height
+            avatarListContainerFrame.origin.y -= heightDelta / 4.0
         } else {
             let expandHeightFraction = expandedAvatarListSize.height / expandedAvatarListSize.width
             avatarListContainerFrame = CGRect(origin: CGPoint(x: -apparentAvatarFrame.width / 2.0, y: -apparentAvatarFrame.width / 2.0 + expandHeightFraction * 0.0 * apparentAvatarFrame.width), size: apparentAvatarFrame.size)
