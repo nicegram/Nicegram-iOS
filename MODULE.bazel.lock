@@ -554,7 +554,7 @@
         "bzlTransitiveDigest": "9AgzMTHkqmmiKbHik1d1wHV4P2hQJqk+nv3TK1JqA5A=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "2b8f181be4e697244c4aa71ff71720cc7f1bb3a06ab10c6bb2942698e6e68bd1"
+          "@@//Package.resolved": "253f77bcc3268cafd7854581b525439669091c2ecda136d0a0fd48d7f3ed78a7"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -563,9 +563,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_firebase_ios_sdk",
-              "commit": "1cce11cf94d27e2fc194112cc7ad51e8fb279230",
+              "commit": "541ac342abead313f2ce0ccf33278962b5c1e43c",
               "remote": "https://github.com/firebase/firebase-ios-sdk.git",
-              "version": "12.3.0",
+              "version": "12.4.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -585,7 +585,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "6ec0fc4a9da651b900ca9069c278c861e185691f",
+              "commit": "f3fe0813923ee4bd93d6a266e11df6afd8d95ff7",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -871,9 +871,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_google_ads_on_device_conversion_ios_sdk",
-              "commit": "c7d04b7592d3a1d6f8b7ce4e103cfbcbd766f419",
+              "commit": "2ba031f43ef88a7f6631c84d23794eb99751e891",
               "remote": "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
-              "version": "3.0.0",
+              "version": "3.1.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -893,9 +893,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_googleappmeasurement",
-              "commit": "34f5306ed8c9d9493f6390b4c2a18f19ecad1da4",
+              "commit": "52713644ce2831bb687ded4aefd5e5c9f15565c5",
               "remote": "https://github.com/google/GoogleAppMeasurement.git",
-              "version": "12.3.0",
+              "version": "12.4.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1267,9 +1267,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_sdwebimage",
-              "commit": "34cf2423a2c4088d06a3b08655603b5bc3eeeb3a",
+              "commit": "2053b120767c42a70bcba21095f34e4cfb54a75d",
               "remote": "https://github.com/SDWebImage/SDWebImage.git",
-              "version": "5.21.2",
+              "version": "5.21.3",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1619,9 +1619,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_protobuf",
-              "commit": "2547102afd04fe49f1b286090f13ebce07284980",
+              "commit": "c6fe6442e6a64250495669325044052e113e990c",
               "remote": "https://github.com/apple/swift-protobuf.git",
-              "version": "1.31.1",
+              "version": "1.32.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,

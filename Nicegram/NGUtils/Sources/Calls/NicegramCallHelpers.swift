@@ -37,7 +37,12 @@ public func startNicegramCall(
             peerId: peerId
         )
         
-        callsManager.startOutgoingCall(to: interlocutor)
+        callsManager.startOutgoingCall(
+            StartOutgoingCallParams(
+                to: interlocutor,
+                type: .personal
+            )
+        )
     }
 }
 
