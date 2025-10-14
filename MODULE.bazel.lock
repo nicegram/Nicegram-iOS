@@ -554,7 +554,7 @@
         "bzlTransitiveDigest": "9AgzMTHkqmmiKbHik1d1wHV4P2hQJqk+nv3TK1JqA5A=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "44627e829302185f71f8490919a2a52e88b1d5c156deb09dad4e6e6e9f20604a"
+          "@@//Package.resolved": "2b8f181be4e697244c4aa71ff71720cc7f1bb3a06ab10c6bb2942698e6e68bd1"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -585,7 +585,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "8283b9adc489f7be2d8b0800942d7b25f3e3396e",
+              "commit": "6ec0fc4a9da651b900ca9069c278c861e185691f",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -607,7 +607,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "1d92d47d2cacba843936663f290a261e09aeba46",
+              "commit": "d33a8d0cf7dc8c2ecfde30f94a1aec15d3c2033d",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "env": {},
@@ -1465,9 +1465,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_collections",
-              "commit": "8c0c0a8b49e080e54e5e328cc552821ff07cd341",
+              "commit": "7b847a3b7008b2dc2f47ca3110d8c782fb2e5c7e",
               "remote": "https://github.com/apple/swift-collections",
-              "version": "1.2.1",
+              "version": "1.3.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1553,9 +1553,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_numerics",
-              "commit": "bbadd4b853a33fd78c4ae977d17bb2af15eb3f2a",
+              "commit": "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
               "remote": "https://github.com/apple/swift-numerics.git",
-              "version": "1.1.0",
+              "version": "1.1.1",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1861,9 +1861,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "3f9c90c1a99835293dc2a21674ad25687fc9b270",
+              "commit": "5198377644a54b4b77a1b25c0e39d297aada75dd",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.3.9",
+              "version": "4.3.15",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1927,9 +1927,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_xctest_dynamic_overlay",
-              "commit": "b2ed9eabefe56202ee4939dd9fc46b6241c88317",
+              "commit": "4c27acf5394b645b70d8ba19dc249c0472d5f618",
               "remote": "https://github.com/pointfreeco/xctest-dynamic-overlay",
-              "version": "1.6.1",
+              "version": "1.7.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,

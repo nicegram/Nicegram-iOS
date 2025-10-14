@@ -262,7 +262,7 @@ extension ChatControllerImpl {
                         return
                     }
                     if canResetWallpaper && chatTheme != nil {
-                        let _ = context.engine.themes.setChatWallpaper(peerId: peerId, wallpaper: nil, forBoth: false).startStandalone()
+                        let _ = context.engine.themes.setChatWallpaper(peerId: peerId, wallpaper: nil, forBoth: true).startStandalone()
                     }
                     strongSelf.chatThemeAndDarkAppearancePreviewPromise.set(.single((chatTheme ?? .emoticon(""), nil)))
                     let _ = context.engine.themes.setChatTheme(peerId: peerId, chatTheme: chatTheme ?? .emoticon("")).startStandalone(completed: { [weak self] in

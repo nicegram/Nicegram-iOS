@@ -2662,7 +2662,7 @@ public final class ChatListNode: ListView {
                                 case let .user(userType):
                                     if case let .user(user) = peer {
                                         match = true
-                                        if user.id.isVerificationCodes {
+                                        if user.id.isVerificationCodes || user.id.isTelegramNotifications {
                                             match = false
                                         }
                                         if let isBot = userType.isBot {

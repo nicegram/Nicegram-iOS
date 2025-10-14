@@ -5888,6 +5888,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 }
                             }
                         case .gift:
+                            if let darkAppearancePreview = darkAppearancePreview {
+                                useDarkAppearance = darkAppearancePreview
+                            }
                             if let theme = makePresentationTheme(chatTheme: chatTheme, dark: useDarkAppearance) {
                                 theme.forceSync = true
                                 presentationData = presentationData.withUpdated(theme: theme).withUpdated(chatWallpaper: theme.chat.defaultWallpaper)

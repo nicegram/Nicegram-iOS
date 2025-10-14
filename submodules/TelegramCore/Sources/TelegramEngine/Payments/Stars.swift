@@ -1678,6 +1678,8 @@ func _internal_sendStarsPaymentForm(account: Account, formId: Int64, source: Bot
                 return .fail(.alreadyPaid)
             } else if error.errorDescription == "STARGIFT_USAGE_LIMITED" {
                 return .fail(.starGiftOutOfStock)
+            } else if error.errorDescription == "STARGIFT_USER_USAGE_LIMITED" {
+                return .fail(.starGiftUserLimit)
             }
             return .fail(.generic)
         }

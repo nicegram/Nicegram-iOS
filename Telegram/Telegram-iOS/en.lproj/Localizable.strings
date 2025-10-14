@@ -451,6 +451,8 @@
 "Login.PhoneGenericEmailSubject" = "Nicegram iOS error: %@";
 "Login.PhoneGenericEmailBody" = "I'm trying to use my mobile phone number: %1$@\nBut Nicegram shows an error. Please help.\n\nError: %2$@\nApp version: %3$@\nOS version: %4$@\nLocale: %5$@\nMNC: %6$@";
 
+"Login.PhonePaidEmailSubject" = "Payment Issue";
+"Login.PhonePaidEmailBody" = "Hello Telegram Support,\n\nI’m experiencing an issue with an in-app purchase on iOS.\nMy phone number: %1$@\nApple ID (email used in the App Store): \nApp version: %2$@\nDevice model / iOS version: %3$@\nApp Store country/region: %4$@\nDate & time of attempt (with timezone): %5$@\nExact error message: \n\n#payment_failed";
 
 "Login.PhoneTitle" = "Your Phone";
 "Login.PhonePlaceholder" = "Your phone number";
@@ -14996,3 +14998,15 @@ Sorry for the inconvenience.";
 "Gift.Value.ForSaleOnFragment" = "for sale on Fragment";
 
 "Gift.View.Context.SetAsTheme" = "Set as Theme in...";
+
+"Notification.GiftStars" = "Gift for %@";
+"Notification.GiftStars.Stars_1" = "%@ Star";
+"Notification.GiftStars.Stars_any" = "%@ Stars";
+
+"Notification.PrepaidGiftUpgrade" = "Gift Upgrade for %@";
+"Notification.PrepaidGiftUpgrade.Stars_1" = "%@ Star";
+"Notification.PrepaidGiftUpgrade.Stars_any" = "%@ Stars";
+
+"ProfileLevelInfo.RatingTitle" = "Rating";
+"ProfileLevelInfo.FutureRatingTitle" = "Future Rating";
+

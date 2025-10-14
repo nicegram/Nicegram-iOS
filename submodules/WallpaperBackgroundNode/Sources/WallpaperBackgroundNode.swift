@@ -1383,7 +1383,7 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             }
         }
         if let validPatternImage = self.validPatternImage, !validPatternImage.rects.isEmpty, var modelRectIndex = self.modelRectIndex, let modelFile {
-            let filteredRects = validPatternImage.rects.filter { $0.center.y > 240.0 }
+            let filteredRects = validPatternImage.rects.filter { $0.center.y > $0.containerSize.height * 0.1 && $0.center.y < $0.containerSize.height * 0.9 }
             modelRectIndex = modelRectIndex % Int32(filteredRects.count);
             
             let rect = filteredRects[Int(modelRectIndex)]

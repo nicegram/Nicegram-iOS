@@ -1573,7 +1573,9 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
         if isPlaying {
             var alreadySeen = true
             
-            if item.message.flags.contains(.Incoming) {
+            if let action = item.message.media.first(where: { $0 is TelegramMediaAction }) as? TelegramMediaAction, case .setChatTheme = action.action {
+                
+            } else if item.message.flags.contains(.Incoming) {
                 if let unreadRange = item.controllerInteraction.unreadMessageRange[UnreadMessageRangeKey(peerId: item.message.id.peerId, namespace: item.message.id.namespace)] {
                     if unreadRange.contains(item.message.id.id) {
                         alreadySeen = false

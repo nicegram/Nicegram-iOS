@@ -127,13 +127,24 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
                     }))
                 }
             
-                let presence: EnginePeer.Presence
+                var presence: EnginePeer.Presence
                 if member.peer.id == context.account.peerId {
                     presence = EnginePeer.Presence(status: .present(until: Int32.max), lastActivity: 0)
                 } else if let value = member.presence {
                     presence = EnginePeer.Presence(value)
                 } else {
                     presence = EnginePeer.Presence(status: .longTimeAgo, lastActivity: 0)
+                }
+            
+                var status: ContactsPeerItemStatus = .presence(presence, presentationData.dateTimeFormat)
+                if let user = member.peer as? TelegramUser, let botInfo = user.botInfo {
+                    let botStatus: String
+                    if botInfo.flags.contains(.hasAccessToChatHistory) {
+                        botStatus = presentationData.strings.Bot_GroupStatusReadsHistory
+                    } else {
+                        botStatus = presentationData.strings.Bot_GroupStatusDoesNotReadHistory
+                    }
+                    status = .custom(string: NSAttributedString(string: botStatus, font: Font.regular(floor(presentationData.listsFontSize.itemListBaseFontSize * 14.0 / 17.0)), textColor: presentationData.theme.list.itemSecondaryTextColor), multiline: false, isActive: false, icon: nil)
                 }
             
                 return ContactsPeerItem(
@@ -145,7 +156,7 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
                     context: context,
                     peerMode: .memberList,
                     peer: .peer(peer: EnginePeer(member.peer), chatPeer: EnginePeer(member.peer)),
-                    status: .presence(presence, presentationData.dateTimeFormat),
+                    status: status,
                     rightLabelText: label,
                     enabled: true,
                     selection: .none,

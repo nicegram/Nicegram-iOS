@@ -807,7 +807,7 @@ UIImage * _Nullable renderPreparedImageWithSymbol(NSData * _Nonnull data, CGSize
         
         NSMutableArray<GiftPatternRect *> *filteredRects = [[NSMutableArray alloc] init];
         for (GiftPatternRect *rect in rects) {
-            if (rect.center.y > 240.0) {
+            if (rect.center.y > height * 0.1 && rect.center.y < height * 0.9) {
                 [filteredRects addObject:rect];
             }
         }
