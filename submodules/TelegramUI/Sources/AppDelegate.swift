@@ -554,7 +554,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }
             }
         )
-        AdsgramPinWebViewLoader(contextProvider: contextProvider).initialize()
         
         // Nicegram Unblock
         let _ = (self.context.get()

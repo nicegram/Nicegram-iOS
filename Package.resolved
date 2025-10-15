@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/conference",
-        "revision" : "f3fe0813923ee4bd93d6a266e11df6afd8d95ff7"
+        "branch" : "feat/adsgram",
+        "revision" : "99816d5e9232a146ccdf6dbb3d3b6583306ef3c1"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "39c3a99bbd05e7b0c4d25b9b2811937c945d7b23",
-        "version" : "6.11.4"
+        "revision" : "ba66219b5c242d1d953bc293e13c141279c19e49",
+        "version" : "6.12.0"
       }
     },
     {
@@ -347,8 +347,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "309a47b2b1d9b5e991f36961c983ecec72275be3",
-        "version" : "1.6.1"
+        "revision" : "cdd0ef3755280949551dc26dee5de9ddeda89f54",
+        "version" : "1.6.2"
       }
     },
     {
@@ -536,8 +536,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "5198377644a54b4b77a1b25c0e39d297aada75dd",
-        "version" : "4.3.15"
+        "revision" : "1efc1c10b836d52f748bf7f71929cf0f9bb0b163",
+        "version" : "4.3.18"
       }
     },
     {
