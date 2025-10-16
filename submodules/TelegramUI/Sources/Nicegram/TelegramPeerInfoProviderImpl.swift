@@ -10,7 +10,7 @@ class TelegramPeerInfoProviderImpl {
 
 extension TelegramPeerInfoProviderImpl: TelegramPeerInfoProvider {
     func currentPeerInfo() async throws -> TelegramPeerInfo {
-        let context = try contextProvider.context().unwrap()
+        let context = try await contextProvider.awaitContext()
         let peerId = context.account.peerId
         let view = try await context.account.postbox
             .peerView(id: peerId)
