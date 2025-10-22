@@ -112,6 +112,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         var index: Int32 = 0
         let title: String
         let enabled: Bool
+        var enableInteractiveChanges: Bool = true
         @IgnoreEquatable var setEnabled: (Bool) -> Void
     }
 
@@ -506,6 +507,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 presentationData: presentationData,
                 title: chat.title,
                 value: chat.enabled,
+                enableInteractiveChanges: chat.enableInteractiveChanges,
                 enabled: true,
                 sectionId: section,
                 style: .blocks,
@@ -827,6 +829,7 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
                         index: (entries.last?.index ?? 0) + 1,
                         title: "adsgram",
                         enabled: adsgramSettings.showPin,
+                        enableInteractiveChanges: false,
                         setEnabled: { value in
                             Task { @MainActor in
                                 let settingsViewModel = SettingsViewModel()

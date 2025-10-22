@@ -4,7 +4,6 @@ import Postbox
 // Nicegram Imports
 import class Combine.CurrentValueSubject
 import Factory
-import FeatAdsgram
 import FeatAssistant
 import FeatChatListWidget
 import FeatPinnedChats
