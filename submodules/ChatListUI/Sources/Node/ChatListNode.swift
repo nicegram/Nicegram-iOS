@@ -2510,7 +2510,6 @@ public final class ChatListNode: ListView {
                     nicegramItems = nicegramItems.filter { item in
                         item.chat.showInAllFolders
                     }
-                    nicegramWidgetHeight = 0
                 }
             } else {
                 nicegramItems = []

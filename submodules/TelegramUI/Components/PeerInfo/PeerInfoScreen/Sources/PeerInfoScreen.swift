@@ -263,8 +263,8 @@ private final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
                 contentWithBackgroundOffset = contentHeight
             }
 
-            // Nicegram Wallet (hide section background, like PeerInfoScreenHeaderItem)
-            if #available(iOS 16.0, *), item is PeerInfoScreenWalletItem {
+            // Nicegram (hide section background, like PeerInfoScreenHeaderItem)
+            if #available(iOS 16.0, *), (item is PeerInfoScreenWalletItem || item is PeerInfoScreenNicegramCallsItem) {
                 contentWithBackgroundOffset = contentHeight
             }
             //
@@ -2218,21 +2218,13 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     }
     
     // Nicegram Calls
-    if isNicegramCallsEnabled(),
+    if #available(iOS 16.0, *),
+       isNicegramCallsEnabled(),
        let user = data.peer as? TelegramUser,
        user.botInfo == nil,
        user.id != context.account.peerId {
         items[.nicegramCall]?.append(
-            PeerInfoScreenActionItem(
-                id: 0,
-                text: FeatCalls.strings.peerInfoCallButton(),
-                icon: NGCoreUI.images.shieldHandset(),
-                spacing: 4,
-                action: {
-                    trackEvent("call_start_click") 
-                    startNicegramCall(context: context, to: user.id)
-                }
-            )
+            PeerInfoScreenNicegramCallsItem(peer: user)
         )
     }
     //

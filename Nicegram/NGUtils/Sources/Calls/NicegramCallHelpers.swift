@@ -16,7 +16,7 @@ public func maybePresentNicegramCallsOnboarding(
     peerId: PeerId
 ) {
     Task {
-        let interlocutor = try await toCallParticipant(
+        let interlocutor = try await CallParticipant.make(
             context: context,
             peerId: peerId
         )
@@ -25,39 +25,29 @@ public func maybePresentNicegramCallsOnboarding(
     }
 }
 
-public func startNicegramCall(
-    context: AccountContext,
-    to peerId: PeerId
-) {
-    Task {
-        let callsManager = CallsModule.shared.callsManager()
+public extension CallParticipant {
+    static func make(
+        peer: Peer
+    ) throws -> CallParticipant {
+        guard peer is TelegramUser else {
+            throw UnexpectedError()
+        }
         
-        let interlocutor = try await toCallParticipant(
-            context: context,
-            peerId: peerId
+        return CallParticipant(
+            fullname: peer.debugDisplayTitle,
+            telegramId: .init(peer.id)
         )
+    }
+    
+    static func make(
+        context: AccountContext,
+        peerId: PeerId
+    ) async throws -> CallParticipant {
+        let peer = try await context.engine.data
+            .get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            .awaitForFirstValue()
+            .unwrap()
         
-        callsManager.startOutgoingCall(to: interlocutor)
+        return try .make(peer: peer._asPeer())
     }
-}
-
-//  MARK: - Private Functions
-
-private func toCallParticipant(
-    context: AccountContext,
-    peerId: PeerId
-) async throws -> CallParticipant {
-    let peer = try await context.engine.data
-        .get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-        .awaitForFirstValue()
-        .unwrap()
-    
-    guard case .user = peer else {
-        throw UnexpectedError()
-    }
-    
-    return CallParticipant(
-        fullname: peer.debugDisplayTitle,
-        telegramId: .init(peerId)
-    )
 }

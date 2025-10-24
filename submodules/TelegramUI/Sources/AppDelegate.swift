@@ -518,11 +518,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         stonfiNicegramApiUrl: NGENV.wallet.stonfiNicegramApiUrl
                     )
                 },
-                contactImageProvider: {
-                    ContactImageProviderImpl(contextProvider: contextProvider)
-                },
-                contactsRetriever: {
-                    ContactsRetrieverImpl(contextProvider: contextProvider)
+                telegramContactsProvider: {
+                    TelegramContactsProviderImpl(contextProvider: contextProvider)
                 },
                 walletVerificationInterceptor: {
                     WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
