@@ -3,6 +3,7 @@ import Combine
 import MemberwiseInit
 import NGUtils
 import NicegramWallet
+import Postbox
 import SwiftSignalKit
 import TelegramCore
 
@@ -12,19 +13,24 @@ class TelegramContactsProviderImpl {
 }
 
 extension TelegramContactsProviderImpl: TelegramContactsProvider {
-    func get() async -> [TgContact] {
+    func get(_ params: Params) async -> Contacts? {
         do {
-            return try await publisher().awaitForFirstValue()
+            return try await publisher(params).awaitForFirstValue()
         } catch {
-            return []
+            return nil
         }
     }
     
-    func publisher() -> AnyPublisher<[TgContact], Never> {
+    func publisher(_ params: Params) -> AnyPublisher<Contacts?, Never> {
         let signal = contextProvider.contextSignal()
         |> mapToSignal { context -> Signal<(AccountContext, EngineContactList)?, NoError> in
             guard let context else {
-                return Signal.single(nil)
+                return .single(nil)
+            }
+            
+            if let userId = params.userId,
+               context.account.peerId != PeerId(userId) {
+                return .single(nil)
             }
             
             return context.engine.data.subscribe(
@@ -34,16 +40,16 @@ extension TelegramContactsProviderImpl: TelegramContactsProvider {
                 (context, contacts)
             }
         }
-        |> map { result -> [TgContact] in
+        |> map { result -> Contacts? in
             guard let result else {
-                return []
+                return nil
             }
             
             let context = result.0
             let contacts = result.1
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
             
-            return contacts.peers
+            let contactList = contacts.peers
                 .filter { $0.id != context.account.peerId }
                 .map { peer in
                     TgContact(
@@ -53,6 +59,7 @@ extension TelegramContactsProviderImpl: TelegramContactsProvider {
                     )
                 }
                 .filter { !$0.name.isEmpty }
+            return Contacts(contacts: contactList)
         }
         
         return signal
