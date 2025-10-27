@@ -554,7 +554,7 @@
         "bzlTransitiveDigest": "9AgzMTHkqmmiKbHik1d1wHV4P2hQJqk+nv3TK1JqA5A=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "f06fc9e416da02f022c886234d0693be87933bcb34ce65ab2681a147ebef2768"
+          "@@//Package.resolved": "a13390145171905cbddbbac3b240e926df3a71b217e31cdadcbcb5ea5a198222"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -585,7 +585,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "df6e97c2c3dc69cace2f1b1932e7701904bcaad4",
+              "commit": "f64381b5fbac82a281ab591e7c2112d405694f2d",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -607,7 +607,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "d33a8d0cf7dc8c2ecfde30f94a1aec15d3c2033d",
+              "commit": "e75f960d9a8ad8fa091de5fcfb077312b8913dde",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "env": {},
@@ -1417,6 +1417,28 @@
               "replace_scm_with_registry": false
             }
           },
+          "swiftpkg_swift_async_algorithms": {
+            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
+            "attributes": {
+              "bazel_package_name": "swiftpkg_swift_async_algorithms",
+              "commit": "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23",
+              "remote": "https://github.com/denis15yo/swift-async-algorithms.git",
+              "version": "",
+              "env": {},
+              "env_inherit": [],
+              "init_submodules": false,
+              "recursive_init_submodules": true,
+              "patch_args": [
+                "-p0"
+              ],
+              "patch_cmds": [],
+              "patch_cmds_win": [],
+              "patch_tool": "",
+              "patches": [],
+              "publicly_expose_all_targets": false,
+              "replace_scm_with_registry": false
+            }
+          },
           "swiftpkg_swift_case_paths": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -1487,9 +1509,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_http_types",
-              "commit": "a0a57e949a8903563aba4615869310c0ebf14c03",
+              "commit": "45eb0224913ea070ec4fba17291b9e7ecf4749ca",
               "remote": "https://github.com/apple/swift-http-types",
-              "version": "1.4.0",
+              "version": "1.5.1",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1861,9 +1883,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "1efc1c10b836d52f748bf7f71929cf0f9bb0b163",
+              "commit": "fe280e42be5c65dc93c6e8cee158572e4674a91f",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.3.18",
+              "version": "4.3.19",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,

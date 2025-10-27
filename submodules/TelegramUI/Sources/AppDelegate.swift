@@ -472,11 +472,17 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramMediaFetcher: {
                 TelegramMediaFetcherImpl(contextProvider: contextProvider)
             },
+            telegramMediaManager: {
+                TelegramMediaManagerImpl(contextProvider: contextProvider)
+            },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
             telegramMessagesProvider: {
                 TelegramMessagesProviderImpl(contextProvider: contextProvider)
+            },
+            telegramNavigator: {
+                TelegramNavigatorImpl(contextProvider: contextProvider)
             },
             telegramPeerImageProvider: {
                 TelegramPeerImageProviderImpl(contextProvider: contextProvider)

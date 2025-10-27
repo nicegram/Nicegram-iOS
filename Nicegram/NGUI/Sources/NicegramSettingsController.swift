@@ -13,6 +13,7 @@ import Display
 import FeatAccountBackup
 import FeatAdsgram
 import FeatAiShortcuts
+import FeatCalls
 import FeatDataSharing
 import FeatPinnedChats
 import Foundation
@@ -133,6 +134,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case Account(String)
     case doubleBottom(String)
+    case nicegramCalls
     
     case unblockHeader(String)
     case unblock(String, URL)
@@ -170,7 +172,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.QuickReplies.rawValue
         case .unblockHeader, .unblock:
             return NicegramSettingsControllerSection.Unblock.rawValue
-        case .Account, .doubleBottom:
+        case .Account, .doubleBottom, .nicegramCalls:
             return NicegramSettingsControllerSection.Account.rawValue
         case .shareBotsData, .shareChannelsData, .shareStickersData, .shareDataNote:
             return NicegramSettingsControllerSection.ShareData.rawValue
@@ -252,6 +254,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .doubleBottom:
             return 2700
+        case .nicegramCalls:
+            return 2800
             
         case .accountsBackupHeader:
             return 3000
@@ -453,6 +457,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case let .doubleBottom(text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
                 arguments.pushController(doubleBottomListController(context: arguments.context, presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }, accountsContexts: arguments.accountsContexts))
+            }
+        case .nicegramCalls:
+            return ItemListActionItem(presentationData: presentationData, title: FeatCalls.strings.settingsItemTitle(), kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
+                if #available(iOS 15.0, *) {
+                    Task { @MainActor in
+                        FeatCalls.SettingsPresenter().present()
+                    }
+                }
             }
         case let .quickReplies(text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
@@ -662,6 +674,10 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.Account(l("NiceFeatures.Account.Header").localizedUppercase))
     if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
         entries.append(.doubleBottom(l("DoubleBottom.Title")))
+    }
+    if #available(iOS 15.0, *),
+       isNicegramCallsEnabled() {
+        entries.append(.nicegramCalls)
     }
     
     if #available(iOS 15.0, *) {

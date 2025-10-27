@@ -239,6 +239,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.presentationDataDisposable?.dispose()
         self.applicationInFocusDisposable?.dispose()
         self.storyUploadEventsDisposable?.dispose()
+        
+        // Nicegram DockWidget
+        if #available(iOS 16.0, *) {
+            nicegramDockWidget.aiVoiceAssistantModel.onChange(isPaused: true)
+        }
+        //
     }
     
     // Nicegram Assistant
