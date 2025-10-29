@@ -227,7 +227,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Do you want to stop recording this call?";
 "NicegramCallRecord.StopAlertButtonStop" = "Stop";
 "NicegramCallRecord.StopAlertButtonCancel" = "Cancel";
-"NicegramCallRecord.SavedMessage" = "Recorded Call saved to **Saved Messages**.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Feed";

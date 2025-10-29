@@ -13,6 +13,7 @@ import Display
 import FeatAccountBackup
 import FeatAdsgram
 import FeatAiShortcuts
+import FeatCallRecorder
 import FeatCalls
 import FeatDataSharing
 import FeatPinnedChats
@@ -72,6 +73,7 @@ private enum NicegramSettingsControllerSection: Int32 {
     case RoundVideos
     case Account
     case Other
+    case CallRecorder
     case QuickReplies
     case ShareData
     case PinnedChats
@@ -139,6 +141,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case unblockHeader(String)
     case unblock(String, URL)
     
+    case callRecorderReceiverId
+    
     case quickReplies(String)
     
     case enableAppleSpeech2Text(String, Int64, Bool)
@@ -168,6 +172,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.RoundVideos.rawValue
         case .OtherHeader, .hidePhoneInSettings, .hidePhoneInSettingsNotice, .easyToggle:
             return NicegramSettingsControllerSection.Other.rawValue
+        case .callRecorderReceiverId:
+            return NicegramSettingsControllerSection.CallRecorder.rawValue
         case .quickReplies:
             return NicegramSettingsControllerSection.QuickReplies.rawValue
         case .unblockHeader, .unblock:
@@ -245,6 +251,9 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .hidePhoneInSettingsNotice:
             return 2400
+            
+        case .callRecorderReceiverId:
+            return 2425
             
         case .quickReplies:
             return 2450
@@ -466,6 +475,10 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     }
                 }
             }
+        case .callRecorderReceiverId:
+            return ItemListActionItem(presentationData: presentationData, title: FeatCallRecorder.strings.receiverIdItem(), kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
+                ReceiverIdAlertPresenter().present()
+            }
         case let .quickReplies(text):
             return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
                 arguments.pushController(quickRepliesController(context: arguments.context))
@@ -665,6 +678,8 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.hidePhoneInSettingsNotice(
         l("NicegramSettings.Other.hidePhoneInSettingsNotice")
     ))
+    
+    entries.append(.callRecorderReceiverId)
     
     if #available(iOS 10.0, *) {
         entries.append(.quickReplies(l("NiceFeatures.QuickReplies")))

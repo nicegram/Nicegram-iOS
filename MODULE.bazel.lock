@@ -554,7 +554,7 @@
         "bzlTransitiveDigest": "9AgzMTHkqmmiKbHik1d1wHV4P2hQJqk+nv3TK1JqA5A=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "a13390145171905cbddbbac3b240e926df3a71b217e31cdadcbcb5ea5a198222"
+          "@@//Package.resolved": "d77bd47a7ad931059234986aae2fad00fd00ecdff3f138f2fbf5b86bb37d0327"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -563,9 +563,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_firebase_ios_sdk",
-              "commit": "541ac342abead313f2ce0ccf33278962b5c1e43c",
+              "commit": "793b67f4652e1a39d03fab6650033768afe6d15e",
               "remote": "https://github.com/firebase/firebase-ios-sdk.git",
-              "version": "12.4.0",
+              "version": "12.5.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -585,7 +585,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "f64381b5fbac82a281ab591e7c2112d405694f2d",
+              "commit": "32e88de5ca9479e5d4959c7a3a702991df90ff39",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -871,9 +871,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_google_ads_on_device_conversion_ios_sdk",
-              "commit": "2ba031f43ef88a7f6631c84d23794eb99751e891",
+              "commit": "35b601a60fbbea2de3ea461f604deaaa4d8bbd0c",
               "remote": "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
-              "version": "3.1.0",
+              "version": "3.2.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -893,9 +893,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_googleappmeasurement",
-              "commit": "52713644ce2831bb687ded4aefd5e5c9f15565c5",
+              "commit": "c2d59acf17a8ba7ed80a763593c67c9c7c006ad1",
               "remote": "https://github.com/google/GoogleAppMeasurement.git",
-              "version": "12.4.0",
+              "version": "12.5.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1417,28 +1417,6 @@
               "replace_scm_with_registry": false
             }
           },
-          "swiftpkg_swift_async_algorithms": {
-            "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
-            "attributes": {
-              "bazel_package_name": "swiftpkg_swift_async_algorithms",
-              "commit": "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23",
-              "remote": "https://github.com/denis15yo/swift-async-algorithms.git",
-              "version": "",
-              "env": {},
-              "env_inherit": [],
-              "init_submodules": false,
-              "recursive_init_submodules": true,
-              "patch_args": [
-                "-p0"
-              ],
-              "patch_cmds": [],
-              "patch_cmds_win": [],
-              "patch_tool": "",
-              "patches": [],
-              "publicly_expose_all_targets": false,
-              "replace_scm_with_registry": false
-            }
-          },
           "swiftpkg_swift_case_paths": {
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
@@ -1641,9 +1619,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_protobuf",
-              "commit": "c6fe6442e6a64250495669325044052e113e990c",
+              "commit": "97bb244f7a575a419ebc8f3c2d33f2feb9c8f7f2",
               "remote": "https://github.com/apple/swift-protobuf.git",
-              "version": "1.32.0",
+              "version": "1.33.1",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1883,9 +1861,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "fe280e42be5c65dc93c6e8cee158572e4674a91f",
+              "commit": "4adde2a402c3796a5b58e84911988f7c4e7f8ebf",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.3.19",
+              "version": "4.3.20",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,

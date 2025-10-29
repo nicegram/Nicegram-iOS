@@ -114,7 +114,8 @@
 "Messages.SelectAllFromUser" = "Bu Kullanıcıdan Olan Bütün Mesajları Seç";
 "Messages.ToLanguage" = "Hedef Dil";
 "Messages.ToLanguage.WithCode" = "Hedef Dil: %@";
-"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.\n";
+"Messages.TranslateError.ToLanguageNotFound" = "Metni çevirmek istediğiniz dili tespit edemedik. Lütfen manuel olarak seçin ve tekrar deneyin.
+";
 "Messages.ReplyPrivately" = "Özelden Cevapla";
 "Messages.DeleteAllSystemMessages" = "Tümünü Sil";
 
@@ -227,7 +228,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Bu çağrıyı kaydetmeyi durdurmak istiyor musunuz?";
 "NicegramCallRecord.StopAlertButtonStop" = "Durdur";
 "NicegramCallRecord.StopAlertButtonCancel" = "İptal";
-"NicegramCallRecord.SavedMessage" = "Kaydedilen Çağrı **Kaydedilen Mesajlar** bölümüne kaydedildi.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Akış";

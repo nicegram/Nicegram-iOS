@@ -1,20 +1,22 @@
+import FeatCallRecorder
 import Foundation
+import NGCore
+import NGUtils
+import Postbox
 import TelegramCore
 
 extension CallRecorder {
-    func sendAudioToSavedMessages(
+    func sendAudioToChat(
         audio: RecordedAudio,
         partNumber: Int
-    ) async throws {
+    ) async throws -> PeerId? {
         defer {
             deleteFile(path: audio.path)
         }
         
         if call == nil {
-            log("sendAudioToSavedMessages call=nil")
+            log("sendAudioToChat call=nil")
         }
-        
-        let context = try call.unwrap().accountContext
         
         let text = try await makeText(
             audio: audio,
@@ -35,15 +37,13 @@ extension CallRecorder {
             bubbleUpEmojiOrStickersets: []
         )
 
-        let account = context.account
         do {
-            _ = try await enqueueMessages(
-                account: account,
-                peerId: account.peerId,
-                messages: [message]
-            ).awaitForFirstValue()
+            let peerId = await getReceiverId()
+            try await send(message: message, to: peerId)
+            return peerId
         } catch {
-            log("enqueueMessages error: \(error)")
+            try await send(message: message, to: nil)
+            return nil
         }
     }
 }
@@ -52,6 +52,16 @@ private extension CallRecorder {
     func deleteFile(path: String) {
         let url = URL(fileURLWithPath: path)
         try? FileManager.default.removeItem(at: url)
+    }
+    
+    func getReceiverId() async -> PeerId? {
+        let getSettingsUseCase = CallRecorderModule.shared.getSettingsUseCase()
+        
+        if let receiverId = await getSettingsUseCase().receiverId {
+            return PeerId.ng_fromInt64(receiverId)
+        } else {
+            return nil
+        }
     }
     
     func makeMedia(_ audio: RecordedAudio) -> TelegramMediaFile {
@@ -93,10 +103,29 @@ private extension CallRecorder {
         let date = dateFormatter.string(from: Date())
         
         var text = "\(title)-\(date)"
+        if let peerId = call?.peerId?.ng_toInt64() {
+            text = "\(peerId)-\(text)"
+        }
         if partNumber > 1 {
             text += "-part-\(partNumber)"
         }
         
         return text
+    }
+    
+    func send(
+        message: EnqueueMessage,
+        to: PeerId?
+    ) async throws {
+        let context = try call.unwrap().accountContext
+        let account = context.account
+        let ids = try await enqueueMessages(
+            account: account,
+            peerId: to ?? account.peerId,
+            messages: [message]
+        ).awaitForFirstValue()
+        if ids.isEmpty {
+            throw UnexpectedError()
+        }
     }
 }

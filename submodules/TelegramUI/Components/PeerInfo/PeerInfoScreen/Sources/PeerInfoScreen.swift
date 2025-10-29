@@ -903,11 +903,7 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
 
     if isExpanded && NGSettings.showProfileId {
         // Nicegram ID
-        var idText = ""
-        
-        if let user = data.peer as? TelegramUser {
-            idText = String(user.id.id._internalGetInt64Value())
-        }
+        let idText = data.peer?.id.ng_toInt64Text() ?? ""
         
         // Sorry RTL users
         let idStrings = [presentationData.strings.Conversation_ContextMenuCopy, "ID: \(idText)"]
@@ -1429,7 +1425,7 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     
     // Nicegram ID
     var ngItemId = 0
-    var idText = ""
+    let idText = data.peer?.id.ng_toInt64Text() ?? ""
     var isUser = false
     
     // Nicegram TranslateBio
@@ -1464,7 +1460,6 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
     
     if let user = data.peer as? TelegramUser {
         // Nicegram User ID
-        idText = String(user.id.id._internalGetInt64Value())
         isUser = true
         
         if !callMessages.isEmpty {
@@ -1873,9 +1868,6 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
             }
         }
     } else if let channel = data.peer as? TelegramChannel {
-        // Nicegram Channel ID
-        idText = "-100" + String(channel.id.id._internalGetInt64Value())
-        
         let ItemUsername = 1
         let ItemUsernameInfo = 2
         let ItemAbout = 3
@@ -2143,9 +2135,6 @@ private func infoItems(data: PeerInfoScreenData?, context: AccountContext, prese
             }
         }
     } else if let group = data.peer as? TelegramGroup {
-        // Nicegram Group ID
-        idText = String(group.id.id._internalGetInt64Value())
-         
         if let cachedData = data.cachedData as? CachedGroupData {
             let aboutText: String?
             if group.isFake {
