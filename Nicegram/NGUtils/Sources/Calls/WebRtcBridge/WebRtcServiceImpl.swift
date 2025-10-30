@@ -11,6 +11,11 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
     
     weak var delegate: WebRtcServiceDelegate?
     
+    //  MARK: - Logic
+    
+    private var localVideoCapturer: RTCCameraVideoCapturer?
+    private var localVideoTrack: RTCVideoTrack?
+    
     //  MARK: - Lifecycle
     
     init(
@@ -25,7 +30,10 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
         config.sdpSemantics = .unifiedPlan
         config.continualGatheringPolicy = .gatherContinually
         
-        let factory = RTCPeerConnectionFactory()
+        let factory = RTCPeerConnectionFactory(
+            encoderFactory: RTCDefaultVideoEncoderFactory(),
+            decoderFactory: RTCDefaultVideoDecoderFactory()
+        )
         let peerConnection = factory.peerConnection(
             with: config,
             constraints: RTCMediaConstraints(
@@ -41,7 +49,6 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
         
         super.init()
         
-        createMediaSenders()
         peerConnection?.delegate = self
     }
 }
@@ -49,6 +56,10 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
 //  MARK: - WebRtcService
 
 extension WebRtcServiceImpl {
+    func initialize() {
+        createMediaSenders()
+    }
+    
     func offer() async throws -> SessionDescription {
         let peerConnection = try peerConnection.unwrap()
         
@@ -79,6 +90,16 @@ extension WebRtcServiceImpl {
         peerConnection?.close()
     }
     
+    func setLocalVideo(enabled: Bool) {
+        setTrack(RTCVideoTrack.self, enabled: enabled)
+        
+        if enabled {
+            startCapture()
+        } else {
+            stopCapture()
+        }
+    }
+    
     func setMuted(_ muted: Bool) {
         setTrack(RTCAudioTrack.self, enabled: !muted)
     }
@@ -95,7 +116,11 @@ extension WebRtcServiceImpl {
 extension WebRtcServiceImpl: RTCPeerConnectionDelegate {
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {}
     
-    func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {}
+    func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {
+        if let videoTrack = stream.videoTracks.first {
+            delegate?.didReceiveRemoteVideoTrack(VideoTrackAdapter(videoTrack))
+        }
+    }
     
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
     
@@ -142,6 +167,9 @@ private extension WebRtcServiceImpl {
         
         let audioTrack = createAudioTrack()
         peerConnection?.add(audioTrack, streamIds: [streamId])
+        
+        let videoTrack = createVideoTrack()
+        peerConnection?.add(videoTrack, streamIds: [streamId])
     }
     
     func createAudioTrack() -> RTCAudioTrack {
@@ -151,11 +179,24 @@ private extension WebRtcServiceImpl {
         return audioTrack
     }
     
+    func createVideoTrack() -> RTCVideoTrack {
+        let source = factory.videoSource()
+        let capturer = RTCCameraVideoCapturer(delegate: source)
+        let track = factory.videoTrack(with: source, trackId: "video0")
+        
+        self.localVideoCapturer = capturer
+        
+        self.localVideoTrack = track
+        self.delegate?.didReceiveLocalVideoTrack(VideoTrackAdapter(track))
+        
+        return track
+    }
+    
     func getMediaConstraints() -> RTCMediaConstraints{
         RTCMediaConstraints(
             mandatoryConstraints: [
                 kRTCMediaConstraintsOfferToReceiveAudio: kRTCMediaConstraintsValueTrue,
-                kRTCMediaConstraintsOfferToReceiveVideo: kRTCMediaConstraintsValueFalse,
+                kRTCMediaConstraintsOfferToReceiveVideo: kRTCMediaConstraintsValueTrue,
             ],
             optionalConstraints: nil
         )
@@ -165,5 +206,21 @@ private extension WebRtcServiceImpl {
         peerConnection?.transceivers
             .compactMap { $0.sender.track as? T }
             .forEach { $0.isEnabled = enabled }
+    }
+    
+    func startCapture() {
+        do {
+            let capturer = try localVideoCapturer.unwrap()
+            let device = try RTCCameraVideoCapturer.captureDevices().first(where: { $0.position == .front }).unwrap()
+            
+            let format = try RTCCameraVideoCapturer.supportedFormats(for: device).last.unwrap()
+            let fps = try format.videoSupportedFrameRateRanges.first.unwrap().maxFrameRate
+            
+            capturer.startCapture(with: device, format: format, fps: Int(fps))
+        } catch {}
+    }
+    
+    func stopCapture() {
+        localVideoCapturer?.stopCapture()
     }
 }

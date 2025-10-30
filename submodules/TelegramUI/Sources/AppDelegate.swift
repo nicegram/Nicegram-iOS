@@ -454,6 +454,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             firebaseAnalyticsSender: {
                 FirebaseAnalyticsSender()
             },
+            idleTimerManager: {
+                IdleTimerManagerImpl(contextProvider: contextProvider)
+            },
             lottieView: {
                 LottieViewImpl()
             },

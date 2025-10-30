@@ -73,6 +73,14 @@ private class SignalPublisherSubscription<S: Combine.Subscriber>: Combine.Subscr
 
 }
 
+public extension AnyCancellable {
+    convenience init(_ disposable: Disposable) {
+        self.init {
+            disposable.dispose()
+        }
+    }
+}
+
 // MARK: Publisher to Signal
 
 @available(iOS 13.0, *)
