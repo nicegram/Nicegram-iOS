@@ -6,6 +6,7 @@ import Postbox
 import TelegramCore
 import AccountContext
 import ChatPresentationInterfaceState
+import ChatControllerInteraction
 
 public protocol ChatInputPanelViewForOverlayContent: UIView {
     func maybeDismissContent(point: CGPoint)
@@ -13,6 +14,7 @@ public protocol ChatInputPanelViewForOverlayContent: UIView {
 
 open class ChatInputPanelNode: ASDisplayNode {
     open var context: AccountContext?
+    open var chatControllerInteraction: ChatControllerInteraction?
     open var interfaceInteraction: ChatPanelInterfaceInteraction?
     open var prevInputPanelNode: ChatInputPanelNode?
     
@@ -21,7 +23,7 @@ open class ChatInputPanelNode: ASDisplayNode {
     open func updateAbsoluteRect(_ rect: CGRect, within containerSize: CGSize, transition: ContainedViewLayoutTransition) {
     }
     
-    open func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+    open func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
         return 0.0
     }
     
@@ -31,9 +33,9 @@ open class ChatInputPanelNode: ASDisplayNode {
     
     open func defaultHeight(metrics: LayoutMetrics) -> CGFloat {
         if case .regular = metrics.widthClass, case .regular = metrics.heightClass {
-            return 49.0
+            return 40.0
         } else {
-            return 45.0
+            return 40.0
         }
     }
     

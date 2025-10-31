@@ -388,7 +388,7 @@ public final class ForwardAccessoryPanelNode: AccessoryPanelNode {
         
         let alertController = richTextAlertController(context: self.context, title: title, text: text, actions: [TextAlertAction(type: .genericAction, title: self.strings.Conversation_ForwardOptions_ShowOptions, action: { [weak self] in
             if let strongSelf = self {
-                strongSelf.interfaceInteraction?.presentForwardOptions(strongSelf)
+                strongSelf.interfaceInteraction?.presentForwardOptions(strongSelf.view)
                 Queue.mainQueue().after(0.5) {
                     strongSelf.updateThemeAndStrings(theme: strongSelf.theme, strings: strongSelf.strings, forwardOptionsState: strongSelf.forwardOptionsState, force: true)
                 }
@@ -409,7 +409,7 @@ public final class ForwardAccessoryPanelNode: AccessoryPanelNode {
                 return
             }
             self.previousTapTimestamp = CFAbsoluteTimeGetCurrent()
-            self.interfaceInteraction?.presentForwardOptions(self)
+            self.interfaceInteraction?.presentForwardOptions(self.view)
             Queue.mainQueue().after(1.5) {
                 self.updateThemeAndStrings(theme: self.theme, strings: self.strings, forwardOptionsState: self.forwardOptionsState, force: true)
             }

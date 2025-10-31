@@ -55,6 +55,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Stars/BalanceNeededScreen",
         "//submodules/TelegramUI/Components/ChatThemeScreen",
         "//submodules/ImageBlur",
+        "//submodules/TelegramUI/Components/PeerInfo/ProfileLevelRatingBarComponent",
     ],
     visibility = [
         "//visibility:public",

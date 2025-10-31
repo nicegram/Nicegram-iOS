@@ -147,10 +147,10 @@
     {
       "identity" : "grdb.swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/denis15yo/GRDB.swift.git",
+      "location" : "https://github.com/groue/GRDB.swift.git",
       "state" : {
-        "branch" : "master",
-        "revision" : "156d630c7a4175ddf4d529244f4672428cc6e2fc"
+        "revision" : "18497b68fdbb3a09528d260a0a0e1e7e61c8c53d",
+        "version" : "7.8.0"
       }
     },
     {
@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/call-recorder",
-        "revision" : "32e88de5ca9479e5d4959c7a3a702991df90ff39"
+        "branch" : "qa/build-571",
+        "revision" : "8786e7422240a76fca6aa5f887e16b05e7eba951"
       }
     },
     {
@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "e75f960d9a8ad8fa091de5fcfb077312b8913dde"
+        "branch" : "feat/merge-12.1.1",
+        "revision" : "7ed46cce164c61f8b99c8ab0bb1a4025d09d9296"
       }
     },
     {
@@ -352,6 +352,15 @@
       }
     },
     {
+      "identity" : "swift-async-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/denis15yo/swift-async-algorithms.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "ddbd78777d2bdc7ae2c7e5b42fc5f55693746c23"
+      }
+    },
+    {
       "identity" : "swift-case-paths",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/denis15yo/swift-case-paths.git",
@@ -365,8 +374,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark",
       "state" : {
-        "revision" : "b97d09472e847a416629f026eceae0e2afcfad65",
-        "version" : "0.7.0"
+        "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
+        "version" : "0.7.1"
       }
     },
     {
@@ -437,8 +446,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",
       "state" : {
-        "revision" : "97bb244f7a575a419ebc8f3c2d33f2feb9c8f7f2",
-        "version" : "1.33.1"
+        "revision" : "c169a5744230951031770e27e475ff6eefe51f9d",
+        "version" : "1.33.3"
       }
     },
     {
@@ -510,7 +519,7 @@
       "location" : "https://github.com/denis15yo/ton-swift.git",
       "state" : {
         "branch" : "main",
-        "revision" : "f2b6363f15ec2374e13449d381fcb10506ec019f"
+        "revision" : "5ed7dab15361928f38d42f8c584cbe9a34639dff"
       }
     },
     {
@@ -525,10 +534,10 @@
     {
       "identity" : "tweetnacl-swiftwrap",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/bitmark-inc/tweetnacl-swiftwrap",
+      "location" : "https://github.com/denis15yo/tweetnacl-swiftwrap",
       "state" : {
-        "revision" : "f8fd111642bf2336b11ef9ea828510693106e954",
-        "version" : "1.1.0"
+        "branch" : "master",
+        "revision" : "c771560c1fbd1bc4e56ae90001ae357c71ab8564"
       }
     },
     {
@@ -536,8 +545,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "4adde2a402c3796a5b58e84911988f7c4e7f8ebf",
-        "version" : "4.3.20"
+        "revision" : "6110d9c4bec60c73adb09563f2b1484c9a847d42",
+        "version" : "4.3.21"
       }
     },
     {

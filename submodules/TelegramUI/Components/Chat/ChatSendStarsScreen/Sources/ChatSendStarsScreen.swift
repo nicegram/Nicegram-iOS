@@ -1420,10 +1420,16 @@ private final class ChatSendStarsScreenComponent: Component {
                         theme: environment.theme,
                         currency: .stars,
                         action: { [weak self] in
-                            guard let self, let starsContext = context.starsContext, let navigationController = self.environment?.controller()?.navigationController as? NavigationController else {
+                            guard let self, let component = self.component, let starsContext = context.starsContext, let navigationController = self.environment?.controller()?.navigationController as? NavigationController else {
                                 return
                             }
                             self.environment?.controller()?.dismiss()
+                            
+                            let targetPeerId: EnginePeer.Id
+                            switch component.initialData.subjectInitialData {
+                            case let .react(reactData):
+                                targetPeerId = reactData.peer.id
+                            }
                             
                             let _ = (context.engine.payments.starsTopUpOptions()
                             |> take(1)
@@ -1433,6 +1439,7 @@ private final class ChatSendStarsScreenComponent: Component {
                                     starsContext: starsContext,
                                     options: options,
                                     purpose: .generic,
+                                    targetPeerId: targetPeerId,
                                     completion: { _ in }
                                 )
                                 navigationController.pushViewController(controller)
@@ -2295,7 +2302,7 @@ private final class ChatSendStarsScreenComponent: Component {
                                     purchasePurpose = .reactions(peerId: reactData.peer.id, requiredStars: Int64(self.amount.realValue))
                                 }
                                 
-                                let purchaseScreen = component.context.sharedContext.makeStarsPurchaseScreen(context: component.context, starsContext: starsContext, options: options, purpose: purchasePurpose, completion: { result in
+                                let purchaseScreen = component.context.sharedContext.makeStarsPurchaseScreen(context: component.context, starsContext: starsContext, options: options, purpose: purchasePurpose, targetPeerId: nil, completion: { result in
                                     let _ = result
                                     //TODO:release
                                 })

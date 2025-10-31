@@ -28,6 +28,7 @@ import CoreTelephony
 import PhoneNumberFormat
 import PlainButtonComponent
 import StoreKit
+import DeviceModel
 
 final class AuthorizationSequencePaymentScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -199,19 +200,12 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                                 text: errorText,
                                 actions: [
                                     TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {}),
-                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Login_PhoneNumberHelp, action: { [weak controller] in
-                                        guard let controller else {
+                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Login_PhoneNumberHelp, action: { [weak self] in
+                                        guard let self else {
                                             return
                                         }
-                                        let formattedNumber = formatPhoneNumber(component.phoneNumber)
-                                        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
-                                        let systemVersion = UIDevice.current.systemVersion
-                                        let locale = Locale.current.identifier
-                                        let carrier = CTCarrier()
-                                        let mnc = carrier.mobileNetworkCode ?? "none"
-                                        let errorString: String = "\(errorCode): \(errorText)"
                                         
-                                        AuthorizationSequenceController.presentEmailComposeController(address: component.supportEmailAddress, subject: component.supportEmailSubject, body: presentationData.strings.Login_PhoneGenericEmailBody(formattedNumber, errorString, appVersion, systemVersion, locale, mnc).string, from: controller, presentationData: presentationData)
+                                        self.displaySendEmail(error: errorText, errorCode: "\(errorCode)")
                                     })
                                 ]
                             )
@@ -223,6 +217,35 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                     self.state?.updated(transition: .immediate)
                 }
             })
+        }
+        
+        private func displaySendEmail(error: String?, errorCode: String?) {
+            guard let component = self.component, let environment = self.environment, let controller = environment.controller() else {
+                return
+            }
+            
+            let formattedNumber = "\(component.phoneNumber)"
+            let device = DeviceModel.currentModelCode()
+            let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
+            let systemVersion = UIDevice.current.systemVersion
+            let locale = Locale.current.identifier
+            
+            let issue = error ?? "unknown"
+            let errorCode = errorCode ?? "unknown"
+            
+            let body = environment.strings.Login_PhonePaidEmailText(
+                device,
+                systemVersion,
+                locale,
+                formattedNumber,
+                "1",
+                appVersion,
+                issue,
+                errorCode
+            ).string
+            
+            let presentationData = component.presentationData
+            AuthorizationSequenceController.presentEmailComposeController(address: component.supportEmailAddress, subject: environment.strings.Login_PhonePaidEmailSubject, body: body, from: controller, presentationData: presentationData)
         }
         
         func update(component: AuthorizationSequencePaymentScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
@@ -257,7 +280,6 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
             
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             
-            let presentationData = component.presentationData
             let helpButtonSize = self.helpButton.update(
                 transition: transition,
                 component: AnyComponent(PlainButtonComponent(
@@ -267,26 +289,10 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                     minSize: CGSize(width: 0.0, height: 44.0),
                     contentInsets: UIEdgeInsets(top: 0.0, left: 8.0, bottom: 0.0, right: 8.0),
                     action: { [weak self] in
-                        guard let self, let environment = self.environment, let controller = environment.controller() else {
+                        guard let self else {
                             return
                         }
-                        let formattedNumber = formatPhoneNumber(component.phoneNumber)
-                        let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
-                        let systemVersion = UIDevice.current.systemVersion
-                        let region = SKPaymentQueue.default().storefront?.countryCode ?? ""
-                        let dateFormatter = DateFormatter()
-                        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
-                        let dateString = dateFormatter.string(from: Date())
-                        
-                        let body = environment.strings.Login_PhonePaidEmailBody(
-                            formattedNumber,
-                            appVersion,
-                            systemVersion,
-                            region,
-                            dateString
-                        ).string
-                        
-                        AuthorizationSequenceController.presentEmailComposeController(address: component.supportEmailAddress, subject: environment.strings.Login_PhonePaidEmailSubject, body: body, from: controller, presentationData: presentationData)
+                        self.displaySendEmail(error: nil, errorCode: nil)
                     },
                     animateScale: false,
                     animateContents: false
@@ -445,10 +451,10 @@ final class AuthorizationSequencePaymentScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
+                        pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(buttonString),

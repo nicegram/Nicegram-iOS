@@ -10,7 +10,7 @@ import SolidRoundedButtonNode
 import PresentationDataUtils
 import VoiceChatActionButton
 
-private let accentColor: UIColor = UIColor(rgb: 0x007aff)
+private let accentColor: UIColor = UIColor(rgb: 0x0088ff)
 
 final class VoiceChatRecordingSetupController: ViewController {
     private var controllerNode: VoiceChatRecordingSetupControllerNode {

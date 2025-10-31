@@ -15,7 +15,7 @@ final class ChatMessageReportInputPanelNode: ChatInputPanelNode {
     private let reportButton: HighlightableButtonNode
     private let separatorNode: ASDisplayNode
     
-    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, metrics: LayoutMetrics, isSecondary: Bool)?
+    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, metrics: LayoutMetrics, isSecondary: Bool)?
     private var presentationInterfaceState: ChatPresentationInterfaceState?
     
     private var theme: PresentationTheme
@@ -72,7 +72,7 @@ final class ChatMessageReportInputPanelNode: ChatInputPanelNode {
         }
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
         if self.presentationInterfaceState != interfaceState {
             self.presentationInterfaceState = interfaceState
             

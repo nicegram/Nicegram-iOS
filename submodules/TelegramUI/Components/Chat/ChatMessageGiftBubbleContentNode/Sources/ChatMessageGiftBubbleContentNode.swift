@@ -86,6 +86,10 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
     
     private var currentProgressDisposable: Disposable?
     
+    override public var disablesClipping: Bool {
+        return true
+    }
+    
     override public var visibility: ListViewItemNodeVisibility {
         didSet {
             let wasVisible = oldValue != .none
@@ -278,7 +282,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                 switch action.action {
                 case let .starGift(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     releasedBy = gift.releasedBy
-                case let .starGiftUnique(gift, _, _, _, _, _, _, _, _, _, _, _, _, _):
+                case let .starGiftUnique(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     releasedBy = gift.releasedBy
                 default:
                     break
@@ -558,7 +562,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                 
                                 isStarGift = true
                                 var authorName = item.message.author.flatMap { EnginePeer($0) }?.compactDisplayTitle ?? ""
-                                
+                                                                
                                 let isSelfGift = item.message.id.peerId == item.context.account.peerId
                                 let isChannelGift = item.message.id.peerId.namespace == Namespaces.Peer.CloudChannel || channelPeerId != nil
                                 if isSelfGift {
@@ -569,8 +573,12 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                     } else {
                                         if let senderPeerId, let name = item.message.peers[senderPeerId].flatMap(EnginePeer.init)?.compactDisplayTitle {
                                             authorName = name
+                                            title = item.presentationData.strings.Notification_StarGift_Title(authorName).string
+                                        } else if !incoming, let name = item.message.peers[item.message.id.peerId].flatMap(EnginePeer.init)?.compactDisplayTitle {
+                                            title = item.presentationData.strings.Notification_StarGift_TitleTo(name).string
+                                        } else {
+                                            title = item.presentationData.strings.Gift_View_Unknown_Title
                                         }
-                                        title = item.presentationData.strings.Notification_StarGift_Title(authorName).string
                                     }
                                 }
                                 if let giftText, !giftText.isEmpty {
@@ -647,10 +655,14 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                     buttonTitle = item.presentationData.strings.Notification_StarGift_Unpack
                                     buttonIcon = "GiftUnpack"
                                 } else {
-                                    buttonTitle = item.presentationData.strings.Notification_StarGift_View
+                                    if isPrepaidUpgrade && !incoming {
+                                        buttonTitle = ""
+                                    } else {
+                                        buttonTitle = item.presentationData.strings.Notification_StarGift_View
+                                    }
                                 }
                             }
-                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _, _, _, _, _):
+                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _, _, _, _, _, _, _):
                             if case let .unique(uniqueGift) = gift {
                                 isStarGift = true
                                 

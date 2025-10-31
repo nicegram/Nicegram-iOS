@@ -58,6 +58,7 @@ swift_library(
         "//submodules/TelegramUI/Components/BottomButtonPanelComponent",
         "//submodules/PromptUI",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
+        "//submodules/TelegramUI/Components/PeerInfo/CollectionTabItemComponent"
     ],
     visibility = [
         "//visibility:public",

@@ -463,12 +463,11 @@ public final class GifPagerContentComponent: Component {
             }
         }
         
+        private let clippingView: UIView
+        
         private let shimmerHostView: PortalSourceView
         private let standaloneShimmerEffect: StandaloneShimmerEffect
         
-        private let backgroundView: BlurredBackgroundView
-        private let backgroundTintView: UIView
-        private var vibrancyEffectView: UIView?
         private let mirrorContentScrollView: UIView
         private let scrollView: ContentScrollView
         private let scrollClippingView: UIView
@@ -490,8 +489,8 @@ public final class GifPagerContentComponent: Component {
         private var currentLoadMoreToken: String?
         
         override init(frame: CGRect) {
-            self.backgroundView = BlurredBackgroundView(color: nil)
-            self.backgroundTintView = UIView()
+            self.clippingView = UIView()
+            self.clippingView.clipsToBounds = true
             
             self.shimmerHostView = PortalSourceView()
             self.standaloneShimmerEffect = StandaloneShimmerEffect()
@@ -514,11 +513,10 @@ public final class GifPagerContentComponent: Component {
             
             super.init(frame: frame)
             
-            self.backgroundView.addSubview(self.backgroundTintView)
-            self.addSubview(self.backgroundView)
+            self.addSubview(self.clippingView)
             
             self.shimmerHostView.alpha = 0.0
-            self.addSubview(self.shimmerHostView)
+            self.clippingView.addSubview(self.shimmerHostView)
             
             self.scrollView.delaysContentTouches = false
             if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
@@ -533,10 +531,10 @@ public final class GifPagerContentComponent: Component {
             self.scrollView.delegate = self
             
             self.scrollClippingView.addSubview(self.scrollView)
-            self.addSubview(self.scrollClippingView)
+            self.clippingView.addSubview(self.scrollClippingView)
             
             self.scrollView.addSubview(self.placeholdersContainerView)
-            self.addSubview(self.searchHeaderContainer)
+            self.clippingView.addSubview(self.searchHeaderContainer)
             
             self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))
             
@@ -876,45 +874,14 @@ public final class GifPagerContentComponent: Component {
             }
         }
         
-        public func pagerUpdateBackground(backgroundFrame: CGRect, topPanelHeight: CGFloat, transition: ComponentTransition) {
-            guard let theme = self.theme else {
-                return
-            }
-            if theme.overallDarkAppearance {
-                if let vibrancyEffectView = self.vibrancyEffectView {
-                    self.vibrancyEffectView = nil
-                    vibrancyEffectView.removeFromSuperview()
-                }
-            } else {
-                if self.vibrancyEffectView == nil {
-                    let vibrancyEffectView = UIView()
-                    vibrancyEffectView.backgroundColor = .white
-                    if let filter = CALayer.luminanceToAlpha() {
-                        vibrancyEffectView.layer.filters = [filter]
-                    }
-                    self.vibrancyEffectView = vibrancyEffectView
-                    self.backgroundTintView.mask = vibrancyEffectView
-                    vibrancyEffectView.addSubview(self.mirrorContentScrollView)
-                    vibrancyEffectView.addSubview(self.mirrorSearchHeaderContainer)
+        public func pagerUpdateBackground(backgroundFrame: CGRect, topPanelHeight: CGFloat, bottomPanelHeight: CGFloat, externalTintMaskContainer: UIView?, transition: ComponentTransition) {
+            if let externalTintMaskContainer {
+                if self.mirrorSearchHeaderContainer.superview !== externalTintMaskContainer {
+                    externalTintMaskContainer.addSubview(self.mirrorSearchHeaderContainer)
                 }
             }
             
-            let hideBackground = self.component?.hideBackground ?? false
-            var backgroundColor = theme.chat.inputMediaPanel.backgroundColor
-            if hideBackground {
-                backgroundColor = backgroundColor.withAlphaComponent(0.01)
-            }
-            
-            self.backgroundTintView.backgroundColor = backgroundColor
-            transition.setFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
-            
-            self.backgroundView.updateColor(color: .clear, enableBlur: true, forceKeepBlur: true, transition: transition.containedViewLayoutTransition)
-            transition.setFrame(view: self.backgroundView, frame: backgroundFrame)
-            self.backgroundView.update(size: backgroundFrame.size, transition: transition.containedViewLayoutTransition)
-            
-            if let vibrancyEffectView = self.vibrancyEffectView {
-                transition.setFrame(view: vibrancyEffectView, frame: CGRect(origin: CGPoint(x: 0.0, y: -backgroundFrame.minY), size: CGSize(width: backgroundFrame.width, height: backgroundFrame.height + backgroundFrame.minY)))
-            }
+            transition.setFrame(view: self.clippingView, frame: CGRect(origin: CGPoint(), size: CGSize(width: backgroundFrame.width, height: max(0.0, backgroundFrame.height - bottomPanelHeight))))
         }
         
         func update(component: GifPagerContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {

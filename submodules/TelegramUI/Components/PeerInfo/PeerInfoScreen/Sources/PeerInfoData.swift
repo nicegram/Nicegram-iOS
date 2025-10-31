@@ -40,6 +40,7 @@ final class PeerInfoState {
     let paneIsReordering: Bool
     let updatingAvatar: PeerInfoUpdatingAvatar?
     let updatingBio: String?
+    let updatingNote: NSAttributedString?
     let avatarUploadProgress: AvatarUploadProgress?
     let highlightedButton: PeerInfoHeaderButtonKey?
     let isEditingBirthDate: Bool
@@ -53,6 +54,7 @@ final class PeerInfoState {
         paneIsReordering: Bool,
         updatingAvatar: PeerInfoUpdatingAvatar?,
         updatingBio: String?,
+        updatingNote: NSAttributedString?,
         avatarUploadProgress: AvatarUploadProgress?,
         highlightedButton: PeerInfoHeaderButtonKey?,
         isEditingBirthDate: Bool,
@@ -65,6 +67,7 @@ final class PeerInfoState {
         self.paneIsReordering = paneIsReordering
         self.updatingAvatar = updatingAvatar
         self.updatingBio = updatingBio
+        self.updatingNote = updatingNote
         self.avatarUploadProgress = avatarUploadProgress
         self.highlightedButton = highlightedButton
         self.isEditingBirthDate = isEditingBirthDate
@@ -80,6 +83,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -96,6 +100,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -112,6 +117,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -128,6 +134,7 @@ final class PeerInfoState {
             paneIsReordering: paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -144,6 +151,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -160,6 +168,24 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: updatingBio,
+            updatingNote: self.updatingNote,
+            avatarUploadProgress: self.avatarUploadProgress,
+            highlightedButton: self.highlightedButton,
+            isEditingBirthDate: self.isEditingBirthDate,
+            updatingBirthDate: self.updatingBirthDate,
+            personalChannels: self.personalChannels
+        )
+    }
+    
+    func withUpdatingNote(_ updatingNote: NSAttributedString?) -> PeerInfoState {
+        return PeerInfoState(
+            isEditing: self.isEditing,
+            selectedMessageIds: self.selectedMessageIds,
+            selectedStoryIds: self.selectedStoryIds,
+            paneIsReordering: self.paneIsReordering,
+            updatingAvatar: self.updatingAvatar,
+            updatingBio: self.updatingBio,
+            updatingNote: updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -176,6 +202,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -192,6 +219,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -208,6 +236,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: isEditingBirthDate,
@@ -224,6 +253,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -240,6 +270,7 @@ final class PeerInfoState {
             paneIsReordering: self.paneIsReordering,
             updatingAvatar: self.updatingAvatar,
             updatingBio: self.updatingBio,
+            updatingNote: self.updatingNote,
             avatarUploadProgress: self.avatarUploadProgress,
             highlightedButton: self.highlightedButton,
             isEditingBirthDate: self.isEditingBirthDate,
@@ -1057,7 +1088,8 @@ func peerInfoScreenData(
     chatLocationContextHolder: Atomic<ChatLocationContextHolder?>,
     sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?,
     privacySettings: Signal<AccountPrivacySettings?, NoError>,
-    forceHasGifts: Bool
+    forceHasGifts: Bool,
+    switchToUpgradableGifts: Bool
 ) -> Signal<PeerInfoScreenData, NoError> {
     return peerInfoScreenInputData(context: context, peerId: peerId, isSettings: isSettings)
     |> mapToSignal { inputData -> Signal<PeerInfoScreenData, NoError> in
@@ -1151,6 +1183,10 @@ func peerInfoScreenData(
                 if isMyProfile || userPeerId != context.account.peerId {
                     profileGiftsContext = existingProfileGiftsContext ?? ProfileGiftsContext(account: context.account, peerId: userPeerId)
                     profileGiftsCollectionsContext = existingProfileGiftsCollectionsContext ?? ProfileGiftsCollectionsContext(account: context.account, peerId: userPeerId, allGiftsContext: profileGiftsContext)
+                    
+                    if switchToUpgradableGifts {
+                        profileGiftsContext?.updateFilter([.displayed, .hidden, .limitedUpgradable])
+                    }
                 } else {
                     profileGiftsContext = nil
                     profileGiftsCollectionsContext = nil

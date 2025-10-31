@@ -4,6 +4,8 @@ import AsyncDisplayKit
 import Display
 import TelegramPresentationData
 import AccountContext
+import ComponentFlow
+import GlassBackgroundComponent
 
 private func generateBackgroundImage(foreground: UIColor, diameter: CGFloat, sideInset: CGFloat) -> UIImage? {
     return generateImage(CGSize(width: diameter + sideInset * 2.0, height: diameter + sideInset * 2.0), rotatedContext: { size, context in
@@ -41,6 +43,8 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
     private let smallCircleSize: CGFloat
     
     private let backgroundView: BlurredBackgroundView
+    private let glassBackgroundView: GlassBackgroundView?
+    
     private let backgroundTintView: UIView
     private let backgroundTintMaskOuterContainer: UIView
     let backgroundTintMaskContainer: UIView
@@ -57,11 +61,16 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
     
     private var theme: PresentationTheme?
     
-    init(largeCircleSize: CGFloat, smallCircleSize: CGFloat, maskNode: ASDisplayNode) {
+    init(glass: Bool, largeCircleSize: CGFloat, smallCircleSize: CGFloat, maskNode: ASDisplayNode) {
         self.largeCircleSize = largeCircleSize
         self.smallCircleSize = smallCircleSize
         
         self.backgroundView = BlurredBackgroundView(color: nil, enableBlur: true)
+        if glass {
+            self.glassBackgroundView = GlassBackgroundView()
+        } else {
+            self.glassBackgroundView = nil
+        }
         
         self.backgroundTintView = UIView()
         self.backgroundTintMaskContainer = UIView()
@@ -108,16 +117,22 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         
         self.backgroundTintMaskOuterContainer.backgroundColor = .white
         
-        self.view.addSubview(self.backgroundView)
-        self.backgroundView.addSubview(self.backgroundTintView)
+        
+        if let glassBackgroundView = self.glassBackgroundView {
+            self.view.addSubview(glassBackgroundView)
+            glassBackgroundView.addSubview(self.backgroundTintView)
+            //glassBackgroundView.maskContentView.layer.addSublayer(self.maskLayer)
+        } else {
+            self.backgroundView.layer.mask = self.maskLayer
+            self.view.addSubview(self.backgroundView)
+            self.backgroundView.addSubview(self.backgroundTintView)
+        }
         
         self.maskLayer.addSublayer(self.smallCircleLayer)
         self.maskLayer.addSublayer(self.largeCircleLayer)
         self.maskLayer.addSublayer(self.backgroundClippingLayer)
         
         self.backgroundClippingLayer.addSublayer(self.backgroundMaskNode.layer)
-        
-        self.backgroundView.layer.mask = self.maskLayer
     }
     
     func updateIsIntersectingContent(isIntersectingContent: Bool, transition: ContainedViewLayoutTransition) {
@@ -218,7 +233,16 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         transition.updateFrame(view: self.backgroundView, frame: contentBounds, beginWithCurrentState: true)
         self.backgroundView.update(size: contentBounds.size, transition: transition)
         
-        transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)))
+        if let glassBackgroundView = self.glassBackgroundView {
+            var glassBackgroundFrame = contentBounds.insetBy(dx: 10.0, dy: 10.0)
+            glassBackgroundFrame.size.height -= 8.0
+            transition.updateFrame(view: glassBackgroundView, frame: glassBackgroundFrame, beginWithCurrentState: true)
+            glassBackgroundView.update(size: glassBackgroundFrame.size, cornerRadius: 23.0, isDark: true, tintColor: .init(kind: .custom, color: UIColor(rgb: 0x25272e, alpha: 0.72)), transition: ComponentTransition(transition))
+            
+            transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)).insetBy(dx: -10.0, dy: -10.0))
+        } else {
+            transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)))
+        }
         transition.updateFrame(view: self.backgroundTintMaskOuterContainer, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: contentBounds.size))
         transition.updateFrame(view: self.backgroundTintMaskContainer, frame: CGRect(origin: CGPoint(x: 10.0, y: 10.0), size: contentBounds.size))
         transition.updateFrame(view: self.vibrantExpandedContentContainer, frame: CGRect(origin: CGPoint(x: 10.0, y: 10.0), size: contentBounds.size))

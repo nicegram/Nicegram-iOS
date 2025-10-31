@@ -366,7 +366,7 @@ func _internal_toggleAddressNameActive(account: Account, domain: AddressNameDoma
                     }
                     |> mapToSignal { result -> Signal<Void, ToggleAddressNameActiveError> in
                         return account.postbox.transaction { transaction -> Void in
-                            if case .boolTrue = result, let peer = transaction.getPeer(peerId) as? TelegramChannel {
+                            if case .boolTrue = result, let peer = transaction.getPeer(peerId) as? TelegramUser {
                                 var updatedNames = peer.usernames
                                 if let index = updatedNames.firstIndex(where: { $0.username == name }) {
                                     var updatedFlags = updatedNames[index].flags
@@ -405,7 +405,7 @@ func _internal_toggleAddressNameActive(account: Account, domain: AddressNameDoma
                                     }
                                     updatedNames.insert(updatedName, at: updatedIndex)
                                 }
-                                let updatedPeer = peer.withUpdatedAddressNames(updatedNames)
+                                let updatedPeer = peer.withUpdatedUsernames(updatedNames)
                                 updatePeersCustom(transaction: transaction, peers: [updatedPeer], update: { _, updated in
                                     return updated
                                 })

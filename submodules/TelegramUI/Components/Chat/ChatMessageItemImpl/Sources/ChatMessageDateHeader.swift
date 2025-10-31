@@ -923,7 +923,7 @@ public final class ChatMessageAvatarHeader: ListViewItemHeader {
     public let stickDirection: ListViewItemHeaderStickDirection
     public let stickOverInsets: Bool = false
 
-    public let height: CGFloat = 38.0
+    public let height: CGFloat = 40.0
 
     public func combinesWith(other: ListViewItemHeader) -> Bool {
         if let other = other as? ChatMessageAvatarHeader, other.id == self.id {
@@ -1053,9 +1053,9 @@ public final class ChatMessageAvatarHeaderNodeImpl: ListViewItemHeaderNode, Chat
         if let previousPeer = self.peer, previousPeer.nameColor != peer.nameColor {
             self.peer = peer
             if peer.smallProfileImage != nil {
-                self.avatarNode.setPeerV2(context: self.context, theme: self.presentationData.theme.theme, peer: EnginePeer(peer), authorOfMessage: self.messageReference, overrideImage: nil, emptyColor: .black, synchronousLoad: false, displayDimensions: CGSize(width: 38.0, height: 38.0))
+                self.avatarNode.setPeerV2(context: self.context, theme: self.presentationData.theme.theme, peer: EnginePeer(peer), authorOfMessage: self.messageReference, overrideImage: nil, emptyColor: .black, synchronousLoad: false, displayDimensions: CGSize(width: 40.0, height: 40.0))
             } else {
-                self.avatarNode.setPeer(context: self.context, theme: self.presentationData.theme.theme, peer: EnginePeer(peer), authorOfMessage: self.messageReference, overrideImage: nil, emptyColor: .black, synchronousLoad: false, displayDimensions: CGSize(width: 38.0, height: 38.0))
+                self.avatarNode.setPeer(context: self.context, theme: self.presentationData.theme.theme, peer: EnginePeer(peer), authorOfMessage: self.messageReference, overrideImage: nil, emptyColor: .black, synchronousLoad: false, displayDimensions: CGSize(width: 40.0, height: 40.0))
             }
         }
     }
@@ -1072,9 +1072,9 @@ public final class ChatMessageAvatarHeaderNodeImpl: ListViewItemHeaderNode, Chat
             overrideImage = .deletedIcon
         }
         if peer.smallProfileImage != nil {
-            self.avatarNode.setPeerV2(context: context, theme: theme, peer: EnginePeer(peer), authorOfMessage: authorOfMessage, overrideImage: overrideImage, emptyColor: emptyColor, synchronousLoad: synchronousLoad, displayDimensions: CGSize(width: 38.0, height: 38.0))
+            self.avatarNode.setPeerV2(context: context, theme: theme, peer: EnginePeer(peer), authorOfMessage: authorOfMessage, overrideImage: overrideImage, emptyColor: emptyColor, synchronousLoad: synchronousLoad, displayDimensions: CGSize(width: 40.0, height: 40.0))
         } else {
-            self.avatarNode.setPeer(context: context, theme: theme, peer: EnginePeer(peer), authorOfMessage: authorOfMessage, overrideImage: overrideImage, emptyColor: emptyColor, synchronousLoad: synchronousLoad, displayDimensions: CGSize(width: 38.0, height: 38.0))
+            self.avatarNode.setPeer(context: context, theme: theme, peer: EnginePeer(peer), authorOfMessage: authorOfMessage, overrideImage: overrideImage, emptyColor: emptyColor, synchronousLoad: synchronousLoad, displayDimensions: CGSize(width: 40.0, height: 40.0))
         }
         
         if peer.isPremium && context.sharedContext.energyUsageSettings.autoplayVideo {
@@ -1111,7 +1111,7 @@ public final class ChatMessageAvatarHeaderNodeImpl: ListViewItemHeaderNode, Chat
                             strongSelf.avatarNode.contentNode.addSubnode(videoNode)
                             strongSelf.avatarVideoNode = videoNode
                         }
-                        videoNode.update(peer: EnginePeer(peer), photo: photo, size: CGSize(width: 38.0, height: 38.0))
+                        videoNode.update(peer: EnginePeer(peer), photo: photo, size: CGSize(width: 40.0, height: 40.0))
                         
                         if strongSelf.hierarchyTrackingLayer == nil {
                             let hierarchyTrackingLayer = HierarchyTrackingLayer()
@@ -1220,8 +1220,8 @@ public final class ChatMessageAvatarHeaderNodeImpl: ListViewItemHeaderNode, Chat
     }
 
     override public func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, transition: ContainedViewLayoutTransition) {
-        transition.updateFrame(node: self.containerNode, frame: CGRect(origin: CGPoint(x: leftInset + 3.0, y: 0.0), size: CGSize(width: 38.0, height: 38.0)))
-        let avatarFrame = CGRect(origin: CGPoint(), size: CGSize(width: 38.0, height: 38.0))
+        transition.updateFrame(node: self.containerNode, frame: CGRect(origin: CGPoint(x: leftInset + 8.0, y: 0.0), size: CGSize(width: 40.0, height: 40.0)))
+        let avatarFrame = CGRect(origin: CGPoint(), size: CGSize(width: 40.0, height: 40.0))
         self.avatarNode.position = avatarFrame.center
         self.avatarNode.bounds = CGRect(origin: CGPoint(), size: avatarFrame.size)
         self.avatarNode.updateSize(size: avatarFrame.size)
@@ -1265,7 +1265,7 @@ public final class ChatMessageAvatarHeaderNodeImpl: ListViewItemHeaderNode, Chat
         var avatarTransform: CATransform3D = CATransform3DIdentity
         if isHidden {
             let scale: CGFloat = isHidden ? 0.001 : 1.0
-            avatarTransform = CATransform3DTranslate(avatarTransform, -38.0 * 0.5, 38.0 * 0.5, 0.0)
+            avatarTransform = CATransform3DTranslate(avatarTransform, -40.0 * 0.5, 40.0 * 0.5, 0.0)
             avatarTransform = CATransform3DScale(avatarTransform, scale, scale, 1.0)
         }
         transition.updateTransform(node: self.avatarNode, transform: avatarTransform)

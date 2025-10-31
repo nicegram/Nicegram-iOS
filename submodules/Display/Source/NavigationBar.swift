@@ -148,6 +148,7 @@ public final class NavigationBackgroundNode: ASDisplayNode {
     
     private var enableBlur: Bool
     private var enableSaturation: Bool
+    private var customBlurRadius: CGFloat?
 
     public var effectView: UIVisualEffectView?
     private let backgroundNode: ASDisplayNode
@@ -166,10 +167,11 @@ public final class NavigationBackgroundNode: ASDisplayNode {
         }
     }
 
-    public init(color: UIColor, enableBlur: Bool = true, enableSaturation: Bool = true) {
+    public init(color: UIColor, enableBlur: Bool = true, enableSaturation: Bool = true, customBlurRadius: CGFloat? = nil) {
         self._color = .clear
         self.enableBlur = enableBlur
         self.enableSaturation = enableSaturation
+        self.customBlurRadius = customBlurRadius
 
         self.backgroundNode = ASDisplayNode()
 
@@ -223,6 +225,9 @@ public final class NavigationBackgroundNode: ASDisplayNode {
                         let filterName = String(describing: filter)
                         if !allowedKeys.contains(filterName) {
                             return false
+                        }
+                        if let customBlurRadius = self.customBlurRadius, filterName == "gaussianBlur" {
+                            filter.setValue(customBlurRadius as NSNumber, forKey: "inputRadius")
                         }
                         return true
                     }
@@ -309,6 +314,7 @@ open class BlurredBackgroundView: UIView {
     private var _color: UIColor?
 
     private var enableBlur: Bool
+    private var customBlurRadius: CGFloat?
 
     public private(set) var effectView: UIVisualEffectView?
     private let backgroundView: UIView
@@ -323,9 +329,10 @@ open class BlurredBackgroundView: UIView {
         }
     }
 
-    public init(color: UIColor?, enableBlur: Bool = true) {
+    public init(color: UIColor?, enableBlur: Bool = true, customBlurRadius: CGFloat? = nil) {
         self._color = nil
         self.enableBlur = enableBlur
+        self.customBlurRadius = customBlurRadius
 
         self.backgroundView = UIView()
 
@@ -346,7 +353,6 @@ open class BlurredBackgroundView: UIView {
         if let color = self._color, self.enableBlur && !sharedIsReduceTransparencyEnabled && ((color.alpha > .ulpOfOne && color.alpha < 0.95) || forceKeepBlur) {
             if self.effectView == nil {
                 let effectView = UIVisualEffectView(effect: UIBlurEffect(style: .light))
-                //effectView.isHidden = true
 
                 for subview in effectView.subviews {
                     if subview.description.contains("VisualEffectSubview") {
@@ -369,6 +375,9 @@ open class BlurredBackgroundView: UIView {
                         let filterName = String(describing: filter)
                         if !allowedKeys.contains(filterName) {
                             return false
+                        }
+                        if let customBlurRadius = self.customBlurRadius, filterName == "gaussianBlur" {
+                            filter.setValue(customBlurRadius as NSNumber, forKey: "inputRadius")
                         }
                         return true
                     }

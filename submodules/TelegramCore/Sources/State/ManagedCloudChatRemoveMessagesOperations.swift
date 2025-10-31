@@ -536,7 +536,10 @@ private func _internal_clearHistory(transaction: Transaction, postbox: Postbox, 
                         return .complete()
                     }
                 } else {
-                    return network.request(Api.functions.channels.deleteTopicHistory(channel: inputChannel, topMsgId: Int32(clamping: threadId)))
+                    guard let inputPeer = apiInputPeer(peer) else {
+                        return .complete()
+                    }
+                    return network.request(Api.functions.messages.deleteTopicHistory(peer: inputPeer, topMsgId: Int32(clamping: threadId)))
                     |> map(Optional.init)
                     |> `catch` { _ -> Signal<Api.messages.AffectedHistory?, NoError> in
                         return .single(nil)

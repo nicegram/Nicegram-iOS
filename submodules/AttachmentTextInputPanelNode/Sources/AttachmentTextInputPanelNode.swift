@@ -700,6 +700,9 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         let hadLayout = self.validLayout != nil
         let previousAdditionalSideInsets = self.validLayout?.3
         self.validLayout = (width, leftInset, rightInset, additionalSideInsets, maxHeight, metrics, isSecondary)
+        
+        let leftInset = leftInset + 8.0
+        let rightInset = rightInset + 8.0
     
         var transition = transition
         if let previousAdditionalSideInsets = previousAdditionalSideInsets, previousAdditionalSideInsets.right != additionalSideInsets.right {
@@ -933,9 +936,13 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     }
     
     private func updateFieldAndButtonsLayout(inputHasText: Bool, panelHeight: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
-        guard let (width, leftInset, rightInset, additionalSideInsets, _, metrics, _) = self.validLayout else {
+        guard let (width, leftInsetValue, rightInsetValue, additionalSideInsets, _, metrics, _) = self.validLayout else {
             return 0.0
         }
+        
+        let leftInset = leftInsetValue + 8.0
+        let rightInset = rightInsetValue + 8.0
+        
         var textFieldMinHeight: CGFloat = 33.0
         if let presentationInterfaceState = self.presentationInterfaceState {
             textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, metrics: metrics)
@@ -1280,6 +1287,9 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         if let (width, leftInset, rightInset, _, maxHeight, metrics, _) = self.validLayout {
             let composeButtonsOffset: CGFloat = 0.0
             
+            let leftInset = leftInset + 8.0
+            let rightInset = rightInset + 8.0
+            
             let (_, textFieldHeight) = self.calculateTextFieldMetrics(width: width - leftInset - rightInset, maxHeight: maxHeight, metrics: metrics)
             let panelHeight = self.panelHeight(textFieldHeight: textFieldHeight, metrics: metrics)
             var textFieldMinHeight: CGFloat = 33.0
@@ -1421,6 +1431,9 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     
     private func updateTextHeight(animated: Bool) -> CGFloat? {
         if let (width, leftInset, rightInset, additionalSideInsets, maxHeight, metrics, _) = self.validLayout {
+            let leftInset = leftInset + 8.0
+            let rightInset = rightInset + 8.0
+            
             let (_, textFieldHeight) = self.calculateTextFieldMetrics(width: width - leftInset - rightInset - additionalSideInsets.right, maxHeight: maxHeight, metrics: metrics)
             let panelHeight = self.panelHeight(textFieldHeight: textFieldHeight, metrics: metrics)
             if !self.bounds.size.height.isEqual(to: panelHeight) {

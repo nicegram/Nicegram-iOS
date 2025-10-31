@@ -366,27 +366,33 @@ private func themeSettingsControllerEntries(presentationData: PresentationData, 
     let title = presentationData.autoNightModeTriggered ? strings.Appearance_ColorThemeNight.uppercased() : strings.Appearance_ColorTheme.uppercased()
     entries.append(.themeListHeader(presentationData.theme, title))
     
-    let nameColor: PeerNameColor
+    let nameColor: PeerColor
     let profileColor: PeerNameColor?
     var authorName = presentationData.strings.Appearance_PreviewReplyAuthor
     if let accountPeer {
-        nameColor = accountPeer.nameColor ?? .blue
+        nameColor = accountPeer.nameColor ?? .preset(.blue)
         if accountPeer._asPeer().hasCustomNameColor {
             authorName = accountPeer.displayTitle(strings: strings, displayOrder: presentationData.nameDisplayOrder)
         }
-        profileColor = accountPeer.profileColor
+        profileColor = accountPeer.effectiveProfileColor
     } else {
-        nameColor = .blue
+        nameColor = .preset(.blue)
         profileColor = nil
     }
     
-    entries.append(.chatPreview(presentationData.theme, presentationData.chatWallpaper, presentationData.chatFontSize, presentationData.chatBubbleCorners, presentationData.strings, presentationData.dateTimeFormat, presentationData.nameDisplayOrder, [ChatPreviewMessageItem(outgoing: false, reply: (authorName, presentationData.strings.Appearance_PreviewReplyText), text: presentationData.strings.Appearance_PreviewIncomingText, nameColor: nameColor, backgroundEmojiId: accountPeer?.backgroundEmojiId), ChatPreviewMessageItem(outgoing: true, reply: nil, text: presentationData.strings.Appearance_PreviewOutgoingText, nameColor: .blue, backgroundEmojiId: nil)]))
+    entries.append(.chatPreview(presentationData.theme, presentationData.chatWallpaper, presentationData.chatFontSize, presentationData.chatBubbleCorners, presentationData.strings, presentationData.dateTimeFormat, presentationData.nameDisplayOrder, [ChatPreviewMessageItem(outgoing: false, reply: (authorName, presentationData.strings.Appearance_PreviewReplyText), text: presentationData.strings.Appearance_PreviewIncomingText, nameColor: nameColor, backgroundEmojiId: accountPeer?.backgroundEmojiId), ChatPreviewMessageItem(outgoing: true, reply: nil, text: presentationData.strings.Appearance_PreviewOutgoingText, nameColor: .preset(.blue), backgroundEmojiId: nil)]))
     
     entries.append(.themes(presentationData.theme, presentationData.strings, chatThemes, themeReference, presentationThemeSettings.automaticThemeSwitchSetting.force || presentationData.autoNightModeTriggered, animatedEmojiStickers, presentationThemeSettings.themeSpecificAccentColors, presentationThemeSettings.themeSpecificChatWallpapers))
     entries.append(.chatTheme(presentationData.theme, strings.Settings_ChatThemes))
     entries.append(.wallpaper(presentationData.theme, strings.Settings_ChatBackground))
     
-    let colors = nameColors.get(nameColor, dark: presentationData.theme.overallDarkAppearance)
+    let colors: PeerNameColors.Colors
+    switch nameColor {
+    case let .preset(nameColor):
+        colors = nameColors.get(nameColor, dark: presentationData.theme.overallDarkAppearance)
+    case let .collectible(collectibleColor):
+        colors = collectibleColor.peerNameColors(dark: presentationData.theme.overallDarkAppearance)
+    }
     let profileColors = profileColor.flatMap { nameColors.getProfile($0, dark: presentationData.theme.overallDarkAppearance, subject: .palette) }
     entries.append(.nameColor(presentationData.theme, presentationData.strings.Settings_YourColor, accountPeer?.compactDisplayTitle ?? "", colors, profileColors))
     
@@ -569,7 +575,7 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
                 pushControllerImpl?(controller)
             } else {
                 currentAppIconName.set(icon.name)
-                context.sharedContext.applicationBindings.requestSetAlternateIconName(icon.name, { _ in
+                context.sharedContext.applicationBindings.requestSetAlternateIconName(icon.isDefault ? nil : icon.name, { _ in
                 })
             }
         })

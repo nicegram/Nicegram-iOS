@@ -84,17 +84,13 @@ final class VerticalListContextResultsChatInputPanelButtonItemNode: ListViewItem
     
     private let buttonNode: HighlightTrackingButtonNode
     private let titleNode: TextNode
-    private let topSeparatorNode: ASDisplayNode
     private let separatorNode: ASDisplayNode
     
     private var item: VerticalListContextResultsChatInputPanelButtonItem?
     
     init() {
         self.buttonNode = HighlightTrackingButtonNode()
-        
-        self.topSeparatorNode = ASDisplayNode()
-        self.topSeparatorNode.isLayerBacked = true
-        
+
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
         
@@ -102,7 +98,6 @@ final class VerticalListContextResultsChatInputPanelButtonItemNode: ListViewItem
         
         super.init(layerBacked: false, dynamicBounce: false)
         
-        self.addSubnode(self.topSeparatorNode)
         self.addSubnode(self.separatorNode)
         
         self.addSubnode(self.titleNode)
@@ -145,41 +140,37 @@ final class VerticalListContextResultsChatInputPanelButtonItemNode: ListViewItem
                 titleFont = Font.regular(17.0)
             }
             
-            let titleString = NSAttributedString(string: item.title, font: titleFont, textColor: item.theme.list.itemAccentColor)
+            let titleString = NSAttributedString(string: item.title, font: titleFont, textColor: item.theme.chat.inputPanel.panelControlColor)
             
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - 16.0, height: 100.0), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             let nodeLayout = ListViewItemNodeLayout(contentSize: CGSize(width: params.width, height: VerticalListContextResultsChatInputPanelButtonItemNode.itemHeight(style: item.style)), insets: UIEdgeInsets())
             
-            return (nodeLayout, { _ in
+            return (nodeLayout, { animation in
                 if let strongSelf = self {
                     strongSelf.item = item
                     
                     strongSelf.separatorNode.backgroundColor = item.theme.list.itemPlainSeparatorColor
-                    strongSelf.topSeparatorNode.backgroundColor = item.theme.list.itemPlainSeparatorColor
                     
                     let titleOffsetY: CGFloat
                     switch item.style {
                     case .regular:
-                        strongSelf.backgroundColor = item.theme.list.plainBackgroundColor
-                        strongSelf.topSeparatorNode.isHidden = mergedTop
                         strongSelf.separatorNode.isHidden = !mergedBottom
                         titleOffsetY = 2.0
                     case .round:
-                        strongSelf.backgroundColor = nil
-                        strongSelf.topSeparatorNode.isHidden = true
                         strongSelf.separatorNode.isHidden = !mergedBottom
                         titleOffsetY = 1.0
                     }
                     
                     let _ = titleApply()
                     
-                    strongSelf.titleNode.frame = CGRect(origin: CGPoint(x: floor((params.width - titleLayout.size.width) / 2.0), y: floor((nodeLayout.contentSize.height - titleLayout.size.height) / 2.0) + titleOffsetY), size: titleLayout.size)
+                    let titleFrame = CGRect(origin: CGPoint(x: floor((params.width - titleLayout.size.width) / 2.0), y: floor((nodeLayout.contentSize.height - titleLayout.size.height) / 2.0) + titleOffsetY), size: titleLayout.size)
+                    animation.animator.updatePosition(layer: strongSelf.titleNode.layer, position: titleFrame.center, completion: nil)
+                    strongSelf.titleNode.bounds = CGRect(origin: CGPoint(), size: titleFrame.size)
                     
-                    strongSelf.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: UIScreenPixel))
-                    strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: nodeLayout.contentSize.height - UIScreenPixel), size: CGSize(width: params.width, height: UIScreenPixel))
+                    animation.animator.updateFrame(layer: strongSelf.separatorNode.layer, frame: CGRect(origin: CGPoint(x: 0.0, y: nodeLayout.contentSize.height - UIScreenPixel), size: CGSize(width: params.width, height: UIScreenPixel)), completion: nil)
                     
-                    strongSelf.buttonNode.frame = CGRect(origin: CGPoint(), size: nodeLayout.contentSize)
+                    animation.animator.updateFrame(layer: strongSelf.buttonNode.layer, frame: CGRect(origin: CGPoint(), size: nodeLayout.contentSize), completion: nil)
                 }
             })
         }

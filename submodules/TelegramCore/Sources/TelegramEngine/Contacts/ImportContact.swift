@@ -60,7 +60,7 @@ func _internal_addContactInteractively(account: Account, peerId: PeerId, firstNa
         if addToPrivacyExceptions {
             flags |= (1 << 0)
         }
-        return account.network.request(Api.functions.contacts.addContact(flags: flags, id: inputUser, firstName: firstName, lastName: lastName, phone: phone))
+        return account.network.request(Api.functions.contacts.addContact(flags: flags, id: inputUser, firstName: firstName, lastName: lastName, phone: phone, note: nil))
         |> mapError { _ -> AddContactError in
             return .generic
         }

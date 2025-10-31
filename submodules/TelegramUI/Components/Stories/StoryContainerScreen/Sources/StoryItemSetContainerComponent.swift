@@ -2905,7 +2905,7 @@ public final class StoryItemSetContainerComponent: Component {
                             }
                             component.presentInGlobalOverlay(c, nil)
                         },
-                        sendMessageAction: { [weak self] in
+                        sendMessageAction: { [weak self] _ in
                             guard let self else {
                                 return
                             }

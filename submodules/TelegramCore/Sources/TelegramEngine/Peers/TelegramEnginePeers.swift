@@ -923,6 +923,10 @@ public extension TelegramEngine {
         public func removeSavedMusic(file: FileMediaReference) -> Signal<Never, NoError> {
             return _internal_removeSavedMusic(account: self.account, file: file)
         }
+        
+        public func suggestBirthday(peerId: EnginePeer.Id, birthday: TelegramBirthday) -> Signal<Never, SuggestBirthdayError> {
+            return _internal_suggestBirthday(account: self.account, peerId: peerId, birthday: birthday)
+        }
 
         public func getNextUnreadChannel(peerId: PeerId, chatListFilterId: Int32?, getFilterPredicate: @escaping (ChatListFilterData) -> ChatListFilterPredicate) -> Signal<(peer: EnginePeer, unreadCount: Int, location: NextUnreadChannelLocation)?, NoError> {
             let startTime = CFAbsoluteTimeGetCurrent()

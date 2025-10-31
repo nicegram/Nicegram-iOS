@@ -187,6 +187,7 @@ public final class EmojiStatusSelectionComponent: Component {
                     defaultToEmojiTab: true,
                     externalTopPanelContainer: self.panelHostView,
                     externalBottomPanelContainer: nil,
+                    externalTintMaskContainer: nil,
                     displayTopPanelBackground: .blur,
                     topPanelExtensionUpdated: { _, _ in },
                     topPanelScrollingOffset: { _, _ in },

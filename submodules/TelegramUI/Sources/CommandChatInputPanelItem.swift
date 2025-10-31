@@ -86,7 +86,6 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
     private var item: CommandChatInputPanelItem?
     private let avatarNode: AvatarNode
     private let textNode: TextNode
-    private let topSeparatorNode: ASDisplayNode
     private let separatorNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     private let arrowNode: ASButtonNode
@@ -96,9 +95,6 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
     init() {
         self.avatarNode = AvatarNode(font: avatarFont)
         self.textNode = TextNode()
-        
-        self.topSeparatorNode = ASDisplayNode()
-        self.topSeparatorNode.isLayerBacked = true
         
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
@@ -113,7 +109,6 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
         
         super.init(layerBacked: false, dynamicBounce: false)
         
-        self.addSubnode(self.topSeparatorNode)
         self.addSubnode(self.separatorNode)
         
         self.addSubnode(self.avatarNode)
@@ -167,8 +162,6 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
                     strongSelf.item = item
                     
                     strongSelf.separatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
-                    strongSelf.topSeparatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
-                    strongSelf.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
                     strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
                     
                     strongSelf.arrowNode.setImage(iconImage, for: [])
@@ -183,10 +176,8 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
                     let arrowSize = CGSize(width: 42.0, height: nodeLayout.contentSize.height)
                     strongSelf.arrowNode.frame = CGRect(origin: CGPoint(x: nodeLayout.size.width - arrowSize.width - params.rightInset, y: 0.0), size: arrowSize)
                     
-                    strongSelf.topSeparatorNode.isHidden = mergedTop
                     strongSelf.separatorNode.isHidden = !mergedBottom
                     
-                    strongSelf.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: UIScreenPixel))
                     strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - UIScreenPixel), size: CGSize(width: params.width - leftInset, height: UIScreenPixel))
                     
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: nodeLayout.size.height + UIScreenPixel))
@@ -205,7 +196,7 @@ final class CommandChatInputPanelItemNode: ListViewItemNode {
         if highlighted {
             self.highlightedBackgroundNode.alpha = 1.0
             if self.highlightedBackgroundNode.supernode == nil {
-                self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
+                //self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
             }
         } else {
             if self.highlightedBackgroundNode.supernode != nil {

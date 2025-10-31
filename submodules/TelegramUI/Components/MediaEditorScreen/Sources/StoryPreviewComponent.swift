@@ -260,7 +260,7 @@ final class StoryPreviewComponent: Component {
                     areVoiceMessagesAvailable: false,
                     presentController: { _ in },
                     presentInGlobalOverlay: { _ in },
-                    sendMessageAction: { },
+                    sendMessageAction: { _ in },
                     sendMessageOptionsAction: nil,
                     sendStickerAction: { _ in },
                     setMediaRecordingActive: { _, _, _, _ in },

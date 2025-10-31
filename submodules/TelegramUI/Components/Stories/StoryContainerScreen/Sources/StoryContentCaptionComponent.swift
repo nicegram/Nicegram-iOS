@@ -616,7 +616,13 @@ final class StoryContentCaptionComponent: Component {
             var baseQuoteSecondaryTintColor: UIColor?
             var baseQuoteTertiaryTintColor: UIColor?
             if let nameColor = component.author.nameColor {
-                let resolvedColor = component.context.peerNameColors.get(nameColor)
+                let resolvedColor: PeerNameColors.Colors
+                switch nameColor {
+                case let .preset(nameColor):
+                    resolvedColor = component.context.peerNameColors.get(nameColor)
+                case let .collectible(collectibleColor):
+                    resolvedColor = collectibleColor.peerNameColors(dark: false)
+                }
                 if resolvedColor.secondary != nil {
                     baseQuoteSecondaryTintColor = .clear
                 }

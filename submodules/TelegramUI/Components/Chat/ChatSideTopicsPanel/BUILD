@@ -31,6 +31,7 @@ swift_library(
         "//submodules/TelegramUI/Components/MaskedContainerComponent",
         "//submodules/AppBundle",
         "//submodules/PresentationDataUtils",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

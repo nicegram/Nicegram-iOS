@@ -102,7 +102,6 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         
     private let avatarNode: AvatarNode
     private let textNode: TextNode
-    private let topSeparatorNode: ASDisplayNode
     private let separatorNode: ASDisplayNode
     private let highlightedBackgroundNode: ASDisplayNode
     
@@ -123,9 +122,6 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         self.avatarNode = AvatarNode(font: avatarFont)
         self.textNode = TextNode()
         
-        self.topSeparatorNode = ASDisplayNode()
-        self.topSeparatorNode.isLayerBacked = true
-        
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
         
@@ -137,7 +133,6 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         
         super.init(layerBacked: false, dynamicBounce: false)
         
-        self.addSubnode(self.topSeparatorNode)
         self.addSubnode(self.separatorNode)
         
         self.addSubnode(self.avatarNode)
@@ -217,8 +212,6 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                     }
                     
                     strongSelf.separatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
-                    strongSelf.topSeparatorNode.backgroundColor = item.presentationData.theme.list.itemPlainSeparatorColor
-                    strongSelf.backgroundColor = item.presentationData.theme.list.plainBackgroundColor
                     strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
                     // Nicegram changes
                     if let peer = item.peer {
@@ -236,10 +229,8 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
                     strongSelf.avatarNode.frame = CGRect(origin: CGPoint(x: params.leftInset + 12.0, y: floor((nodeLayout.contentSize.height - 30.0) / 2.0)), size: CGSize(width: 30.0, height: 30.0))
                     strongSelf.textNode.frame = CGRect(origin: CGPoint(x: leftInset, y: floor((nodeLayout.contentSize.height - textLayout.size.height) / 2.0)), size: textLayout.size)
                     
-                    strongSelf.topSeparatorNode.isHidden = mergedTop
                     strongSelf.separatorNode.isHidden = !mergedBottom
                     
-                    strongSelf.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: item.inverted ? (nodeLayout.contentSize.height - UIScreenPixel) : 0.0), size: CGSize(width: params.width, height: UIScreenPixel))
                     strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: !item.inverted ? (nodeLayout.contentSize.height - UIScreenPixel) : 0.0), size: CGSize(width: params.width - leftInset, height: UIScreenPixel))
                     
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: params.width, height: nodeLayout.size.height + UIScreenPixel))
@@ -277,7 +268,7 @@ final class MentionChatInputPanelItemNode: ListViewItemNode {
         if highlighted {
             self.highlightedBackgroundNode.alpha = 1.0
             if self.highlightedBackgroundNode.supernode == nil {
-                self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
+                //self.insertSubnode(self.highlightedBackgroundNode, aboveSubnode: self.separatorNode)
             }
         } else {
             if self.highlightedBackgroundNode.supernode != nil {

@@ -206,7 +206,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 let previousTheme = strongSelf.presentationData.theme
                 strongSelf.presentationData = presentationData
                 if previousTheme !== presentationData.theme {
-                    (strongSelf.rootTabController as? TabBarControllerImpl)?.updateTheme(navigationBarPresentationData: NavigationBarPresentationData(presentationData: presentationData), theme: TabBarControllerTheme(rootControllerTheme: presentationData.theme))
+                    (strongSelf.rootTabController as? TabBarControllerImpl)?.updateTheme(theme: presentationData.theme)
                     strongSelf.rootTabController?.statusBar.statusBarStyle = presentationData.theme.rootController.statusBarStyle.style
                 }
             }
@@ -239,6 +239,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.presentationDataDisposable?.dispose()
         self.applicationInFocusDisposable?.dispose()
         self.storyUploadEventsDisposable?.dispose()
+        
+        // Nicegram DockWidget
+        if #available(iOS 16.0, *) {
+            nicegramDockWidget.aiVoiceAssistantModel.onChange(isPaused: true)
+        }
+        //
     }
     
     // Nicegram Assistant
@@ -312,8 +318,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     public func addRootControllers(showCallsTab: Bool) {
-        // Nicegram (showTabNames)
-        let tabBarController = TabBarControllerImpl(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData), theme: TabBarControllerTheme(rootControllerTheme: self.presentationData.theme), showTabNames: NGSettings.showTabNames)
+        let tabBarController = TabBarControllerImpl(theme: self.presentationData.theme)
         tabBarController.navigationPresentation = .master
         let chatListController = self.context.sharedContext.makeChatListController(context: self.context, location: .chatList(groupId: .root), controlsHistoryPreload: true, hideNetworkActivityStatus: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
@@ -357,13 +362,9 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 accountContext: self.context,
                 adjustSafeArea: true
             )
-            assistantController.tabBarItem = UITabBarItem(
+            assistantController.tabBarItem = tabBarItem(
                 title: "Nicegram",
-                image: NGCoreUI.images.logoNicegram()?.sd_resizedImage(
-                    with: CGSize(width: 30, height: 30),
-                    scaleMode: .aspectFit
-                )?.withRenderingMode(.alwaysTemplate),
-                tag: 0
+                image: NGCoreUI.images.logoNicegram()
             )
             
             self.assistantController = assistantController
@@ -440,6 +441,31 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         self.rootTabController = tabBarController
         self.pushViewController(tabBarController, animated: false)
     }
+    
+    // Nicegram
+    private func tabBarItem(
+        title: String,
+        image: UIImage?,
+    ) -> UITabBarItem {
+        let image = image?
+            .sd_resizedImage(
+                with: CGSize(width: 30, height: 30),
+                scaleMode: .aspectFit
+            )?
+            .withRenderingMode(.alwaysTemplate)
+        
+        func coloredImage(_ color: UIColor) -> UIImage? {
+            image?.sd_tintedImage(with: color)
+        }
+        
+        let theme = presentationData.theme.rootController.tabBar
+        return UITabBarItem(
+            title: title,
+            image: coloredImage(theme.textColor),
+            selectedImage: coloredImage(theme.selectedTextColor)
+        )
+    }
+    //
         
     public func updateRootControllers(showCallsTab: Bool) {
         guard let rootTabController = self.rootTabController as? TabBarControllerImpl else {

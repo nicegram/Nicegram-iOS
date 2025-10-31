@@ -240,7 +240,15 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                 }
             }
             
-            let nameColors = author?.nameColor.flatMap { context.peerNameColors.get($0, dark: presentationData.theme.theme.overallDarkAppearance) }
+            let nameColors: PeerNameColors.Colors?
+            switch author?.nameColor {
+            case let .preset(nameColor):
+                nameColors = context.peerNameColors.get(nameColor, dark: presentationData.theme.theme.overallDarkAppearance)
+            case let .collectible(collectibleColor):
+                nameColors = collectibleColor.peerNameColors(dark: presentationData.theme.theme.overallDarkAppearance)
+            default:
+                nameColors = nil
+            }
             
             let mainColor: UIColor
             var secondaryColor: UIColor?

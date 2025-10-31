@@ -126,13 +126,13 @@ private func synchronizeMarkAllUnseen(transaction: Transaction, postbox: Postbox
         return network.request(Api.functions.messages.getUnreadMentions(flags: 0, peer: inputPeer, topMsgId: nil, offsetId: maxId, addOffset: maxId == 0 ? 0 : -1, limit: limit, maxId: maxId == 0 ? 0 : (maxId + 1), minId: 1))
         |> mapToSignal { result -> Signal<[MessageId], MTRpcError> in
             switch result {
-                case let .messages(messages, _, _):
+                case let .messages(messages, _, _, _):
                     return .single(messages.compactMap({ $0.id() }))
                 case let .channelMessages(_, _, _, _, messages, _, _, _):
                     return .single(messages.compactMap({ $0.id() }))
                 case .messagesNotModified:
                     return .single([])
-                case let .messagesSlice(_, _, _, _, _, messages, _, _):
+                case let .messagesSlice(_, _, _, _, _, messages, _, _, _):
                     return .single(messages.compactMap({ $0.id() }))
             }
         }

@@ -36,15 +36,18 @@ public final class TabSelectorComponent: Component {
     public struct Colors: Equatable {
         public var foreground: UIColor
         public var selection: UIColor
+        public var normal: UIColor?
         public var simple: Bool
 
         public init(
             foreground: UIColor,
             selection: UIColor,
+            normal: UIColor? = nil,
             simple: Bool = false
         ) {
             self.foreground = foreground
             self.selection = selection
+            self.normal = normal
             self.simple = simple
         }
     }
@@ -58,7 +61,7 @@ public final class TabSelectorComponent: Component {
         public var verticalInset: CGFloat
         public var allowScroll: Bool
         
-        public init(font: UIFont, spacing: CGFloat, innerSpacing: CGFloat? = nil, fillWidth: Bool = false, lineSelection: Bool = false, verticalInset: CGFloat = 0.0, allowScroll: Bool = true) {
+        public init(font: UIFont, spacing: CGFloat = 2.0, innerSpacing: CGFloat? = nil, fillWidth: Bool = false, lineSelection: Bool = false, verticalInset: CGFloat = 0.0, allowScroll: Bool = true) {
             self.font = font
             self.spacing = spacing
             self.innerSpacing = innerSpacing
@@ -611,6 +614,9 @@ public final class TabSelectorComponent: Component {
                 if case .component = item.content {
                     useSelectionFraction = true
                 }
+                if let _ = component.colors.normal {
+                    useSelectionFraction = true
+                }
                 
                 let itemSize = itemView.title.update(
                     transition: itemTransition,
@@ -619,6 +625,7 @@ public final class TabSelectorComponent: Component {
                         content: item.content,
                         font: itemFont,
                         color: component.colors.foreground,
+                        normalColor: component.colors.normal,
                         selectedColor: component.colors.selection,
                         selectionFraction: useSelectionFraction ? selectionFraction : 0.0
                     )),
@@ -805,6 +812,7 @@ private final class ItemComponent: CombinedComponent {
     let content: TabSelectorComponent.Item.Content
     let font: UIFont
     let color: UIColor
+    let normalColor: UIColor?
     let selectedColor: UIColor
     let selectionFraction: CGFloat
     
@@ -813,6 +821,7 @@ private final class ItemComponent: CombinedComponent {
         content: TabSelectorComponent.Item.Content,
         font: UIFont,
         color: UIColor,
+        normalColor: UIColor?,
         selectedColor: UIColor,
         selectionFraction: CGFloat
     ) {
@@ -820,6 +829,7 @@ private final class ItemComponent: CombinedComponent {
         self.content = content
         self.font = font
         self.color = color
+        self.normalColor = normalColor
         self.selectedColor = selectedColor
         self.selectionFraction = selectionFraction
     }
@@ -835,6 +845,9 @@ private final class ItemComponent: CombinedComponent {
             return false
         }
         if lhs.color != rhs.color {
+            return false
+        }
+        if lhs.normalColor != rhs.normalColor {
             return false
         }
         if lhs.selectedColor != rhs.selectedColor {
@@ -856,7 +869,7 @@ private final class ItemComponent: CombinedComponent {
             
             switch component.content {
             case let .text(text):
-                let attributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: component.color)
+                let attributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: component.normalColor ?? component.color)
                 var range = (attributedTitle.string as NSString).range(of: "⭐️")
                 if range.location != NSNotFound {
                     attributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)
@@ -879,7 +892,12 @@ private final class ItemComponent: CombinedComponent {
                     .opacity(1.0 - component.selectionFraction)
                 )
                 
-                let selectedAttributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: component.selectedColor)
+                var selectedColor = component.selectedColor
+                if let _ = component.normalColor {
+                    selectedColor = component.color
+                }
+                
+                let selectedAttributedTitle = NSMutableAttributedString(string: text, font: component.font, textColor: selectedColor)
                 range = (selectedAttributedTitle.string as NSString).range(of: "⭐️")
                 if range.location != NSNotFound {
                     selectedAttributedTitle.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: range)

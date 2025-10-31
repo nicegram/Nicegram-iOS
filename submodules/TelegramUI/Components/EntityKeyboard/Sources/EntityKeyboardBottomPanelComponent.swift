@@ -7,6 +7,7 @@ import TelegramPresentationData
 import TelegramCore
 import ComponentDisplayAdapters
 import BundleIconComponent
+import GlassBackgroundComponent
 
 private final class BottomPanelIconComponent: Component {
     let title: String
@@ -41,13 +42,17 @@ private final class BottomPanelIconComponent: Component {
     }
     
     final class View: UIView {
-        let contentView: UIImageView
+        let contentView: GlassBackgroundView.ContentImageView
+        let tintMaskContainer: UIView
         
         var component: BottomPanelIconComponent?
         
         override init(frame: CGRect) {
-            self.contentView = UIImageView()
+            self.contentView = GlassBackgroundView.ContentImageView()
             self.contentView.isUserInteractionEnabled = false
+            
+            self.tintMaskContainer = UIView()
+            self.tintMaskContainer.addSubview(self.contentView.tintMask)
             
             super.init(frame: frame)
             
@@ -84,7 +89,7 @@ private final class BottomPanelIconComponent: Component {
             let textSize = self.contentView.image?.size ?? CGSize()
             let size = CGSize(width: textSize.width + textInset * 2.0, height: 28.0)
             
-            let color = component.isHighlighted ? component.theme.chat.inputMediaPanel.panelHighlightedIconColor : component.theme.chat.inputMediaPanel.panelIconColor
+            let color = component.theme.chat.inputPanel.inputControlColor
             
             if self.contentView.tintColor != color {
                 if !transition.animation.isImmediate {
@@ -139,7 +144,7 @@ final class EntityKeyboardBottomPanelComponent: Component {
         return true
     }
     
-    final class View: UIView {
+    final class View: UIView, PagerTopPanelView {
         private final class AccessoryButtonView {
             let id: AnyHashable
             var component: AnyComponent<Empty>
@@ -154,24 +159,43 @@ final class EntityKeyboardBottomPanelComponent: Component {
         
         private let backgroundView: BlurredBackgroundView
         private let separatorView: UIView
+        private let tintSeparatorView: UIView
         private var leftAccessoryButton: AccessoryButtonView?
         private var rightAccessoryButton: AccessoryButtonView?
         
         private var iconViews: [AnyHashable: ComponentHostView<Empty>] = [:]
         private var highlightedIconBackgroundView: UIView
+        private var highlightedTintIconBackgroundView: UIView
+        
+        let tintContentMask: UIView
         
         private var component: EntityKeyboardBottomPanelComponent?
         
         override init(frame: CGRect) {
-            self.backgroundView = BlurredBackgroundView(color: .clear, enableBlur: true)
+            self.tintContentMask = UIView()
+            
+            self.backgroundView = BlurredBackgroundView(color: .clear, enableBlur: true, customBlurRadius: 10.0)
             
             self.separatorView = UIView()
             self.separatorView.isUserInteractionEnabled = false
+            self.tintSeparatorView = UIView()
+            self.tintSeparatorView.isUserInteractionEnabled = false
+            self.tintSeparatorView.backgroundColor = UIColor(white: 0.0, alpha: 0.7)
+            
+            self.tintContentMask.addSubview(self.tintSeparatorView)
             
             self.highlightedIconBackgroundView = UIView()
             self.highlightedIconBackgroundView.isUserInteractionEnabled = false
             self.highlightedIconBackgroundView.layer.cornerRadius = 10.0
             self.highlightedIconBackgroundView.clipsToBounds = true
+            
+            self.highlightedTintIconBackgroundView = UIView()
+            self.highlightedTintIconBackgroundView.isUserInteractionEnabled = false
+            self.highlightedTintIconBackgroundView.layer.cornerRadius = 10.0
+            self.highlightedTintIconBackgroundView.clipsToBounds = true
+            self.highlightedTintIconBackgroundView.backgroundColor = UIColor(white: 0.0, alpha: 0.1)
+            
+            self.tintContentMask.addSubview(self.highlightedTintIconBackgroundView)
             
             super.init(frame: frame)
             
@@ -186,7 +210,8 @@ final class EntityKeyboardBottomPanelComponent: Component {
         
         func update(component: EntityKeyboardBottomPanelComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
             if self.component?.theme !== component.theme {
-                self.separatorView.backgroundColor = component.theme.chat.inputMediaPanel.panelSeparatorColor
+                self.separatorView.backgroundColor = component.theme.list.itemPlainSeparatorColor.withMultipliedAlpha(0.5)
+                
                 self.backgroundView.updateColor(color: component.theme.chat.inputPanel.panelBackgroundColor.withMultipliedAlpha(1.0), transition: .immediate)
                 self.highlightedIconBackgroundView.backgroundColor = component.theme.chat.inputMediaPanel.panelHighlightedIconBackgroundColor
             }
@@ -232,7 +257,14 @@ final class EntityKeyboardBottomPanelComponent: Component {
                     environment: {},
                     containerSize: CGSize(width: .greatestFiniteMagnitude, height: intrinsicHeight)
                 )
-                leftAccessoryButtonTransition.setFrame(view: leftAccessoryButton.view, frame: CGRect(origin: CGPoint(x: component.containerInsets.left + 2.0, y: accessoryButtonOffset), size: leftAccessoryButtonSize))
+                let leftAccessoryButtonFrame = CGRect(origin: CGPoint(x: component.containerInsets.left + 2.0, y: accessoryButtonOffset), size: leftAccessoryButtonSize)
+                leftAccessoryButtonTransition.setFrame(view: leftAccessoryButton.view, frame: leftAccessoryButtonFrame)
+                if let leftAccessoryButtonView = leftAccessoryButton.view.componentView as? PagerTopPanelView {
+                    if leftAccessoryButtonView.tintContentMask.superview == nil {
+                        self.tintContentMask.addSubview(leftAccessoryButtonView.tintContentMask)
+                    }
+                    leftAccessoryButtonTransition.setFrame(view: leftAccessoryButtonView.tintContentMask, frame: leftAccessoryButtonFrame)
+                }
             } else {
                 self.leftAccessoryButton = nil
             }
@@ -240,18 +272,29 @@ final class EntityKeyboardBottomPanelComponent: Component {
             if previousLeftAccessoryButton?.view !== self.leftAccessoryButton?.view {
                 if case .none = transition.animation {
                     previousLeftAccessoryButton?.view.removeFromSuperview()
+                    if let previousLeftAccessoryButton = previousLeftAccessoryButton?.view.componentView as? PagerTopPanelView {
+                        previousLeftAccessoryButton.tintContentMask.removeFromSuperview()
+                    }
                 } else {
                     if let previousLeftAccessoryButton = previousLeftAccessoryButton {
                         let previousLeftAccessoryButtonView = previousLeftAccessoryButton.view
                         previousLeftAccessoryButtonView.layer.animateScale(from: 1.0, to: 0.01, duration: 0.2, removeOnCompletion: false)
                         previousLeftAccessoryButtonView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak previousLeftAccessoryButtonView] _ in
                             previousLeftAccessoryButtonView?.removeFromSuperview()
+                            if let previousLeftAccessoryButton = previousLeftAccessoryButtonView?.componentView as? PagerTopPanelView {
+                                previousLeftAccessoryButton.tintContentMask.removeFromSuperview()
+                            }
                         })
                     }
                     
                     if let leftAccessoryButtonView = self.leftAccessoryButton?.view {
                         leftAccessoryButtonView.layer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
                         leftAccessoryButtonView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        
+                        if let leftAccessoryButtonView = leftAccessoryButtonView.componentView as? PagerTopPanelView {
+                            leftAccessoryButtonView.tintContentMask.layer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
+                            leftAccessoryButtonView.tintContentMask.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        }
                     }
                 }
             }
@@ -284,7 +327,15 @@ final class EntityKeyboardBottomPanelComponent: Component {
                     environment: {},
                     containerSize: CGSize(width: .greatestFiniteMagnitude, height: intrinsicHeight)
                 )
-                rightAccessoryButtonTransition.setFrame(view: rightAccessoryButton.view, frame: CGRect(origin: CGPoint(x: availableSize.width - component.containerInsets.right - 2.0 - rightAccessoryButtonSize.width, y: accessoryButtonOffset), size: rightAccessoryButtonSize))
+                
+                let rightAccessoryButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - component.containerInsets.right - 2.0 - rightAccessoryButtonSize.width, y: accessoryButtonOffset), size: rightAccessoryButtonSize)
+                rightAccessoryButtonTransition.setFrame(view: rightAccessoryButton.view, frame: rightAccessoryButtonFrame)
+                if let rightAccessoryButtonView = rightAccessoryButton.view.componentView as? PagerTopPanelView {
+                    if rightAccessoryButtonView.tintContentMask.superview == nil {
+                        self.tintContentMask.addSubview(rightAccessoryButtonView.tintContentMask)
+                    }
+                    rightAccessoryButtonTransition.setFrame(view: rightAccessoryButtonView.tintContentMask, frame: rightAccessoryButtonFrame)
+                }
             } else {
                 self.rightAccessoryButton = nil
             }
@@ -292,18 +343,29 @@ final class EntityKeyboardBottomPanelComponent: Component {
             if previousRightAccessoryButton?.view !== self.rightAccessoryButton?.view {
                 if case .none = transition.animation {
                     previousRightAccessoryButton?.view.removeFromSuperview()
+                    if let previousRightAccessoryButtonView = previousRightAccessoryButton?.view.componentView as? PagerTopPanelView {
+                        previousRightAccessoryButtonView.tintContentMask.removeFromSuperview()
+                    }
                 } else {
                     if let previousRightAccessoryButton = previousRightAccessoryButton {
                         let previousRightAccessoryButtonView = previousRightAccessoryButton.view
                         previousRightAccessoryButtonView.layer.animateScale(from: 1.0, to: 0.01, duration: 0.2, removeOnCompletion: false)
                         previousRightAccessoryButtonView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak previousRightAccessoryButtonView] _ in
                             previousRightAccessoryButtonView?.removeFromSuperview()
+                            if let previousRightAccessoryButtonView = previousRightAccessoryButtonView?.componentView as? PagerTopPanelView {
+                                previousRightAccessoryButtonView.tintContentMask.removeFromSuperview()
+                            }
                         })
                     }
                     
                     if let rightAccessoryButtonView = self.rightAccessoryButton?.view {
                         rightAccessoryButtonView.layer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
                         rightAccessoryButtonView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        
+                        if let rightAccessoryButtonView = rightAccessoryButtonView.componentView as? PagerTopPanelView {
+                            rightAccessoryButtonView.tintContentMask.layer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
+                            rightAccessoryButtonView.tintContentMask.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        }
                     }
                 }
             }
@@ -369,12 +431,22 @@ final class EntityKeyboardBottomPanelComponent: Component {
                     let iconFrame = CGRect(origin: nextIconOrigin, size: iconInfo.size)
                     iconInfo.transition.setFrame(view: iconView, frame: iconFrame, completion: nil)
                     
+                    if let iconView = iconView.componentView as? BottomPanelIconComponent.View {
+                        if iconView.tintMaskContainer.superview == nil {
+                            self.tintContentMask.addSubview(iconView.tintMaskContainer)
+                        }
+                        iconInfo.transition.setFrame(view: iconView.tintMaskContainer, frame: iconFrame, completion: nil)
+                    }
+                    
                     if let activeContentId = activeContentId, activeContentId == icon.id {
                         self.highlightedIconBackgroundView.isHidden = false
+                        self.highlightedTintIconBackgroundView.isHidden = false
                         transition.setFrame(view: self.highlightedIconBackgroundView, frame: iconFrame)
+                        transition.setFrame(view: self.highlightedTintIconBackgroundView, frame: iconFrame)
                         
                         let cornerRadius: CGFloat = min(iconFrame.width, iconFrame.height) / 2.0
                         transition.setCornerRadius(layer: self.highlightedIconBackgroundView.layer, cornerRadius: cornerRadius)
+                        transition.setCornerRadius(layer: self.highlightedTintIconBackgroundView.layer, cornerRadius: cornerRadius)
                     }
                     
                     nextIconOrigin.x += iconInfo.size.width + iconSpacing
@@ -397,9 +469,10 @@ final class EntityKeyboardBottomPanelComponent: Component {
             }
             
             transition.setFrame(view: self.separatorView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
+            transition.setFrame(view: self.tintSeparatorView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
             
             transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: height)))
-            self.backgroundView.update(size: CGSize(width: availableSize.width, height: height), transition: transition.containedViewLayoutTransition)
+            //self.backgroundView.update(size: CGSize(width: availableSize.width, height: height), transition: transition.containedViewLayoutTransition)
             
             self.component = component
             

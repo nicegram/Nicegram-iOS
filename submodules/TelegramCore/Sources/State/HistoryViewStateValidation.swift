@@ -558,11 +558,13 @@ private func validateChannelMessagesBatch(postbox: Postbox, network: Network, ac
                         var channelPts: Int32?
                         
                         switch result {
-                            case let .messages(messages: apiMessages, chats: apiChats, users: apiUsers):
+                            case let .messages(messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                                let _ = apiTopics
                                 messages = apiMessages
                                 chats = apiChats
                                 users = apiUsers
-                            case let .messagesSlice(_, _, _, _, _, messages: apiMessages, chats: apiChats, users: apiUsers):
+                            case let .messagesSlice(_, _, _, _, _, messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                                let _ = apiTopics
                                 messages = apiMessages
                                 chats = apiChats
                                 users = apiUsers
@@ -627,11 +629,13 @@ private func validateReplyThreadMessagesBatch(postbox: Postbox, network: Network
                 var channelPts: Int32?
                 
                 switch result {
-                    case let .messages(messages: apiMessages, chats: apiChats, users: apiUsers):
+                    case let .messages(messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                        let _ = apiTopics
                         messages = apiMessages
                         chats = apiChats
                         users = apiUsers
-                    case let .messagesSlice(_, _, _, _, _, messages: apiMessages, chats: apiChats, users: apiUsers):
+                    case let .messagesSlice(_, _, _, _, _, messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                        let _ = apiTopics
                         messages = apiMessages
                         chats = apiChats
                         users = apiUsers
@@ -669,11 +673,13 @@ private func validateScheduledMessagesBatch(postbox: Postbox, network: Network, 
                         let users: [Api.User]
                         
                         switch result {
-                            case let .messages(messages: apiMessages, chats: apiChats, users: apiUsers):
+                            case let .messages(messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                                let _ = apiTopics
                                 messages = apiMessages
                                 chats = apiChats
                                 users = apiUsers
-                            case let .messagesSlice(_, _, _, _, _, messages: apiMessages, chats: apiChats, users: apiUsers):
+                            case let .messagesSlice(_, _, _, _, _, messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                                let _ =  apiTopics
                                 messages = apiMessages
                                 chats = apiChats
                                 users = apiUsers
@@ -715,11 +721,13 @@ private func validateQuickReplyMessagesBatch(postbox: Postbox, network: Network,
                         let users: [Api.User]
                         
                         switch result {
-                            case let .messages(messages: apiMessages, chats: apiChats, users: apiUsers):
+                            case let .messages(messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                                let _ = apiTopics
                                 messages = apiMessages
                                 chats = apiChats
                                 users = apiUsers
-                            case let .messagesSlice(_, _, _, _, _, messages: apiMessages, chats: apiChats, users: apiUsers):
+                            case let .messagesSlice(_, _, _, _, _, messages: apiMessages, topics: apiTopics, chats: apiChats, users: apiUsers):
+                                let _ = apiTopics
                                 messages = apiMessages
                                 chats = apiChats
                                 users = apiUsers
@@ -801,9 +809,9 @@ private func validateBatch(postbox: Postbox, network: Network, transaction: Tran
                                             case let .channelMessages(_, _, _, _, messages, apiTopics, _, _):
                                                 apiMessages = messages
                                                 let _ = apiTopics
-                                            case let .messages(messages, _, _):
+                                            case let .messages(messages, _, _, _):
                                                 apiMessages = messages
-                                            case let .messagesSlice(_, _, _, _, _, messages, _, _):
+                                            case let .messagesSlice(_, _, _, _, _, messages, _, _, _):
                                                 apiMessages = messages
                                             case .messagesNotModified:
                                                 return Set()
@@ -1050,9 +1058,9 @@ private func validateReplyThreadBatch(postbox: Postbox, network: Network, transa
                                 case let .channelMessages(_, _, _, _, messages, apiTopics, _, _):
                                     apiMessages = messages
                                     let _ = apiTopics
-                                case let .messages(messages, _, _):
+                                case let .messages(messages, _, _, _):
                                     apiMessages = messages
-                                case let .messagesSlice(_, _, _, _, _, messages, _, _):
+                                case let .messagesSlice(_, _, _, _, _, messages, _, _, _):
                                     apiMessages = messages
                                 case .messagesNotModified:
                                     return Set()

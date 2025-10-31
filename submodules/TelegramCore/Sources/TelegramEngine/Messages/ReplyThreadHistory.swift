@@ -87,14 +87,6 @@ private class ReplyThreadHistoryContextImpl {
             var indices = transaction.getThreadIndexHoles(peerId: data.peerId, threadId: data.threadId, namespace: Namespaces.Message.Cloud)
             indices.subtract(data.initialFilledHoles)
             
-            /*let isParticipant = transaction.getPeerChatListIndex(data.messageId.peerId) != nil
-            if isParticipant {
-                let historyHoles = transaction.getHoles(peerId: data.messageId.peerId, namespace: Namespaces.Message.Cloud)
-                indices.formIntersection(historyHoles)
-            }
-            
-            print("after intersection: \(indices)")*/
-            
             if let maxMessageId = data.maxMessage {
                 indices.remove(integersIn: Int(maxMessageId.id + 1) ..< Int(Int32.max))
             } else {
@@ -246,6 +238,8 @@ private class ReplyThreadHistoryContextImpl {
                             if channel.isMonoForum {
                                 isMonoforumPost = true
                             }
+                        } else if let user = transaction.getPeer(parsedIndex.id.peerId) as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum) {
+                            isForumPost = true
                         }
                         
                         return .single(DiscussionMessage(
@@ -344,6 +338,7 @@ private class ReplyThreadHistoryContextImpl {
             }
             
             var markMainAsRead = false
+            markMainAsRead = !"".isEmpty
             
             if var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: threadId)?.data.get(MessageHistoryThreadData.self) {
                 if messageIndex.id.id >= data.maxIncomingReadId {
@@ -366,23 +361,6 @@ private class ReplyThreadHistoryContextImpl {
                     
                     if let entry = StoredMessageHistoryThreadInfo(data) {
                         transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
-                    }
-                    
-                    if data.incomingUnreadCount == 0, let channel = peer as? TelegramChannel, channel.linkedBotId != nil {
-                        var hasOtherUnread = false
-                        for item in transaction.getMessageHistoryThreadIndex(peerId: peerId, limit: 20) {
-                            guard let data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: item.threadId)?.data.get(MessageHistoryThreadData.self) else {
-                                continue
-                            }
-                            if data.incomingUnreadCount != 0 {
-                                hasOtherUnread = true
-                                break
-                            }
-                        }
-                        
-                        if !hasOtherUnread {
-                            markMainAsRead = true
-                        }
                     }
                 }
             }
@@ -625,7 +603,7 @@ public struct ChatReplyThreadMessage: Equatable {
     public var isNotAvailable: Bool
     
     public var effectiveMessageId: MessageId? {
-        if self.peerId.namespace == Namespaces.Peer.CloudChannel {
+        if self.peerId.namespace == Namespaces.Peer.CloudChannel || self.isForumPost {
             return MessageId(peerId: self.peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: self.threadId))
         } else {
             return nil
@@ -743,6 +721,8 @@ func _internal_fetchChannelReplyThreadMessage(account: Account, messageId: Messa
                         if channel.isMonoForum {
                             isMonoforumPost = true
                         }
+                    } else if let user = transaction.getPeer(parsedIndex.id.peerId) as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum) {
+                        isForumPost = true
                     }
                     
                     return DiscussionMessage(

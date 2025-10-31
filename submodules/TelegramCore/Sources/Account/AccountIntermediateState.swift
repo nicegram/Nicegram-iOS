@@ -118,6 +118,8 @@ enum AccountStateMutationOperation {
     case UpdateGroupCallParticipants(id: Int64, accessHash: Int64, participants: [Api.GroupCallParticipant], version: Int32)
     case UpdateGroupCall(peerId: PeerId?, call: Api.GroupCall)
     case UpdateGroupCallChainBlocks(id: Int64, accessHash: Int64, subChainId: Int32, blocks: [Data], nextOffset: Int32)
+    case UpdateGroupCallMessage(id: Int64, authorId: PeerId, randomId: Int64, text: Api.TextWithEntities)
+    case UpdateGroupCallOpaqueMessage(id: Int64, authorId: PeerId, data: Data)
     case UpdateAutoremoveTimeout(peer: Api.Peer, value: CachedPeerAutoremoveTimeout.Value?)
     case UpdateAttachMenuBots
     case UpdateAudioTranscription(messageId: MessageId, id: Int64, isPending: Bool, text: String)
@@ -407,6 +409,14 @@ struct AccountMutableState {
     
     mutating func updateGroupCallChainBlocks(id: Int64, accessHash: Int64, subChainId: Int32, blocks: [Data], nextOffset: Int32) {
         self.addOperation(.UpdateGroupCallChainBlocks(id: id, accessHash: accessHash, subChainId: subChainId, blocks: blocks, nextOffset: nextOffset))
+    }
+    
+    mutating func updateGroupCallMessage(id: Int64, authorId: PeerId, randomId: Int64, text: Api.TextWithEntities) {
+        self.addOperation(.UpdateGroupCallMessage(id: id, authorId: authorId, randomId: randomId, text: text))
+    }
+    
+    mutating func updateGroupCallOpaqueMessage(id: Int64, authorId: PeerId, data: Data) {
+        self.addOperation(.UpdateGroupCallOpaqueMessage(id: id, authorId: authorId, data: data))
     }
     
     mutating func updateAutoremoveTimeout(peer: Api.Peer, value: CachedPeerAutoremoveTimeout.Value?) {
@@ -719,7 +729,7 @@ struct AccountMutableState {
     
     mutating func addOperation(_ operation: AccountStateMutationOperation) {
         switch operation {
-        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .ReadOutbox, .ReadGroupFeedInbox, .MergePeerPresences, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdatePeerChatUnreadMark, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .UpdateWallpaper, .SyncChatListFilters, .UpdateChatListFilterOrder, .UpdateChatListFilter, .UpdateReadThread, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateMessagesPinned, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException:
+        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .ReadOutbox, .ReadGroupFeedInbox, .MergePeerPresences, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdatePeerChatUnreadMark, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .UpdateWallpaper, .SyncChatListFilters, .UpdateChatListFilterOrder, .UpdateChatListFilter, .UpdateReadThread, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateGroupCallMessage, .UpdateGroupCallOpaqueMessage, .UpdateMessagesPinned, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException:
                 break
             case let .AddMessages(messages, location):
                 for message in messages {
@@ -855,6 +865,7 @@ struct AccountReplayedFinalState {
     let updatedCalls: [Api.PhoneCall]
     let addedCallSignalingData: [(Int64, Data)]
     let updatedGroupCallParticipants: [(Int64, GroupCallParticipantsContext.Update)]
+    let groupCallMessageUpdates: [GroupCallMessageUpdate]
     let storyUpdates: [InternalStoryUpdate]
     let updatedPeersNearby: [PeerNearby]?
     let isContactUpdates: [(PeerId, Bool)]
@@ -882,6 +893,7 @@ struct AccountFinalStateEvents {
     let updatedCalls: [Api.PhoneCall]
     let addedCallSignalingData: [(Int64, Data)]
     let updatedGroupCallParticipants: [(Int64, GroupCallParticipantsContext.Update)]
+    let groupCallMessageUpdates: [GroupCallMessageUpdate]
     let storyUpdates: [InternalStoryUpdate]
     let updatedPeersNearby: [PeerNearby]?
     let isContactUpdates: [(PeerId, Bool)]
@@ -903,10 +915,10 @@ struct AccountFinalStateEvents {
     let addedConferenceInvitationMessagesIds: [MessageId]
     
     var isEmpty: Bool {
-        return self.addedIncomingMessageIds.isEmpty && self.addedReactionEvents.isEmpty && self.wasScheduledMessageIds.isEmpty && self.deletedMessageIds.isEmpty && self.sentScheduledMessageIds.isEmpty && self.updatedTypingActivities.isEmpty && self.updatedWebpages.isEmpty && self.updatedCalls.isEmpty && self.addedCallSignalingData.isEmpty && self.updatedGroupCallParticipants.isEmpty && self.storyUpdates.isEmpty && self.updatedPeersNearby?.isEmpty ?? true && self.isContactUpdates.isEmpty && self.displayAlerts.isEmpty && self.dismissBotWebViews.isEmpty && self.delayNotificatonsUntil == nil && self.updatedMaxMessageId == nil && self.updatedQts == nil && self.externallyUpdatedPeerId.isEmpty && !authorizationListUpdated && self.updatedIncomingThreadReadStates.isEmpty && self.updatedOutgoingThreadReadStates.isEmpty && !self.updateConfig && !self.isPremiumUpdated && self.updatedStarsBalance.isEmpty && self.updatedTonBalance.isEmpty && self.updatedStarsRevenueStatus.isEmpty && self.reportMessageDelivery.isEmpty && self.addedConferenceInvitationMessagesIds.isEmpty
+        return self.addedIncomingMessageIds.isEmpty && self.addedReactionEvents.isEmpty && self.wasScheduledMessageIds.isEmpty && self.deletedMessageIds.isEmpty && self.sentScheduledMessageIds.isEmpty && self.updatedTypingActivities.isEmpty && self.updatedWebpages.isEmpty && self.updatedCalls.isEmpty && self.addedCallSignalingData.isEmpty && self.updatedGroupCallParticipants.isEmpty && self.groupCallMessageUpdates.isEmpty && self.storyUpdates.isEmpty && self.updatedPeersNearby?.isEmpty ?? true && self.isContactUpdates.isEmpty && self.displayAlerts.isEmpty && self.dismissBotWebViews.isEmpty && self.delayNotificatonsUntil == nil && self.updatedMaxMessageId == nil && self.updatedQts == nil && self.externallyUpdatedPeerId.isEmpty && !authorizationListUpdated && self.updatedIncomingThreadReadStates.isEmpty && self.updatedOutgoingThreadReadStates.isEmpty && !self.updateConfig && !self.isPremiumUpdated && self.updatedStarsBalance.isEmpty && self.updatedTonBalance.isEmpty && self.updatedStarsRevenueStatus.isEmpty && self.reportMessageDelivery.isEmpty && self.addedConferenceInvitationMessagesIds.isEmpty
     }
     
-    init(addedIncomingMessageIds: [MessageId] = [], addedReactionEvents: [(reactionAuthor: Peer, reaction: MessageReaction.Reaction, message: Message, timestamp: Int32)] = [], wasScheduledMessageIds: [MessageId] = [], deletedMessageIds: [DeletedMessageId] = [], updatedTypingActivities: [PeerActivitySpace: [PeerId: PeerInputActivity?]] = [:], updatedWebpages: [MediaId: TelegramMediaWebpage] = [:], updatedCalls: [Api.PhoneCall] = [], addedCallSignalingData: [(Int64, Data)] = [], updatedGroupCallParticipants: [(Int64, GroupCallParticipantsContext.Update)] = [], storyUpdates: [InternalStoryUpdate] = [], updatedPeersNearby: [PeerNearby]? = nil, isContactUpdates: [(PeerId, Bool)] = [], displayAlerts: [(text: String, isDropAuth: Bool)] = [], dismissBotWebViews: [Int64] = [], delayNotificatonsUntil: Int32? = nil, updatedMaxMessageId: Int32? = nil, updatedQts: Int32? = nil, externallyUpdatedPeerId: Set<PeerId> = Set(), authorizationListUpdated: Bool = false, updatedIncomingThreadReadStates: [PeerAndBoundThreadId: MessageId.Id] = [:], updatedOutgoingThreadReadStates: [PeerAndBoundThreadId: MessageId.Id] = [:], updateConfig: Bool = false, isPremiumUpdated: Bool = false, updatedStarsBalance: [PeerId: StarsAmount] = [:], updatedTonBalance: [PeerId: StarsAmount] = [:], updatedStarsRevenueStatus: [PeerId: StarsRevenueStats.Balances] = [:], sentScheduledMessageIds: Set<MessageId> = Set(), reportMessageDelivery: Set<MessageId> = Set(), addedConferenceInvitationMessagesIds: [MessageId] = []) {
+    init(addedIncomingMessageIds: [MessageId] = [], addedReactionEvents: [(reactionAuthor: Peer, reaction: MessageReaction.Reaction, message: Message, timestamp: Int32)] = [], wasScheduledMessageIds: [MessageId] = [], deletedMessageIds: [DeletedMessageId] = [], updatedTypingActivities: [PeerActivitySpace: [PeerId: PeerInputActivity?]] = [:], updatedWebpages: [MediaId: TelegramMediaWebpage] = [:], updatedCalls: [Api.PhoneCall] = [], addedCallSignalingData: [(Int64, Data)] = [], updatedGroupCallParticipants: [(Int64, GroupCallParticipantsContext.Update)] = [], groupCallMessageUpdates: [GroupCallMessageUpdate] = [], storyUpdates: [InternalStoryUpdate] = [], updatedPeersNearby: [PeerNearby]? = nil, isContactUpdates: [(PeerId, Bool)] = [], displayAlerts: [(text: String, isDropAuth: Bool)] = [], dismissBotWebViews: [Int64] = [], delayNotificatonsUntil: Int32? = nil, updatedMaxMessageId: Int32? = nil, updatedQts: Int32? = nil, externallyUpdatedPeerId: Set<PeerId> = Set(), authorizationListUpdated: Bool = false, updatedIncomingThreadReadStates: [PeerAndBoundThreadId: MessageId.Id] = [:], updatedOutgoingThreadReadStates: [PeerAndBoundThreadId: MessageId.Id] = [:], updateConfig: Bool = false, isPremiumUpdated: Bool = false, updatedStarsBalance: [PeerId: StarsAmount] = [:], updatedTonBalance: [PeerId: StarsAmount] = [:], updatedStarsRevenueStatus: [PeerId: StarsRevenueStats.Balances] = [:], sentScheduledMessageIds: Set<MessageId> = Set(), reportMessageDelivery: Set<MessageId> = Set(), addedConferenceInvitationMessagesIds: [MessageId] = []) {
         self.addedIncomingMessageIds = addedIncomingMessageIds
         self.addedReactionEvents = addedReactionEvents
         self.wasScheduledMessageIds = wasScheduledMessageIds
@@ -916,6 +928,7 @@ struct AccountFinalStateEvents {
         self.updatedCalls = updatedCalls
         self.addedCallSignalingData = addedCallSignalingData
         self.updatedGroupCallParticipants = updatedGroupCallParticipants
+        self.groupCallMessageUpdates = groupCallMessageUpdates
         self.storyUpdates = storyUpdates
         self.updatedPeersNearby = updatedPeersNearby
         self.isContactUpdates = isContactUpdates
@@ -948,6 +961,7 @@ struct AccountFinalStateEvents {
         self.updatedCalls = state.updatedCalls
         self.addedCallSignalingData = state.addedCallSignalingData
         self.updatedGroupCallParticipants = state.updatedGroupCallParticipants
+        self.groupCallMessageUpdates = state.groupCallMessageUpdates
         self.storyUpdates = state.storyUpdates
         self.updatedPeersNearby = state.updatedPeersNearby
         self.isContactUpdates = state.isContactUpdates
@@ -1016,6 +1030,7 @@ struct AccountFinalStateEvents {
             updatedCalls: self.updatedCalls + other.updatedCalls,
             addedCallSignalingData: self.addedCallSignalingData + other.addedCallSignalingData,
             updatedGroupCallParticipants: self.updatedGroupCallParticipants + other.updatedGroupCallParticipants,
+            groupCallMessageUpdates: self.groupCallMessageUpdates + other.groupCallMessageUpdates,
             storyUpdates: self.storyUpdates + other.storyUpdates,
             isContactUpdates: self.isContactUpdates + other.isContactUpdates,
             displayAlerts: self.displayAlerts + other.displayAlerts,

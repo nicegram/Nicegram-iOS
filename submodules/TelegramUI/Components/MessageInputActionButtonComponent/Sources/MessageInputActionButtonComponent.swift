@@ -12,6 +12,7 @@ import MoreHeaderButton
 import ContextUI
 import ReactionButtonListComponent
 import LottieComponent
+import GlassBackgroundComponent
 
 private class ButtonIcon: Equatable {
     enum IconType: Equatable {
@@ -24,6 +25,7 @@ private class ButtonIcon: Equatable {
         case forward
         case like
         case repost
+        case close
     }
     
     let icon: IconType
@@ -32,7 +34,7 @@ private class ButtonIcon: Equatable {
         self.icon = icon
     }
     
-    var image: UIImage? {
+    func image(withBackground: Bool) -> UIImage? {
         switch icon {
         case .delete:
             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: .white)
@@ -46,6 +48,8 @@ private class ButtonIcon: Equatable {
             return generateTintedImage(image: UIImage(bundleImageName: "Media Editor/RemoveRecordedVideo"), color: .white)
         case .repost:
             return generateTintedImage(image: UIImage(bundleImageName: "Stories/InputRepost"), color: .white)
+        case .close:
+            return generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Close"), color: .white)
         case .apply:
             return generateImage(CGSize(width: 33.0, height: 33.0), contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
@@ -62,10 +66,19 @@ private class ButtonIcon: Equatable {
         case .send:
             return generateImage(CGSize(width: 33.0, height: 33.0), rotatedContext: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
-                context.setFillColor(UIColor.white.cgColor)
-                context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
+                
+                if withBackground {
+                    context.setFillColor(UIColor.white.cgColor)
+                    context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
+                }
+                
                 context.setBlendMode(.copy)
-                context.setStrokeColor(UIColor.clear.cgColor)
+                
+                if withBackground {
+                    context.setStrokeColor(UIColor.clear.cgColor)
+                } else {
+                    context.setStrokeColor(UIColor.white.cgColor)
+                }
                 context.setLineWidth(2.0)
                 context.setLineCap(.round)
                 context.setLineJoin(.round)
@@ -111,6 +124,8 @@ private extension MessageInputActionButtonComponent.Mode {
             return ButtonIcon(icon: .apply)
         case .send:
             return ButtonIcon(icon: .send)
+        case .close:
+            return ButtonIcon(icon: .close)
         case .stars:
             return nil
         default:
@@ -137,14 +152,21 @@ public final class MessageInputActionButtonComponent: Component {
         case repost
         case captionUp
         case captionDown
+        case close
     }
     
     public enum Action {
         case down
         case up
     }
+    
+    public enum Style {
+        case legacy
+        case glass
+    }
 
     public let mode: Mode
+    public let style: Style
     public let storyId: Int32?
     public let action: (Mode, Action, Bool) -> Void
     public let longPressAction: ((UIView, ContextGesture?) -> Void)?
@@ -163,6 +185,7 @@ public final class MessageInputActionButtonComponent: Component {
     
     public init(
         mode: Mode,
+        style: Style = .legacy,
         storyId: Int32?,
         action: @escaping (Mode, Action, Bool) -> Void,
         longPressAction: ((UIView, ContextGesture?) -> Void)?,
@@ -180,6 +203,7 @@ public final class MessageInputActionButtonComponent: Component {
         hasShadow: Bool = false
     ) {
         self.mode = mode
+        self.style = style
         self.storyId = storyId
         self.action = action
         self.longPressAction = longPressAction
@@ -199,6 +223,9 @@ public final class MessageInputActionButtonComponent: Component {
     
     public static func ==(lhs: MessageInputActionButtonComponent, rhs: MessageInputActionButtonComponent) -> Bool {
         if lhs.mode != rhs.mode {
+            return false
+        }
+        if lhs.style != rhs.style {
             return false
         }
         if lhs.storyId != rhs.storyId {
@@ -231,6 +258,7 @@ public final class MessageInputActionButtonComponent: Component {
         public let button: HighlightTrackingButtonNode
         public let referenceNode: ContextReferenceContentNode
         public let containerNode: ContextControllerSourceNode
+        private var backgroundView: GlassBackgroundView?
         private let sendIconView: UIImageView
         private var reactionHeartView: UIImageView?
         private var moreButton: MoreHeaderButton?
@@ -475,7 +503,7 @@ public final class MessageInputActionButtonComponent: Component {
                 break
             case .captionUp, .captionDown:
                 sendAlpha = 0.0
-            case .send, .apply, .attach, .delete, .forward, .removeVideoInput, .repost, .stars:
+            case .send, .apply, .attach, .delete, .forward, .removeVideoInput, .repost, .stars, .close:
                 sendAlpha = 1.0
             case let .like(reaction, _, _):
                 if reaction != nil {
@@ -491,9 +519,30 @@ public final class MessageInputActionButtonComponent: Component {
                 microphoneAlpha = 0.4
             }
             
+            if component.style == .glass, [.send, .close].contains(component.mode) {
+                let backgroundView: GlassBackgroundView
+                if let current = self.backgroundView {
+                    backgroundView = current
+                } else {
+                    backgroundView = GlassBackgroundView()
+                    self.button.view.insertSubview(backgroundView, at: 0)
+                    self.backgroundView = backgroundView
+                }
+                
+                var tintColor = UIColor(rgb: 0x25272e, alpha: 0.72)
+                let tintKind: GlassBackgroundView.TintColor.Kind = .custom
+                if case .send = component.mode {
+                    tintColor = UIColor(rgb: 0x029dff)
+                }
+                let buttonSize = CGSize(width: 40.0, height: 40.0)
+                backgroundView.update(size: buttonSize, cornerRadius: buttonSize.height / 2.0, isDark: true, tintColor: .init(kind: tintKind, color: tintColor), transition: transition)
+                backgroundView.frame = CGRect(origin: .zero, size: buttonSize)
+            }
+            
             if self.sendIconView.image == nil || previousComponent?.mode.icon != component.mode.icon {
-                if let image = component.mode.icon?.image {
-                    if case .send = component.mode {
+                if let image = component.mode.icon?.image(withBackground: component.style == .legacy) {
+                    switch component.mode {
+                    case .send, .close:
                         if !transition.animation.isImmediate {
                             if let snapshotView = self.sendIconView.snapshotView(afterScreenUpdates: false) {
                                 snapshotView.frame = self.sendIconView.frame
@@ -509,6 +558,8 @@ public final class MessageInputActionButtonComponent: Component {
                                 transition.animateScale(view: self.sendIconView, from: 0.01, to: 1.0)
                             }
                         }
+                    default:
+                        break
                     }
                     self.sendIconView.image = image
                 } else {
@@ -674,7 +725,7 @@ public final class MessageInputActionButtonComponent: Component {
                 
                 if previousComponent?.mode != component.mode {
                     switch component.mode {
-                    case .none, .send, .apply, .voiceInput, .attach, .delete, .forward, .unavailableVoiceInput, .more, .like, .repost, .captionUp, .captionDown, .stars:
+                    case .none, .send, .apply, .voiceInput, .attach, .delete, .forward, .unavailableVoiceInput, .more, .like, .repost, .captionUp, .captionDown, .stars, .close:
                         micButton.updateMode(mode: .audio, animated: !transition.animation.isImmediate)
                     case .videoInput, .removeVideoInput:
                         micButton.updateMode(mode: .video, animated: !transition.animation.isImmediate)

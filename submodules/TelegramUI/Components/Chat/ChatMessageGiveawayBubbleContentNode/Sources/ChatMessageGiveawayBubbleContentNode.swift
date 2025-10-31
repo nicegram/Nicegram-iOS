@@ -983,7 +983,12 @@ private final class PeerButtonsStackNode: ASDisplayNode {
                 var titleColor = titleColor
                 var backgroundColor = backgroundColor
                 if incoming, let nameColor = peer.nameColor, makeChannelButtonLayouts.count > 1 {
-                    titleColor = context.peerNameColors.get(nameColor, dark: dark).main
+                    switch nameColor {
+                    case let .preset(nameColor):
+                        titleColor = context.peerNameColors.get(nameColor, dark: dark).main
+                    case let .collectible(collectibleColor):
+                        titleColor = collectibleColor.mainColor(dark: dark)
+                    }
                     backgroundColor = titleColor.withAlphaComponent(0.1)
                 }
                 

@@ -1147,24 +1147,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     return
                 }
                 
-                var threadId = threadId
-                var subject: ChatControllerSubject?
-                if let threadIdValue = threadId, case let .user(user) = peer {
-                    threadId = nil
-                    
-                    if case let .known(linkedForumId) = await self.context.engine.data.get(
-                        TelegramEngine.EngineData.Item.Peer.LinkedBotForumPeerId(id: user.id)
-                    ).get(), let linkedForumId {
-                        subject = .botForumThread(forumId: linkedForumId, threadId: threadIdValue)
-                    }
-                } else if case let .user(user) = peer {
-                    if case let .known(linkedForumId) = await self.context.engine.data.get(
-                        TelegramEngine.EngineData.Item.Peer.LinkedBotForumPeerId(id: user.id)
-                    ).get(), let linkedForumId {
-                        subject = .botForumThread(forumId: linkedForumId, threadId: EngineMessage.newTopicThreadId)
-                    }
-                }
-                subject = nil
+                let subject: ChatControllerSubject? = nil
                 
                 var forumSourcePeer: Signal<EnginePeer?, NoError> = .single(nil)
                 if case let .savedMessagesChats(peerId) = self.location, peerId != self.context.account.peerId {
@@ -5647,12 +5630,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                         if case .broadcast = channel.info {
                             canClear = false
                             deleteTitle = strongSelf.presentationData.strings.Channel_LeaveChannel
-                            if channel.flags.contains(.isCreator) {
+                            if channel.addressName == nil && channel.flags.contains(.isCreator) {
                                 canRemoveGlobally = true
                             }
                         } else {
                             deleteTitle = strongSelf.presentationData.strings.Group_DeleteGroup
-                            if channel.flags.contains(.isCreator) {
+                            if channel.addressName == nil && channel.flags.contains(.isCreator) {
                                 canRemoveGlobally = true
                             }
                         }
@@ -6360,7 +6343,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.donePressed()
     }
     
-    override public func tabBarItemContextAction(sourceNode: ContextExtractedContentContainingNode, gesture: ContextGesture) {
+    override public func tabBarItemContextAction(sourceView: ContextExtractedContentContainingView, gesture: ContextGesture) {
         let _ = (combineLatest(queue: .mainQueue(),
             self.context.engine.peers.currentChatListFilters(),
             chatListFilterItems(context: self.context)
@@ -6477,7 +6460,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
             
-            let controller = ContextController(context: strongSelf.context, presentationData: strongSelf.presentationData, source: .extracted(ChatListTabBarContextExtractedContentSource(controller: strongSelf, sourceNode: sourceNode)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
+            let controller = ContextController(context: strongSelf.context, presentationData: strongSelf.presentationData, source: .reference(ChatListTabBarContextReferenceContentSource(controller: strongSelf, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
             strongSelf.context.sharedContext.mainWindow?.presentInGlobalOverlay(controller)
         })
     }
@@ -6504,25 +6487,31 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             settingsPromise = Promise()
             settingsPromise.set(.single(nil) |> then(context.engine.privacy.requestAccountPrivacySettings() |> map(Optional.init)))
         }
-        let controller = BirthdayPickerScreen(context: context, settings: settingsPromise.get(), openSettings: { [weak self] in
-            guard let self else {
-                return
+        
+        let controller = context.sharedContext.makeBirthdayPickerScreen(
+            context: context,
+            settings: settingsPromise,
+            openSettings: { [weak self] in
+                guard let self else {
+                    return
+                }
+                self.context.sharedContext.makeBirthdayPrivacyController(context: self.context, settings: settingsPromise, openedFromBirthdayScreen: true, present: { [weak self] c in
+                    self?.push(c)
+                })
+            },
+            completion: { [weak self] value in
+                guard let self else {
+                    return
+                }
+                
+                let _ = context.engine.accountData.updateBirthday(birthday: value).startStandalone()
+                
+                let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                self.present(UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: self.presentationData.strings.Birthday_Added, cancel: nil, destructive: false), elevatedLayout: false, action: { _ in
+                    return true
+                }), in: .current)
             }
-            self.context.sharedContext.makeBirthdayPrivacyController(context: self.context, settings: settingsPromise, openedFromBirthdayScreen: true, present: { [weak self] c in
-                self?.push(c)
-            })
-        }, completion: { [weak self] value in
-            guard let self else {
-                return
-            }
-            
-            let _ = context.engine.accountData.updateBirthday(birthday: value).startStandalone()
-            
-            let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-            self.present(UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: self.presentationData.strings.Birthday_Added, cancel: nil, destructive: false), elevatedLayout: false, action: { _ in
-                return true
-            }), in: .current)
-        })
+        )
         self.push(controller)
     }
     
@@ -6530,7 +6519,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         guard let starsContext = self.context.starsContext else {
             return
         }
-        let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: [], purpose: amount.flatMap({ .topUp(requiredStars: $0, purpose: "subs") }) ?? .generic, completion: { _ in })
+        let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: [], purpose: amount.flatMap({ .topUp(requiredStars: $0, purpose: "subs") }) ?? .generic, targetPeerId: nil, completion: { _ in })
         self.push(controller)
     }
     
@@ -6867,26 +6856,24 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     //
 }
 
-private final class ChatListTabBarContextExtractedContentSource: ContextExtractedContentSource {
+private final class ChatListTabBarContextReferenceContentSource: ContextReferenceContentSource {
     let keepInPlace: Bool = true
-    let ignoreContentTouches: Bool = true
-    let blurBackground: Bool = true
     let actionsHorizontalAlignment: ContextActionsHorizontalAlignment = .center
     
     private let controller: ChatListController
-    private let sourceNode: ContextExtractedContentContainingNode
+    private let sourceView: ContextExtractedContentContainingView
     
-    init(controller: ChatListController, sourceNode: ContextExtractedContentContainingNode) {
+    init(controller: ChatListController, sourceView: ContextExtractedContentContainingView) {
         self.controller = controller
-        self.sourceNode = sourceNode
+        self.sourceView = sourceView
     }
     
-    func takeView() -> ContextControllerTakeViewInfo? {
-        return ContextControllerTakeViewInfo(containingItem: .node(self.sourceNode), contentAreaInScreenSpace: UIScreen.main.bounds)
-    }
-    
-    func putBack() -> ContextControllerPutBackViewInfo? {
-        return ContextControllerPutBackViewInfo(contentAreaInScreenSpace: UIScreen.main.bounds)
+    func transitionInfo() -> ContextControllerReferenceViewInfo? {
+        return ContextControllerReferenceViewInfo(
+            referenceView: self.sourceView.contentView,
+            contentAreaInScreenSpace: UIScreen.main.bounds,
+            actionsPosition: .top
+        )
     }
 }
 

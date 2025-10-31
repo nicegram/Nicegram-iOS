@@ -138,6 +138,10 @@ private extension CALayer {
     }
 }
 
+private func bounceParameters(duration: Double) -> (duration: Double, damping: CGFloat, stiffness: CGFloat) {
+    return (duration: duration * 1.25, damping: 88.0, stiffness: 750.0)
+}
+
 public extension ContainedViewLayoutTransition {
     func animation() -> CABasicAnimation? {
         switch self {
@@ -461,6 +465,106 @@ public extension ContainedViewLayoutTransition {
                 let previousPosition = layer.position
                 layer.position = position
                 layer.animatePosition(from: previousPosition, to: position, duration: duration, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
+                    if let completion = completion {
+                        completion(result)
+                    }
+                })
+            }
+        }
+    }
+    
+    func updatePositionSpring(layer: CALayer, position: CGPoint, completion: ((Bool) -> Void)? = nil) {
+        if layer.position.equalTo(position) {
+            completion?(true)
+        } else {
+            switch self {
+            case .immediate:
+                layer.removeAnimation(forKey: "position")
+                if let view = layer.delegate as? UIView {
+                    view.center = position
+                } else {
+                    layer.position = position
+                }
+                if let completion = completion {
+                    completion(true)
+                }
+            case let .animated(duration, curve):
+                let _ = curve
+                let previousPosition = layer.position
+                if let view = layer.delegate as? UIView {
+                    view.center = position
+                } else {
+                    layer.position = position
+                }
+                let params = bounceParameters(duration: duration)
+                layer.animateSpring(from: NSValue(cgPoint: previousPosition), to: NSValue(cgPoint: position), keyPath: "position", duration: params.duration, stiffness: params.stiffness, damping: params.damping, completion: { flag in
+                    if let completion {
+                        completion(flag)
+                    }
+                })
+            }
+        }
+    }
+    
+    func updateScaleSpring(layer: CALayer, scale: CGFloat, completion: ((Bool) -> Void)? = nil) {
+        let t = layer.transform
+        let currentScale = sqrt((t.m11 * t.m11) + (t.m12 * t.m12) + (t.m13 * t.m13))
+        if abs(CGFloat(currentScale) - scale) <= CGFloat(Float.ulpOfOne) {
+            completion?(true)
+        } else {
+            switch self {
+            case .immediate:
+                layer.removeAnimation(forKey: "transform.scale")
+                if let view = layer.delegate as? UIView {
+                    view.transform = CGAffineTransformMakeScale(scale, scale)
+                } else {
+                    layer.transform = CATransform3DMakeScale(scale, scale, 1.0)
+                }
+                if let completion = completion {
+                    completion(true)
+                }
+            case let .animated(duration, curve):
+                let _ = curve
+                if let view = layer.delegate as? UIView {
+                    view.transform = CGAffineTransformMakeScale(scale, scale)
+                } else {
+                    layer.transform = CATransform3DMakeScale(scale, scale, 1.0)
+                }
+                let params = bounceParameters(duration: duration)
+                layer.animateSpring(from: currentScale as NSNumber, to: scale as NSNumber, keyPath: "transform.scale", duration: params.duration, stiffness: params.stiffness, damping: params.damping, completion: { flag in
+                    if let completion {
+                        completion(flag)
+                    }
+                })
+            }
+        }
+    }
+    
+    func updateBoundsSpring(layer: CALayer, bounds: CGRect, completion: ((Bool) -> Void)? = nil) {
+        if layer.bounds.equalTo(bounds) {
+            completion?(true)
+        } else {
+            switch self {
+            case .immediate:
+                layer.removeAnimation(forKey: "bounds")
+                if let view = layer.delegate as? UIView {
+                    view.bounds = bounds
+                } else {
+                    layer.bounds = bounds
+                }
+                if let completion = completion {
+                    completion(true)
+                }
+            case let .animated(duration, curve):
+                let _ = curve
+                let previousBounds = layer.bounds
+                if let view = layer.delegate as? UIView {
+                    view.bounds = bounds
+                } else {
+                    layer.bounds = bounds
+                }
+                let params = bounceParameters(duration: duration)
+                layer.animateSpring(from: NSValue(cgRect: previousBounds), to: NSValue(cgRect: bounds), keyPath: "bounds", duration: params.duration, stiffness: params.stiffness, damping: params.damping, completion: { result in
                     if let completion = completion {
                         completion(result)
                     }
@@ -830,7 +934,7 @@ public extension ContainedViewLayoutTransition {
     }
     
     func updateAlpha(node: ASDisplayNode, alpha: CGFloat, beginWithCurrentState: Bool = false, force: Bool = false, delay: Double = 0.0, completion: ((Bool) -> Void)? = nil) {
-        if node.alpha.isEqual(to: alpha) && !force {
+        if node.layer.opacity == Float(alpha) && !force {
             if let completion = completion {
                 completion(true)
             }
@@ -844,14 +948,18 @@ public extension ContainedViewLayoutTransition {
                 completion(true)
             }
         case let .animated(duration, curve):
-            let previousAlpha: CGFloat
+            let previousAlpha: Float
             if beginWithCurrentState, let presentation = node.layer.presentation() {
-                previousAlpha = CGFloat(presentation.opacity)
+                previousAlpha = presentation.opacity
             } else {
-                previousAlpha = node.alpha
+                previousAlpha = node.layer.opacity
             }
-            node.alpha = alpha
-            node.layer.animateAlpha(from: previousAlpha, to: alpha, duration: duration, delay: delay, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
+            if alpha == 0.0 {
+                node.layer.opacity = Float(alpha)
+            } else {
+                node.alpha = alpha
+            }
+            node.layer.animateAlpha(from: CGFloat(previousAlpha), to: alpha, duration: duration, delay: delay, timingFunction: curve.timingFunction, mediaTimingFunction: curve.mediaTimingFunction, completion: { result in
                 if let completion = completion {
                     completion(result)
                 }

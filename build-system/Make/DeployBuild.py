@@ -18,10 +18,10 @@ def sha256_file(path):
             h.update(data)
     return h.hexdigest()
 
-def init_build(host, token, files):
+def init_build(host, token, files, channel):
     url = host.rstrip('/') + '/upload/init'
     headers = {"Authorization": "Bearer " + token}
-    payload = {"files": files}
+    payload = {"files": files, "channel": channel}
     r = requests.post(url, json=payload, headers=headers, timeout=30)
     r.raise_for_status()
     return r.json()
@@ -77,7 +77,8 @@ if __name__ == '__main__':
 
     host = config.get('host')
     token = config.get('auth_token')
-    if not host or not token:
+    channel = config.get('channel')
+    if not host or not token or not channel:
         print('Invalid configuration')
         sys.exit(1)
     ipa_path = args.ipa
@@ -100,7 +101,7 @@ if __name__ == '__main__':
         }
 
     print('Init build')
-    init = init_build(host, token, files)
+    init = init_build(host, token, files, channel)
     build_id = init.get('build_id')
     urls = init.get('upload_urls', {})
     if not build_id:

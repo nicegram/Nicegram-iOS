@@ -369,8 +369,20 @@ public final class AccountContextImpl: AccountContext {
         |> deliverOnMainQueue).start(next: { value in
             let _ = currentAppConfiguration.swap(value)
             
-            if let data = appConfiguration.data, data["ios_killswitch_contact_diffing"] != nil {
+            guard let data = appConfiguration.data else {
+                return
+            }
+            
+            if data["ios_killswitch_contact_diffing"] != nil {
                 sharedDisableDeviceContactDataDiffing = true
+            }
+            
+            if let url = data["ios_update_url"] as? String, !url.isEmpty {
+                let _ = (sharedContext.accountManager.transaction { transaction -> Void in
+                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.updateSettings, { _ in
+                        return PreferencesEntry(UpdateSettings(url: url))
+                    })
+                }).start()
             }
         })
         

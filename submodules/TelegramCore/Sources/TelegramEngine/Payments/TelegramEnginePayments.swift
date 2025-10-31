@@ -125,6 +125,10 @@ public extension TelegramEngine {
             return _internal_updateStarGiftAddedToProfile(account: self.account, reference: reference, added: added)
         }
         
+        public func dropStarGiftOriginalDetails(reference: StarGiftReference) -> Signal<Never, DropStarGiftOriginalDetailsError> {
+            return _internal_dropStarGiftOriginalDetails(account: self.account, reference: reference)
+        }
+        
         public func transferStarGift(prepaid: Bool, reference: StarGiftReference, peerId: EnginePeer.Id) -> Signal<Never, TransferStarGiftError> {
             return _internal_transferStarGift(account: self.account, prepaid: prepaid, reference: reference, peerId: peerId)
         }
@@ -137,7 +141,7 @@ public extension TelegramEngine {
             return _internal_upgradeStarGift(account: self.account, formId: formId, reference: reference, keepOriginalInfo: keepOriginalInfo)
         }
         
-        public func starGiftUpgradePreview(giftId: Int64) -> Signal<[StarGift.UniqueGift.Attribute], NoError> {
+        public func starGiftUpgradePreview(giftId: Int64) -> Signal<StarGiftUpgradePreview?, NoError> {
             return _internal_starGiftUpgradePreview(account: self.account, giftId: giftId)
         }
         

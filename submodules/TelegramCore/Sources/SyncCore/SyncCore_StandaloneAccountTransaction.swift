@@ -77,14 +77,10 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
         peerSummaryIsThreadBased: { peer, associatedPeer in
             if let channel = peer as? TelegramChannel {
                 if channel.flags.contains(.isForum) {
-                    if channel.linkedBotId != nil {
-                        return (true, false)
+                    if channel.flags.contains(.displayForumAsTabs) {
+                        return (false, false)
                     } else {
-                        if channel.flags.contains(.displayForumAsTabs) {
-                            return (false, false)
-                        } else {
-                            return (true, false)
-                        }
+                        return (true, false)
                     }
                 } else if channel.flags.contains(.isMonoforum) {
                     if let associatedPeer = associatedPeer as? TelegramChannel, associatedPeer.hasPermission(.manageDirect) {
@@ -95,6 +91,8 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
                 } else {
                     return (false, false)
                 }
+            } else if let user = peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum) {
+                return (true, false)
             } else {
                 return (false, false)
             }
@@ -187,14 +185,6 @@ public let telegramPostboxSeedConfiguration: SeedConfiguration = {
                 }
             }
             return false
-        },
-        decodeAssociatedChatListPeerId: { cachedData in
-            if let cachedData = cachedData as? CachedUserData {
-                if case let .known(value) = cachedData.linkedBotChannelId {
-                    return value
-                }
-            }
-            return nil
         },
         isPeerUpgradeMessage: { message in
             for media in message.media {

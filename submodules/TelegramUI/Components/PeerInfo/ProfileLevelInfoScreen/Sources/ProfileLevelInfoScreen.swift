@@ -18,6 +18,7 @@ import Markdown
 import PremiumUI
 import LottieComponent
 import AnimatedTextComponent
+import ProfileLevelRatingBarComponent
 
 private final class ProfileLevelInfoScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -84,10 +85,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
         private let closeButton = ComponentView<Empty>()
         
         private let peerAvatar = ComponentView<Empty>()
-        
-        private let callIconBackground = ComponentView<Empty>()
-        private let callIcon = ComponentView<Empty>()
-        
+    
         private let title = ComponentView<Empty>()
         private let levelInfo = ComponentView<Empty>()
         private var secondaryDescriptionText: ComponentView<Empty>?
@@ -97,9 +95,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
         
         private let bottomPanelContainer: UIView
         private let actionButton = ComponentView<Empty>()
-        
-        private let bottomOverscrollLimit: CGFloat
-        
+                
         private var isFirstTimeApplyingModalFactor: Bool = true
         private var ignoreScrolling: Bool = false
         
@@ -115,9 +111,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
         private var cachedChevronImage: UIImage?
         private var cachedCloseImage: UIImage?
         
-        override init(frame: CGRect) {
-            self.bottomOverscrollLimit = 200.0
-            
+        override init(frame: CGRect) {            
             self.dimView = UIView()
             
             self.backgroundLayer = SimpleLayer()
@@ -448,16 +442,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
             transition.setFrame(view: self.navigationBackgroundView, frame: navigationBackgroundFrame)
             self.navigationBackgroundView.update(size: navigationBackgroundFrame.size, cornerRadius: 10.0, maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner], transition: transition.containedViewLayoutTransition)
             transition.setFrame(layer: self.navigationBarSeparator, frame: CGRect(origin: CGPoint(x: 0.0, y: 54.0), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
-            
-            let gradientColors: [UIColor]
-            gradientColors = [
-                environment.theme.list.itemCheckColors.fillColor,
-                environment.theme.list.itemCheckColors.fillColor,
-                environment.theme.list.itemCheckColors.fillColor,
-                environment.theme.list.itemCheckColors.fillColor
-            ]
-            let _ = gradientColors
-            
+                        
             var levelFraction: CGFloat
             
             let badgeText: String
@@ -495,17 +480,17 @@ private final class ProfileLevelInfoScreenComponent: Component {
             
             levelFraction = max(0.0, levelFraction)
             
-            //TODO:localize
             let levelInfoSize = self.levelInfo.update(
                 transition: isChangingPreview ? ComponentTransition.immediate.withUserData(ProfileLevelRatingBarComponent.TransitionHint(animate: true)) : .immediate,
                 component: AnyComponent(ProfileLevelRatingBarComponent(
                     theme: environment.theme,
                     value: levelFraction,
                     leftLabel: currentLevel < 0 ? "" : environment.strings.ProfileLevelInfo_LevelIndex(Int32(currentLevel)),
-                    rightLabel: currentLevel < 0 ? "Negative rating" : nextLevel.flatMap { environment.strings.ProfileLevelInfo_LevelIndex(Int32($0)) } ?? "",
+                    rightLabel: currentLevel < 0 ? environment.strings.ProfileLevelInfo_NegativeRating : nextLevel.flatMap { environment.strings.ProfileLevelInfo_LevelIndex(Int32($0)) } ?? "",
                     badgeValue: badgeText,
                     badgeTotal: badgeTextSuffix,
-                    level: Int(currentLevel)
+                    level: Int(currentLevel),
+                    icon: .rating
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 110.0)

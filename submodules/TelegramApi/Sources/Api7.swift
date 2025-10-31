@@ -824,18 +824,19 @@ public extension Api {
 }
 public extension Api {
     indirect enum ForumTopic: TypeConstructorDescription {
-        case forumTopic(flags: Int32, id: Int32, date: Int32, title: String, iconColor: Int32, iconEmojiId: Int64?, topMessage: Int32, readInboxMaxId: Int32, readOutboxMaxId: Int32, unreadCount: Int32, unreadMentionsCount: Int32, unreadReactionsCount: Int32, fromId: Api.Peer, notifySettings: Api.PeerNotifySettings, draft: Api.DraftMessage?)
+        case forumTopic(flags: Int32, id: Int32, date: Int32, peer: Api.Peer, title: String, iconColor: Int32, iconEmojiId: Int64?, topMessage: Int32, readInboxMaxId: Int32, readOutboxMaxId: Int32, unreadCount: Int32, unreadMentionsCount: Int32, unreadReactionsCount: Int32, fromId: Api.Peer, notifySettings: Api.PeerNotifySettings, draft: Api.DraftMessage?)
         case forumTopicDeleted(id: Int32)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .forumTopic(let flags, let id, let date, let title, let iconColor, let iconEmojiId, let topMessage, let readInboxMaxId, let readOutboxMaxId, let unreadCount, let unreadMentionsCount, let unreadReactionsCount, let fromId, let notifySettings, let draft):
+                case .forumTopic(let flags, let id, let date, let peer, let title, let iconColor, let iconEmojiId, let topMessage, let readInboxMaxId, let readOutboxMaxId, let unreadCount, let unreadMentionsCount, let unreadReactionsCount, let fromId, let notifySettings, let draft):
                     if boxed {
-                        buffer.appendInt32(1903173033)
+                        buffer.appendInt32(-838922550)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt32(id, buffer: buffer, boxed: false)
                     serializeInt32(date, buffer: buffer, boxed: false)
+                    peer.serialize(buffer, true)
                     serializeString(title, buffer: buffer, boxed: false)
                     serializeInt32(iconColor, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt64(iconEmojiId!, buffer: buffer, boxed: false)}
@@ -860,8 +861,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .forumTopic(let flags, let id, let date, let title, let iconColor, let iconEmojiId, let topMessage, let readInboxMaxId, let readOutboxMaxId, let unreadCount, let unreadMentionsCount, let unreadReactionsCount, let fromId, let notifySettings, let draft):
-                return ("forumTopic", [("flags", flags as Any), ("id", id as Any), ("date", date as Any), ("title", title as Any), ("iconColor", iconColor as Any), ("iconEmojiId", iconEmojiId as Any), ("topMessage", topMessage as Any), ("readInboxMaxId", readInboxMaxId as Any), ("readOutboxMaxId", readOutboxMaxId as Any), ("unreadCount", unreadCount as Any), ("unreadMentionsCount", unreadMentionsCount as Any), ("unreadReactionsCount", unreadReactionsCount as Any), ("fromId", fromId as Any), ("notifySettings", notifySettings as Any), ("draft", draft as Any)])
+                case .forumTopic(let flags, let id, let date, let peer, let title, let iconColor, let iconEmojiId, let topMessage, let readInboxMaxId, let readOutboxMaxId, let unreadCount, let unreadMentionsCount, let unreadReactionsCount, let fromId, let notifySettings, let draft):
+                return ("forumTopic", [("flags", flags as Any), ("id", id as Any), ("date", date as Any), ("peer", peer as Any), ("title", title as Any), ("iconColor", iconColor as Any), ("iconEmojiId", iconEmojiId as Any), ("topMessage", topMessage as Any), ("readInboxMaxId", readInboxMaxId as Any), ("readOutboxMaxId", readOutboxMaxId as Any), ("unreadCount", unreadCount as Any), ("unreadMentionsCount", unreadMentionsCount as Any), ("unreadReactionsCount", unreadReactionsCount as Any), ("fromId", fromId as Any), ("notifySettings", notifySettings as Any), ("draft", draft as Any)])
                 case .forumTopicDeleted(let id):
                 return ("forumTopicDeleted", [("id", id as Any)])
     }
@@ -874,14 +875,16 @@ public extension Api {
             _2 = reader.readInt32()
             var _3: Int32?
             _3 = reader.readInt32()
-            var _4: String?
-            _4 = parseString(reader)
-            var _5: Int32?
-            _5 = reader.readInt32()
-            var _6: Int64?
-            if Int(_1!) & Int(1 << 0) != 0 {_6 = reader.readInt64() }
-            var _7: Int32?
-            _7 = reader.readInt32()
+            var _4: Api.Peer?
+            if let signature = reader.readInt32() {
+                _4 = Api.parse(reader, signature: signature) as? Api.Peer
+            }
+            var _5: String?
+            _5 = parseString(reader)
+            var _6: Int32?
+            _6 = reader.readInt32()
+            var _7: Int64?
+            if Int(_1!) & Int(1 << 0) != 0 {_7 = reader.readInt64() }
             var _8: Int32?
             _8 = reader.readInt32()
             var _9: Int32?
@@ -892,25 +895,27 @@ public extension Api {
             _11 = reader.readInt32()
             var _12: Int32?
             _12 = reader.readInt32()
-            var _13: Api.Peer?
+            var _13: Int32?
+            _13 = reader.readInt32()
+            var _14: Api.Peer?
             if let signature = reader.readInt32() {
-                _13 = Api.parse(reader, signature: signature) as? Api.Peer
+                _14 = Api.parse(reader, signature: signature) as? Api.Peer
             }
-            var _14: Api.PeerNotifySettings?
+            var _15: Api.PeerNotifySettings?
             if let signature = reader.readInt32() {
-                _14 = Api.parse(reader, signature: signature) as? Api.PeerNotifySettings
+                _15 = Api.parse(reader, signature: signature) as? Api.PeerNotifySettings
             }
-            var _15: Api.DraftMessage?
+            var _16: Api.DraftMessage?
             if Int(_1!) & Int(1 << 4) != 0 {if let signature = reader.readInt32() {
-                _15 = Api.parse(reader, signature: signature) as? Api.DraftMessage
+                _16 = Api.parse(reader, signature: signature) as? Api.DraftMessage
             } }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
-            let _c7 = _7 != nil
+            let _c6 = _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 0) == 0) || _7 != nil
             let _c8 = _8 != nil
             let _c9 = _9 != nil
             let _c10 = _10 != nil
@@ -918,9 +923,10 @@ public extension Api {
             let _c12 = _12 != nil
             let _c13 = _13 != nil
             let _c14 = _14 != nil
-            let _c15 = (Int(_1!) & Int(1 << 4) == 0) || _15 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 {
-                return Api.ForumTopic.forumTopic(flags: _1!, id: _2!, date: _3!, title: _4!, iconColor: _5!, iconEmojiId: _6, topMessage: _7!, readInboxMaxId: _8!, readOutboxMaxId: _9!, unreadCount: _10!, unreadMentionsCount: _11!, unreadReactionsCount: _12!, fromId: _13!, notifySettings: _14!, draft: _15)
+            let _c15 = _15 != nil
+            let _c16 = (Int(_1!) & Int(1 << 4) == 0) || _16 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 {
+                return Api.ForumTopic.forumTopic(flags: _1!, id: _2!, date: _3!, peer: _4!, title: _5!, iconColor: _6!, iconEmojiId: _7, topMessage: _8!, readInboxMaxId: _9!, readOutboxMaxId: _10!, unreadCount: _11!, unreadMentionsCount: _12!, unreadReactionsCount: _13!, fromId: _14!, notifySettings: _15!, draft: _16)
             }
             else {
                 return nil

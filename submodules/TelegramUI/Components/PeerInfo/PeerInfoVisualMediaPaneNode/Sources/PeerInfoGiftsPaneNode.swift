@@ -34,6 +34,7 @@ import BundleIconComponent
 import EmojiTextAttachmentView
 import TextFormat
 import PromptUI
+import CollectionTabItemComponent
 
 public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScrollViewDelegate {
     public enum GiftCollection: Equatable {
@@ -94,12 +95,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
     private var panelSeparator: ASDisplayNode?
     private var panelButton: ComponentView<Empty>?
     private var panelCheck: ComponentView<Empty>?
-    
-    private let emptyResultsClippingView = UIView()
-    private let emptyResultsAnimation = ComponentView<Empty>()
-    private let emptyResultsTitle = ComponentView<Empty>()
-    private let emptyResultsAction = ComponentView<Empty>()
-    
+        
     private var currentParams: (size: CGSize, topInset: CGFloat, sideInset: CGFloat, bottomInset: CGFloat, deviceMetrics: DeviceMetrics, visibleHeight: CGFloat, isScrollingLockedAtTop: Bool, expandProgress: CGFloat, navigationHeight: CGFloat, presentationData: PresentationData)?
     
     private var theme: PresentationTheme?
@@ -935,7 +931,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
         }
         
         let bottomContentOffset = max(0.0, self.scrollNode.view.contentSize.height - self.scrollNode.view.contentOffset.y - self.scrollNode.view.frame.height)
-        if interactive, bottomContentOffset < 200.0 {
+        if bottomContentOffset < 200.0 {
             self.giftsListView.loadMore()
         }
     }
@@ -1330,6 +1326,25 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             return
                         }
                         let context = self.context
+                        
+                        guard uniqueGift.hostPeerId == nil else {
+                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                            let alertController = textAlertController(
+                                context: context,
+                                title: presentationData.strings.Gift_UnavailableAction_Title,
+                                text: presentationData.strings.Gift_UnavailableAction_Text,
+                                actions: [
+                                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Gift_UnavailableAction_OpenFragment, action: {
+                                        context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "https://fragment.com/gift/\(uniqueGift.slug)", forceExternal: true, presentationData: presentationData, navigationController: nil, dismissInput: {})
+                                    }),
+                                    TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {})
+                                ],
+                                actionLayout: .vertical
+                            )
+                            self.parentController?.present(alertController, in: .window(.root))
+                            return
+                        }
+                        
                         let _ = (context.account.stateManager.contactBirthdays
                         |> take(1)
                         |> deliverOnMainQueue).start(next: { [weak self] birthdays in
@@ -1476,162 +1491,6 @@ private func cancelContextGestures(view: UIView) {
     }
     for subview in view.subviews {
         cancelContextGestures(view: subview)
-    }
-}
-
-private final class CollectionTabItemComponent: Component {
-    typealias EnvironmentType = TabSelectorComponent.ItemEnvironment
-    
-    enum Icon: Equatable {
-        case collection(TelegramMediaFile)
-        case add
-    }
-    
-    let context: AccountContext
-    let icon: Icon?
-    let title: String
-    let theme: PresentationTheme
-    
-    init(
-        context: AccountContext,
-        icon: Icon?,
-        title: String,
-        theme: PresentationTheme
-    ) {
-        self.context = context
-        self.icon = icon
-        self.title = title
-        self.theme = theme
-    }
-    
-    static func ==(lhs: CollectionTabItemComponent, rhs: CollectionTabItemComponent) -> Bool {
-        if lhs.icon != rhs.icon {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.theme !== rhs.theme {
-            return false
-        }
-        return true
-    }
-    
-    final class View: UIView {
-        private let title = ComponentView<Empty>()
-        private let icon = ComponentView<Empty>()
-        private var iconLayer: InlineStickerItemLayer?
-                
-        private var component: CollectionTabItemComponent?
-                
-        func update(component: CollectionTabItemComponent, availableSize: CGSize, state: State, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
-            self.component = component
-            
-            let environment = environment[EnvironmentType.self].value
-                        
-            let iconSpacing: CGFloat = 3.0
-            
-            let normalColor = component.theme.list.itemSecondaryTextColor
-            let selectedColor = component.theme.list.freeTextColor
-            let effectiveColor = normalColor.mixedWith(selectedColor, alpha: environment.selectionFraction)
-            
-            let titleSize = self.title.update(
-                transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.title, font: Font.medium(14.0), textColor: effectiveColor))
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 100.0)
-            )
-                        
-            var iconOffset: CGFloat = 0.0
-            var iconSize = CGSize()
-            if let icon = component.icon  {
-                switch icon {
-                case let .collection(file):
-                    iconSize = CGSize(width: 16.0, height: 16.0)
-                    
-                    let iconLayer: InlineStickerItemLayer
-                    if let current = self.iconLayer {
-                        iconLayer = current
-                    } else {
-                        iconLayer = InlineStickerItemLayer(
-                            context: component.context,
-                            userLocation: .other,
-                            attemptSynchronousLoad: true,
-                            emoji: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: file.fileId.id, file: file),
-                            file: file,
-                            cache: component.context.animationCache,
-                            renderer: component.context.animationRenderer,
-                            placeholderColor: component.theme.list.mediaPlaceholderColor,
-                            pointSize: iconSize,
-                            loopCount: 1
-                        )
-                        self.layer.addSublayer(iconLayer)
-                        self.iconLayer = iconLayer
-                    }
-                    let iconFrame = CGRect(origin: CGPoint(x: iconOffset, y: floorToScreenPixels((titleSize.height - iconSize.height) * 0.5)), size: iconSize)
-                    iconLayer.frame = iconFrame
-                case .add:
-                    iconSize = self.icon.update(
-                        transition: .immediate,
-                        component: AnyComponent(BundleIconComponent(
-                            name: "Chat/Input/Media/PanelBadgeAdd",
-                            tintColor: component.theme.list.itemSecondaryTextColor
-                        )),
-                        environment: {},
-                        containerSize: CGSize(width: 100.0, height: 100.0)
-                    )
-                    let iconFrame = CGRect(origin: CGPoint(x: iconOffset, y: floorToScreenPixels((titleSize.height - iconSize.height) * 0.5)), size: iconSize)
-                    if let iconView = self.icon.view {
-                        if iconView.superview == nil {
-                            iconView.isUserInteractionEnabled = false
-                            self.addSubview(iconView)
-                        }
-                        iconView.frame = iconFrame
-                    }
-                }
-                                
-                iconOffset += iconSize.width + iconSpacing
-            } else {
-                if let iconLayer = self.iconLayer {
-                    self.iconLayer = nil
-                    iconLayer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { _ in
-                        iconLayer.removeFromSuperlayer()
-                    })
-                    iconLayer.animateScale(from: 1.0, to: 0.01, duration: 0.2, removeOnCompletion: false)
-                }
-                if let iconView = self.icon.view {
-                    iconView.removeFromSuperview()
-                }
-            }
-            
-            let titleFrame = CGRect(origin: CGPoint(x: iconOffset, y: 0.0), size: titleSize)
-            if let titleView = self.title.view {
-                if titleView.superview == nil {
-                    titleView.isUserInteractionEnabled = false
-                    self.addSubview(titleView)
-                }
-                titleView.frame = titleFrame
-            }
-                        
-            let size: CGSize
-            if let _ = component.icon {
-                size = CGSize(width: iconSize.width + iconSpacing + titleSize.width, height: titleSize.height)
-            } else {
-                size = titleSize
-            }
-             
-            return size
-        }
-    }
-    
-    func makeView() -> View {
-        return View(frame: CGRect())
-    }
-    
-    func update(view: View, availableSize: CGSize, state: State, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
-        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
 

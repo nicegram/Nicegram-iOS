@@ -981,10 +981,13 @@ final class OverscrollContentsComponent: Component {
             let titleSize = self.titleNode.updateLayout(CGSize(width: availableSize.width - 32.0, height: 100.0))
             let titleBackgroundSize = CGSize(width: titleSize.width + 18.0, height: titleSize.height + 8.0)
             let titleBackgroundFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleBackgroundSize.width) / 2.0), y: fullHeight - titleBackgroundSize.height - 8.0), size: titleBackgroundSize)
-            self.titleBackgroundNode.frame = titleBackgroundFrame
+            self.titleBackgroundNode.position = titleBackgroundFrame.center
+            self.titleBackgroundNode.bounds = CGRect(origin: CGPoint(), size: titleBackgroundFrame.size)
             self.titleBackgroundNode.update(rect: titleBackgroundFrame.offsetBy(dx: component.absoluteRect.minX, dy: component.absoluteRect.minY), within: component.absoluteSize, color: component.backgroundColor, wallpaperNode: component.wallpaperNode, transition: .immediate)
             self.titleBackgroundNode.cornerRadius = min(titleBackgroundFrame.width, titleBackgroundFrame.height) / 2.0
-            self.titleNode.frame = titleSize.centered(in: titleBackgroundFrame)
+            let titleFrame = titleSize.centered(in: titleBackgroundFrame)
+            self.titleNode.position = titleFrame.center
+            self.titleNode.bounds = CGRect(origin: CGPoint(), size: titleFrame.size)
 
             let backgroundClippingFrame = CGRect(origin: CGPoint(x: floor(-backgroundWidth / 2.0), y: -fullHeight), size: CGSize(width: backgroundWidth, height: isFullyExpanded ? backgroundWidth : fullHeight))
             self.backgroundClippingNode.cornerRadius = isFolderMask ? 10.0 : backgroundWidth / 2.0
@@ -1003,7 +1006,7 @@ final class OverscrollContentsComponent: Component {
             let transformTransition: ContainedViewLayoutTransition
             if self.isFullyExpanded != isFullyExpanded {
                 self.isFullyExpanded = isFullyExpanded
-                transformTransition = .animated(duration: 0.12, curve: .easeInOut)
+                transformTransition = .animated(duration: 0.18, curve: .easeInOut)
 
                 if isFullyExpanded {
                     func animateBounce(layer: CALayer) {
@@ -1067,8 +1070,11 @@ final class OverscrollContentsComponent: Component {
 
             transformTransition.updateSublayerTransformOffset(layer: self.avatarOffsetContainer.layer, offset: CGPoint(x: 0.0, y: isFullyExpanded ? -(fullHeight - backgroundWidth) : 0.0))
             transformTransition.updateSublayerTransformOffset(layer: self.arrowOffsetContainer.layer, offset: CGPoint(x: 0.0, y: isFullyExpanded ? -(fullHeight - backgroundWidth) : 0.0))
+            
+            transformTransition.updateSublayerTransformOffset(layer: self.titleOffsetContainer.layer, offset: CGPoint(x: 0.0, y: isFullyExpanded ? 0.0 : 20.0))
 
-            transformTransition.updateSublayerTransformOffset(layer: self.titleOffsetContainer.layer, offset: CGPoint(x: 0.0, y: isFullyExpanded ? 0.0 : (titleBackgroundSize.height + 50.0)))
+            transformTransition.updateTransformScale(layer: self.titleBackgroundNode.layer, scale: isFullyExpanded ? 1.0 : 0.001)
+            transformTransition.updateTransformScale(layer: self.titleNode.layer, scale: isFullyExpanded ? 1.0 : 0.001)
 
             transformTransition.updateSublayerTransformScale(node: self.avatarExtraScalingContainer, scale: isFullyExpanded ? 1.0 : ((backgroundWidth - avatarInset * 2.0) / backgroundWidth))
 
@@ -1207,52 +1213,5 @@ public final class ChatOverscrollControl: CombinedComponent {
 
             return size
         }
-    }
-}
-
-public final class ChatInputPanelOverscrollNode: ASDisplayNode {
-    public let text: NSAttributedString
-    public let priority: Int
-    private let titleNode: ImmediateTextNodeWithEntities
-
-    public init(context: AccountContext, text: NSAttributedString, color: UIColor, priority: Int) {
-        self.text = text
-        self.priority = priority
-        self.titleNode = ImmediateTextNodeWithEntities()
-
-        super.init()
-
-        let attributedText = NSMutableAttributedString(string: text.string)
-        attributedText.addAttribute(.font, value: Font.regular(14.0), range: NSRange(location: 0, length: text.length))
-        attributedText.addAttribute(.foregroundColor, value: color, range: NSRange(location: 0, length: text.length))
-        text.enumerateAttributes(in: NSRange(location: 0, length: text.length), using: { attributes, range, _ in
-            for (key, value) in attributes {
-                if key == ChatTextInputAttributes.bold {
-                    attributedText.addAttribute(.font, value: Font.bold(14.0), range: range)
-                } else if key == ChatTextInputAttributes.italic {
-                    attributedText.addAttribute(.font, value: Font.italic(14.0), range: range)
-                } else if key == ChatTextInputAttributes.monospace {
-                    attributedText.addAttribute(.font, value: Font.monospace(14.0), range: range)
-                } else {
-                    attributedText.addAttribute(key, value: value, range: range)
-                }
-            }
-        })
-        self.titleNode.attributedText = attributedText
-        self.titleNode.visibility = true
-        self.titleNode.arguments = TextNodeWithEntities.Arguments(
-            context: context,
-            cache: context.animationCache,
-            renderer: context.animationRenderer,
-            placeholderColor: color.withMultipliedAlpha(0.1),
-            attemptSynchronous: true
-        )
-
-        self.addSubnode(self.titleNode)
-    }
-
-    public func update(size: CGSize) {
-        let titleSize = self.titleNode.updateLayout(size)
-        self.titleNode.frame = titleSize.centered(in: CGRect(origin: CGPoint(), size: size))
     }
 }

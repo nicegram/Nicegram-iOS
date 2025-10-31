@@ -285,7 +285,7 @@ private func editThemeControllerEntries(presentationData: PresentationData, stat
     entries.append(.slugInfo(presentationData.theme, infoText))
     
     entries.append(.chatPreviewHeader(presentationData.theme, presentationData.strings.EditTheme_Preview.uppercased()))
-    entries.append(.chatPreview(presentationData.theme, previewTheme, previewTheme.chat.defaultWallpaper, presentationData.chatFontSize, presentationData.chatBubbleCorners, presentationData.strings, presentationData.dateTimeFormat, presentationData.nameDisplayOrder, [ChatPreviewMessageItem(outgoing: false, reply: (previewIncomingReplyName, previewIncomingReplyText), text: previewIncomingText, nameColor: .blue, backgroundEmojiId: nil), ChatPreviewMessageItem(outgoing: true, reply: nil, text: previewOutgoingText, nameColor: .blue, backgroundEmojiId: nil)]))
+    entries.append(.chatPreview(presentationData.theme, previewTheme, previewTheme.chat.defaultWallpaper, presentationData.chatFontSize, presentationData.chatBubbleCorners, presentationData.strings, presentationData.dateTimeFormat, presentationData.nameDisplayOrder, [ChatPreviewMessageItem(outgoing: false, reply: (previewIncomingReplyName, previewIncomingReplyText), text: previewIncomingText, nameColor: .preset(.blue), backgroundEmojiId: nil), ChatPreviewMessageItem(outgoing: true, reply: nil, text: previewOutgoingText, nameColor: .preset(.blue), backgroundEmojiId: nil)]))
     
     entries.append(.changeColors(presentationData.theme, presentationData.strings.EditTheme_ChangeColors))
     if hasSettings {

@@ -88,7 +88,7 @@ def parse_positional_arguments(string: str) -> [PositionalArgument]:
     result = list()
 
     implicit_index = 0
-    argument = re.compile(r'%((\d)\$)?([@d])', re.U)
+    argument = re.compile(r'%((\d+)\$)?([@d])', re.U)
     start_position = 0
     while True:
         m = argument.search(string, start_position)

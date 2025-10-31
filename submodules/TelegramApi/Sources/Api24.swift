@@ -835,6 +835,7 @@ public extension Api {
         case sendMessageRecordAudioAction
         case sendMessageRecordRoundAction
         case sendMessageRecordVideoAction
+        case sendMessageTextDraftAction(randomId: Int64, text: Api.TextWithEntities)
         case sendMessageTypingAction
         case sendMessageUploadAudioAction(progress: Int32)
         case sendMessageUploadDocumentAction(progress: Int32)
@@ -913,6 +914,13 @@ public extension Api {
                     }
                     
                     break
+                case .sendMessageTextDraftAction(let randomId, let text):
+                    if boxed {
+                        buffer.appendInt32(929929052)
+                    }
+                    serializeInt64(randomId, buffer: buffer, boxed: false)
+                    text.serialize(buffer, true)
+                    break
                 case .sendMessageTypingAction:
                     if boxed {
                         buffer.appendInt32(381645902)
@@ -982,6 +990,8 @@ public extension Api {
                 return ("sendMessageRecordRoundAction", [])
                 case .sendMessageRecordVideoAction:
                 return ("sendMessageRecordVideoAction", [])
+                case .sendMessageTextDraftAction(let randomId, let text):
+                return ("sendMessageTextDraftAction", [("randomId", randomId as Any), ("text", text as Any)])
                 case .sendMessageTypingAction:
                 return ("sendMessageTypingAction", [])
                 case .sendMessageUploadAudioAction(let progress):
@@ -1063,6 +1073,22 @@ public extension Api {
         }
         public static func parse_sendMessageRecordVideoAction(_ reader: BufferReader) -> SendMessageAction? {
             return Api.SendMessageAction.sendMessageRecordVideoAction
+        }
+        public static func parse_sendMessageTextDraftAction(_ reader: BufferReader) -> SendMessageAction? {
+            var _1: Int64?
+            _1 = reader.readInt64()
+            var _2: Api.TextWithEntities?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.SendMessageAction.sendMessageTextDraftAction(randomId: _1!, text: _2!)
+            }
+            else {
+                return nil
+            }
         }
         public static func parse_sendMessageTypingAction(_ reader: BufferReader) -> SendMessageAction? {
             return Api.SendMessageAction.sendMessageTypingAction

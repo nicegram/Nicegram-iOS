@@ -259,9 +259,7 @@ public final class PeerInfoGiftsCoverComponent: Component {
                     seed: self.seed
                 )
                 
-                let start = CACurrentMediaTime()
                 self.iconPositions = positionGenerator.generatePositions(count: 12, itemSize: iconSize)
-                print("generated icon positions in \( CACurrentMediaTime() - start )s")
             }
             self.appliedGiftIds = giftIds
             

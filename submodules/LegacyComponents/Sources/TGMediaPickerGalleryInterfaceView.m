@@ -466,7 +466,7 @@
             _saveCoverButton.clipsToBounds = true;
             _saveCoverButton.layer.cornerRadius = 10.0;
             _saveCoverButton.hidden = true;
-            [_saveCoverButton setBackgroundColor:UIColorRGB(0x007aff)];
+            [_saveCoverButton setBackgroundColor:UIColorRGB(0x0088ff)];
             _saveCoverButton.titleLabel.font = TGBoldSystemFontOfSize(17.0);
             [_saveCoverButton setTitle:TGLocalized(@"Media.SaveCover") forState:UIControlStateNormal];
             [_saveCoverButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];

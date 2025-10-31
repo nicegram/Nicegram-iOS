@@ -78,6 +78,7 @@ public final class RoundedRectangle: Component {
                             context.fillEllipse(in: CGRect(origin: CGPoint(), size: imageSize).insetBy(dx: stroke, dy: stroke))
                         }
                     }
+                    
                     self.image = UIGraphicsGetImageFromCurrentImageContext()?.stretchableImage(withLeftCapWidth: Int(cornerRadius), topCapHeight: Int(cornerRadius))
                     UIGraphicsEndImageContext()
                 } else if component.colors.count > 1 {

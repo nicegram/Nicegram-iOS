@@ -5,41 +5,6 @@ import SwiftSignalKit
 import Display
 import TelegramPresentationData
 
-public final class TabBarControllerTheme {
-    public let backgroundColor: UIColor
-    public let tabBarBackgroundColor: UIColor
-    public let tabBarSeparatorColor: UIColor
-    public let tabBarIconColor: UIColor
-    public let tabBarSelectedIconColor: UIColor
-    public let tabBarTextColor: UIColor
-    public let tabBarSelectedTextColor: UIColor
-    public let tabBarBadgeBackgroundColor: UIColor
-    public let tabBarBadgeStrokeColor: UIColor
-    public let tabBarBadgeTextColor: UIColor
-    public let tabBarExtractedIconColor: UIColor
-    public let tabBarExtractedTextColor: UIColor
-
-    public init(backgroundColor: UIColor, tabBarBackgroundColor: UIColor, tabBarSeparatorColor: UIColor, tabBarIconColor: UIColor, tabBarSelectedIconColor: UIColor, tabBarTextColor: UIColor, tabBarSelectedTextColor: UIColor, tabBarBadgeBackgroundColor: UIColor, tabBarBadgeStrokeColor: UIColor, tabBarBadgeTextColor: UIColor, tabBarExtractedIconColor: UIColor, tabBarExtractedTextColor: UIColor) {
-        self.backgroundColor = backgroundColor
-        self.tabBarBackgroundColor = tabBarBackgroundColor
-        self.tabBarSeparatorColor = tabBarSeparatorColor
-        self.tabBarIconColor = tabBarIconColor
-        self.tabBarSelectedIconColor = tabBarSelectedIconColor
-        self.tabBarTextColor = tabBarTextColor
-        self.tabBarSelectedTextColor = tabBarSelectedTextColor
-        self.tabBarBadgeBackgroundColor = tabBarBadgeBackgroundColor
-        self.tabBarBadgeStrokeColor = tabBarBadgeStrokeColor
-        self.tabBarBadgeTextColor = tabBarBadgeTextColor
-        self.tabBarExtractedIconColor = tabBarExtractedIconColor
-        self.tabBarExtractedTextColor = tabBarExtractedTextColor
-    }
-    
-    public convenience init(rootControllerTheme: PresentationTheme) {
-        let theme = rootControllerTheme.rootController.tabBar
-        self.init(backgroundColor: rootControllerTheme.list.plainBackgroundColor, tabBarBackgroundColor: theme.backgroundColor, tabBarSeparatorColor: theme.separatorColor, tabBarIconColor: theme.iconColor, tabBarSelectedIconColor: theme.selectedIconColor, tabBarTextColor: theme.textColor, tabBarSelectedTextColor: theme.selectedTextColor, tabBarBadgeBackgroundColor: theme.badgeBackgroundColor, tabBarBadgeStrokeColor: theme.badgeStrokeColor, tabBarBadgeTextColor: theme.badgeTextColor, tabBarExtractedIconColor: rootControllerTheme.contextMenu.extractedContentTintColor, tabBarExtractedTextColor: rootControllerTheme.contextMenu.extractedContentTintColor)
-    }
-}
-
 public final class TabBarItemInfo: NSObject {
     public let previewing: Bool
     
@@ -88,12 +53,6 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         }
     }
     
-    // Nicegram Assistant, tooltip
-    public var tabBarView: UIView {
-        tabBarControllerNode.tabBarNode.view
-    }
-    //
-    
     open override func updateNavigationCustomData(_ data: Any?, progress: CGFloat, transition: ContainedViewLayoutTransition) {
         for controller in self.controllers {
             controller.updateNavigationCustomData(data, progress: progress, transition: transition)
@@ -133,25 +92,14 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     
     private let pendingControllerDisposable = MetaDisposable()
     
-    private var navigationBarPresentationData: NavigationBarPresentationData
-    private var theme: TabBarControllerTheme
-    // Nicegram
-    private var showTabNames: Bool
-    //
-    
-    public var cameraItemAndAction: (item: UITabBarItem, action: () -> Void)?
-    
+    private var theme: PresentationTheme
+        
     // Nicegram
     public var willSelect: ((Int) -> Void)?
     //
     
-    // Nicegram (showTabNames)
-    public init(navigationBarPresentationData: NavigationBarPresentationData, theme: TabBarControllerTheme, showTabNames: Bool) {
-        self.navigationBarPresentationData = navigationBarPresentationData
+    public init(theme: PresentationTheme) {
         self.theme = theme
-        // Nicegram
-        self.showTabNames = showTabNames
-        //
         
         super.init(navigationBarPresentationData: nil)
         
@@ -173,54 +121,27 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         self.pendingControllerDisposable.dispose()
     }
     
-    public func updateTheme(navigationBarPresentationData: NavigationBarPresentationData, theme: TabBarControllerTheme) {
+    public func updateTheme(theme: PresentationTheme) {
         if self.theme !== theme {
             self.theme = theme
-            self.navigationBarPresentationData = navigationBarPresentationData
             if self.isNodeLoaded {
-                self.tabBarControllerNode.updateTheme(theme, navigationBarPresentationData: navigationBarPresentationData)
+                self.tabBarControllerNode.updateTheme(theme)
             }
         }
     }
     
     private var debugTapCounter: (Double, Int) = (0.0, 0)
     
-    public func sourceNodesForController(at index: Int) -> [ASDisplayNode]? {
-        return self.tabBarControllerNode.tabBarNode.sourceNodesForController(at: index)
-    }
-    
-    public func viewForCameraItem() -> UIView? {
-        if let (cameraItem, _) = self.cameraItemAndAction {
-            if let cameraItemIndex = self.tabBarControllerNode.tabBarNode.tabBarItems.firstIndex(where: { $0.item === cameraItem }) {
-                return self.tabBarControllerNode.tabBarNode.viewForControllerTab(at: cameraItemIndex)
-            }
-        }
-        return nil
-    }
-    
     public func frameForControllerTab(controller: ViewController) -> CGRect? {
         if let index = self.controllers.firstIndex(of: controller) {
-            var index = index
-            if let (cameraItem, _) = self.cameraItemAndAction {
-                if let cameraItemIndex = self.tabBarControllerNode.tabBarNode.tabBarItems.firstIndex(where: { $0.item === cameraItem }) {
-                    if index == cameraItemIndex {
-                        
-                    } else if index > cameraItemIndex {
-                        index -= 1
-                    }
-                }
-            }
-            return self.tabBarControllerNode.tabBarNode.frameForControllerTab(at: index).flatMap { self.tabBarControllerNode.tabBarNode.view.convert($0, to: self.view) }
+            return self.tabBarControllerNode.frameForControllerTab(at: index)
         } else {
             return nil
         }
     }
     
     public func isPointInsideContentArea(point: CGPoint) -> Bool {
-        if point.y < self.tabBarControllerNode.tabBarNode.frame.minY {
-            return true
-        }
-        return false
+        return self.tabBarControllerNode.isPointInsideContentArea(point: point)
     }
     
     public func updateIsTabBarEnabled(_ value: Bool, transition: ContainedViewLayoutTransition) {
@@ -235,20 +156,8 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     }
     
     override open func loadDisplayNode() {
-        // Nicegram (showTabNames)
-        self.displayNode = TabBarControllerNode(theme: self.theme, showTabNames: self.showTabNames, navigationBarPresentationData: self.navigationBarPresentationData, itemSelected: { [weak self] index, longTap, itemNodes in
+        self.displayNode = TabBarControllerNode(theme: self.theme, itemSelected: { [weak self] index, longTap, itemNodes in
             if let strongSelf = self {
-                var index = index
-                if let (cameraItem, cameraAction) = strongSelf.cameraItemAndAction {
-                    if let cameraItemIndex = strongSelf.tabBarControllerNode.tabBarNode.tabBarItems.firstIndex(where: { $0.item === cameraItem }) {
-                        if index == cameraItemIndex {
-                            cameraAction()
-                            return
-                        } else if index > cameraItemIndex {
-                            index -= 1
-                        }
-                    }
-                }
                 if longTap, let controller = strongSelf.controllers[index] as? TabBarContainedController {
                     controller.presentTabBarPreviewingController(sourceNodes: itemNodes)
                     return
@@ -315,38 +224,18 @@ open class TabBarControllerImpl: ViewController, TabBarController {
                     }
                 }))
             }
-        }, contextAction: { [weak self] index, node, gesture in
+        }, contextAction: { [weak self] index, view, gesture in
             guard let strongSelf = self else {
                 return
             }
-            if index >= 0 && index < strongSelf.tabBarControllerNode.tabBarNode.tabBarItems.count {
-                var index = index
-                if let (cameraItem, _) = strongSelf.cameraItemAndAction {
-                    if let cameraItemIndex = strongSelf.tabBarControllerNode.tabBarNode.tabBarItems.firstIndex(where: { $0.item === cameraItem }) {
-                        if index == cameraItemIndex {
-                            return
-                        } else if index > cameraItemIndex {
-                            index -= 1
-                        }
-                    }
-                }
-                strongSelf.controllers[index].tabBarItemContextAction(sourceNode: node, gesture: gesture)
+            if index >= 0 && index < strongSelf.tabBarControllerNode.tabBarItems.count {
+                strongSelf.controllers[index].tabBarItemContextAction(sourceView: view, gesture: gesture)
             }
         }, swipeAction: { [weak self] index, direction in
             guard let strongSelf = self else {
                 return
             }
-            if index >= 0 && index < strongSelf.tabBarControllerNode.tabBarNode.tabBarItems.count {
-                var index = index
-                if let (cameraItem, _) = strongSelf.cameraItemAndAction {
-                    if let cameraItemIndex = strongSelf.tabBarControllerNode.tabBarNode.tabBarItems.firstIndex(where: { $0.item === cameraItem }) {
-                        if index == cameraItemIndex {
-                            return
-                        } else if index > cameraItemIndex {
-                            index -= 1
-                        }
-                    }
-                }
+            if index >= 0 && index < strongSelf.tabBarControllerNode.tabBarItems.count {
                 strongSelf.controllers[index].tabBarItemSwipeAction(direction: direction)
             }
         }, toolbarActionSelected: { [weak self] action in
@@ -360,9 +249,6 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     }
     
     public func updateBackgroundAlpha(_ alpha: CGFloat, transition: ContainedViewLayoutTransition) {
-        let alpha = max(0.0, min(1.0, alpha))
-        transition.updateAlpha(node: self.tabBarControllerNode.tabBarNode.backgroundNode, alpha: alpha, delay: 0.1)
-        transition.updateAlpha(node: self.tabBarControllerNode.tabBarNode.separatorNode, alpha: alpha, delay: 0.1)
     }
     
     private func updateSelectedIndex(animated: Bool = false) {
@@ -375,15 +261,8 @@ open class TabBarControllerImpl: ViewController, TabBarController {
             animated = false
         }
         
-        var tabBarSelectedIndex = self.selectedIndex
-        if let (cameraItem, _) = self.cameraItemAndAction {
-            if let cameraItemIndex = self.tabBarControllerNode.tabBarNode.tabBarItems.firstIndex(where: { $0.item === cameraItem }) {
-                if tabBarSelectedIndex >= cameraItemIndex {
-                    tabBarSelectedIndex += 1
-                }
-            }
-        }
-        self.tabBarControllerNode.tabBarNode.selectedIndex = tabBarSelectedIndex
+        let tabBarSelectedIndex = self.selectedIndex
+        self.tabBarControllerNode.updateSelectedIndex(index: tabBarSelectedIndex)
         
         var transitionScale: CGFloat = 0.998
         if let currentView = self.currentController?.view {
@@ -449,26 +328,14 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         
         self.validLayout = layout
         
-        self.tabBarControllerNode.containerLayoutUpdated(layout, toolbar: self.currentController?.toolbar, transition: transition)
+        let bottomInset = self.tabBarControllerNode.containerLayoutUpdated(layout, toolbar: self.currentController?.toolbar, transition: transition)
         
         if let currentController = self.currentController {
             currentController.view.frame = CGRect(origin: CGPoint(), size: layout.size)
             
             var updatedLayout = layout
-            
-            var tabBarHeight: CGFloat
-            var options: ContainerViewLayoutInsetOptions = []
-            if updatedLayout.metrics.widthClass == .regular {
-                options.insert(.input)
-            }
-            let bottomInset: CGFloat = updatedLayout.insets(options: options).bottom
-            if !updatedLayout.safeInsets.left.isZero {
-                tabBarHeight = 34.0 + bottomInset
-            } else {
-                tabBarHeight = 49.0 + bottomInset
-            }
             if !self.tabBarControllerNode.tabBarHidden {
-                updatedLayout.intrinsicInsets.bottom = tabBarHeight
+                updatedLayout.intrinsicInsets.bottom = bottomInset
             }
             
             currentController.containerLayoutUpdated(updatedLayout, transition: transition)
@@ -546,12 +413,9 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         }
         self.controllers = controllers
         
-        var tabBarItems = self.controllers.map({ TabBarNodeItem(item: $0.tabBarItem, contextActionType: $0.tabBarItemContextActionType) })
-        if let (cameraItem, _) = self.cameraItemAndAction {
-            tabBarItems.insert(TabBarNodeItem(item: cameraItem, contextActionType: .none), at: Int(floor(CGFloat(controllers.count) / 2)))
-        }
+        let tabBarItems = self.controllers.map({ TabBarNodeItem(item: $0.tabBarItem, contextActionType: $0.tabBarItemContextActionType) })
         
-        self.tabBarControllerNode.tabBarNode.tabBarItems = tabBarItems
+        self.tabBarControllerNode.updateTabBarItems(items: tabBarItems)
         
         let signals = combineLatest(self.controllers.map({ $0.tabBarItem }).map { tabBarItem -> Signal<Bool, NoError> in
             if let tabBarItem = tabBarItem, tabBarItem.image == nil {

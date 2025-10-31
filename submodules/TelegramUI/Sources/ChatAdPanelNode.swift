@@ -375,15 +375,16 @@ final class ChatAdPanelNode: ASDisplayNode {
             }
         }
         
+        let (adLayout, adApply) = makeAdLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: strings.Chat_BotAd_Title, font: Font.semibold(14.0), textColor: theme.chat.inputPanel.panelControlAccentColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: width, height: .greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: .zero))
+        
+        let titleConstrainedSize = CGSize(width: width - contentLeftInset - contentRightInset - textRightInset - adLayout.size.width - 90.0, height: CGFloat.greatestFiniteMagnitude)
         let textConstrainedSize = CGSize(width: width - contentLeftInset - contentRightInset - textRightInset, height: CGFloat.greatestFiniteMagnitude)
                 
-        let (adLayout, adApply) = makeAdLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: strings.Chat_BotAd_Title, font: Font.semibold(14.0), textColor: theme.chat.inputPanel.panelControlAccentColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: textConstrainedSize, alignment: .natural, cutout: nil, insets: .zero))
-        
         var titleText: String = ""
         if let author = message.author {
             titleText = EnginePeer(author).compactDisplayTitle
         }
-        let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: titleText, font: Font.semibold(14.0), textColor: theme.chat.inputPanel.primaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: textConstrainedSize, alignment: .natural, cutout: nil, insets: .zero))
+        let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: titleText, font: Font.semibold(14.0), textColor: theme.chat.inputPanel.primaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: titleConstrainedSize, alignment: .natural, cutout: nil, insets: .zero))
         
         let (textString, _, isText) = descriptionStringForMessage(contentSettings: context.currentContentSettings.with { $0 }, message: EngineMessage(message), strings: strings, nameDisplayOrder: nameDisplayOrder, dateTimeFormat: dateTimeFormat, accountPeerId: accountPeerId)
         

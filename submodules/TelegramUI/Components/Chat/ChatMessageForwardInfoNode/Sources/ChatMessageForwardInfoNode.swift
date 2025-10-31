@@ -344,7 +344,12 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
                 } else {
                     if incoming {
                         if let nameColor = peer?.nameColor {
-                            titleColor = context.peerNameColors.get(nameColor, dark: presentationData.theme.theme.overallDarkAppearance).main
+                            switch nameColor {
+                            case let .preset(nameColor):
+                                titleColor = context.peerNameColors.get(nameColor, dark: presentationData.theme.theme.overallDarkAppearance).main
+                            case let .collectible(collectibleColor):
+                                titleColor = collectibleColor.mainColor(dark: presentationData.theme.theme.overallDarkAppearance)
+                            }
                         } else {
                             titleColor = presentationData.theme.theme.chat.message.incoming.accentTextColor
                         }

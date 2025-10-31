@@ -34,6 +34,10 @@ public extension TelegramEngine {
             return _internal_updateContactPhoto(account: self.account, peerId: peerId, resource: resource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: markup, mode: mode, mapResourceToAvatarSizes: mapResourceToAvatarSizes)
         }
         
+        public func updateContactNote(peerId: PeerId, text: String, entities: [MessageTextEntity]) -> Signal<Never, UpdateContactNoteError> {
+            return _internal_updateContactNote(account: self.account, peerId: peerId, text: text, entities: entities)
+        }
+        
         public func deviceContactsImportedByCount(contacts: [(String, [DeviceContactNormalizedPhoneNumber])]) -> Signal<[String: Int32], NoError> {
             return _internal_deviceContactsImportedByCount(postbox: self.account.postbox, contacts: contacts)
         }

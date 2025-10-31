@@ -101,7 +101,7 @@ func generateHeadingArrowImage() -> UIImage? {
         context.clip()
         
         var locations: [CGFloat] = [0.0, 0.4, 1.0]
-        let colors: [CGColor] = [UIColor(rgb: 0x007aff, alpha: 0.5).cgColor, UIColor(rgb: 0x007aff, alpha: 0.3).cgColor, UIColor(rgb: 0x007aff, alpha: 0.0).cgColor]
+        let colors: [CGColor] = [UIColor(rgb: 0x0088ff, alpha: 0.5).cgColor, UIColor(rgb: 0x0088ff, alpha: 0.3).cgColor, UIColor(rgb: 0x0088ff, alpha: 0.0).cgColor]
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: &locations)!
         

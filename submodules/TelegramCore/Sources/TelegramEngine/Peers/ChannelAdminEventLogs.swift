@@ -328,14 +328,14 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                     action = .changeUsernames(prev: prevValue, new: newValue)
                                 case let .channelAdminLogEventActionCreateTopic(topic):
                                     switch topic {
-                                    case let .forumTopic(_, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
                                         action = .createTopic(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor))
                                     case .forumTopicDeleted:
                                         action = .createTopic(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0))
                                     }
                                 case let .channelAdminLogEventActionDeleteTopic(topic):
                                     switch topic {
-                                    case let .forumTopic(_, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
                                         action = .deleteTopic(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor))
                                     case .forumTopicDeleted:
                                         action = .deleteTopic(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0))
@@ -343,7 +343,7 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                 case let .channelAdminLogEventActionEditTopic(prevTopic, newTopic):
                                     let prevInfo: AdminLogEventAction.ForumTopicInfo
                                     switch prevTopic {
-                                    case let .forumTopic(flags, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(flags, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
                                         prevInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor), isClosed: (flags & (1 << 2)) != 0, isHidden: (flags & (1 << 6)) != 0)
                                     case .forumTopicDeleted:
                                         prevInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0), isClosed: false, isHidden: false)
@@ -351,7 +351,7 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                     
                                     let newInfo: AdminLogEventAction.ForumTopicInfo
                                     switch newTopic {
-                                    case let .forumTopic(flags, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(flags, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
                                         newInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor), isClosed: (flags & (1 << 2)) != 0, isHidden: (flags & (1 << 6)) != 0)
                                     case .forumTopicDeleted:
                                         newInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0), isClosed: false, isHidden: false)
@@ -361,7 +361,7 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                 case let .channelAdminLogEventActionPinTopic(_, prevTopic, newTopic):
                                     let prevInfo: EngineMessageHistoryThread.Info?
                                     switch prevTopic {
-                                    case let .forumTopic(_, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
                                         prevInfo = EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor)
                                     case .forumTopicDeleted:
                                         prevInfo = EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0)
@@ -371,7 +371,7 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                     
                                     let newInfo: EngineMessageHistoryThread.Info?
                                     switch newTopic {
-                                    case let .forumTopic(_, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
                                         newInfo = EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor)
                                     case .forumTopicDeleted:
                                         newInfo = EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0)
@@ -384,40 +384,20 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                 case let .channelAdminLogEventActionToggleAntiSpam(newValue):
                                     action = .toggleAntiSpam(isEnabled: newValue == .boolTrue)
                                 case let .channelAdminLogEventActionChangePeerColor(prevValue, newValue):
-                                    var prevColorIndex: Int32
-                                    var prevEmojiId: Int64?
-                                    switch prevValue {
-                                    case let .peerColor(_, color, backgroundEmojiIdValue):
-                                        prevColorIndex = color ?? 0
-                                        prevEmojiId = backgroundEmojiIdValue
+                                    guard case let .peerColor(_, prevColor, prevBackgroundEmojiIdValue) = prevValue, case let .peerColor(_, newColor, newBackgroundEmojiIdValue) = newValue else {
+                                        continue
                                     }
+                                    let prevColorIndex = prevColor ?? 0
+                                    let prevEmojiId = prevBackgroundEmojiIdValue
                                     
-                                    var newColorIndex: Int32
-                                    var newEmojiId: Int64?
-                                    switch newValue {
-                                    case let .peerColor(_, color, backgroundEmojiIdValue):
-                                        newColorIndex = color ?? 0
-                                        newEmojiId = backgroundEmojiIdValue
-                                    }
+                                    let newColorIndex = newColor ?? 0
+                                    let newEmojiId = newBackgroundEmojiIdValue
                                     
                                     action = .changeNameColor(prevColor: PeerNameColor(rawValue: prevColorIndex), prevIcon: prevEmojiId, newColor: PeerNameColor(rawValue: newColorIndex), newIcon: newEmojiId)
                                 case let .channelAdminLogEventActionChangeProfilePeerColor(prevValue, newValue):
-                                    var prevColorIndex: Int32?
-                                    var prevEmojiId: Int64?
-                                    switch prevValue {
-                                    case let .peerColor(_, color, backgroundEmojiIdValue):
-                                        prevColorIndex = color
-                                        prevEmojiId = backgroundEmojiIdValue
+                                    guard case let .peerColor(_, prevColorIndex, prevEmojiId) = prevValue, case let .peerColor(_, newColorIndex, newEmojiId) = newValue else {
+                                        continue
                                     }
-                                    
-                                    var newColorIndex: Int32?
-                                    var newEmojiId: Int64?
-                                    switch newValue {
-                                    case let .peerColor(_, color, backgroundEmojiIdValue):
-                                        newColorIndex = color
-                                        newEmojiId = backgroundEmojiIdValue
-                                    }
-                                    
                                     action = .changeProfileColor(prevColor: prevColorIndex.flatMap(PeerNameColor.init(rawValue:)), prevIcon: prevEmojiId, newColor: newColorIndex.flatMap(PeerNameColor.init(rawValue:)), newIcon: newEmojiId)
                                 case let .channelAdminLogEventActionChangeWallpaper(prevValue, newValue):
                                     let prev: TelegramWallpaper?

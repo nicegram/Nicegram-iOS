@@ -69,7 +69,7 @@ private let lightTheme = InstantPageSettingsItemTheme(
     separatorColor: UIColor(rgb: 0xc8c7cc),
     primaryColor: .black,
     secondaryColor: UIColor(rgb: 0xa8a8a8),
-    accentColor: UIColor(rgb: 0x007aff)
+    accentColor: UIColor(rgb: 0x0088ff)
 )
 
 private let sepiaTheme = InstantPageSettingsItemTheme(

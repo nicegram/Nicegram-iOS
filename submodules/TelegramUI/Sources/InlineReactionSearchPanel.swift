@@ -16,6 +16,9 @@ import PremiumUI
 import UndoUI
 import ChatControllerInteraction
 import ChatInputContextPanelNode
+import GlassBackgroundComponent
+import ComponentFlow
+import ComponentDisplayAdapters
 
 private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollViewDelegate {
     private final class DisplayItem {
@@ -39,7 +42,7 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
     private var topInset: CGFloat?
     private var itemNodes: [MediaId: HorizontalStickerGridItemNode] = [:]
     
-    private var validLayout: CGSize?
+    private var validLayout: (size: CGSize, bottomInset: CGFloat)?
     fileprivate weak var currentInterfaceState: ChatPresentationInterfaceState?
     private var ignoreScrolling: Bool = false
     private var animateInOnLayout: Bool = false
@@ -279,19 +282,19 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
     }
     
     func updateScrollNode() {
-        guard let size = self.validLayout else {
+        guard let (size, bottomInset) = self.validLayout else {
             return
         }
         var contentHeight: CGFloat = 0.0
         if let item = self.displayItems.last {
             let maxY = item.frame.maxY + 4.0
             
-            var topInset = size.height - floor(item.frame.height * 1.5)
-            if topInset + maxY < size.height {
-                topInset = size.height - maxY
+            var topInset = size.height - bottomInset - floor(item.frame.height * 1.5)
+            if topInset + maxY < size.height - bottomInset {
+                topInset = size.height - bottomInset - maxY
             }
             self.topInset = topInset
-            contentHeight = topInset + maxY
+            contentHeight = topInset + maxY + bottomInset
         } else {
             self.topInset = size.height
         }
@@ -305,11 +308,11 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
         if let topInset = self.topInset {
             previousBackgroundOffset = max(0.0, -self.scrollNode.view.contentOffset.y + topInset)
         } else {
-            previousBackgroundOffset = self.validLayout?.height
+            previousBackgroundOffset = self.validLayout?.size.height
         }
         
-        if let size = self.validLayout {
-            self.updateItemsLayout(width: size.width)
+        if let (size, bottomInset) = self.validLayout {
+            self.updateItemsLayout(width: size.width, bottomInset: bottomInset)
             self.updateScrollNode()
         }
         
@@ -328,25 +331,26 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
         }
     }
     
-    func update(size: CGSize, transition: ContainedViewLayoutTransition) {
+    func update(size: CGSize, bottomInset: CGFloat, transition: ContainedViewLayoutTransition) {
         var previousBackgroundOffset: CGFloat?
         if let topInset = self.topInset {
             previousBackgroundOffset = max(0.0, -self.scrollNode.view.contentOffset.y + topInset)
         } else {
-            previousBackgroundOffset = self.validLayout?.height
+            previousBackgroundOffset = self.validLayout?.size.height
         }
         
         let previousLayout = self.validLayout
-        self.validLayout = size
+        self.validLayout = (size, bottomInset)
         
         if self.animateInOnLayout {
             self.updateBackgroundOffset?(size.height, false, .immediate)
         }
         
         var synchronous = false
-        if previousLayout?.width != size.width {
+        if previousLayout?.size.width != size.width || previousLayout?.bottomInset != bottomInset {
             synchronous = true
-            self.updateItemsLayout(width: size.width)
+            self.updateItemsLayout(width: size.width, bottomInset: bottomInset)
+            self.updateScrollNode()
         }
         
         self.ignoreScrolling = true
@@ -383,7 +387,7 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
         self.updateBackground(animateIn: animateIn, transition: backgroundTransition)
     }
     
-    private func updateItemsLayout(width: CGFloat) {
+    private func updateItemsLayout(width: CGFloat, bottomInset: CGFloat) {
         self.displayItems.removeAll()
         
         let itemsPerRow = min(8, max(5, Int(width / 80)))
@@ -478,16 +482,9 @@ private final class InlineReactionSearchStickersNode: ASDisplayNode, ASScrollVie
     }
 }
 
-private let backgroundDiameter: CGFloat = 20.0
-private let shadowBlur: CGFloat = 6.0
-
 final class InlineReactionSearchPanel: ChatInputContextPanelNode {
     private let containerNode: ASDisplayNode
-    private let backgroundNode: ASDisplayNode
-    private let backgroundTopLeftNode: ASImageNode
-    private let backgroundTopLeftContainerNode: ASDisplayNode
-    private let backgroundTopRightNode: ASImageNode
-    private let backgroundTopRightContainerNode: ASDisplayNode
+    private let backgroundView: GlassBackgroundView
     private let backgroundContainerNode: ASDisplayNode
     private let stickersNode: InlineReactionSearchStickersNode
     
@@ -501,45 +498,12 @@ final class InlineReactionSearchPanel: ChatInputContextPanelNode {
     init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, peerId: PeerId?, chatPresentationContext: ChatPresentationContext) {
         self.containerNode = ASDisplayNode()
         
-        self.backgroundNode = ASDisplayNode()
-        
-        let shadowImage = generateImage(CGSize(width: backgroundDiameter + shadowBlur * 2.0, height: floor(backgroundDiameter / 2.0 + shadowBlur)), rotatedContext: { size, context in
-            let diameter = backgroundDiameter
-            let shadow = UIColor(white: 0.0, alpha: 0.5)
-            context.clear(CGRect(origin: CGPoint(), size: size))
-            
-            context.saveGState()
-            context.setFillColor(shadow.cgColor)
-            context.setShadow(offset: CGSize(), blur: shadowBlur, color: shadow.cgColor)
-            
-            context.fillEllipse(in: CGRect(origin: CGPoint(x: shadowBlur, y: shadowBlur), size: CGSize(width: diameter, height: diameter)))
-            
-            context.setFillColor(UIColor.clear.cgColor)
-            context.setBlendMode(.copy)
-            
-            context.fillEllipse(in: CGRect(origin: CGPoint(x: shadowBlur, y: shadowBlur), size: CGSize(width: diameter, height: diameter)))
-            
-            context.restoreGState()
-            
-            context.setFillColor(theme.list.plainBackgroundColor.cgColor)
-            context.fillEllipse(in: CGRect(origin: CGPoint(x: shadowBlur, y: shadowBlur), size: CGSize(width: diameter, height: diameter)))
-        })?.stretchableImage(withLeftCapWidth: Int(backgroundDiameter / 2.0 + shadowBlur), topCapHeight: 0)
-        
-        self.backgroundTopLeftNode = ASImageNode()
-        self.backgroundTopLeftNode.image = shadowImage
-        self.backgroundTopLeftContainerNode = ASDisplayNode()
-        self.backgroundTopLeftContainerNode.clipsToBounds = true
-        self.backgroundTopLeftContainerNode.addSubnode(self.backgroundTopLeftNode)
-        
-        self.backgroundTopRightNode = ASImageNode()
-        self.backgroundTopRightNode.image = shadowImage
-        self.backgroundTopRightContainerNode = ASDisplayNode()
-        self.backgroundTopRightContainerNode.clipsToBounds = true
-        self.backgroundTopRightContainerNode.addSubnode(self.backgroundTopRightNode)
-        
+        self.backgroundView = GlassBackgroundView()
         self.backgroundContainerNode = ASDisplayNode()
         
         self.stickersNode = InlineReactionSearchStickersNode(context: context, theme: theme, strings: strings, peerId: peerId)
+        self.stickersNode.layer.cornerRadius = 20.0
+        self.stickersNode.clipsToBounds = true
         
         super.init(context: context, theme: theme, strings: strings, fontSize: fontSize, chatPresentationContext: chatPresentationContext)
         
@@ -547,15 +511,11 @@ final class InlineReactionSearchPanel: ChatInputContextPanelNode {
         self.isOpaque = false
         self.clipsToBounds = true
         
-        self.backgroundContainerNode.addSubnode(self.backgroundNode)
-        self.backgroundContainerNode.addSubnode(self.backgroundTopLeftContainerNode)
-        self.backgroundContainerNode.addSubnode(self.backgroundTopRightContainerNode)
+        self.backgroundContainerNode.view.addSubview(self.backgroundView)
         self.containerNode.addSubnode(self.backgroundContainerNode)
         self.containerNode.addSubnode(self.stickersNode)
         
         self.addSubnode(self.containerNode)
-        
-        self.backgroundNode.backgroundColor = theme.list.plainBackgroundColor
         
         self.stickersNode.getControllerInteraction = { [weak self] in
             return self?.controllerInteraction
@@ -572,10 +532,6 @@ final class InlineReactionSearchPanel: ChatInputContextPanelNode {
             } else {
                 transition.updateFrame(node: strongSelf.backgroundContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: offset), size: CGSize()), beginWithCurrentState: false)
             }
-            let cornersTransitionDistance: CGFloat = 20.0
-            let cornersTransition: CGFloat = max(0.0, min(1.0, (cornersTransitionDistance - offset) / cornersTransitionDistance))
-            transition.updateSublayerTransformScaleAndOffset(node: strongSelf.backgroundTopLeftContainerNode, scale: 1.0, offset: CGPoint(x: -cornersTransition * backgroundDiameter, y: 0.0), beginWithCurrentState: true)
-            transition.updateSublayerTransformScaleAndOffset(node: strongSelf.backgroundTopRightContainerNode, scale: 1.0, offset: CGPoint(x: cornersTransition * backgroundDiameter, y: 0.0), beginWithCurrentState: true)
         }
         
         self.stickersNode.sendSticker = { [weak self] file, node, rect in
@@ -611,16 +567,18 @@ final class InlineReactionSearchPanel: ChatInputContextPanelNode {
         
         transition.updateFrame(node: self.containerNode, frame: CGRect(origin: CGPoint(), size: size))
         
-        transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: backgroundDiameter / 2.0), size: size))
-        
-        transition.updateFrame(node: self.backgroundTopLeftContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -shadowBlur), size: CGSize(width: size.width / 2.0, height: backgroundDiameter / 2.0 + shadowBlur)))
-        transition.updateFrame(node: self.backgroundTopRightContainerNode, frame: CGRect(origin: CGPoint(x: size.width / 2.0, y: -shadowBlur), size: CGSize(width: size.width - size.width / 2.0, height: backgroundDiameter / 2.0 + shadowBlur)))
-        
-        transition.updateFrame(node: self.backgroundTopLeftNode, frame: CGRect(origin: CGPoint(x: -shadowBlur, y: 0.0), size: CGSize(width: size.width + shadowBlur * 2.0, height: backgroundDiameter / 2.0 + shadowBlur)))
-        transition.updateFrame(node: self.backgroundTopRightNode, frame: CGRect(origin: CGPoint(x: -shadowBlur - size.width / 2.0, y: 0.0), size: CGSize(width: size.width + shadowBlur * 2.0, height: backgroundDiameter / 2.0 + shadowBlur)))
+        let backgroundSize = CGSize(width: size.width, height: size.height + 32.0)
+        transition.updateFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: backgroundSize))
+        self.backgroundView.update(
+            size: backgroundSize,
+            cornerRadius: 20.0,
+            isDark: interfaceState.theme.overallDarkAppearance,
+            tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)),
+            transition: ComponentTransition(transition)
+        )
         
         transition.updateFrame(node: self.stickersNode, frame: CGRect(origin: CGPoint(x: leftInset, y: 0.0), size: CGSize(width: size.width - leftInset * 2.0, height: size.height)))
-        self.stickersNode.update(size: CGSize(width: size.width - leftInset * 2.0, height: size.height), transition: transition)
+        self.stickersNode.update(size: CGSize(width: size.width - leftInset * 2.0, height: size.height), bottomInset: bottomInset, transition: transition)
     }
     
     override func animateOut(completion: @escaping () -> Void) {
@@ -630,7 +588,7 @@ final class InlineReactionSearchPanel: ChatInputContextPanelNode {
     }
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if !self.backgroundNode.frame.contains(self.view.convert(point, to: self.backgroundNode.view)) {
+        if !self.backgroundView.bounds.contains(self.view.convert(point, to: self.backgroundView)) {
             return nil
         }
         return super.hitTest(point, with: event)

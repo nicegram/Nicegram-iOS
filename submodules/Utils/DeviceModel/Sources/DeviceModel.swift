@@ -126,6 +126,11 @@ public enum DeviceModel: CaseIterable, Equatable {
     case iPhone16ProMax
     case iPhone16e
     
+    case iPhone17
+    case iPhone17Pro
+    case iPhone17ProMax
+    case iPhoneAir
+    
     case unknown(String)
     
     public var modelId: [String] {
@@ -238,6 +243,14 @@ public enum DeviceModel: CaseIterable, Equatable {
             return ["iPhone17,2"]
         case .iPhone16e:
             return ["iPhone17,5"]
+        case .iPhone17:
+            return ["iPhone18,3"]
+        case .iPhone17Pro:
+            return ["iPhone18,1"]
+        case .iPhone17ProMax:
+            return ["iPhone18,2"]
+        case .iPhoneAir:
+            return ["iPhone18,4"]
         case let .unknown(modelId):
             return [modelId]
         }
@@ -353,6 +366,14 @@ public enum DeviceModel: CaseIterable, Equatable {
             return "iPhone 16 Pro Max"
         case .iPhone16e:
             return "iPhone 16e"
+        case .iPhone17:
+            return "iPhone 17"
+        case .iPhone17Pro:
+            return "iPhone 17 Pro"
+        case .iPhone17ProMax:
+            return "iPhone 17 Pro Max"
+        case .iPhoneAir:
+            return "iPhone Air"
         case let .unknown(modelId):
             if modelId.hasPrefix("iPhone") {
                 return "Unknown iPhone"
@@ -371,6 +392,17 @@ public enum DeviceModel: CaseIterable, Equatable {
     }
     
     public static let current = DeviceModel()
+    
+    public static func currentModelCode() -> String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let modelCode = withUnsafePointer(to: &systemInfo.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
+                ptr in String.init(validatingUTF8: ptr)
+            }
+        }
+        return modelCode ?? "unknown"
+    }
     
     private init() {
         var systemInfo = utsname()

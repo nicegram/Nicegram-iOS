@@ -1186,7 +1186,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             let sendGiftTitle: String
             var isIncoming = message.effectivelyIncoming(context.account.peerId)
             for media in message.media {
-                if let action = media as? TelegramMediaAction, case let .starGiftUnique(_, isUpgrade, _, _, _, _, _, _, _, _, _, _, _, _) = action.action {
+                if let action = media as? TelegramMediaAction, case let .starGiftUnique(_, isUpgrade, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = action.action {
                     if isUpgrade && message.author?.id == context.account.peerId {
                         isIncoming = true
                     }

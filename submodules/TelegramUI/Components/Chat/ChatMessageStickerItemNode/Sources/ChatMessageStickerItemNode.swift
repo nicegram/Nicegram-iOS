@@ -514,7 +514,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
             }
             
             if hasAvatar {
-                avatarInset = layoutConstants.avatarDiameter
+                avatarInset = layoutConstants.avatarInset
             } else {
                 avatarInset = 0.0
             }
@@ -746,7 +746,7 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
             }
             
             var hasReply = replyMessage != nil || replyForward != nil || replyStory != nil
-            if case let .peer(peerId) = item.chatLocation, (peerId == replyMessage?.id.peerId || item.message.threadId == 1), let channel = item.message.peers[item.message.id.peerId] as? TelegramChannel, channel.isForumOrMonoForum, item.message.associatedThreadInfo != nil {
+            if case let .peer(peerId) = item.chatLocation, (peerId == replyMessage?.id.peerId || item.message.threadId == 1), let peer = item.message.peers[item.message.id.peerId], peer.isForumOrMonoForum, item.message.associatedThreadInfo != nil {
                 if let threadId = item.message.threadId, let replyMessage = replyMessage, Int64(replyMessage.id.id) == threadId {
                     hasReply = false
                 }
@@ -2161,18 +2161,18 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
     }
     
     public final class AnimationTransitionReplyPanel {
-        public let titleNode: ASDisplayNode
-        public let textNode: ASDisplayNode
-        public let lineNode: ASDisplayNode
-        public let imageNode: ASDisplayNode
+        public let titleView: UIView
+        public let textView: UIView
+        public let lineView: UIView
+        public let imageView: UIView?
         public let relativeSourceRect: CGRect
         public let relativeTargetRect: CGRect
 
-        public init(titleNode: ASDisplayNode, textNode: ASDisplayNode, lineNode: ASDisplayNode, imageNode: ASDisplayNode, relativeSourceRect: CGRect, relativeTargetRect: CGRect) {
-            self.titleNode = titleNode
-            self.textNode = textNode
-            self.lineNode = lineNode
-            self.imageNode = imageNode
+        public init(titleView: UIView, textView: UIView, lineView: UIView, imageView: UIView?, relativeSourceRect: CGRect, relativeTargetRect: CGRect) {
+            self.titleView = titleView
+            self.textView = textView
+            self.lineView = lineView
+            self.imageView = imageView
             self.relativeSourceRect = relativeSourceRect
             self.relativeTargetRect = relativeTargetRect
         }
@@ -2182,10 +2182,10 @@ public class ChatMessageStickerItemNode: ChatMessageItemView {
         if let replyInfoNode = self.replyInfoNode {
             let localRect = self.contextSourceNode.contentNode.view.convert(sourceReplyPanel.relativeSourceRect, to: replyInfoNode.view)
             let mappedPanel = ChatMessageReplyInfoNode.TransitionReplyPanel(
-                titleNode: sourceReplyPanel.titleNode,
-                textNode: sourceReplyPanel.textNode,
-                lineNode: sourceReplyPanel.lineNode,
-                imageNode: sourceReplyPanel.imageNode,
+                titleView: sourceReplyPanel.titleView,
+                textView: sourceReplyPanel.textView,
+                lineView: sourceReplyPanel.lineView,
+                imageView: sourceReplyPanel.imageView,
                 relativeSourceRect: sourceReplyPanel.relativeSourceRect,
                 relativeTargetRect: sourceReplyPanel.relativeTargetRect
             )

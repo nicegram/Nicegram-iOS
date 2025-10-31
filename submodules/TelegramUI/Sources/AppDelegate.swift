@@ -475,11 +475,17 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramMediaFetcher: {
                 TelegramMediaFetcherImpl(contextProvider: contextProvider)
             },
+            telegramMediaManager: {
+                TelegramMediaManagerImpl(contextProvider: contextProvider)
+            },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
             },
             telegramMessagesProvider: {
                 TelegramMessagesProviderImpl(contextProvider: contextProvider)
+            },
+            telegramNavigator: {
+                TelegramNavigatorImpl(contextProvider: contextProvider)
             },
             telegramPeerImageProvider: {
                 TelegramPeerImageProviderImpl(contextProvider: contextProvider)
@@ -1119,16 +1125,12 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 return nil
             }
         }, requestSetAlternateIconName: { name, completion in
-            if #available(iOS 10.3, *) {
-                application.setAlternateIconName(name, completionHandler: { error in
-                    if let error = error {
-                       Logger.shared.log("App \(self.episodeId)", "failed to set alternate icon with error \(error.localizedDescription)")
-                    }
-                    completion(error == nil)
-                })
-            } else {
-                completion(false)
-            }
+            application.setAlternateIconName(name, completionHandler: { error in
+                if let error = error {
+                   Logger.shared.log("App \(self.episodeId)", "failed to set alternate icon with error \(error.localizedDescription)")
+                }
+                completion(error == nil)
+            })
         }, forceOrientation: { orientation in
             let value = orientation.rawValue
             if #available(iOSApplicationExtension 16.0, iOS 16.0, *) {
@@ -1584,24 +1586,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                             }
                         })
                     }
-                    self.mainWindow.forEachViewController({ controller in
-                        if let controller = controller as? TabBarAccountSwitchController {
-                            if let rootController = self.mainWindow.viewController as? TelegramRootController {
-                                if let tabsController = rootController.viewControllers.first as? TabBarController {
-                                    for i in 0 ..< tabsController.controllers.count {
-                                        if let _ = tabsController.controllers[i] as? (SettingsController & ViewController) {
-                                            let sourceNodes = tabsController.sourceNodesForController(at: i)
-                                            if let sourceNodes = sourceNodes {
-                                                controller.dismiss(sourceNodes: sourceNodes)
-                                            }
-                                            return false
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        return true
-                    })
                     self.mainWindow.topLevelOverlayControllers = [context.sharedApplicationContext.overlayMediaController, context.notificationController]
                     (context.context.sharedContext as? SharedAccountContextImpl)?.notificationController = context.notificationController
                     var authorizeNotifications = true
@@ -3456,19 +3440,30 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private func maybeCheckForUpdates() {
         #if targetEnvironment(simulator)
         #else
-        guard let buildConfig = self.buildConfig, let appCenterId = buildConfig.appCenterId, !appCenterId.isEmpty else {
+        guard let buildConfig = self.buildConfig else {
             return
         }
         let timestamp = CFAbsoluteTimeGetCurrent()
         if self.lastCheckForUpdatesTimestamp == nil || self.lastCheckForUpdatesTimestamp! < timestamp - 10.0 * 60.0 {
             self.lastCheckForUpdatesTimestamp = timestamp
             
-            if let url = URL(string: "https://api.appcenter.ms/v0.1/public/sdk/apps/\(appCenterId)/releases/latest") {
+            let _ = (self.sharedContextPromise.get()
+            |> take(1)
+            |> mapToSignal { sharedContext in
+                return sharedContext.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.updateSettings])
+                |> map { sharedData in
+                    return (sharedContext, sharedData.entries[ApplicationSpecificSharedDataKeys.updateSettings]?.get(UpdateSettings.self)?.url)
+                }
+            }
+            |> deliverOnMainQueue).start(next: { sharedContext, urlString in
+                guard buildConfig.isInternalBuild || sharedContext.sharedContext.immediateExperimentalUISettings.enableUpdates else {
+                    return
+                }
+                guard let url = urlString.flatMap({ URL(string: $0) }) else {
+                    return
+                }
                 self.currentCheckForUpdatesDisposable.set((downloadHTTPData(url: url)
-                |> deliverOnMainQueue).start(next: { [weak self] data in
-                    guard let strongSelf = self else {
-                        return
-                    }
+                |> deliverOnMainQueue).start(next: { data in
                     guard let json = try? JSONSerialization.jsonObject(with: data, options: []) else {
                         return
                     }
@@ -3478,27 +3473,23 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     guard let versionString = dict["version"] as? String, let version = Int(versionString) else {
                         return
                     }
-                    guard let releaseNotesUrl = dict["release_notes_url"] as? String else {
+                    guard let releaseNotesUrl = dict["url"] as? String else {
                         return
                     }
                     guard let currentVersionString = Bundle.main.infoDictionary?["CFBundleVersion"] as? String, let currentVersion = Int(currentVersionString) else {
                         return
                     }
                     if currentVersion < version {
-                        let _ = (strongSelf.sharedContextPromise.get()
-                        |> take(1)
-                        |> deliverOnMainQueue).start(next: { sharedContext in
-                            let presentationData = sharedContext.sharedContext.currentPresentationData.with { $0 }
-                            sharedContext.sharedContext.mainWindow?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: "A new build is available", actions: [
-                                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
-                                TextAlertAction(type: .defaultAction, title: "Show", action: {
-                                    sharedContext.sharedContext.applicationBindings.openUrl(releaseNotesUrl)
-                                })
-                            ]), on: .root, blockInteraction: false, completion: {})
-                        })
+                        let presentationData = sharedContext.sharedContext.currentPresentationData.with { $0 }
+                        sharedContext.sharedContext.mainWindow?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: "A new build is available", actions: [
+                            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}),
+                            TextAlertAction(type: .defaultAction, title: "Show", action: {
+                                sharedContext.sharedContext.applicationBindings.openUrl(releaseNotesUrl)
+                            })
+                        ]), on: .root, blockInteraction: false, completion: {})
                     }
                 }))
-            }
+            })
         }
         #endif
     }
@@ -3928,4 +3919,16 @@ private func getMemoryConsumption() -> Int {
         return 0
     }
     return Int(info.phys_footprint)
+}
+
+final class UpdateSettings: Codable, Equatable {
+    let url: String?
+    
+    init(url: String?) {
+        self.url = url
+    }
+    
+    static func ==(lhs: UpdateSettings, rhs: UpdateSettings) -> Bool {
+        return lhs.url == rhs.url
+    }
 }

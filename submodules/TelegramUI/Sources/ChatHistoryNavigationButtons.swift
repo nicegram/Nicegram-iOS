@@ -178,14 +178,14 @@ final class ChatHistoryNavigationButtons: ASDisplayNode {
     }
     
     func updateLayout(transition: ContainedViewLayoutTransition) -> CGSize {
-        let buttonSize = CGSize(width: 38.0, height: 38.0)
-        let completeSize = CGSize(width: buttonSize.width, height: buttonSize.height * 2.0 + 12.0)
+        let buttonSize = CGSize(width: 40.0, height: 40.0)
+        let completeSize = CGSize(width: buttonSize.width, height: buttonSize.height * 2.0 + 8.0)
         var upOffset: CGFloat = 0.0
         var mentionsOffset: CGFloat = 0.0
         var reactionsOffset: CGFloat = 0.0
         
         if let down = self.directionButtonState.down {
-            self.downButton.imageNode.alpha = down.isEnabled ? 1.0 : 0.5
+            self.downButton.imageView.alpha = down.isEnabled ? 1.0 : 0.5
             self.downButton.buttonNode.isEnabled = down.isEnabled
             
             mentionsOffset += buttonSize.height + 12.0
@@ -205,7 +205,7 @@ final class ChatHistoryNavigationButtons: ASDisplayNode {
         }
         
         if let up = self.directionButtonState.up {
-            self.upButton.imageNode.alpha = up.isEnabled ? 1.0 : 0.5
+            self.upButton.imageView.alpha = up.isEnabled ? 1.0 : 0.5
             self.upButton.buttonNode.isEnabled = up.isEnabled
             
             mentionsOffset += buttonSize.height + 12.0

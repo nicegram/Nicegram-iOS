@@ -790,18 +790,31 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
         TelegramEngine.EngineData.Item.NotificationSettings.Global()
     )
     |> mapToSignal { peer, peerNotificationSettings, threadData, globalNotificationSettings -> Signal<[ContextMenuItem], NoError> in
-        guard case let .channel(channel) = peer else {
+        guard let peer else {
             return .single([])
         }
-        guard let threadData = threadData else {
+        guard let threadData else {
             return .single([])
         }
         
         var items: [ContextMenuItem] = []
         
-        if let isClosed = isClosed, isClosed && threadId != 1 {
+        var isCreator = false
+        var canManageTopics = false
+        var canDeleteMessages = false
+        if case let .channel(channel) = peer {
+            isCreator = channel.flags.contains(.isCreator)
+            canManageTopics = channel.hasPermission(.manageTopics)
+            canDeleteMessages = channel.hasPermission(.deleteAllMessages)
+        } else if case .user = peer {
+            isCreator = true
+            canManageTopics = true
+            canDeleteMessages = true
+        }
+        
+        if let isClosed, isClosed && threadId != 1 {
         } else {
-            if let isPinned, channel.hasPermission(.manageTopics) {
+            if let isPinned, canManageTopics {
                 items.append(.action(ContextMenuActionItem(text: isPinned ? presentationData.strings.ChatList_Context_Unpin : presentationData.strings.ChatList_Context_Pin, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: isPinned ? "Chat/Context Menu/Unpin": "Chat/Context Menu/Pin"), color: theme.contextMenu.primaryColor) }, action: { c, f in
                     if let customPinUnpin {
                         if let c = c as? ContextController {
@@ -852,12 +865,14 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
         }
         
         var canOpenClose = false
-        if channel.flags.contains(.isCreator) {
-            canOpenClose = true
-        } else if channel.hasPermission(.manageTopics) {
-            canOpenClose = true
-        } else if threadData.isOwnedByMe {
-            canOpenClose = true
+        if case .channel = peer {
+            if isCreator {
+                canOpenClose = true
+            } else if canManageTopics {
+                canOpenClose = true
+            } else if threadData.isOwnedByMe {
+                canOpenClose = true
+            }
         }
         
         if threadId != 1, canOpenClose, let customEdit {
@@ -1028,7 +1043,7 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                         
                         let defaultSound: PeerMessageSound
                         
-                        if case .broadcast = channel.info {
+                        if case let .channel(channel) = peer, case .broadcast = channel.info {
                             defaultSound = globalSettings.channels.sound._asMessageSound()
                         } else {
                             defaultSound = globalSettings.groupChats.sound._asMessageSound()
@@ -1036,7 +1051,7 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                         
                         let canRemove = false
                         
-                        let exceptionController = notificationPeerExceptionController(context: context, updatedPresentationData: nil, peer: .channel(channel), threadId: threadId, isStories: nil, canRemove: canRemove, defaultSound: defaultSound, defaultStoriesSound: defaultSound, edit: true, updatePeerSound: { peerId, sound in
+                        let exceptionController = notificationPeerExceptionController(context: context, updatedPresentationData: nil, peer: peer, threadId: threadId, isStories: nil, canRemove: canRemove, defaultSound: defaultSound, defaultStoriesSound: defaultSound, edit: true, updatePeerSound: { peerId, sound in
                             let _ = (updatePeerSound(peerId, sound)
                             |> deliverOnMainQueue).startStandalone(next: { _ in
                             })
@@ -1105,7 +1120,7 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                     let _ = context.engine.peers.setForumChannelTopicClosed(id: peerId, threadId: threadId, isClosed: !threadData.isClosed).startStandalone()
                 })))
             }
-            if channel.hasPermission(.deleteAllMessages) {
+            if canDeleteMessages {
                 items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_Delete, textColor: .destructive, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Delete"), color: theme.contextMenu.destructiveColor) }, action: { [weak chatListController] c, _ in
                     c?.dismiss(completion: {
                         if let chatListController = chatListController as? ChatListControllerImpl {

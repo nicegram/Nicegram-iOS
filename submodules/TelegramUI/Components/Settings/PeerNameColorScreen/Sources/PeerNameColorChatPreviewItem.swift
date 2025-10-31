@@ -55,9 +55,9 @@ final class PeerNameColorChatPreviewItem: ListViewItem, ItemListItem, ListItemCo
         let peerId: EnginePeer.Id
         let author: String
         let photo: [TelegramMediaImageRepresentation]
-        let nameColor: PeerNameColor
+        let nameColor: PeerColor
         let backgroundEmojiId: Int64?
-        let reply: (String, String, PeerNameColor)?
+        let reply: (String, String, PeerColor)?
         let linkPreview: (String, String, String)?
         let text: String
     }

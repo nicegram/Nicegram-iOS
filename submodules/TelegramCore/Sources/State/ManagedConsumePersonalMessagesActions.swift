@@ -534,7 +534,7 @@ func managedSynchronizeMessageHistoryTagSummaries(postbox: Postbox, network: Net
 private func synchronizeMessageHistoryTagSummary(accountPeerId: PeerId, postbox: Postbox, network: Network, entry: InvalidatedMessageHistoryTagsSummaryEntry) -> Signal<Void, NoError> {
     return postbox.transaction { transaction -> Signal<Void, NoError> in
         if let threadId = entry.key.threadId {
-            if let peer = transaction.getPeer(entry.key.peerId) as? TelegramChannel, peer.flags.contains(.isForum), !peer.flags.contains(.isMonoforum), let inputPeer = apiInputPeer(peer) {
+            if let peer = transaction.getPeer(entry.key.peerId), peer.isForum, !peer.isMonoForum, let inputPeer = apiInputPeer(peer) {
                 return network.request(Api.functions.messages.getReplies(peer: inputPeer, msgId: Int32(clamping: threadId), offsetId: 0, offsetDate: 0, addOffset: 0, limit: 1, maxId: 0, minId: 0, hash: 0))
                 |> map(Optional.init)
                 |> `catch` { _ -> Signal<Api.messages.Messages?, NoError> in
@@ -577,13 +577,13 @@ private func synchronizeMessageHistoryTagSummary(accountPeerId: PeerId, postbox:
                             case let .channelMessages(_, _, count, _, messages, _, _, _):
                                 apiMessages = messages
                                 apiCount = count
-                            case let .messages(messages, _, _):
+                            case let .messages(messages, _, _, _):
                                 apiMessages = messages
                                 apiCount = Int32(messages.count)
                             case let .messagesNotModified(count):
                                 apiMessages = []
                                 apiCount = count
-                            case let .messagesSlice(_, count, _, _, _, messages, _, _):
+                            case let .messagesSlice(_, count, _, _, _, messages, _, _, _):
                                 apiMessages = messages
                                 apiCount = count
                             }

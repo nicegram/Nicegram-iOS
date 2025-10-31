@@ -59,7 +59,7 @@ class ChatSlowmodeItem: ListViewItem, ItemListItem {
     }
 }
 
-private let allowedValues: [Int32] = [0, 10, 30, 60, 300, 900, 3600]
+private let allowedValues: [Int32] = [0, 5, 10, 30, 60, 300, 900, 3600]
 
 class ChatSlowmodeItemNode: ListViewItemNode {
     private let backgroundNode: ASDisplayNode

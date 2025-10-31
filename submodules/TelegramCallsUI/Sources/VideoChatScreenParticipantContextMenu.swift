@@ -133,7 +133,7 @@ extension VideoChatScreenComponent.View {
                                 }).start()
                             }
                             
-                            self.presentUndoOverlay(content: .info(title: nil, text: environment.strings.VoiceChat_EditBioSuccess, timeout: nil, customUndoText: nil), action: { _ in return false })
+                            self.presentToast(icon: .animation("anim_infotip"), text: environment.strings.VoiceChat_EditBioSuccess, duration: 4)
                         })
                         environment.controller()?.present(controller, in: .window(.root))
                     }
@@ -155,7 +155,7 @@ extension VideoChatScreenComponent.View {
                                 }
                                 let _ = currentCall.accountContext.engine.accountData.updateAccountPeerName(firstName: firstName, lastName: lastName).startStandalone()
                                 
-                                self.presentUndoOverlay(content: .info(title: nil, text: environment.strings.VoiceChat_EditNameSuccess, timeout: nil, customUndoText: nil), action: { _ in return false })
+                                self.presentToast(icon: .animation("anim_infotip"), text: environment.strings.VoiceChat_EditNameSuccess, duration: 4)
                             })
                             environment.controller()?.present(controller, in: .window(.root))
                         }
@@ -190,7 +190,8 @@ extension VideoChatScreenComponent.View {
                                 f(.default)
                                 
                                 if let participantPeer = participant.peer {
-                                    self.presentUndoOverlay(content: .voiceChatCanSpeak(text: environment.strings.VoiceChat_UserCanNowSpeak(participantPeer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string), action: { _ in return true })
+                                    let text = environment.strings.VoiceChat_UserCanNowSpeak(participantPeer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
+                                    self.presentToast(icon: .animation("anim_vcspeak"), text: text, duration: 3)
                                 }
                             })))
                         } else {
@@ -248,24 +249,11 @@ extension VideoChatScreenComponent.View {
                 items.append(.action(ContextMenuActionItem(text: openTitle, icon: { theme in
                     return generateTintedImage(image: openIcon, color: theme.actionSheet.primaryTextColor)
                 }, action: { [weak self] _, f in
-                    guard let self, let environment = self.environment, let currentCall = self.currentCall else {
+                    guard let self else {
                         return
                     }
+                    self.openPeer(peer)
                     
-                    guard let controller = environment.controller() as? VideoChatScreenV2Impl, let navigationController = controller.parentNavigationController else {
-                        return
-                    }
-                
-                    let context = currentCall.accountContext
-                    controller.dismiss(completion: { [weak navigationController] in
-                        Queue.mainQueue().after(0.1) {
-                            guard let navigationController else {
-                                return
-                            }
-                            context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), keepStack: .always, purposefulAction: {}, peekData: nil))
-                        }
-                    })
-                
                     f(.dismissWithoutContent)
                 })))
             
@@ -314,15 +302,14 @@ extension VideoChatScreenComponent.View {
                                     if groupCall.isConference {
                                         groupCall.kickPeer(id: peer.id)
                                         
-                                        //TODO:localize
-                                        self.presentUndoOverlay(content: .banned(text: "You removed \(peer.displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)) from this call. They will no longer be able to join using the invite link."), action: { _ in return false })
+                                        self.presentToast(icon: .animation("anim_banned"), text: environment.strings.VoiceChat_RemovedConferencePeerText(peer.displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)).string, duration: 3)
                                     } else {
                                         if let callPeerId = groupCall.peerId {
                                             let _ = groupCall.accountContext.peerChannelMemberCategoriesContextsManager.updateMemberBannedRights(engine: groupCall.accountContext.engine, peerId: callPeerId, memberId: peer.id, bannedRights: TelegramChatBannedRights(flags: [.banReadMessages], untilDate: Int32.max)).start()
                                             groupCall.removedPeer(peer.id)
                                         }
                                         
-                                        self.presentUndoOverlay(content: .banned(text: environment.strings.VoiceChat_RemovedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)).string), action: { _ in return false })
+                                        self.presentToast(icon: .animation("anim_banned"), text: environment.strings.VoiceChat_RemovedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: nameDisplayOrder)).string, duration: 3)
                                     }
                                 }))
 
@@ -423,6 +410,24 @@ extension VideoChatScreenComponent.View {
         })
         
         environment.controller()?.presentInGlobalOverlay(contextController)
+    }
+    
+    func openPeer(_ peer: EnginePeer) {
+        guard let environment = self.environment, let currentCall = self.currentCall else {
+            return
+        }
+        guard let controller = environment.controller() as? VideoChatScreenV2Impl, let navigationController = controller.parentNavigationController else {
+            return
+        }
+        let context = currentCall.accountContext
+        controller.dismiss(completion: { [weak navigationController] in
+            Queue.mainQueue().after(0.1) {
+                guard let navigationController else {
+                    return
+                }
+                context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), keepStack: .always, purposefulAction: {}, peekData: nil))
+            }
+        })
     }
     
     private func openAvatarForEditing(fromGallery: Bool = false, completion: @escaping () -> Void = {}) {

@@ -8,11 +8,11 @@ public extension UIView {
     }
 }
 
-public func makeSpringAnimation(_ keyPath: String) -> CABasicAnimation {
-    return makeSpringAnimationImpl(keyPath)
+public func makeSpringAnimation(_ keyPath: String, duration: Double) -> CABasicAnimation {
+    return makeSpringAnimationImpl(keyPath, duration)
 }
 
-public func makeSpringBounceAnimation(_ keyPath: String, _ initialVelocity: CGFloat, _ damping: CGFloat) -> CABasicAnimation {
+public func makeSpringBounceAnimation(_ keyPath: String, _ initialVelocity: CGFloat, _ damping: CGFloat) -> CASpringAnimation {
     return makeSpringBounceAnimationImpl(keyPath, initialVelocity, damping)
 }
 
@@ -200,6 +200,37 @@ public extension UIColor {
         self.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
         
         return UIColor(hue: hue, saturation: saturation, brightness: max(0.0, min(1.0, brightness * factor)), alpha: alpha)
+    }
+    
+    func adjustedPerceivedBrightness(_ factor: CGFloat) -> UIColor {
+        let f = max(0, factor)
+        let base = self
+        guard
+            let cs = CGColorSpace(name: CGColorSpace.extendedSRGB),
+            let cg = base.cgColor.converted(to: cs, intent: .defaultIntent, options: nil),
+            let c = cg.components, c.count >= 3
+        else { return base }
+
+        func toLin(_ x: CGFloat) -> CGFloat { x <= 0.04045 ? x/12.92 : pow((x+0.055)/1.055, 2.4) }
+        func toSRGB(_ x: CGFloat) -> CGFloat { x <= 0.0031308 ? 12.92*x : 1.055*pow(x, 1/2.4) - 0.055 }
+        func clamp(_ x: CGFloat) -> CGFloat { min(max(x, 0), 1) }
+
+        var r = toLin(c[0]), g = toLin(c[1]), b = toLin(c[2])
+        if f >= 1 {
+            // mix toward white: t = 1 - 1/f (so f=1 → t=0, f→∞ → t→1)
+            let t = 1 - 1/f
+            r = r + (1 - r) * t
+            g = g + (1 - g) * t
+            b = b + (1 - b) * t
+        } else {
+            // scale toward black
+            r *= f; g *= f; b *= f
+        }
+
+        return UIColor(red: clamp(toSRGB(r)),
+                       green: clamp(toSRGB(g)),
+                       blue: clamp(toSRGB(b)),
+                       alpha: cg.alpha)
     }
     
     func withMultiplied(hue: CGFloat, saturation: CGFloat, brightness: CGFloat) -> UIColor {
@@ -867,5 +898,56 @@ public extension CGRect {
 public extension CGPoint {
     func offsetBy(dx: CGFloat, dy: CGFloat) -> CGPoint {
         return CGPoint(x: self.x + dx, y: self.y + dy)
+    }
+}
+
+public extension UIView {
+    func setMonochromaticEffect(tintColor: UIColor?) {
+        var overrideUserInterfaceStyle: UIUserInterfaceStyle = .unspecified
+        var red: CGFloat = 0.0
+        var green: CGFloat = 0.0
+        var blue: CGFloat = 0.0
+        var alpha: CGFloat = 1.0
+        if let tintColor {
+            if tintColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
+                if red == 0.0 && green == 0.0 && blue == 0.0 && alpha == 1.0 {
+                    overrideUserInterfaceStyle = .light
+                }
+            } else {
+                if red == 1.0 && green == 1.0 && blue == 1.0 && alpha == 1.0 {
+                    overrideUserInterfaceStyle = .dark
+                }
+            }
+        }
+        
+        if self.overrideUserInterfaceStyle != overrideUserInterfaceStyle {
+            self.overrideUserInterfaceStyle = overrideUserInterfaceStyle
+            setMonochromaticEffectImpl(self, overrideUserInterfaceStyle != .unspecified)
+        }
+    }
+    
+    func setMonochromaticEffectAndAlpha(tintColor: UIColor?, transition: ContainedViewLayoutTransition) {
+        var overrideUserInterfaceStyle: UIUserInterfaceStyle = .unspecified
+        var red: CGFloat = 0.0
+        var green: CGFloat = 0.0
+        var blue: CGFloat = 0.0
+        var alpha: CGFloat = 1.0
+        if let tintColor {
+            if tintColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) {
+                if red == 0.0 && green == 0.0 && blue == 0.0 {
+                    overrideUserInterfaceStyle = .light
+                }
+            } else {
+                if red == 1.0 && green == 1.0 && blue == 1.0 {
+                    overrideUserInterfaceStyle = .dark
+                }
+            }
+        }
+        
+        if self.overrideUserInterfaceStyle != overrideUserInterfaceStyle {
+            self.overrideUserInterfaceStyle = overrideUserInterfaceStyle
+            setMonochromaticEffectImpl(self, overrideUserInterfaceStyle != .unspecified)
+        }
+        transition.updateAlpha(layer: self.layer, alpha: alpha)
     }
 }

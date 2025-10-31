@@ -132,14 +132,16 @@ public enum ChatListItemContent {
         public var hideSeparator: Bool
         public var hideDate: Bool
         public var hidePeerStatus: Bool
+        public var isInTransparentContainer: Bool
         
-        public init(commandPrefix: String?, searchQuery: String?, messageCount: Int?, hideSeparator: Bool, hideDate: Bool, hidePeerStatus: Bool) {
+        public init(commandPrefix: String?, searchQuery: String?, messageCount: Int?, hideSeparator: Bool, hideDate: Bool, hidePeerStatus: Bool, isInTransparentContainer: Bool = false) {
             self.commandPrefix = commandPrefix
             self.searchQuery = searchQuery
             self.messageCount = messageCount
             self.hideSeparator = hideSeparator
             self.hideDate = hideDate
             self.hidePeerStatus = hidePeerStatus
+            self.isInTransparentContainer = isInTransparentContainer
         }
     }
     
@@ -2064,6 +2066,11 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     reallyHighlighted = true
                 }
             }
+            if case let .peer(peerData) = item.content, let customMessageListData = peerData.customMessageListData {
+                if customMessageListData.isInTransparentContainer {
+                    reallyHighlighted = false
+                }
+            }
         }
         return reallyHighlighted
     }
@@ -3622,7 +3629,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 textMaxWidth -= 18.0
             }
             
-            let (textLayout, textApply) = textLayout(TextNodeLayoutArguments(attributedString: textAttributedString, backgroundColor: nil, maximumNumberOfLines: (authorAttributedString == nil && itemTags.isEmpty && forumThread == nil) ? 2 : 1, truncationType: .end, constrainedSize: CGSize(width: textMaxWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: textCutout, insets: UIEdgeInsets(top: 2.0, left: 1.0, bottom: 2.0, right: 1.0)))
+            let (textLayout, textApply) = textLayout(TextNodeLayoutArguments(attributedString: textAttributedString, backgroundColor: nil, maximumNumberOfLines: (authorAttributedString == nil && itemTags.isEmpty && forumThread == nil && topForumTopicItems.isEmpty) ? 2 : 1, truncationType: .end, constrainedSize: CGSize(width: textMaxWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: textCutout, insets: UIEdgeInsets(top: 2.0, left: 1.0, bottom: 2.0, right: 1.0)))
             
             let maxTitleLines: Int
             switch item.index {

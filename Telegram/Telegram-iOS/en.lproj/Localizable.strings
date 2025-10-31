@@ -452,20 +452,6 @@
 "Login.PhoneGenericEmailBody" = "I'm trying to use my mobile phone number: %1$@\nBut Nicegram shows an error. Please help.\n\nError: %2$@\nApp version: %3$@\nOS version: %4$@\nLocale: %5$@\nMNC: %6$@";
 
 "Login.PhonePaidEmailSubject" = "Payment Issue";
-"Login.PhonePaidEmailBody" = "Hello Telegram Support,\n\nI’m experiencing an issue with an in-app purchase on iOS.\nMy phone number: %1$@\nApple ID (email used in the App Store): \nApp version: %2$@\nDevice model / iOS version: %3$@\nApp Store country/region: %4$@\nDate & time of attempt (with timezone): %5$@\nExact error message: \n\n#payment_failed";
-
-"Login.PhoneTitle" = "Your Phone";
-"Login.PhonePlaceholder" = "Your phone number";
-"Login.CountryCode" = "Country Code";
-"Login.InvalidCountryCode" = "Invalid Country Code";
-
-"Login.InfoTitle" = "Your Info";
-"Login.InfoAvatarAdd" = "add";
-"Login.InfoAvatarPhoto" = "photo";
-"Login.InfoFirstNamePlaceholder" = "First Name";
-"Login.InfoLastNamePlaceholder" = "Last Name";
-"Login.InfoDeletePhoto" = "Remove Photo";
-"Login.InfoHelp" = "Enter your name and add a profile photo.";
 
 // Login.SelectCountry
 "Login.SelectCountry.Title" = "Country";
@@ -14987,7 +14973,6 @@ Sorry for the inconvenience.";
 "Gift.Value.MinimumPriceInfo" = "**%1$@** is the floor price for %2$@ gifts listed on Telegram and Fragment.";
 "Gift.Value.AveragePriceInfo" = "**%1$@** is the average sale price for %2$@ gifts listed on Telegram and Fragment over the past month.";
 
-"Gift.Value.AveragePrice" = "Last Sale";
 "Gift.Value.InitialSale" = "Initial Sale";
 "Gift.Value.InitialPrice" = "Initial Price";
 "Gift.Value.LastSale" = "Last Sale";
@@ -15010,3 +14995,164 @@ Sorry for the inconvenience.";
 "ProfileLevelInfo.RatingTitle" = "Rating";
 "ProfileLevelInfo.FutureRatingTitle" = "Future Rating";
 
+"Gift.Options.Gift.Filter.Collectibles" = "Collectibles";
+
+"Gift.Options.Collectibles.Text" = "Collectible gifts are unique digital items you can exchange or sell.";
+
+"Gift.Upgrade.UpgradeFor" = "Upgrade for %@";
+
+"Login.PhonePaidEmailText" = "1. NAME OF YOUR PHONE CARRIER:
+
+2. (OPTIONAL) WRITE YOUR COMMENT HERE:
+
+=================================================
+Device: %1$@
+OS version: %2$@
+Locale: %3$@
+
+Target phone: %4$@
+
+App: %5$@
+App version: %6$@          
+
+Issue: %7$@
+Error: %8$@";
+
+"Login.PhoneTitle" = "Your Phone";
+"Login.PhonePlaceholder" = "Your phone number";
+"Login.CountryCode" = "Country Code";
+"Login.InvalidCountryCode" = "Invalid Country Code";
+
+"Login.InfoTitle" = "Your Info";
+"Login.InfoAvatarAdd" = "add";
+"Login.InfoAvatarPhoto" = "photo";
+"Login.InfoFirstNamePlaceholder" = "First Name";
+"Login.InfoLastNamePlaceholder" = "Last Name";
+"Login.InfoDeletePhoto" = "Remove Photo";
+"Login.InfoHelp" = "Enter your name and add a profile photo.";
+"Gift.Upgrade.PriceWillDecrease" = "Price will decrease in {m}:{s}";
+
+"Stars.Purchase.RemoveOriginalDetailsStarGiftInfo" = "Buy Stars to remove original details of your gift.";
+
+"Notification.StarGift.TitleTo" = "Gift for %@";
+
+"Gift.Upgrade.Gift.Sent.Text" = "Upgrade sent!";
+"Gift.Upgrade.Gift.Sent.GiftMore" = "Gift More";
+
+"Gift.Options.Gift.Limited.Left_1" = "%@ left";
+"Gift.Options.Gift.Limited.Left_any" = "%@ left";
+
+"Gift.Options.Gift.Premium.Left_1" = "%@ left";
+"Gift.Options.Gift.Premium.Left_any" = "%@ left";
+
+"Gift.Send.Limited.Success.Title" = "Gift Sent!";
+"Gift.Send.Limited.Success.Text_1" = "You can send **%@** more.";
+"Gift.Send.Limited.Success.Text_any" = "You can send **%@** more.";
+"Gift.Send.Limited.Success.Text.None" = "You've reached your limit on this gift.";
+
+"Gift.UpgradeCost.Title" = "Upgrade Cost";
+"Gift.UpgradeCost.Stars_1" = "%@ Star";
+"Gift.UpgradeCost.Stars_any" = "%@ Stars";
+"Gift.UpgradeCost.Description" = "Users who upgrade their gifts first get collectibles with shorter numbers.";
+"Gift.UpgradeCost.AdditionalDescription" = "Upgrade cost drops every minute.";
+"Gift.UpgradeCost.Done" = "Understood";
+
+"Gift.RemoveDetails.Title" = "Remove Description";
+"Gift.RemoveDetails.Text" = "Do you want to permanently remove this description from your gift?";
+"Gift.RemoveDetails.Action" = "Remove for %@";
+"Gift.RemoveDetails.Success" = "Removed %@'s description!";
+
+"UserInfo.SuggestBirthdate" = "Suggest Date of Birth";
+
+"SuggestBirthdate.Suggest.Title" = "%@'s Date of Birth";
+"SuggestBirthdate.Suggest.Action" = "Suggest Date of Birth";
+"SuggestBirthdate.Accept.Title" = "Date of Birth";
+"SuggestBirthdate.Accept.HideYear" = "Hide the Year";
+"SuggestBirthdate.Accept.Action" = "Add to My Profile";
+"SuggestBirthdate.Accept.Added" = "Date of birth added. You can change it in **Settings**.";
+
+"Notification.SuggestBirthdate" = "Suggested Date of Birth";
+
+"Conversation.SuggestedBirthdateText" = "**%@** suggests you to add you date of birth:.";
+"Conversation.SuggestedBirthdateTextYou" = "You suggested **%@** to add a date of birth:";
+"Conversation.SuggestedBirthdate.Day" = "Day";
+"Conversation.SuggestedBirthdate.Month" = "Month";
+"Conversation.SuggestedBirthdate.Year" = "Year";
+"Conversation.SuggestedBirthdate.View" = "View";
+
+"PeerInfo.ChangeProfileColor" = "Change Profile Color";
+
+"PUSH_MESSAGE_TODO" = "%1$@|sent you a todo-list %2$@";
+"PUSH_CHANNEL_MESSAGE_TODO" = "%1$@|posted a todo-list %2$@";
+"PUSH_CHANNEL_MESSAGE_TODO_DONE" = "%1$@|toggled %2$@ tasks";
+"PUSH_CHANNEL_MESSAGE_TODO_APPEND" = "%1$@|added %2$@ tasks";
+"PUSH_CHAT_MESSAGE_TODO" = "%2$@|%1$@ sent a todo-list %3$@";
+"PUSH_CHAT_MESSAGE_TODO_DONE" = "%2$@|%1$@ toggled %3$@ tasks";
+"PUSH_CHAT_MESSAGE_TODO_APPEND" = "%2$@|%1$@ added %3$@ tasks";
+"PUSH_PINNED_TODO" = "%1$@|pinned a todo-list %2$@";
+"PUSH_REACT_TODO" = "%1$@|reacted %2$@ to your todo %3$@";
+"PUSH_CHAT_REACT_TODO" = "%2$@|%1$@ reacted %3$@ to your todo %4$@";
+
+"PeerInfo.Notes" = "notes";
+"PeerInfo.NotesInfo" = "only visible to you";
+"PeerInfo.AddNotesPlaceholder" = "Add Notes";
+"PeerInfo.AddNotesInfo" = "Notes are only visible to you.";
+"PeerInfo.NoteActionCopy" = "Copy Note";
+"PeerInfo.NoteActionEdit" = "Edit Note";
+"PeerInfo.ToastNoteCopied" = "Note copied to clipboard.";
+
+"PeerInfo.ViewDiscussion" = "View Discussion";
+
+"MESSAGE_SUGGEST_BIRTHDAY" = "%@ suggested you your birthday";
+
+"Gift.UnavailableAction.Title" = "Action Locked";
+"Gift.UnavailableAction.Text" = "Transfer this gift to your Telegram account on Fragment to unlock this action.";
+"Gift.UnavailableAction.OpenFragment" = "Open Fragment";
+
+"Gift.Unique.Telegram" = "Telegram";
+
+"VoiceChat.ContextEnableMessages" = "Enable Messages";
+"VoiceChat.ContextDisableMessages" = "Disable Messages";
+
+"VoiceChat.ToastMessagesEnabled" = "Messages enabled";
+"VoiceChat.ToastMessagesDisabled" = "Messages disabled";
+
+"VoiceChat.Rotate" = "rotate";
+"VoiceChat.Message" = "message";
+"VoiceChat.ShareButton" = "share";
+"VoiceChat.MessagePlaceholder" = "Message";
+"VoiceChat.SubtitleParticipants_1" = " participant";
+"VoiceChat.SubtitleParticipants_any" = " participants";
+"VoiceChat.SubtitleInvited_1" = " invited";
+"VoiceChat.SubtitleInvited_any" = " invited";
+
+"ProfileLevelInfo.NegativeRating" = "Negative rating";
+
+"Notification.StarsGift.Assigned" = "You started displaying %@ on your Telegram profile page.";
+
+"Gift.View.SenderInfo" = "**%@** sent you this gift on **%@**.";
+
+"VideoChat.EncryptionKeyLabelShort" = "Encrypted";
+"VoiceChat.MuteShort" = "mute";
+
+"Stars.Intro.Transaction.GiftDropOriginalDetails" = "Gift Description Removal";
+"Stars.Intro.Transaction.PrepaidGiftUpgrade" = "Gift Upgrade";
+
+"Gift.Upgrade.SeePriceDecrease" = "See how price will decrease >";
+
+"ProfileColorSetup.ProfileColorPreviewInfo" = "You can also change color of your name and customize replies to you. [Change >]()";
+"ProfileColorSetup.ApplyStyle" = "Apply Style";
+
+"ProfileColorSetup.MyGifts" = "My Gifts";
+"ProfileColorSetup.NoProfileGiftsPlaceholder" = "You don't have any gifts you can use as styles for your profile.";
+"ProfileColorSetup.NoNameGiftsPlaceholder" = "You don't have any gifts you can use as styles for your name.";
+"ProfileColorSetup.BrowseGiftsForPurchase" = "Browse gifts available for purchase >";
+
+"VoiceChat.RemovedConferencePeerText" = "You removed %@ from this call. They will no longer be able to join using the invite link.";
+
+"Chat.MessageHeaderBotNewThread" = "New Thread";
+"Chat.MessageContinueLastThread" = "Continue Last Thread";
+"Chat.NewThreadInfo.Title" = "New Thread";
+"Chat.NewThreadInfo.Text" = "Type any message to\ncreate a new thread.";
+"Chat.InlineTopicMenu.NewForumThreadTab" = "New Chat";
+"Chat.GenericForuThreadStatus" = "thread";

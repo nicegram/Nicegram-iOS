@@ -81,23 +81,6 @@ extension ChatControllerImpl {
             }
         }
         
-        struct HistoryNodeData: Equatable {
-            let chatLocation: ChatLocation
-            let chatLocationContextHolder: Atomic<ChatLocationContextHolder?>
-            
-            init(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>) {
-                self.chatLocation = chatLocation
-                self.chatLocationContextHolder = chatLocationContextHolder
-            }
-            
-            static func ==(lhs: HistoryNodeData, rhs: HistoryNodeData) -> Bool {
-                if lhs.chatLocation != rhs.chatLocation {
-                    return false
-                }
-                return true
-            }
-        }
-        
         struct State {
             var peerView: PeerView?
             var threadInfo: EngineMessageHistoryThread.Info?
@@ -161,8 +144,6 @@ extension ChatControllerImpl {
             var removePaidMessageFeeData: ChatPresentationInterfaceState.RemovePaidMessageFeeData?
             
             var preloadNextChatPeerId: EnginePeer.Id?
-            
-            var historyNodeData: HistoryNodeData?
         }
         
         private let presentationData: PresentationData
@@ -581,16 +562,6 @@ extension ChatControllerImpl {
                             } else {
                                 strongSelf.state.chatTitleContent = .custom(channel.debugDisplayTitle, nil, true)
                             }
-                        } else if let channel = peer as? TelegramChannel, let linkedBotId = channel.linkedBotId, let mainPeer = peerView.peers[linkedBotId] {
-                            strongSelf.state.chatTitleContent = .peer(peerView: ChatTitleContent.PeerData(
-                                peerId: mainPeer.id,
-                                peer: mainPeer,
-                                isContact: false,
-                                isSavedMessages: false,
-                                notificationSettings: nil,
-                                peerPresences: [:],
-                                cachedData: nil
-                            ), customTitle: nil, customSubtitle: nil, onlineMemberCount: (nil, nil), isScheduledMessages: false, isMuted: nil, customMessageCount: nil, isEnabled: true)
                         } else {
                             strongSelf.state.chatTitleContent = .peer(peerView: ChatTitleContent.PeerData(peerView: peerView), customTitle: nil, customSubtitle: nil, onlineMemberCount: onlineMemberCount, isScheduledMessages: isScheduledMessages, isMuted: nil, customMessageCount: nil, isEnabled: hasPeerInfo)
                             
@@ -837,13 +808,6 @@ extension ChatControllerImpl {
                                     alwaysShowGiftButton = globalPrivacySettings.displayGiftButton || cachedData.flags.contains(.displayGiftButton)
                                 }
                                 disallowedGifts = cachedData.disallowedGifts
-                            }
-                            
-                            if chatLocation.threadId == nil, case let .known(value) = cachedData.linkedBotChannelId, let value, chatLocation.peerId != value {
-                                strongSelf.state.historyNodeData = HistoryNodeData(
-                                    chatLocation: .peer(id: value),
-                                    chatLocationContextHolder: Atomic(value: nil)
-                                )
                             }
                         } else if let cachedData = peerView.cachedData as? CachedGroupData {
                             var invitedBy: Peer?
@@ -1466,10 +1430,9 @@ extension ChatControllerImpl {
                         
                         var customMessageCount: Int?
                         var customSubtitle: String?
+                        customSubtitle = nil
                         if let peer = peerView.peers[peerView.peerId] as? TelegramChannel {
                             if peer.isMonoForum {
-                            } else if peer.linkedBotId != nil {
-                                customSubtitle = strongSelf.presentationData.strings.Bot_GenericBotStatus
                             } else {
                                 customMessageCount = savedMessagesPeer?.messageCount ?? 0
                             }
@@ -1565,10 +1528,9 @@ extension ChatControllerImpl {
                         
                         if let threadInfo = messageAndTopic.threadData?.info {
                             var customSubtitle: String?
-                            if messageAndTopic.messageCount == 0, let peer = peerView.peers[peerView.peerId] as? TelegramChannel {
-                                if peer.linkedBotId != nil {
-                                    //TODO:localize
-                                    customSubtitle = "topic"
+                            if messageAndTopic.messageCount == 0, let peer = peerView.peers[peerView.peerId] as? TelegramUser {
+                                if peer.isForum {
+                                    customSubtitle = strongSelf.presentationData.strings.Chat_GenericForuThreadStatus
                                 }
                             }
                             
@@ -1591,8 +1553,7 @@ extension ChatControllerImpl {
                             }
                             strongSelf.state.infoAvatar = .emojiStatus(content: avatarContent, contextActionIsEnabled: infoContextActionIsEnabled)
                         } else if chatLocation.threadId == EngineMessage.newTopicThreadId {
-                            //TODO:localize
-                            strongSelf.state.chatTitleContent = .custom("New Chat", nil, false)
+                            strongSelf.state.chatTitleContent = .custom(strongSelf.presentationData.strings.Chat_MessageHeaderBotNewThread, nil, false)
                             strongSelf.state.infoAvatar = nil
                         } else {
                             strongSelf.state.chatTitleContent = .replyThread(type: replyThreadType, count: count)

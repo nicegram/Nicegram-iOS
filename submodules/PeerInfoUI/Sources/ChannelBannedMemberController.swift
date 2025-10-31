@@ -345,7 +345,7 @@ private func channelBannedMemberControllerEntries(presentationData: Presentation
                 }
             }
             
-            entries.append(.rightItem(presentationData.theme, index, stringForGroupPermission(strings: presentationData.strings, right: right, isForum: channel.flags.contains(.isForum)), right, isSelected, defaultEnabled && !state.updating, subItems, state.expandedPermissions.contains(right)))
+            entries.append(.rightItem(presentationData.theme, index, stringForGroupPermission(strings: presentationData.strings, right: right, isForum: channel.isForum), right, isSelected, defaultEnabled && !state.updating, subItems, state.expandedPermissions.contains(right)))
             index += 1
         }
         

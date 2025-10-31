@@ -531,7 +531,7 @@ public extension EnginePeer {
         return false
     }
     
-    var nameColor: PeerNameColor? {
+    var nameColor: PeerColor? {
         return self._asPeer().nameColor
     }
     
@@ -541,6 +541,10 @@ public extension EnginePeer {
     
     var profileColor: PeerNameColor? {
         return self._asPeer().profileColor
+    }
+    
+    var effectiveProfileColor: PeerNameColor? {
+        return self._asPeer().effectiveProfileColor
     }
     
     var emojiStatus: PeerEmojiStatus? {

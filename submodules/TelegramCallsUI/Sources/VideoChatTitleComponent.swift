@@ -161,7 +161,7 @@ final class VideoChatTitleComponent: Component {
                 
                 let _ = activityStatusNode.transitionToState(.recordingVoice(NSAttributedString(string: value, font: Font.regular(13.0), textColor: UIColor(rgb: 0x34c759)), UIColor(rgb: 0x34c759)), animation: .none)
                 let activityStatusSize = activityStatusNode.updateLayout(CGSize(width: currentSize.width, height: 100.0), alignment: .center)
-                let activityStatusFrame = CGRect(origin: CGPoint(x: floor((currentSize.width - activityStatusSize.width) * 0.5), y: statusView.center.y - activityStatusSize.height * 0.5), size: activityStatusSize)
+                let activityStatusFrame = CGRect(origin: CGPoint(x: floor((currentSize.width - activityStatusSize.width) * 0.5), y: statusView.center.y - activityStatusSize.height * 0.5 + 7.0), size: activityStatusSize)
                 
                 let activityStatusNodeView = activityStatusNode.view
                 activityStatusNodeView.center = activityStatusFrame.center
@@ -201,7 +201,7 @@ final class VideoChatTitleComponent: Component {
             
             self.tapRecognizer?.isEnabled = component.longTapAction != nil || component.tapAction != nil
             
-            let spacing: CGFloat = 1.0
+            let spacing: CGFloat = 0.0
             
             var maxTitleWidth = availableSize.width
             if component.isRecording {
@@ -219,7 +219,7 @@ final class VideoChatTitleComponent: Component {
             
             let statusComponent: AnyComponent<Empty>
             statusComponent = AnyComponent(AnimatedTextComponent(
-                font: Font.regular(13.0),
+                font: Font.regular(12.0),
                 color: UIColor(white: 1.0, alpha: 0.5),
                 items: component.status
             ))

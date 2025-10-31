@@ -31,6 +31,7 @@ import Pasteboard
 import EntityKeyboardGifContent
 import LegacyMessageInputPanelInputView
 import AttachmentTextInputPanelNode
+import GlassBackgroundComponent
 
 public final class EmptyInputView: UIView, UIInputViewAudioFeedback {
     public var enableInputClicksWhenVisible: Bool {
@@ -168,6 +169,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         hasStickers: Bool = true,
         hasGifs: Bool = true,
         hideBackground: Bool = false,
+        maskEdge: EmojiPagerContentComponent.MaskEdgeMode = .none,
         forceHasPremium: Bool = false,
         sendGif: ((FileMediaReference, UIView, CGRect, Bool, Bool) -> Bool)?
     ) -> Signal<InputData, NoError> {
@@ -187,7 +189,8 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
             chatPeerId: chatPeerId,
             hasSearch: hasSearch,
             forceHasPremium: forceHasPremium,
-            hideBackground: hideBackground
+            hideBackground: hideBackground,
+            maskEdge: maskEdge
         )
         
         let stickerNamespaces: [ItemCollectionId.Namespace] = [Namespaces.ItemCollection.CloudStickerPacks]
@@ -210,7 +213,8 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                 hasEdit: hasEdit,
                 hasAdd: hasEdit,
                 subject: .chatStickers,
-                hideBackground: hideBackground
+                hideBackground: hideBackground,
+                maskEdge: maskEdge
             )
             |> map(Optional.init)
         } else {
@@ -411,12 +415,20 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         }
     }
     
-    fileprivate var clipContentToTopPanel: Bool = false
+    public var clipContentToTopPanel: Bool = false
     
     public var externalTopPanelContainerImpl: PagerExternalTopPanelContainer?
     public override var externalTopPanelContainer: UIView? {
         return self.externalTopPanelContainerImpl
     }
+    
+    private let clippingView: UIView
+    private var backgroundView: BlurredBackgroundView?
+    private var backgroundTintView: UIImageView?
+    private var backgroundChromeView: UIImageView?
+    private var backgroundTintMaskView: UIView?
+    private var backgroundTintMaskContentView: UIView?
+    private var externalBackground: EmojiPagerContentComponent.ExternalBackground?
     
     public var switchToTextInput: (() -> Void)?
     
@@ -484,6 +496,10 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         
         self.interaction = interaction
         
+        self.clippingView = UIView()
+        self.clippingView.clipsToBounds = true
+        self.clippingView.layer.cornerRadius = 20.0
+        
         self.entityKeyboardView = ComponentHostView<Empty>()
         
         super.init()
@@ -493,7 +509,41 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         self.topBackgroundExtension = 34.0
         self.followsDefaultHeight = true
         
-        self.view.addSubview(self.entityKeyboardView)
+        if "".isEmpty {
+            let backgroundView = BlurredBackgroundView(color: .black, enableBlur: true)
+            self.backgroundView = backgroundView
+            self.view.addSubview(backgroundView)
+            
+            let backgroundTintView = UIImageView()
+            self.backgroundTintView = backgroundTintView
+            self.view.addSubview(backgroundTintView)
+            
+            let backgroundTintMaskView = UIView()
+            backgroundTintMaskView.backgroundColor = .white
+            self.backgroundTintMaskView = backgroundTintMaskView
+            if let filter = CALayer.luminanceToAlpha() {
+                backgroundTintMaskView.layer.filters = [filter]
+            }
+            backgroundTintView.mask = backgroundTintMaskView
+            
+            let backgroundTintMaskContentView = UIView()
+            backgroundTintMaskView.addSubview(backgroundTintMaskContentView)
+            self.backgroundTintMaskContentView = backgroundTintMaskContentView
+            
+            let backgroundChromeView = UIImageView()
+            self.backgroundChromeView = backgroundChromeView
+            
+            self.externalBackground = EmojiPagerContentComponent.ExternalBackground(
+                effectContainerView: backgroundTintMaskContentView
+            )
+        }
+        
+        self.clippingView.addSubview(self.entityKeyboardView)
+        self.view.addSubview(self.clippingView)
+        
+        if let backgroundChromeView = self.backgroundChromeView {
+            self.view.addSubview(backgroundChromeView)
+        }
         
         self.externalTopPanelContainerImpl = PagerExternalTopPanelContainer()
         
@@ -1170,7 +1220,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
             chatPeerId: chatPeerId,
             peekBehavior: stickerPeekBehavior,
             customLayout: nil,
-            externalBackground: nil,
+            externalBackground: self.externalBackground,
             externalExpansionView: nil,
             customContentView: nil,
             useOpaqueTheme: self.useOpaqueTheme,
@@ -1517,7 +1567,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
             chatPeerId: chatPeerId,
             peekBehavior: stickerPeekBehavior,
             customLayout: nil,
-            externalBackground: nil,
+            externalBackground: self.externalBackground,
             externalExpansionView: nil,
             customContentView: nil,
             useOpaqueTheme: self.useOpaqueTheme,
@@ -1747,6 +1797,22 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, standardInputHeight: standardInputHeight, inputHeight: inputHeight, maximumHeight: maximumHeight, inputPanelHeight: inputPanelHeight, transition: .immediate, interfaceState: interfaceState, layoutMetrics: layoutMetrics, deviceMetrics: deviceMetrics, isVisible: isVisible, isExpanded: isExpanded)
     }
     
+    override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if let result = super.hitTest(point, with: event) {
+            return result
+        }
+        
+        if let backgroundView = self.backgroundView, backgroundView.frame.contains(point) {
+            for subview in self.view.subviews.reversed() {
+                if let result = subview.hitTest(self.view.convert(point, to: subview), with: event) {
+                    return result
+                }
+            }
+        }
+        
+        return nil
+    }
+    
     public override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, standardInputHeight: CGFloat, inputHeight: CGFloat, maximumHeight: CGFloat, inputPanelHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, layoutMetrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isVisible: Bool, isExpanded: Bool) -> (CGFloat, CGFloat) {
         self.currentState = (width, leftInset, rightInset, bottomInset, standardInputHeight, inputHeight, maximumHeight, inputPanelHeight, interfaceState, layoutMetrics, deviceMetrics, isVisible, isExpanded)
         
@@ -1860,6 +1926,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                 defaultToEmojiTab: self.defaultToEmojiTab,
                 externalTopPanelContainer: self.externalTopPanelContainerImpl,
                 externalBottomPanelContainer: nil,
+                externalTintMaskContainer: self.backgroundTintMaskContentView,
                 displayTopPanelBackground: self.opaqueTopPanelBackground ? .opaque : .none,
                 topPanelExtensionUpdated: { [weak self] topPanelExtension, transition in
                     guard let strongSelf = self else {
@@ -1950,7 +2017,52 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
             environment: {},
             containerSize: CGSize(width: width, height: expandedHeight)
         )
-        transition.updateFrame(view: self.entityKeyboardView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: entityKeyboardSize))
+        
+        var clippingFrame = CGRect(origin: CGPoint(), size: entityKeyboardSize)
+        clippingFrame.size.height += 32.0
+        
+        var entityKeyboardSizeFrame = CGRect(origin: CGPoint(), size: entityKeyboardSize)
+        if self.hideInput {
+            clippingFrame.size.height += self.topBackgroundExtension
+            clippingFrame.origin.y -= self.topBackgroundExtension
+            entityKeyboardSizeFrame.origin.y += self.topBackgroundExtension
+        }
+        
+        transition.updateFrame(view: self.entityKeyboardView, frame: entityKeyboardSizeFrame)
+        
+        transition.updateFrame(view: self.clippingView, frame: clippingFrame)
+        
+        if let backgroundView = self.backgroundView, let backgroundTintView = self.backgroundTintView, let backgroundTintMaskView = self.backgroundTintMaskView, let backgroundTintMaskContentView = self.backgroundTintMaskContentView, let backgroundChromeView = self.backgroundChromeView {
+            var backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: entityKeyboardSize)
+            if self.hideInput {
+                backgroundFrame.size.height += self.topBackgroundExtension
+                backgroundFrame.origin.y -= self.topBackgroundExtension
+            }
+            backgroundFrame.size.height += 32.0
+            
+            if backgroundChromeView.image == nil {
+                backgroundChromeView.image = GlassBackgroundView.generateForegroundImage(size: CGSize(width: 20.0 * 2.0, height: 20.0 * 2.0), isDark: interfaceState.theme.overallDarkAppearance, fillColor: .clear)
+            }
+            if backgroundTintView.image == nil {
+                backgroundTintView.image = generateStretchableFilledCircleImage(diameter: 20.0 * 2.0, color: .white)?.withRenderingMode(.alwaysTemplate)
+            }
+            backgroundTintView.tintColor = interfaceState.theme.chat.inputMediaPanel.backgroundColor
+            
+            transition.updateFrame(view: backgroundView, frame: backgroundFrame)
+            backgroundView.updateColor(color: .clear, forceKeepBlur: true, transition: .immediate)
+            backgroundView.update(size: backgroundFrame.size, cornerRadius: 20.0, maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner], transition: transition)
+            
+            transition.updateFrame(view: backgroundChromeView, frame: backgroundFrame.insetBy(dx: -1.0, dy: 0.0))
+            
+            var backgroundTintMaskContentFrame = CGRect(origin: CGPoint(), size: backgroundFrame.size)
+            if self.hideInput {
+                backgroundTintMaskContentFrame.origin.y += self.topBackgroundExtension
+            }
+            transition.updateFrame(view: backgroundTintView, frame: backgroundFrame)
+            
+            transition.updateFrame(view: backgroundTintMaskView, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
+            transition.updateFrame(view: backgroundTintMaskContentView, frame: backgroundTintMaskContentFrame)
+        }
         
         let layoutTime = CFAbsoluteTimeGetCurrent() - startTime
         if layoutTime > 0.1 {

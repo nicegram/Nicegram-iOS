@@ -1374,7 +1374,7 @@ public class AttachmentController: ViewController, MinimizableController {
         let inputNode: ASDisplayNode
         let accessoryPanelNode: ASDisplayNode?
         let menuButtonNode: ASDisplayNode
-        let menuButtonBackgroundNode: ASDisplayNode
+        let menuButtonBackgroundView: UIView
         let menuIconNode: ASDisplayNode
         let menuTextNode: ASDisplayNode
         let prepareForDismiss: () -> Void
@@ -1383,7 +1383,7 @@ public class AttachmentController: ViewController, MinimizableController {
             inputNode: ASDisplayNode,
             accessoryPanelNode: ASDisplayNode?,
             menuButtonNode: ASDisplayNode,
-            menuButtonBackgroundNode: ASDisplayNode,
+            menuButtonBackgroundView: UIView,
             menuIconNode: ASDisplayNode,
             menuTextNode: ASDisplayNode,
             prepareForDismiss: @escaping () -> Void
@@ -1391,7 +1391,7 @@ public class AttachmentController: ViewController, MinimizableController {
             self.inputNode = inputNode
             self.accessoryPanelNode = accessoryPanelNode
             self.menuButtonNode = menuButtonNode
-            self.menuButtonBackgroundNode = menuButtonBackgroundNode
+            self.menuButtonBackgroundView = menuButtonBackgroundView
             self.menuIconNode = menuIconNode
             self.menuTextNode = menuTextNode
             self.prepareForDismiss = prepareForDismiss

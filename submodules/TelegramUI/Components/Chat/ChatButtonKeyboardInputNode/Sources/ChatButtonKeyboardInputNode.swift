@@ -24,7 +24,6 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
     private let backgroundColorNode: ASDisplayNode
     private let backgroundAdditionalColorNode: ASDisplayNode
     
-    private let shadowNode: ASImageNode
     private let highlightNode: ASImageNode
     
     private let textNode: ImmediateTextNode
@@ -37,23 +36,16 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
         self.backgroundContainerNode.clipsToBounds = true
         self.backgroundContainerNode.allowsGroupOpacity = true
         self.backgroundContainerNode.isUserInteractionEnabled = false
-        self.backgroundContainerNode.cornerRadius = 5.0
-        if #available(iOS 13.0, *) {
-            self.backgroundContainerNode.layer.cornerCurve = .continuous
-        }
+        self.backgroundContainerNode.cornerRadius = 10.0
+        self.backgroundContainerNode.layer.cornerCurve = .continuous
         
         self.backgroundColorNode = ASDisplayNode()
-        self.backgroundColorNode.cornerRadius = 5.0
-        if #available(iOS 13.0, *) {
-            self.backgroundColorNode.layer.cornerCurve = .continuous
-        }
+        self.backgroundColorNode.cornerRadius = 10.0
+        self.backgroundColorNode.layer.cornerCurve = .continuous
         
         self.backgroundAdditionalColorNode = ASDisplayNode()
         self.backgroundAdditionalColorNode.backgroundColor = UIColor(rgb: 0xffffff, alpha: 0.1)
         self.backgroundAdditionalColorNode.isHidden = true
-        
-        self.shadowNode = ASImageNode()
-        self.shadowNode.isUserInteractionEnabled = false
         
         self.highlightNode = ASImageNode()
         self.highlightNode.isUserInteractionEnabled = false
@@ -73,7 +65,6 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
         self.backgroundContainerNode.addSubnode(self.backgroundAdditionalColorNode)
         self.addSubnode(self.textNode)
         
-        self.backgroundContainerNode.addSubnode(self.shadowNode)
         self.backgroundContainerNode.addSubnode(self.highlightNode)
                 
         self.highligthedChanged = { [weak self] highlighted in
@@ -146,7 +137,6 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
             self.theme = theme
                         
             self.highlightNode.image = PresentationResourcesChat.chatInputButtonPanelButtonHighlightImage(theme)
-            self.shadowNode.image = PresentationResourcesChat.chatInputButtonPanelButtonShadowImage(theme)
             
             self.updateIcon()
         }
@@ -182,7 +172,6 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
         self.backgroundNode?.frame = self.backgroundColorNode.frame
         
         self.highlightNode.frame = self.bounds
-        self.shadowNode.frame = self.bounds
         
         if let (rect, containerSize) = self.absoluteRect {
             self.update(rect: rect, within: containerSize, transition: .immediate)
@@ -201,7 +190,6 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
     private let context: AccountContext
     private let controllerInteraction: ChatControllerInteraction
 
-    private let separatorNode: ASDisplayNode
     private let scrollNode: ASScrollNode
 
     private var backgroundNode: WallpaperBubbleBackgroundNode?
@@ -220,9 +208,6 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
         
         self.backgroundColorNode = ASDisplayNode()
         
-        self.separatorNode = ASDisplayNode()
-        self.separatorNode.isLayerBacked = true
-        
         super.init()
         
         self.addSubnode(self.backgroundColorNode)
@@ -232,8 +217,6 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
         self.scrollNode.view.canCancelContentTouches = true
         self.scrollNode.view.alwaysBounceHorizontal = false
         self.scrollNode.view.alwaysBounceVertical = false
-        
-        self.addSubnode(self.separatorNode)
     }
     
     override public func didLoad() {
@@ -264,8 +247,6 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
     }
     
     override public func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, standardInputHeight: CGFloat, inputHeight: CGFloat, maximumHeight: CGFloat, inputPanelHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, layoutMetrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isVisible: Bool, isExpanded: Bool) -> (CGFloat, CGFloat) {
-        transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: width, height: UIScreenPixel)))
-        
         if self.backgroundNode == nil {
             if let backgroundNode = self.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {
                 self.backgroundNode = backgroundNode
@@ -277,7 +258,6 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
         if updatedTheme {
             self.theme = interfaceState.theme
             
-            self.separatorNode.backgroundColor = interfaceState.theme.chat.inputButtonPanel.panelSeparatorColor
             self.backgroundColorNode.backgroundColor = interfaceState.theme.chat.inputButtonPanel.panelBackgroundColor
         }
         
@@ -296,8 +276,8 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
         self.message = interfaceState.keyboardButtonsMessage
         
         if let markup = validatedMarkup {
-            let verticalInset: CGFloat = 10.0
-            let sideInset: CGFloat = 6.0 + leftInset
+            let verticalInset: CGFloat = 16.0
+            let sideInset: CGFloat = 16.0 + leftInset
             var buttonHeight: CGFloat = 43.0
             let columnSpacing: CGFloat = 6.0
             let rowSpacing: CGFloat = 5.0

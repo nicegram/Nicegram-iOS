@@ -332,17 +332,27 @@ public extension Api.payments {
 }
 public extension Api.payments {
     enum StarGiftUpgradePreview: TypeConstructorDescription {
-        case starGiftUpgradePreview(sampleAttributes: [Api.StarGiftAttribute])
+        case starGiftUpgradePreview(sampleAttributes: [Api.StarGiftAttribute], prices: [Api.StarGiftUpgradePrice], nextPrices: [Api.StarGiftUpgradePrice])
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .starGiftUpgradePreview(let sampleAttributes):
+                case .starGiftUpgradePreview(let sampleAttributes, let prices, let nextPrices):
                     if boxed {
-                        buffer.appendInt32(377215243)
+                        buffer.appendInt32(1038213101)
                     }
                     buffer.appendInt32(481674261)
                     buffer.appendInt32(Int32(sampleAttributes.count))
                     for item in sampleAttributes {
+                        item.serialize(buffer, true)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(prices.count))
+                    for item in prices {
+                        item.serialize(buffer, true)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(nextPrices.count))
+                    for item in nextPrices {
                         item.serialize(buffer, true)
                     }
                     break
@@ -351,8 +361,8 @@ public extension Api.payments {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .starGiftUpgradePreview(let sampleAttributes):
-                return ("starGiftUpgradePreview", [("sampleAttributes", sampleAttributes as Any)])
+                case .starGiftUpgradePreview(let sampleAttributes, let prices, let nextPrices):
+                return ("starGiftUpgradePreview", [("sampleAttributes", sampleAttributes as Any), ("prices", prices as Any), ("nextPrices", nextPrices as Any)])
     }
     }
     
@@ -361,9 +371,19 @@ public extension Api.payments {
             if let _ = reader.readInt32() {
                 _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.StarGiftAttribute.self)
             }
+            var _2: [Api.StarGiftUpgradePrice]?
+            if let _ = reader.readInt32() {
+                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.StarGiftUpgradePrice.self)
+            }
+            var _3: [Api.StarGiftUpgradePrice]?
+            if let _ = reader.readInt32() {
+                _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.StarGiftUpgradePrice.self)
+            }
             let _c1 = _1 != nil
-            if _c1 {
-                return Api.payments.StarGiftUpgradePreview.starGiftUpgradePreview(sampleAttributes: _1!)
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.payments.StarGiftUpgradePreview.starGiftUpgradePreview(sampleAttributes: _1!, prices: _2!, nextPrices: _3!)
             }
             else {
                 return nil

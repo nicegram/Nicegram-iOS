@@ -26,6 +26,8 @@ swift_library(
         "//submodules/ChatContextQuery",
         "//submodules/TooltipUI",
         "//submodules/AudioWaveform",
+        "//submodules/UndoUI",
+        "//submodules/TextFormat",
     ],
     visibility = [
         "//visibility:public",

@@ -334,12 +334,6 @@ extension ChatControllerImpl {
                     self?.canReadHistory.set(true)
                 }
                 controller.immediateItemsTransitionAnimation = disableTransitionAnimations
-                controller.getOverlayViews = { [weak self] in
-                    guard let self else {
-                        return []
-                    }
-                    return [self.chatDisplayNode.navigateButtons.view]
-                }
                 self.currentContextController = controller
                 
                 controller.premiumReactionsSelected = { [weak self, weak controller] in
@@ -466,7 +460,7 @@ extension ChatControllerImpl {
                                             return
                                         }
                                         
-                                        let purchaseScreen = strongSelf.context.sharedContext.makeStarsPurchaseScreen(context: strongSelf.context, starsContext: starsContext, options: options, purpose: .reactions(peerId: message.id.peerId, requiredStars: 1), completion: { result in
+                                        let purchaseScreen = strongSelf.context.sharedContext.makeStarsPurchaseScreen(context: strongSelf.context, starsContext: starsContext, options: options, purpose: .reactions(peerId: message.id.peerId, requiredStars: 1), targetPeerId: nil, completion: { result in
                                             let _ = result
                                         })
                                         strongSelf.push(purchaseScreen)

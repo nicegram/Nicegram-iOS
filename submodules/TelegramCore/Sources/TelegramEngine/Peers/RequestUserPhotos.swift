@@ -83,11 +83,11 @@ func _internal_requestPeerPhotos(accountPeerId: PeerId, postbox: Postbox, networ
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messages(apiMessages, apiChats, apiUsers):
+                        case let .messages(apiMessages, _, apiChats, apiUsers):
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messagesSlice(_, _, _, _, _, apiMessages, apiChats, apiUsers):
+                        case let .messagesSlice(_, _, _, _, _, apiMessages, _, apiChats, apiUsers):
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers

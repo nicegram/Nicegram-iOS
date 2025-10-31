@@ -209,11 +209,6 @@ public extension TelegramEngine.EngineData.Item {
                         return nil
                     }
                     peers[mainChannel.id] = EnginePeer(mainChannel)
-                } else if let channel = peer as? TelegramChannel, channel.isForum, let linkedBotId = channel.linkedBotId {
-                    guard let mainChannel = view.peers[linkedBotId] else {
-                        return nil
-                    }
-                    peers[mainChannel.id] = EnginePeer(mainChannel)
                 }
 
                 return EngineRenderedPeer(peerId: self.id, peers: peers, associatedMedia: view.media)
@@ -854,39 +849,6 @@ public extension TelegramEngine.EngineData.Item {
                     switch cachedData.linkedDiscussionPeerId {
                     case let .known(value):
                         return .known(value)
-                    case .unknown:
-                        return .unknown
-                    }
-                } else {
-                    return .unknown
-                }
-            }
-        }
-        
-        public struct LinkedBotForumPeerId: TelegramEngineDataItem, TelegramEngineMapKeyDataItem, PostboxViewDataItem {
-            public typealias Result = EnginePeerCachedInfoItem<EnginePeer.Id?>
-
-            fileprivate var id: EnginePeer.Id
-            public var mapKey: EnginePeer.Id {
-                return self.id
-            }
-
-            public init(id: EnginePeer.Id) {
-                self.id = id
-            }
-
-            var key: PostboxViewKey {
-                return .cachedPeerData(peerId: self.id)
-            }
-
-            func extract(view: PostboxView) -> Result {
-                guard let view = view as? CachedPeerDataView else {
-                    preconditionFailure()
-                }
-                if let cachedData = view.cachedPeerData as? CachedUserData {
-                    switch cachedData.linkedBotChannelId {
-                    case let .known(id):
-                        return .known(id)
                     case .unknown:
                         return .unknown
                     }
@@ -2652,31 +2614,6 @@ public extension TelegramEngine.EngineData.Item {
                 }
                 if let cachedData = view.cachedPeerData as? CachedUserData {
                     return cachedData.disallowedGifts
-                } else {
-                    return nil
-                }
-            }
-        }
-        
-        public struct BotLinkedForum: TelegramEngineDataItem, PostboxViewDataItem {
-            public typealias Result = CachedUserData.LinkedBotChannelId?
-            
-            public let id: EnginePeer.Id
-            
-            public init(id: EnginePeer.Id) {
-                self.id = id
-            }
-            
-            var key: PostboxViewKey {
-                return .cachedPeerData(peerId: self.id)
-            }
-            
-            func extract(view: PostboxView) -> Result {
-                guard let view = view as? CachedPeerDataView else {
-                    preconditionFailure()
-                }
-                if let cachedData = view.cachedPeerData as? CachedUserData {
-                    return cachedData.linkedBotChannelId
                 } else {
                     return nil
                 }

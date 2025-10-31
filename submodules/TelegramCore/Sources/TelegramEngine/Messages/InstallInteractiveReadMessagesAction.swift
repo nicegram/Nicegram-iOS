@@ -3,7 +3,7 @@ import Postbox
 import TelegramApi
 import SwiftSignalKit
 
-func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId) -> Disposable {
+func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManager: AccountStateManager, peerId: PeerId, threadId: Int64?) -> Disposable {
     return postbox.installStoreMessageAction(peerId: peerId, { messages, transaction in
         var consumeMessageIds: [MessageId] = []
         var readReactionIds: [MessageId] = []
@@ -13,6 +13,11 @@ func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManag
         
         for message in messages {
             if case let .Id(id) = message.id {
+                if threadId == nil || message.threadId == threadId {
+                } else {
+                    continue
+                }
+                
                 var hasUnconsumedMention = false
                 var hasUnconsumedContent = false
                 var hasUnseenReactions = false
@@ -79,7 +84,34 @@ func _internal_installInteractiveReadMessagesAction(postbox: Postbox, stateManag
         }
         
         for (_, index) in readMessageIndexByNamespace {
-            _internal_applyMaxReadIndexInteractively(transaction: transaction, stateManager: stateManager, index: index)
+            if let threadId {
+                if var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: threadId)?.data.get(MessageHistoryThreadData.self) {
+                    if index.id.id >= data.maxIncomingReadId {
+                        if let count = transaction.getThreadMessageCount(peerId: peerId, threadId: threadId, namespace: Namespaces.Message.Cloud, fromIdExclusive: data.maxIncomingReadId, toIndex: index) {
+                            data.incomingUnreadCount = max(0, data.incomingUnreadCount - Int32(count))
+                            data.maxIncomingReadId = index.id.id
+                        }
+                        
+                        if let topMessageIndex = transaction.getMessageHistoryThreadTopMessage(peerId: peerId, threadId: threadId, namespaces: Set([Namespaces.Message.Cloud])) {
+                            if index.id.id >= topMessageIndex.id.id {
+                                let containingHole = transaction.getThreadIndexHole(peerId: peerId, threadId: threadId, namespace: topMessageIndex.id.namespace, containing: topMessageIndex.id.id)
+                                if let _ = containingHole[.everywhere] {
+                                } else {
+                                    data.incomingUnreadCount = 0
+                                }
+                            }
+                        }
+                        
+                        data.maxKnownMessageId = max(data.maxKnownMessageId, index.id.id)
+                        
+                        if let entry = StoredMessageHistoryThreadInfo(data) {
+                            transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
+                        }
+                    }
+                }
+            } else {
+                _internal_applyMaxReadIndexInteractively(transaction: transaction, stateManager: stateManager, index: index)
+            }
         }
     })
 }

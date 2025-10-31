@@ -173,7 +173,7 @@ public struct PresentationResourcesSettings {
         context.addPath(path.cgPath)
         context.clip()
 
-        context.setFillColor(UIColor(rgb: 0x007aff).cgColor)
+        context.setFillColor(UIColor(rgb: 0x0088ff).cgColor)
         context.fill(bounds)
         
         if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat List/Filters/Bot"), color: UIColor(rgb: 0xffffff)), let cgImage = image.cgImage {

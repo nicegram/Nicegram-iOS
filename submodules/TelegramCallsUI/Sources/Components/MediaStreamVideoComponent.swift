@@ -580,7 +580,9 @@ final class MediaStreamVideoComponent: Component {
                     videoView.isHidden = true
                 }
             } else {
-                videoSize = CGSize(width: 16 / 9 * 100.0, height: 100.0).aspectFitted(.init(width: availableSize.width - videoInset * 2, height: availableSize.height))
+                let availableVideoWidth = min(availableSize.width, availableSize.height) - videoInset * 2
+                let availableVideoHeight = availableVideoWidth * 9.0 / 16
+                videoSize = CGSize(width: 16 / 9 * 100.0, height: 100.0).aspectFitted(.init(width: availableVideoWidth, height: availableVideoHeight))
             }
             
             let loadingBlurViewFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - videoSize.width) / 2.0), y: floor((availableSize.height - videoSize.height) / 2.0)), size: videoSize)

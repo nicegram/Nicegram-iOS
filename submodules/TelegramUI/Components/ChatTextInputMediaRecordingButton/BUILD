@@ -24,6 +24,8 @@ swift_library(
         "//submodules/Components/LottieAnimationComponent",
         "//submodules/TelegramUI/Components/LottieComponent",
         "//submodules/TelegramUI/Components/LegacyInstantVideoController",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/Components/ComponentDisplayAdapters",
     ],
     visibility = [
         "//visibility:public",

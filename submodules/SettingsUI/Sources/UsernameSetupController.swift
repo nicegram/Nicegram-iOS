@@ -60,7 +60,7 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
     case publicLinkInfo(PresentationTheme, String)
     
     case additionalLinkHeader(PresentationTheme, String)
-    case additionalLink(PresentationTheme, TelegramPeerUsername, Int32)
+    case additionalLink(PresentationTheme, TelegramPeerUsername, Int32, Bool)
     case additionalLinkInfo(PresentationTheme, String)
     
     var section: ItemListSectionId {
@@ -84,7 +84,7 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
                 return .index(3)
             case .additionalLinkHeader:
                 return .index(4)
-            case let .additionalLink(_, username, _):
+            case let .additionalLink(_, username, _, _):
                 return .username(username.username)
             case .additionalLinkInfo:
                 return .index(5)
@@ -123,8 +123,8 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
-            case let .additionalLink(lhsTheme, lhsAddressName, lhsIndex):
-                if case let .additionalLink(rhsTheme, rhsAddressName, rhsIndex) = rhs, lhsTheme === rhsTheme, lhsAddressName == rhsAddressName, lhsIndex == rhsIndex {
+            case let .additionalLink(lhsTheme, lhsAddressName, lhsIndex, lhsCanToggleIsActive):
+                if case let .additionalLink(rhsTheme, rhsAddressName, rhsIndex, rhsCanToggleIsActive) = rhs, lhsTheme === rhsTheme, lhsAddressName == rhsAddressName, lhsIndex == rhsIndex, lhsCanToggleIsActive == rhsCanToggleIsActive {
                     return true
                 } else {
                     return false
@@ -175,9 +175,9 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
             default:
                 return true
             }
-        case let .additionalLink(_, _, lhsIndex):
+        case let .additionalLink(_, _, lhsIndex, _):
             switch rhs {
-            case let .additionalLink(_, _, rhsIndex):
+            case let .additionalLink(_, _, rhsIndex, _):
                 return lhsIndex < rhsIndex
             case .publicLinkHeader, .editablePublicLink, .publicLinkStatus, .publicLinkInfo, .additionalLinkHeader:
                 return false
@@ -232,9 +232,9 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
                 }, sectionId: self.section)
             case let .additionalLinkHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
-            case let .additionalLink(_, link, _):
+            case let .additionalLink(_, link, _, canToggleIsActive):
                 return AdditionalLinkItem(presentationData: presentationData, username: link, sectionId: self.section, style: .blocks, tapAction: {
-                    if !link.flags.contains(.isEditable) {
+                    if canToggleIsActive  {
                         if link.isActive {
                             arguments.deactivateLink(link.username)
                         } else {
@@ -348,8 +348,12 @@ private func usernameSetupControllerEntries(presentationData: PresentationData, 
             entries.append(.publicLinkStatus(presentationData.theme, currentUsername, status, statusText, currentUsername))
         }
         
+        var isBot = false
+        
         let otherUsernames = peer.usernames.filter { !$0.flags.contains(.isEditable) }
         if case .bot = mode {
+            isBot = true
+            
             var infoText = presentationData.strings.Username_BotLinkHint
             if otherUsernames.isEmpty {
                 infoText = presentationData.strings.Username_BotLinkHintExtended
@@ -384,7 +388,11 @@ private func usernameSetupControllerEntries(presentationData: PresentationData, 
             }
             var i: Int32 = 0
             for username in usernames {
-                entries.append(.additionalLink(presentationData.theme, username, i))
+                var canToggleIsActive = false
+                if !username.flags.contains(.isEditable) || isBot {
+                    canToggleIsActive = true
+                }
+                entries.append(.additionalLink(presentationData.theme, username, i, canToggleIsActive))
                 i += 1
             }
             
@@ -613,7 +621,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
     
     controller.setReorderEntry({ (fromIndex: Int, toIndex: Int, entries: [UsernameSetupEntry]) -> Signal<Bool, NoError> in
         let fromEntry = entries[fromIndex]
-        guard case let .additionalLink(_, fromUsername, _) = fromEntry else {
+        guard case let .additionalLink(_, fromUsername, _, _) = fromEntry else {
             return .single(false)
         }
         var referenceId: String?
@@ -626,7 +634,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
         var i = 0
         for entry in entries {
             switch entry {
-            case let .additionalLink(_, link, _):
+            case let .additionalLink(_, link, _, _):
                 currentUsernames.append(link.username)
                 if !link.isActive && maxIndex == nil {
                     maxIndex = max(0, i - 1)
@@ -639,7 +647,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
         
         if toIndex < entries.count {
             switch entries[toIndex] {
-                case let .additionalLink(_, toUsername, _):
+                case let .additionalLink(_, toUsername, _, _):
                     if toUsername.isActive {
                         referenceId = toUsername.username
                     } else {
@@ -716,7 +724,7 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
         var currentUsernames: [TelegramPeerUsername] = []
         for entry in entries {
             switch entry {
-            case let .additionalLink(_, username, _):
+            case let .additionalLink(_, username, _, _):
                 currentUsernames.append(username)
             default:
                 break

@@ -178,6 +178,10 @@ final class PeerInfoHeaderNavigationButton: HighlightableButtonNode {
         }
         
         self.addTarget(self, action: #selector(self.pressed), forControlEvents: .touchUpInside)
+        
+        if isReduceTransparencyEnabled() {
+            self.backgroundNode.isHidden = true
+        }
     }
     
     @objc private func pressed() {

@@ -265,6 +265,7 @@ private final class StoryStealthModeSheetContentComponent: Component {
                     ], spacing: 4.0)
                 ))
             }
+
             let buttonSize = self.button.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(

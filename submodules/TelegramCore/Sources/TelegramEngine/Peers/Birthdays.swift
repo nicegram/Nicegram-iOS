@@ -99,11 +99,8 @@ func _internal_updateBirthday(account: Account, birthday: TelegramBirthday?) -> 
         return account.postbox.transaction { transaction -> Void in
             if case .boolTrue = result {
                 transaction.updatePeerCachedData(peerIds: Set([account.peerId]), update: { _, current in
-                    if let current = current as? CachedUserData {
-                        return current.withUpdatedBirthday(birthday)
-                    } else {
-                        return current
-                    }
+                    let current = current as? CachedUserData ?? CachedUserData()
+                    return current.withUpdatedBirthday(birthday)
                 })
             }
         }

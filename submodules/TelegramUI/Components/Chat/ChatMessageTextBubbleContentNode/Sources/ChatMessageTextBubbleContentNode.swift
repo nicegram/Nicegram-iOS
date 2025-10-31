@@ -532,7 +532,16 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     var secondaryColor: UIColor? = nil
                     var tertiaryColor: UIColor? = nil
                     
-                    let nameColors = author?.nameColor.flatMap { item.context.peerNameColors.get($0, dark: item.presentationData.theme.theme.overallDarkAppearance) }
+                    let nameColors: PeerNameColors.Colors?
+                    switch author?.nameColor {
+                    case let .preset(nameColor):
+                        nameColors = item.context.peerNameColors.get(nameColor, dark: item.presentationData.theme.theme.overallDarkAppearance)
+                    case let .collectible(collectibleColor):
+                        nameColors = collectibleColor.peerNameColors(dark: item.presentationData.theme.theme.overallDarkAppearance)
+                    default:
+                        nameColors = nil
+                    }
+                    
                     let codeBlockTitleColor: UIColor
                     let codeBlockAccentColor: UIColor
                     let codeBlockBackgroundColor: UIColor
@@ -1624,6 +1633,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
     }
 
     public func animateFrom(sourceView: UIView, scrollOffset: CGFloat, widthDifference: CGFloat, transition: CombinedTransition) {
+        self.containerNode.clipsToBounds = false
         self.containerNode.view.addSubview(sourceView)
 
         sourceView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.1, removeOnCompletion: false, completion: { [weak sourceView] _ in
@@ -1636,7 +1646,12 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
             y: sourceView.frame.minY - (self.textNode.textNode.frame.minY - 3.0) - scrollOffset
         )
 
-        transition.vertical.animatePositionAdditive(node: self.textNode.textNode, offset: offset)
+        transition.vertical.animatePositionAdditive(layer: self.textNode.textNode.layer, offset: offset, completion: { [weak self] _ in
+            guard let self else {
+                return
+            }
+            self.containerNode.clipsToBounds = true
+        })
         transition.updatePosition(layer: sourceView.layer, position: CGPoint(x: sourceView.layer.position.x - offset.x, y: sourceView.layer.position.y - offset.y))
 
         if let statusNode = self.statusNode {

@@ -16,6 +16,8 @@ swift_library(
         "//submodules/ActivityIndicator",
         "//submodules/ShimmerEffect",
         "//submodules/Components/BundleIconComponent",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        
     ],
     visibility = [
         "//visibility:public",

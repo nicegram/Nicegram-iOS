@@ -7,15 +7,22 @@ import MultilineTextComponent
 
 final class TableComponent: CombinedComponent {
     class Item: Equatable {
+        enum TitleFont {
+            case regular
+            case bold
+        }
+        
         public let id: AnyHashable
         public let title: String?
+        public let titleFont: TitleFont
         public let hasBackground: Bool
         public let component: AnyComponent<Empty>
         public let insets: UIEdgeInsets?
 
-        public init<IdType: Hashable>(id: IdType, title: String?, hasBackground: Bool = false, component: AnyComponent<Empty>, insets: UIEdgeInsets? = nil) {
+        public init<IdType: Hashable>(id: IdType, title: String?, titleFont: TitleFont = .regular, hasBackground: Bool = false, component: AnyComponent<Empty>, insets: UIEdgeInsets? = nil) {
             self.id = AnyHashable(id)
             self.title = title
+            self.titleFont = titleFont
             self.hasBackground = hasBackground
             self.component = component
             self.insets = insets
@@ -26,6 +33,9 @@ final class TableComponent: CombinedComponent {
                 return false
             }
             if lhs.title != rhs.title {
+                return false
+            }
+            if lhs.titleFont != rhs.titleFont {
                 return false
             }
             if lhs.hasBackground != rhs.hasBackground {
@@ -60,6 +70,7 @@ final class TableComponent: CombinedComponent {
     }
     
     final class State: ComponentState {
+        var cachedLeftColumnImage: (UIImage, PresentationTheme)?
         var cachedBorderImage: (UIImage, PresentationTheme)?
     }
     
@@ -68,7 +79,7 @@ final class TableComponent: CombinedComponent {
     }
 
     public static var body: Body {
-        let leftColumnBackground = Child(Rectangle.self)
+        let leftColumnBackground = Child(Image.self)
         let lastBackground = Child(Rectangle.self)
         let verticalBorder = Child(Rectangle.self)
         let titleChildren = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
@@ -99,7 +110,7 @@ final class TableComponent: CombinedComponent {
                 }
                 let titleChild = titleChildren[item.id].update(
                     component: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: title, font: Font.regular(15.0), textColor: context.component.theme.list.itemPrimaryTextColor))
+                        text: .plain(NSAttributedString(string: title, font: item.titleFont == .bold ? Font.semibold(15.0) : Font.regular(15.0), textColor: context.component.theme.list.itemPrimaryTextColor))
                     )),
                     availableSize: context.availableSize,
                     transition: context.transition
@@ -184,25 +195,39 @@ final class TableComponent: CombinedComponent {
                 )
             }
             
+            let borderRadius: CGFloat = 10.0
+            let leftColumnImage: UIImage
+            if let (currentImage, theme) = context.state.cachedLeftColumnImage, theme === context.component.theme {
+                leftColumnImage = currentImage
+            } else {
+                leftColumnImage = generateImage(CGSize(width: 24.0, height: 24.0), rotatedContext: { size, context in
+                    let bounds = CGRect(origin: .zero, size: CGSize(width: size.width + borderRadius, height: size.height))
+                    context.clear(bounds)
+                    
+                    let path = CGPath(roundedRect: bounds.insetBy(dx: borderWidth / 2.0, dy: borderWidth / 2.0), cornerWidth: borderRadius, cornerHeight: borderRadius, transform: nil)
+                    context.setFillColor(secondaryBackgroundColor.cgColor)
+                    context.addPath(path)
+                    context.fillPath()
+                })!.stretchableImage(withLeftCapWidth: 10, topCapHeight: 10)
+                context.state.cachedLeftColumnImage = (leftColumnImage, context.component.theme)
+            }
+            
             let leftColumnBackground = leftColumnBackground.update(
-                component: Rectangle(color: secondaryBackgroundColor),
+                component: Image(image: leftColumnImage),
                 availableSize: CGSize(width: leftColumnWidth, height: innerTotalHeight),
                 transition: context.transition
             )
-            context.add(
-                leftColumnBackground
-                    .position(CGPoint(x: leftColumnWidth / 2.0, y: innerTotalHeight / 2.0))
+            context.add(leftColumnBackground
+                .position(CGPoint(x: leftColumnWidth / 2.0, y: innerTotalHeight / 2.0))
             )
             
             let borderImage: UIImage
             if let (currentImage, theme) = context.state.cachedBorderImage, theme === context.component.theme {
                 borderImage = currentImage
             } else {
-                let borderRadius: CGFloat = 10.0
                 borderImage = generateImage(CGSize(width: 24.0, height: 24.0), rotatedContext: { size, context in
                     let bounds = CGRect(origin: .zero, size: size)
-                    context.setFillColor(backgroundColor.cgColor)
-                    context.fill(bounds)
+                    context.clear(bounds)
                     
                     let path = CGPath(roundedRect: bounds.insetBy(dx: borderWidth / 2.0, dy: borderWidth / 2.0), cornerWidth: borderRadius, cornerHeight: borderRadius, transform: nil)
                     context.setBlendMode(.clear)
@@ -259,12 +284,16 @@ final class TableComponent: CombinedComponent {
                 
                 context.add(valueChild
                     .position(valueFrame.center)
+                    .appear(.default(alpha: true))
+                    .disappear(.default(alpha: true))
                 )
                 
                 if i < updatedBorderChildren.count {
                     let borderChild = updatedBorderChildren[i]
                     context.add(borderChild
                         .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + rowHeight - borderWidth / 2.0))
+                        .appear(.default(alpha: true))
+                        .disappear(.default(alpha: true))
                     )
                 }
                 

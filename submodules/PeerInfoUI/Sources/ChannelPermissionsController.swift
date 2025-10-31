@@ -595,7 +595,7 @@ private let internal_allPossibleGroupPermissionList: [(TelegramChatBannedRightsF
 
 public func allGroupPermissionList(peer: EnginePeer, expandMedia: Bool) -> [(TelegramChatBannedRightsFlags, TelegramChannelPermission)] {
     var result: [(TelegramChatBannedRightsFlags, TelegramChannelPermission)]
-    if case let .channel(channel) = peer, channel.flags.contains(.isForum) {
+    if case let .channel(channel) = peer, channel.isForum {
         result = [
             (.banSendText, .banMembers),
             (.banSendMedia, .banMembers),
@@ -711,7 +711,7 @@ private func channelPermissionsControllerEntries(context: AccountContext, presen
                 }
             }
             
-            entries.append(.permission(presentationData.theme, rightIndex, stringForGroupPermission(strings: presentationData.strings, right: rights, isForum: channel.flags.contains(.isForum)), isSelected, rights, enabled, subItems, state.expandedPermissions.contains(rights)))
+            entries.append(.permission(presentationData.theme, rightIndex, stringForGroupPermission(strings: presentationData.strings, right: rights, isForum: channel.isForum), isSelected, rights, enabled, subItems, state.expandedPermissions.contains(rights)))
             rightIndex += 1
         }
         
