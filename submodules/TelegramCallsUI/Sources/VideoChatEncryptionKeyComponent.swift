@@ -8,6 +8,7 @@ import TelegramPresentationData
 import CallsEmoji
 import ImageBlur
 import HierarchyTrackingLayer
+import GlassBackgroundComponent
 
 private final class EmojiContainerView: UIView {
     private let maskImageView: UIImageView?
@@ -464,6 +465,7 @@ final class VideoChatEncryptionKeyComponent: Component {
     let theme: PresentationTheme
     let strings: PresentationStrings
     let emoji: [String]
+    let isShort: Bool
     let isExpanded: Bool
     let tapAction: () -> Void
 
@@ -471,12 +473,14 @@ final class VideoChatEncryptionKeyComponent: Component {
         theme: PresentationTheme,
         strings: PresentationStrings,
         emoji: [String],
+        isShort: Bool,
         isExpanded: Bool,
         tapAction: @escaping () -> Void
     ) {
         self.theme = theme
         self.strings = strings
         self.emoji = emoji
+        self.isShort = isShort
         self.isExpanded = isExpanded
         self.tapAction = tapAction
     }
@@ -491,6 +495,9 @@ final class VideoChatEncryptionKeyComponent: Component {
         if lhs.emoji != rhs.emoji {
             return false
         }
+        if lhs.isShort != rhs.isShort {
+            return false
+        }
         if lhs.isExpanded != rhs.isExpanded {
             return false
         }
@@ -500,8 +507,7 @@ final class VideoChatEncryptionKeyComponent: Component {
     final class View: UIView {
         private let containerView: UIView
         private var emojiItems: [ComponentView<Empty>] = []
-        private let background = ComponentView<Empty>()
-        private let backgroundShadowLayer = SimpleLayer()
+        private let backgroundView = GlassBackgroundView()
         private let collapsedText = ComponentView<Empty>()
         private let expandedText = ComponentView<Empty>()
         private let expandedSeparatorLayer = SimpleLayer()
@@ -520,11 +526,12 @@ final class VideoChatEncryptionKeyComponent: Component {
         
         override init(frame: CGRect) {
             self.containerView = UIView()
-            self.containerView.clipsToBounds = true
+            //self.containerView.clipsToBounds = true
             
             super.init(frame: frame)
             
             self.addSubview(self.containerView)
+            self.containerView.addSubview(self.backgroundView)
             
             let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:)))
             self.addGestureRecognizer(tapRecognizer)
@@ -630,7 +637,7 @@ final class VideoChatEncryptionKeyComponent: Component {
             let collapsedTextSize = self.collapsedText.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.strings.VideoChat_EncryptionKeyLabel, font: Font.semibold(12.0), textColor: component.theme.list.itemPrimaryTextColor))
+                    text: .plain(NSAttributedString(string: component.isShort ? component.strings.VideoChat_EncryptionKeyLabelShort : component.strings.VideoChat_EncryptionKeyLabel, font: Font.semibold(12.0), textColor: component.theme.list.itemPrimaryTextColor))
                 )),
                 environment: {},
                 containerSize: CGSize(width: 1000.0, height: 1000.0)
@@ -686,40 +693,13 @@ final class VideoChatEncryptionKeyComponent: Component {
             }
             
             let backgroundSize = component.isExpanded ? expandedSize : collapsedSize
-            let backgroundCornerRadius: CGFloat = component.isExpanded ? 10.0 : collapsedSize.height * 0.5
-            
-            let _ = self.background.update(
-                transition: transition,
-                component: AnyComponent(FilledRoundedRectangleComponent(
-                    color: component.theme.list.itemBlocksBackgroundColor,
-                    cornerRadius: .value(backgroundCornerRadius), smoothCorners: false
-                )),
-                environment: {},
-                containerSize: backgroundSize
-            )
+            let backgroundCornerRadius: CGFloat = component.isExpanded ? 26.0 : collapsedSize.height * 0.5
+
             let backgroundFrame = CGRect(origin: CGPoint(), size: backgroundSize)
             
-            if self.backgroundShadowLayer.superlayer == nil {
-                self.backgroundShadowLayer.backgroundColor = UIColor.clear.cgColor
-                self.containerView.layer.addSublayer(self.backgroundShadowLayer)
-            }
-            self.backgroundShadowLayer.shadowOpacity = 0.3
-            self.backgroundShadowLayer.shadowColor = UIColor.black.cgColor
-            self.backgroundShadowLayer.shadowRadius = 5.0
-            self.backgroundShadowLayer.shadowOffset = CGSize(width: 0.0, height: 2.0)
-            alphaTransition.setAlpha(layer: self.backgroundShadowLayer, alpha: component.isExpanded ? 1.0 : 0.0)
-            
-            transition.setFrame(layer: self.backgroundShadowLayer, frame: backgroundFrame)
-            transition.setCornerRadius(layer: self.backgroundShadowLayer, cornerRadius: backgroundCornerRadius)
-            transition.setShadowPath(layer: self.backgroundShadowLayer, path: UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: backgroundFrame.size), cornerRadius: backgroundCornerRadius).cgPath)
-            
-            if let backgroundView = self.background.view {
-                if backgroundView.superview == nil {
-                    self.containerView.addSubview(backgroundView)
-                }
-                transition.setFrame(view: backgroundView, frame: backgroundFrame)
-            }
-            
+            self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundCornerRadius, isDark: true, tintColor: .init(kind: .custom, color: UIColor(rgb: 0x161616, alpha: 0.6)), transition: transition)
+            transition.setFrame(view: self.backgroundView, frame: backgroundFrame)
+                        
             var collapsedEmojiLeftOffset = collapsedSideInset
             var collapsedEmojiRightOffset = collapsedSize.width - collapsedSideInset
             

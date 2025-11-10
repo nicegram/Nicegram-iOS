@@ -299,6 +299,11 @@ extension ChatControllerImpl {
         }
         self.chatDisplayNode.dismissTextInput()
         
+        var previewIconFile: TelegramMediaFile? = previewIconFile
+        if let file = previewIconFile, let peerId = self.chatLocation.peerId, !file.isValidForDisplay(chatPeerId: peerId) {
+            previewIconFile = nil
+        }
+        
         let presentationData = self.presentationData
         let controller = StickerPackScreen(context: self.context, updatedPresentationData: self.updatedPresentationData, mainStickerPack: packReference, stickerPacks: Array(references), previewIconFile: previewIconFile, parentNavigationController: self.effectiveNavigationController, sendEmoji: canSendMessagesToChat(self.presentationInterfaceState) ? { [weak self] text, attribute in
             if let strongSelf = self {

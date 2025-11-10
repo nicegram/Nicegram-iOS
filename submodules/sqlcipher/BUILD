@@ -16,6 +16,10 @@ objc_library(
         "PublicHeaders",
     ],
     copts = [
+        # Nicegram
+        "-DSQLITE_EXTRA_INIT=sqlcipher_extra_init",
+        "-DSQLITE_EXTRA_SHUTDOWN=sqlcipher_extra_shutdown",
+        #
         "-DSQLITE_HAS_CODEC=1",
         "-DSQLCIPHER_CRYPTO_CC=1",
         "-DSQLITE_TEMP_STORE=2",

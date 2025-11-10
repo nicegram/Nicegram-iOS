@@ -14,6 +14,7 @@ swift_library(
         "//submodules/Display",
         "//submodules/ComponentFlow",
         "//submodules/TelegramPresentationData",
+        "//submodules/Components/BundleIconComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -128,6 +128,12 @@ swift_library(
         "//submodules/InviteLinksUI",
         "//third-party/td:TdBinding",
         "//submodules/TelegramUI/Components/AnimatedTextComponent",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/ChatPresentationInterfaceState",
+        "//submodules/TelegramUI/Components/MessageInputPanelComponent",
+        "//submodules/TelegramUI/Components/TextFieldComponent",
+        "//submodules/ReactionSelectionNode",
+        "//submodules/TelegramUI/Components/EntityKeyboard",
     ],
     visibility = [
         "//visibility:public",

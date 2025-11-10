@@ -8,10 +8,15 @@ import SwiftSignalKit
 import TelegramPresentationData
 import ChatPresentationInterfaceState
 import ChatInputPanelNode
+import GlassBackgroundComponent
+import ComponentFlow
+import ComponentDisplayAdapters
+import MultilineTextComponent
 
 final class ChatUnblockInputPanelNode: ChatInputPanelNode {
-    private let button: HighlightableButtonNode
-    private let activityIndicator: UIActivityIndicatorView
+    private let backgroundView: GlassBackgroundView
+    private let title = ComponentView<Empty>()
+    private let button: HighlightTrackingButton
     
     private var statusDisposable: Disposable?
     
@@ -23,15 +28,7 @@ final class ChatUnblockInputPanelNode: ChatInputPanelNode {
                 if let startingBot = self.interfaceInteraction?.statuses?.unblockingPeer {
                     self.statusDisposable = (startingBot |> deliverOnMainQueue).startStrict(next: { [weak self] value in
                         if let strongSelf = self {
-                            if value != !strongSelf.activityIndicator.isHidden {
-                                if value {
-                                    strongSelf.activityIndicator.isHidden = false
-                                    strongSelf.activityIndicator.startAnimating()
-                                } else {
-                                    strongSelf.activityIndicator.isHidden = true
-                                    strongSelf.activityIndicator.stopAnimating()
-                                }
-                            }
+                            strongSelf.title.view?.alpha = value ? 0.7 : 1.0
                         }
                     })
                 }
@@ -46,16 +43,29 @@ final class ChatUnblockInputPanelNode: ChatInputPanelNode {
         self.theme = theme
         self.strings = strings
         
-        self.button = HighlightableButtonNode()
-        self.activityIndicator = UIActivityIndicatorView(style: .medium)
-        self.activityIndicator.isHidden = true
+        self.backgroundView = GlassBackgroundView()
+        self.backgroundView.isUserInteractionEnabled = false
+        
+        self.button = HighlightTrackingButton()
         
         super.init()
         
-        self.addSubnode(self.button)
-        self.view.addSubview(self.activityIndicator)
+        self.view.addSubview(self.button)
+        self.view.addSubview(self.backgroundView)
         
-        self.button.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: [.touchUpInside])
+        self.button.addTarget(self, action: #selector(self.buttonPressed), for: [.touchUpInside])
+        
+        self.button.highligthedChanged = { [weak self] highlighted in
+            guard let self else {
+                return
+            }
+            if highlighted {
+                self.backgroundView.contentView.alpha = 0.6
+            } else {
+                self.backgroundView.contentView.alpha = 1.0
+                self.backgroundView.contentView.layer.animateAlpha(from: 0.6, to: 1.0, duration: 0.2)
+            }
+        }
     }
     
     deinit {
@@ -66,14 +76,12 @@ final class ChatUnblockInputPanelNode: ChatInputPanelNode {
         if self.theme !== theme || self.strings !== strings {
             self.theme = theme
             self.strings = strings
-            
-            self.button.setAttributedTitle(NSAttributedString(string: self.button.attributedTitle(for: [])?.string ?? "", font: Font.regular(17.0), textColor: theme.chat.inputPanel.panelControlAccentColor), for: [])
         }
     }
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         if self.bounds.contains(point) {
-            return self.button.view
+            return self.button
         } else {
             return nil
         }
@@ -83,36 +91,42 @@ final class ChatUnblockInputPanelNode: ChatInputPanelNode {
         self.interfaceInteraction?.unblockPeer()
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
         if self.presentationInterfaceState != interfaceState {
             self.presentationInterfaceState = interfaceState
-            
-            
-            let string: NSAttributedString
-            if let user = interfaceState.renderedPeer?.peer as? TelegramUser, user.botInfo != nil {
-                string = NSAttributedString(string: strings.Bot_Unblock, font: Font.regular(17.0), textColor: theme.chat.inputPanel.panelControlAccentColor)
-            } else {
-                string = NSAttributedString(string: strings.Conversation_Unblock, font: Font.regular(17.0), textColor: theme.chat.inputPanel.panelControlAccentColor)
-            }
-            let updated: Bool
-            if let current = self.button.attributedTitle(for: []) {
-                updated = !current.isEqual(to: string)
-            } else {
-                updated = true
-            }
-            if updated {
-                self.button.setAttributedTitle(string, for: [])
-            }
         }
         
-        let buttonSize = self.button.measure(CGSize(width: width - leftInset - rightInset - 80.0, height: 100.0))
+        let string: String
+        if let user = interfaceState.renderedPeer?.peer as? TelegramUser, user.botInfo != nil {
+            string = strings.Bot_Unblock
+        } else {
+            string = strings.Conversation_Unblock
+        }
+        
+        let titleSize = self.title.update(
+            transition: .immediate,
+            component: AnyComponent(MultilineTextComponent(
+                text: .plain(NSAttributedString(string: string, font: Font.regular(17.0), textColor: theme.chat.inputPanel.panelControlColor))
+            )),
+            environment: {},
+            containerSize: CGSize(width: width - leftInset - rightInset, height: 100.0)
+        )
         
         let panelHeight = defaultHeight(metrics: metrics)
         
-        self.button.frame = CGRect(origin: CGPoint(x: leftInset + floor((width - leftInset - rightInset - buttonSize.width) / 2.0), y: floor((panelHeight - buttonSize.height) / 2.0)), size: buttonSize)
+        let buttonSize = CGSize(width: titleSize.width + 16.0 * 2.0, height: 40.0)
+        let buttonFrame = CGRect(origin: CGPoint(x: floor((width - buttonSize.width) / 2.0), y: floor((panelHeight - buttonSize.height) * 0.5)), size: buttonSize)
+        transition.updateFrame(view: self.button, frame: buttonFrame)
+        transition.updateFrame(view: self.backgroundView, frame: buttonFrame)
+        self.backgroundView.update(size: buttonFrame.size, cornerRadius: buttonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: ComponentTransition(transition))
         
-        let indicatorSize = self.activityIndicator.bounds.size
-        self.activityIndicator.frame = CGRect(origin: CGPoint(x: width - rightInset - indicatorSize.width - 12.0, y: floor((panelHeight - indicatorSize.height) / 2.0)), size: indicatorSize)
+        let titleFrame = CGRect(origin: CGPoint(x: floor((buttonFrame.width - titleSize.width) * 0.5), y: floor((buttonFrame.height - titleSize.height) * 0.5)), size: titleSize)
+        if let titleView = self.title.view {
+            if titleView.superview == nil {
+                self.backgroundView.contentView.addSubview(titleView)
+            }
+            titleView.frame = titleFrame
+        }
         
         return panelHeight
     }

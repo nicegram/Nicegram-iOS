@@ -5,7 +5,8 @@
 
 /*Common*/
 "Nicegram.PrivacyPolicy" = "سياسة الخصوصية";
-"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي\n";
+"Nicegram.EULA" = "اتفاقية ترخيص المستخدم النهائي
+";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "بوتات";
@@ -37,7 +38,8 @@
 "NiceFeatures.InstantLock" = "فوراً ";
 
 /*Save to Cloud*/
-"Chat.SaveToCloud" = "حفظ\n";
+"Chat.SaveToCloud" = "حفظ
+";
 
 /*Open Pin*/
 "Chat.OpenPin" = "عرض المثبت";
@@ -227,7 +229,6 @@
 "NicegramCallRecord.StopAlertDescription" = "هل تريد إيقاف تسجيل هذه المكالمة؟";
 "NicegramCallRecord.StopAlertButtonStop" = "توقف";
 "NicegramCallRecord.StopAlertButtonCancel" = "إلغاء الأمر";
-"NicegramCallRecord.SavedMessage" = "تم حفظ المكالمة المسجلة في **الرسائل المحفوظة**.";
 
 /*Feed*/
 "NicegramFeed.Title" = "فيد";

@@ -19,6 +19,7 @@ public enum BotPaymentInvoiceSource {
     case premiumGift(peerId: EnginePeer.Id, option: CachedPremiumGiftOption, text: String?, entities: [MessageTextEntity]?)
     case starGiftResale(slug: String, toPeerId: EnginePeer.Id, ton: Bool)
     case starGiftPrepaidUpgrade(peerId: EnginePeer.Id, hash: String)
+    case starGiftDropOriginalDetails(reference: StarGiftReference)
 }
 
 public struct BotPaymentInvoiceFields: OptionSet {
@@ -420,6 +421,8 @@ func _internal_parseInputInvoice(transaction: Transaction, source: BotPaymentInv
             return nil
         }
         return .inputInvoiceStarGiftPrepaidUpgrade(peer: inputPeer, hash: hash)
+    case let .starGiftDropOriginalDetails(reference):
+        return reference.apiStarGiftReference(transaction: transaction).flatMap { .inputInvoiceStarGiftDropOriginalDetails(stargift: $0) }
     }
 }
 
@@ -667,6 +670,7 @@ public enum SendBotPaymentFormError {
     case starGiftOutOfStock
     case disallowedStarGift
     case starGiftUserLimit
+    case serverProvided(String)
 }
 
 public enum SendBotPaymentResult {
@@ -761,7 +765,7 @@ func _internal_sendBotPaymentForm(account: Account, formId: Int64, source: BotPa
                                                     receiptMessageId = id
                                                 }
                                             }
-                                        case .giftCode, .stars, .starsGift, .starsChatSubscription, .starGift, .starGiftUpgrade, .starGiftTransfer, .premiumGift, .starGiftResale, .starGiftPrepaidUpgrade:
+                                        case .giftCode, .stars, .starsGift, .starsChatSubscription, .starGift, .starGiftUpgrade, .starGiftTransfer, .premiumGift, .starGiftResale, .starGiftPrepaidUpgrade, .starGiftDropOriginalDetails:
                                             receiptMessageId = nil
                                         }
                                     }

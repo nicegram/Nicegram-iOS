@@ -26,6 +26,7 @@ import GiftViewScreen
 import UndoUI
 import ContextUI
 import LottieComponent
+import GiftLoadingShimmerView
 
 private let minimumCountToDisplayFilters = 18
 
@@ -71,7 +72,7 @@ final class GiftStoreScreenComponent: Component {
     final class View: UIView, UIScrollViewDelegate {
         private let topOverscrollLayer = SimpleLayer()
         private let scrollView: ScrollView
-        private let loadingNode: LoadingShimmerNode
+        private let loadingView: GiftLoadingShimmerView
         private let emptyResultsAnimation = ComponentView<Empty>()
         private let emptyResultsTitle = ComponentView<Empty>()
         private let clearFilters = ComponentView<Empty>()
@@ -88,7 +89,7 @@ final class GiftStoreScreenComponent: Component {
         private let title = ComponentView<Empty>()
         private let subtitle = ComponentView<Empty>()
         
-        private var starsItems: [AnyHashable: ComponentView<Empty>] = [:]
+        private var giftItems: [AnyHashable: ComponentView<Empty>] = [:]
         private let filterSelector = ComponentView<Empty>()
 
         private var isUpdating: Bool = false
@@ -117,13 +118,13 @@ final class GiftStoreScreenComponent: Component {
             }
             self.scrollView.alwaysBounceVertical = true
             
-            self.loadingNode = LoadingShimmerNode()
+            self.loadingView = GiftLoadingShimmerView()
             
             super.init(frame: frame)
             
             self.scrollView.delegate = self
             self.addSubview(self.scrollView)
-            self.addSubview(self.loadingNode.view)
+            self.addSubview(self.loadingView)
             
             self.scrollView.layer.addSublayer(self.topOverscrollLayer)
         }
@@ -211,14 +212,14 @@ final class GiftStoreScreenComponent: Component {
                         
                         var itemTransition = transition
                         let visibleItem: ComponentView<Empty>
-                        if let current = self.starsItems[itemId] {
+                        if let current = self.giftItems[itemId] {
                             visibleItem = current
                         } else {
                             visibleItem = ComponentView()
                             if !transition.animation.isImmediate {
                                 itemTransition = .immediate
                             }
-                            self.starsItems[itemId] = visibleItem
+                            self.giftItems[itemId] = visibleItem
                         }
                         
                         var ribbon: GiftItemComponent.Ribbon?
@@ -235,7 +236,10 @@ final class GiftStoreScreenComponent: Component {
                             color: ribbonColor
                         )
                                                 
-                        let subject: GiftItemComponent.Subject = .uniqueGift(gift: uniqueGift, price: "# \(presentationStringsFormattedNumber(Int32(uniqueGift.resellAmounts?.first(where: { $0.currency == .stars })?.amount.value ?? 0), environment.dateTimeFormat.groupingSeparator))")
+                        let subject: GiftItemComponent.Subject = .uniqueGift(
+                            gift: uniqueGift,
+                            price: "# \(presentationStringsFormattedNumber(Int32(uniqueGift.resellAmounts?.first(where: { $0.currency == .stars })?.amount.value ?? 0), environment.dateTimeFormat.groupingSeparator))"
+                        )
                         let _ = visibleItem.update(
                             transition: itemTransition,
                             component: AnyComponent(
@@ -306,7 +310,7 @@ final class GiftStoreScreenComponent: Component {
                 }
                 
                 var removeIds: [AnyHashable] = []
-                for (id, item) in self.starsItems {
+                for (id, item) in self.giftItems {
                     if !validIds.contains(id) {
                         removeIds.append(id)
                         if let itemView = item.view {
@@ -322,7 +326,7 @@ final class GiftStoreScreenComponent: Component {
                     }
                 }
                 for id in removeIds {
-                    self.starsItems.removeValue(forKey: id)
+                    self.giftItems.removeValue(forKey: id)
                 }
             }
             
@@ -409,7 +413,7 @@ final class GiftStoreScreenComponent: Component {
                     if view.superview == nil {
                         view.alpha = 0.0
                         fadeTransition.setAlpha(view: view, alpha: 1.0)
-                        self.insertSubview(view, belowSubview: self.loadingNode.view)
+                        self.insertSubview(view, belowSubview: self.loadingView)
                         view.playOnce()
                     }
                     view.bounds = CGRect(origin: .zero, size: emptyResultsAnimationFrame.size)
@@ -419,7 +423,7 @@ final class GiftStoreScreenComponent: Component {
                     if view.superview == nil {
                         view.alpha = 0.0
                         fadeTransition.setAlpha(view: view, alpha: 1.0)
-                        self.insertSubview(view, belowSubview: self.loadingNode.view)
+                        self.insertSubview(view, belowSubview: self.loadingView)
                     }
                     view.bounds = CGRect(origin: .zero, size: emptyResultsTitleFrame.size)
                     ComponentTransition.immediate.setPosition(view: view, position: emptyResultsTitleFrame.center)
@@ -1206,12 +1210,12 @@ final class GiftStoreScreenComponent: Component {
             self.updateScrolling(transition: transition)
                         
             if isLoading && self.showLoading {
-                self.loadingNode.update(size: availableSize, theme: environment.theme, showFilters: !showingFilters, transition: .immediate)
-                loadingTransition.setAlpha(view: self.loadingNode.view, alpha: 1.0)
+                self.loadingView.update(size: availableSize, theme: environment.theme, showFilters: !showingFilters, transition: .immediate)
+                loadingTransition.setAlpha(view: self.loadingView, alpha: 1.0)
             } else {
-                loadingTransition.setAlpha(view: self.loadingNode.view, alpha: 0.0)
+                loadingTransition.setAlpha(view: self.loadingView, alpha: 0.0)
             }
-            transition.setFrame(view: self.loadingNode.view, frame: CGRect(origin: CGPoint(x: 0.0, y: environment.navigationHeight), size: availableSize))
+            transition.setFrame(view: self.loadingView, frame: CGRect(origin: CGPoint(x: 0.0, y: environment.navigationHeight), size: availableSize))
                 
             return availableSize
         }

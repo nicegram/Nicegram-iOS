@@ -800,7 +800,6 @@ public enum ChatControllerSubject: Equatable {
     case pinnedMessages(id: EngineMessage.Id?)
     case messageOptions(peerIds: [EnginePeer.Id], ids: [EngineMessage.Id], info: MessageOptionsInfo)
     case customChatContents(contents: ChatCustomContentsProtocol)
-    case botForumThread(forumId: EnginePeer.Id, threadId: Int64)
     
     public static func ==(lhs: ChatControllerSubject, rhs: ChatControllerSubject) -> Bool {
         switch lhs {
@@ -830,12 +829,6 @@ public enum ChatControllerSubject: Equatable {
             }
         case let .customChatContents(lhsValue):
             if case let .customChatContents(rhsValue) = rhs, lhsValue === rhsValue {
-                return true
-            } else {
-                return false
-            }
-        case let .botForumThread(forumId, threadId):
-            if case .botForumThread(forumId, threadId) = rhs {
                 return true
             } else {
                 return false
@@ -1107,6 +1100,8 @@ public protocol ChatController: ViewController {
     func playShakeAnimation()
     
     func removeAd(opaqueId: Data)
+    
+    func restrictedSendingContentsText() -> String
 }
 
 public protocol ChatMessagePreviewItemNode: AnyObject {

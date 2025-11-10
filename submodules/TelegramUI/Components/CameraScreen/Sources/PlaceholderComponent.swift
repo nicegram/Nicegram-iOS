@@ -113,9 +113,9 @@ final class PlaceholderComponent: Component {
                 component: AnyComponent(
                     ButtonComponent(
                         background: ButtonComponent.Background(
-                            color: UIColor(rgb: 0x007aff),
+                            color: UIColor(rgb: 0x0088ff),
                             foreground: .white,
-                            pressedColor: UIColor(rgb: 0x007aff, alpha: 0.55)
+                            pressedColor: UIColor(rgb: 0x0088ff, alpha: 0.55)
                         ),
                         content: AnyComponentWithIdentity(
                             id: buttonTitle,

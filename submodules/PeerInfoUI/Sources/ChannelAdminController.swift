@@ -665,7 +665,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                 ]
             case .group:
                 isGroup = true
-                if channel.flags.contains(.isForum) {
+                if channel.isForum {
                     rightsOrder = [
                         .direct(.canChangeInfo),
                         .direct(.canDeleteMessages),
@@ -732,7 +732,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                         
                         enabled = right == .canBeAnonymous
                         
-                        itemTitle = stringForRight(strings: presentationData.strings, right: right, isGroup: isGroup, isChannel: isChannel, isForum: channel.flags.contains(.isForum), defaultBannedRights: channel.defaultBannedRights)
+                        itemTitle = stringForRight(strings: presentationData.strings, right: right, isGroup: isGroup, isChannel: isChannel, isForum: channel.isForum, defaultBannedRights: channel.defaultBannedRights)
                         isSelected = currentRightsFlags.contains(right)
                     case let .sub(type, subRights):
                         let filteredSubRights = subRights.filter({ accountUserRightsFlags.contains($0) })
@@ -756,7 +756,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                         for subRight in filteredSubRights {
                             let subRightEnabled = true
                             
-                            subItems.append(AdminSubPermission(title: stringForRight(strings: presentationData.strings, right: subRight, isGroup: isGroup, isChannel: isChannel, isForum: channel.flags.contains(.isForum), defaultBannedRights: channel.defaultBannedRights), flags: subRight, isSelected: currentRightsFlags.contains(subRight), isEnabled: enabled && subRightEnabled))
+                            subItems.append(AdminSubPermission(title: stringForRight(strings: presentationData.strings, right: subRight, isGroup: isGroup, isChannel: isChannel, isForum: channel.isForum, defaultBannedRights: channel.defaultBannedRights), flags: subRight, isSelected: currentRightsFlags.contains(subRight), isEnabled: enabled && subRightEnabled))
                         }
                     }
                     
@@ -811,7 +811,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                             
                             enabled = !state.updating && admin.id != accountPeerId && !rightEnabledByDefault(channelPeer: .channel(channel), right: right)
                             
-                            itemTitle = stringForRight(strings: presentationData.strings, right: right, isGroup: isGroup, isChannel: isChannel, isForum: channel.flags.contains(.isForum), defaultBannedRights: channel.defaultBannedRights)
+                            itemTitle = stringForRight(strings: presentationData.strings, right: right, isGroup: isGroup, isChannel: isChannel, isForum: channel.isForum, defaultBannedRights: channel.defaultBannedRights)
                             isSelected = currentRightsFlags.contains(right)
                         case let .sub(type, subRights):
                             let filteredSubRights = subRights.filter({ accountUserRightsFlags.contains($0) })
@@ -835,7 +835,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                             for subRight in filteredSubRights {
                                 let subRightEnabled = !state.updating && admin.id != accountPeerId && !rightEnabledByDefault(channelPeer: .channel(channel), right: subRight)
                                 
-                                subItems.append(AdminSubPermission(title: stringForRight(strings: presentationData.strings, right: subRight, isGroup: isGroup, isChannel: isChannel, isForum: channel.flags.contains(.isForum), defaultBannedRights: channel.defaultBannedRights), flags: subRight, isSelected: currentRightsFlags.contains(subRight), isEnabled: enabled && subRightEnabled))
+                                subItems.append(AdminSubPermission(title: stringForRight(strings: presentationData.strings, right: subRight, isGroup: isGroup, isChannel: isChannel, isForum: channel.isForum, defaultBannedRights: channel.defaultBannedRights), flags: subRight, isSelected: currentRightsFlags.contains(subRight), isEnabled: enabled && subRightEnabled))
                             }
                         }
                             
@@ -878,7 +878,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                         
                         switch right {
                         case let .direct(right):
-                            itemTitle = stringForRight(strings: presentationData.strings, right: right, isGroup: isGroup, isChannel: isChannel, isForum: channel.flags.contains(.isForum), defaultBannedRights: channel.defaultBannedRights)
+                            itemTitle = stringForRight(strings: presentationData.strings, right: right, isGroup: isGroup, isChannel: isChannel, isForum: channel.isForum, defaultBannedRights: channel.defaultBannedRights)
                             isSelected = adminInfo.rights.rights.contains(right)
                         case let .sub(type, subRights):
                             let filteredSubRights = subRights
@@ -900,7 +900,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                             for subRight in filteredSubRights {
                                 let subRightEnabled = false
                                 
-                                subItems.append(AdminSubPermission(title: stringForRight(strings: presentationData.strings, right: subRight, isGroup: isGroup, isChannel: isChannel, isForum: channel.flags.contains(.isForum), defaultBannedRights: channel.defaultBannedRights), flags: subRight, isSelected: adminInfo.rights.rights.contains(subRight), isEnabled: enabled && subRightEnabled))
+                                subItems.append(AdminSubPermission(title: stringForRight(strings: presentationData.strings, right: subRight, isGroup: isGroup, isChannel: isChannel, isForum: channel.isForum, defaultBannedRights: channel.defaultBannedRights), flags: subRight, isSelected: adminInfo.rights.rights.contains(subRight), isEnabled: enabled && subRightEnabled))
                             }
                         }
                         

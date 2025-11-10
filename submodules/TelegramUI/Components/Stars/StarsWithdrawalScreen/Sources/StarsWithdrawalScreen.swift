@@ -466,7 +466,7 @@ private final class SheetContent: CombinedComponent {
                 case .ton:
                     if let value = state.amount?.value, value > 0 {
                         let tonValue = Int64(Float(value) * Float(resaleConfiguration.starGiftCommissionTonPermille) / 1000.0)
-                        let tonString = formatTonAmountText(tonValue, dateTimeFormat: environment.dateTimeFormat, maxDecimalPositions: nil) + " TON"
+                        let tonString = formatTonAmountText(tonValue, dateTimeFormat: environment.dateTimeFormat, maxDecimalPositions: 3) + " TON"
                         amountInfoString = NSAttributedString(attributedString: parseMarkdownIntoAttributedString(environment.strings.Stars_SellGift_AmountInfo(tonString).string, attributes: amountMarkdownAttributes, textAlignment: .natural))
                         
                         if let tonUsdRate = withdrawConfiguration.tonUsdRate {
@@ -894,7 +894,7 @@ private final class SheetContent: CombinedComponent {
                                                     guard let controller, let state else {
                                                         return
                                                     }
-                                                    let purchaseController = state.context.sharedContext.makeStarsPurchaseScreen(context: state.context, starsContext: starsContext, options: options, purpose: .generic, completion: { _ in
+                                                    let purchaseController = state.context.sharedContext.makeStarsPurchaseScreen(context: state.context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, completion: { _ in
                                                     })
                                                     controller.push(purchaseController)
                                                 })
@@ -1230,7 +1230,13 @@ public final class StarsWithdrawScreen: ViewControllerComponentContainer {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         var text = presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum(presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum_Stars(Int32(clamping: minAmount))).string
         if case .starGiftResell = self.mode {
-            text = presentationData.strings.Stars_SellGiftMinAmountToast_Text("\(presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum_Stars(Int32(clamping: minAmount)))").string
+            switch currency {
+            case .stars:
+                text = presentationData.strings.Stars_SellGiftMinAmountToast_Text("\(presentationData.strings.Stars_Withdraw_Withdraw_ErrorMinimum_Stars(Int32(clamping: minAmount)))").string
+            case .ton:
+                let amountString = formatTonAmountText(minAmount, dateTimeFormat: presentationData.dateTimeFormat) + " TON"
+                text = presentationData.strings.Stars_SellGiftMinAmountToast_Text(amountString).string
+            }
         } else if case let .suggestedPost(mode, _, _, _) = self.mode {
             let resaleConfiguration = StarsSubscriptionConfiguration.with(appConfiguration: self.context.currentAppConfiguration.with { $0 })
             switch currency {
@@ -1253,7 +1259,7 @@ public final class StarsWithdrawScreen: ViewControllerComponentContainer {
         let resultController = UndoOverlayController(
             presentationData: presentationData,
             content: .image(
-                image: UIImage(bundleImageName: "Premium/Stars/StarLarge")!,
+                image: currency == .ton ? generateTintedImage(image: UIImage(bundleImageName: "Premium/TonGift"), color: .white)! : UIImage(bundleImageName: "Premium/Stars/StarLarge")!,
                 title: nil,
                 text: text,
                 round: false,
@@ -1314,9 +1320,9 @@ private final class AmountFieldStarsFormatter: NSObject, UITextFieldDelegate {
                 }
             case .ton:
                 let scale: Int64 = 1_000_000_000  // 10⁹  (one “nano”)
-                if let dot = text.firstIndex(of: ".") {
+                if let decimalSeparator = self.dateTimeFormat.decimalSeparator.first, let dot = text.firstIndex(of: decimalSeparator) {
                     // Slices for the parts on each side of the dot
-                    var wholeSlice     = String(text[..<dot])
+                    var wholeSlice = String(text[..<dot])
                     if wholeSlice.isEmpty {
                         wholeSlice = "0"
                     }
@@ -1356,7 +1362,7 @@ private final class AmountFieldStarsFormatter: NSObject, UITextFieldDelegate {
     
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         var acceptZero = false
-        if self.minValue <= 0 {
+        if case .ton = self.currency, self.minValue < 1_000_000_000 {
             acceptZero = true
         }
         
@@ -1367,7 +1373,7 @@ private final class AmountFieldStarsFormatter: NSObject, UITextFieldDelegate {
                 return false
             default:
                 if case .ton = self.currency {
-                    if c == "." {
+                    if let decimalSeparator = self.dateTimeFormat.decimalSeparator.first, c == decimalSeparator {
                         return false
                     }
                 }
@@ -1376,7 +1382,7 @@ private final class AmountFieldStarsFormatter: NSObject, UITextFieldDelegate {
         }) {
             return false
         }
-        if newText.count(where: { $0 == "." }) > 1 {
+        if let decimalSeparator = self.dateTimeFormat.decimalSeparator.first, newText.count(where: { $0 == decimalSeparator }) > 1 {
             return false
         }
         
@@ -1390,7 +1396,7 @@ private final class AmountFieldStarsFormatter: NSObject, UITextFieldDelegate {
             }
         case .ton:
             var fixedText = false
-            if let index = newText.firstIndex(of: ".") {
+            if let decimalSeparator = self.dateTimeFormat.decimalSeparator.first, let index = newText.firstIndex(of: decimalSeparator) {
                 let fractionalString = newText[newText.index(after: index)...]
                 if fractionalString.count > 2 {
                     newText = String(newText[newText.startIndex ..< newText.index(index, offsetBy: 3)])
@@ -1398,7 +1404,16 @@ private final class AmountFieldStarsFormatter: NSObject, UITextFieldDelegate {
                 }
             }
             
-            if (newText == "0" && !acceptZero) || (newText.count > 1 && newText.hasPrefix("0") && !newText.hasPrefix("0.")) {
+            if newText == self.dateTimeFormat.decimalSeparator {
+                if !acceptZero {
+                    newText.removeFirst()
+                } else {
+                    newText = "0\(newText)"
+                }
+                fixedText = true
+            }
+            
+            if (newText == "0" && !acceptZero) || (newText.count > 1 && newText.hasPrefix("0") && !newText.hasPrefix("0\(self.dateTimeFormat.decimalSeparator)")) {
                 newText.removeFirst()
                 fixedText = true
             }
@@ -1416,7 +1431,7 @@ private final class AmountFieldStarsFormatter: NSObject, UITextFieldDelegate {
             case .stars:
                 textField.text = "\(self.maxValue)"
             case .ton:
-                textField.text = "\(formatTonAmountText(self.maxValue, dateTimeFormat: PresentationDateTimeFormat(timeFormat: self.dateTimeFormat.timeFormat, dateFormat: self.dateTimeFormat.dateFormat, dateSeparator: "", dateSuffix: "", requiresFullYear: false, decimalSeparator: ".", groupingSeparator: ""), maxDecimalPositions: nil))"
+                textField.text = "\(formatTonAmountText(self.maxValue, dateTimeFormat: PresentationDateTimeFormat(timeFormat: self.dateTimeFormat.timeFormat, dateFormat: self.dateTimeFormat.dateFormat, dateSeparator: "", dateSuffix: "", requiresFullYear: false, decimalSeparator: self.dateTimeFormat.decimalSeparator, groupingSeparator: ""), maxDecimalPositions: nil))"
             }
             self.onTextChanged(text: self.textField.text ?? "")
             self.animateError()
@@ -1639,7 +1654,7 @@ private final class AmountFieldComponent: Component {
                     self.tonFormatter = nil
                     self.textField.delegate = self.starsFormatter
                 case .ton:
-                    self.textField.keyboardType = .numbersAndPunctuation
+                    self.textField.keyboardType = .decimalPad
                     if self.tonFormatter == nil {
                         self.tonFormatter = AmountFieldStarsFormatter(
                             textField: self.textField,

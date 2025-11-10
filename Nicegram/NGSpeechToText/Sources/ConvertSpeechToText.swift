@@ -26,26 +26,15 @@ public func convertSpeechToText(
     completion: (() -> Void)? = nil,
     closeWithoutSelect: (() -> Void)? = nil
 ) {
-    var id: Int64?
-    if let peer = message?.peers.toDict().first?.value {
-        switch EnginePeer(peer) {
-        case let .channel(channel):
-            id = channel.id.toInt64()
-        case let .legacyGroup(group):
-            id = group.id.toInt64()
-        case let .user(user):
-            id = user.id.toInt64()
-        default:
-            return
-        }
-    }
-    
-    guard let id else {
+    guard let message else {
         completion?()
         return
     }
+    
+    let accountId = context.account.peerId.id._internalGetInt64Value()
+    let authorId = (message.author?.id ?? message.id.peerId).toInt64()
 
-    let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: id)
+    let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: accountId)
     
     checkPremium { isPremium in
         if isPremium &&
@@ -61,7 +50,7 @@ public func convertSpeechToText(
                 completion: completion
             )
         } else {
-            let locale = NGSettings.appleSpeechToTextLocale[id] ?? Locale.current
+            let locale = NGSettings.appleSpeechToTextLocale[authorId] ?? Locale.current
 
             if languageStyle == .normal {
                 startConvertSpeechToTextTask(
@@ -76,7 +65,7 @@ public func convertSpeechToText(
                 )
             } else {
                 let appleSpeechToTextLocale = NGSettings.appleSpeechToTextLocale
-                let currentLocale = appleSpeechToTextLocale[id]
+                let currentLocale = appleSpeechToTextLocale[authorId]
 
                 showLanguages(
                     with: context,
@@ -85,7 +74,7 @@ public func convertSpeechToText(
                     currentLocale: currentLocale
                 ) { locale in
                     var appleSpeechToTextLocale = NGSettings.appleSpeechToTextLocale
-                    appleSpeechToTextLocale[id] = locale
+                    appleSpeechToTextLocale[authorId] = locale
                     NGSettings.appleSpeechToTextLocale = appleSpeechToTextLocale
                     
                     _ = controllerInteraction.navigationController()?.popViewController(animated: true)

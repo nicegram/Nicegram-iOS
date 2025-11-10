@@ -126,13 +126,28 @@ public extension TelegramUser {
             
             let restrictionInfo: PeerAccessRestrictionInfo? = restrictionReason.flatMap(PeerAccessRestrictionInfo.init(apiReasons:))
             
-            var nameColorIndex: Int32?
+            var nameColor: PeerColor?
             var backgroundEmojiId: Int64?
             if let color = color {
                 switch color {
                 case let .peerColor(_, color, backgroundEmojiIdValue):
-                    nameColorIndex = color
+                    if let color {
+                        nameColor = .preset(PeerNameColor(rawValue: color))
+                    }
                     backgroundEmojiId = backgroundEmojiIdValue
+                case let .peerColorCollectible(_, collectibleId, giftEmojiId, backgroundEmojiIdValue, accentColor, colors, darkAccentColor, darkColors):
+                    nameColor = .collectible(PeerCollectibleColor(
+                        collectibleId: collectibleId,
+                        giftEmojiFileId: giftEmojiId,
+                        backgroundEmojiId: backgroundEmojiIdValue,
+                        accentColor: UInt32(bitPattern: accentColor),
+                        colors: colors.map { UInt32(bitPattern: $0) },
+                        darkAccentColor: darkAccentColor.flatMap { UInt32(bitPattern: $0) },
+                        darkColors: darkColors.flatMap { $0.map { UInt32(bitPattern: $0) } }
+                    ))
+                    backgroundEmojiId = backgroundEmojiIdValue
+                case .inputPeerColorCollectible:
+                    break
                 }
             }
             
@@ -143,10 +158,12 @@ public extension TelegramUser {
                 case let .peerColor(_, color, backgroundEmojiIdValue):
                     profileColorIndex = color
                     profileBackgroundEmojiId = backgroundEmojiIdValue
+                default:
+                    break
                 }
             }
             
-            self.init(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id)), accessHash: accessHashValue, firstName: firstName, lastName: lastName, username: username, phone: phone, photo: representations, botInfo: botInfo, restrictionInfo: restrictionInfo, flags: userFlags, emojiStatus: emojiStatus.flatMap(PeerEmojiStatus.init(apiStatus:)), usernames: usernames?.map(TelegramPeerUsername.init(apiUsername:)) ?? [], storiesHidden: storiesHidden, nameColor: nameColorIndex.flatMap { PeerNameColor(rawValue: $0) }, backgroundEmojiId: backgroundEmojiId, profileColor: profileColorIndex.flatMap { PeerNameColor(rawValue: $0) }, profileBackgroundEmojiId: profileBackgroundEmojiId, subscriberCount: subscriberCount, verificationIconFileId: verificationIconFileId)
+            self.init(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id)), accessHash: accessHashValue, firstName: firstName, lastName: lastName, username: username, phone: phone, photo: representations, botInfo: botInfo, restrictionInfo: restrictionInfo, flags: userFlags, emojiStatus: emojiStatus.flatMap(PeerEmojiStatus.init(apiStatus:)), usernames: usernames?.map(TelegramPeerUsername.init(apiUsername:)) ?? [], storiesHidden: storiesHidden, nameColor: nameColor, backgroundEmojiId: backgroundEmojiId, profileColor: profileColorIndex.flatMap { PeerNameColor(rawValue: $0) }, profileBackgroundEmojiId: profileBackgroundEmojiId, subscriberCount: subscriberCount, verificationIconFileId: verificationIconFileId)
         case let .userEmpty(id):
             self.init(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id)), accessHash: nil, firstName: nil, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil)
         }
@@ -154,7 +171,7 @@ public extension TelegramUser {
     
     static func merge(_ lhs: TelegramUser?, rhs: Api.User) -> TelegramUser? {
         switch rhs {
-            case let .user(flags, _, _, rhsAccessHash, _, _, _, _, photo, _, _, restrictionReason, botInlinePlaceholder, _, emojiStatus, _, _, nameColor, profileColor, subscriberCount, _, _):
+            case let .user(flags, _, _, rhsAccessHash, _, _, _, _, photo, _, _, restrictionReason, botInlinePlaceholder, _, emojiStatus, _, _, color, profileColor, subscriberCount, _, _):
                 let isMin = (flags & (1 << 20)) != 0
                 if !isMin {
                     return TelegramUser(user: rhs)
@@ -235,13 +252,28 @@ public extension TelegramUser {
                             accessHash = lhs.accessHash ?? rhsAccessHashValue
                         }
                         
-                        var nameColorIndex: Int32?
+                        var nameColor: PeerColor?
                         var backgroundEmojiId: Int64?
-                        if let nameColor = nameColor {
-                            switch nameColor {
+                        if let color {
+                            switch color {
                             case let .peerColor(_, color, backgroundEmojiIdValue):
-                                nameColorIndex = color
+                                if let color {
+                                    nameColor = .preset(PeerNameColor(rawValue: color))
+                                }
                                 backgroundEmojiId = backgroundEmojiIdValue
+                            case let .peerColorCollectible(_, collectibleId, giftEmojiId, backgroundEmojiIdValue, accentColor, colors, darkAccentColor, darkColors):
+                                nameColor = .collectible(PeerCollectibleColor(
+                                    collectibleId: collectibleId,
+                                    giftEmojiFileId: giftEmojiId,
+                                    backgroundEmojiId: backgroundEmojiIdValue,
+                                    accentColor: UInt32(bitPattern: accentColor),
+                                    colors: colors.map { UInt32(bitPattern: $0) },
+                                    darkAccentColor: darkAccentColor.flatMap { UInt32(bitPattern: $0) },
+                                    darkColors: darkColors.flatMap { $0.map { UInt32(bitPattern: $0) } }
+                                ))
+                                backgroundEmojiId = backgroundEmojiIdValue
+                            case .inputPeerColorCollectible:
+                                break
                             }
                         }
                         
@@ -252,10 +284,12 @@ public extension TelegramUser {
                             case let .peerColor(_, color, backgroundEmojiIdValue):
                                 profileColorIndex = color
                                 profileBackgroundEmojiId = backgroundEmojiIdValue
+                            default:
+                                break
                             }
                         }
                         
-                        return TelegramUser(id: lhs.id, accessHash: accessHash, firstName: lhs.firstName, lastName: lhs.lastName, username: lhs.username, phone: lhs.phone, photo: telegramPhoto, botInfo: botInfo, restrictionInfo: restrictionInfo, flags: userFlags, emojiStatus: emojiStatus.flatMap(PeerEmojiStatus.init(apiStatus:)), usernames: lhs.usernames, storiesHidden: lhs.storiesHidden, nameColor: nameColorIndex.flatMap { PeerNameColor(rawValue: $0) }, backgroundEmojiId: backgroundEmojiId, profileColor: profileColorIndex.flatMap { PeerNameColor(rawValue: $0) }, profileBackgroundEmojiId: profileBackgroundEmojiId, subscriberCount: subscriberCount, verificationIconFileId: lhs.verificationIconFileId)
+                        return TelegramUser(id: lhs.id, accessHash: accessHash, firstName: lhs.firstName, lastName: lhs.lastName, username: lhs.username, phone: lhs.phone, photo: telegramPhoto, botInfo: botInfo, restrictionInfo: restrictionInfo, flags: userFlags, emojiStatus: emojiStatus.flatMap(PeerEmojiStatus.init(apiStatus:)), usernames: lhs.usernames, storiesHidden: lhs.storiesHidden, nameColor: nameColor, backgroundEmojiId: backgroundEmojiId, profileColor: profileColorIndex.flatMap { PeerNameColor(rawValue: $0) }, profileBackgroundEmojiId: profileBackgroundEmojiId, subscriberCount: subscriberCount, verificationIconFileId: lhs.verificationIconFileId)
                     } else {
                         return TelegramUser(user: rhs)
                     }

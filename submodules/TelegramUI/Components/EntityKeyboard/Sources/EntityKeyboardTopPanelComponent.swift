@@ -13,6 +13,7 @@ import AccountContext
 import MultilineTextComponent
 import LottieAnimationComponent
 import AvatarNode
+import GlassBackgroundComponent
 
 final class EntityKeyboardAnimationTopPanelComponent: Component {
     typealias EnvironmentType = EntityKeyboardTopPanelItemEnvironment
@@ -324,12 +325,16 @@ final class EntityKeyboardIconTopPanelComponent: Component {
     }
     
     final class View: UIView {
-        let iconView: UIImageView
+        let iconView: GlassBackgroundView.ContentImageView
+        let tintMaskView: UIView
+        
         var component: EntityKeyboardIconTopPanelComponent?
         var titleView: ComponentView<Empty>?
         
         override init(frame: CGRect) {
-            self.iconView = UIImageView()
+            self.tintMaskView = UIView()
+            self.iconView = GlassBackgroundView.ContentImageView()
+            self.tintMaskView.addSubview(self.iconView.tintMask)
             
             super.init(frame: frame)
             
@@ -355,13 +360,13 @@ final class EntityKeyboardIconTopPanelComponent: Component {
                 var image: UIImage?
                 switch component.icon {
                 case .featured:
-                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelFeaturedIcon")
+                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelFeaturedIcon")?.withRenderingMode(.alwaysTemplate)
                 case .trending:
-                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelTrendingIcon")
+                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelTrendingIcon")?.withRenderingMode(.alwaysTemplate)
                 case .recent:
-                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelRecentIcon")
+                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelRecentIcon")?.withRenderingMode(.alwaysTemplate)
                 case .saved:
-                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelSavedIcon")
+                    image = UIImage(bundleImageName: "Chat/Input/Media/PanelSavedIcon")?.withRenderingMode(.alwaysTemplate)
                 case .liked:
                     image = UIImage(bundleImageName: "Chat/Input/Media/PanelHeartIcon")?.withRenderingMode(.alwaysTemplate)
                 case .collectible:
@@ -402,10 +407,10 @@ final class EntityKeyboardIconTopPanelComponent: Component {
                     if component.useAccentColor {
                         color = component.theme.list.itemAccentColor
                     } else {
-                        color = component.theme.chat.inputMediaPanel.panelHighlightedIconColor
+                        color = component.theme.chat.inputPanel.inputControlColor
                     }
                 } else {
-                    color = component.theme.chat.inputMediaPanel.panelIconColor
+                    color = component.theme.chat.inputPanel.inputControlColor
                 }
             }
             
@@ -1278,7 +1283,94 @@ public final class EntityKeyboardTopPanelComponent: Component {
         }
     }
     
-    public final class View: UIView, UIScrollViewDelegate, ComponentTaggedView {
+    public final class View: UIView, UIScrollViewDelegate, ComponentTaggedView, PagerTopPanelView {
+        private final class ContentScrollLayer: CALayer {
+            public var mirrorLayer: CALayer?
+            
+            override public init() {
+                super.init()
+            }
+            
+            override public init(layer: Any) {
+                super.init(layer: layer)
+            }
+            
+            required public init?(coder: NSCoder) {
+                fatalError("init(coder:) has not been implemented")
+            }
+            
+            override public var position: CGPoint {
+                get {
+                    return super.position
+                } set(value) {
+                    if let mirrorLayer = self.mirrorLayer {
+                        mirrorLayer.position = value
+                    }
+                    super.position = value
+                }
+            }
+            
+            override public var bounds: CGRect {
+                get {
+                    return super.bounds
+                } set(value) {
+                    if let mirrorLayer = self.mirrorLayer {
+                        mirrorLayer.bounds = value
+                    }
+                    super.bounds = value
+                }
+            }
+            
+            override public func add(_ animation: CAAnimation, forKey key: String?) {
+                if let mirrorLayer = self.mirrorLayer {
+                    mirrorLayer.add(animation, forKey: key)
+                }
+                
+                super.add(animation, forKey: key)
+            }
+            
+            override public func removeAllAnimations() {
+                if let mirrorLayer = self.mirrorLayer {
+                    mirrorLayer.removeAllAnimations()
+                }
+                
+                super.removeAllAnimations()
+            }
+            
+            override public func removeAnimation(forKey: String) {
+                if let mirrorLayer = self.mirrorLayer {
+                    mirrorLayer.removeAnimation(forKey: forKey)
+                }
+                
+                super.removeAnimation(forKey: forKey)
+            }
+        }
+        
+        private final class ContentScrollView: UIScrollView, PagerExpandableScrollView {
+            override static var layerClass: AnyClass {
+                return ContentScrollLayer.self
+            }
+            
+            private let mirrorView: UIView
+            
+            init(mirrorView: UIView) {
+                self.mirrorView = mirrorView
+                
+                super.init(frame: CGRect())
+                
+                (self.layer as? ContentScrollLayer)?.mirrorLayer = mirrorView.layer
+                self.canCancelContentTouches = true
+            }
+            
+            required init?(coder: NSCoder) {
+                fatalError("init(coder:) has not been implemented")
+            }
+            
+            override func touchesShouldCancel(in view: UIView) -> Bool {
+                return true
+            }
+        }
+        
         private struct ItemLayout {
             struct ItemDescription {
                 var isStatic: Bool
@@ -1394,9 +1486,11 @@ public final class EntityKeyboardTopPanelComponent: Component {
             }
         }
         
-        private let scrollView: UIScrollView
+        private let mirrorContentScrollView: UIView
+        private let scrollView: ContentScrollView
         private var itemViews: [AnyHashable: ComponentHostView<EntityKeyboardTopPanelItemEnvironment>] = [:]
         private var highlightedIconBackgroundView: UIView
+        private var highlightedIconTintBackgroundView: UIView
         
         private var temporaryReorderingOrderIndex: (id: AnyHashable, index: Int)?
         
@@ -1429,21 +1523,35 @@ public final class EntityKeyboardTopPanelComponent: Component {
         
         private var reorderGestureRecognizer: ReorderGestureRecognizer?
         
+        public let tintContentMask: UIView
+        
         private var component: EntityKeyboardTopPanelComponent?
         weak var state: EmptyComponentState?
         private var environment: EntityKeyboardTopContainerPanelEnvironment?
         
         override init(frame: CGRect) {
-            self.scrollView = UIScrollView()
+            self.mirrorContentScrollView = UIView()
+            self.scrollView = ContentScrollView(mirrorView: self.mirrorContentScrollView)
             
             self.highlightedIconBackgroundView = UIView()
             self.highlightedIconBackgroundView.isUserInteractionEnabled = false
             self.highlightedIconBackgroundView.clipsToBounds = true
             self.highlightedIconBackgroundView.isHidden = true
             
+            self.highlightedIconTintBackgroundView = UIView()
+            self.highlightedIconTintBackgroundView.isUserInteractionEnabled = false
+            self.highlightedIconTintBackgroundView.clipsToBounds = true
+            self.highlightedIconTintBackgroundView.isHidden = true
+            self.highlightedIconTintBackgroundView.backgroundColor = UIColor(white: 0.0, alpha: 0.1)
+            
+            self.tintContentMask = UIView()
+            self.mirrorContentScrollView.addSubview(self.highlightedIconTintBackgroundView)
+            self.tintContentMask.addSubview(self.mirrorContentScrollView)
+            
             super.init(frame: frame)
             
             self.scrollView.layer.anchorPoint = CGPoint()
+            self.mirrorContentScrollView.layer.anchorPoint = CGPoint()
             self.scrollView.delaysContentTouches = false
             self.scrollView.clipsToBounds = false
             if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
@@ -1849,11 +1957,21 @@ public final class EntityKeyboardTopPanelComponent: Component {
                         },
                         containerSize: itemOuterFrame.size
                     )
+                    
                     let itemFrame = CGRect(origin: CGPoint(x: itemOuterFrame.minX + floor((itemOuterFrame.width - itemSize.width) / 2.0), y: itemOuterFrame.minY + floor((itemOuterFrame.height - itemSize.height) / 2.0)), size: itemSize)
                     itemTransition.setFrame(view: itemView, frame: itemFrame)
-                    
                     itemTransition.setSublayerTransform(view: itemView, transform: CATransform3DMakeScale(scale, scale, 1.0))
                     itemTransition.setAlpha(view: itemView, alpha: self.visibilityFraction)
+                    
+                    if let itemView = itemView.componentView as? EntityKeyboardIconTopPanelComponent.View {
+                        if itemView.tintMaskView.superview == nil {
+                            self.mirrorContentScrollView.addSubview(itemView.tintMaskView)
+                        }
+                        
+                        itemTransition.setFrame(view: itemView.tintMaskView, frame: itemFrame)
+                        itemTransition.setSublayerTransform(view: itemView.tintMaskView, transform: CATransform3DMakeScale(scale, scale, 1.0))
+                        itemTransition.setAlpha(view: itemView.tintMaskView, alpha: self.visibilityFraction)
+                    }
                 }
             }
             var removedIds: [AnyHashable] = []
@@ -1861,6 +1979,9 @@ public final class EntityKeyboardTopPanelComponent: Component {
                 if !validIds.contains(id) {
                     removedIds.append(id)
                     itemView.removeFromSuperview()
+                    if let itemView = itemView.componentView as? EntityKeyboardIconTopPanelComponent.View {
+                        itemView.tintMaskView.removeFromSuperview()
+                    }
                 }
             }
             for id in removedIds {
@@ -2020,6 +2141,7 @@ public final class EntityKeyboardTopPanelComponent: Component {
                                 
                                 if let activeContentItemId = self.activeContentItemId, activeContentItemId == self.items[index].id {
                                     self.highlightedIconBackgroundView.frame = itemOuterFrame
+                                    self.highlightedIconTintBackgroundView.frame = itemOuterFrame
                                 }
                             }
                         }
@@ -2080,6 +2202,7 @@ public final class EntityKeyboardTopPanelComponent: Component {
                     var highlightTransition = transition
                     if self.highlightedIconBackgroundView.isHidden {
                         self.highlightedIconBackgroundView.isHidden = false
+                        self.highlightedIconTintBackgroundView.isHidden = false
                         highlightTransition = .immediate
                     }
                     
@@ -2089,16 +2212,24 @@ public final class EntityKeyboardTopPanelComponent: Component {
                     } else {
                         isRound = false
                     }
+                    
                     highlightTransition.setCornerRadius(layer: self.highlightedIconBackgroundView.layer, cornerRadius: isRound ? min(itemFrame.width / 2.0, itemFrame.height / 2.0) : 10.0)
                     highlightTransition.setPosition(view: self.highlightedIconBackgroundView, position: CGPoint(x: itemFrame.midX, y: itemFrame.midY))
                     highlightTransition.setBounds(view: self.highlightedIconBackgroundView, bounds: CGRect(origin: CGPoint(), size: itemFrame.size))
+                    
+                    highlightTransition.setCornerRadius(layer: self.highlightedIconTintBackgroundView.layer, cornerRadius: isRound ? min(itemFrame.width / 2.0, itemFrame.height / 2.0) : 10.0)
+                    highlightTransition.setPosition(view: self.highlightedIconTintBackgroundView, position: CGPoint(x: itemFrame.midX, y: itemFrame.midY))
+                    highlightTransition.setBounds(view: self.highlightedIconTintBackgroundView, bounds: CGRect(origin: CGPoint(), size: itemFrame.size))
                 } else {
                     self.highlightedIconBackgroundView.isHidden = true
+                    self.highlightedIconTintBackgroundView.isHidden = true
                 }
             } else {
                 self.highlightedIconBackgroundView.isHidden = true
+                self.highlightedIconTintBackgroundView.isHidden = true
             }
             transition.setAlpha(view: self.highlightedIconBackgroundView, alpha: isExpanded ? 0.0 : 1.0)
+            transition.setAlpha(view: self.highlightedIconTintBackgroundView, alpha: isExpanded ? 0.0 : 1.0)
             
             panelEnvironment.visibilityFractionUpdated.connect { [weak self] (fraction, transition) in
                 guard let strongSelf = self else {
@@ -2129,6 +2260,9 @@ public final class EntityKeyboardTopPanelComponent: Component {
             
             transition.setScale(view: self.highlightedIconBackgroundView, scale: scale)
             transition.setAlpha(view: self.highlightedIconBackgroundView, alpha: self.visibilityFraction)
+            
+            transition.setScale(view: self.highlightedIconTintBackgroundView, scale: scale)
+            transition.setAlpha(view: self.highlightedIconTintBackgroundView, alpha: self.visibilityFraction)
             
             for (_, itemView) in self.itemViews {
                 transition.setSublayerTransform(view: itemView, transform: CATransform3DMakeScale(scale, scale, 1.0))
@@ -2165,29 +2299,6 @@ public final class EntityKeyboardTopPanelComponent: Component {
                     }
                 }
             }
-
-            /*var found = false
-            for i in 0 ..< self.items.count {
-                if self.items[i].id == itemId {
-                    found = true
-                    self.highlightedIconBackgroundView.isHidden = false
-                    let itemFrame = itemLayout.containerFrame(at: i)
-                    
-                    var highlightTransition = transition
-                    if highlightTransition.animation.isImmediate {
-                        highlightTransition = highlightTransition.withAnimation(.curve(duration: 0.3, curve: .spring))
-                    }
-                    highlightTransition.setPosition(view: self.highlightedIconBackgroundView, position: CGPoint(x: itemFrame.midX, y: itemFrame.midY))
-                    highlightTransition.setBounds(view: self.highlightedIconBackgroundView, bounds: CGRect(origin: CGPoint(), size: itemFrame.size))
-                    
-                    self.scrollView.scrollRectToVisible(itemFrame.insetBy(dx: -6.0, dy: 0.0), animated: true)
-                    
-                    break
-                }
-            }
-            if !found {
-                self.highlightedIconBackgroundView.isHidden = true
-            }*/
         }
         
         override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {

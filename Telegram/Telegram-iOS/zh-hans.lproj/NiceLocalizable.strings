@@ -227,7 +227,6 @@
 "NicegramCallRecord.StopAlertDescription" = "您想停止录制这个通话吗？";
 "NicegramCallRecord.StopAlertButtonStop" = "停止";
 "NicegramCallRecord.StopAlertButtonCancel" = "取消";
-"NicegramCallRecord.SavedMessage" = "已将录制的通话保存到 **保存的消息** 中。";
 
 /*Feed*/
 "NicegramFeed.Title" = "动态";

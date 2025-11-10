@@ -22,6 +22,7 @@ import ContextReferenceButtonComponent
 import ForwardInfoPanelComponent
 import MultilineTextComponent
 import PlainButtonComponent
+import GlassBackgroundComponent
 
 private var sharedIsReduceTransparencyEnabled = UIAccessibility.isReduceTransparencyEnabled
 
@@ -48,6 +49,7 @@ public final class MessageInputPanelComponent: Component {
         case story
         case editor
         case media
+        case glass
     }
     
     public enum InputMode: Hashable {
@@ -141,7 +143,7 @@ public final class MessageInputPanelComponent: Component {
     }
     
     public final class ExternalState {
-        public fileprivate(set) var isEditing: Bool = false
+        public var isEditing: Bool = false
         public fileprivate(set) var hasText: Bool = false
         public fileprivate(set) var isKeyboardHidden: Bool = false
         
@@ -151,6 +153,20 @@ public final class MessageInputPanelComponent: Component {
         public fileprivate(set) var deleteBackward: () -> Void = { }
         
         public init() {
+        }
+    }
+    
+    public final class SendActionTransition {
+        public let randomId: Int64
+        public let textSnapshotView: UIView
+        public let globalFrame: CGRect
+        public let cornerRadius: CGFloat
+        
+        init(randomId: Int64, textSnapshotView: UIView, globalFrame: CGRect, cornerRadius: CGFloat) {
+            self.randomId = randomId
+            self.textSnapshotView = textSnapshotView
+            self.globalFrame = globalFrame
+            self.cornerRadius = cornerRadius
         }
     }
     
@@ -170,7 +186,7 @@ public final class MessageInputPanelComponent: Component {
     public let areVoiceMessagesAvailable: Bool
     public let presentController: (ViewController) -> Void
     public let presentInGlobalOverlay: (ViewController) -> Void
-    public let sendMessageAction: () -> Void
+    public let sendMessageAction: (SendActionTransition?) -> Void
     public let sendMessageOptionsAction: ((UIView, ContextGesture?) -> Void)?
     public let sendStickerAction: (TelegramMediaFile) -> Void
     public let setMediaRecordingActive: ((Bool, Bool, Bool, UIView?) -> Void)?
@@ -229,7 +245,7 @@ public final class MessageInputPanelComponent: Component {
         areVoiceMessagesAvailable: Bool,
         presentController: @escaping (ViewController) -> Void,
         presentInGlobalOverlay: @escaping (ViewController) -> Void,
-        sendMessageAction: @escaping () -> Void,
+        sendMessageAction: @escaping (SendActionTransition?) -> Void,
         sendMessageOptionsAction: ((UIView, ContextGesture?) -> Void)?,
         sendStickerAction: @escaping (TelegramMediaFile) -> Void,
         setMediaRecordingActive: ((Bool, Bool, Bool, UIView?) -> Void)?,
@@ -464,6 +480,7 @@ public final class MessageInputPanelComponent: Component {
     public final class View: UIView {
         private let fieldBackgroundView: BlurredBackgroundView
         private let fieldBackgroundTint: UIView
+        private var fieldGlassBackgroundView: GlassBackgroundView?
         private let gradientView: UIImageView
         private let bottomGradientView: UIView
         
@@ -758,6 +775,28 @@ public final class MessageInputPanelComponent: Component {
             return result
         }
         
+        private func sendMessageAction() {
+            guard let component = self.component else {
+                return
+            }
+            if let maxLength = component.maxLength, self.textFieldExternalState.textLength > maxLength {
+                self.animateError()
+                component.presentTextLengthLimitTooltip?()
+            } else {
+                let baseFieldHeight: CGFloat = 40.0
+                var sendActionTransition: MessageInputPanelComponent.SendActionTransition?
+                if let snapshotView = self.textClippingView.snapshotView(afterScreenUpdates: false), let backgroundView = self.fieldGlassBackgroundView {
+                    sendActionTransition = MessageInputPanelComponent.SendActionTransition(
+                        randomId: Int64.random(in: .min ..< .max),
+                        textSnapshotView: snapshotView,
+                        globalFrame: backgroundView.convert(backgroundView.bounds, to: nil),
+                        cornerRadius: baseFieldHeight * 0.5
+                    )
+                }
+                component.sendMessageAction(sendActionTransition)
+            }
+        }
+        
         func update(component: MessageInputPanelComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             let previousPlaceholder = self.component?.placeholder
             
@@ -773,12 +812,18 @@ public final class MessageInputPanelComponent: Component {
                 insets.right = 41.0
             }
             
-            var textFieldSideInset = 9.0
-            if case .media = component.style {
+            let textFieldSideInset: CGFloat
+            switch component.style {
+            case .media, .glass:
                 textFieldSideInset = 8.0
+            default:
+                textFieldSideInset = 9.0
             }
             
-            let mediaInsets = UIEdgeInsets(top: insets.top, left: textFieldSideInset, bottom: insets.bottom, right: 41.0)
+            var mediaInsets = UIEdgeInsets(top: insets.top, left: textFieldSideInset, bottom: insets.bottom, right: 41.0)
+            if case .glass = component.style {
+                mediaInsets.right = 54.0
+            }
             
             let baseFieldHeight: CGFloat = 40.0
             
@@ -851,7 +896,9 @@ public final class MessageInputPanelComponent: Component {
                         }
                     },
                     isOneLineWhenUnfocused: component.style == .media,
-                    formatMenuAvailability: component.isFormattingLocked ? .locked : .available(TextFieldComponent.FormatMenuAvailability.Action.all),
+                    emptyLineHandling: component.style == .glass ? .notAllowed : .allowed,
+                    formatMenuAvailability: component.isFormattingLocked ? .locked : .available(component.style == .glass ? [.bold, .italic, .strikethrough, .underline, .spoiler] : TextFieldComponent.FormatMenuAvailability.Action.all),
+                    returnKeyType: component.style == .glass ? .send : .default,
                     lockedFormatAction: {
                         component.presentTextFormattingTooltip?()
                     },
@@ -860,7 +907,10 @@ public final class MessageInputPanelComponent: Component {
                     },
                     paste: { data in
                         component.paste(data)
-                    }
+                    },
+                    returnKeyAction: component.style == .glass ? { [weak self] in
+                        self?.sendMessageAction()
+                    } : nil
                 )),
                 environment: {},
                 containerSize: availableTextFieldSize
@@ -1025,6 +1075,8 @@ public final class MessageInputPanelComponent: Component {
             var fieldBackgroundFrame: CGRect
             if hasMediaRecording {
                 fieldBackgroundFrame = CGRect(origin: CGPoint(x: mediaInsets.left, y: insets.top), size: CGSize(width: availableSize.width - mediaInsets.left - mediaInsets.right, height: fieldFrame.height))
+            } else if case .glass = component.style {
+                fieldBackgroundFrame = CGRect(origin: CGPoint(x: mediaInsets.left, y: insets.top), size: CGSize(width: availableSize.width - mediaInsets.left - mediaInsets.right, height: fieldFrame.height))
             } else if isEditing || component.style == .editor || component.style == .media {
                 fieldBackgroundFrame = fieldFrame
             } else {
@@ -1041,6 +1093,24 @@ public final class MessageInputPanelComponent: Component {
             fieldBackgroundFrame.size.height += headerHeight
                         
             //transition.setFrame(view: self.vibrancyEffectView, frame: CGRect(origin: CGPoint(), size: fieldBackgroundFrame.size))
+            
+            switch component.style {
+            case .glass:
+                if self.fieldGlassBackgroundView == nil {
+                    let fieldGlassBackgroundView = GlassBackgroundView(frame: fieldBackgroundFrame)
+                    self.insertSubview(fieldGlassBackgroundView, aboveSubview: self.fieldBackgroundView)
+                    self.fieldGlassBackgroundView = fieldGlassBackgroundView
+                    
+                    self.fieldBackgroundView.isHidden = true
+                    self.fieldBackgroundTint.isHidden = true
+                }
+                if let fieldGlassBackgroundView = self.fieldGlassBackgroundView {
+                    fieldGlassBackgroundView.update(size: fieldBackgroundFrame.size, cornerRadius: baseFieldHeight * 0.5, isDark: true, tintColor: .init(kind: .custom, color: UIColor(rgb: 0x25272e, alpha: 0.72)), transition: transition)
+                    transition.setFrame(view: fieldGlassBackgroundView, frame: fieldBackgroundFrame)
+                }
+            default:
+                break
+            }
             
             transition.setFrame(view: self.fieldBackgroundView, frame: fieldBackgroundFrame)
             self.fieldBackgroundView.update(size: fieldBackgroundFrame.size, cornerRadius: headerHeight > 0.0 ? 18.0 : baseFieldHeight * 0.5, transition: transition.containedViewLayoutTransition)
@@ -1063,7 +1133,7 @@ public final class MessageInputPanelComponent: Component {
             transition.setAlpha(view: self.bottomGradientView, alpha: component.displayGradient ? 1.0 : 0.0)
 
             let placeholderOriginX: CGFloat
-            if isEditing || component.style == .story {
+            if isEditing || component.style == .story || component.style == .glass {
                 placeholderOriginX = 16.0
             } else {
                 placeholderOriginX = floorToScreenPixels(fieldBackgroundFrame.minX + (fieldBackgroundFrame.width - placeholderSize.width) / 2.0)
@@ -1282,7 +1352,10 @@ public final class MessageInputPanelComponent: Component {
                     environment: {},
                     containerSize: availableTextFieldSize
                 )
-                let counterFrame = CGRect(origin: CGPoint(x: availableSize.width - insets.right + floorToScreenPixels((insets.right - counterSize.width) * 0.5), y: size.height - insets.bottom - baseFieldHeight - counterSize.height - 5.0), size: counterSize)
+                var counterFrame = CGRect(origin: CGPoint(x: availableSize.width - insets.right + floorToScreenPixels((insets.right - counterSize.width) * 0.5), y: size.height - insets.bottom - baseFieldHeight - counterSize.height - 5.0), size: counterSize)
+                if case .glass = component.style {
+                    counterFrame.origin.x -= 7.0
+                }
                 if let counterView = self.counter.view {
                     if counterView.superview == nil {
                         self.addSubview(counterView)
@@ -1456,6 +1529,7 @@ public final class MessageInputPanelComponent: Component {
                 }
             }
             
+            var inputActionButtonAvailableSize = CGSize(width: 33.0, height: 33.0)
             var inputActionButtonAlpha = 1.0
             let inputActionButtonMode: MessageInputActionButtonComponent.Mode
             if case .editor = component.style {
@@ -1469,12 +1543,19 @@ public final class MessageInputPanelComponent: Component {
                 if !isEditing {
                     inputActionButtonAlpha = 0.0
                 }
+            } else if case .glass = component.style {
+                inputActionButtonAvailableSize = CGSize(width: 40.0, height: 40.0)
+                if self.textFieldExternalState.hasText {
+                    inputActionButtonMode = .send
+                } else {
+                    inputActionButtonMode = .close
+                }
             } else {
                 if hasMediaEditing {
                     inputActionButtonMode = .send
                 } else {
                     if self.textFieldExternalState.hasText {
-                        if let sendPaidMessageStars = component.sendPaidMessageStars, "".isEmpty {
+                        if let sendPaidMessageStars = component.sendPaidMessageStars, !"".isEmpty {
                             inputActionButtonMode = .stars(sendPaidMessageStars.value)
                         } else {
                             inputActionButtonMode = .send
@@ -1494,6 +1575,7 @@ public final class MessageInputPanelComponent: Component {
                 transition: transition,
                 component: AnyComponent(MessageInputActionButtonComponent(
                     mode: inputActionButtonMode,
+                    style: component.style == .glass ? .glass : .legacy,
                     storyId: component.storyItem?.id,
                     action: { [weak self] mode, action, sendAction in
                         guard let self, let component = self.component else {
@@ -1503,20 +1585,17 @@ public final class MessageInputPanelComponent: Component {
                         switch mode {
                         case .none:
                             break
+                        case .close:
+                            component.sendMessageAction(nil)
                         case .send, .stars:
                             if case .up = action {
                                 if component.recordedAudioPreview != nil {
-                                    component.sendMessageAction()
+                                    component.sendMessageAction(nil)
                                 } else if component.hasRecordedVideoPreview {
-                                    component.sendMessageAction()
+                                    component.sendMessageAction(nil)
                                 } else if case let .text(string) = self.getSendMessageInput(), string.string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 } else {
-                                    if let maxLength = component.maxLength, self.textFieldExternalState.textLength > maxLength {
-                                        self.animateError()
-                                        component.presentTextLengthLimitTooltip?()
-                                    } else {
-                                        component.sendMessageAction()
-                                    }
+                                    self.sendMessageAction()
                                 }
                             }
                         case .apply:
@@ -1525,7 +1604,7 @@ public final class MessageInputPanelComponent: Component {
                                     self.animateError()
                                     component.presentTextLengthLimitTooltip?()
                                 } else {
-                                    component.sendMessageAction()
+                                    component.sendMessageAction(nil)
                                 }
                             }
                         case .voiceInput, .videoInput:
@@ -1587,7 +1666,7 @@ public final class MessageInputPanelComponent: Component {
                     hasShadow: component.style == .editor
                 )),
                 environment: {},
-                containerSize: CGSize(width: 33.0, height: 33.0)
+                containerSize: inputActionButtonAvailableSize
             )
             
             let hasLikeAction: Bool
@@ -1617,8 +1696,13 @@ public final class MessageInputPanelComponent: Component {
                     inputActionButtonOriginX -= 46.0
                 }
             } else {
-                if component.setMediaRecordingActive != nil || isEditing {
-                    inputActionButtonOriginX = fieldBackgroundFrame.maxX + floorToScreenPixels((41.0 - inputActionButtonSize.width) * 0.5)
+                if component.setMediaRecordingActive != nil || isEditing || component.style == .glass {
+                    switch component.style {
+                    case .glass:
+                        inputActionButtonOriginX = fieldBackgroundFrame.maxX + 6.0
+                    default:
+                        inputActionButtonOriginX = fieldBackgroundFrame.maxX + floorToScreenPixels((41.0 - inputActionButtonSize.width) * 0.5)
+                    }
                 } else {
                     inputActionButtonOriginX = size.width
                 }

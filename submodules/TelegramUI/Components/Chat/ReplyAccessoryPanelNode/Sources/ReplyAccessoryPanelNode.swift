@@ -492,7 +492,7 @@ public final class ReplyAccessoryPanelNode: AccessoryPanelNode {
                 return
             }
             self.previousTapTimestamp = CFAbsoluteTimeGetCurrent()
-            self.interfaceInteraction?.presentReplyOptions(self)
+            self.interfaceInteraction?.presentReplyOptions(self.view)
             Queue.mainQueue().after(1.5) {
                 self.updateThemeAndStrings(theme: self.theme, strings: self.strings, force: true)
             }

@@ -3235,6 +3235,10 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                 completeOffset += snapToBoundsOffset
                 
                 if !updateSizeAndInsets.duration.isZero && !isExperimentalSnapToScrollToItem {
+                    for i in 0 ..< previousApparentFrames.count {
+                        previousApparentFrames[i].1.frame.origin.y += completeOffset - offsetFix
+                    }
+                    
                     let animation: CABasicAnimation
                     let animationCurve: ContainedViewLayoutTransitionCurve
                     let animationDuration: Double
@@ -3242,7 +3246,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                         case let .Spring(duration):
                             headerNodesTransition = (.animated(duration: duration, curve: .spring), false, -completeOffset)
                             animationCurve = .spring
-                            let springAnimation = makeSpringAnimation("sublayerTransform")
+                            let springAnimation = makeSpringAnimation("sublayerTransform", duration: duration)
                             springAnimation.fromValue = NSValue(caTransform3D: CATransform3DMakeTranslation(0.0, -completeOffset, 0.0))
                             springAnimation.toValue = NSValue(caTransform3D: CATransform3DIdentity)
                             springAnimation.isRemovedOnCompletion = true
@@ -3323,7 +3327,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                     })
                 }
                 
-                let springAnimation = makeSpringAnimation("sublayerTransform")
+                let springAnimation = makeSpringAnimation("sublayerTransform", duration: duration)
                 springAnimation.fromValue = NSValue(caTransform3D: CATransform3DMakeTranslation(0.0, -completeOffset, 0.0))
                 springAnimation.toValue = NSValue(caTransform3D: CATransform3DIdentity)
                 springAnimation.isRemovedOnCompletion = true
@@ -3572,7 +3576,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                         case let .Spring(duration):
                             animationCurve = .spring
                             animationDuration = duration
-                            let springAnimation = makeSpringAnimation("sublayerTransform")
+                            let springAnimation = makeSpringAnimation("sublayerTransform", duration: duration)
                             springAnimation.fromValue = NSValue(caTransform3D: CATransform3DMakeTranslation(0.0, -offset, 0.0))
                             springAnimation.toValue = NSValue(caTransform3D: CATransform3DIdentity)
                             springAnimation.isRemovedOnCompletion = true
@@ -3591,7 +3595,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                                 springAnimation.speed = speed * Float(springAnimation.duration / duration)
                             }
                             
-                            let reverseSpringAnimation = makeSpringAnimation("sublayerTransform")
+                            let reverseSpringAnimation = makeSpringAnimation("sublayerTransform", duration: duration)
                             reverseSpringAnimation.fromValue = NSValue(caTransform3D: CATransform3DMakeTranslation(0.0, offset, 0.0))
                             reverseSpringAnimation.toValue = NSValue(caTransform3D: CATransform3DIdentity)
                             reverseSpringAnimation.isRemovedOnCompletion = true

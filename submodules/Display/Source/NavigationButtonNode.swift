@@ -107,7 +107,7 @@ private final class NavigationButtonItemNode: ImmediateTextNode {
         }
     }
     
-    public var color: UIColor = UIColor(rgb: 0x007aff) {
+    public var color: UIColor = UIColor(rgb: 0x0088ff) {
         didSet {
             if let text = self._text {
                 self.attributedText = NSAttributedString(string: text, attributes: self.attributesForCurrentState())
@@ -347,7 +347,7 @@ public final class NavigationButtonNode: ContextControllerSourceNode {
     public var pressed: (Int) -> () = { _ in }
     public var highlightChanged: (Int, Bool) -> () = { _, _ in }
     
-    public var color: UIColor = UIColor(rgb: 0x007aff) {
+    public var color: UIColor = UIColor(rgb: 0x0088ff) {
         didSet {
             if !self.color.isEqual(oldValue) {
                 for node in self.nodes {

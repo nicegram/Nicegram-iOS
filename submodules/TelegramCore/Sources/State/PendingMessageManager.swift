@@ -494,7 +494,7 @@ public final class PendingMessageManager {
                                 stateManager: strongSelf.stateManager,
                                 accountPeerId: strongSelf.accountPeerId,
                                 peerId: message.id.peerId,
-                                title: "Topic #\(message.stableId)",
+                                title: "New Thread",
                                 iconColor: 0,
                                 iconFileId: nil
                             ).startStrict(next: { [weak strongSelf] topicId in

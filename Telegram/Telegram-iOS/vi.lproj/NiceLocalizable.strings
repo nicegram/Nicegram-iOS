@@ -1,11 +1,11 @@
 "AppName" = "Nicegram";
 
 "ViewAuditReport" = "Xem Báo cáo CertiK";
-"Wallet" = "Wallet";
+"Wallet" = "Ví";
 
 /*Common*/
-"Nicegram.PrivacyPolicy" = "Chính sách quyền riêng tư";
-"Nicegram.EULA" = "EULA";
+"Nicegram.PrivacyPolicy" = "Chính sách bảo mật";
+"Nicegram.EULA" = "Thỏa thuận giấy phép người dùng cuối";
 
 /*ChatFilter*/
 "ChatFilter.Bots" = "Bots";
@@ -111,11 +111,11 @@
 "Messages.Translate" = "Dịch";
 "Messages.UndoTranslate" = "Hoàn tác Dịch";
 "Messages.TranslateError" = "Xin lỗi, không thể dịch.";
-"Messages.SelectAllFromUser" = "Chọn Tất cả từ Người dùng này";
+"Messages.SelectAllFromUser" = "Chọn Tất cả Từ Người dùng Này";
 "Messages.ToLanguage" = "Sang Ngôn ngữ";
 "Messages.ToLanguage.WithCode" = "Sang Ngôn ngữ: %@";
 "Messages.TranslateError.ToLanguageNotFound" = "Không thể xác định ngôn ngữ bạn muốn dịch văn bản thành. Vui lòng chọn thủ công và thử lại.";
-"Messages.ReplyPrivately" = "Phản hồi Riêng tư";
+"Messages.ReplyPrivately" = "Trả lời Riêng tư";
 "Messages.DeleteAllSystemMessages" = "Xóa Tất cả";
 
 /*NG Lab Registration Date*/
@@ -160,7 +160,7 @@
 "NicegramSettings.Unblock.Button" = "Hướng dẫn Bỏ Chặn";
 "NicegramSettings.Other.hideReactions" = "Ẩn Phản hồi";
 "NicegramSettings.Other.hideReactionsToYourMessages" = "Ẩn phản hồi tới tin nhắn của bạn";
-"NicegramSettings.RoundVideos.DownloadVideos" = "Tải video về Thư viện";
+"NicegramSettings.RoundVideos.DownloadVideos" = "Tải video xuống Thư viện";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Bỏ qua Ngôn ngữ";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Ứng dụng phát hiện ngôn ngữ của từng tin nhắn trên thiết bị của bạn. Đây là một tác vụ hiệu suất cao có thể ảnh hưởng đến tuổi thọ pin của bạn.";
 "Premium.rememberFolderOnExit" = "Ghi nhớ thư mục hiện tại khi thoát";
@@ -190,12 +190,12 @@
 "TelegramPremium.Description" = "Rất tiếc, bạn không thể nhận các Tính năng Telegram Premium khi đang đăng nhập vào ứng dụng Nicegram. Vui lòng chuyển đến ứng dụng chính thức của Telegram và đăng ký Telegram Premium. Khi bạn quay lại Nicegram, tất cả các Tính năng Premium sẽ khả dụng để sử dụng.";
 
 /*Double Bottom*/
-"DoubleBottom.Title" = "Đáy đôi";
+"DoubleBottom.Title" = "Double bottom";
 "DoubleBottom.Description" = "Để kích hoạt tính năng này, bạn nên có nhiều hơn một tài khoản và bật Mã khóa (đi tới Cài đặt → Quyền riêng tư & Bảo mật → Mã khóa)";
 "DoubleBottom.Enabled.Title" = "Double Bottom đã được kích hoạt";
 "DoubleBottom.Enabled.Description" = "Vui lòng nhớ mã khóa bạn vừa thiết lập và khởi động lại ứng dụng để Double Bottom hoạt động tốt";
 "DoubleBottom.Enabled.OK" = "OK";
-"DoubleBottom.Passcode.Error" = "Vui lòng đặt mã khóa khác với mã bạn sử dụng cho Mã khóa";
+"DoubleBottom.Passcode.Error" = "Vui lòng thiết lập một mã khác với mã bạn sử dụng cho Khóa mã";
 
 /*Rounded Videos*/
 "RoundedVideos.ButtonTitle" = "Gửi dưới dạng Video Tròn";
@@ -203,7 +203,7 @@
 "RoundedVideos.SendButtonTooltip" = "Nhấn giữ để gửi video của bạn dưới dạng vòng tròn phong cách.";
 
 /*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI Speech2Text";
+"SpeechToText.UseOpenAi" = "OpenAI Chuyển Giọng nói thành Văn bản";
 "SpeechToText.Toast" = "[Đăng ký Nicegram Premium]() cho công nghệ OpenAI Speech2Text nhanh hơn và tốt hơn!";
 
 /*Confirm Call*/
@@ -227,10 +227,9 @@
 "NicegramCallRecord.StopAlertDescription" = "Bạn có muốn dừng ghi âm cuộc gọi này không?";
 "NicegramCallRecord.StopAlertButtonStop" = "Dừng";
 "NicegramCallRecord.StopAlertButtonCancel" = "Hủy";
-"NicegramCallRecord.SavedMessage" = "Cuộc gọi đã ghi được lưu vào **Tin nhắn đã lưu**.";
 
 /*Feed*/
-"NicegramFeed.Title" = "Nguồn cấp";
+"NicegramFeed.Title" = "Nguồn";
 "NicegramFeed.Add" = "Thêm vào Nguồn cấp";
 "NicegramFeed.Remove" = "Xóa khỏi Nguồn cấp";
 

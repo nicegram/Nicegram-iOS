@@ -12,7 +12,7 @@ import PresentationDataUtils
 import UIKitRuntimeUtils
 import ReplayKit
 
-private let accentColor: UIColor = UIColor(rgb: 0x007aff)
+private let accentColor: UIColor = UIColor(rgb: 0x0088ff)
 
 protocol PreviewVideoNode: ASDisplayNode {
     var ready: Signal<Bool, NoError> { get }

@@ -57,3 +57,10 @@ void applyKeyboardAutocorrection(UITextView * _Nonnull textView);
 @end
 
 void snapshotViewByDrawingInContext(UIView * _Nonnull view);
+
+@interface EffectSettingsContainerView : UIView
+
+@property (nonatomic) double lumaMin;
+@property (nonatomic) double lumaMax;
+
+@end

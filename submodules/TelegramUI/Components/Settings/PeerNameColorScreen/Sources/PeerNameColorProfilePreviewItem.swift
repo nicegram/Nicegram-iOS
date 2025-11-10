@@ -24,6 +24,7 @@ final class PeerNameColorProfilePreviewItem: ListViewItem, ItemListItem, ListIte
     let componentTheme: PresentationTheme
     let strings: PresentationStrings
     let topInset: CGFloat
+    let bottomInset: CGFloat
     let sectionId: ItemListSectionId
     let peer: EnginePeer?
     let subtitleString: String?
@@ -31,12 +32,13 @@ final class PeerNameColorProfilePreviewItem: ListViewItem, ItemListItem, ListIte
     let nameDisplayOrder: PresentationPersonNameOrder
     let showBackground: Bool
     
-    init(context: AccountContext, theme: PresentationTheme, componentTheme: PresentationTheme, strings: PresentationStrings, topInset: CGFloat, sectionId: ItemListSectionId, peer: EnginePeer?, subtitleString: String? = nil, files: [Int64: TelegramMediaFile], nameDisplayOrder: PresentationPersonNameOrder, showBackground: Bool) {
+    init(context: AccountContext, theme: PresentationTheme, componentTheme: PresentationTheme, strings: PresentationStrings, topInset: CGFloat, bottomInset: CGFloat, sectionId: ItemListSectionId, peer: EnginePeer?, subtitleString: String? = nil, files: [Int64: TelegramMediaFile], nameDisplayOrder: PresentationPersonNameOrder, showBackground: Bool) {
         self.context = context
         self.theme = theme
         self.componentTheme = componentTheme
         self.strings = strings
         self.topInset = topInset
+        self.bottomInset = bottomInset
         self.sectionId = sectionId
         self.peer = peer
         self.subtitleString = subtitleString
@@ -150,7 +152,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
         return { [weak self] item, params, neighbors in
             let separatorHeight = UIScreenPixel
             
-            let contentSize = CGSize(width: params.width, height: 210.0 + item.topInset)
+            let contentSize = CGSize(width: params.width, height: 210.0 + item.topInset + item.bottomInset)
             var insets = itemListNeighborsGroupedInsets(neighbors, params)
             if params.width <= 320.0 {
                 insets.top = 0.0
@@ -169,7 +171,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                 }
                 self.item = item
                     
-                self.backgroundNode.backgroundColor = item.theme.rootController.navigationBar.opaqueBackgroundColor
+                self.backgroundNode.backgroundColor = item.theme.list.itemBlocksBackgroundColor
                 self.topStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
                 self.bottomStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
 
@@ -186,6 +188,18 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                     self.addSubnode(self.maskNode)
                 }
                 
+                var hasBackground = false
+                let subject: PeerInfoCoverComponent.Subject?
+                if let status = item.peer?.emojiStatus, case .starGift = status.content {
+                    subject = .status(status)
+                    hasBackground = true
+                } else if let peer = item.peer {
+                    subject = .peer(peer)
+                    hasBackground = peer.profileColor != nil
+                } else {
+                    subject = nil
+                }
+                
                 if params.isStandalone {
                     let transition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .easeInOut)
                     transition.updateAlpha(node: self.backgroundNode, alpha: item.showBackground ? 1.0 : 0.0)
@@ -193,7 +207,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                     
                     self.backgroundNode.isHidden = false
                     self.topStripeNode.isHidden = true
-                    self.bottomStripeNode.isHidden = false
+                    self.bottomStripeNode.isHidden = hasBackground
                     self.maskNode.isHidden = true
                     
                     self.bottomStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: contentSize.height - separatorHeight), size: CGSize(width: layoutSize.width, height: separatorHeight))
@@ -223,7 +237,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                         hasBottomCorners = true
                         self.bottomStripeNode.isHidden = hasCorners
                     }
-                    
+                                        
                     self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.componentTheme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                     
                     self.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
@@ -237,14 +251,6 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                 let avatarSize: CGFloat = 104.0
                 let avatarFrame = CGRect(origin: CGPoint(x: floor((coverFrame.width - avatarSize) * 0.5), y: coverFrame.minY + item.topInset + 24.0), size: CGSize(width: avatarSize, height: avatarSize))
                 
-                let subject: PeerInfoCoverComponent.Subject?
-                if let status = item.peer?.emojiStatus, case .starGift = status.content {
-                    subject = .status(status)
-                } else if let peer = item.peer {
-                    subject = .peer(peer)
-                } else {
-                    subject = nil
-                }
                 let _ = self.background.update(
                     transition: .immediate,
                     component: AnyComponent(PeerInfoCoverComponent(
@@ -312,7 +318,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                         credibilityIcon = .emojiStatus(emojiStatus)
                     } else if peer.isVerified {
                         credibilityIcon = .verified
-                    } else if peer.isPremium && !premiumConfiguration.isPremiumDisabled && (peer.id != item.context.account.peerId) {
+                    } else if peer.isPremium && !premiumConfiguration.isPremiumDisabled {
                         credibilityIcon = .premium
                     } else {
                         credibilityIcon = .none
@@ -324,7 +330,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                 let statusColor: UIColor
                 if let status = item.peer?.emojiStatus, case .starGift = status.content {
                     statusColor = .white
-                } else if let peer = item.peer, peer.profileColor != nil {
+                } else if let peer = item.peer, peer.effectiveProfileColor != nil {
                     statusColor = .white
                 } else {
                     statusColor = item.theme.list.itemCheckColors.fillColor
@@ -343,7 +349,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                 case .scam:
                     emojiStatusContent = .text(color: item.theme.chat.message.incoming.scamColor, string: item.strings.Message_ScamAccount.uppercased())
                 case let .emojiStatus(emojiStatus):
-                    emojiStatusContent = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 80.0, height: 80.0), placeholderColor: item.theme.list.mediaPlaceholderColor, themeColor: statusColor, loopMode: .forever)
+                    emojiStatusContent = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 80.0, height: 80.0), placeholderColor: item.theme.list.mediaPlaceholderColor, themeColor: statusColor, loopMode: .count(2))
                 }
                 
                 let backgroundColor: UIColor
@@ -355,7 +361,7 @@ final class PeerNameColorProfilePreviewItemNode: ListViewItemNode {
                     backgroundColor = UIColor(rgb: UInt32(bitPattern: outerColor))
                     subtitleColor = UIColor(white: 1.0, alpha: 0.6).blitOver(backgroundColor.withMultiplied(hue: 1.0, saturation: 2.2, brightness: 1.5), alpha: 1.0)
                     particleColor = .white
-                } else if let peer = item.peer, let profileColor = peer.profileColor {
+                } else if let peer = item.peer, let profileColor = peer.effectiveProfileColor {
                     titleColor = .white
                     backgroundColor = item.context.peerNameColors.getProfile(profileColor).main
                     subtitleColor = UIColor(white: 1.0, alpha: 0.6).blitOver(backgroundColor.withMultiplied(hue: 1.0, saturation: 2.2, brightness: 1.5), alpha: 1.0)

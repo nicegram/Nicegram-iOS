@@ -180,7 +180,7 @@ final class StarsBalanceComponent: Component {
             let formattedLabel: String
             switch component.currency {
             case .ton:
-                formattedLabel = formatTonAmountText(component.count.value, dateTimeFormat: component.dateTimeFormat)
+                formattedLabel = formatTonAmountText(component.count.value, dateTimeFormat: component.dateTimeFormat, maxDecimalPositions: 3)
             case .stars:
                 formattedLabel = formatStarsAmountText(component.count, dateTimeFormat: component.dateTimeFormat)
             }

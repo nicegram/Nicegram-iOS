@@ -631,9 +631,9 @@ public extension Api.messages {
 public extension Api.messages {
     enum Messages: TypeConstructorDescription {
         case channelMessages(flags: Int32, pts: Int32, count: Int32, offsetIdOffset: Int32?, messages: [Api.Message], topics: [Api.ForumTopic], chats: [Api.Chat], users: [Api.User])
-        case messages(messages: [Api.Message], chats: [Api.Chat], users: [Api.User])
+        case messages(messages: [Api.Message], topics: [Api.ForumTopic], chats: [Api.Chat], users: [Api.User])
         case messagesNotModified(count: Int32)
-        case messagesSlice(flags: Int32, count: Int32, nextRate: Int32?, offsetIdOffset: Int32?, searchFlood: Api.SearchPostsFlood?, messages: [Api.Message], chats: [Api.Chat], users: [Api.User])
+        case messagesSlice(flags: Int32, count: Int32, nextRate: Int32?, offsetIdOffset: Int32?, searchFlood: Api.SearchPostsFlood?, messages: [Api.Message], topics: [Api.ForumTopic], chats: [Api.Chat], users: [Api.User])
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
@@ -666,13 +666,18 @@ public extension Api.messages {
                         item.serialize(buffer, true)
                     }
                     break
-                case .messages(let messages, let chats, let users):
+                case .messages(let messages, let topics, let chats, let users):
                     if boxed {
-                        buffer.appendInt32(-1938715001)
+                        buffer.appendInt32(494135274)
                     }
                     buffer.appendInt32(481674261)
                     buffer.appendInt32(Int32(messages.count))
                     for item in messages {
+                        item.serialize(buffer, true)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(topics.count))
+                    for item in topics {
                         item.serialize(buffer, true)
                     }
                     buffer.appendInt32(481674261)
@@ -692,9 +697,9 @@ public extension Api.messages {
                     }
                     serializeInt32(count, buffer: buffer, boxed: false)
                     break
-                case .messagesSlice(let flags, let count, let nextRate, let offsetIdOffset, let searchFlood, let messages, let chats, let users):
+                case .messagesSlice(let flags, let count, let nextRate, let offsetIdOffset, let searchFlood, let messages, let topics, let chats, let users):
                     if boxed {
-                        buffer.appendInt32(1982539325)
+                        buffer.appendInt32(1595959062)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt32(count, buffer: buffer, boxed: false)
@@ -704,6 +709,11 @@ public extension Api.messages {
                     buffer.appendInt32(481674261)
                     buffer.appendInt32(Int32(messages.count))
                     for item in messages {
+                        item.serialize(buffer, true)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(topics.count))
+                    for item in topics {
                         item.serialize(buffer, true)
                     }
                     buffer.appendInt32(481674261)
@@ -724,12 +734,12 @@ public extension Api.messages {
         switch self {
                 case .channelMessages(let flags, let pts, let count, let offsetIdOffset, let messages, let topics, let chats, let users):
                 return ("channelMessages", [("flags", flags as Any), ("pts", pts as Any), ("count", count as Any), ("offsetIdOffset", offsetIdOffset as Any), ("messages", messages as Any), ("topics", topics as Any), ("chats", chats as Any), ("users", users as Any)])
-                case .messages(let messages, let chats, let users):
-                return ("messages", [("messages", messages as Any), ("chats", chats as Any), ("users", users as Any)])
+                case .messages(let messages, let topics, let chats, let users):
+                return ("messages", [("messages", messages as Any), ("topics", topics as Any), ("chats", chats as Any), ("users", users as Any)])
                 case .messagesNotModified(let count):
                 return ("messagesNotModified", [("count", count as Any)])
-                case .messagesSlice(let flags, let count, let nextRate, let offsetIdOffset, let searchFlood, let messages, let chats, let users):
-                return ("messagesSlice", [("flags", flags as Any), ("count", count as Any), ("nextRate", nextRate as Any), ("offsetIdOffset", offsetIdOffset as Any), ("searchFlood", searchFlood as Any), ("messages", messages as Any), ("chats", chats as Any), ("users", users as Any)])
+                case .messagesSlice(let flags, let count, let nextRate, let offsetIdOffset, let searchFlood, let messages, let topics, let chats, let users):
+                return ("messagesSlice", [("flags", flags as Any), ("count", count as Any), ("nextRate", nextRate as Any), ("offsetIdOffset", offsetIdOffset as Any), ("searchFlood", searchFlood as Any), ("messages", messages as Any), ("topics", topics as Any), ("chats", chats as Any), ("users", users as Any)])
     }
     }
     
@@ -778,19 +788,24 @@ public extension Api.messages {
             if let _ = reader.readInt32() {
                 _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Message.self)
             }
-            var _2: [Api.Chat]?
+            var _2: [Api.ForumTopic]?
             if let _ = reader.readInt32() {
-                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Chat.self)
+                _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.ForumTopic.self)
             }
-            var _3: [Api.User]?
+            var _3: [Api.Chat]?
             if let _ = reader.readInt32() {
-                _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
+                _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Chat.self)
+            }
+            var _4: [Api.User]?
+            if let _ = reader.readInt32() {
+                _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            if _c1 && _c2 && _c3 {
-                return Api.messages.Messages.messages(messages: _1!, chats: _2!, users: _3!)
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.messages.Messages.messages(messages: _1!, topics: _2!, chats: _3!, users: _4!)
             }
             else {
                 return nil
@@ -824,13 +839,17 @@ public extension Api.messages {
             if let _ = reader.readInt32() {
                 _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Message.self)
             }
-            var _7: [Api.Chat]?
+            var _7: [Api.ForumTopic]?
             if let _ = reader.readInt32() {
-                _7 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Chat.self)
+                _7 = Api.parseVector(reader, elementSignature: 0, elementType: Api.ForumTopic.self)
             }
-            var _8: [Api.User]?
+            var _8: [Api.Chat]?
             if let _ = reader.readInt32() {
-                _8 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
+                _8 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Chat.self)
+            }
+            var _9: [Api.User]?
+            if let _ = reader.readInt32() {
+                _9 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
@@ -840,8 +859,9 @@ public extension Api.messages {
             let _c6 = _6 != nil
             let _c7 = _7 != nil
             let _c8 = _8 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
-                return Api.messages.Messages.messagesSlice(flags: _1!, count: _2!, nextRate: _3, offsetIdOffset: _4, searchFlood: _5, messages: _6!, chats: _7!, users: _8!)
+            let _c9 = _9 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
+                return Api.messages.Messages.messagesSlice(flags: _1!, count: _2!, nextRate: _3, offsetIdOffset: _4, searchFlood: _5, messages: _6!, topics: _7!, chats: _8!, users: _9!)
             }
             else {
                 return nil

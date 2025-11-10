@@ -5,6 +5,7 @@ include "PeerAccessRestrictionInfo.fbs";
 include "PeerEmojiStatus.fbs";
 include "TelegramPeerUsername.fbs";
 include "PeerNameColor.fbs";
+include "PeerCollectibleColor.fbs";
 include "Optional.fbs";
 include "StarsAmount.fbs";
 
@@ -35,6 +36,7 @@ table TelegramUser {
     profileBackgroundEmojiId:int64 (id: 16);
     subscriberCount:int32 (id: 17);
     verificationIconFileId:int64 (id: 18);
+    collectibleColor:PeerCollectibleColor (id: 19);
 }
 
 root_type TelegramUser;

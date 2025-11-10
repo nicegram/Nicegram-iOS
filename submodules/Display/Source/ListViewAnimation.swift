@@ -89,7 +89,7 @@ extension CGSize {
 }
 
 private let springAnimationIn: CABasicAnimation = {
-    let animation = makeSpringAnimation("")
+    let animation = makeSpringAnimation("", duration: 0.5)
     return animation
 }()
 

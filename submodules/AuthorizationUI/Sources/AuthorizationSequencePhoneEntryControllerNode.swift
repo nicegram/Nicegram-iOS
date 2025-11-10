@@ -290,7 +290,14 @@ private final class ContactSyncNode: ASDisplayNode {
     }
     
     func updateLayout(width: CGFloat) -> CGSize {
-        let switchSize = CGSize(width: 51.0, height: 31.0)
+        var switchSize = CGSize(width: 51.0, height: 31.0)
+        if let switchView = self.switchNode.view as? UISwitch {
+            if self.switchNode.bounds.size.width.isZero {
+                switchView.sizeToFit()
+            }
+            switchSize = switchView.bounds.size
+        }
+        
         let inset: CGFloat = 24.0
         let titleSize = self.titleNode.updateLayout(CGSize(width: width - switchSize.width - inset * 2.0 - 8.0, height: .greatestFiniteMagnitude))
         let height: CGFloat = 40.0

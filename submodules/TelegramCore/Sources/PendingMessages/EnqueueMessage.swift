@@ -825,7 +825,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                             if let message = transaction.getMessage(replyToMessageId.messageId) {
                                 if let threadIdValue = message.threadId {
                                     if threadIdValue == 1 {
-                                        if let channel = transaction.getPeer(message.id.peerId) as? TelegramChannel, channel.flags.contains(.isForum) {
+                                        if let peer = transaction.getPeer(message.id.peerId), peer.isForum {
                                             threadId = threadIdValue
                                         } else {
                                             if let channel = message.peers[message.id.peerId] as? TelegramChannel, case .group = channel.info {
@@ -842,7 +842,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                         }
                     }
                 
-                    if threadId == nil, let channel = transaction.getPeer(peerId) as? TelegramChannel, channel.flags.contains(.isForum) {
+                    if threadId == nil, let peer = transaction.getPeer(peerId), peer.isForum {
                         threadId = 1
                     }
                     
@@ -1087,7 +1087,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                             augmentedMediaList = augmentedMediaList.map(convertForwardedMediaForSecretChat)
                         }
                         
-                        if threadId == nil, let channel = transaction.getPeer(peerId) as? TelegramChannel, channel.flags.contains(.isForum) {
+                        if threadId == nil, let peer = transaction.getPeer(peerId), peer.isForum {
                             threadId = 1
                         }
                                                 

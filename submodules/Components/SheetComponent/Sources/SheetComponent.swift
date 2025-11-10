@@ -60,6 +60,7 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
     }
     
     public let content: AnyComponent<ChildEnvironmentType>
+    public let headerContent: AnyComponent<Empty>?
     public let backgroundColor: BackgroundColor
     public let followContentSizeChanges: Bool
     public let clipsContent: Bool
@@ -73,6 +74,7 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
     
     public init(
         content: AnyComponent<ChildEnvironmentType>,
+        headerContent: AnyComponent<Empty>? = nil,
         backgroundColor: BackgroundColor,
         followContentSizeChanges: Bool = false,
         clipsContent: Bool = false,
@@ -85,6 +87,7 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
         willDismiss: @escaping () -> Void = {}
     ) {
         self.content = content
+        self.headerContent = headerContent
         self.backgroundColor = backgroundColor
         self.followContentSizeChanges = followContentSizeChanges
         self.clipsContent = clipsContent
@@ -99,6 +102,9 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
     
     public static func ==(lhs: SheetComponent, rhs: SheetComponent) -> Bool {
         if lhs.content != rhs.content {
+            return false
+        }
+        if lhs.headerContent != rhs.headerContent {
             return false
         }
         if lhs.backgroundColor != rhs.backgroundColor {
@@ -159,6 +165,7 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
         private let backgroundView: UIView
         private var effectView: UIVisualEffectView?
         private let contentView: ComponentView<ChildEnvironmentType>
+        private var headerView: ComponentView<Empty>?
         
         private var isAnimatingOut: Bool = false
         private var previousIsDisplaying: Bool = false
@@ -272,10 +279,12 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
         }
         
         override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            if let headerView = self.headerView?.view, headerView.bounds.contains(self.convert(point, to: headerView)) {
+                return super.hitTest(point, with: event)
+            }
             if !self.backgroundView.bounds.contains(self.convert(point, to: self.backgroundView)) {
                 return self.dimView
             }
-            
             return super.hitTest(point, with: event)
         }
         
@@ -288,6 +297,10 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
             transition.animateView(allowUserInteraction: true, {
                 self.scrollView.center = targetPosition
             })
+            
+            if let headerContent = self.headerView {
+                headerContent.view?.layer.animateAlpha(from: 0.1, to: 0.0, duration: 0.15)
+            }
         }
         
         private func animateOut(initialVelocity: CGFloat? = nil, completion: @escaping () -> Void) {
@@ -299,6 +312,10 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
             
             self.isUserInteractionEnabled = false
             self.dimView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
+            
+            if let headerContent = self.headerView {
+                headerContent.view?.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false)
+            }
             
             guard let contentView = self.contentView.view else {
                 return
@@ -403,6 +420,33 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
                 }
             }
             transition.setFrame(view: self.scrollView, frame: CGRect(origin: CGPoint(), size: availableSize), completion: nil)
+            
+            if let headerContent = component.headerContent {
+                let headerView: ComponentView<Empty>
+                if let current = self.headerView {
+                    headerView = current
+                } else {
+                    headerView = ComponentView()
+                    self.headerView = headerView
+                }
+                
+                let headerSize = headerView.update(
+                    transition: transition,
+                    component: headerContent,
+                    environment: {},
+                    containerSize: CGSize(width: contentSize.width, height: 44.0)
+                )
+                let headerFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - headerSize.width) / 2.0), y: self.backgroundView.frame.minY - headerSize.height - 10.0), size: headerSize)
+                if let headerView = headerView.view {
+                    if headerView.superview == nil {
+                        self.scrollView.addSubview(headerView)
+                    }
+                    transition.setFrame(view: headerView, frame: headerFrame)
+                }
+            } else if let headerView = self.headerView {
+                self.headerView = nil
+                headerView.view?.removeFromSuperview()
+            }
             
             let previousContentSize = self.scrollView.contentSize
             let updateContentSize = {

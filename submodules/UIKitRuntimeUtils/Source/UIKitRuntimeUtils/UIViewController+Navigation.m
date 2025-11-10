@@ -173,6 +173,59 @@ static bool notyfyingShiftState = false;
 
 @end
 
+static EffectSettingsContainerView *findTopmostEffectSuperview(UIView *view, int depth) {
+    if (depth > 5) {
+        return nil;
+    }
+    if ([view isKindOfClass:[EffectSettingsContainerView class]]) {
+        return (EffectSettingsContainerView* )view;
+    }
+    if (view.superview != nil) {
+        return findTopmostEffectSuperview(view.superview, depth + 1);
+    } else {
+        return nil;
+    }
+}
+
+static id (*original_backdropLayerDidChangeLuma)(UIView *, SEL, CALayer *, double) = NULL;
+static void replacement_backdropLayerDidChangeLuma(UIView *self, SEL selector, CALayer *layer, double luma) {
+    EffectSettingsContainerView *topmostSuperview = findTopmostEffectSuperview(self, 0);
+    if (topmostSuperview) {
+        luma = MIN(MAX(luma, topmostSuperview.lumaMin), topmostSuperview.lumaMax);
+    }
+    original_backdropLayerDidChangeLuma(self, selector, layer, luma);
+}
+
+static void registerEffectViewOverrides(void) {
+    int classCount = objc_getClassList(NULL, 0);
+    if (classCount > 0) {
+        __unsafe_unretained Class *classList = (Class *)malloc(classCount * sizeof(Class));
+        objc_getClassList(classList, classCount);
+        
+        NSString *searchString = [@"UISD" stringByAppendingString:@"FBackdropView"];
+        NSString *selectorString = [@"backdropLayer" stringByAppendingString:@":didChangeLuma:"];
+        
+        for (int i = 0; i < classCount; i++)
+        {
+            const char *className = class_getName(classList[i]);
+            NSString *name = [[NSString alloc] initWithCString:className encoding:NSASCIIStringEncoding];
+            if ([name hasSuffix:searchString]) {
+                Method method = (Method)[RuntimeUtils getMethodOfClass:classList[i] selector:NSSelectorFromString(selectorString)];
+                if (method) {
+                    const char *typeEncoding = method_getTypeEncoding(method);
+                    if (strcmp(typeEncoding, "v32@0:8@16d24") == 0) {
+                        original_backdropLayerDidChangeLuma = (id (*)(id, SEL, CALayer *, double))method_getImplementation(method);
+                        [RuntimeUtils replaceMethodImplementationOfClass:classList[i] selector:NSSelectorFromString(selectorString) replacement:(IMP)&replacement_backdropLayerDidChangeLuma];
+                    }
+                }
+                break;
+            }
+        }
+        
+        free(classList);
+    }
+}
+
 @implementation UIViewController (Navigation)
 
 + (void)load
@@ -197,6 +250,10 @@ static bool notyfyingShiftState = false;
         }
         
         [RuntimeUtils swizzleInstanceMethodOfClass:[UIFocusSystem class] currentSelector:@selector(updateFocusIfNeeded) newSelector:@selector(_65087dc8_updateFocusIfNeeded)];
+        
+        if (@available(iOS 26.0, *)) {
+            registerEffectViewOverrides();
+        }
     });
 }
 
@@ -501,3 +558,16 @@ void applyKeyboardAutocorrection(UITextView * _Nonnull textView) {
 void snapshotViewByDrawingInContext(UIView * _Nonnull view) {
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:false];
 }
+
+@implementation EffectSettingsContainerView
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self != nil) {
+        _lumaMin = 0.0;
+        _lumaMax = 0.0;
+    }
+    return self;
+}
+
+@end

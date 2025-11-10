@@ -354,9 +354,8 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
                                 headerDisplayPeer = ChatMessageDateHeader.HeaderData(contents: .thread(id: threadId, info: threadInfo))
                             } else if content.firstMessage.threadId == EngineMessage.newTopicThreadId {
                                 headerSeparableThreadId = content.firstMessage.threadId
-                                //TODO:localize
                                 headerDisplayPeer = ChatMessageDateHeader.HeaderData(contents: .thread(id: threadId, info: Message.AssociatedThreadInfo(
-                                    title: "New Chat",
+                                    title: presentationData.strings.Chat_MessageHeaderBotNewThread,
                                     icon: nil,
                                     iconColor: 0,
                                     isClosed: false

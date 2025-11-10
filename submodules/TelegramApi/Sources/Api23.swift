@@ -626,13 +626,13 @@ public extension Api {
 }
 public extension Api {
     enum SavedStarGift: TypeConstructorDescription {
-        case savedStarGift(flags: Int32, fromId: Api.Peer?, date: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, msgId: Int32?, savedId: Int64?, convertStars: Int64?, upgradeStars: Int64?, canExportAt: Int32?, transferStars: Int64?, canTransferAt: Int32?, canResellAt: Int32?, collectionId: [Int32]?, prepaidUpgradeHash: String?)
+        case savedStarGift(flags: Int32, fromId: Api.Peer?, date: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, msgId: Int32?, savedId: Int64?, convertStars: Int64?, upgradeStars: Int64?, canExportAt: Int32?, transferStars: Int64?, canTransferAt: Int32?, canResellAt: Int32?, collectionId: [Int32]?, prepaidUpgradeHash: String?, dropOriginalDetailsStars: Int64?)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .savedStarGift(let flags, let fromId, let date, let gift, let message, let msgId, let savedId, let convertStars, let upgradeStars, let canExportAt, let transferStars, let canTransferAt, let canResellAt, let collectionId, let prepaidUpgradeHash):
+                case .savedStarGift(let flags, let fromId, let date, let gift, let message, let msgId, let savedId, let convertStars, let upgradeStars, let canExportAt, let transferStars, let canTransferAt, let canResellAt, let collectionId, let prepaidUpgradeHash, let dropOriginalDetailsStars):
                     if boxed {
-                        buffer.appendInt32(430552434)
+                        buffer.appendInt32(-1987861422)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 1) != 0 {fromId!.serialize(buffer, true)}
@@ -653,14 +653,15 @@ public extension Api {
                         serializeInt32(item, buffer: buffer, boxed: false)
                     }}
                     if Int(flags) & Int(1 << 16) != 0 {serializeString(prepaidUpgradeHash!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 18) != 0 {serializeInt64(dropOriginalDetailsStars!, buffer: buffer, boxed: false)}
                     break
     }
     }
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .savedStarGift(let flags, let fromId, let date, let gift, let message, let msgId, let savedId, let convertStars, let upgradeStars, let canExportAt, let transferStars, let canTransferAt, let canResellAt, let collectionId, let prepaidUpgradeHash):
-                return ("savedStarGift", [("flags", flags as Any), ("fromId", fromId as Any), ("date", date as Any), ("gift", gift as Any), ("message", message as Any), ("msgId", msgId as Any), ("savedId", savedId as Any), ("convertStars", convertStars as Any), ("upgradeStars", upgradeStars as Any), ("canExportAt", canExportAt as Any), ("transferStars", transferStars as Any), ("canTransferAt", canTransferAt as Any), ("canResellAt", canResellAt as Any), ("collectionId", collectionId as Any), ("prepaidUpgradeHash", prepaidUpgradeHash as Any)])
+                case .savedStarGift(let flags, let fromId, let date, let gift, let message, let msgId, let savedId, let convertStars, let upgradeStars, let canExportAt, let transferStars, let canTransferAt, let canResellAt, let collectionId, let prepaidUpgradeHash, let dropOriginalDetailsStars):
+                return ("savedStarGift", [("flags", flags as Any), ("fromId", fromId as Any), ("date", date as Any), ("gift", gift as Any), ("message", message as Any), ("msgId", msgId as Any), ("savedId", savedId as Any), ("convertStars", convertStars as Any), ("upgradeStars", upgradeStars as Any), ("canExportAt", canExportAt as Any), ("transferStars", transferStars as Any), ("canTransferAt", canTransferAt as Any), ("canResellAt", canResellAt as Any), ("collectionId", collectionId as Any), ("prepaidUpgradeHash", prepaidUpgradeHash as Any), ("dropOriginalDetailsStars", dropOriginalDetailsStars as Any)])
     }
     }
     
@@ -703,6 +704,8 @@ public extension Api {
             } }
             var _15: String?
             if Int(_1!) & Int(1 << 16) != 0 {_15 = parseString(reader) }
+            var _16: Int64?
+            if Int(_1!) & Int(1 << 18) != 0 {_16 = reader.readInt64() }
             let _c1 = _1 != nil
             let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
             let _c3 = _3 != nil
@@ -718,8 +721,9 @@ public extension Api {
             let _c13 = (Int(_1!) & Int(1 << 14) == 0) || _13 != nil
             let _c14 = (Int(_1!) & Int(1 << 15) == 0) || _14 != nil
             let _c15 = (Int(_1!) & Int(1 << 16) == 0) || _15 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 {
-                return Api.SavedStarGift.savedStarGift(flags: _1!, fromId: _2, date: _3!, gift: _4!, message: _5, msgId: _6, savedId: _7, convertStars: _8, upgradeStars: _9, canExportAt: _10, transferStars: _11, canTransferAt: _12, canResellAt: _13, collectionId: _14, prepaidUpgradeHash: _15)
+            let _c16 = (Int(_1!) & Int(1 << 18) == 0) || _16 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 {
+                return Api.SavedStarGift.savedStarGift(flags: _1!, fromId: _2, date: _3!, gift: _4!, message: _5, msgId: _6, savedId: _7, convertStars: _8, upgradeStars: _9, canExportAt: _10, transferStars: _11, canTransferAt: _12, canResellAt: _13, collectionId: _14, prepaidUpgradeHash: _15, dropOriginalDetailsStars: _16)
             }
             else {
                 return nil

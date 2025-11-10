@@ -227,7 +227,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Voulez-vous arrêter d'enregistrer cet appel ?";
 "NicegramCallRecord.StopAlertButtonStop" = "Arrêter";
 "NicegramCallRecord.StopAlertButtonCancel" = "Annuler";
-"NicegramCallRecord.SavedMessage" = "Appel enregistré sauvegardé dans **Messages Sauvegardés**.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Flux";

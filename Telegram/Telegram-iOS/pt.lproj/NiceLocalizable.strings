@@ -227,7 +227,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Você deseja parar a gravação desta chamada?";
 "NicegramCallRecord.StopAlertButtonStop" = "Parar";
 "NicegramCallRecord.StopAlertButtonCancel" = "Cancelar";
-"NicegramCallRecord.SavedMessage" = "Chamada gravada salva em **Mensagens Salvas**.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Feed";

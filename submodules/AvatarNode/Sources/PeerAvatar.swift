@@ -406,7 +406,7 @@ public func peerAvatarImage(postbox: Postbox, network: Network, peerReference: P
     }
 }
 
-public func drawPeerAvatarLetters(context: CGContext, size: CGSize, round: Bool = true, font: UIFont, letters: [String], peerId: EnginePeer.Id, nameColor: PeerNameColor?) {
+public func drawPeerAvatarLetters(context: CGContext, size: CGSize, round: Bool = true, font: UIFont, letters: [String], peerId: EnginePeer.Id, nameColor: PeerColor?) {
     if round {
         context.beginPath()
         context.addEllipse(in: CGRect(x: 0.0, y: 0.0, width: size.width, height:
@@ -427,7 +427,13 @@ public func drawPeerAvatarLetters(context: CGContext, size: CGSize, round: Bool 
     } else {
         var index = colorIndex % AvatarNode.gradientColors.count
         if let nameColor {
-            index = Int(nameColor.rawValue) % AvatarNode.gradientColors.count
+            switch nameColor {
+            case let .preset(peerNameColor):
+                index = Int(peerNameColor.rawValue) % AvatarNode.gradientColors.count
+            case let .collectible(peerCollectibleColor):
+                let _ = peerCollectibleColor
+                break
+            }
         }
         colorsArray = AvatarNode.gradientColors[index].map(\.cgColor) as NSArray
     }

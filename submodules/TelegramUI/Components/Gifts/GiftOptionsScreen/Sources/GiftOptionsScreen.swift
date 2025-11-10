@@ -141,6 +141,8 @@ final class GiftOptionsScreenComponent: Component {
         private var starsItems: [AnyHashable: ComponentView<Empty>] = [:]
         private let tabSelector = ComponentView<Empty>()
         private var starsFilter: StarsFilter = .all
+        private var appliedStarsFilter: StarsFilter = .all
+        
         private var switchingFilter = false
         
         private var loadingGiftId: Int64?
@@ -504,14 +506,26 @@ final class GiftOptionsScreenComponent: Component {
                                 }
                                 isSoldOut = true
                             } else if let _ = gift.availability {
+                                let text: String
+                                if let perUserLimit = gift.perUserLimit {
+                                    text = environment.strings.Gift_Options_Gift_Limited_Left(perUserLimit.remains)
+                                } else {
+                                    text = environment.strings.Gift_Options_Gift_Limited
+                                }
                                 ribbon = GiftItemComponent.Ribbon(
-                                    text: environment.strings.Gift_Options_Gift_Limited,
+                                    text: text,
                                     color: .blue
                                 )
                             }
                             if !isSoldOut && gift.flags.contains(.requiresPremium) {
+                                let text: String
+                                if component.context.isPremium, let perUserLimit = gift.perUserLimit {
+                                    text = environment.strings.Gift_Options_Gift_Premium_Left(perUserLimit.remains)
+                                } else {
+                                    text = environment.strings.Gift_Options_Gift_Premium
+                                }
                                 ribbon = GiftItemComponent.Ribbon(
-                                    text: environment.strings.Gift_Options_Gift_Premium,
+                                    text: text,
                                     color: .orange
                                 )
                                 outline = .orange
@@ -835,6 +849,7 @@ final class GiftOptionsScreenComponent: Component {
                                     starsContext: starsContext,
                                     options: options ?? [],
                                     purpose: .transferStarGift(requiredStars: transferStars),
+                                    targetPeerId: nil,
                                     completion: { stars in
                                         starsContext.add(balance: StarsAmount(value: stars, nanos: 0))
                                         proceed(true)
@@ -868,6 +883,9 @@ final class GiftOptionsScreenComponent: Component {
             let themeUpdated = self.environment?.theme !== environment.theme
             self.environment = environment
             self.state = state
+            
+            let previousStarsFilter = self.appliedStarsFilter
+            self.appliedStarsFilter = self.starsFilter
             
             if self.component == nil {
                 self.starsStateDisposable = (component.starsContext.state
@@ -967,6 +985,7 @@ final class GiftOptionsScreenComponent: Component {
                 }
                 transition.setBounds(view: headerView, bounds: CGRect(origin: .zero, size: headerSize))
             }
+            
                         
 //            let topPanelSize = self.topPanel.update(
 //                transition: transition,
@@ -1109,7 +1128,8 @@ final class GiftOptionsScreenComponent: Component {
             })
             let peerName = state.peer?.compactDisplayTitle ?? ""
             
-            let premiumDescriptionRawString: String
+            var premiumDescriptionRawString: String
+            var isPremiumDescription = false
             if isSelfGift {
                 premiumDescriptionRawString = strings.Gift_Options_GiftSelf_Text
             } else if isChannelGift {
@@ -1118,7 +1138,12 @@ final class GiftOptionsScreenComponent: Component {
                 premiumDescriptionRawString = strings.Gift_Options_Gift_Text(peerName).string
             } else {
                 premiumDescriptionRawString = strings.Gift_Options_Premium_Text(peerName).string
+                isPremiumDescription = true
             }
+            if !isPremiumDescription && self.starsFilter == .resale && component.peerId != component.context.account.peerId {
+                premiumDescriptionRawString = strings.Gift_Options_Collectibles_Text
+            }
+            
             let premiumDescriptionString = parseMarkdownIntoAttributedString(premiumDescriptionRawString, attributes: markdownAttributes).mutableCopy() as! NSMutableAttributedString
             if let range = premiumDescriptionString.string.range(of: ">"), let chevronImage = self.chevronImage?.0 {
                 premiumDescriptionString.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: premiumDescriptionString.string))
@@ -1197,6 +1222,7 @@ final class GiftOptionsScreenComponent: Component {
                     
                     var validIds: [AnyHashable] = []
                     var itemFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: premiumOptionSize)
+                    
                     for product in premiumProducts {
                         if let _ = product.starsPrice {
                             premiumOptionSize.height = 178.0 + 23.0
@@ -1227,28 +1253,37 @@ final class GiftOptionsScreenComponent: Component {
                             title = strings.Gift_Options_Premium_Months(3)
                         }
                         
+                        var label: String?
+                        if showStarPrice {
+                            if let starsPrice = product.starsPrice {
+                                label = strings.Gift_Options_Premium_OrStars("**#\(presentationStringsFormattedNumber(Int32(starsPrice), environment.dateTimeFormat.groupingSeparator))**").string
+                            }
+                        }
+                        
+                        let giftItemComponent = GiftItemComponent(
+                            context: component.context,
+                            theme: theme,
+                            strings: environment.strings,
+                            peer: nil,
+                            subject: .premium(months: product.months, price: product.price),
+                            title: title,
+                            subtitle: strings.Gift_Options_Premium_Premium,
+                            label: label,
+                            ribbon: product.discount.flatMap {
+                                GiftItemComponent.Ribbon(
+                                    text:  "-\($0)%",
+                                    color: .purple
+                                )
+                            },
+                            isLoading: false
+                        )
+                        
                         let _ = visibleItem.update(
                             transition: itemTransition,
                             component: AnyComponent(
                                 PlainButtonComponent(
                                     content: AnyComponent(
-                                        GiftItemComponent(
-                                            context: component.context,
-                                            theme: theme,
-                                            strings: environment.strings,
-                                            peer: nil,
-                                            subject: .premium(months: product.months, price: product.price),
-                                            title: title,
-                                            subtitle: strings.Gift_Options_Premium_Premium,
-                                            label: showStarPrice ? product.starsPrice.flatMap { strings.Gift_Options_Premium_OrStars("**#\(presentationStringsFormattedNumber(Int32($0), environment.dateTimeFormat.groupingSeparator))**").string } : nil,
-                                            ribbon: product.discount.flatMap {
-                                                GiftItemComponent.Ribbon(
-                                                    text:  "-\($0)%",
-                                                    color: .purple
-                                                )
-                                            },
-                                            isLoading: false
-                                        )
+                                        giftItemComponent
                                     ),
                                     effectAlignment: .center,
                                     action: { [weak self] in
@@ -1332,12 +1367,30 @@ final class GiftOptionsScreenComponent: Component {
                         transition.setBounds(view: starsTitleView, bounds: CGRect(origin: .zero, size: starsTitleSize))
                     }
                     
-                    let starsDescriptionString = parseMarkdownIntoAttributedString(strings.Gift_Options_Gift_Text(peerName).string, attributes: markdownAttributes).mutableCopy() as! NSMutableAttributedString
+                    var starsDescriptionRawString = strings.Gift_Options_Gift_Text(peerName).string
+                    if self.starsFilter == .resale {
+                        starsDescriptionRawString = strings.Gift_Options_Collectibles_Text
+                    }
+                    let starsDescriptionString = parseMarkdownIntoAttributedString(starsDescriptionRawString, attributes: markdownAttributes).mutableCopy() as! NSMutableAttributedString
                     if let range = starsDescriptionString.string.range(of: ">"), let chevronImage = self.chevronImage?.0 {
                         starsDescriptionString.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: starsDescriptionString.string))
                     }
+                    
+                    var descriptionTransition = transition
+                    if previousStarsFilter != self.appliedStarsFilter, let starsDescriptionView = self.starsDescription.view {
+                        descriptionTransition = .immediate
+                        if let snapshotView = starsDescriptionView.snapshotView(afterScreenUpdates: false) {
+                            snapshotView.frame = starsDescriptionView.frame
+                            self.scrollView.addSubview(snapshotView)
+                            snapshotView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
+                                snapshotView.removeFromSuperview()
+                            })
+                            starsDescriptionView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                        }
+                    }
+                    
                     let starsDescriptionSize = self.starsDescription.update(
-                        transition: transition,
+                        transition: descriptionTransition,
                         component: AnyComponent(BalancedTextComponent(
                             text: .plain(starsDescriptionString),
                             horizontalAlignment: .center,
@@ -1376,7 +1429,7 @@ final class GiftOptionsScreenComponent: Component {
                         if starsDescriptionView.superview == nil {
                             self.scrollView.addSubview(starsDescriptionView)
                         }
-                        transition.setFrame(view: starsDescriptionView, frame: starsDescriptionFrame)
+                        descriptionTransition.setFrame(view: starsDescriptionView, frame: starsDescriptionFrame)
                     }
                     contentHeight += starsDescriptionSize.height
                     contentHeight += 16.0
@@ -1397,7 +1450,6 @@ final class GiftOptionsScreenComponent: Component {
                     ))
                 }
                 
-                var hasLimited = false
                 var hasResale = false
                 var starsAmountsSet = Set<Int64>()
                 if let starGifts = self.state?.starGifts {
@@ -1405,7 +1457,6 @@ final class GiftOptionsScreenComponent: Component {
                         if case let .generic(gift) = gift {
                             starsAmountsSet.insert(gift.price)
                             if let availability = gift.availability {
-                                hasLimited = true
                                 if availability.remains == 0 && availability.resale > 0 {
                                     hasResale = true
                                 }
@@ -1414,30 +1465,10 @@ final class GiftOptionsScreenComponent: Component {
                     }
                 }
                 
-                if hasLimited {
-                    tabSelectorItems.append(TabSelectorComponent.Item(
-                        id: AnyHashable(StarsFilter.limited.rawValue),
-                        title: strings.Gift_Options_Gift_Filter_Limited
-                    ))
-                }
-                
-                tabSelectorItems.append(TabSelectorComponent.Item(
-                    id: AnyHashable(StarsFilter.inStock.rawValue),
-                    title: strings.Gift_Options_Gift_Filter_InStock
-                ))
-                
                 if hasResale {
                     tabSelectorItems.append(TabSelectorComponent.Item(
                         id: AnyHashable(StarsFilter.resale.rawValue),
-                        title: strings.Gift_Options_Gift_Filter_Resale
-                    ))
-                }
-                
-                let starsAmounts = Array(starsAmountsSet).sorted()
-                for amount in starsAmounts {
-                    tabSelectorItems.append(TabSelectorComponent.Item(
-                        id: AnyHashable(StarsFilter.stars(amount).rawValue),
-                        title: "⭐️\(amount)"
+                        title: strings.Gift_Options_Gift_Filter_Collectibles
                     ))
                 }
                 

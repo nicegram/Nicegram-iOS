@@ -10,31 +10,49 @@ import ChatPresentationInterfaceState
 import TelegramPresentationData
 import ChatInputPanelNode
 import AccountContext
+import GlassBackgroundComponent
+import ComponentFlow
+import ComponentDisplayAdapters
 
 final class ChatRestrictedInputPanelNode: ChatInputPanelNode {
+    private let backgroundView: GlassBackgroundView
     private let buttonNode: HighlightTrackingButtonNode
     private let textNode: ImmediateTextNode
+    private let tintTextNode: ImmediateTextNode
     private let subtitleNode: ImmediateTextNode
+    private let tintSubtitleNode: ImmediateTextNode
     private var iconView: UIImageView?
     
     private var presentationInterfaceState: ChatPresentationInterfaceState?
     
     override init() {
+        self.backgroundView = GlassBackgroundView()
+        
         self.textNode = ImmediateTextNode()
         self.textNode.maximumNumberOfLines = 2
         self.textNode.textAlignment = .center
+        self.tintTextNode = ImmediateTextNode()
+        self.tintTextNode.maximumNumberOfLines = 2
+        self.tintTextNode.textAlignment = .center
         
         self.subtitleNode = ImmediateTextNode()
         self.subtitleNode.maximumNumberOfLines = 1
         self.subtitleNode.textAlignment = .center
+        self.tintSubtitleNode = ImmediateTextNode()
+        self.tintSubtitleNode.maximumNumberOfLines = 1
+        self.tintSubtitleNode.textAlignment = .center
         
         self.buttonNode = HighlightTrackingButtonNode()
         self.buttonNode.isUserInteractionEnabled = false
         
         super.init()
         
-        self.addSubnode(self.textNode)
-        self.addSubnode(self.subtitleNode)
+        self.backgroundView.contentView.addSubview(self.textNode.view)
+        self.backgroundView.maskContentView.addSubview(self.tintTextNode.view)
+        self.backgroundView.contentView.addSubview(self.subtitleNode.view)
+        self.backgroundView.maskContentView.addSubview(self.tintSubtitleNode.view)
+        
+        self.view.addSubview(self.backgroundView)
         self.addSubnode(self.buttonNode)
         
         self.buttonNode.highligthedChanged = { [weak self] highlighted in
@@ -63,7 +81,7 @@ final class ChatRestrictedInputPanelNode: ChatInputPanelNode {
         self.interfaceInteraction?.openBoostToUnrestrict()
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
         if self.presentationInterfaceState != interfaceState {
             self.presentationInterfaceState = interfaceState
         }
@@ -135,11 +153,15 @@ final class ChatRestrictedInputPanelNode: ChatInputPanelNode {
         }
         self.buttonNode.isUserInteractionEnabled = isUserInteractionEnabled
         
+        self.tintTextNode.attributedText = NSAttributedString(string: self.textNode.attributedText?.string ?? "", font: Font.regular(15.0), textColor: .black)
+        self.tintSubtitleNode.attributedText = NSAttributedString(string: self.subtitleNode.attributedText?.string ?? "", font: Font.regular(13.0), textColor: .black)
+        
         let panelHeight = defaultHeight(metrics: metrics)
         let textSize = self.textNode.updateLayout(CGSize(width: width - leftInset - rightInset - 8.0 * 2.0, height: panelHeight))
         let subtitleSize = self.subtitleNode.updateLayout(CGSize(width: width - leftInset - rightInset - 8.0 * 2.0, height: panelHeight))
         
         var originX: CGFloat = leftInset + floor((width - leftInset - rightInset - textSize.width) / 2.0)
+        var totalWidth = textSize.width
         
         if let iconImage {
             let iconView: UIImageView
@@ -152,7 +174,7 @@ final class ChatRestrictedInputPanelNode: ChatInputPanelNode {
             }
             iconView.image = iconImage
             
-            let totalWidth = textSize.width + iconImage.size.width + iconSpacing
+            totalWidth += iconImage.size.width + iconSpacing
             iconView.frame = CGRect(origin: CGPoint(x: leftInset + floor((width - leftInset - rightInset - totalWidth) / 2.0), y: floor((panelHeight - textSize.height) / 2.0) + UIScreenPixel + floorToScreenPixels((textSize.height - iconImage.size.height) / 2.0)), size: iconImage.size)
             
             originX += iconImage.size.width + iconSpacing
@@ -166,13 +188,26 @@ final class ChatRestrictedInputPanelNode: ChatInputPanelNode {
             combinedHeight += subtitleSize.height + 2.0
         }
         let textFrame = CGRect(origin: CGPoint(x: originX, y: floor((panelHeight - combinedHeight) / 2.0)), size: textSize)
-        self.textNode.frame = textFrame
         
         let subtitleFrame = CGRect(origin: CGPoint(x: leftInset + floor((width - leftInset - rightInset - subtitleSize.width) / 2.0), y: floor((panelHeight + combinedHeight) / 2.0) - subtitleSize.height), size: subtitleSize)
-        self.subtitleNode.frame = subtitleFrame
         
-        let combinedFrame = textFrame.union(subtitleFrame)
-        self.buttonNode.frame = combinedFrame.insetBy(dx: -8.0, dy: -12.0)
+        var combinedFrame = textFrame.union(subtitleFrame)
+        if let iconView {
+            combinedFrame = combinedFrame.union(iconView.frame)
+        }
+        combinedFrame = combinedFrame.insetBy(dx: -12.0, dy: -6.0)
+        combinedFrame.origin.y += 1.0
+        
+        self.textNode.frame = textFrame.offsetBy(dx: -combinedFrame.minX, dy: -combinedFrame.minY)
+        self.tintTextNode.frame = self.textNode.frame
+        
+        self.subtitleNode.frame = subtitleFrame.offsetBy(dx: -combinedFrame.minX, dy: -combinedFrame.minY)
+        self.tintSubtitleNode.frame = self.subtitleNode.frame
+        
+        self.backgroundView.frame = combinedFrame
+        self.backgroundView.update(size: combinedFrame.size, cornerRadius: combinedFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: ComponentTransition(transition))
+        
+        self.buttonNode.frame = combinedFrame
         
         return panelHeight
     }

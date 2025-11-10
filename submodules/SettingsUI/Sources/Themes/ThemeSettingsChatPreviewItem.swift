@@ -37,7 +37,7 @@ struct ChatPreviewMessageItem: Equatable {
     let outgoing: Bool
     let reply: (String, String)?
     let text: String
-    let nameColor: PeerNameColor
+    let nameColor: PeerColor
     let backgroundEmojiId: Int64?
 }
 

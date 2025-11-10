@@ -497,7 +497,7 @@ public final class UniqueGiftChatThemesContext {
     private let cacheDisposable = MetaDisposable()
     
     private var themes: [ChatTheme] = []
-    private var nextOffset: Int32 = 0
+    private var nextOffset: String?
     private var dataState: UniqueGiftChatThemesContext.State.DataState = .ready(canLoadMore: true)
     
     private let stateValue = Promise<State>()
@@ -518,7 +518,7 @@ public final class UniqueGiftChatThemesContext {
     
     public func reload() {
         self.themes = []
-        self.nextOffset = 0
+        self.nextOffset = nil
         self.dataState = .ready(canLoadMore: true)
         self.loadMore(reload: true)
     }
@@ -552,16 +552,16 @@ public final class UniqueGiftChatThemesContext {
             self.pushState()
         }
         
-        let signal = network.request(Api.functions.account.getUniqueGiftChatThemes(offset: offset, limit: 50, hash: 0))
+        let signal = network.request(Api.functions.account.getUniqueGiftChatThemes(offset: offset ?? "", limit: 50, hash: 0))
         |> map(Optional.init)
         |> `catch` { error in
             return .single(nil)
         }
-        |> mapToSignal { result -> Signal<([ChatTheme], Int32?), NoError> in
+        |> mapToSignal { result -> Signal<([ChatTheme], String?), NoError> in
             guard let result else {
                 return .single(([], nil))
             }
-            return postbox.transaction { transaction -> ([ChatTheme], Int32?) in
+            return postbox.transaction { transaction -> ([ChatTheme], String?) in
                 switch result {
                 case let .chatThemes(_, _, themes, chats, users, nextOffset):
                     let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
@@ -578,7 +578,7 @@ public final class UniqueGiftChatThemesContext {
             guard let self else {
                 return
             }
-            if offset == 0 || reload {
+            if offset == nil || reload {
                 self.themes = themes
                 self.cacheDisposable.set(self.account.postbox.transaction { transaction in
                     if let entry = CodableEntry(CachedUniqueGiftChatThemes(themes: themes)) {

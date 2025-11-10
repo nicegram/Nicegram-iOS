@@ -257,7 +257,7 @@ public final class MediaStreamComponent: CombinedComponent {
         let local = Local()
         
         return { context in
-            _body(context, local) // { context in
+            _body(context, local)
         }
     }
     
@@ -1052,10 +1052,10 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
             view.expandFromPictureInPicture()
         }
         
-            self.view.clipsToBounds = true
-            
-            self.view.layer.animatePosition(from: CGPoint(x: self.view.frame.center.x, y: self.view.bounds.maxY + self.view.bounds.height / 2), to: self.view.center, duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
-            })
+        self.view.clipsToBounds = true
+        
+        self.view.layer.animatePosition(from: CGPoint(x: self.view.frame.center.x, y: self.view.bounds.maxY + self.view.bounds.height / 2), to: self.view.center, duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, completion: { _ in
+        })
         
         self.view.layer.allowsGroupOpacity = true
         
@@ -1081,8 +1081,7 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
     
     override public func viewDidLoad() {
         super.viewDidLoad()
-        // TODO: replace with actual color
-        backgroundDimView.backgroundColor = .black.withAlphaComponent(0.3)
+        self.backgroundDimView.backgroundColor = .black.withAlphaComponent(0.3)
         self.view.clipsToBounds = false
     }
     
@@ -1094,7 +1093,7 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
     override public func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         let dimViewSide: CGFloat = max(view.bounds.width, view.bounds.height)
-        backgroundDimView.frame = .init(x: view.bounds.midX - dimViewSide / 2, y: -view.bounds.height * 3, width: dimViewSide, height: view.bounds.height * 4)
+        self.backgroundDimView.frame = .init(x: view.bounds.midX - dimViewSide / 2, y: -view.bounds.height * 3, width: dimViewSide, height: view.bounds.height * 4)
     }
     
     public func dismiss(closing: Bool, manual: Bool) {

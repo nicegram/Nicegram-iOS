@@ -238,7 +238,7 @@ public final class MediaScrubberComponent: Component {
             self.coverDotWrapper.isUserInteractionEnabled = false
             self.coverDotWrapper.isHidden = true
             
-            self.coverDotView = UIImageView(image: generateFilledCircleImage(diameter: 7.0, color: UIColor(rgb: 0x007aff)))
+            self.coverDotView = UIImageView(image: generateFilledCircleImage(diameter: 7.0, color: UIColor(rgb: 0x0088ff)))
             
             self.coverImageView = UIImageView()
             self.coverImageView.clipsToBounds = true
@@ -750,7 +750,7 @@ public final class MediaScrubberComponent: Component {
             case .editor, .cover:
                 fullTrackHeight = trackHeight
             case .videoMessage, .voiceMessage:
-                fullTrackHeight = 33.0
+                fullTrackHeight = 34.0
             }
             let scrubberSize = CGSize(width: availableSize.width, height: fullTrackHeight)
             
@@ -873,7 +873,7 @@ public final class MediaScrubberComponent: Component {
             transition.setFrame(view: self.cursorImageView, frame: CGRect(origin: .zero, size: self.cursorView.frame.size))
             
             if let (coverPosition, coverImage) = component.cover {
-                let imageSize = CGSize(width: 36.0, height: 36.0)
+                let imageSize = CGSize(width: 34.0, height: 34.0)
                 var animateFrame = false
                 if previousComponent?.cover?.position != coverPosition {
                     self.coverDotWrapper.isHidden = false
@@ -1134,6 +1134,10 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
             let fullTrackHeight: CGFloat
             if case .cover = params.style {
                 fullTrackHeight = trackHeight
+            } else if case .voiceMessage = params.style {
+                fullTrackHeight = 34.0
+            } else if case .videoMessage = params.style {
+                fullTrackHeight = 34.0
             } else {
                 fullTrackHeight = 33.0
             }
@@ -1209,7 +1213,7 @@ private class TrackView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelega
             framesCornerRadius = 9.0
             self.videoTransparentFramesContainer.alpha = 0.35
         case .videoMessage, .voiceMessage:
-            fullTrackHeight = 33.0
+            fullTrackHeight = 34.0
             framesCornerRadius = fullTrackHeight / 2.0
             self.videoTransparentFramesContainer.alpha = 0.5
         }
@@ -1826,7 +1830,8 @@ public class TrimView: UIView {
         endPosition: Double,
         position: Double,
         minDuration: Double,
-        maxDuration: Double
+        maxDuration: Double,
+        isBorderless: Bool
     )?
     
     public func update(
@@ -1840,10 +1845,13 @@ public class TrimView: UIView {
         position: Double,
         minDuration: Double,
         maxDuration: Double,
+        isBorderless: Bool = false,
         transition: ComponentTransition
     ) -> (leftHandleFrame: CGRect, rightHandleFrame: CGRect) {
         let isFirstTime = self.params == nil
-        self.params = (scrubberSize, duration, startPosition, endPosition, position, minDuration, maxDuration)
+        self.params = (scrubberSize, duration, startPosition, endPosition, position, minDuration, maxDuration, isBorderless)
+        
+        self.borderView.isHidden = isBorderless
         
         let effectiveHandleWidth: CGFloat
         let fullTrackHeight: CGFloat
@@ -1891,7 +1899,7 @@ public class TrimView: UIView {
         case .videoMessage:
             effectiveHandleWidth = 16.0
             fullTrackHeight = 33.0
-            capsuleOffset = 8.0
+            capsuleOffset = 10.0
             color = theme.chat.inputPanel.panelControlAccentColor
             highlightColor = theme.chat.inputPanel.panelControlAccentColor
             
@@ -1918,8 +1926,9 @@ public class TrimView: UIView {
             capsuleOffset = 8.0
             color = theme.chat.inputPanel.panelControlAccentColor
             highlightColor = theme.chat.inputPanel.panelControlAccentColor
+            self.borderView.isHidden = true
         
-            self.zoneView.backgroundColor = UIColor(white: 1.0, alpha: 0.4)
+            self.zoneView.backgroundColor = .clear
             
             if isFirstTime {
                 self.borderView.image = generateImage(CGSize(width: 3.0, height: fullTrackHeight), rotatedContext: { size, context in
@@ -1940,6 +1949,9 @@ public class TrimView: UIView {
                 
                 self.leftHandleView.image = handleImage
                 self.rightHandleView.image = handleImage
+                
+                self.leftHandleView.image = nil
+                self.rightHandleView.image = nil
                 
                 self.leftCapsuleView.backgroundColor = .white
                 self.rightCapsuleView.backgroundColor = .white
@@ -1972,7 +1984,7 @@ public class TrimView: UIView {
         rightHandleFrame.origin.x = min(rightHandleFrame.origin.x, totalWidth - visualInsets.right - effectiveHandleWidth)
         transition.setFrame(view: self.rightHandleView, frame: rightHandleFrame)
         
-        let capsuleSize = CGSize(width: 2.0, height: 11.0)
+        let capsuleSize = CGSize(width: 3.0, height: 12.0)
         transition.setFrame(view: self.leftCapsuleView, frame: CGRect(origin: CGPoint(x: capsuleOffset, y: floorToScreenPixels((leftHandleFrame.height - capsuleSize.height) / 2.0)), size: capsuleSize))
         transition.setFrame(view: self.rightCapsuleView, frame: CGRect(origin: CGPoint(x: capsuleOffset, y: floorToScreenPixels((leftHandleFrame.height - capsuleSize.height) / 2.0)), size: capsuleSize))
         

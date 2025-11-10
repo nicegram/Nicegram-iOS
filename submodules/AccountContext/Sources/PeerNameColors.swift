@@ -323,3 +323,41 @@ public class PeerNameColors: Equatable {
         return true
     }
 }
+
+public extension PeerCollectibleColor {
+    func peerNameColors(dark: Bool) -> PeerNameColors.Colors {
+        return PeerNameColors.Colors(
+            main: self.mainColor(dark: dark),
+            secondary: self.secondaryColor(dark: dark),
+            tertiary: self.tertiaryColor(dark: dark)
+        )
+    }
+    
+    func mainColor(dark: Bool) -> UIColor {
+        if dark, let darkAccentColor = self.darkAccentColor {
+            return UIColor(rgb: darkAccentColor)
+        } else {
+            return UIColor(rgb: self.accentColor)
+        }
+    }
+    
+    func secondaryColor(dark: Bool) -> UIColor? {
+        if dark, let darkColors = self.darkColors, darkColors.count > 0 {
+            return UIColor(rgb: darkColors[0])
+        } else if self.colors.count > 0 {
+            return UIColor(rgb: self.colors[0])
+        } else {
+            return nil
+        }
+    }
+    
+    func tertiaryColor(dark: Bool) -> UIColor? {
+        if dark, let darkColors = self.darkColors, darkColors.count > 1 {
+            return UIColor(rgb: darkColors[1])
+        } else if self.colors.count > 1 {
+            return UIColor(rgb: self.colors[1])
+        } else {
+            return nil
+        }
+    }
+}

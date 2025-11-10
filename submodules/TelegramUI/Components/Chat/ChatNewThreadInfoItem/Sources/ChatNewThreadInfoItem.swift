@@ -187,9 +187,8 @@ public final class ChatNewThreadInfoItemNode: ListViewItemNode, ASGestureRecogni
             
             let constrainedWidth = params.width - (horizontalInset + horizontalContentInset) * 2.0
             
-            //TODO:localize
-            let titleString = "New Thread"
-            let subtitleString = "Type any message to\ncreate a new thread."
+            let titleString = item.presentationData.strings.Chat_NewThreadInfo_Title
+            let subtitleString = item.presentationData.strings.Chat_NewThreadInfo_Text
             
             backgroundSize.height += iconBackgroundSize
             backgroundSize.height += iconTextSpacing

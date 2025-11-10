@@ -51,6 +51,12 @@ public enum PreparedShareItemError {
 }
 
 private func preparedShareItem(postbox: Postbox, network: Network, to peerId: PeerId, value: [String: Any]) -> Signal<PreparedShareItem, PreparedShareItemError> {
+    // Nicegram, fixed screenshot sharing on iOS 26
+    var value = value
+    if let imageData = value["image"] as? Data {
+        value["data"] = imageData
+    }
+    //
     if let imageData = value["scaledImageData"] as? Data, let dimensions = value["scaledImageDimensions"] as? NSValue {
         let diminsionsSize = dimensions.cgSizeValue
         return .single(.preparing(false))

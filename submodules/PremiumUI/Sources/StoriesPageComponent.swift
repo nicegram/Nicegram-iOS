@@ -313,7 +313,7 @@ private final class StoriesListComponent: CombinedComponent {
             let strings = context.component.context.sharedContext.currentPresentationData.with { $0 }.strings
             
             let colors = [
-                UIColor(rgb: 0x007aff),
+                UIColor(rgb: 0x0088ff),
                 UIColor(rgb: 0x798aff),
                 UIColor(rgb: 0xac64f3),
                 UIColor(rgb: 0xc456ae),

@@ -227,7 +227,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Möchten Sie die Aufnahme dieses Anrufs stoppen?";
 "NicegramCallRecord.StopAlertButtonStop" = "Stopp";
 "NicegramCallRecord.StopAlertButtonCancel" = "Abbrechen";
-"NicegramCallRecord.SavedMessage" = "Aufgezeichneter Anruf in **Gespeicherte Nachrichten** gespeichert.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Feed";

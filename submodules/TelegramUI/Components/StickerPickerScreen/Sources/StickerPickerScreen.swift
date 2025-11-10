@@ -283,6 +283,7 @@ private final class StickerSelectionComponent: Component {
                     defaultToEmojiTab: defaultToEmoji,
                     externalTopPanelContainer: self.panelHostView,
                     externalBottomPanelContainer: nil,
+                    externalTintMaskContainer: nil,
                     displayTopPanelBackground: .blur,
                     topPanelExtensionUpdated: { _, _ in
                     },

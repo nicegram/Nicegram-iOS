@@ -254,9 +254,9 @@ func withResolvedAssociatedMessages<T>(postbox: Postbox, source: FetchMessageHis
                         signals.append(signal
                         |> map { result in
                             switch result {
-                                case let .messages(messages, chats, users):
+                                case let .messages(messages, _, chats, users):
                                     return (peer, messages, chats, users)
-                                case let .messagesSlice(_, _, _, _, _, messages, chats, users):
+                                case let .messagesSlice(_, _, _, _, _, messages, _, chats, users):
                                     return (peer, messages, chats, users)
                                 case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
                                     let _ = apiTopics
@@ -285,9 +285,9 @@ func withResolvedAssociatedMessages<T>(postbox: Postbox, source: FetchMessageHis
                         signals.append(signal
                         |> map { result in
                             switch result {
-                                case let .messages(messages, chats, users):
+                                case let .messages(messages, _, chats, users):
                                     return (peer, messages, chats, users)
-                                case let .messagesSlice(_, _, _, _, _, messages, chats, users):
+                                case let .messagesSlice(_, _, _, _, _, messages, _, chats, users):
                                     return (peer, messages, chats, users)
                                 case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
                                     let _ = apiTopics
@@ -919,11 +919,11 @@ func fetchMessageHistoryHole(accountPeerId: PeerId, source: FetchMessageHistoryH
                     let users: [Api.User]
                     var channelPts: Int32?
                     switch result {
-                        case let .messages(messages: apiMessages, chats: apiChats, users: apiUsers):
+                        case let .messages(messages: apiMessages, _, chats: apiChats, users: apiUsers):
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messagesSlice(_, _, _, _, _, messages: apiMessages, chats: apiChats, users: apiUsers):
+                        case let .messagesSlice(_, _, _, _, _, messages: apiMessages, _, chats: apiChats, users: apiUsers):
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
@@ -1217,11 +1217,11 @@ func fetchCallListHole(network: Network, postbox: Postbox, accountPeerId: PeerId
             let chats: [Api.Chat]
             let users: [Api.User]
             switch result {
-                case let .messages(messages: apiMessages, chats: apiChats, users: apiUsers):
+                case let .messages(messages: apiMessages, _, chats: apiChats, users: apiUsers):
                     messages = apiMessages
                     chats = apiChats
                     users = apiUsers
-                case let .messagesSlice(_, _, _, _, _, messages: apiMessages, chats: apiChats, users: apiUsers):
+                case let .messagesSlice(_, _, _, _, _, messages: apiMessages, _, chats: apiChats, users: apiUsers):
                     messages = apiMessages
                     chats = apiChats
                     users = apiUsers

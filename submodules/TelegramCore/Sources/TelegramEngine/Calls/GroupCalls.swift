@@ -94,6 +94,7 @@ public struct GroupCallInfo: Equatable {
     public var recordingStartTimestamp: Int32?
     public var sortAscending: Bool
     public var defaultParticipantsAreMuted: GroupCallParticipantsContext.State.DefaultParticipantsAreMuted?
+    public var messagesAreEnabled: GroupCallParticipantsContext.State.MessagesAreEnabled?
     public var isVideoEnabled: Bool
     public var unmutedVideoLimit: Int
     public var isStream: Bool
@@ -110,6 +111,7 @@ public struct GroupCallInfo: Equatable {
         recordingStartTimestamp: Int32?,
         sortAscending: Bool,
         defaultParticipantsAreMuted: GroupCallParticipantsContext.State.DefaultParticipantsAreMuted?,
+        messagesAreEnabled: GroupCallParticipantsContext.State.MessagesAreEnabled?,
         isVideoEnabled: Bool,
         unmutedVideoLimit: Int,
         isStream: Bool,
@@ -125,6 +127,7 @@ public struct GroupCallInfo: Equatable {
         self.recordingStartTimestamp = recordingStartTimestamp
         self.sortAscending = sortAscending
         self.defaultParticipantsAreMuted = defaultParticipantsAreMuted
+        self.messagesAreEnabled = messagesAreEnabled
         self.isVideoEnabled = isVideoEnabled
         self.unmutedVideoLimit = unmutedVideoLimit
         self.isStream = isStream
@@ -152,6 +155,7 @@ extension GroupCallInfo {
                 recordingStartTimestamp: recordStartDate,
                 sortAscending: (flags & (1 << 6)) != 0,
                 defaultParticipantsAreMuted: GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: (flags & (1 << 1)) != 0, canChange: (flags & (1 << 2)) != 0),
+                messagesAreEnabled: GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: (flags & (1 << 17)) != 0, canChange: (flags & (1 << 18)) != 0),
                 isVideoEnabled: (flags & (1 << 9)) != 0,
                 unmutedVideoLimit: Int(unmutedVideoLimit),
                 isStream: (flags & (1 << 12)) != 0,
@@ -506,17 +510,17 @@ public enum GetGroupCallParticipantsError {
 func _internal_getGroupCallParticipants(account: Account, reference: InternalGroupCallReference, offset: String, ssrcs: [UInt32], limit: Int32, sortAscending: Bool?) -> Signal<GroupCallParticipantsContext.State, GetGroupCallParticipantsError> {
     let accountPeerId = account.peerId
     
-    let sortAscendingValue: Signal<(Bool, Int32?, Bool, GroupCallParticipantsContext.State.DefaultParticipantsAreMuted?, Bool, Int, Bool, Bool), GetGroupCallParticipantsError>
+    let sortAscendingValue: Signal<(Bool, Int32?, Bool, GroupCallParticipantsContext.State.DefaultParticipantsAreMuted?, GroupCallParticipantsContext.State.MessagesAreEnabled?, Bool, Int, Bool, Bool), GetGroupCallParticipantsError>
     
     sortAscendingValue = _internal_getCurrentGroupCall(account: account, reference: reference)
     |> mapError { _ -> GetGroupCallParticipantsError in
         return .generic
     }
-    |> mapToSignal { result -> Signal<(Bool, Int32?, Bool, GroupCallParticipantsContext.State.DefaultParticipantsAreMuted?, Bool, Int, Bool, Bool), GetGroupCallParticipantsError> in
+    |> mapToSignal { result -> Signal<(Bool, Int32?, Bool, GroupCallParticipantsContext.State.DefaultParticipantsAreMuted?, GroupCallParticipantsContext.State.MessagesAreEnabled?, Bool, Int, Bool, Bool), GetGroupCallParticipantsError> in
         guard let result = result else {
             return .fail(.generic)
         }
-        return .single((sortAscending ?? result.info.sortAscending, result.info.scheduleTimestamp, result.info.subscribedToScheduled, result.info.defaultParticipantsAreMuted, result.info.isVideoEnabled, result.info.unmutedVideoLimit, result.info.isStream, result.info.isCreator))
+        return .single((sortAscending ?? result.info.sortAscending, result.info.scheduleTimestamp, result.info.subscribedToScheduled, result.info.defaultParticipantsAreMuted, result.info.messagesAreEnabled, result.info.isVideoEnabled, result.info.unmutedVideoLimit, result.info.isStream, result.info.isCreator))
     }
 
     return combineLatest(
@@ -533,7 +537,7 @@ func _internal_getGroupCallParticipants(account: Account, reference: InternalGro
             let version: Int32
             let nextParticipantsFetchOffset: String?
             
-            let (sortAscendingValue, scheduleTimestamp, subscribedToScheduled, defaultParticipantsAreMuted, isVideoEnabled, unmutedVideoLimit, isStream, isCreator) = sortAscendingAndScheduleTimestamp
+            let (sortAscendingValue, scheduleTimestamp, subscribedToScheduled, defaultParticipantsAreMuted, messagesAreEnabled, isVideoEnabled, unmutedVideoLimit, isStream, isCreator) = sortAscendingAndScheduleTimestamp
             
             switch result {
             case let .groupParticipants(count, participants, nextOffset, chats, users, apiVersion):
@@ -560,6 +564,7 @@ func _internal_getGroupCallParticipants(account: Account, reference: InternalGro
                 adminIds: Set(),
                 isCreator: isCreator,
                 defaultParticipantsAreMuted: defaultParticipantsAreMuted ?? GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: false, canChange: false),
+                messagesAreEnabled: messagesAreEnabled ?? GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: true, canChange: false),
                 sortAscending: sortAscendingValue,
                 recordingStartTimestamp: nil,
                 title: nil,
@@ -758,14 +763,18 @@ func _internal_joinGroupCall(account: Account, peerId: PeerId?, joinAs: PeerId?,
                             
                             switch call {
                             case let .groupCall(flags, _, _, _, title, _, recordStartDate, scheduleDate, _, unmutedVideoLimit, _, _):
+                                let isMin = (flags & (1 << 19)) != 0
                                 let isMuted = (flags & (1 << 1)) != 0
                                 let canChange = (flags & (1 << 2)) != 0
                                 let isVideoEnabled = (flags & (1 << 9)) != 0
-                                state.defaultParticipantsAreMuted = GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: isMuted, canChange: canChange)
+                                let messagesEnabled = (flags & (1 << 17)) != 0
+                                let canChangeMessagesEnabled = (flags & (1 << 18)) != 0
+                                state.defaultParticipantsAreMuted = GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: isMuted, canChange: isMin ? state.defaultParticipantsAreMuted.canChange : canChange)
+                                state.messagesAreEnabled = GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: messagesEnabled, canChange: isMin ? state.messagesAreEnabled.canChange : canChangeMessagesEnabled)
                                 state.title = title
                                 state.recordingStartTimestamp = recordStartDate
                                 state.scheduleTimestamp = scheduleDate
-                                state.isVideoEnabled = isVideoEnabled
+                                state.isVideoEnabled = isMin ? state.isVideoEnabled : isVideoEnabled
                                 state.unmutedVideoLimit = Int(unmutedVideoLimit)
                             default:
                                 break
@@ -1374,11 +1383,22 @@ public final class GroupCallParticipantsContext {
             }
         }
         
+        public struct MessagesAreEnabled: Equatable {
+            public var isEnabled: Bool
+            public var canChange: Bool
+            
+            public init(isEnabled: Bool, canChange: Bool) {
+                self.isEnabled = isEnabled
+                self.canChange = canChange
+            }
+        }
+        
         public var participants: [Participant]
         public var nextParticipantsFetchOffset: String?
         public var adminIds: Set<PeerId>
         public var isCreator: Bool
         public var defaultParticipantsAreMuted: DefaultParticipantsAreMuted
+        public var messagesAreEnabled: MessagesAreEnabled
         public var sortAscending: Bool
         public var recordingStartTimestamp: Int32?
         public var title: String?
@@ -1416,6 +1436,7 @@ public final class GroupCallParticipantsContext {
             adminIds: Set<PeerId>,
             isCreator: Bool,
             defaultParticipantsAreMuted: DefaultParticipantsAreMuted,
+            messagesAreEnabled: MessagesAreEnabled,
             sortAscending: Bool,
             recordingStartTimestamp: Int32?,
             title: String?,
@@ -1432,6 +1453,7 @@ public final class GroupCallParticipantsContext {
             self.adminIds = adminIds
             self.isCreator = isCreator
             self.defaultParticipantsAreMuted = defaultParticipantsAreMuted
+            self.messagesAreEnabled = messagesAreEnabled
             self.sortAscending = sortAscending
             self.recordingStartTimestamp = recordingStartTimestamp
             self.title = title
@@ -1565,7 +1587,7 @@ public final class GroupCallParticipantsContext {
         }
         
         case state(update: StateUpdate)
-        case call(isTerminated: Bool, defaultParticipantsAreMuted: State.DefaultParticipantsAreMuted, title: String?, recordingStartTimestamp: Int32?, scheduleTimestamp: Int32?, isVideoEnabled: Bool, participantCount: Int?)
+        case call(isTerminated: Bool, defaultParticipantsAreMuted: State.DefaultParticipantsAreMuted, messagesAreEnabled: State.MessagesAreEnabled, title: String?, recordingStartTimestamp: Int32?, scheduleTimestamp: Int32?, isVideoEnabled: Bool, participantCount: Int?, isMin: Bool)
         case conferenceChainBlocks(subChainId: Int, blocks: [Data], nextOffset: Int)
     }
     
@@ -1708,6 +1730,7 @@ public final class GroupCallParticipantsContext {
     private let updateDefaultMuteDisposable = MetaDisposable()
     private let resetInviteLinksDisposable = MetaDisposable()
     private let updateShouldBeRecordingDisposable = MetaDisposable()
+    private let updateMessagesEnabledDisposable = MetaDisposable()
     private let subscribeDisposable = MetaDisposable()
     
     private var localVideoIsMuted: Bool? = nil
@@ -1801,6 +1824,7 @@ public final class GroupCallParticipantsContext {
                                 adminIds: strongSelf.stateValue.state.adminIds,
                                 isCreator: strongSelf.stateValue.state.isCreator,
                                 defaultParticipantsAreMuted: strongSelf.stateValue.state.defaultParticipantsAreMuted,
+                                messagesAreEnabled: strongSelf.stateValue.state.messagesAreEnabled,
                                 sortAscending: strongSelf.stateValue.state.sortAscending,
                                 recordingStartTimestamp: strongSelf.stateValue.state.recordingStartTimestamp,
                                 title: strongSelf.stateValue.state.title,
@@ -1916,6 +1940,7 @@ public final class GroupCallParticipantsContext {
         self.activitiesDisposable?.dispose()
         self.updateDefaultMuteDisposable.dispose()
         self.updateShouldBeRecordingDisposable.dispose()
+        self.updateMessagesEnabledDisposable.dispose()
         self.activityRankResetTimer?.invalidate()
         self.resetInviteLinksDisposable.dispose()
         self.subscribeDisposable.dispose()
@@ -1940,13 +1965,14 @@ public final class GroupCallParticipantsContext {
         for update in updates {
             if case let .state(update) = update {
                 stateUpdates.append(update)
-            } else if case let .call(_, defaultParticipantsAreMuted, title, recordingStartTimestamp, scheduleTimestamp, isVideoEnabled, participantsCount) = update {
+            } else if case let .call(_, defaultParticipantsAreMuted, messagesAreEnabled, title, recordingStartTimestamp, scheduleTimestamp, isVideoEnabled, participantsCount, isMin) = update {
                 var state = self.stateValue.state
-                state.defaultParticipantsAreMuted = defaultParticipantsAreMuted
+                state.defaultParticipantsAreMuted = isMin ? State.DefaultParticipantsAreMuted(isMuted: defaultParticipantsAreMuted.isMuted, canChange: state.defaultParticipantsAreMuted.canChange) : defaultParticipantsAreMuted
+                state.messagesAreEnabled = isMin ? State.MessagesAreEnabled(isEnabled: messagesAreEnabled.isEnabled, canChange: state.messagesAreEnabled.canChange) : messagesAreEnabled
                 state.recordingStartTimestamp = recordingStartTimestamp
                 state.title = title
                 state.scheduleTimestamp = scheduleTimestamp
-                state.isVideoEnabled = isVideoEnabled
+                state.isVideoEnabled = isMin ? state.isVideoEnabled : isVideoEnabled
                 if let participantsCount = participantsCount {
                     state.totalCount = participantsCount
                 }
@@ -2029,6 +2055,7 @@ public final class GroupCallParticipantsContext {
                     adminIds: strongSelf.stateValue.state.adminIds,
                     isCreator: strongSelf.stateValue.state.isCreator,
                     defaultParticipantsAreMuted: strongSelf.stateValue.state.defaultParticipantsAreMuted,
+                    messagesAreEnabled: strongSelf.stateValue.state.messagesAreEnabled,
                     sortAscending: strongSelf.stateValue.state.sortAscending,
                     recordingStartTimestamp: strongSelf.stateValue.state.recordingStartTimestamp,
                     title: strongSelf.stateValue.state.title,
@@ -2273,6 +2300,7 @@ public final class GroupCallParticipantsContext {
                     adminIds: adminIds,
                     isCreator: isCreator,
                     defaultParticipantsAreMuted: defaultParticipantsAreMuted,
+                    messagesAreEnabled: strongSelf.stateValue.state.messagesAreEnabled,
                     sortAscending: strongSelf.stateValue.state.sortAscending,
                     recordingStartTimestamp: recordingStartTimestamp,
                     title: title,
@@ -2313,6 +2341,7 @@ public final class GroupCallParticipantsContext {
             state.adminIds = strongSelf.stateValue.state.adminIds
             state.isCreator = strongSelf.stateValue.state.isCreator
             state.defaultParticipantsAreMuted = strongSelf.stateValue.state.defaultParticipantsAreMuted
+            state.messagesAreEnabled = strongSelf.stateValue.state.messagesAreEnabled
             state.title = strongSelf.stateValue.state.title
             state.recordingStartTimestamp = strongSelf.stateValue.state.recordingStartTimestamp
             state.scheduleTimestamp = strongSelf.stateValue.state.scheduleTimestamp
@@ -2550,7 +2579,22 @@ public final class GroupCallParticipantsContext {
         }
         self.stateValue.state.defaultParticipantsAreMuted.isMuted = isMuted
         
-        self.updateDefaultMuteDisposable.set((self.account.network.request(Api.functions.phone.toggleGroupCallSettings(flags: 1 << 0, call: self.reference.apiInputGroupCall, joinMuted: isMuted ? .boolTrue : .boolFalse))
+        self.updateDefaultMuteDisposable.set((self.account.network.request(Api.functions.phone.toggleGroupCallSettings(flags: 1 << 0, call: self.reference.apiInputGroupCall, joinMuted: isMuted ? .boolTrue : .boolFalse, messagesEnabled: nil))
+        |> deliverOnMainQueue).start(next: { [weak self] updates in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.account.stateManager.addUpdates(updates)
+        }))
+    }
+    
+    public func updateMessagesEnabled(isEnabled: Bool) {
+        if isEnabled == self.stateValue.state.messagesAreEnabled.isEnabled {
+            return
+        }
+        self.stateValue.state.messagesAreEnabled.isEnabled = isEnabled
+        
+        self.updateMessagesEnabledDisposable.set((self.account.network.request(Api.functions.phone.toggleGroupCallSettings(flags: 1 << 2, call: self.reference.apiInputGroupCall, joinMuted: nil, messagesEnabled: isEnabled ? .boolTrue : .boolFalse))
         |> deliverOnMainQueue).start(next: { [weak self] updates in
             guard let strongSelf = self else {
                 return
@@ -2560,7 +2604,7 @@ public final class GroupCallParticipantsContext {
     }
     
     public func resetInviteLinks() {
-        self.resetInviteLinksDisposable.set((self.account.network.request(Api.functions.phone.toggleGroupCallSettings(flags: 1 << 1, call: self.reference.apiInputGroupCall, joinMuted: nil))
+        self.resetInviteLinksDisposable.set((self.account.network.request(Api.functions.phone.toggleGroupCallSettings(flags: 1 << 1, call: self.reference.apiInputGroupCall, joinMuted: nil, messagesEnabled: nil))
         |> deliverOnMainQueue).start(next: { [weak self] updates in
             guard let strongSelf = self else {
                 return
@@ -3251,7 +3295,7 @@ public enum RevokeConferenceInviteLinkError {
 }
 
 func _internal_revokeConferenceInviteLink(account: Account, reference: InternalGroupCallReference, link: String) -> Signal<GroupCallInviteLinks, RevokeConferenceInviteLinkError> {
-    return account.network.request(Api.functions.phone.toggleGroupCallSettings(flags: 1 << 1, call: reference.apiInputGroupCall, joinMuted: .boolFalse))
+    return account.network.request(Api.functions.phone.toggleGroupCallSettings(flags: 1 << 1, call: reference.apiInputGroupCall, joinMuted: .boolFalse, messagesEnabled: nil))
     |> mapError { _ -> RevokeConferenceInviteLinkError in
         return .generic
     }
@@ -3371,5 +3415,505 @@ func _internal_refreshInlineGroupCall(account: Account, messageId: MessageId) ->
             })
         }
         |> ignoreValues
+    }
+}
+
+struct GroupCallMessageUpdate {
+    enum Update {
+        case newPlaintextMessage(authorId: PeerId, randomId: Int64, text: String, entities: [MessageTextEntity])
+        case newOpaqueMessage(authorId: PeerId, data: Data)
+    }
+    
+    var callId: Int64
+    var update: Update
+    
+    init(callId: Int64, update: Update) {
+        self.callId = callId
+        self.update = update
+    }
+}
+
+private func serializeGroupCallMessage(randomId: Int64, text: String, entities: [MessageTextEntity]) -> Data? {
+    var dict: [String: Any] = [:]
+    dict["_"] = "groupCallMessage"
+    
+    dict["random_id"] = randomId
+
+    var messageDict: [String: Any] = [:]
+    messageDict["_"] = "textWithEntities"
+    messageDict["text"] = text
+    if !entities.isEmpty {
+        messageDict["entities"] = entities.compactMap { entity -> [String: Any]? in
+            var entityDict: [String: Any] = [:]
+            entityDict["offset"] = Int32(entity.range.lowerBound)
+            entityDict["length"] = Int32(entity.range.upperBound - entity.range.lowerBound)
+            switch entity.type {
+            case .Unknown:
+                entityDict["_"] = "messageEntityUnknown"
+            case .Mention:
+                entityDict["_"] = "messageEntityMention"
+            case .Hashtag:
+                entityDict["_"] = "messageEntityHashtag"
+            case .BotCommand:
+                entityDict["_"] = "messageEntityBotCommand"
+            case .Url:
+                entityDict["_"] = "messageEntityUrl"
+            case .Email:
+                entityDict["_"] = "messageEntityEmail"
+            case .Bold:
+                entityDict["_"] = "messageEntityBold"
+            case .Italic:
+                entityDict["_"] = "messageEntityItalic"
+            case .Code:
+                entityDict["_"] = "messageEntityCode"
+            case let .Pre(language):
+                entityDict["_"] = "messageEntityPre"
+                entityDict["language"] = language
+            case .TextUrl(let url):
+                entityDict["_"] = "messageEntityTextUrl"
+                entityDict["url"] = url
+            case let .TextMention(peerId):
+                entityDict["_"] = "messageEntityMentionName"
+                entityDict["user_id"] = peerId.id._internalGetInt64Value()
+            case .PhoneNumber:
+                entityDict["_"] = "messageEntityPhone"
+            case .Strikethrough:
+                entityDict["_"] = "messageEntityStrike"
+            case let .BlockQuote(isCollapsed):
+                entityDict["_"] = "messageEntityBlockquote"
+                entityDict["collapsed"] = isCollapsed
+            case .Underline:
+                entityDict["_"] = "messageEntityUnderline"
+            case .BankCard:
+                entityDict["_"] = "messageEntityBankCard"
+            case .Spoiler:
+                entityDict["_"] = "messageEntitySpoiler"
+            case let .CustomEmoji(_, fileId):
+                entityDict["_"] = "messageEntityCustomEmoji"
+                entityDict["document_id"] = "\(fileId)"
+            case .Custom:
+                return nil
+            }
+            return entityDict
+        }
+    }
+    dict["message"] = messageDict
+    
+    do {
+        return try JSONSerialization.data(withJSONObject: dict, options: [])
+    } catch {
+        return nil
+    }
+}
+
+private func deserializeGroupCallMessage(data: Data) -> (randomId: Int64, text: String, entities: [MessageTextEntity])? {
+    guard let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+        return nil
+    }
+    
+    guard let type = jsonObject["_"] as? String, type == "groupCallMessage" else {
+        return nil
+    }
+    
+    func readInt32(_ value: Any?) -> Int32? {
+        if let int32 = value as? Int32 {
+            return int32
+        } else if let int = value as? Int {
+            return Int32(int)
+        } else if let string = value as? String, let int = Int32(string) {
+            return int
+        }
+        return nil
+    }
+    
+    func readInt64(_ value: Any?) -> Int64? {
+        if let int64 = value as? Int64 {
+            return int64
+        } else if let int = value as? Int {
+            return Int64(int)
+        } else if let string = value as? String, let int = Int64(string) {
+            return int
+        }
+        return nil
+    }
+    
+    guard let randomId = readInt64(jsonObject["random_id"]) else {
+        return nil
+    }
+    
+    guard let messageDict = jsonObject["message"] as? [String: Any] else {
+        return nil
+    }
+    
+    guard let messageType = messageDict["_"] as? String, messageType == "textWithEntities" else {
+        return nil
+    }
+    
+    guard let text = messageDict["text"] as? String else {
+        return nil
+    }
+    
+    var entities: [MessageTextEntity] = []
+    if let entitiesArray = messageDict["entities"] as? [[String: Any]] {
+        entities = entitiesArray.compactMap { entityDict -> MessageTextEntity? in
+            guard let entityType = entityDict["_"] as? String else {
+                return nil
+            }
+            
+            guard let offset = readInt32(entityDict["offset"]) else {
+                return nil
+            }
+            guard let length = readInt32(entityDict["length"]) else {
+                return nil
+            }
+            
+            let range = Int(offset)..<(Int(offset) + Int(length))
+            
+            let messageEntityType: MessageTextEntityType
+            switch entityType {
+            case "messageEntityUnknown":
+                messageEntityType = .Unknown
+            case "messageEntityMention":
+                messageEntityType = .Mention
+            case "messageEntityHashtag":
+                messageEntityType = .Hashtag
+            case "messageEntityBotCommand":
+                messageEntityType = .BotCommand
+            case "messageEntityUrl":
+                messageEntityType = .Url
+            case "messageEntityEmail":
+                messageEntityType = .Email
+            case "messageEntityBold":
+                messageEntityType = .Bold
+            case "messageEntityItalic":
+                messageEntityType = .Italic
+            case "messageEntityCode":
+                messageEntityType = .Code
+            case "messageEntityPre":
+                let language = entityDict["language"] as? String
+                messageEntityType = .Pre(language: language)
+            case "messageEntityTextUrl":
+                guard let url = entityDict["url"] as? String else {
+                    return nil
+                }
+                messageEntityType = .TextUrl(url: url)
+            case "messageEntityMentionName":
+                guard let userId = readInt64(entityDict["user_id"]) else {
+                    return nil
+                }
+                let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
+                messageEntityType = .TextMention(peerId: peerId)
+            case "messageEntityPhone":
+                messageEntityType = .PhoneNumber
+            case "messageEntityStrike":
+                messageEntityType = .Strikethrough
+            case "messageEntityBlockquote":
+                let isCollapsed = entityDict["collapsed"] as? Bool ?? false
+                messageEntityType = .BlockQuote(isCollapsed: isCollapsed)
+            case "messageEntityUnderline":
+                messageEntityType = .Underline
+            case "messageEntityBankCard":
+                messageEntityType = .BankCard
+            case "messageEntitySpoiler":
+                messageEntityType = .Spoiler
+            case "messageEntityCustomEmoji":
+                guard let documentId = readInt64(entityDict["document_id"]) else {
+                    return nil
+                }
+                messageEntityType = .CustomEmoji(stickerPack: nil, fileId: documentId)
+            default:
+                return nil
+            }
+            
+            return MessageTextEntity(range: range, type: messageEntityType)
+        }
+    }
+    
+    return (randomId: randomId, text: text, entities: entities)
+}
+
+public final class GroupCallMessagesContext {
+    public final class Message: Equatable {
+        public let id: Int64
+        public let author: EnginePeer?
+        public let text: String
+        public let entities: [MessageTextEntity]
+        public let date: Int32
+        public let lifetime: Int32
+        
+        public init(id: Int64, author: EnginePeer?, text: String, entities: [MessageTextEntity], date: Int32, lifetime: Int32) {
+            self.id = id
+            self.author = author
+            self.text = text
+            self.entities = entities
+            self.date = date
+            self.lifetime = lifetime
+        }
+        
+        public static func ==(lhs: Message, rhs: Message) -> Bool {
+            if lhs.id != rhs.id {
+                return false
+            }
+            if lhs === rhs {
+                return true
+            }
+            if lhs.author != rhs.author {
+                return false
+            }
+            if lhs.text != rhs.text {
+                return false
+            }
+            if lhs.entities != rhs.entities {
+                return false
+            }
+            if lhs.date != rhs.date {
+                return false
+            }
+            if lhs.lifetime != rhs.lifetime {
+                return false
+            }
+            return true
+        }
+    }
+    
+    public struct State: Equatable {
+        public var messages: [Message]
+        
+        public init(messages: [Message]) {
+            self.messages = messages
+        }
+    }
+    
+    private final class Impl {
+        private let messageLifetime: Int32
+        
+        let queue: Queue
+        let account: Account
+        let callId: Int64
+        let reference: InternalGroupCallReference
+        let e2eContext: ConferenceCallE2EContext?
+        
+        var state: State {
+            didSet {
+                self.stateValue.set(self.state)
+            }
+        }
+        let stateValue = ValuePromise<State>()
+        
+        var updatesDisposable: Disposable?
+        let sendMessageDisposables = DisposableSet()
+        
+        var processedIds = Set<Int64>()
+        
+        private var messageLifeTimer: SwiftSignalKit.Timer?
+        
+        init(queue: Queue, account: Account, callId: Int64, reference: InternalGroupCallReference, e2eContext: ConferenceCallE2EContext?, messageLifetime: Int32) {
+            self.queue = queue
+            self.account = account
+            self.callId = callId
+            self.reference = reference
+            self.e2eContext = e2eContext
+            self.messageLifetime = messageLifetime
+            
+            self.state = State(messages: [])
+            self.stateValue.set(self.state)
+            
+            self.updatesDisposable = (account.stateManager.groupCallMessageUpdates
+            |> deliverOn(self.queue)).startStrict(next: { [weak self] updates in
+                guard let self else {
+                    return
+                }
+                let currentTime = Int32(CFAbsoluteTimeGetCurrent())
+                var addedMessages: [(authorId: PeerId, randomId: Int64, text: String, entities: [MessageTextEntity])] = []
+                var addedOpaqueMessages: [(authorId: PeerId, data: Data)] = []
+                for update in updates {
+                    if update.callId != self.callId {
+                        continue
+                    }
+                    switch update.update {
+                    case let .newPlaintextMessage(authorId, randomId, text, entities):
+                        if authorId != self.account.peerId {
+                            addedMessages.append((authorId, randomId, text, entities))
+                        }
+                    case let .newOpaqueMessage(authorId, data):
+                        if authorId != self.account.peerId {
+                            addedOpaqueMessages.append((authorId, data))
+                        }
+                    }
+                }
+                
+                if !addedMessages.isEmpty || !addedOpaqueMessages.isEmpty {
+                    let _ = (self.account.postbox.transaction { transaction -> [Message] in
+                        var messages: [Message] = []
+                        if let e2eContext = self.e2eContext {
+                            let decryptedMessages = e2eContext.state.with({ state -> [Data?] in
+                                guard let state = state.state else {
+                                    return []
+                                }
+                                var result: [Data?] = []
+                                for addedOpaqueMessage in addedOpaqueMessages {
+                                    result.append(state.decrypt(message: addedOpaqueMessage.data, userId: addedOpaqueMessage.authorId.id._internalGetInt64Value()))
+                                }
+                                return result
+                            })
+                            for i in 0 ..< addedOpaqueMessages.count {
+                                let addedOpaqueMessage = addedOpaqueMessages[i]
+                                var decryptedMessage: Data?
+                                if i < decryptedMessages.count {
+                                    decryptedMessage = decryptedMessages[i]
+                                }
+                                guard let decryptedMessage else {
+                                    continue
+                                }
+                                guard let (randomId, text, entities) = deserializeGroupCallMessage(data: decryptedMessage) else {
+                                    continue
+                                }
+                                messages.append(Message(
+                                    id: randomId,
+                                    author: transaction.getPeer(addedOpaqueMessage.authorId).flatMap(EnginePeer.init),
+                                    text: text,
+                                    entities: entities,
+                                    date: currentTime,
+                                    lifetime: self.messageLifetime
+                                ))
+                            }
+                        } else {
+                            for addedMessage in addedMessages {
+                                if self.processedIds.contains(addedMessage.randomId) {
+                                    continue
+                                }
+                                messages.append(Message(
+                                    id: addedMessage.randomId,
+                                    author: transaction.getPeer(addedMessage.authorId).flatMap(EnginePeer.init),
+                                    text: addedMessage.text,
+                                    entities: addedMessage.entities,
+                                    date: currentTime,
+                                    lifetime: self.messageLifetime
+                                ))
+                            }
+                        }
+                        return messages
+                    }
+                    |> deliverOn(self.queue)).startStandalone(next: { [weak self] messages in
+                        guard let self else {
+                            return
+                        }
+                        for message in messages {
+                            self.processedIds.insert(message.id)
+                        }
+                        var state = self.state
+                        state.messages.append(contentsOf: messages)
+                        self.state = state
+                    })
+                }
+            })
+            
+            let timer = SwiftSignalKit.Timer(timeout: 1.0, repeat: true, completion: { [weak self] in
+                self?.messageLifetimeTick()
+            }, queue: self.queue)
+            self.messageLifeTimer = timer
+            timer.start()
+        }
+        
+        deinit {
+            self.updatesDisposable?.dispose()
+            self.sendMessageDisposables.dispose()
+            self.messageLifeTimer?.invalidate()
+        }
+        
+        private func messageLifetimeTick() {
+            let now = Int32(CFAbsoluteTimeGetCurrent())
+            let filtered = self.state.messages.filter { now - $0.date < $0.lifetime }
+            if filtered.count != self.state.messages.count {
+                var state = self.state
+                state.messages = filtered
+                self.state = state
+            }
+        }
+        
+        func send(fromId: EnginePeer.Id, randomId requestedRandomId: Int64?, text: String, entities: [MessageTextEntity]) {
+            let _ = (self.account.postbox.transaction { transaction -> Peer? in
+                return transaction.getPeer(fromId)
+            }
+            |> deliverOn(self.queue)).startStandalone(next: { [weak self] fromPeer in
+                guard let self else {
+                    return
+                }
+                
+                let currentTime = Int32(CFAbsoluteTimeGetCurrent())
+                
+                var randomId: Int64 = 0
+                if let requestedRandomId {
+                    randomId = requestedRandomId
+                } else {
+                    arc4random_buf(&randomId, 8)
+                }
+                var state = self.state
+                state.messages.append(Message(
+                    id: randomId,
+                    author: fromPeer.flatMap(EnginePeer.init),
+                    text: text,
+                    entities: entities,
+                    date: currentTime,
+                    lifetime: self.messageLifetime
+                ))
+                self.state = state
+                
+                self.processedIds.insert(randomId)
+                
+                if let e2eContext = self.e2eContext, let messageData = serializeGroupCallMessage(randomId: randomId, text: text, entities: entities) {
+                    let encryptedMessage = e2eContext.state.with({ state -> Data? in
+                        guard let state = state.state else {
+                            return nil
+                        }
+                        return state.encrypt(message: messageData, channelId: 2, plaintextPrefixLength: 0)
+                    })
+                    if let encryptedMessage {
+                        self.sendMessageDisposables.add(self.account.network.request(Api.functions.phone.sendGroupCallEncryptedMessage(
+                            call: self.reference.apiInputGroupCall,
+                            encryptedMessage: Buffer(data: encryptedMessage)
+                        )).startStrict())
+                    }
+                } else {
+                    var randomId: Int64 = 0
+                    if let requestedRandomId {
+                        randomId = requestedRandomId
+                    } else {
+                        arc4random_buf(&randomId, 8)
+                    }
+                    self.sendMessageDisposables.add(self.account.network.request(Api.functions.phone.sendGroupCallMessage(
+                        call: self.reference.apiInputGroupCall,
+                        randomId: randomId,
+                        message: .textWithEntities(
+                            text: text,
+                            entities: apiEntitiesFromMessageTextEntities(entities, associatedPeers: SimpleDictionary())
+                        )
+                    )).startStrict())
+                }
+            })
+        }
+    }
+    
+    private let queue: Queue
+    private let impl: QueueLocalObject<Impl>
+    
+    public var state: Signal<State, NoError> {
+        return self.impl.signalWith { impl, subscriber in
+            return impl.stateValue.get().startStandalone(next: subscriber.putNext)
+        }
+    }
+    
+    init(account: Account, callId: Int64, reference: InternalGroupCallReference, e2eContext: ConferenceCallE2EContext?, messageLifetime: Int32) {
+        let queue = Queue(name: "GroupCallMessagesContext")
+        self.queue = queue
+        self.impl = QueueLocalObject(queue: queue, generate: {
+            return Impl(queue: queue, account: account, callId: callId, reference: reference, e2eContext: e2eContext, messageLifetime: messageLifetime)
+        })
+    }
+    
+    public func send(fromId: EnginePeer.Id, randomId: Int64?, text: String, entities: [MessageTextEntity]) {
+        self.impl.with { impl in
+            impl.send(fromId: fromId, randomId: randomId, text: text, entities: entities)
+        }
     }
 }

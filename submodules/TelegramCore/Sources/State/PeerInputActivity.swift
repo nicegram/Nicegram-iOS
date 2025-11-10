@@ -144,8 +144,8 @@ extension PeerInputActivity {
                 }
             case let .sendMessageEmojiInteractionSeen(emoticon):
                 self = .seeingEmojiInteraction(emoticon: emoticon)
-            /*case .sendMessageTextDraftAction:
-                return nil*/
+            case .sendMessageTextDraftAction:
+                return nil
         }
     }
 }

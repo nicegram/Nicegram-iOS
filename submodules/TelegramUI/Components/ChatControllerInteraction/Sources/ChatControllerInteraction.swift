@@ -271,7 +271,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public let openNoAdsDemo: () -> Void
     public let openAdsInfo: () -> Void
     public let displayGiveawayParticipationStatus: (EngineMessage.Id) -> Void
-    public let openPremiumStatusInfo: (EnginePeer.Id, UIView, Int64?, PeerNameColor) -> Void
+    public let openPremiumStatusInfo: (EnginePeer.Id, UIView, Int64?, PeerColor) -> Void
     public let openRecommendedChannelContextMenu: (EnginePeer, UIView, ContextGesture?) -> Void
     public let openGroupBoostInfo: (EnginePeer.Id?, Int) -> Void
     public let openStickerEditor: () -> Void
@@ -441,7 +441,7 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         openNoAdsDemo: @escaping () -> Void,
         openAdsInfo: @escaping () -> Void,
         displayGiveawayParticipationStatus: @escaping (EngineMessage.Id) -> Void,
-        openPremiumStatusInfo: @escaping (EnginePeer.Id, UIView, Int64?, PeerNameColor) -> Void,
+        openPremiumStatusInfo: @escaping (EnginePeer.Id, UIView, Int64?, PeerColor) -> Void,
         openRecommendedChannelContextMenu: @escaping (EnginePeer, UIView, ContextGesture?) -> Void,
         openGroupBoostInfo: @escaping (EnginePeer.Id?, Int) -> Void,
         openStickerEditor: @escaping () -> Void,

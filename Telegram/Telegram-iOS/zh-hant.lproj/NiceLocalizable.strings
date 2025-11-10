@@ -90,7 +90,7 @@
 "Common.SupportChatUsername" = "nicegram_tw";
 "Common.FAQUrl" = "https://nicegram-tw.gitbook.io/";
 "Common.FAQ.Button" = "Nicegram 常見問題";
-"IAP.Premium.Title" = "Premium";
+"IAP.Premium.Title" = "進階版功能";
 "IAP.Premium.Subtitle" = "您無法抗拒的獨特功能！";
 "IAP.Premium.Activated" = "已升級進階版！";
 "IAP.Common.Restore" = "恢復購買";
@@ -227,7 +227,6 @@
 "NicegramCallRecord.StopAlertDescription" = "您想停止錄製這個通話嗎？";
 "NicegramCallRecord.StopAlertButtonStop" = "停止";
 "NicegramCallRecord.StopAlertButtonCancel" = "取消";
-"NicegramCallRecord.SavedMessage" = "已將錄製的通話保存到 **保存的消息** 中。";
 
 /*Feed*/
 "NicegramFeed.Title" = "動態";

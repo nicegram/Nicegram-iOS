@@ -122,7 +122,7 @@ func rightNavigationButtonForChatInterfaceState(context: AccountContext, present
         }
     }
     
-    if let channel = presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isForum, channel.linkedBotId != nil, case .peer = presentationInterfaceState.chatLocation {
+    if let user = presentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.isForum, case .peer = presentationInterfaceState.chatLocation {
         let displaySearch = hasMessages
         
         if displaySearch {

@@ -1521,7 +1521,7 @@ final class ShareWithPeersScreenComponent: Component {
                             )),
                             maximumNumberOfLines: 0,
                             lineSpacing: 0.1,
-                            highlightColor: UIColor(rgb: 0x007aff, alpha: 0.2),
+                            highlightColor: UIColor(rgb: 0x0088ff, alpha: 0.2),
                             highlightAction: { attributes in
                                 if let _ = attributes[NSAttributedString.Key(rawValue: "URL")] {
                                     return NSAttributedString.Key(rawValue: "URL")

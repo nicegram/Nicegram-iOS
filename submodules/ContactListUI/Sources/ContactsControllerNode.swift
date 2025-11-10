@@ -17,6 +17,7 @@ import ChatListTitleView
 import ComponentFlow
 import SwiftUI
 import ContactsUI
+import EdgeEffect
 
 private final class ContextControllerContentSourceImpl: ContextControllerContentSource {
     let controller: ViewController
@@ -48,6 +49,7 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
 
 final class ContactsControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     let contactListNode: ContactListNode
+    private let edgeEffectView: EdgeEffectView
     
     private let context: AccountContext
     private(set) var searchDisplayController: SearchDisplayController?
@@ -116,6 +118,8 @@ final class ContactsControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             contextAction?(peer, node, gesture, location, isStories)
         })
         
+        self.edgeEffectView = EdgeEffectView()
+        
         super.init()
         
         self.setViewBlock({
@@ -125,6 +129,7 @@ final class ContactsControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         
         self.addSubnode(self.contactListNode)
+        self.view.addSubview(self.edgeEffectView)
         
         self.presentationDataDisposable = (context.sharedContext.presentationData
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
@@ -441,6 +446,11 @@ final class ContactsControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.contactListNode.containerLayoutUpdated(innerLayout, headerInsets: headerInsets, storiesInset: navigationBarLayout.storiesInset, transition: transition)
         
         self.contactListNode.frame = CGRect(origin: CGPoint(), size: layout.size)
+        
+        let edgeEffectHeight: CGFloat = layout.intrinsicInsets.bottom
+        let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - edgeEffectHeight), size: CGSize(width: layout.size.width, height: edgeEffectHeight))
+        transition.updateFrame(view: self.edgeEffectView, frame: edgeEffectFrame)
+        self.edgeEffectView.update(content: self.presentationData.theme.list.plainBackgroundColor, rect: edgeEffectFrame, edge: .bottom, edgeSize: edgeEffectFrame.height, transition: ComponentTransition(transition))
         
         self.updateNavigationScrolling(transition: transition)
         

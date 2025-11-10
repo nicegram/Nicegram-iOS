@@ -183,6 +183,11 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 params.navigationController?.pushViewController(controller)
                 return true
             case let .stickerPack(reference, previewIconFile):
+                var previewIconFile: TelegramMediaFile? = previewIconFile
+                if let file = previewIconFile, !file.isValidForDisplay(chatPeerId: params.message.id.peerId) {
+                    previewIconFile = nil
+                }
+            
                 let controller = StickerPackScreen(context: params.context, updatedPresentationData: params.updatedPresentationData, mainStickerPack: reference, stickerPacks: [reference], previewIconFile: previewIconFile, parentNavigationController: params.navigationController, sendSticker: params.sendSticker, sendEmoji: params.sendEmoji, actionPerformed: { actions in
                     let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
                     

@@ -54,7 +54,7 @@ public func dateFillNeedsBlur(theme: PresentationTheme, wallpaper: TelegramWallp
 
 public let defaultServiceBackgroundColor = UIColor(rgb: 0x000000, alpha: 0.2)
 public let defaultPresentationTheme = makeDefaultDayPresentationTheme(serviceBackgroundColor: defaultServiceBackgroundColor, day: false, preview: false)
-public let defaultDayAccentColor = UIColor(rgb: 0x007aff)
+public let defaultDayAccentColor = UIColor(rgb: 0x0088ff)
 
 public func customizeDefaultDayTheme(theme: PresentationTheme, editing: Bool, title: String?, accentColor: UIColor?, outgoingAccentColor: UIColor?, backgroundColors: [UInt32], bubbleColors: [UInt32], animateBubbleColors: Bool?, wallpaper forcedWallpaper: TelegramWallpaper? = nil, serviceBackgroundColor: UIColor?) -> PresentationTheme {
     if (theme.referenceTheme != .day && theme.referenceTheme != .dayClassic) {
@@ -436,7 +436,7 @@ public func makeDefaultDayPresentationTheme(extendingThemeReference: Presentatio
         separatorColor: UIColor(rgb: 0xb2b2b2),
         iconColor: UIColor(rgb: 0x959595),
         selectedIconColor: defaultDayAccentColor,
-        textColor: UIColor(rgb: 0x959595),
+        textColor: UIColor(rgb: 0x000000, alpha: 0.8),
         selectedTextColor: defaultDayAccentColor,
         badgeBackgroundColor: UIColor(rgb: 0xff3b30),
         badgeStrokeColor: UIColor(rgb: 0xff3b30),
@@ -941,20 +941,20 @@ public func makeDefaultDayPresentationTheme(extendingThemeReference: Presentatio
     let inputPanel = PresentationThemeChatInputPanel(
         panelBackgroundColor: rootNavigationBar.blurredBackgroundColor,
         panelBackgroundColorNoWallpaper: UIColor(rgb: 0xffffff),
-        panelSeparatorColor: UIColor(rgb: 0xb2b2b2),
+        panelSeparatorColor: UIColor(rgb: 0xbec2c6),
         panelControlAccentColor: defaultDayAccentColor,
-        panelControlColor: UIColor(rgb: 0x858e99),
+        panelControlColor: UIColor(rgb: 0x000000, alpha: 1.0),
         panelControlDisabledColor: UIColor(rgb: 0x727b87, alpha: 0.5),
         panelControlDestructiveColor: UIColor(rgb: 0xff3b30),
         inputBackgroundColor: UIColor(rgb: 0xffffff),
         inputStrokeColor: UIColor(rgb: 0x000000, alpha: 0.1),
-        inputPlaceholderColor: UIColor(rgb: 0xbebec0),
+        inputPlaceholderColor: UIColor(rgb: 0x000000, alpha: 0.4),
         inputTextColor: UIColor(rgb: 0x000000),
-        inputControlColor: UIColor(rgb: 0x868D98),
+        inputControlColor: UIColor(rgb: 0x000000, alpha: 0.5),
         actionControlFillColor: defaultDayAccentColor,
         actionControlForegroundColor: UIColor(rgb: 0xffffff),
-        primaryTextColor: UIColor(rgb: 0x000000),
-        secondaryTextColor: UIColor(rgb: 0x8e8e93),
+        primaryTextColor: UIColor(rgb: 0x000000, alpha: 1.0),
+        secondaryTextColor: UIColor(rgb: 0x202020, alpha: 0.6),
         mediaRecordingDotColor: UIColor(rgb: 0xed2521),
         mediaRecordingControl: inputPanelMediaRecordingControl
     )
@@ -964,7 +964,7 @@ public func makeDefaultDayPresentationTheme(extendingThemeReference: Presentatio
         panelIconColor: UIColor(rgb: 0x858e99),
         panelHighlightedIconBackgroundColor: UIColor(rgb: 0x858e99, alpha: 0.2),
         panelHighlightedIconColor: UIColor(rgb: 0x4D5561),
-        panelContentVibrantOverlayColor: UIColor(white: 0.7, alpha: 0.65),
+        panelContentVibrantOverlayColor: UIColor(white: 0.6, alpha: 0.65),
         panelContentControlVibrantOverlayColor: UIColor(white: 0.85, alpha: 0.65),
         panelContentControlVibrantSelectionColor: UIColor(white: 0.85, alpha: 0.1),
         panelContentControlOpaqueOverlayColor: UIColor(white: 0.0, alpha: 0.2),

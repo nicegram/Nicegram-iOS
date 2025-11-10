@@ -5,6 +5,9 @@ import Display
 import TelegramPresentationData
 import WallpaperBackgroundNode
 import AnimatedCountLabelNode
+import GlassBackgroundComponent
+import ComponentFlow
+import ComponentDisplayAdapters
 
 private let badgeFont = Font.with(size: 13.0, traits: [.monospacedNumbers])
 
@@ -18,11 +21,9 @@ enum ChatHistoryNavigationButtonType {
 class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
     let containerNode: ContextExtractedContentContainingNode
     let buttonNode: HighlightTrackingButtonNode
-    private let backgroundNode: NavigationBackgroundNode
-    private var backgroundContent: WallpaperBubbleBackgroundNode?
-    let backgroundImageNode: ASImageNode
-    let imageNode: ASImageNode
-    private let badgeBackgroundNode: ASImageNode
+    private let backgroundView: GlassBackgroundView
+    let imageView: GlassBackgroundView.ContentImageView
+    private let badgeBackgroundView: GlassBackgroundView
     private let badgeTextNode: ImmediateAnimatedCountLabelNode
     
     var tapped: (() -> Void)? {
@@ -55,32 +56,22 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
         self.containerNode = ContextExtractedContentContainingNode()
         self.buttonNode = HighlightTrackingButtonNode()
 
-        self.backgroundNode = NavigationBackgroundNode(color: theme.chat.inputPanel.panelBackgroundColor)
+        self.backgroundView = GlassBackgroundView()
         
-        self.backgroundImageNode = ASImageNode()
-        self.backgroundImageNode.image = PresentationResourcesChat.chatHistoryNavigationButtonBackground(theme)
-        self.backgroundImageNode.isLayerBacked = true
-        
-        self.backgroundImageNode.displayWithoutProcessing = true
-        self.imageNode = ASImageNode()
-        self.imageNode.displayWithoutProcessing = true
+        self.imageView = GlassBackgroundView.ContentImageView()
         switch type {
-            case .down:
-                self.imageNode.image = PresentationResourcesChat.chatHistoryNavigationButtonImage(theme)
-            case .up:
-                self.imageNode.image = PresentationResourcesChat.chatHistoryNavigationUpButtonImage(theme)
-            case .mentions:
-                self.imageNode.image = PresentationResourcesChat.chatHistoryMentionsButtonImage(theme)
-            case .reactions:
-                self.imageNode.image = PresentationResourcesChat.chatHistoryReactionsButtonImage(theme)
+        case .down:
+            self.imageView.image = PresentationResourcesChat.chatHistoryNavigationButtonImage(theme)
+        case .up:
+            self.imageView.image = PresentationResourcesChat.chatHistoryNavigationUpButtonImage(theme)
+        case .mentions:
+            self.imageView.image = PresentationResourcesChat.chatHistoryMentionsButtonImage(theme)
+        case .reactions:
+            self.imageView.image = PresentationResourcesChat.chatHistoryReactionsButtonImage(theme)
         }
-        self.imageNode.isLayerBacked = true
         
-        self.badgeBackgroundNode = ASImageNode()
-        self.badgeBackgroundNode.displayWithoutProcessing = true
-        self.badgeBackgroundNode.displaysAsynchronously = false
-        self.badgeBackgroundNode.image = PresentationResourcesChat.chatHistoryNavigationButtonBadgeImage(theme)
-        self.badgeBackgroundNode.alpha = 0.0
+        self.badgeBackgroundView = GlassBackgroundView()
+        self.badgeBackgroundView.alpha = 0.0
         
         self.badgeTextNode = ImmediateAnimatedCountLabelNode()
         self.badgeTextNode.isUserInteractionEnabled = false
@@ -93,7 +84,7 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
         
         self.addSubnode(self.containerNode)
         
-        let size = CGSize(width: 38.0, height: 38.0)
+        let size = CGSize(width: 40.0, height: 40.0)
         
         self.containerNode.contentNode.frame = CGRect(origin: CGPoint(), size: size)
         self.containerNode.contentRect = CGRect(origin: CGPoint(), size: size)
@@ -101,17 +92,16 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
         self.buttonNode.frame = CGRect(origin: CGPoint(), size: size)
         self.containerNode.contentNode.addSubnode(self.buttonNode)
 
-        self.buttonNode.addSubnode(self.backgroundNode)
-        self.backgroundNode.frame = CGRect(origin: CGPoint(), size: size)
-        self.backgroundNode.update(size: self.backgroundNode.bounds.size, cornerRadius: size.width / 2.0, transition: .immediate)
+        self.buttonNode.view.addSubview(self.backgroundView)
+        self.backgroundView.frame = CGRect(origin: CGPoint(), size: size)
+        self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: .immediate)
+        self.imageView.tintColor = theme.chat.inputPanel.panelControlColor
 
-        self.buttonNode.addSubnode(self.backgroundImageNode)
-        self.buttonNode.addSubnode(self.imageNode)
-        self.backgroundImageNode.frame = CGRect(origin: CGPoint(), size: size)
-        self.imageNode.frame = CGRect(origin: CGPoint(), size: size)
+        self.backgroundView.contentView.addSubview(self.imageView)
+        self.imageView.frame = CGRect(origin: CGPoint(), size: size)
         
-        self.buttonNode.addSubnode(self.badgeBackgroundNode)
-        self.badgeBackgroundNode.addSubnode(self.badgeTextNode)
+        self.buttonNode.view.addSubview(self.badgeBackgroundView)
+        self.badgeBackgroundView.contentView.addSubview(self.badgeTextNode.view)
         
         self.frame = CGRect(origin: CGPoint(), size: size)
     }
@@ -120,19 +110,21 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
         if self.theme !== theme {
             self.theme = theme
 
-            self.backgroundNode.updateColor(color: theme.chat.inputPanel.panelBackgroundColor, transition: .immediate)
+            self.backgroundView.update(size: self.backgroundView.bounds.size, cornerRadius: self.backgroundView.bounds.size.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: .immediate)
+            self.imageView.tintColor = theme.chat.inputPanel.panelControlColor
+            
             switch self.type {
-                case .down:
-                    self.imageNode.image = PresentationResourcesChat.chatHistoryNavigationButtonImage(theme)
-                case .up:
-                    self.imageNode.image = PresentationResourcesChat.chatHistoryNavigationUpButtonImage(theme)
-                case .mentions:
-                    self.imageNode.image = PresentationResourcesChat.chatHistoryMentionsButtonImage(theme)
-                case .reactions:
-                    self.imageNode.image = PresentationResourcesChat.chatHistoryReactionsButtonImage(theme)
+            case .down:
+                self.imageView.image = PresentationResourcesChat.chatHistoryNavigationButtonImage(theme)
+            case .up:
+                self.imageView.image = PresentationResourcesChat.chatHistoryNavigationUpButtonImage(theme)
+            case .mentions:
+                self.imageView.image = PresentationResourcesChat.chatHistoryMentionsButtonImage(theme)
+            case .reactions:
+                self.imageView.image = PresentationResourcesChat.chatHistoryReactionsButtonImage(theme)
             }
-            self.backgroundImageNode.image = PresentationResourcesChat.chatHistoryNavigationButtonBackground(theme)
-            self.badgeBackgroundNode.image = PresentationResourcesChat.chatHistoryNavigationButtonBadgeImage(theme)
+            
+            self.badgeBackgroundView.update(size: self.badgeBackgroundView.bounds.size, cornerRadius: self.badgeBackgroundView.bounds.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .custom, color: theme.chat.inputPanel.actionControlFillColor), transition: .immediate)
             
             var segments: [AnimatedCountLabelNode.Segment] = []
             if let value = Int(self.badge) {
@@ -144,34 +136,11 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
             }
             self.badgeTextNode.segments = segments
         }
-        
-        if backgroundNode.hasExtraBubbleBackground() {
-            if self.backgroundContent == nil {
-                if let backgroundContent = backgroundNode.makeBubbleBackground(for: .free) {
-                    backgroundContent.allowsGroupOpacity = true
-                    backgroundContent.clipsToBounds = true
-                    backgroundContent.alpha = 0.3
-                    backgroundContent.cornerRadius = 19.0
-                    backgroundContent.frame = self.backgroundNode.frame
-                    self.buttonNode.insertSubnode(backgroundContent, aboveSubnode: self.backgroundNode)
-                    self.backgroundContent = backgroundContent
-                }
-            }
-        } else {
-            self.backgroundContent?.removeFromSupernode()
-            self.backgroundContent = nil
-        }
-        
-        if let (rect, containerSize) = self.absoluteRect {
-            self.backgroundContent?.update(rect: rect, within: containerSize, transition: .immediate)
-        }
     }
     
     private var absoluteRect: (CGRect, CGSize)?
     func update(rect: CGRect, within containerSize: CGSize, transition: ContainedViewLayoutTransition) {
         self.absoluteRect = (rect, containerSize)
-        
-        self.backgroundContent?.update(rect: rect, within: containerSize, transition: transition)
     }
     
     @objc func onTap() {
@@ -195,43 +164,47 @@ class ChatHistoryNavigationButtonNode: ContextControllerSourceNode {
             self.badgeTextNode.segments = segments
             
             let badgeSize = self.badgeTextNode.updateLayout(size: CGSize(width: 200.0, height: 100.0), animated: true)
-            let backgroundSize = CGSize(width: self.badge.count == 1 ? 18.0 : max(18.0, badgeSize.width + 10.0 + 1.0), height: 18.0)
-            let backgroundFrame = CGRect(origin: CGPoint(x: floor((38.0 - backgroundSize.width) / 2.0), y: -9.0), size: backgroundSize)
-            if backgroundFrame.width < self.badgeBackgroundNode.frame.width {
-                self.badgeBackgroundNode.layer.animateFrame(from: self.badgeBackgroundNode.frame, to: backgroundFrame, duration: 0.2)
-                self.badgeBackgroundNode.frame = backgroundFrame
+            let backgroundSize = CGSize(width: self.badge.count == 1 ? 20.0 : max(20.0, badgeSize.width + 10.0 + 1.0), height: 20.0)
+            let backgroundFrame = CGRect(origin: CGPoint(x: floor((40.0 - backgroundSize.width) / 2.0), y: -7.0), size: backgroundSize)
+            if backgroundFrame.width < self.badgeBackgroundView.frame.width {
+                self.badgeBackgroundView.layer.animateFrame(from: self.badgeBackgroundView.frame, to: backgroundFrame, duration: 0.2)
+                self.badgeBackgroundView.frame = backgroundFrame
             } else {
-                self.badgeBackgroundNode.frame = backgroundFrame
+                self.badgeBackgroundView.frame = backgroundFrame
             }
-            self.badgeTextNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((backgroundFrame.width - badgeSize.width) / 2.0), y: 1.0), size: badgeSize)
             
-            if self.badgeBackgroundNode.alpha < 1.0 {
-                self.badgeBackgroundNode.alpha = 1.0
+            let transition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)
+            self.badgeBackgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .custom, color: self.theme.chat.inputPanel.actionControlFillColor), transition: ComponentTransition(transition))
+            
+            self.badgeTextNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((backgroundFrame.width - badgeSize.width) / 2.0), y: 2.0), size: badgeSize)
+            
+            if self.badgeBackgroundView.alpha < 1.0 {
+                self.badgeBackgroundView.alpha = 1.0
                 
-                self.badgeBackgroundNode.layer.animateScale(from: 0.01, to: 1.2, duration: 0.2, removeOnCompletion: false, completion: { [weak self] _ in
+                self.badgeBackgroundView.layer.animateScale(from: 0.01, to: 1.2, duration: 0.2, removeOnCompletion: false, completion: { [weak self] _ in
                     if let strongSelf = self {
-                        strongSelf.badgeBackgroundNode.layer.animateScale(from: 1.15, to: 1.0, duration: 0.12, removeOnCompletion: false, completion: { _ in
-                            strongSelf.badgeBackgroundNode.layer.removeAllAnimations()
+                        strongSelf.badgeBackgroundView.layer.animateScale(from: 1.15, to: 1.0, duration: 0.12, removeOnCompletion: false, completion: { _ in
+                            strongSelf.badgeBackgroundView.layer.removeAllAnimations()
                         })
                     }
                 })
-                self.badgeBackgroundNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                self.badgeBackgroundView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
             } else if previousValue < self.currentValue {
-                self.badgeBackgroundNode.layer.animateScale(from: 1.0, to: 1.2, duration: 0.12, removeOnCompletion: false, completion: { [weak self] finished in
+                self.badgeBackgroundView.layer.animateScale(from: 1.0, to: 1.2, duration: 0.12, removeOnCompletion: false, completion: { [weak self] finished in
                     if let strongSelf = self {
-                        strongSelf.badgeBackgroundNode.layer.animateScale(from: 1.2, to: 1.0, duration: 0.12, removeOnCompletion: false, completion: { _ in
-                            strongSelf.badgeBackgroundNode.layer.removeAllAnimations()
+                        strongSelf.badgeBackgroundView.layer.animateScale(from: 1.2, to: 1.0, duration: 0.12, removeOnCompletion: false, completion: { _ in
+                            strongSelf.badgeBackgroundView.layer.removeAllAnimations()
                         })
                     }
                 })
             }
         } else {
             self.currentValue = 0
-            if self.badgeBackgroundNode.alpha > 0.0 {
-                self.badgeBackgroundNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2)
-                self.badgeBackgroundNode.layer.animateScale(from: 1.0, to: 0.01, duration: 0.2)
+            if self.badgeBackgroundView.alpha > 0.0 {
+                self.badgeBackgroundView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2)
+                self.badgeBackgroundView.layer.animateScale(from: 1.0, to: 0.01, duration: 0.2)
             }
-            self.badgeBackgroundNode.alpha = 0.0
+            self.badgeBackgroundView.alpha = 0.0
         }
     }
 }

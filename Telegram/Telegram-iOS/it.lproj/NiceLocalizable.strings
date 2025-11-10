@@ -73,7 +73,8 @@
 "NiceFeatures.Use.DataStorage" = "Per favore, usa «%1» per configurare il tuo browser predefinito";
 "NiceFeatures.Browser.Header" = "URL";
 "NiceFeatures.Browser.UseBrowser" = "Apri link nel browser";
-"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.\nIl browser selezionato deve essere installato.";
+"NiceFeatures.Browser.UseBrowserNotice" = "Nicegram aprirà i link in un browser esterno invece di farlo nell'app.
+Il browser selezionato deve essere installato.";
 "ChatFilter.Missed" = "Mancati";
 
 /*Premium*/
@@ -227,7 +228,6 @@
 "NicegramCallRecord.StopAlertDescription" = "Vuoi interrompere la registrazione di questa chiamata?";
 "NicegramCallRecord.StopAlertButtonStop" = "Ferma";
 "NicegramCallRecord.StopAlertButtonCancel" = "Cancella";
-"NicegramCallRecord.SavedMessage" = "Chiamata registrata salvata in **Messaggi Salvati**.";
 
 /*Feed*/
 "NicegramFeed.Title" = "Feed";

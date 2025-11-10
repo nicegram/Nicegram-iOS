@@ -305,6 +305,11 @@ public final class AccountStateManager {
             return self.groupCallParticipantUpdatesPipe.signal()
         }
         
+        private let groupCallMessageUpdatesPipe = ValuePipe<[GroupCallMessageUpdate]>()
+        public var groupCallMessageUpdates: Signal<[GroupCallMessageUpdate], NoError> {
+            return self.groupCallMessageUpdatesPipe.signal()
+        }
+        
         private let deletedMessagesPipe = ValuePipe<[DeletedMessageId]>()
         public var deletedMessages: Signal<[DeletedMessageId], NoError> {
             return self.deletedMessagesPipe.signal()
@@ -1129,6 +1134,9 @@ public final class AccountStateManager {
                             if !events.updatedGroupCallParticipants.isEmpty {
                                 strongSelf.groupCallParticipantUpdatesPipe.putNext(events.updatedGroupCallParticipants)
                             }
+                            if !events.groupCallMessageUpdates.isEmpty {
+                                strongSelf.groupCallMessageUpdatesPipe.putNext(events.groupCallMessageUpdates)
+                            }
                             if !events.storyUpdates.isEmpty {
                                 strongSelf.storyUpdatesPipe.putNext(events.storyUpdates)
                             }
@@ -1921,6 +1929,12 @@ public final class AccountStateManager {
     public var groupCallParticipantUpdates: Signal<[(Int64, GroupCallParticipantsContext.Update)], NoError> {
         return self.impl.signalWith { impl, subscriber in
             return impl.groupCallParticipantUpdates.start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
+        }
+    }
+    
+    var groupCallMessageUpdates: Signal<[GroupCallMessageUpdate], NoError> {
+        return self.impl.signalWith { impl, subscriber in
+            return impl.groupCallMessageUpdates.start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
         }
     }
     

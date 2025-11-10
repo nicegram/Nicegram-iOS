@@ -708,9 +708,12 @@ public class ImmediateTextNodeWithEntities: TextNode {
         
         let _ = apply()
         
+        var enableAnimations = true
         if let arguments = self.arguments {
             self.updateInlineStickers(context: arguments.context, cache: arguments.cache, renderer: arguments.renderer, textLayout: layout, placeholderColor: arguments.placeholderColor, fontSizeNorm: arguments.fontSizeNorm)
+            enableAnimations = arguments.context.sharedContext.energyUsageSettings.fullTranslucency
         }
+        self.updateSpoilers(enableAnimations: enableAnimations, textLayout: layout)
         
         return ImmediateTextNodeLayoutInfo(size: layout.size, truncated: layout.truncated, numberOfLines: layout.numberOfLines)
     }

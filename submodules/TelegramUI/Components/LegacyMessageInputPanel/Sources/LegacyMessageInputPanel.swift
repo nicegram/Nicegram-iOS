@@ -229,7 +229,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
                     areVoiceMessagesAvailable: false,
                     presentController: self.present,
                     presentInGlobalOverlay: self.presentInGlobalOverlay,
-                    sendMessageAction: { [weak self] in
+                    sendMessageAction: { [weak self] _ in
                         if let self {
                             self.sendPressed?(self.caption())
                             let _ = self.dismissInput()

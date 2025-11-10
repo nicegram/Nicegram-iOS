@@ -38,15 +38,18 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
     
     let theme: PresentationTheme
     let overflowHeight: CGFloat
+    let topInset: CGFloat
     let displayBackground: EntityKeyboardComponent.DisplayTopPanelBackground
     
     init(
         theme: PresentationTheme,
         overflowHeight: CGFloat,
+        topInset: CGFloat,
         displayBackground: EntityKeyboardComponent.DisplayTopPanelBackground
     ) {
         self.theme = theme
         self.overflowHeight = overflowHeight
+        self.topInset = topInset
         self.displayBackground = displayBackground
     }
     
@@ -55,6 +58,9 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
             return false
         }
         if lhs.overflowHeight != rhs.overflowHeight {
+            return false
+        }
+        if lhs.topInset != rhs.topInset {
             return false
         }
         if lhs.displayBackground != rhs.displayBackground {
@@ -66,11 +72,12 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
     
     private final class PanelView {
         let view = ComponentHostView<EntityKeyboardTopContainerPanelEnvironment>()
+        let tintContentView = UIView()
         let visibilityFractionUpdated = ActionSlot<(CGFloat, ComponentTransition)>()
         var isExpanded: Bool = false
     }
     
-    final class View: UIView {
+    final class View: UIView, PagerTopPanelView {
         private var backgroundView: BlurredBackgroundView?
         private var backgroundSeparatorView: UIView?
         
@@ -82,7 +89,11 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
         
         private var visibilityFraction: CGFloat = 1.0
         
+        public let tintContentMask: UIView
+        
         override init(frame: CGRect) {
+            self.tintContentMask = UIView()
+            
             super.init(frame: frame)
             
             self.disablesInteractiveKeyboardGestureRecognizer = true
@@ -95,7 +106,7 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
         
         func update(component: EntityKeyboardTopContainerPanelComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
             let intrinsicHeight: CGFloat = 34.0
-            let height = intrinsicHeight
+            let height = intrinsicHeight + component.topInset
             
             let panelEnvironment = environment[PagerComponentPanelEnvironment.self].value
             
@@ -122,7 +133,7 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
                     let panel = panelEnvironment.contentTopPanels[index]
                     let indexOffset = index - centralIndex
                     
-                    let panelFrame = CGRect(origin: CGPoint(x: CGFloat(indexOffset) * availableSize.width, y: -component.overflowHeight), size: CGSize(width: availableSize.width, height: intrinsicHeight + component.overflowHeight))
+                    let panelFrame = CGRect(origin: CGPoint(x: CGFloat(indexOffset) * availableSize.width, y: component.topInset - component.overflowHeight), size: CGSize(width: availableSize.width, height: intrinsicHeight + component.overflowHeight))
                     
                     let isInBounds = visibleBounds.intersects(panelFrame)
                     let isPartOfTransition: Bool
@@ -144,6 +155,7 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
                             panelView = PanelView()
                             self.panelViews[panel.id] = panelView
                             self.addSubview(panelView.view)
+                            self.tintContentMask.addSubview(panelView.tintContentView)
                         }
                         
                         let panelId = panel.id
@@ -166,12 +178,20 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
                         )
                         if isInBounds {
                             transition.animatePosition(view: panelView.view, from: CGPoint(x: transitionOffsetFraction * availableSize.width, y: 0.0), to: CGPoint(), additive: true, completion: nil)
+                            transition.animatePosition(view: panelView.tintContentView, from: CGPoint(x: transitionOffsetFraction * availableSize.width, y: 0.0), to: CGPoint(), additive: true, completion: nil)
                         }
                         panelTransition.setFrame(view: panelView.view, frame: panelFrame, completion: { [weak self] completed in
                             if isPartOfTransition && completed {
                                 self?.state?.updated(transition: .immediate)
                             }
                         })
+                        panelTransition.setFrame(view: panelView.tintContentView, frame: panelFrame)
+                        if let panelViewImpl = panelView.view.componentView as? PagerTopPanelView {
+                            if panelViewImpl.tintContentMask.superview == nil {
+                                panelView.tintContentView.addSubview(panelViewImpl.tintContentMask)
+                            }
+                            panelTransition.setFrame(view: panelViewImpl.tintContentMask, frame: CGRect(origin: CGPoint(), size: panelFrame.size))
+                        }
                     }
                 }
             }
@@ -180,6 +200,7 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
                 if !validPanelIds.contains(id) {
                     removedPanelIds.append(id)
                     panelView.view.removeFromSuperview()
+                    panelView.tintContentView.removeFromSuperview()
                 }
             }
             for id in removedPanelIds {
@@ -200,7 +221,8 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
                 if let current = self.backgroundView {
                     backgroundView = current
                 } else {
-                    backgroundView = BlurredBackgroundView(color: .clear, enableBlur: true)
+                    backgroundView = BlurredBackgroundView(color: .clear, enableBlur: true, customBlurRadius: 5.0)
+                    self.backgroundView = backgroundView
                     self.insertSubview(backgroundView, at: 0)
                 }
                 
@@ -209,15 +231,16 @@ final class EntityKeyboardTopContainerPanelComponent: Component {
                     backgroundSeparatorView = current
                 } else {
                     backgroundSeparatorView = UIView()
+                    self.backgroundSeparatorView = backgroundSeparatorView
                     self.insertSubview(backgroundSeparatorView, aboveSubview: backgroundView)
                 }
                 
                 backgroundView.updateColor(color: component.theme.chat.inputPanel.panelBackgroundColor.withMultipliedAlpha(1.0), transition: .immediate)
-                backgroundView.update(size: CGSize(width: availableSize.width, height: height), transition: transition.containedViewLayoutTransition)
-                transition.setFrame(view: backgroundView, frame: CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: height)))
+                backgroundView.update(size: CGSize(width: availableSize.width, height: height + component.overflowHeight), transition: transition.containedViewLayoutTransition)
+                transition.setFrame(view: backgroundView, frame: CGRect(origin: CGPoint(x: 0.0, y: -component.overflowHeight), size: CGSize(width: availableSize.width, height: height + component.overflowHeight)))
                 
                 backgroundSeparatorView.backgroundColor = component.theme.chat.inputPanel.panelSeparatorColor
-                transition.setFrame(view: backgroundSeparatorView, frame: CGRect(origin: CGPoint(x: 0.0, y: height), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
+                transition.setFrame(view: backgroundSeparatorView, frame: CGRect(origin: CGPoint(x: 0.0, y: height - UIScreenPixel), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
             } else if case .none = component.displayBackground {
                 self.backgroundColor = nil
                 

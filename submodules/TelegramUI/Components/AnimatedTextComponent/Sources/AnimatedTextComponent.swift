@@ -3,6 +3,7 @@ import UIKit
 import Display
 import ComponentFlow
 import TelegramPresentationData
+import BundleIconComponent
 
 extension ComponentTransition {
     func animateBlur(layer: CALayer, from: CGFloat, to: CGFloat, delay: Double = 0.0, removeOnCompletion: Bool = true, completion: ((Bool) -> Void)? = nil) {
@@ -26,6 +27,7 @@ public final class AnimatedTextComponent: Component {
         public enum Content: Equatable {
             case text(String)
             case number(Int, minDigits: Int)
+            case icon(String, offset: CGPoint)
         }
         
         public var id: AnyHashable
@@ -147,6 +149,9 @@ public final class AnimatedTextComponent: Component {
                     } else {
                         itemText = valueText.map(String.init)
                     }
+                case let .icon(iconName, _):
+                    let characterKey = CharacterKey(itemId: item.id, index: 0, value: iconName)
+                    validKeys.append(characterKey)
                 }
                 var index = 0
                 for character in itemText {
@@ -181,13 +186,24 @@ public final class AnimatedTextComponent: Component {
             }
             
             for item in component.items {
-                var itemText: [String] = []
+                enum AnimatedTextCharacter {
+                    case text(String)
+                    case icon(String, CGPoint)
+                    
+                    var value: String {
+                        switch self {
+                        case let .text(value), let .icon(value, _):
+                            return value
+                        }
+                    }
+                }
+                var itemText: [AnimatedTextCharacter] = []
                 switch item.content {
                 case let .text(text):
                     if item.isUnbreakable {
-                        itemText = [text]
+                        itemText = [.text(text)]
                     } else {
-                        itemText = text.map(String.init)
+                        itemText = text.map { .text(String($0)) }
                     }
                 case let .number(value, minDigits):
                     var valueText: String = "\(value)"
@@ -196,14 +212,16 @@ public final class AnimatedTextComponent: Component {
                     }
                     
                     if item.isUnbreakable {
-                        itemText = [valueText]
+                        itemText = [.text(valueText)]
                     } else {
-                        itemText = valueText.map(String.init)
+                        itemText = valueText.map { .text(String($0)) }
                     }
+                case let .icon(iconName, offset):
+                    itemText = [.icon(iconName, offset)]
                 }
                 var index = 0
                 for character in itemText {
-                    let characterKey = CharacterKey(itemId: item.id, index: index, value: character)
+                    let characterKey = CharacterKey(itemId: item.id, index: index, value: character.value)
                     index += 1
                     
                     var characterTransition = transition
@@ -216,17 +234,30 @@ public final class AnimatedTextComponent: Component {
                         self.characters[characterKey] = characterView
                     }
                     
-                    let characterSize = characterView.update(
-                        transition: characterTransition,
-                        component: AnyComponent(Text(
-                            text: String(character),
+                    let characterComponent: AnyComponent<Empty>
+                    var characterOffset: CGPoint = .zero
+                    switch character {
+                    case let .text(text):
+                        characterComponent = AnyComponent(Text(
+                            text: String(text),
                             font: component.font,
                             color: component.color
-                        )),
+                        ))
+                    case let .icon(iconName, offset):
+                        characterComponent = AnyComponent(BundleIconComponent(
+                            name: iconName,
+                            tintColor: component.color
+                        ))
+                        characterOffset = offset
+                    }
+                    
+                    let characterSize = characterView.update(
+                        transition: characterTransition,
+                        component: characterComponent,
                         environment: {},
                         containerSize: CGSize(width: availableSize.width, height: 100.0)
                     )
-                    let characterFrame = CGRect(origin: CGPoint(x: size.width, y: 0.0), size: characterSize)
+                    let characterFrame = CGRect(origin: CGPoint(x: size.width + characterOffset.x, y: characterOffset.y), size: characterSize)
                     if let characterComponentView = characterView.view {
                         var animateIn = false
                         if characterComponentView.superview == nil {
@@ -358,6 +389,8 @@ public extension AnimatedTextComponent {
                     isUnbreakable = true
                 case .number:
                     isUnbreakable = false
+                case .icon:
+                    isUnbreakable = true
                 }
                 textItems.append(AnimatedTextComponent.Item(id: AnyHashable("\(id)_item_\(range.index)"), isUnbreakable: isUnbreakable, content: value))
             }

@@ -10,6 +10,7 @@ import ChatPresentationInterfaceState
 import SwiftSignalKit
 import TextFormat
 import ChatContextQuery
+import ChatTextInputPanelNode
 
 func serviceTasksForChatPresentationIntefaceState(context: AccountContext, chatPresentationInterfaceState: ChatPresentationInterfaceState, updateState: @escaping ((ChatPresentationInterfaceState) -> ChatPresentationInterfaceState) -> Void) -> [AnyHashable: () -> Disposable] {
     var missingEmoji = Set<Int64>()

@@ -13,6 +13,9 @@ import ChatInputPanelNode
 import ReactionSelectionNode
 import EntityKeyboard
 import TopMessageReactions
+import GlassBackgroundComponent
+import ComponentFlow
+import ComponentDisplayAdapters
 
 private final class ChatMessageSelectionInputPanelNodeViewForOverlayContent: UIView, ChatInputPanelViewForOverlayContent {
     var reactionContextNode: ReactionContextNode?
@@ -61,23 +64,135 @@ private final class ChatMessageSelectionInputPanelNodeViewForOverlayContent: UIV
     }
 }
 
+private final class GlassButtonView: HighlightTrackingButton {
+    private struct Params: Equatable {
+        let theme: PresentationTheme
+        let size: CGSize
+        
+        init(theme: PresentationTheme, size: CGSize) {
+            self.theme = theme
+            self.size = size
+        }
+        
+        static func ==(lhs: Params, rhs: Params) -> Bool {
+            if lhs.theme !== rhs.theme {
+                return false
+            }
+            if lhs.size != rhs.size {
+                return false
+            }
+            return true
+        }
+    }
+    
+    private let backgroundView: GlassBackgroundView
+    private let iconView: GlassBackgroundView.ContentImageView
+    
+    private var params: Params?
+    
+    var isImplicitlyDisabled: Bool = false {
+        didSet {
+            self.updateIsEnabled()
+        }
+    }
+    
+    override var isEnabled: Bool {
+        didSet {
+            self.updateIsEnabled()
+        }
+    }
+    
+    var icon: String? {
+        didSet {
+            if self.icon == oldValue {
+                return
+            }
+            if let icon = self.icon {
+                self.iconView.image = UIImage(bundleImageName: icon)?.withRenderingMode(.alwaysTemplate)
+            } else {
+                self.iconView.image = nil
+            }
+            if let params = self.params {
+                self.updateImpl(params: params, transition: .immediate)
+            }
+        }
+    }
+    
+    override init(frame: CGRect) {
+        self.backgroundView = GlassBackgroundView()
+        self.backgroundView.isUserInteractionEnabled = false
+        
+        self.iconView = GlassBackgroundView.ContentImageView()
+        self.backgroundView.contentView.addSubview(self.iconView)
+        
+        super.init(frame: frame)
+        
+        self.addSubview(self.backgroundView)
+        
+        self.highligthedChanged = { [weak self] highlighted in
+            guard let self else {
+                return
+            }
+            if highlighted && self.isEnabled && !self.isImplicitlyDisabled {
+                self.backgroundView.contentView.alpha = 0.6
+            } else {
+                self.backgroundView.contentView.alpha = 1.0
+                self.backgroundView.contentView.layer.animateAlpha(from: 0.6, to: 1.0, duration: 0.2)
+            }
+        }
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func update(theme: PresentationTheme, size: CGSize, transition: ComponentTransition) {
+        let params = Params(theme: theme, size: size)
+        if self.params != params {
+            self.iconView.tintColor = params.theme.chat.inputPanel.panelControlColor
+            self.params = params
+            self.updateImpl(params: params, transition: transition)
+        }
+    }
+    
+    private func updateImpl(params: Params, transition: ComponentTransition) {
+        if let image = self.iconView.image {
+            let iconFrame = image.size.centered(in: CGRect(origin: CGPoint(), size: params.size))
+            transition.setFrame(view: self.iconView, frame: iconFrame)
+        }
+        
+        transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: params.size))
+        self.backgroundView.update(size: params.size, cornerRadius: min(params.size.width, params.size.height) * 0.5, isDark: params.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: params.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: transition)
+        
+        let isEnabled = self.isEnabled && !self.isImplicitlyDisabled
+        self.iconView.alpha = isEnabled ? 1.0 : 0.5
+        self.iconView.tintMask.alpha = self.iconView.alpha
+    }
+    
+    private func updateIsEnabled() {
+        if let params = self.params {
+            self.updateImpl(params: params, transition: .immediate)
+        }
+    }
+}
+
 public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
-    private let deleteButton: HighlightableButtonNode
-    private let reportButton: HighlightableButtonNode
-    private let forwardButton: HighlightableButtonNode
     // Nicegram SelectedMessagesMenu
-    private let cloudButton: HighlightableButtonNode
-    private let copyForwardButton: HighlightableButtonNode
-    private let copyButton: HighlightableButtonNode
+    private let cloudButton: GlassButtonView
+    private let copyForwardButton: GlassButtonView
+    private let copyButton: GlassButtonView
     //
-    private let shareButton: HighlightableButtonNode
-    private let tagButton: HighlightableButtonNode
-    private let tagEditButton: HighlightableButtonNode
-    private let separatorNode: ASDisplayNode
+    
+    private let deleteButton: GlassButtonView
+    private let reportButton: GlassButtonView
+    private let forwardButton: GlassButtonView
+    private let shareButton: GlassButtonView
+    private let tagButton: GlassButtonView
+    private let tagEditButton: GlassButtonView
     
     private let reactionOverlayContainer: ChatMessageSelectionInputPanelNodeViewForOverlayContent
     
-    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, metrics: LayoutMetrics, isSecondary: Bool, isMediaInputExpanded: Bool)?
+    private var validLayout: (width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, metrics: LayoutMetrics, isSecondary: Bool, isMediaInputExpanded: Bool)?
     private var presentationInterfaceState: ChatPresentationInterfaceState?
     private var actions: ChatAvailableMessageActions?
     
@@ -98,104 +213,87 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.theme = theme
         self.peerMedia = peerMedia
         
-        self.deleteButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.deleteButton = GlassButtonView()
+        self.deleteButton.icon = "Chat/Input/Accessory Panels/MessageSelectionTrash"
         self.deleteButton.isEnabled = false
         self.deleteButton.isAccessibilityElement = true
         self.deleteButton.accessibilityLabel = strings.VoiceOver_MessageContextDelete
         
-        self.reportButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.reportButton = GlassButtonView()
+        self.reportButton.icon = "Chat/Input/Accessory Panels/MessageSelectionReport"
         self.reportButton.isEnabled = false
         self.reportButton.isAccessibilityElement = true
         self.reportButton.accessibilityLabel = strings.VoiceOver_MessageContextReport
         
-        self.forwardButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.forwardButton = GlassButtonView()
+        self.forwardButton.icon = "Chat/Input/Accessory Panels/MessageSelectionForward"
         self.forwardButton.isAccessibilityElement = true
         self.forwardButton.accessibilityLabel = strings.VoiceOver_MessageContextForward
 
         // Nicegram SelectedMessagesMenu
-        self.cloudButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.cloudButton = GlassButtonView()
+        self.cloudButton.icon = "SaveToCloud"
         self.cloudButton.isAccessibilityElement = true
         self.cloudButton.accessibilityLabel = "Save To Favourites"
         
-        self.copyForwardButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.copyForwardButton = GlassButtonView()
+        self.copyForwardButton.icon = "CopyForward"
         self.copyForwardButton.isAccessibilityElement = true
         self.copyForwardButton.accessibilityLabel = "Forward As Copy"
         
-        self.copyButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.copyButton = GlassButtonView()
+        self.copyButton.icon = "Chat/Context Menu/Copy"
         self.copyButton.isAccessibilityElement = true
         self.copyButton.accessibilityLabel = "Copy"
         //
-
-        self.shareButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        
+        self.shareButton = GlassButtonView()
+        self.shareButton.icon = "Chat/Input/Accessory Panels/MessageSelectionAction"
         self.shareButton.isAccessibilityElement = true
         self.shareButton.accessibilityLabel = strings.VoiceOver_MessageContextShare
         
-        self.tagButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.tagButton = GlassButtonView()
+        self.tagButton.icon = "Chat/Input/Accessory Panels/TagIcon"
         self.tagButton.isAccessibilityElement = true
         self.tagButton.accessibilityLabel = strings.VoiceOver_MessageSelectionButtonTag
         
-        self.tagEditButton = HighlightableButtonNode(pointerStyle: .rectangle(CGSize(width: 56.0, height: 40.0)))
+        self.tagEditButton = GlassButtonView()
+        self.tagEditButton.icon = "Chat/Input/Accessory Panels/TagEditIcon"
         self.tagEditButton.isAccessibilityElement = true
         self.tagEditButton.accessibilityLabel = strings.VoiceOver_MessageSelectionButtonTag
-        
-        self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        self.tagButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/TagIcon"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.tagEditButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/TagEditIcon"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        
-        self.separatorNode = ASDisplayNode()
-        self.separatorNode.backgroundColor = theme.chat.inputPanel.panelSeparatorColor
         
         self.reactionOverlayContainer = ChatMessageSelectionInputPanelNodeViewForOverlayContent()
         
         super.init()
         
-        self.addSubnode(self.deleteButton)
-        self.addSubnode(self.reportButton)
-        self.addSubnode(self.forwardButton)
-        self.addSubnode(self.shareButton)
-        self.addSubnode(self.tagButton)
-        self.addSubnode(self.tagEditButton)
-        self.addSubnode(self.separatorNode)
+        self.view.addSubview(self.deleteButton)
+        self.view.addSubview(self.reportButton)
+        self.view.addSubview(self.forwardButton)
+        self.view.addSubview(self.shareButton)
+        self.view.addSubview(self.tagButton)
+        self.view.addSubview(self.tagEditButton)
         
         self.viewForOverlayContent = self.reactionOverlayContainer
         
         self.forwardButton.isImplicitlyDisabled = true
         self.shareButton.isImplicitlyDisabled = true
         
-        self.deleteButton.addTarget(self, action: #selector(self.deleteButtonPressed), forControlEvents: .touchUpInside)
-        self.reportButton.addTarget(self, action: #selector(self.reportButtonPressed), forControlEvents: .touchUpInside)
-        self.forwardButton.addTarget(self, action: #selector(self.forwardButtonPressed), forControlEvents: .touchUpInside)
-        self.shareButton.addTarget(self, action: #selector(self.shareButtonPressed), forControlEvents: .touchUpInside)
-        
         // Nicegram SelectedMessagesMenu
-        self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
+        self.view.addSubview(self.cloudButton)
+        self.view.addSubview(self.copyForwardButton)
+        self.view.addSubview(self.copyButton)
         
-        
-        self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-        
-        self.copyButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-        self.copyButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-
-        self.addSubnode(self.cloudButton)
-        self.addSubnode(self.copyForwardButton)
-        self.addSubnode(self.copyButton)
-        
-        self.cloudButton.addTarget(self, action: #selector(self.cloudButtonPressed), forControlEvents: .touchUpInside)
-        self.copyForwardButton.addTarget(self, action: #selector(self.copyForwardButtonPressed), forControlEvents: .touchUpInside)
-        self.copyButton.addTarget(self, action: #selector(self.copyButtonPressed), forControlEvents: .touchUpInside)
+        self.cloudButton.addTarget(self, action: #selector(self.cloudButtonPressed), for: .touchUpInside)
+        self.copyForwardButton.addTarget(self, action: #selector(self.copyForwardButtonPressed), for: .touchUpInside)
+        self.copyButton.addTarget(self, action: #selector(self.copyButtonPressed), for: .touchUpInside)
         //
         
-        self.tagButton.addTarget(self, action: #selector(self.tagButtonPressed), forControlEvents: .touchUpInside)
-        self.tagEditButton.addTarget(self, action: #selector(self.tagButtonPressed), forControlEvents: .touchUpInside)
+        self.deleteButton.addTarget(self, action: #selector(self.deleteButtonPressed), for: .touchUpInside)
+        self.reportButton.addTarget(self, action: #selector(self.reportButtonPressed), for: .touchUpInside)
+        self.forwardButton.addTarget(self, action: #selector(self.forwardButtonPressed), for: .touchUpInside)
+        self.shareButton.addTarget(self, action: #selector(self.shareButtonPressed), for: .touchUpInside)
+        self.tagButton.addTarget(self, action: #selector(self.tagButtonPressed), for: .touchUpInside)
+        self.tagEditButton.addTarget(self, action: #selector(self.tagButtonPressed), for: .touchUpInside)
     }
     
     deinit {
@@ -213,8 +311,8 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         
         if self.selectedMessages.isEmpty {
             self.actions = nil
-            if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, metrics, isSecondary, isMediaInputExpanded) = self.validLayout, let interfaceState = self.presentationInterfaceState {
-                let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: interfaceState, metrics: metrics, isMediaInputExpanded: isMediaInputExpanded)
+            if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, metrics, isSecondary, isMediaInputExpanded) = self.validLayout, let interfaceState = self.presentationInterfaceState {
+                let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: interfaceState, metrics: metrics, isMediaInputExpanded: isMediaInputExpanded)
             }
             self.canDeleteMessagesDisposable.set(nil)
         } else if let context = self.context {
@@ -222,8 +320,8 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             |> deliverOnMainQueue).startStrict(next: { [weak self] actions in
                 if let strongSelf = self {
                     strongSelf.actions = actions
-                    if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, metrics, isSecondary, isMediaInputExpanded) = strongSelf.validLayout, let interfaceState = strongSelf.presentationInterfaceState {
-                        let _ = strongSelf.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: interfaceState, metrics: metrics, isMediaInputExpanded: isMediaInputExpanded)
+                    if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight: maxOverlayHeight, metrics, isSecondary, isMediaInputExpanded) = strongSelf.validLayout, let interfaceState = strongSelf.presentationInterfaceState {
+                        let _ = strongSelf.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: interfaceState, metrics: metrics, isMediaInputExpanded: isMediaInputExpanded)
                     }
                 }
             }))
@@ -233,27 +331,6 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     public func updateTheme(theme: PresentationTheme) {
         if self.theme !== theme {
             self.theme = theme
-            
-            self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.deleteButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.reportButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionReport"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.forwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            // Nicegram SelectedMessagesMenu
-            self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.cloudButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "SaveToCloud"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.copyForwardButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "CopyForward"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            self.copyButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.copyButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            //
-            self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.shareButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionAction"), color: theme.chat.inputPanel.panelControlDisabledColor), for: [.disabled])
-            self.tagButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/WebpageIcon"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            self.tagEditButton.setImage(generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/LinkSettingsIcon"), color: theme.chat.inputPanel.panelControlAccentColor), for: [.normal])
-            
-            self.separatorNode.backgroundColor = theme.chat.inputPanel.panelSeparatorColor
         }
     }
     
@@ -437,13 +514,19 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
     }
     
     private func update(transition: ContainedViewLayoutTransition) {
-        if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, metrics, isSecondary, isMediaInputExpanded) = self.validLayout, let interfaceState = self.presentationInterfaceState {
-            let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, isSecondary: isSecondary, transition: transition, interfaceState: interfaceState, metrics: metrics, isMediaInputExpanded: isMediaInputExpanded)
+        if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, metrics, isSecondary, isMediaInputExpanded) = self.validLayout, let interfaceState = self.presentationInterfaceState {
+            let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: transition, interfaceState: interfaceState, metrics: metrics, isMediaInputExpanded: isMediaInputExpanded)
         }
     }
     
-    override public func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
-        self.validLayout = (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, metrics, isSecondary, isMediaInputExpanded)
+    override public func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+        self.validLayout = (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, metrics, isSecondary, isMediaInputExpanded)
+        
+        var leftInset = leftInset
+        leftInset += 16.0
+        
+        var rightInset = rightInset
+        rightInset += 16.0
         
         let panelHeight = defaultHeight(metrics: metrics)
         
@@ -520,7 +603,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             width -= additionalSideInsets.right
         }
         
-        var tagButton: HighlightableButtonNode?
+        var tagButton: GlassButtonView?
         if !self.tagButton.isHidden {
             tagButton = self.tagButton
         } else if !self.tagEditButton.isHidden {
@@ -532,7 +615,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         //
         
         // Nicegram SelectedMessagesMenu, change let to var
-        var buttons: [HighlightableButtonNode]
+        var buttons: [GlassButtonView]
         if self.reportButton.isHidden {
             if let tagButton {
                 buttons = [
@@ -596,23 +679,24 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
             at: nicegramButtonsIndex
         )
         
-        let buttonSize = CGSize(width: 57.0, height: panelHeight)
+        let buttonSize = CGSize(width: 40.0, height: 40.0)
         
         let availableWidth = width - leftInset - rightInset
         let spacing: CGFloat = floor((availableWidth - buttonSize.width * CGFloat(buttons.count)) / CGFloat(buttons.count - 1))
         var offset: CGFloat = leftInset
         for i in 0 ..< buttons.count {
             let button = buttons[i]
+            let buttonFrame: CGRect
             if i == buttons.count - 1 {
-                button.frame = CGRect(origin: CGPoint(x: width - rightInset - buttonSize.width, y: 0.0), size: buttonSize)
+                buttonFrame = CGRect(origin: CGPoint(x: width - rightInset - buttonSize.width, y: 0.0), size: buttonSize)
             } else {
-                button.frame = CGRect(origin: CGPoint(x: offset, y: 0.0), size: buttonSize)
+                buttonFrame = CGRect(origin: CGPoint(x: offset, y: 0.0), size: buttonSize)
             }
+            transition.updateFrame(view: button, frame: buttonFrame)
+            button.update(theme: interfaceState.theme, size: buttonFrame.size, transition: ComponentTransition(transition))
+            
             offset += buttonSize.width + spacing
         }
-        
-        transition.updateAlpha(node: self.separatorNode, alpha: isSecondary ? 1.0 : 0.0)
-        self.separatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: panelHeight), size: CGSize(width: width, height: UIScreenPixel))
         
         if let reactionContextNode = self.reactionOverlayContainer.reactionContextNode, let tagButton {
             let isFirstTime = reactionContextNode.bounds.isEmpty

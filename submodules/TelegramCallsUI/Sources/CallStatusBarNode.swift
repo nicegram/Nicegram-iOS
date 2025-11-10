@@ -268,7 +268,8 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         self.update()
     }
 
-    private let textFont = Font.with(size: 13.0, design: .regular, weight: .regular, traits: [.monospacedNumbers])
+    private let callTextFont = Font.with(size: 13.0, design: .regular, weight: .regular, traits: [.monospacedNumbers])
+    private let groupCallTextFont = Font.with(size: 13.0, design: .regular, weight: .regular, traits: [])
     
     private func update() {
         guard let size = self.currentSize, let content = self.currentContent else {
@@ -277,12 +278,15 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         
         let wasEmpty = (self.titleNode.attributedText?.string ?? "").isEmpty
         
+        let textFont: UIFont
         let setupDataForCall: AnyObject?
         switch content {
         case let .call(_, _, call):
             setupDataForCall = call
+            textFont = callTextFont
         case let .groupCall(_, _, call):
             setupDataForCall = call
+            textFont = groupCallTextFont
         }
         
         if self.didSetupDataForCall !== setupDataForCall {
@@ -540,7 +544,11 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         let subtitleSize = self.subtitleNode.updateLayout(size: CGSize(width: 150.0, height: size.height), animated: true)
         let speakerSize = self.speakerNode.updateLayout(CGSize(width: 150.0, height: size.height))
         
-        let totalWidth = titleSize.width + spacing + subtitleSize.width
+        var totalWidth = titleSize.width
+        if totalWidth > 0.0 {
+            totalWidth += spacing
+        }
+        totalWidth += subtitleSize.width
         let horizontalOrigin: CGFloat = floor((size.width - totalWidth) / 2.0)
         
         let contentHeight: CGFloat = 24.0
@@ -553,7 +561,8 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
         transition.updateFrame(node: self.subtitleNode, frame: CGRect(origin: CGPoint(x: horizontalOrigin + titleSize.width + spacing, y: verticalOrigin + floor((contentHeight - subtitleSize.height) / 2.0)), size: subtitleSize))
         
         if displaySpeakerSubtitle {
-            self.speakerNode.frame = CGRect(origin: CGPoint(x: horizontalOrigin + titleSize.width + spacing, y: verticalOrigin + floor((contentHeight - speakerSize.height) / 2.0)), size: speakerSize)
+            let speakerOriginX: CGFloat = title.isEmpty ? floor((size.width - speakerSize.width) / 2.0) : horizontalOrigin + titleSize.width + spacing
+            self.speakerNode.frame = CGRect(origin: CGPoint(x: speakerOriginX, y: verticalOrigin + floor((contentHeight - speakerSize.height) / 2.0)), size: speakerSize)
         }
         
         let state: CallStatusBarBackgroundNode.State

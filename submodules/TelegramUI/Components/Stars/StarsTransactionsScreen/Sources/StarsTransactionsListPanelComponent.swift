@@ -315,7 +315,14 @@ final class StarsTransactionsListPanelComponent: Component {
                             itemTitle = peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)
                             itemSubtitle = environment.strings.Stars_Intro_Transaction_PaidMessage(item.paidMessageCount ?? 1)
                         } else if let starGift = item.starGift {
-                            if item.flags.contains(.isStarGiftUpgrade), case let .unique(gift) = starGift {
+                            if item.flags.contains(.isStarGiftPrepaidUpgrade) {
+                                itemTitle = peer.displayTitle(strings: environment.strings, displayOrder: .firstLast)
+                                itemSubtitle = environment.strings.Stars_Intro_Transaction_PrepaidGiftUpgrade
+                            } else if item.flags.contains(.isStarGiftDropOriginalDetails), case let .unique(gift) = starGift {
+                                itemTitle = "\(gift.title) #\(presentationStringsFormattedNumber(gift.number, environment.dateTimeFormat.groupingSeparator))"
+                                itemSubtitle = environment.strings.Stars_Intro_Transaction_GiftDropOriginalDetails
+                                uniqueGift = gift
+                            } else if item.flags.contains(.isStarGiftUpgrade), case let .unique(gift) = starGift {
                                 itemTitle = "\(gift.title) #\(presentationStringsFormattedNumber(gift.number, environment.dateTimeFormat.groupingSeparator))"
                                 itemSubtitle = environment.strings.Stars_Intro_Transaction_GiftUpgrade
                                 uniqueGift = gift

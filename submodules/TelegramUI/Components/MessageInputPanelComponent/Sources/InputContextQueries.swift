@@ -22,9 +22,6 @@ func inputContextQueries(_ inputState: TextFieldComponent.InputState) -> [ChatPr
             result.append(.hashtag(query))
         } else if possibleTypes == [.mention] {
             let types: ChatInputQueryMentionTypes = [.members]
-//            if possibleQueryRange.lowerBound == 1 {
-//                types.insert(.contextBots)
-//            }
             result.append(.mention(query: query, types: types))
         } else if possibleTypes == [.command] {
             result.append(.command(query))

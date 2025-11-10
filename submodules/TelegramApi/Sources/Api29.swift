@@ -570,14 +570,14 @@ public extension Api.account {
 }
 public extension Api.account {
     enum ChatThemes: TypeConstructorDescription {
-        case chatThemes(flags: Int32, hash: Int64, themes: [Api.ChatTheme], chats: [Api.Chat], users: [Api.User], nextOffset: Int32?)
+        case chatThemes(flags: Int32, hash: Int64, themes: [Api.ChatTheme], chats: [Api.Chat], users: [Api.User], nextOffset: String?)
         case chatThemesNotModified
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
                 case .chatThemes(let flags, let hash, let themes, let chats, let users, let nextOffset):
                     if boxed {
-                        buffer.appendInt32(373835863)
+                        buffer.appendInt32(-1106673293)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt64(hash, buffer: buffer, boxed: false)
@@ -596,7 +596,7 @@ public extension Api.account {
                     for item in users {
                         item.serialize(buffer, true)
                     }
-                    if Int(flags) & Int(1 << 0) != 0 {serializeInt32(nextOffset!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 0) != 0 {serializeString(nextOffset!, buffer: buffer, boxed: false)}
                     break
                 case .chatThemesNotModified:
                     if boxed {
@@ -633,8 +633,8 @@ public extension Api.account {
             if let _ = reader.readInt32() {
                 _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
-            var _6: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {_6 = reader.readInt32() }
+            var _6: String?
+            if Int(_1!) & Int(1 << 0) != 0 {_6 = parseString(reader) }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil

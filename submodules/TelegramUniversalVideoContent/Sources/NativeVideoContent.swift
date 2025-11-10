@@ -488,6 +488,13 @@ private final class NativeVideoContentNode: ASDisplayNode, UniversalVideoContent
         }
         
         var useLegacyImplementation = !context.sharedContext.immediateExperimentalUISettings.playerV2
+        for attribute in fileReference.media.attributes {
+            if case let .Video(_, _, _, _, _, videoCodec) = attribute {
+                if videoCodec == "av1" || videoCodec == "av01" {
+                    useLegacyImplementation = false
+                }
+            }
+        }
         if let data = context.currentAppConfiguration.with({ $0 }).data, let value = data["ios_video_legacyplayer"] as? Double {
             useLegacyImplementation = value != 0.0
         }

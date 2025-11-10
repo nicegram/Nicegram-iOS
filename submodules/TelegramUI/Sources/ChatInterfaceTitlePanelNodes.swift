@@ -256,12 +256,12 @@ func titleTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInterfa
                 if let currentPanel = currentPanel as? ChatTopicListTitleAccessoryPanelNode {
                     return currentPanel
                 } else {
-                    let panel = ChatTopicListTitleAccessoryPanelNode(context: context, peerId: peerId, kind: channel.linkedBotId != nil ? .botForum : .forum)
+                    let panel = ChatTopicListTitleAccessoryPanelNode(context: context, peerId: peerId, kind: .forum)
                     panel.interfaceInteraction = interfaceInteraction
                     return panel
                 }
             }
-        } else if let user = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum), chatPresentationInterfaceState.search == nil {
+        } else if let user = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.isForum, chatPresentationInterfaceState.search == nil {
             let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
             if !topicListDisplayModeOnTheSide, let peerId = chatPresentationInterfaceState.chatLocation.peerId {
                 if let currentPanel = currentPanel as? ChatTopicListTitleAccessoryPanelNode {
@@ -329,7 +329,7 @@ func sidePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceState
                     strings: chatPresentationInterfaceState.strings,
                     location: .side,
                     peerId: peerId,
-                    kind: channel.linkedBotId != nil ? .botForum : .forum,
+                    kind: .forum,
                     topicId: chatPresentationInterfaceState.chatLocation.threadId,
                     controller: { [weak interfaceInteraction] in
                         return interfaceInteraction?.chatController()
@@ -349,7 +349,7 @@ func sidePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceState
                 ))
             )
         }
-    } else if let user = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum), chatPresentationInterfaceState.search == nil {
+    } else if let user = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.isForum, chatPresentationInterfaceState.search == nil {
         let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
         if topicListDisplayModeOnTheSide {
             return AnyComponentWithIdentity(

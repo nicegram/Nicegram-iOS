@@ -164,7 +164,7 @@ public final class TelegramUser: Peer, Equatable {
     public let emojiStatus: PeerEmojiStatus?
     public let usernames: [TelegramPeerUsername]
     public let storiesHidden: Bool?
-    public let nameColor: PeerNameColor?
+    public let nameColor: PeerColor?
     public let backgroundEmojiId: Int64?
     public let profileColor: PeerNameColor?
     public let profileBackgroundEmojiId: Int64?
@@ -259,7 +259,7 @@ public final class TelegramUser: Peer, Equatable {
         emojiStatus: PeerEmojiStatus?,
         usernames: [TelegramPeerUsername],
         storiesHidden: Bool?,
-        nameColor: PeerNameColor?,
+        nameColor: PeerColor?,
         backgroundEmojiId: Int64?,
         profileColor: PeerNameColor?,
         profileBackgroundEmojiId: Int64?,
@@ -325,7 +325,13 @@ public final class TelegramUser: Peer, Equatable {
         self.usernames = decoder.decodeObjectArrayForKey("uns")
         self.storiesHidden = decoder.decodeOptionalBoolForKey("sth")
         
-        self.nameColor = decoder.decodeOptionalInt32ForKey("nclr").flatMap { PeerNameColor(rawValue: $0) }
+        if let collectibleColor = decoder.decodeCodable(PeerCollectibleColor.self, forKey: "clclr") {
+            self.nameColor = .collectible(collectibleColor)
+        } else if let nameColor = decoder.decodeOptionalInt32ForKey("nclr").flatMap({ PeerNameColor(rawValue: $0) }) {
+            self.nameColor = .preset(nameColor)
+        } else {
+            self.nameColor = nil
+        }
         self.backgroundEmojiId = decoder.decodeOptionalInt64ForKey("bgem")
         self.profileColor = decoder.decodeOptionalInt32ForKey("pclr").flatMap { PeerNameColor(rawValue: $0) }
         self.profileBackgroundEmojiId = decoder.decodeOptionalInt64ForKey("pgem")
@@ -403,8 +409,16 @@ public final class TelegramUser: Peer, Equatable {
         }
         
         if let nameColor = self.nameColor {
-            encoder.encodeInt32(nameColor.rawValue, forKey: "nclr")
+            switch nameColor {
+            case let .preset(nameColor):
+                encoder.encodeInt32(nameColor.rawValue, forKey: "nclr")
+                encoder.encodeNil(forKey: "clclr")
+            case let .collectible(collectibleColor):
+                encoder.encodeCodable(collectibleColor, forKey: "clclr")
+                encoder.encodeNil(forKey: "nclr")
+            }
         } else {
+            encoder.encodeNil(forKey: "clclr")
             encoder.encodeNil(forKey: "nclr")
         }
         
@@ -545,7 +559,7 @@ public final class TelegramUser: Peer, Equatable {
         return TelegramUser(id: self.id, accessHash: self.accessHash, firstName: self.firstName, lastName: self.lastName, username: self.username, phone: self.phone, photo: self.photo, botInfo: self.botInfo, restrictionInfo: self.restrictionInfo, flags: self.flags, emojiStatus: self.emojiStatus, usernames: self.usernames, storiesHidden: storiesHidden, nameColor: self.nameColor, backgroundEmojiId: self.backgroundEmojiId, profileColor: self.profileColor, profileBackgroundEmojiId: self.profileBackgroundEmojiId, subscriberCount: self.subscriberCount, verificationIconFileId: self.verificationIconFileId)
     }
     
-    public func withUpdatedNameColor(_ nameColor: PeerNameColor) -> TelegramUser {
+    public func withUpdatedNameColor(_ nameColor: PeerColor) -> TelegramUser {
         return TelegramUser(id: self.id, accessHash: self.accessHash, firstName: self.firstName, lastName: self.lastName, username: self.username, phone: self.phone, photo: self.photo, botInfo: self.botInfo, restrictionInfo: self.restrictionInfo, flags: self.flags, emojiStatus: self.emojiStatus, usernames: self.usernames, storiesHidden: self.storiesHidden, nameColor: nameColor, backgroundEmojiId: self.backgroundEmojiId, profileColor: self.profileColor, profileBackgroundEmojiId: self.profileBackgroundEmojiId, subscriberCount: self.subscriberCount, verificationIconFileId: self.verificationIconFileId)
     }
     
@@ -575,7 +589,13 @@ public final class TelegramUser: Peer, Equatable {
         self.emojiStatus = try flatBuffersObject.emojiStatus.flatMap { try PeerEmojiStatus(flatBuffersObject: $0) }
         self.usernames = try (0 ..< flatBuffersObject.usernamesCount).map { try TelegramPeerUsername(flatBuffersObject: flatBuffersObject.usernames(at: $0)!) }
         self.storiesHidden = flatBuffersObject.storiesHidden?.value
-        self.nameColor = try flatBuffersObject.nameColor.flatMap(PeerNameColor.init)
+        if let collectibleColor = try flatBuffersObject.collectibleColor.flatMap(PeerCollectibleColor.init) {
+            self.nameColor = .collectible(collectibleColor)
+        } else if let nameColor = try flatBuffersObject.nameColor.flatMap(PeerNameColor.init) {
+            self.nameColor = .preset(nameColor)
+        } else {
+            self.nameColor = nil
+        }
         self.backgroundEmojiId = flatBuffersObject.backgroundEmojiId == Int64.min ? nil : flatBuffersObject.backgroundEmojiId
         self.profileColor = try flatBuffersObject.profileColor.flatMap(PeerNameColor.init)
         self.profileBackgroundEmojiId = flatBuffersObject.profileBackgroundEmojiId == Int64.min ? nil : flatBuffersObject.profileBackgroundEmojiId
@@ -600,7 +620,18 @@ public final class TelegramUser: Peer, Equatable {
         let usernamesOffsets = self.usernames.map { $0.encodeToFlatBuffers(builder: &builder) }
         let usernamesOffset = builder.createVector(ofOffsets: usernamesOffsets, len: usernamesOffsets.count)
         
-        let nameColorOffset = self.nameColor.flatMap { $0.encodeToFlatBuffers(builder: &builder) }
+        let nameColorOffset: Offset?
+        let collectibleColorOffset: Offset?
+        if case let .collectible(collectibleColor) = self.nameColor {
+            nameColorOffset = nil
+            collectibleColorOffset = collectibleColor.encodeToFlatBuffers(builder: &builder)
+        } else if case let .preset(nameColor) = self.nameColor {
+            nameColorOffset = nameColor.encodeToFlatBuffers(builder: &builder)
+            collectibleColorOffset = nil
+        } else {
+            nameColorOffset = nil
+            collectibleColorOffset = nil
+        }        
         let profileColorOffset = self.profileColor.flatMap { $0.encodeToFlatBuffers(builder: &builder) }
         let emojiStatusOffset = self.emojiStatus?.encodeToFlatBuffers(builder: &builder)
         
@@ -640,6 +671,9 @@ public final class TelegramUser: Peer, Equatable {
         }
         if let nameColorOffset {
             TelegramCore_TelegramUser.add(nameColor: nameColorOffset, &builder)
+        }
+        if let collectibleColorOffset {
+            TelegramCore_TelegramUser.add(collectibleColor: collectibleColorOffset, &builder)
         }
         TelegramCore_TelegramUser.add(backgroundEmojiId: self.backgroundEmojiId ?? Int64.min, &builder)
         if let profileColorOffset {

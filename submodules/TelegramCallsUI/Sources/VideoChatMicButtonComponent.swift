@@ -11,6 +11,9 @@ import MetalEngine
 import SwiftSignalKit
 import AccountContext
 import RadialStatusNode
+import GlassBackgroundComponent
+
+private let blueColor = UIColor(rgb: 0x55b3f8)
 
 private final class BlobView: UIView {
     let blobsLayer: CallBlobsLayer
@@ -192,6 +195,7 @@ final class VideoChatMicButtonComponent: Component {
     let strings: PresentationStrings
     let content: Content
     let isCollapsed: Bool
+    let isCompact: Bool
     let updateUnmutedStateIsPushToTalk: (Bool?) -> Void
     let raiseHand: () -> Void
     let scheduleAction: () -> Void
@@ -201,6 +205,7 @@ final class VideoChatMicButtonComponent: Component {
         strings: PresentationStrings,
         content: Content,
         isCollapsed: Bool,
+        isCompact: Bool,
         updateUnmutedStateIsPushToTalk: @escaping (Bool?) -> Void,
         raiseHand: @escaping () -> Void,
         scheduleAction: @escaping () -> Void
@@ -209,6 +214,7 @@ final class VideoChatMicButtonComponent: Component {
         self.strings = strings
         self.content = content
         self.isCollapsed = isCollapsed
+        self.isCompact = isCompact
         self.updateUnmutedStateIsPushToTalk = updateUnmutedStateIsPushToTalk
         self.raiseHand = raiseHand
         self.scheduleAction = scheduleAction
@@ -222,6 +228,9 @@ final class VideoChatMicButtonComponent: Component {
             return false
         }
         if lhs.isCollapsed != rhs.isCollapsed {
+            return false
+        }
+        if lhs.isCompact != rhs.isCompact {
             return false
         }
         return true
@@ -238,6 +247,8 @@ final class VideoChatMicButtonComponent: Component {
         private var glowView: GlowView?
         private var blobView: BlobView?
 
+        private var chromeView: UIImageView?
+        
         private var component: VideoChatMicButtonComponent?
         private var isUpdating: Bool = false
         
@@ -340,7 +351,7 @@ final class VideoChatMicButtonComponent: Component {
             
             let alphaTransition: ComponentTransition = transition.animation.isImmediate ? .immediate : .easeInOut(duration: 0.2)
             
-            let titleText: String
+            var titleText: String
             var subtitleText: String?
             var isEnabled = true
             switch component.content {
@@ -354,7 +365,7 @@ final class VideoChatMicButtonComponent: Component {
                     titleText = component.strings.VoiceChat_Unmute
                 }
             case let .unmuted(isPushToTalk):
-                titleText = isPushToTalk ? component.strings.VoiceChat_Live : component.strings.VoiceChat_Mute
+                titleText = isPushToTalk ? component.strings.VoiceChat_Live : component.strings.VoiceChat_MuteShort
             case let .raiseHand(isRaised):
                 if isRaised {
                     titleText = component.strings.VoiceChat_AskedToSpeak
@@ -377,10 +388,14 @@ final class VideoChatMicButtonComponent: Component {
             }
             self.isEnabled = isEnabled
             
+            if component.isCompact {
+                titleText = titleText.lowercased()
+            }
+            
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: titleText, font: Font.regular(15.0), textColor: .white))
+                    text: .plain(NSAttributedString(string: titleText, font: Font.regular(13.0), textColor: .white))
                 )),
                 environment: {},
                 containerSize: CGSize(width: 180.0, height: 100.0)
@@ -402,7 +417,7 @@ final class VideoChatMicButtonComponent: Component {
                     progressIndicator = RadialStatusNode(backgroundNodeColor: .clear)
                     self.progressIndicator = progressIndicator
                 }
-                progressIndicator.transitionToState(.progress(color: UIColor(rgb: 0x0080FF), lineWidth: 3.0, value: nil, cancelEnabled: false, animateRotation: true))
+                progressIndicator.transitionToState(.progress(color: blueColor, lineWidth: 3.0, value: nil, cancelEnabled: false, animateRotation: true))
                 
                 let progressIndicatorView = progressIndicator.view
                 if progressIndicatorView.superview == nil {
@@ -447,7 +462,7 @@ final class VideoChatMicButtonComponent: Component {
                         if case .muted(forced: true) = component.content {
                             colors = [UIColor(rgb: 0x3252EF), UIColor(rgb: 0xC64688)]
                         } else if case .muted(forced: false) = component.content {
-                            colors = [UIColor(rgb: 0x0080FF), UIColor(rgb: 0x00A1FE)]
+                            colors = [blueColor, UIColor(rgb: 0x55adfe)]
                         } else if case .raiseHand = component.content {
                             colors = [UIColor(rgb: 0x3252EF), UIColor(rgb: 0xC64688)]
                         } else if case .scheduled = component.content {
@@ -503,8 +518,12 @@ final class VideoChatMicButtonComponent: Component {
             }
             
             var titleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) * 0.5), y: size.height + 16.0), size: titleSize)
-            if subtitleText != nil {
-                titleFrame.origin.y -= 5.0
+            if component.isCompact {
+                titleFrame.origin.y -= 11.0
+            } else {
+                if subtitleText != nil {
+                    titleFrame.origin.y -= 5.0
+                }
             }
             if let titleView = self.title.view {
                 if titleView.superview == nil {
@@ -545,7 +564,7 @@ final class VideoChatMicButtonComponent: Component {
                     }
                     subtitleTransition.setPosition(view: subtitleView, position: subtitleFrame.center)
                     subtitleView.bounds = CGRect(origin: CGPoint(), size: subtitleFrame.size)
-                    alphaTransition.setAlpha(view: subtitleView, alpha: component.isCollapsed ? 0.0 : 1.0)
+                    alphaTransition.setAlpha(view: subtitleView, alpha: component.isCollapsed || component.isCompact ? 0.0 : 1.0)
                 }
             } else if let subtitle = self.subtitle {
                 self.subtitle = nil
@@ -566,7 +585,7 @@ final class VideoChatMicButtonComponent: Component {
             
             transition.setPosition(view: self.icon.view, position: iconFrame.center)
             transition.setBounds(view: self.icon.view, bounds: CGRect(origin: CGPoint(), size: iconFrame.size))
-            transition.setScale(view: self.icon.view, scale: component.isCollapsed ? ((iconSize.width - 32.0) / iconSize.width) : 1.0)
+            transition.setScale(view: self.icon.view, scale: component.isCollapsed || component.isCompact ? ((iconSize.width - 34.0) / iconSize.width) : 1.0)
             
             switch component.content {
             case .connecting:
@@ -622,7 +641,7 @@ final class VideoChatMicButtonComponent: Component {
                 if case .muted(forced: true) = component.content {
                     blobsColor = UIColor(rgb: 0x914BAD)
                 } else if case .muted(forced: false) = component.content {
-                    blobsColor = UIColor(rgb: 0x0086FF)
+                    blobsColor = UIColor(rgb: 0x397cd8)
                 } else if case .raiseHand = component.content {
                     blobsColor = UIColor(rgb: 0x914BAD)
                 } else if case .scheduled = component.content {
@@ -665,7 +684,7 @@ final class VideoChatMicButtonComponent: Component {
                     glowView = GlowView(frame: CGRect())
                     glowView.isUserInteractionEnabled = false
                     self.glowView = glowView
-                    self.insertSubview(glowView, aboveSubview: blobView)
+                    //self.insertSubview(glowView, aboveSubview: blobView)
                     
                     transition.animateScale(view: glowView, from: 0.001, to: 1.0)
                     glowView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
@@ -675,7 +694,7 @@ final class VideoChatMicButtonComponent: Component {
                 if case .muted(forced: true) = component.content {
                     glowColor = UIColor(rgb: 0x3252EF)
                 } else if case .muted(forced: false) = component.content {
-                    glowColor = UIColor(rgb: 0x0086FF)
+                    glowColor = blueColor
                 } else if case .raiseHand = component.content {
                     glowColor = UIColor(rgb: 0x3252EF)
                 } else if case .scheduled = component.content {
@@ -704,6 +723,29 @@ final class VideoChatMicButtonComponent: Component {
                     self.audioLevelDisposable = nil
                     audioLevelDisposable.dispose()
                 }
+            }
+            
+            if component.isCompact {
+                let chromeView: UIImageView
+                var chromeTransition = transition
+                if let current = self.chromeView {
+                    chromeView = current
+                } else {
+                    chromeTransition = .immediate
+                    chromeView = UIImageView()
+                    self.chromeView = chromeView
+                        self.addSubview(chromeView)
+                    
+                    chromeView.layer.compositingFilter = "overlayBlendMode"
+                    chromeView.alpha = 0.8
+                    chromeView.image = GlassBackgroundView.generateForegroundImage(size: size, isDark: false, fillColor: .clear)
+                }
+                chromeTransition.setFrame(view: chromeView, frame: CGRect(origin: .zero, size: size))
+            } else if let chromeView = self.chromeView {
+                self.chromeView = nil
+                chromeView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false, completion: { _ in
+                    chromeView.removeFromSuperview()
+                })
             }
             
             return size

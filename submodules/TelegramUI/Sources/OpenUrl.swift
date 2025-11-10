@@ -1198,7 +1198,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         }
         
         if isInternetUrl {
-            if parsedUrl.host == "t.me" || parsedUrl.host == "telegram.me" {
+            if parsedUrl.host == "t.me" || parsedUrl.host == "telegram.me" || parsedUrl.host == "telegram.dog" {
                 handleInternalUrl(parsedUrl.absoluteString)
             } else {
                 let settings = combineLatest(context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.webBrowserSettings, ApplicationSpecificSharedDataKeys.presentationPasscodeSettings]), context.sharedContext.accountManager.accessChallengeData())
@@ -1220,11 +1220,6 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                     return settings
                 }
 
-//                var isCompact = false
-//                if let metrics = navigationController?.validLayout?.metrics, case .compact = metrics.widthClass {
-//                    isCompact = true
-//                }
-                
                 let _ = (settings
                 |> deliverOnMainQueue).startStandalone(next: { settings in
                     var isTonSite = false
@@ -1295,7 +1290,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
     }
     
     if parsedUrl.scheme == "http" || parsedUrl.scheme == "https" {
-        let nativeHosts = ["t.me", "telegram.me"]
+        let nativeHosts = ["t.me", "telegram.me", "telegram.dog"]
         if let host = parsedUrl.host, nativeHosts.contains(host) {
             continueHandling()
         } else {

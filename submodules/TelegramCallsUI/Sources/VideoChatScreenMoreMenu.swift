@@ -227,6 +227,31 @@ extension VideoChatScreenComponent.View {
                 }
                 self.openTitleEditing()
             })))
+            
+            if callState.canEnableMessages {
+                items.append(.action(ContextMenuActionItem(text: callState.messagesAreEnabled ? environment.strings.VoiceChat_ContextDisableMessages : environment.strings.VoiceChat_ContextEnableMessages, icon: { theme -> UIImage? in
+                    return generateTintedImage(image: UIImage(bundleImageName: callState.messagesAreEnabled ? "Call/MessagesDisable" : "Call/MessagesEnable"), color: theme.actionSheet.primaryTextColor)
+                }, action: { [weak self] _, f in
+                    f(.default)
+                    
+                    guard let self, let currentCall = self.currentCall else {
+                        return
+                    }
+                    let isEnabled = !callState.messagesAreEnabled
+                    currentCall.setMessagesEnabled(isEnabled: isEnabled)
+                    
+                    let iconName: String
+                    let text: String
+                    if isEnabled {
+                        iconName = "Call/ToastMessagesEnabled"
+                        text = environment.strings.VoiceChat_ToastMessagesEnabled
+                    } else {
+                        iconName = "Call/ToastMessagesDisabled"
+                        text = environment.strings.VoiceChat_ToastMessagesDisabled
+                    }
+                    self.presentToast(icon: .icon(iconName), text: text, duration: 3)
+                })))
+            }
 
             var hasPermissions = true
             if let peer = self.peer, case let .channel(chatPeer) = peer {
@@ -458,7 +483,7 @@ extension VideoChatScreenComponent.View {
                                     text = environment.strings.VoiceChat_RecordingStarted
                                 }
 
-                                self.presentUndoOverlay(content: .voiceChatRecording(text: text), action: { _ in return false })
+                                self.presentToast(icon: .animation("anim_vcrecord"), text: text, duration: 3)
                                 groupCall.playTone(.recordingStarted)
                             })
                             environment.controller()?.present(controller, in: .window(.root))

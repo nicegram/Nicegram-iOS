@@ -1276,6 +1276,11 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
         }, updateRecordingTrimRange: { _, _, _, _ in
         }, dismissAllTooltips: {  
         }, editTodoMessage: { _, _, _ in
+        }, dismissUrlPreview: {
+        }, dismissForwardMessages: {
+        }, dismissSuggestPost: {
+        }, displayUndo: { _ in
+        }, sendEmoji: { _, _, _ in
         }, updateHistoryFilter: { _ in
         }, updateChatLocationThread: { _, _ in
         }, toggleChatSidebarMode: {
@@ -1628,7 +1633,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
         self.animatingTransition = true
         
         let targetButtonColor = self.mainButtonNode.backgroundColor
-        self.mainButtonNode.backgroundColor = inputTransition.menuButtonBackgroundNode.backgroundColor
+        self.mainButtonNode.backgroundColor = inputTransition.menuButtonBackgroundView.backgroundColor
         transition.updateBackgroundColor(node: self.mainButtonNode, color: targetButtonColor ?? .clear)
         
         transition.animateFrame(layer: self.mainButtonNode.layer, from: inputTransition.menuButtonNode.frame)
@@ -1686,7 +1691,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate {
             }
             
             let sourceButtonColor = self.mainButtonNode.backgroundColor
-            transition.updateBackgroundColor(node: self.mainButtonNode, color: inputTransition.menuButtonBackgroundNode.backgroundColor ?? .clear)
+            transition.updateBackgroundColor(node: self.mainButtonNode, color: inputTransition.menuButtonBackgroundView.backgroundColor ?? .clear)
             
             let sourceButtonFrame = self.mainButtonNode.frame
             transition.updateFrame(node: self.mainButtonNode, frame: inputTransition.menuButtonNode.frame)

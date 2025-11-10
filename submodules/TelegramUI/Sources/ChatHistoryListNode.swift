@@ -924,8 +924,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                                 subscriptionUntilDate: nil,
                                 verificationIconFileId: nil,
                                 sendPaidMessageStars: nil,
-                                linkedMonoforumId: nil,
-                                linkedBotId: nil
+                                linkedMonoforumId: nil
                             )
                             messagePeers[author.id] = author
                             
@@ -994,7 +993,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         }
         
         self.dynamicBounceEnabled = !self.currentPresentationData.disableAnimations
-        self.experimentalSnapScrollToItem = true
+        self.experimentalSnapScrollToItem = false
         
         //self.debugInfo = true
         
@@ -1171,6 +1170,17 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                         }
                         
                         if matches {
+                            for (message, _) in item.content {
+                                if strongSelf.chatLocation.threadId != nil {
+                                    if message.id.namespace != Namespaces.Message.Cloud {
+                                        matches = false
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if matches {
                             var maxItemIndex: MessageIndex?
                             for (message, _) in item.content {
                                 if let maxItemIndexValue = maxItemIndex {
@@ -1313,6 +1323,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             return
         }
         self.chatLocation = chatLocation
+        
+        self.interactiveReadActionDisposable?.dispose()
+        self.interactiveReadActionDisposable = nil
         
         self.beginChatHistoryTransitions(resetScrolling: true, switchedToAnotherSource: false)
         self.beginReadHistoryManagement()
@@ -2679,64 +2692,6 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
 
             self.currentOverscrollExpandProgress = expandProgress
 
-            if let nextChannelToRead = self.nextChannelToRead {
-                let swipeText: NSAttributedString
-                let releaseText: NSAttributedString
-                switch nextChannelToRead.location {
-                case .same:
-                    if let controllerNode = self.controllerInteraction.chatControllerNode() as? ChatControllerNode, let chatController = controllerNode.interfaceInteraction?.chatController() as? ChatControllerImpl, chatController.customChatNavigationStack != nil {
-                        swipeText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextSuggestedChannelSwipeProgress)
-                        releaseText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextSuggestedChannelSwipeAction)
-                    } else if nextChannelToRead.threadData != nil {
-                        swipeText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextUnreadTopicSwipeProgress)
-                        releaseText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextUnreadTopicSwipeAction)
-                    } else {
-                        swipeText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelSameLocationSwipeProgress)
-                        releaseText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelSameLocationSwipeAction)
-                    }
-                case .archived:
-                    swipeText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelArchivedSwipeProgress)
-                    releaseText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelArchivedSwipeAction)
-                case .unarchived:
-                    swipeText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelUnarchivedSwipeProgress)
-                    releaseText = NSAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelUnarchivedSwipeAction)
-                case let .folder(_, title):
-                    let swipeTextValue = NSMutableAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelFolderSwipeProgressV2)
-                    let swipeFolderRange = (swipeTextValue.string as NSString).range(of: "{folder}")
-                    if swipeFolderRange.location != NSNotFound {
-                        swipeTextValue.replaceCharacters(in: swipeFolderRange, with: "")
-                        swipeTextValue.insert(title.attributedString(attributes: [
-                            ChatTextInputAttributes.bold: true
-                        ]), at: swipeFolderRange.location)
-                    }
-                    swipeText = swipeTextValue
-                    
-                    let releaseTextValue = NSMutableAttributedString(string: self.currentPresentationData.strings.Chat_NextChannelFolderSwipeActionV2)
-                    let releaseTextFolderRange = (releaseTextValue.string as NSString).range(of: "{folder}")
-                    if releaseTextFolderRange.location != NSNotFound {
-                        releaseTextValue.replaceCharacters(in: releaseTextFolderRange, with: "")
-                        releaseTextValue.insert(title.attributedString(attributes: [
-                            ChatTextInputAttributes.bold: true
-                        ]), at: releaseTextFolderRange.location)
-                    }
-                    releaseText = releaseTextValue
-                }
-
-                if expandProgress < 0.1 {
-                    chatControllerNode.setChatInputPanelOverscrollNode(overscrollNode: nil)
-                } else if expandProgress >= 1.0 {
-                    if chatControllerNode.inputPanelOverscrollNode?.text.string != releaseText.string {
-                        chatControllerNode.setChatInputPanelOverscrollNode(overscrollNode: ChatInputPanelOverscrollNode(context: self.context, text: releaseText, color: self.currentPresentationData.theme.theme.rootController.navigationBar.secondaryTextColor, priority: 1))
-                    }
-                } else {
-                    if chatControllerNode.inputPanelOverscrollNode?.text.string != swipeText.string {
-                        chatControllerNode.setChatInputPanelOverscrollNode(overscrollNode: ChatInputPanelOverscrollNode(context: self.context, text: swipeText, color: self.currentPresentationData.theme.theme.rootController.navigationBar.secondaryTextColor, priority: 2))
-                    }
-                }
-            } else {
-                chatControllerNode.setChatInputPanelOverscrollNode(overscrollNode: nil)
-            }
-
             var overscrollFrame = CGRect(origin: CGPoint(x: 0.0, y: self.insets.top), size: CGSize(width: self.bounds.width, height: 94.0))
             if self.freezeOverscrollControlProgress {
                 overscrollFrame.origin.y -= max(0.0, 94.0 - expandDistance)
@@ -2772,10 +2727,6 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         } else if let overscrollView = self.overscrollView {
             self.overscrollView = nil
             overscrollView.removeFromSuperview()
-
-            if let chatControllerNode = self.controllerInteraction.chatControllerNode() as? ChatControllerNode {
-                chatControllerNode.setChatInputPanelOverscrollNode(overscrollNode: nil)
-            }
         }
     }
     
@@ -4590,9 +4541,11 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     self.interactiveReadActionDisposable = nil
                 }
             } else if self.interactiveReadActionDisposable == nil {
-                if case let .peer(peerId) = self.chatLocation {
-                    if !self.context.sharedContext.immediateExperimentalUISettings.skipReadHistory && !self.context.account.isSupportUser {
-                        self.interactiveReadActionDisposable = self.context.engine.messages.installInteractiveReadMessagesAction(peerId: peerId)
+                if !self.context.sharedContext.immediateExperimentalUISettings.skipReadHistory && !self.context.account.isSupportUser {
+                    if case let .peer(peerId) = self.chatLocation {
+                        self.interactiveReadActionDisposable = self.context.engine.messages.installInteractiveReadMessagesAction(peerId: peerId, threadId: nil)
+                    } else if case let .replyThread(replyThread) = self.chatLocation, (replyThread.isForumPost || replyThread.isMonoforumPost) {
+                        self.interactiveReadActionDisposable = self.context.engine.messages.installInteractiveReadMessagesAction(peerId: replyThread.peerId, threadId: replyThread.threadId)
                     }
                 }
             }

@@ -442,7 +442,7 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
         
         if let _ = self.item(at: location.y) {
             if self.isExpanded {
-                return abs(velocity.x) > abs(velocity.y)
+                return abs(velocity.x) > abs(velocity.y) && !self.isApplyingTransition
             } else {
                 return abs(velocity.y) > abs(velocity.x)
             }

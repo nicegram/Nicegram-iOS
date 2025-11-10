@@ -750,10 +750,18 @@ public extension Api {
 }
 public extension Api {
     enum PeerColor: TypeConstructorDescription {
+        case inputPeerColorCollectible(collectibleId: Int64)
         case peerColor(flags: Int32, color: Int32?, backgroundEmojiId: Int64?)
+        case peerColorCollectible(flags: Int32, collectibleId: Int64, giftEmojiId: Int64, backgroundEmojiId: Int64, accentColor: Int32, colors: [Int32], darkAccentColor: Int32?, darkColors: [Int32]?)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
+                case .inputPeerColorCollectible(let collectibleId):
+                    if boxed {
+                        buffer.appendInt32(-1192589655)
+                    }
+                    serializeInt64(collectibleId, buffer: buffer, boxed: false)
+                    break
                 case .peerColor(let flags, let color, let backgroundEmojiId):
                     if boxed {
                         buffer.appendInt32(-1253352753)
@@ -762,16 +770,52 @@ public extension Api {
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt32(color!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 1) != 0 {serializeInt64(backgroundEmojiId!, buffer: buffer, boxed: false)}
                     break
+                case .peerColorCollectible(let flags, let collectibleId, let giftEmojiId, let backgroundEmojiId, let accentColor, let colors, let darkAccentColor, let darkColors):
+                    if boxed {
+                        buffer.appendInt32(-1178573926)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeInt64(collectibleId, buffer: buffer, boxed: false)
+                    serializeInt64(giftEmojiId, buffer: buffer, boxed: false)
+                    serializeInt64(backgroundEmojiId, buffer: buffer, boxed: false)
+                    serializeInt32(accentColor, buffer: buffer, boxed: false)
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(colors.count))
+                    for item in colors {
+                        serializeInt32(item, buffer: buffer, boxed: false)
+                    }
+                    if Int(flags) & Int(1 << 0) != 0 {serializeInt32(darkAccentColor!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 1) != 0 {buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(darkColors!.count))
+                    for item in darkColors! {
+                        serializeInt32(item, buffer: buffer, boxed: false)
+                    }}
+                    break
     }
     }
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
+                case .inputPeerColorCollectible(let collectibleId):
+                return ("inputPeerColorCollectible", [("collectibleId", collectibleId as Any)])
                 case .peerColor(let flags, let color, let backgroundEmojiId):
                 return ("peerColor", [("flags", flags as Any), ("color", color as Any), ("backgroundEmojiId", backgroundEmojiId as Any)])
+                case .peerColorCollectible(let flags, let collectibleId, let giftEmojiId, let backgroundEmojiId, let accentColor, let colors, let darkAccentColor, let darkColors):
+                return ("peerColorCollectible", [("flags", flags as Any), ("collectibleId", collectibleId as Any), ("giftEmojiId", giftEmojiId as Any), ("backgroundEmojiId", backgroundEmojiId as Any), ("accentColor", accentColor as Any), ("colors", colors as Any), ("darkAccentColor", darkAccentColor as Any), ("darkColors", darkColors as Any)])
     }
     }
     
+        public static func parse_inputPeerColorCollectible(_ reader: BufferReader) -> PeerColor? {
+            var _1: Int64?
+            _1 = reader.readInt64()
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.PeerColor.inputPeerColorCollectible(collectibleId: _1!)
+            }
+            else {
+                return nil
+            }
+        }
         public static func parse_peerColor(_ reader: BufferReader) -> PeerColor? {
             var _1: Int32?
             _1 = reader.readInt32()
@@ -784,6 +828,42 @@ public extension Api {
             let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.PeerColor.peerColor(flags: _1!, color: _2, backgroundEmojiId: _3)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_peerColorCollectible(_ reader: BufferReader) -> PeerColor? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Int64?
+            _3 = reader.readInt64()
+            var _4: Int64?
+            _4 = reader.readInt64()
+            var _5: Int32?
+            _5 = reader.readInt32()
+            var _6: [Int32]?
+            if let _ = reader.readInt32() {
+                _6 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
+            }
+            var _7: Int32?
+            if Int(_1!) & Int(1 << 0) != 0 {_7 = reader.readInt32() }
+            var _8: [Int32]?
+            if Int(_1!) & Int(1 << 1) != 0 {if let _ = reader.readInt32() {
+                _8 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
+            } }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = _5 != nil
+            let _c6 = _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 0) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 1) == 0) || _8 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
+                return Api.PeerColor.peerColorCollectible(flags: _1!, collectibleId: _2!, giftEmojiId: _3!, backgroundEmojiId: _4!, accentColor: _5!, colors: _6!, darkAccentColor: _7, darkColors: _8)
             }
             else {
                 return nil

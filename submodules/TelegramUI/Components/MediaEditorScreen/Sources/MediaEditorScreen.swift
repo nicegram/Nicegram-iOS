@@ -407,6 +407,7 @@ final class MediaEditorScreenComponent: Component {
                         areCustomEmojiEnabled: true,
                         hasSearch: true,
                         hideBackground: true,
+                        maskEdge: .fade,
                         sendGif: nil
                     ) |> map { inputData -> ChatEntityKeyboardInputNode.InputData in
                         return ChatEntityKeyboardInputNode.InputData(
@@ -888,7 +889,7 @@ final class MediaEditorScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(PlainButtonComponent(
                     content: AnyComponent(DoneButtonContentComponent(
-                        backgroundColor: UIColor(rgb: 0x007aff),
+                        backgroundColor: UIColor(rgb: 0x0088ff),
                         icon: doneButtonIcon,
                         title: doneButtonTitle)),
                     effectAlignment: .center,
@@ -1396,7 +1397,7 @@ final class MediaEditorScreenComponent: Component {
                             }
                             controller.presentInGlobalOverlay(c)
                         },
-                        sendMessageAction: { [weak self] in
+                        sendMessageAction: { [weak self] _ in
                             guard let self else {
                                 return
                             }
@@ -3730,7 +3731,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                 } else if case let .gift(gift) = subject {
                     isGift = true
-                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil))]
+                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil, dropOriginalDetailsStars: nil, assigned: false))]
                     let message = Message(stableId: 0, stableVersion: 0, id: MessageId(peerId: self.context.account.peerId, namespace: Namespaces.Message.Cloud, id: -1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: media, peers: SimpleDictionary(), associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
                     messages = .single([message])
                 } else {

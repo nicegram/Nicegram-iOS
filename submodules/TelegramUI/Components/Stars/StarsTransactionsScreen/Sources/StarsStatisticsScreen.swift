@@ -910,7 +910,7 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
                 guard let self, let starsContext = context.starsContext else {
                     return
                 }
-                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, completion: { [weak self] stars in
+                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, completion: { [weak self] stars in
                     guard let self else {
                         return
                     }

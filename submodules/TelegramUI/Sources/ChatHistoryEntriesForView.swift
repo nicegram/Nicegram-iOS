@@ -69,11 +69,13 @@ func chatHistoryEntriesForView(
     var adminRanks: [PeerId: CachedChannelAdminRank] = [:]
     var stickersEnabled = true
     var chatPeer: Peer?
-    if let peerId = location.peerId, peerId.namespace == Namespaces.Peer.CloudChannel {
+    if let peerId = location.peerId {
         for additionalEntry in view.additionalData {
             if case let .cacheEntry(id, data) = additionalEntry {
-                if id == cachedChannelAdminRanksEntryId(peerId: peerId), let data = data?.get(CachedChannelAdminRanks.self) {
-                    adminRanks = data.ranks
+                if peerId.namespace == Namespaces.Peer.CloudChannel {
+                    if id == cachedChannelAdminRanksEntryId(peerId: peerId), let data = data?.get(CachedChannelAdminRanks.self) {
+                        adminRanks = data.ranks
+                    }
                 }
             } else if case let .peer(_, peer) = additionalEntry {
                 chatPeer = peer
@@ -141,7 +143,9 @@ func chatHistoryEntriesForView(
                                 chatPeer = peer
                             }
                         }
-                        if let channel = chatPeer as? TelegramChannel, (channel.isMonoForum || channel.linkedBotId != nil) {
+                        if let channel = chatPeer as? TelegramChannel, channel.isMonoForum {
+                            continue loop
+                        } else if let user = chatPeer as? TelegramUser, user.isForum {
                             continue loop
                         }
                     }
@@ -156,7 +160,9 @@ func chatHistoryEntriesForView(
                             chatPeer = peer
                         }
                     }
-                    if let channel = chatPeer as? TelegramChannel, (channel.isMonoForum || channel.linkedBotId != nil) {
+                    if let channel = chatPeer as? TelegramChannel, channel.isMonoForum {
+                        continue loop
+                    } else if let user = chatPeer as? TelegramChannel, user.isForum {
                         continue loop
                     }
                 }
@@ -312,7 +318,7 @@ func chatHistoryEntriesForView(
     }
     
     var addBotForumHeader = false
-    if location.threadId == nil, let channel = chatPeer as? TelegramChannel, channel.linkedBotId != nil, !entries.isEmpty, !view.holeEarlier, !view.isLoading {
+    if location.threadId == nil, let user = chatPeer as? TelegramUser, user.isForum, !entries.isEmpty, !view.holeEarlier, !view.isLoading {
         addBotForumHeader = true
         outer: for i in (0 ..< entries.count).reversed() {
             switch entries[i] {

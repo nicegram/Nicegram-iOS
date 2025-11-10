@@ -46,6 +46,24 @@ public extension TelegramMediaFile {
     }
 }
 
+public extension TelegramMediaFile {
+    func isValidForDisplay(chatPeerId: PeerId) -> Bool {
+        if chatPeerId.namespace == Namespaces.Peer.SecretChat {
+            if self.isAnimatedSticker {
+                if !self.attributes.contains(where: { attribute in
+                    if case .hintIsValidated = attribute {
+                        return true
+                    }
+                    return false
+                }) {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+}
+
 extension StickerPackReference {
     init?(apiInputSet: Api.InputStickerSet) {
         switch apiInputSet {
@@ -163,7 +181,21 @@ func telegramMediaFileFromApiDocument(_ document: Api.Document, altDocuments: [A
     switch document {
         case let .document(_, id, accessHash, fileReference, _, mimeType, size, thumbs, videoThumbs, dcId, attributes):
             var parsedAttributes = telegramMediaFileAttributesFromApiAttributes(attributes)
-            parsedAttributes.append(.hintIsValidated)
+            var isSticker = false
+            var isAnimated = false
+            for attribute in parsedAttributes {
+                switch attribute {
+                case .Sticker:
+                    isSticker = true
+                case .Animated:
+                    isAnimated = true
+                default:
+                    break
+                }
+            }
+            if isSticker && isAnimated {
+                parsedAttributes.append(.hintIsValidated)
+            }
             
             let (immediateThumbnail, previewRepresentations) = telegramMediaFileThumbnailRepresentationsFromApiSizes(datacenterId: dcId, documentId: id, accessHash: accessHash, fileReference: fileReference.makeData(), sizes: thumbs ?? [])
         

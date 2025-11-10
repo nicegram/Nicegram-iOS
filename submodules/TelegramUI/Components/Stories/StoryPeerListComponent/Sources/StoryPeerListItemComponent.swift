@@ -14,6 +14,7 @@ import AsyncDisplayKit
 import StoryContainerScreen
 import MultilineTextComponent
 import HierarchyTrackingLayer
+import EmojiStatusComponent
 
 private func calculateCircleIntersection(center: CGPoint, otherCenter: CGPoint, radius: CGFloat) -> (point1Angle: CGFloat, point2Angle: CGFloat)? {
     let distanceVector = CGPoint(x: otherCenter.x - center.x, y: otherCenter.y - center.y)
@@ -484,6 +485,7 @@ public final class StoryPeerListItemComponent: Component {
         private let extractedBackgroundView: UIImageView
         
         private let button: HighlightTrackingButton
+        private let titleContainer: UIView
         
         fileprivate var composeLayer: StoryComposeLayer?
         fileprivate let avatarContent: PortalSourceView
@@ -501,6 +503,7 @@ public final class StoryPeerListItemComponent: Component {
         private let indicatorShapeSeenLayer: SimpleShapeLayer
         private let indicatorShapeUnseenLayer: SimpleShapeLayer
         private let title = ComponentView<Empty>()
+        private var verifiedIconView: ComponentHostView<Empty>?
         private let composeTitle = ComponentView<Empty>()
         
         private var component: StoryPeerListItemComponent?
@@ -511,6 +514,9 @@ public final class StoryPeerListItemComponent: Component {
             self.backgroundContainer.isUserInteractionEnabled = false
             
             self.button = HighlightTrackingButton()
+            
+            self.titleContainer = UIView()
+            self.titleContainer.isUserInteractionEnabled = false
             
             self.extractedContainerNode = ContextExtractedContentContainingNode()
             self.containerNode = ContextControllerSourceNode()
@@ -557,6 +563,8 @@ public final class StoryPeerListItemComponent: Component {
             self.extractedContainerNode.contentNode.view.addSubview(self.button)
             self.avatarContent.addSubview(self.avatarContainer)
             self.button.addSubview(self.avatarContent)
+            
+            self.button.addSubview(self.titleContainer)
             
             self.avatarContent.layer.addSublayer(self.indicatorColorSeenLayer)
             self.avatarContent.layer.addSublayer(self.indicatorColorUnseenLayer)
@@ -876,6 +884,18 @@ public final class StoryPeerListItemComponent: Component {
                 }
             }
             
+            let iconContainerSize = CGSize(width: 12.0, height: 12.0)
+            let iconSpacing: CGFloat = 1.0
+            
+            var currentVerifiedIconContent: EmojiStatusComponent.Content?
+            if component.peer.isVerified {
+                currentVerifiedIconContent = .verified(fillColor: component.theme.list.itemCheckColors.fillColor, foregroundColor: component.theme.list.itemCheckColors.foregroundColor, sizeType: .smaller)
+            }
+            var titleConstrainedSize = CGSize(width: availableSize.width + 12.0, height: 100.0)
+            if let _ = currentVerifiedIconContent {
+                titleConstrainedSize.width -= iconContainerSize.width + iconSpacing
+            }
+            
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
@@ -883,20 +903,63 @@ public final class StoryPeerListItemComponent: Component {
                     maximumNumberOfLines: 1
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width + 12.0, height: 100.0)
+                containerSize: titleConstrainedSize
             )
-            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5) + (effectiveWidth - availableSize.width) * 0.5, y: indicatorFrame.midY + (indicatorFrame.height * 0.5 + 2.0) * effectiveScale), size: titleSize)
+            
+            var totalTitleWidth = titleSize.width
+            if let currentVerifiedIconContent {
+                let verifiedIconView: ComponentHostView<Empty>
+                if let current = self.verifiedIconView {
+                    verifiedIconView = current
+                } else {
+                    verifiedIconView = ComponentHostView<Empty>()
+                    verifiedIconView.isUserInteractionEnabled = false
+                    self.verifiedIconView = verifiedIconView
+                    self.titleContainer.addSubview(verifiedIconView)
+                }
+                let verifiedIconComponent = EmojiStatusComponent(
+                    context: component.context,
+                    animationCache: component.context.animationCache,
+                    animationRenderer: component.context.animationRenderer,
+                    content: currentVerifiedIconContent,
+                    size: iconContainerSize,
+                    isVisibleForAnimations: component.context.sharedContext.energyUsageSettings.loopEmoji,
+                    action: nil
+                )
+
+                let iconSize = verifiedIconView.update(
+                    transition: .immediate,
+                    component: AnyComponent(verifiedIconComponent),
+                    environment: {},
+                    containerSize: iconContainerSize
+                )
+                totalTitleWidth += iconSize.width + iconSpacing
+                
+                let verifiedIconFrame = CGRect(origin: CGPoint(x: totalTitleWidth - iconSize.width, y: UIScreenPixel), size: iconSize)
+                titleTransition.setFrame(view: verifiedIconView, frame: verifiedIconFrame)
+            } else if let verifiedIconView = self.verifiedIconView {
+                self.verifiedIconView = nil
+                verifiedIconView.removeFromSuperview()
+            }
+            
+            let titleFrame = CGRect(origin: .zero, size: titleSize)
             if let titleView = self.title.view {
                 if titleView.superview == nil {
                     titleView.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
                     titleView.isUserInteractionEnabled = false
-                    self.button.addSubview(titleView)
+                    self.titleContainer.addSubview(titleView)
                 }
                 titleTransition.setPosition(view: titleView, position: titleFrame.center)
                 titleView.bounds = CGRect(origin: CGPoint(), size: titleFrame.size)
-                titleTransition.setScale(view: titleView, scale: effectiveScale)
-                titleTransition.setAlpha(view: titleView, alpha: component.expandedAlphaFraction)
             }
+            
+            let titleContainerSize = CGSize(width: totalTitleWidth, height: titleSize.height)
+            let titleContainerFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleContainerSize.width) * 0.5) + (effectiveWidth - availableSize.width) * 0.5, y: indicatorFrame.midY + (indicatorFrame.height * 0.5 + 2.0) * effectiveScale), size: titleContainerSize)
+            
+            titleTransition.setPosition(view: self.titleContainer, position: titleContainerFrame.center)
+            self.titleContainer.bounds = CGRect(origin: CGPoint(), size: titleContainerFrame.size)
+            titleTransition.setScale(view: self.titleContainer, scale: effectiveScale)
+            titleTransition.setAlpha(view: self.titleContainer, alpha: component.expandedAlphaFraction)
             
             if let ringAnimation = component.ringAnimation {
                 var progressTransition = transition

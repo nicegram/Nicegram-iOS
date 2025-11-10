@@ -214,7 +214,7 @@ func _internal_createForumChannelTopic(postbox: Postbox, network: Network, state
         guard let peer = peer else {
             return .fail(.generic)
         }
-        guard let inputChannel = apiInputChannel(peer) else {
+        guard let inputPeer = apiInputPeer(peer) else {
             return .fail(.generic)
         }
         var flags: Int32 = 0
@@ -222,9 +222,9 @@ func _internal_createForumChannelTopic(postbox: Postbox, network: Network, state
             flags |= (1 << 3)
         }
         flags |= (1 << 0)
-        return network.request(Api.functions.channels.createForumTopic(
+        return network.request(Api.functions.messages.createForumTopic(
             flags: flags,
-            channel: inputChannel,
+            peer: inputPeer,
             title: title,
             iconColor: iconColor,
             iconEmojiId: iconFileId,
@@ -242,6 +242,12 @@ func _internal_createForumChannelTopic(postbox: Postbox, network: Network, state
             for update in result.allUpdates {
                 switch update {
                 case let .updateNewChannelMessage(message, _, _):
+                    if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum) {
+                        if case let .Id(id) = message.id {
+                            topicId = Int64(id.id)
+                        }
+                    }
+                case let .updateNewMessage(message, _, _):
                     if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum) {
                         if case let .Id(id) = message.id {
                             topicId = Int64(id.id)
@@ -307,12 +313,12 @@ public enum EditForumChannelTopicError {
 }
 
 func _internal_editForumChannelTopic(account: Account, peerId: PeerId, threadId: Int64, title: String, iconFileId: Int64?) -> Signal<Never, EditForumChannelTopicError> {
-    return account.postbox.transaction { transaction -> Api.InputChannel? in
-        return transaction.getPeer(peerId).flatMap(apiInputChannel)
+    return account.postbox.transaction { transaction -> Api.InputPeer? in
+        return transaction.getPeer(peerId).flatMap(apiInputPeer)
     }
     |> castError(EditForumChannelTopicError.self)
-    |> mapToSignal { inputChannel -> Signal<Never, EditForumChannelTopicError> in
-        guard let inputChannel = inputChannel else {
+    |> mapToSignal { inputPeer -> Signal<Never, EditForumChannelTopicError> in
+        guard let inputPeer else {
             return .fail(.generic)
         }
         var flags: Int32 = 0
@@ -321,9 +327,9 @@ func _internal_editForumChannelTopic(account: Account, peerId: PeerId, threadId:
             flags |= (1 << 1)
         }
         
-        return account.network.request(Api.functions.channels.editForumTopic(
+        return account.network.request(Api.functions.messages.editForumTopic(
             flags: flags,
-            channel: inputChannel,
+            peer: inputPeer,
             topicId: Int32(clamping: threadId),
             title: title,
             iconEmojiId: threadId == 1 ? nil : iconFileId ?? 0,
@@ -356,20 +362,20 @@ func _internal_editForumChannelTopic(account: Account, peerId: PeerId, threadId:
 }
 
 func _internal_setForumChannelTopicClosed(account: Account, id: EnginePeer.Id, threadId: Int64, isClosed: Bool) -> Signal<Never, EditForumChannelTopicError> {
-    return account.postbox.transaction { transaction -> Api.InputChannel? in
-        return transaction.getPeer(id).flatMap(apiInputChannel)
+    return account.postbox.transaction { transaction -> Api.InputPeer? in
+        return transaction.getPeer(id).flatMap(apiInputPeer)
     }
     |> castError(EditForumChannelTopicError.self)
-    |> mapToSignal { inputChannel -> Signal<Never, EditForumChannelTopicError> in
-        guard let inputChannel = inputChannel else {
+    |> mapToSignal { inputPeer -> Signal<Never, EditForumChannelTopicError> in
+        guard let inputPeer else {
             return .fail(.generic)
         }
         var flags: Int32 = 0
         flags |= (1 << 2)
 
-        return account.network.request(Api.functions.channels.editForumTopic(
+        return account.network.request(Api.functions.messages.editForumTopic(
             flags: flags,
-            channel: inputChannel,
+            peer: inputPeer,
             topicId: Int32(clamping: threadId),
             title: nil,
             iconEmojiId: nil,
@@ -408,7 +414,7 @@ func _internal_setForumChannelTopicHidden(account: Account, id: EnginePeer.Id, t
     guard threadId == 1 else {
         return .fail(.generic)
     }
-    return account.postbox.transaction { transaction -> Api.InputChannel? in
+    return account.postbox.transaction { transaction -> Api.InputPeer? in
         if let initialData = transaction.getMessageHistoryThreadInfo(peerId: id, threadId: threadId)?.data.get(MessageHistoryThreadData.self) {
             var data = initialData
             
@@ -421,19 +427,19 @@ func _internal_setForumChannelTopicHidden(account: Account, id: EnginePeer.Id, t
             }
         }
         
-        return transaction.getPeer(id).flatMap(apiInputChannel)
+        return transaction.getPeer(id).flatMap(apiInputPeer)
     }
     |> castError(EditForumChannelTopicError.self)
-    |> mapToSignal { inputChannel -> Signal<Never, EditForumChannelTopicError> in
-        guard let inputChannel = inputChannel else {
+    |> mapToSignal { inputPeer -> Signal<Never, EditForumChannelTopicError> in
+        guard let inputPeer else {
             return .fail(.generic)
         }
         var flags: Int32 = 0
         flags |= (1 << 3)
         
-        return account.network.request(Api.functions.channels.editForumTopic(
+        return account.network.request(Api.functions.messages.editForumTopic(
             flags: flags,
-            channel: inputChannel,
+            peer: inputPeer,
             topicId: Int32(clamping: threadId),
             title: nil,
             iconEmojiId: nil,
@@ -493,8 +499,8 @@ func _internal_setForumChannelPinnedTopics(account: Account, id: EnginePeer.Id, 
             }
         }
     } else {
-        return account.postbox.transaction { transaction -> Api.InputChannel? in
-            guard let inputChannel = transaction.getPeer(id).flatMap(apiInputChannel) else {
+        return account.postbox.transaction { transaction -> Api.InputPeer? in
+            guard let inputChannel = transaction.getPeer(id).flatMap(apiInputPeer) else {
                 return nil
             }
             
@@ -503,14 +509,14 @@ func _internal_setForumChannelPinnedTopics(account: Account, id: EnginePeer.Id, 
             return inputChannel
         }
         |> castError(SetForumChannelTopicPinnedError.self)
-        |> mapToSignal { inputChannel -> Signal<Never, SetForumChannelTopicPinnedError> in
-            guard let inputChannel = inputChannel else {
+        |> mapToSignal { inputPeer -> Signal<Never, SetForumChannelTopicPinnedError> in
+            guard let inputPeer else {
                 return .fail(.generic)
             }
             
-            return account.network.request(Api.functions.channels.reorderPinnedForumTopics(
+            return account.network.request(Api.functions.messages.reorderPinnedForumTopics(
                 flags: 1 << 0,
-                channel: inputChannel,
+                peer: inputPeer,
                 order: threadIds.map(Int32.init(clamping:))
             ))
             |> mapError { _ -> SetForumChannelTopicPinnedError in
@@ -924,18 +930,24 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
             }
             return signal
         } else {
-            let signal: Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> = postbox.transaction { transaction -> Api.InputChannel? in
-                guard let channel = transaction.getPeer(peerId) as? TelegramChannel else {
+            let signal: Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> = postbox.transaction { transaction -> Api.InputPeer? in
+                guard let peer = transaction.getPeer(peerId) else {
                     return nil
                 }
-                if !channel.flags.contains(.isForum) {
+                if let channel = peer as? TelegramChannel {
+                    if !channel.flags.contains(.isForum) {
+                        return nil
+                    }
+                    return apiInputPeer(channel)
+                } else if let user = peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum) {
+                    return apiInputPeer(user)
+                } else {
                     return nil
                 }
-                return apiInputChannel(channel)
             }
             |> castError(LoadMessageHistoryThreadsError.self)
-            |> mapToSignal { inputChannel -> Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> in
-                guard let inputChannel = inputChannel else {
+            |> mapToSignal { inputPeer -> Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> in
+                guard let inputPeer else {
                     return .fail(.generic)
                 }
                 var flags: Int32 = 0
@@ -952,9 +964,9 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
                     offsetId = offsetIndex.messageId
                     offsetTopic = Int32(clamping: offsetIndex.threadId)
                 }
-                let signal: Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> = network.request(Api.functions.channels.getForumTopics(
+                let signal: Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> = network.request(Api.functions.messages.getForumTopics(
                     flags: flags,
-                    channel: inputChannel,
+                    peer: inputPeer,
                     q: query,
                     offsetDate: offsetDate,
                     offsetId: offsetId,
@@ -979,8 +991,9 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
                         
                         for topic in topics {
                             switch topic {
-                            case let .forumTopic(flags, id, date, title, iconColor, iconEmojiId, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadMentionsCount, unreadReactionsCount, fromId, notifySettings, draft):
+                            case let .forumTopic(flags, id, date, peer, title, iconColor, iconEmojiId, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadMentionsCount, unreadReactionsCount, fromId, notifySettings, draft):
                                 let _ = draft
+                                let _ = peer
                                 
                                 if (flags & (1 << 3)) != 0 {
                                     pinnedIds.append(Int64(id))
@@ -1147,7 +1160,7 @@ func _internal_forumChannelTopicNotificationExceptions(account: Account, id: Eng
         return transaction.getPeer(id)
     }
     |> mapToSignal { peer -> Signal<[EngineMessageHistoryThread.NotificationException], NoError> in
-        guard let inputPeer = peer.flatMap(apiInputPeer), let inputChannel = peer.flatMap(apiInputChannel) else {
+        guard let inputPeer = peer.flatMap(apiInputPeer) else {
             return .single([])
         }
         
@@ -1178,7 +1191,7 @@ func _internal_forumChannelTopicNotificationExceptions(account: Account, id: Eng
             return list
         }
         |> mapToSignal { list -> Signal<[EngineMessageHistoryThread.NotificationException], NoError> in
-            return account.network.request(Api.functions.channels.getForumTopicsByID(channel: inputChannel, topics: list.map { Int32(clamping: $0.threadId) }))
+            return account.network.request(Api.functions.messages.getForumTopicsByID(peer: inputPeer, topics: list.map { Int32(clamping: $0.threadId) }))
             |> map { result -> [EngineMessageHistoryThread.NotificationException] in
                 var infoMapping: [Int64: EngineMessageHistoryThread.Info] = [:]
                 
@@ -1186,7 +1199,7 @@ func _internal_forumChannelTopicNotificationExceptions(account: Account, id: Eng
                 case let .forumTopics(_, _, topics, _, _, _, _):
                     for topic in topics {
                         switch topic {
-                        case let .forumTopic(_, id, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                        case let .forumTopic(_, id, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
                             infoMapping[Int64(id)] = EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor)
                         case .forumTopicDeleted:
                             break

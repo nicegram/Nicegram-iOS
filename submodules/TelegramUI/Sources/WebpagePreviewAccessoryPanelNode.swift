@@ -222,7 +222,7 @@ final class WebpagePreviewAccessoryPanelNode: AccessoryPanelNode {
                 return
             }
             self.previousTapTimestamp = CFAbsoluteTimeGetCurrent()
-            self.interfaceInteraction?.presentLinkOptions(self)
+            self.interfaceInteraction?.presentLinkOptions(self.view)
             Queue.mainQueue().after(1.5) {
                 self.updateThemeAndStrings(theme: self.theme, strings: self.strings, force: true)
             }

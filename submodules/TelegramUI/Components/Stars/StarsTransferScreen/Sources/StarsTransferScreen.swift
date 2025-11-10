@@ -588,6 +588,7 @@ private final class SheetContent: CombinedComponent {
                                     starsContext: starsContext,
                                     options: state?.options ?? [],
                                     purpose: purpose,
+                                    targetPeerId: nil,
                                     completion: { [weak starsContext] stars in
                                         guard let starsContext else {
                                             return

@@ -1027,7 +1027,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
             var additionalLeftInset: CGFloat = 0.0
             var leftInset: CGFloat = params.leftInset
             var rightInset: CGFloat = params.rightInset
-            let switchSize = CGSize(width: 51.0, height: 31.0)
+            var switchSize = CGSize(width: 51.0, height: 31.0)
             var checkImage: UIImage?
             
             if let switchValue = item.switchValue {
@@ -1054,6 +1054,13 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
             } else {
                 currentSwitchNode = nil
                 currentCheckNode = nil
+            }
+            
+            if let currentSwitchNode, let switchView = currentSwitchNode.view as? UISwitch {
+                if currentSwitchNode.bounds.size.width.isZero {
+                    switchView.sizeToFit()
+                }
+                switchSize = switchView.bounds.size
             }
             
             let titleColor: UIColor

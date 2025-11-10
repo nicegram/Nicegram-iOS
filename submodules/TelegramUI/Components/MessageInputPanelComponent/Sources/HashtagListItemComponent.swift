@@ -442,7 +442,7 @@ public final class HashtagListItemComponent: Component {
             }
             
             if themeUpdated {
-                let accentColor = UIColor(rgb: 0x007aff)
+                let accentColor = UIColor(rgb: 0x0088ff)
                 self.separatorLayer.backgroundColor = component.theme.list.itemPlainSeparatorColor.cgColor
                 self.iconBackgroundLayer.backgroundColor = accentColor.cgColor
                 self.iconLayer.layerTintColor = UIColor.white.cgColor

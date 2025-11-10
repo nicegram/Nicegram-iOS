@@ -41,6 +41,7 @@ public final class EmojiStatusComponent: Component {
     public enum SizeType {
         case compact
         case large
+        case smaller
     }
     
     public enum Content: Equatable {
@@ -375,7 +376,7 @@ public final class EmojiStatusComponent: Component {
                 case let .verified(fillColor, foregroundColor, sizeType):
                     let imageNamePrefix: String
                     switch sizeType {
-                    case .compact:
+                    case .compact, .smaller:
                         imageNamePrefix = "Chat List/PeerVerifiedIcon"
                     case .large:
                         imageNamePrefix = "Peer Info/VerifiedIcon"

@@ -13,6 +13,8 @@ import Postbox
 import ChatListHeaderComponent
 import ActionPanelComponent
 import ChatFolderLinkPreviewScreen
+import EdgeEffect
+import ComponentDisplayAdapters
 
 final class ChatListContainerItemNode: ASDisplayNode {
     private final class TopPanelItem {
@@ -36,6 +38,8 @@ final class ChatListContainerItemNode: ASDisplayNode {
     private let isInlineMode: Bool
     
     private var floatingHeaderOffset: CGFloat?
+    
+    private let edgeEffectView: EdgeEffectView
     
     private(set) var emptyNode: ChatListEmptyNode?
     var emptyShimmerEffectNode: ChatListShimmerNode?
@@ -75,9 +79,12 @@ final class ChatListContainerItemNode: ASDisplayNode {
             self.listNode.scrollHeightTopInset = ChatListNavigationBar.searchScrollHeight + ChatListNavigationBar.storiesScrollHeight
         }
         
+        self.edgeEffectView = EdgeEffectView()
+        
         super.init()
         
         self.addSubnode(self.listNode)
+        self.view.addSubview(self.edgeEffectView)
         
         self.listNode.isEmptyUpdated = { [weak self] isEmptyState, _, transition in
             guard let strongSelf = self else {
@@ -443,6 +450,12 @@ final class ChatListContainerItemNode: ASDisplayNode {
         }
         
         self.layoutAdditionalPanels(transition: transition)
+        
+        let edgeEffectHeight: CGFloat = insets.bottom
+        let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: size.height - edgeEffectHeight), size: CGSize(width: size.width, height: edgeEffectHeight))
+        transition.updateFrame(view: self.edgeEffectView, frame: edgeEffectFrame)
+        self.edgeEffectView.update(content: self.presentationData.theme.list.plainBackgroundColor, rect: edgeEffectFrame, edge: .bottom, edgeSize: edgeEffectFrame.height, transition: ComponentTransition(transition))
+        transition.updateAlpha(layer: self.edgeEffectView.layer, alpha: edgeEffectHeight > 21.0 ? 1.0 : 0.0)
     }
     
     func updateScrollingOffset(navigationHeight: CGFloat, offset: CGFloat, transition: ContainedViewLayoutTransition) {
