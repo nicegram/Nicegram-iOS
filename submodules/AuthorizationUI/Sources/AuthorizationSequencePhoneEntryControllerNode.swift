@@ -1,5 +1,5 @@
 // Nicegram Onboarding
-import FeatOnboarding
+import FeatOnboardingCore
 //
 // Nicegram PhoneEntryBanner
 import FeatPhoneEntryBanner
@@ -439,7 +439,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         // Nicegram Onboarding, overwrite 'notice' if isNgOnboarding
         var notice = account == nil ? strings.ChangePhoneNumberNumber_Help : strings.Login_PhoneAndCountryHelp
         if isNgOnboarding {
-            notice = FeatOnboarding.strings.phoneEntryDesc()
+            notice = FeatOnboardingCore.strings.phoneEntryDesc()
         }
         self.noticeNode.attributedText = NSAttributedString(string: notice, font: Font.regular(17.0), textColor: theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
         
@@ -605,7 +605,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         // Nicegram Onboarding, overwrite 'title' if isNgOnboarding
         var title = self.account == nil ? strings.Login_NewNumber : strings.Login_PhoneTitle
         if self.isNgOnboarding {
-            title = FeatOnboarding.strings.phoneEntryTitle()
+            title = FeatOnboardingCore.strings.phoneEntryTitle()
         }
         self.titleNode.attributedText = NSAttributedString(string: title, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
         self.titleActivateAreaNode.accessibilityLabel = self.titleNode.attributedText?.string ?? ""

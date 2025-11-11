@@ -657,6 +657,10 @@ private final class ItemComponent: Component {
         func update(component: ItemComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             let previousComponent = self.component
             
+            // Nicegram
+            self.accessibilityIdentifier = component.item.item.title
+            //
+            
             if previousComponent?.item.item !== component.item.item {
                 if let setImageListener = self.setImageListener {
                     self.component?.item.item.removeSetImageListener(setImageListener)

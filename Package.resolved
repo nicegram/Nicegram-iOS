@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "qa/build-571",
-        "revision" : "4adef9d48ad8da006e08804f7059a6217499ee6c"
+        "branch" : "feat/onboarding",
+        "revision" : "40a9b2b6924819f1b6d73cf7056c163f3612b415"
       }
     },
     {
@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "feat/merge-12.1.1",
-        "revision" : "dde393508d643527be7358b5f1c037557af8a514"
+        "branch" : "develop",
+        "revision" : "6050fffeab969dc37f7cdb94928243d8a988a017"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "ba66219b5c242d1d953bc293e13c141279c19e49",
-        "version" : "6.12.0"
+        "revision" : "405f10d2161127c90665ffcee050f305b0330bdc",
+        "version" : "6.12.2"
       }
     },
     {
@@ -410,8 +410,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gohanlon/swift-memberwise-init-macro",
       "state" : {
-        "branch" : "main",
-        "revision" : "29f3cba483cc4a5647cb8a4717d04b05bd32aad7"
+        "revision" : "47a2bdf45f1567e7324438f8482e362ee1c3fb44",
+        "version" : "0.5.2"
       }
     },
     {
@@ -464,8 +464,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-syntax",
       "state" : {
-        "revision" : "f99ae8aa18f0cf0d53481901f88a0991dc3bd4a2",
-        "version" : "601.0.1"
+        "revision" : "0687f71944021d616d34d922343dcef086855920",
+        "version" : "600.0.1"
       }
     },
     {
@@ -545,8 +545,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "6110d9c4bec60c73adb09563f2b1484c9a847d42",
-        "version" : "4.3.21"
+        "revision" : "5afbb3ea8e6319ec3630f5c5a6958ee72a1b61bf",
+        "version" : "4.3.23"
       }
     },
     {

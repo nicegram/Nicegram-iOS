@@ -1089,8 +1089,15 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
             let label: PeerInfoScreenDisclosureItem.Label = bot.flags.contains(.notActivated) || bot.flags.contains(.showInSettingsDisclaimer) ? .titleBadge(presentationData.strings.Settings_New, presentationData.theme.list.itemAccentColor) : .none
             
             // Nicegram Wallet
+            let isTonWalletBot = (bot.peer.id.id._internalGetInt64Value() == 1985737506)
+            
+            let inReview = RemoteConfigContainer.shared.getReviewStatusUseCase().inReview()
+            if isTonWalletBot, inReview {
+                continue
+            }
+            
             let text: String
-            if bot.peer.id.id._internalGetInt64Value() == 1985737506 {
+            if isTonWalletBot {
                 text = "TON Wallet Bot"
             } else {
                 text = bot.shortName
