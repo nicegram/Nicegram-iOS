@@ -313,7 +313,8 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     open var customNavigationDataSummary: CustomViewControllerNavigationDataSummary?
     
-    public internal(set) var isInFocus: Bool = false {
+    // Nicegram, removed 'internal(set)'
+    public var isInFocus: Bool = false {
         didSet {
             if self.isInFocus != oldValue {
                 self.inFocusUpdated(isInFocus: self.isInFocus)
@@ -650,6 +651,10 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     open override func viewDidDisappear(_ animated: Bool) {
         self.activeInputView = self.activeInputViewCandidate
         
+        // Nicegram
+        self.isInFocus = false
+        //
+        
         super.viewDidDisappear(animated)
     }
     
@@ -658,6 +663,10 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     
     open override func viewDidAppear(_ animated: Bool) {
         self.activeInputView = nil
+        
+        // Nicegram
+        self.isInFocus = true
+        //
         
         super.viewDidAppear(animated)
     }
