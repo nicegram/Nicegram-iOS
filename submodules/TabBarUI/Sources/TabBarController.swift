@@ -282,6 +282,10 @@ open class TabBarControllerImpl: ViewController, TabBarController {
             currentController.removeFromParent()
             currentController.didMove(toParent: nil)
             
+            // Nicegram
+            currentController.isInFocus = false
+            //
+            
             self.currentController = nil
         }
         
@@ -307,6 +311,10 @@ open class TabBarControllerImpl: ViewController, TabBarController {
                 commit()
             }
             currentController.didMove(toParent: self)
+            
+            // Nicegram
+            currentController.isInFocus = isInFocus
+            //
 
             currentController.displayNode.recursivelyEnsureDisplaySynchronously(true)
             self.statusBar.statusBarStyle = currentController.statusBar.statusBarStyle
@@ -401,6 +409,12 @@ open class TabBarControllerImpl: ViewController, TabBarController {
             currentController.viewDidDisappear(animated)
         }
     }
+    
+    // Nicegram
+    override public func inFocusUpdated(isInFocus: Bool) {
+        currentController?.isInFocus = isInFocus
+    }
+    //
         
     public func setControllers(_ controllers: [ViewController], selectedIndex: Int?) {
         var updatedSelectedIndex: Int? = selectedIndex

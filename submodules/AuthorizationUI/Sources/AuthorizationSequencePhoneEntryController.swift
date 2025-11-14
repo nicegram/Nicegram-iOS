@@ -11,7 +11,7 @@ import FeatAuth
 import class CoreSwiftUI.DailyLoginLimitPopupPresenter
 //
 // Nicegram Onboarding
-import FeatOnboarding
+import FeatOnboardingCore
 //
 import Foundation
 import UIKit

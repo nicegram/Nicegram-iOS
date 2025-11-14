@@ -1,5 +1,5 @@
 import Factory
-import FeatOnboarding
+import FeatOnboardingLegacy
 import FeatPinnedChats
 import NGData
 

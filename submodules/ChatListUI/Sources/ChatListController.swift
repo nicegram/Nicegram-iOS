@@ -2490,9 +2490,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        // Nicegram PinnedChats
-        updateChatListNode(isVisible: true)
-        //
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
             |> mapToSignal { settings -> Signal<Bool, NoError> in
@@ -2918,10 +2915,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     override public func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         
-        // Nicegram PinnedChats
-        updateChatListNode(isVisible: false)
-        //
-        
         if self.dismissSearchOnDisappear {
             self.dismissSearchOnDisappear = false
             self.deactivateSearch(animated: false)
@@ -2940,6 +2933,12 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             storyPeerListView.cancelLoadingItem()
         }
     }
+    
+    // Nicegram
+    override public func inFocusUpdated(isInFocus: Bool) {
+        updateChatListNode(isVisible: isInFocus)
+    }
+    //
     
     // Nicegram PinnedChats
     lazy var chatListNicegramData: ChatListNicegramData = {

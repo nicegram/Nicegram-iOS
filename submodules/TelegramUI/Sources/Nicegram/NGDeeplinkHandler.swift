@@ -129,7 +129,7 @@ private extension NGDeeplinkHandler {
         
         var dismissImpl: (() -> Void)?
         
-        let c = LaunchOnboardingFactory().makeController(
+        let c = OnboardingRoot().makeController(
             launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
             onFinish: {
                 dismissImpl?()

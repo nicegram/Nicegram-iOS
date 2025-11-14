@@ -1671,7 +1671,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         } else {
             if #available(iOS 15.0, *),
                let rootController = window.rootViewController {
-                let controller = LaunchOnboardingFactory().makeController(
+                let controller = OnboardingRoot().makeController(
                     launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
                     onFinish: { [weak rootController] in
                         AppCache.wasOnboardingShown = true

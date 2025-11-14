@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "a2646dd2704656fa5a679af68953249a70c77f40",
-        "version" : "3.0.1"
+        "revision" : "41d75802452e3fc6bf3a888ae83d122fd0e4ef18",
+        "version" : "3.1.0"
       }
     },
     {
@@ -240,7 +240,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "086d863422564970a88cea26eeb3e6963430f85f"
+        "revision" : "46b034476d1dd8d2e329ea05b2fdf7d706dd265b"
       }
     },
     {
@@ -249,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "c5a185c3cc5de6e05cf66f76b06966ddfc2e20d1"
+        "revision" : "6050fffeab969dc37f7cdb94928243d8a988a017"
       }
     },
     {
@@ -284,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "db6704efa4621c14133ffa1b015550f16a7db7bb",
-        "version" : "6.12.1"
+        "revision" : "405f10d2161127c90665ffcee050f305b0330bdc",
+        "version" : "6.12.2"
       }
     },
     {
@@ -545,8 +545,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "55a973cebbd80def82fcf97a73505242185a7719",
-        "version" : "4.3.22"
+        "revision" : "5afbb3ea8e6319ec3630f5c5a6958ee72a1b61bf",
+        "version" : "4.3.23"
       }
     },
     {

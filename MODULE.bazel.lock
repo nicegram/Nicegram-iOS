@@ -445,7 +445,7 @@
         "bzlTransitiveDigest": "CpG2z0bMf8DusDHjjWFmipHWDj4rv/NejukTV6hS/ww=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "bea26313b307a00e2d1c1474b07124c1248cabb8e13845fde112e0955fb9fba1"
+          "@@//Package.resolved": "f6adab0a32dc102c3b063e13ab2569cc467d8f545039d722afed3b1c1e4b5283"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -476,7 +476,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "2e34ae1e81985dcb78696ff2265cdd2ec13929de",
+              "commit": "047cf1a1e66e5623fca2daf535a806600830eaf0",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -498,7 +498,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "c5a185c3cc5de6e05cf66f76b06966ddfc2e20d1",
+              "commit": "6050fffeab969dc37f7cdb94928243d8a988a017",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "env": {},
@@ -1136,9 +1136,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_rive_ios",
-              "commit": "db6704efa4621c14133ffa1b015550f16a7db7bb",
+              "commit": "405f10d2161127c90665ffcee050f305b0330bdc",
               "remote": "https://github.com/rive-app/rive-ios.git",
-              "version": "6.12.1",
+              "version": "6.12.2",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1774,9 +1774,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "55a973cebbd80def82fcf97a73505242185a7719",
+              "commit": "5afbb3ea8e6319ec3630f5c5a6958ee72a1b61bf",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.3.22",
+              "version": "4.3.23",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
