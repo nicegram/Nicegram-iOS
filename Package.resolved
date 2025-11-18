@@ -95,8 +95,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "793b67f4652e1a39d03fab6650033768afe6d15e",
-        "version" : "12.5.0"
+        "revision" : "087bb95235f676c1a37e928769a5b6645dcbd325",
+        "version" : "12.6.0"
       }
     },
     {
@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "qa/build-580",
-        "revision" : "569b1c6888f356524fd627ecb1273843f99e1e4a"
+        "branch" : "feat/airdrop",
+        "revision" : "4016a3cd22ad5b386ff5ca1757ed70412d5fe9ad"
       }
     },
     {
@@ -545,8 +545,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "5afbb3ea8e6319ec3630f5c5a6958ee72a1b61bf",
-        "version" : "4.3.23"
+        "revision" : "7c78376f1a49ebd97060ff3fa56672db4758944d",
+        "version" : "4.4.0"
       }
     },
     {

@@ -1,10 +1,10 @@
-// Nicegram HideStories
-import NGData
-//
-// Nicegram ColorAlign
-import NGUtils
-import NGLogging
+// Nicegram
+import class Combine.AnyCancellable
+import FeatChatListWidget
 import FeatKeywords
+import NGData
+import NGLogging
+import NGUtils
 import TelegramStringFormatting
 //
 import Foundation
@@ -1077,6 +1077,19 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
     private let animationCache: AnimationCache
     private let animationRenderer: MultiAnimationRenderer
     
+    // Nicegram
+    private var cancellables = Set<AnyCancellable>()
+    //
+    
+    // Nicegram ChatListBottomWidget
+    let ngBottomWidgetViewModel: ChatListBottomWidgetViewModel
+    let ngBottomWidgetNode: ASDisplayNode
+    
+    var ngBottomWidgetState: ChatListBottomWidgetViewState {
+        ngBottomWidgetViewModel.viewState
+    }
+    //
+    
     // Nicegram FoldersAtBottom
     let inlineTabContainerNode: ChatListFilterTabInlineContainerNode
     //
@@ -1168,6 +1181,19 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             openArchiveSettings?()
         })
         
+        // Nicegram ChatListBottomWidget
+        self.ngBottomWidgetViewModel = ChatListBottomWidgetViewModel()
+        
+        if #available(iOS 16.0, *) {
+            let ngBottomWidgetView = makeChatListBottomWidgetView(
+                viewModel: ngBottomWidgetViewModel
+            )
+            self.ngBottomWidgetNode = ASDisplayNode { ngBottomWidgetView }
+        } else {
+            self.ngBottomWidgetNode = ASDisplayNode()
+        }
+        //
+        
         // Nicegram FoldersAtBottom, userId
         self.inlineTabContainerNode = ChatListFilterTabInlineContainerNode(userId: context.account.peerId.toInt64())
         //
@@ -1215,6 +1241,18 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         self.backgroundColor = presentationData.theme.chatList.backgroundColor
         
         self.addSubnode(self.mainContainerNode)
+        
+        // Nicegram ChatListBottomWidget
+        ngBottomWidgetViewModel.$viewState
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.controller?.requestLayout(transition: .immediate)
+            }
+            .store(in: &cancellables)
+        
+        self.addSubnode(self.ngBottomWidgetNode)
+        //
         
         // Nicegram FoldersAtBottom
         self.addSubnode(self.inlineTabContainerNode)
@@ -1680,6 +1718,11 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             cleanMainNavigationBarHeight = visualNavigationHeight
             mainInsets.top = visualNavigationHeight
         }
+        
+        // Nicegram ChatListBottomWidget
+        mainInsets.bottom += ngBottomWidgetState.height
+        //
+        
         // Nicegram FoldersAtBottom
         if !self.inlineTabContainerNode.isHidden {
             mainInsets.bottom += 50
@@ -1718,8 +1761,52 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             }
         }
         
+        // Nicegram
+        var bottomBorder = layout.size.height - layout.intrinsicInsets.bottom
+        //
+        
         // Nicegram FoldersAtBottom
-        transition.updateFrame(node: self.inlineTabContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - layout.intrinsicInsets.bottom - 8.0 - 40.0), size: CGSize(width: layout.size.width, height: 40.0)))
+        let inlineTabContainerSize = CGSize(
+            width: layout.size.width,
+            height: 40
+        )
+        let inlineTabContainerFrame = CGRect(
+            origin: CGPoint(
+                x: 0,
+                y: bottomBorder - inlineTabContainerSize.height - 8
+            ),
+            size: inlineTabContainerSize
+        )
+        transition.updateFrame(
+            node: inlineTabContainerNode,
+            frame: inlineTabContainerFrame
+        )
+        
+        if !inlineTabContainerNode.isHidden {
+            bottomBorder = inlineTabContainerFrame.minY
+        }
+        //
+        
+        // Nicegram ChatListBottomWidget
+        let ngBottomWidgetSize = CGSize(
+            width: layout.size.width,
+            height: ngBottomWidgetState.height
+        )
+        let ngBottomWidgetFrame = CGRect(
+            origin: CGPoint(
+                x: 0.0,
+                y: bottomBorder - ngBottomWidgetSize.height
+            ),
+            size: ngBottomWidgetSize
+        )
+        transition.updateFrame(
+            node: ngBottomWidgetNode,
+            frame: ngBottomWidgetFrame
+        )
+        
+        ngBottomWidgetNode.isHidden = (ngBottomWidgetState.height == 0)
+        
+        bottomBorder = ngBottomWidgetFrame.minY
         //
         
         self.tapRecognizer?.isEnabled = self.isReorderingFilters
