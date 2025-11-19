@@ -445,7 +445,7 @@
         "bzlTransitiveDigest": "CpG2z0bMf8DusDHjjWFmipHWDj4rv/NejukTV6hS/ww=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "f6adab0a32dc102c3b063e13ab2569cc467d8f545039d722afed3b1c1e4b5283"
+          "@@//Package.resolved": "63979f3251807e96a89ff914f2d9092ae9706acf87b432551cc1c0b3dd178100"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -454,9 +454,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_firebase_ios_sdk",
-              "commit": "793b67f4652e1a39d03fab6650033768afe6d15e",
+              "commit": "087bb95235f676c1a37e928769a5b6645dcbd325",
               "remote": "https://github.com/firebase/firebase-ios-sdk.git",
-              "version": "12.5.0",
+              "version": "12.6.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -476,7 +476,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "047cf1a1e66e5623fca2daf535a806600830eaf0",
+              "commit": "0afe40be12e18e76d2e333a11942407c4d33c953",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -498,7 +498,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "6050fffeab969dc37f7cdb94928243d8a988a017",
+              "commit": "ea4ced4985c25db8d633ef4a54185d41e190e3cb",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "env": {},
@@ -740,9 +740,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_floatingpanel",
-              "commit": "a2646dd2704656fa5a679af68953249a70c77f40",
+              "commit": "41d75802452e3fc6bf3a888ae83d122fd0e4ef18",
               "remote": "https://github.com/scenee/FloatingPanel",
-              "version": "3.0.1",
+              "version": "3.1.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1774,9 +1774,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "5afbb3ea8e6319ec3630f5c5a6958ee72a1b61bf",
+              "commit": "ecfa2bb4173106e1be629138c8a73c29998025fb",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.3.23",
+              "version": "4.4.1",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
