@@ -520,10 +520,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         super.didLoad()
         
         // Nicegram AppReviewLogin
-        if RemoteConfigContainer.shared.getReviewStatusUseCase().inReview() {
-            self.animationNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.reviewLoginTap(_:))))
-            self.managedAnimationNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.reviewLoginTap(_:))))
-        }
+        self.animationNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.reviewLoginTap(_:))))
+        self.managedAnimationNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.reviewLoginTap(_:))))
         //
         
         self.titleNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugTap(_:))))
@@ -731,6 +729,10 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     
     // Nicegram AppReviewLogin
     @objc private func reviewLoginTap(_ recognizer: UITapGestureRecognizer) {
+        guard RemoteConfigContainer.shared.getReviewStatusUseCase().inReview() else {
+            return
+        }
+        
         phoneAndCountryNode.phoneInputNode.number = AppReviewLogin.phone
         checkPhone?()
     }
