@@ -12,6 +12,7 @@ import FeatDockWidget
 import MinimizedContainer
 import NGData
 import NGStrings
+import TelegramBridge
 //
 import Foundation
 import UIKit
@@ -406,6 +407,15 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 }
             }
         }
+        //
+        
+        // Nicegram RootReturn
+        tabBarController.isVisiblePublisher
+            .filter { $0 }
+            .sink { _ in
+                TelegramBridgeModule.shared.telegramRootReturnManager().executePendingActions()
+            }
+            .store(in: &cancellables)
         //
         
         var restoreSettignsController: (ViewController & SettingsController)?

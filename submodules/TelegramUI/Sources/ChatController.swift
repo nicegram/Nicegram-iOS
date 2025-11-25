@@ -56,7 +56,6 @@ import StatisticsUI
 import NGWebUtils
 // Nicegram Imports
 import FeatAttentionEconomy
-import FeatTgUtils
 import NGAppCache
 import NGStrings
 import NGUI
@@ -587,10 +586,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     var currentSpeechHolder: SpeechSynthesizerHolder?
     
     var powerSavingMonitoringDisposable: Disposable?
-    
-    // Nicegram
-    private var nicegramCloseCallback: (() -> Void)?
-    //
     
     var avatarNode: ChatAvatarNavigationNode?
     
@@ -6145,11 +6140,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 return state.updatedInterfaceState({ $0.withUpdatedSelectedMessages(messageIds) })
             })
         }
-        
-        // Nicegram
-        self.nicegramCloseCallback = TgChatCloseCallback.callback
-        TgChatCloseCallback.callback = nil
-        //
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -6157,10 +6147,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     }
     
     deinit {
-        // Nicegram
-        self.nicegramCloseCallback?()
-        //
-        
         let _ = ChatControllerCount.modify { value in
             return value - 1
         }

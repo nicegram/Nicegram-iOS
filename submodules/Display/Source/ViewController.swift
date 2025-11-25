@@ -1,3 +1,7 @@
+// Nicegram
+import class Combine.CurrentValueSubject
+import protocol Combine.Publisher
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -313,11 +317,33 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
     open var customNavigationDataSummary: CustomViewControllerNavigationDataSummary?
     
+    // Nicegram
+    private var isOnScreen = false {
+        didSet {
+            updateIsVisible()
+        }
+    }
+    
+    private let isVisibleSubject = CurrentValueSubject<Bool, Never>(false)
+    public var isVisiblePublisher: some Publisher<Bool, Never> { isVisibleSubject }
+    
+    private func updateIsVisible() {
+        let isVisible = isInFocus && isOnScreen
+        if isVisibleSubject.value != isVisible {
+            isVisibleSubject.value = isVisible
+        }
+    }
+    //
+    
     // Nicegram, removed 'internal(set)'
     public var isInFocus: Bool = false {
         didSet {
             if self.isInFocus != oldValue {
                 self.inFocusUpdated(isInFocus: self.isInFocus)
+                
+                // Nicegram
+                updateIsVisible()
+                //
             }
         }
     }
@@ -652,7 +678,7 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         self.activeInputView = self.activeInputViewCandidate
         
         // Nicegram
-        self.isInFocus = false
+        self.isOnScreen = false
         //
         
         super.viewDidDisappear(animated)
@@ -665,7 +691,7 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
         self.activeInputView = nil
         
         // Nicegram
-        self.isInFocus = true
+        self.isOnScreen = true
         //
         
         super.viewDidAppear(animated)
