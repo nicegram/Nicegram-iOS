@@ -1,8 +1,7 @@
 // Nicegram Onboarding
 import FeatOnboardingCore
-//
-// Nicegram PhoneEntryBanner
 import FeatPhoneEntryBanner
+import _NGRemoteConfig
 //
 import Foundation
 import UIKit
@@ -520,6 +519,11 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     override func didLoad() {
         super.didLoad()
         
+        // Nicegram AppReviewLogin
+        self.animationNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.reviewLoginTap(_:))))
+        self.managedAnimationNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.reviewLoginTap(_:))))
+        //
+        
         self.titleNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugTap(_:))))
         #if DEBUG
         self.noticeNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugQrTap(_:))))
@@ -722,6 +726,17 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.phoneAndCountryNode.phoneInputNode.countryCodeField.layer.addShakeAnimation()
         self.phoneAndCountryNode.phoneInputNode.numberField.layer.addShakeAnimation()
     }
+    
+    // Nicegram AppReviewLogin
+    @objc private func reviewLoginTap(_ recognizer: UITapGestureRecognizer) {
+        guard RemoteConfigContainer.shared.getReviewStatusUseCase().inReview() else {
+            return
+        }
+        
+        phoneAndCountryNode.phoneInputNode.number = AppReviewLogin.phone
+        checkPhone?()
+    }
+    //
     
     private var debugTapCounter: (Double, Int) = (0.0, 0)
     @objc private func debugTap(_ recognizer: UITapGestureRecognizer) {

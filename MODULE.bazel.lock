@@ -445,7 +445,7 @@
         "bzlTransitiveDigest": "CpG2z0bMf8DusDHjjWFmipHWDj4rv/NejukTV6hS/ww=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "1a1a1d0f4891a51860d142b757ad3e27b9fb8bd7dfce299114e2bdcd2a73eb3b"
+          "@@//Package.resolved": "b2acf7424e813b34218cae4a0392803ffe0eaa2df3772aee1f9dbe82bc8372f0"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -476,7 +476,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "ac0277d0e35b67fa4d0d2cc265fa9be80eca8f86",
+              "commit": "4381aed835cc9295e832d4f902d425396a73a00d",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -1004,9 +1004,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_lnextensionexecutor",
-              "commit": "81ca50fad3560249ffa83fdbd52cc0d2df5ce511",
+              "commit": "8b1e6289c34a29f47195efd04a0bb302966e8cdd",
               "remote": "https://github.com/LeoNatan/LNExtensionExecutor",
-              "version": "1.5.0",
+              "version": "1.4.1",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
@@ -1774,9 +1774,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_wallet_core",
-              "commit": "1fe9c732de7aa7b96f9e8633050f634f1910977d",
+              "commit": "ecfa2bb4173106e1be629138c8a73c29998025fb",
               "remote": "https://github.com/trustwallet/wallet-core.git",
-              "version": "4.4.2",
+              "version": "4.4.1",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,

@@ -52,7 +52,6 @@ import FeatAssistant
 import FeatCalls
 import FeatGodsEye
 import struct FeatPremiumUI.PremiumUITgHelper
-import FeatTgAppsCenter
 import FeatTgUserNotes
 import FeatWallet
 import NGAiChatUI
@@ -1111,25 +1110,6 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
             }))
             appIndex += 1
         }
-
-        // Nicegram TgAppsCenter
-        let getConfigUseCase = FeatTgAppsCenter.Module.shared.getConfigUseCase()
-        if getConfigUseCase.isFeatureEnabled() {
-            items[.apps]!.append(
-                PeerInfoScreenDisclosureItem(
-                    id: "tgAppsCenter",
-                    text: FeatTgAppsCenter.strings.settingsItemTitle(),
-                    icon: FeatTgAppsCenter.images.logoBg()?.asTgIcon(),
-                    action: {
-                        Task { @MainActor in
-                            TgAppsCenterPresenter().present(from: .settings)
-                        }
-                    }
-                )
-            )
-            appIndex += 1
-        }
-        //
     }
     
     items[.shortcuts]!.append(PeerInfoScreenDisclosureItem(id: 1, text: presentationData.strings.Settings_SavedMessages, icon: PresentationResourcesSettings.savedMessages, action: {

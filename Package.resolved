@@ -212,8 +212,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LeoNatan/LNExtensionExecutor",
       "state" : {
-        "revision" : "81ca50fad3560249ffa83fdbd52cc0d2df5ce511",
-        "version" : "1.5.0"
+        "revision" : "8b1e6289c34a29f47195efd04a0bb302966e8cdd",
+        "version" : "1.4.1"
       }
     },
     {
@@ -239,8 +239,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/tg-apps-center",
-        "revision" : "ac0277d0e35b67fa4d0d2cc265fa9be80eca8f86"
+        "branch" : "develop",
+        "revision" : "4381aed835cc9295e832d4f902d425396a73a00d"
       }
     },
     {
@@ -545,8 +545,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "1fe9c732de7aa7b96f9e8633050f634f1910977d",
-        "version" : "4.4.2"
+        "revision" : "ecfa2bb4173106e1be629138c8a73c29998025fb",
+        "version" : "4.4.1"
       }
     },
     {
