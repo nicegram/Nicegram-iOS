@@ -8,13 +8,14 @@ NGDEPS = [
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGUtils:NGUtils",
     "//Nicegram/NGWebUtils:NGWebUtils",
+    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
     "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
+    "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye",
+    "@swiftpkg_nicegram_assistant_ios//:FeatNftSticker",
     "@swiftpkg_nicegram_assistant_ios//:FeatPremiumUI",
+    "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgUserNotes",
     "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
-    "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
-    "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
-    "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye"
 ]
 
 swift_library(

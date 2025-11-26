@@ -1602,18 +1602,26 @@ func peerInfoScreenData(
                         hasWatchApp: false,
                         enableQRLogin: false)
                 }
-// Nicegram NCG-7303 Spy on friends
+
                 if #available(iOS 15.0, *),
                    let user = peer as? TelegramUser,
                    !(user.botInfo != nil && !user.id.isVerificationCodes), // checking is bot
                    user.id.id._internalGetInt64Value() != 777000 { //checking for telegram login bot                    
+                    // Nicegram NCG-7303 Spy on friends
                     if availablePanes != nil {
                         availablePanes?.insert(.spyOnFriends, at: 0)
                     } else {
                         availablePanes = [.spyOnFriends]
                     }
+                    //
+
+                    // Nicegram Nft Sticker
+                    if #available(iOS 16.0, *) {
+                        availablePanes?.insert(.nftSticker, at: 1)
+                    }
+                    //
                 }
-//
+
                 return PeerInfoScreenData(
                     peer: peer,
                     chatPeer: peerView.peers[peerId],

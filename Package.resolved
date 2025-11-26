@@ -172,6 +172,15 @@
       }
     },
     {
+      "identity" : "gzipswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/1024jp/GzipSwift.git",
+      "state" : {
+        "revision" : "56bf51fdd2fe4b2cf254b2cf34aede3d7caccc6c",
+        "version" : "6.1.0"
+      }
+    },
+    {
       "identity" : "interop-ios-for-google-sdks",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/interop-ios-for-google-sdks.git",
@@ -212,8 +221,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LeoNatan/LNExtensionExecutor",
       "state" : {
-        "revision" : "8b1e6289c34a29f47195efd04a0bb302966e8cdd",
-        "version" : "1.4.1"
+        "revision" : "81ca50fad3560249ffa83fdbd52cc0d2df5ce511",
+        "version" : "1.5.0"
       }
     },
     {
@@ -239,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "8b1b4306b4e0c9f478557c7b3647a1b7802023e7"
+        "branch" : "feat/nft-sticker",
+        "revision" : "153ad132ec625cfd7fedc432dbf0c3e88ba9ae46"
       }
     },
     {
@@ -545,8 +554,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "ecfa2bb4173106e1be629138c8a73c29998025fb",
-        "version" : "4.4.1"
+        "revision" : "1fe9c732de7aa7b96f9e8633050f634f1910977d",
+        "version" : "4.4.2"
       }
     },
     {
