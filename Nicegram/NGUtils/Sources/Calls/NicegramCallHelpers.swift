@@ -29,7 +29,7 @@ public extension CallParticipant {
     static func make(
         peer: Peer
     ) throws -> CallParticipant {
-        guard peer is TelegramUser else {
+        guard let user = peer as? TelegramUser, user.botInfo == nil else {
             throw UnexpectedError()
         }
         

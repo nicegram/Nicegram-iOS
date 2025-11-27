@@ -1,7 +1,8 @@
 // Nicegram Imports
+import FeatNftSticker
+import FeatSpyOnFriends
 import FeatTgUserNotes
 import NGData
-import FeatSpyOnFriends
 import NGUtils
 //
 import Foundation
@@ -1091,6 +1092,10 @@ func peerInfoScreenData(
     forceHasGifts: Bool,
     switchToUpgradableGifts: Bool
 ) -> Signal<PeerInfoScreenData, NoError> {
+    // Nicegram Nft Sticker
+    let isNftStickerEnabled = FeatNftSticker.Module.shared.getConfigUseCase().isFeatureEnabled()
+    //
+    
     return peerInfoScreenInputData(context: context, peerId: peerId, isSettings: isSettings)
     |> mapToSignal { inputData -> Signal<PeerInfoScreenData, NoError> in
         let wasUpgradedGroup = Atomic<Bool?>(value: nil)
@@ -1616,7 +1621,7 @@ func peerInfoScreenData(
                     //
 
                     // Nicegram Nft Sticker
-                    if #available(iOS 16.0, *) {
+                    if #available(iOS 16.0, *), isNftStickerEnabled {
                         availablePanes?.insert(.nftSticker, at: 1)
                     }
                     //

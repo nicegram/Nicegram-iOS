@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/nft-sticker",
-        "revision" : "153ad132ec625cfd7fedc432dbf0c3e88ba9ae46"
+        "branch" : "develop",
+        "revision" : "0241a9ba8c0f6d58be7c075032a52d04e96c70f7"
       }
     },
     {
@@ -554,8 +554,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "1fe9c732de7aa7b96f9e8633050f634f1910977d",
-        "version" : "4.4.2"
+        "revision" : "7e848e081d07f7b495d3cc53c41a09cc717a8eb9",
+        "version" : "4.4.3"
       }
     },
     {
