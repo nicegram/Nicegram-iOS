@@ -194,6 +194,13 @@ open class TabBarControllerImpl: ViewController, TabBarController {
                     } else {
                         tabBarHeight = 49.0 + bottomInset
                     }
+                    
+                    // Nicegram, fix tabBarHeight on tab click
+                    if let height = strongSelf.tabBarControllerNode.tabBarView.view?.frame.height {
+                        tabBarHeight = height + bottomInset
+                    }
+                    //
+                    
                     updatedLayout.intrinsicInsets.bottom = tabBarHeight
                     
                     strongSelf.controllers[index].containerLayoutUpdated(updatedLayout, transition: .immediate)
@@ -399,12 +406,20 @@ open class TabBarControllerImpl: ViewController, TabBarController {
     }
     
     override open func viewDidAppear(_ animated: Bool) {
+        // Nicegram
+        super.viewDidAppear(animated)
+        //
+        
         if let currentController = self.currentController {
             currentController.viewDidAppear(animated)
         }
     }
     
     override open func viewDidDisappear(_ animated: Bool) {
+        // Nicegram
+        super.viewDidDisappear(animated)
+        //
+        
         if let currentController = self.currentController {
             currentController.viewDidDisappear(animated)
         }

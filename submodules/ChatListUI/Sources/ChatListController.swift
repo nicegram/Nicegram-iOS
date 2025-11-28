@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Postbox
 // Nicegram Imports
+import class Combine.AnyCancellable
 import class Combine.CurrentValueSubject
 import Factory
 import FeatAssistant
@@ -112,6 +113,10 @@ private final class ContextControllerContentSourceImpl: ContextControllerContent
 
 public class ChatListControllerImpl: TelegramBaseController, ChatListController {
     private var validLayout: ContainerViewLayout?
+    
+    // Nicegram
+    private var cancellables = Set<AnyCancellable>()
+    //
     
     // Nicegram, ChatListWidget
     @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
@@ -289,6 +294,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.tabsNode.addSubnode(self.tabContainerNode)
                 
         super.init(context: context, navigationBarPresentationData: nil, mediaAccessoryPanelVisibility: .always, locationBroadcastPanelSource: .summary, groupCallPanelSource: groupCallPanelSource)
+        
+        // Nicegram
+        self.isVisiblePublisher
+            .sink { [weak self] isVisible in
+                self?.updateChatListNode(isVisible: isVisible)
+            }
+            .store(in: &cancellables)
+        //
         
         // Nicegram NCG-7581 Folder for keywords
         self.tabContainerNode.openKeywords = { [weak self] in
@@ -2933,12 +2946,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             storyPeerListView.cancelLoadingItem()
         }
     }
-    
-    // Nicegram
-    override public func inFocusUpdated(isInFocus: Bool) {
-        updateChatListNode(isVisible: isInFocus)
-    }
-    //
     
     // Nicegram PinnedChats
     lazy var chatListNicegramData: ChatListNicegramData = {

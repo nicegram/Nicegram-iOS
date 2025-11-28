@@ -1,8 +1,17 @@
+// Nicegram
+import NGCore
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
 import PhoneNumberFormat
+
+// Nicegram AppReviewLogin
+private func appReviewLog(_ message: String) {
+    Log(category: "app-review").log(message)
+}
+//
 
 private func removeDuplicatedPlus(_ text: String?) -> String {
     var result = ""
@@ -245,6 +254,12 @@ public final class PhoneInputNode: ASDisplayNode, UITextFieldDelegate {
     }
         
     public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        // Nicegram AppReviewLogin
+        let textFieldName = (textField === countryCodeField) ? "prefix" : "number"
+        let rangeDesc = "[\(range.lowerBound), \(range.upperBound)]"
+        appReviewLog("\(textFieldName) input: change range \(rangeDesc) with '\(string)'")
+        //
+        
         if !self.enableEditing {
             return false
         }
@@ -351,6 +366,10 @@ public final class PhoneInputNode: ASDisplayNode, UITextFieldDelegate {
             }
         }
         self.numberTextUpdated?(numberText)
+        
+        // Nicegram AppReviewLogin
+        appReviewLog("updateNumber prefix='\(realRegionPrefix)' number='\(numberText)'")
+        //
         
         if self.previousNumberText.isEmpty && !numberText.isEmpty {
             focusOnNumber = true

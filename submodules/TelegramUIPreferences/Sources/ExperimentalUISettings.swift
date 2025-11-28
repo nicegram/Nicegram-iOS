@@ -79,8 +79,7 @@ public struct ExperimentalUISettings: Codable, Equatable {
             crashOnLongQueries: false,
             chatListPhotos: false,
             knockoutWallpaper: false,
-            // Nicegram foldersTabAtBottom, change (true by default)
-            foldersTabAtBottom: true,
+            foldersTabAtBottom: false,
             playerEmbedding: false,
             preferredVideoCodec: nil,
             disableVideoAspectScaling: false,

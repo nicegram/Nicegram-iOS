@@ -51,7 +51,8 @@ final class TabBarControllerNode: ASDisplayNode {
     private let itemSelected: (Int, Bool, [ASDisplayNode]) -> Void
     private let contextAction: (Int, ContextExtractedContentContainingView, ContextGesture) -> Void
     
-    private let tabBarView = ComponentView<Empty>()
+    // Nicegram, remove 'private'
+    let tabBarView = ComponentView<Empty>()
     
     private let disabledOverlayNode: ASDisplayNode
     private var toolbarNode: ToolbarNode?

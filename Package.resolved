@@ -95,8 +95,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "793b67f4652e1a39d03fab6650033768afe6d15e",
-        "version" : "12.5.0"
+        "revision" : "087bb95235f676c1a37e928769a5b6645dcbd325",
+        "version" : "12.6.0"
       }
     },
     {
@@ -212,8 +212,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LeoNatan/LNExtensionExecutor",
       "state" : {
-        "revision" : "c0226dcd7d653d4c22dd16ccd72619c86b610c2d",
-        "version" : "1.3.0"
+        "revision" : "8b1e6289c34a29f47195efd04a0bb302966e8cdd",
+        "version" : "1.4.1"
       }
     },
     {
@@ -240,7 +240,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "46b034476d1dd8d2e329ea05b2fdf7d706dd265b"
+        "revision" : "8b1b4306b4e0c9f478557c7b3647a1b7802023e7"
       }
     },
     {
@@ -249,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "6050fffeab969dc37f7cdb94928243d8a988a017"
+        "revision" : "05c6c4cf92e0a1195daaba57dd000d815ef577b5"
       }
     },
     {
@@ -545,8 +545,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "5afbb3ea8e6319ec3630f5c5a6958ee72a1b61bf",
-        "version" : "4.3.23"
+        "revision" : "ecfa2bb4173106e1be629138c8a73c29998025fb",
+        "version" : "4.4.1"
       }
     },
     {

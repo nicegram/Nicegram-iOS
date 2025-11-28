@@ -1,5 +1,6 @@
 // Nicegram Imports
 import NGAppCache
+import class NGCoreUI.LogsUI
 import NGData
 import NicegramWallet
 //
@@ -72,6 +73,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case testStickerImport(PresentationTheme)
     case sendLogs(PresentationTheme)
     case sendOneLog(PresentationTheme)
+    case sendAppReviewLogs
     case sendNGLogs(PresentationTheme)
 // Nicegram NCG-5828 call recording
     case sendNGCallRecorderLogs(PresentationTheme)
@@ -147,7 +149,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         case .testStickerImport:
             return DebugControllerSection.sticker.rawValue
 // Nicegram NCG-5828 call recording, .sendNGCallRecorderLogs
-        case .sendNGLogs, .sendLogs, .sendOneLog, .sendShareLogs, .sendGroupCallLogs, .sendStorageStats, .sendNotificationLogs, .sendCriticalLogs, .sendAllLogs, .sendNGCallRecorderLogs:
+        case .sendAppReviewLogs, .sendNGLogs, .sendLogs, .sendOneLog, .sendShareLogs, .sendGroupCallLogs, .sendStorageStats, .sendNotificationLogs, .sendCriticalLogs, .sendAllLogs, .sendNGCallRecorderLogs:
             return DebugControllerSection.logs.rawValue
 //
         case .accounts:
@@ -175,10 +177,12 @@ private enum DebugControllerEntry: ItemListNodeEntry {
         switch self {
         // Nicegram DebugMenu
         case .showOnboarding:
-            return -4
+            return -20
         case .multichainEnabled:
-            return -3
+            return -10
         //
+        case .sendAppReviewLogs:
+            return -3
         case .sendNGLogs:
             return -2
 // Nicegram NCG-5828 call recording
@@ -817,6 +821,18 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
             })
 //
+        case .sendAppReviewLogs:
+            return ItemListDisclosureItem(presentationData: presentationData, title: "Send App Review Logs", label: "", sectionId: self.section, style: .blocks, action: {
+                if #available(iOS 15.0, *) {
+                    Task { @MainActor in
+                        LogsUI(
+                            options: .init(
+                                categories: ["app-review"]
+                            )
+                        ).shareFile()
+                    }
+                }
+            })
         case .sendNGLogs:
         return ItemListDisclosureItem(presentationData: presentationData, title: "Send Nicegram Logs", label: "", sectionId: self.section, style: .blocks, action: {
             let ngLogs = Logger(
@@ -1640,6 +1656,7 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
     entries.append(.showOnboarding(!AppCache.wasOnboardingShown))
     entries.append(.multichainEnabled(multichainEnabled))
     //
+    entries.append(.sendAppReviewLogs)
     entries.append(.sendNGLogs(presentationData.theme))
 // Nicegram NCG-5828 call recording
     entries.append(.sendNGCallRecorderLogs(presentationData.theme))
