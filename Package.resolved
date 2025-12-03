@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "qa/build-596",
-        "revision" : "85ef3909033ab811aa170683d2beda90b384abc6"
+        "branch" : "feat/favorite-dapps",
+        "revision" : "6091338802cf58666709198ebb3e95f082682577"
       }
     },
     {
@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "05c6c4cf92e0a1195daaba57dd000d815ef577b5"
+        "branch" : "feat/favorite-dapps",
+        "revision" : "689a93f172af7160cac36f12b0778fe2ee4c8aa9"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SDWebImage/SDWebImage.git",
       "state" : {
-        "revision" : "e53f6226eaab490291096cfbd9b2b109ea968e8d",
-        "version" : "5.21.4"
+        "revision" : "36e79ba485e9bb4d3cd4e3318908866dac5e7b51",
+        "version" : "5.21.5"
       }
     },
     {

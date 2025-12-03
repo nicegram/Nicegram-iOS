@@ -445,7 +445,7 @@
         "bzlTransitiveDigest": "CpG2z0bMf8DusDHjjWFmipHWDj4rv/NejukTV6hS/ww=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "1b67b830e9d9d64677093b8f1fb02d34c63c0254a94a23dc379cfafa5603893e"
+          "@@//Package.resolved": "e0621f090cee3dd269d2c8a53e6c94d9eccb698ed5db7acea8fe73748c5ab09d"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -476,7 +476,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "85ef3909033ab811aa170683d2beda90b384abc6",
+              "commit": "e4629e998ac20ef42dec6c08d9a41c7f551dcaaa",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -498,7 +498,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "05c6c4cf92e0a1195daaba57dd000d815ef577b5",
+              "commit": "fadf4f77109cf2cd636a4617e7bd3c890ed7e23c",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "env": {},
@@ -1180,9 +1180,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_sdwebimage",
-              "commit": "e53f6226eaab490291096cfbd9b2b109ea968e8d",
+              "commit": "36e79ba485e9bb4d3cd4e3318908866dac5e7b51",
               "remote": "https://github.com/SDWebImage/SDWebImage.git",
-              "version": "5.21.4",
+              "version": "5.21.5",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
