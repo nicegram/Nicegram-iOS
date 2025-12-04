@@ -2,15 +2,20 @@ import Lottie
 import NGCoreUI
 import UIKit
 
-public class LottieViewImpl: UIView {
+class LottieViewImpl: UIView {
     
     //  MARK: - UI Elements
     
-    private let animationView = AnimationView()
+    private let animationView = AnimationView(
+        configuration: LottieConfiguration(
+            renderingEngine: .automatic,
+            decodingStrategy: .dictionaryBased
+        )
+    )
     
     //  MARK: - Lifecycle
     
-    public override init(frame: CGRect) {
+    override init(frame: CGRect) {
         super.init(frame: frame)
         
         animationView.backgroundBehavior = .pauseAndRestore
@@ -27,20 +32,18 @@ public class LottieViewImpl: UIView {
 }
 
 extension LottieViewImpl: LottieViewProtocol {
-    public func play(completion: @escaping () -> Void) {
+    func play(completion: @escaping () -> Void) {
         animationView.play { _ in
             completion()
         }
     }
     
-    public func setAnimation(fileUrl: URL?) {
-        guard let fileUrl else { return }
-        animationView.animation = Animation.filepath(
-            fileUrl._wrapperPath()
-        )
+    func setAnimation(_ animation: NGCoreUI.LottieAnimation) {
+        let animation = (animation as? LottieAnimationImpl)?.animation
+        animationView.animation = animation
     }
     
-    public func setImageProvider(_ imageProvider: ImageProvider?) {
+    func setImageProvider(_ imageProvider: ImageProvider?) {
         if let imageProvider {
             animationView.imageProvider = AnonymousImageProvider(
                 provider: imageProvider
@@ -53,7 +56,7 @@ extension LottieViewImpl: LottieViewProtocol {
         }
     }
     
-    public func setLoopMode(_ loopMode: LoopMode) {
+    func setLoopMode(_ loopMode: LoopMode) {
         let mode: LottieLoopMode
         switch loopMode {
         case .playOnce:
@@ -71,7 +74,7 @@ extension LottieViewImpl: LottieViewProtocol {
         animationView.loopMode = mode
     }
     
-    public func stop() {
+    func stop() {
         animationView.stop()
     }
 }

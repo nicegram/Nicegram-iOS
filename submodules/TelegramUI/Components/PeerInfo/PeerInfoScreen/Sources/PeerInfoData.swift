@@ -1,7 +1,8 @@
 // Nicegram Imports
+import FeatNftSticker
+import FeatSpyOnFriends
 import FeatTgUserNotes
 import NGData
-import FeatSpyOnFriends
 import NGUtils
 //
 import Foundation
@@ -1091,6 +1092,10 @@ func peerInfoScreenData(
     forceHasGifts: Bool,
     switchToUpgradableGifts: Bool
 ) -> Signal<PeerInfoScreenData, NoError> {
+    // Nicegram Nft Sticker
+    let isNftStickerEnabled = FeatNftSticker.Module.shared.getConfigUseCase().isFeatureEnabled()
+    //
+    
     return peerInfoScreenInputData(context: context, peerId: peerId, isSettings: isSettings)
     |> mapToSignal { inputData -> Signal<PeerInfoScreenData, NoError> in
         let wasUpgradedGroup = Atomic<Bool?>(value: nil)
@@ -1602,18 +1607,26 @@ func peerInfoScreenData(
                         hasWatchApp: false,
                         enableQRLogin: false)
                 }
-// Nicegram NCG-7303 Spy on friends
+
                 if #available(iOS 15.0, *),
                    let user = peer as? TelegramUser,
                    !(user.botInfo != nil && !user.id.isVerificationCodes), // checking is bot
                    user.id.id._internalGetInt64Value() != 777000 { //checking for telegram login bot                    
+                    // Nicegram NCG-7303 Spy on friends
                     if availablePanes != nil {
                         availablePanes?.insert(.spyOnFriends, at: 0)
                     } else {
                         availablePanes = [.spyOnFriends]
                     }
+                    //
+
+                    // Nicegram Nft Sticker
+                    if #available(iOS 16.0, *), isNftStickerEnabled {
+                        availablePanes?.insert(.nftSticker, at: 1)
+                    }
+                    //
                 }
-//
+
                 return PeerInfoScreenData(
                     peer: peer,
                     chatPeer: peerView.peers[peerId],

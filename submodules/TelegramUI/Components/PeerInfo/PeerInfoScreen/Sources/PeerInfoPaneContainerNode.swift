@@ -1,4 +1,5 @@
-// Nicegram NCG-7303 Spy on friends
+// Nicegram
+import FeatNftSticker
 import NGStrings
 import NGUtils
 //
@@ -702,6 +703,9 @@ private final class PeerInfoPendingPane {
     var isReady: Bool = false
     
     init(
+        // Nicegram NftSticker
+        nftsViewModel: UserNftsViewModel,
+        //
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?,
         chatControllerInteraction: ChatControllerInteraction,
@@ -858,6 +862,14 @@ private final class PeerInfoPendingPane {
             paneNode = PeerInfoChatListPaneNode(context: context, navigationController: chatControllerInteraction.navigationController)
         case .savedMessages:
             paneNode = PeerInfoChatPaneNode(context: context, peerId: peerId, navigationController: chatControllerInteraction.navigationController)
+        // Nicegram NftSticker    
+        case .nftSticker:
+            if #available(iOS 16.0, *) {
+                paneNode = PeerInfoNftsPaneNode(viewModel: nftsViewModel)
+            } else {
+                preconditionFailure()
+            }
+        //
 // Nicegram NCG-7303 Spy on friends
         case .spyOnFriends:
             if #available(iOS 15.0, *),
@@ -890,6 +902,10 @@ private final class PeerInfoPendingPane {
 }
 
 final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegate {
+    // Nicegram NftSticker
+    private let nftsViewModel: UserNftsViewModel
+    //
+    
     private let context: AccountContext
     private let peerId: PeerId
     private let chatLocation: ChatLocation
@@ -913,7 +929,16 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     
     private var currentParams: (size: CGSize, sideInset: CGFloat, bottomInset: CGFloat, deviceMetrics: DeviceMetrics, visibleHeight: CGFloat, expansionFraction: CGFloat, presentationData: PresentationData, data: PeerInfoScreenData?, areTabsHidden: Bool, disableTabSwitching: Bool, navigationHeight: CGFloat)?
     
-    private(set) var currentPaneKey: PeerInfoPaneKey?
+    // Nicegram, 'didSet' added
+    private(set) var currentPaneKey: PeerInfoPaneKey? {
+        didSet {
+            guard currentPaneKey != oldValue else { return }
+            
+            if #available(iOS 16.0, *), currentPaneKey == .nftSticker {
+                nftsViewModel.onTabOpening()
+            }
+        }
+    }
     var pendingSwitchToPaneKey: PeerInfoPaneKey?
     var expandOnSwitch = false
     
@@ -965,6 +990,9 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     private let initialPaneKey: PeerInfoPaneKey?
     
     init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: PeerId, chatLocation: ChatLocation, sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, isMediaOnly: Bool, initialPaneKey: PeerInfoPaneKey?, initialStoryFolderId: Int64?, initialGiftCollectionId: Int64?) {
+        // Nicegram NftSticker
+        self.nftsViewModel = UserNftsViewModel(userId: .init(peerId))
+        //
         self.context = context
         self.updatedPresentationData = updatedPresentationData
         self.peerId = peerId
@@ -1224,6 +1252,17 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     }
     
     func update(size: CGSize, sideInset: CGFloat, bottomInset: CGFloat, deviceMetrics: DeviceMetrics, visibleHeight: CGFloat, expansionFraction: CGFloat, presentationData: PresentationData, data: PeerInfoScreenData?, areTabsHidden: Bool, disableTabSwitching: Bool, navigationHeight: CGFloat, transition: ContainedViewLayoutTransition) {
+        // Nicegram NftSticker
+        if let peer = data?.peer {
+            nftsViewModel.update(
+                user: .init(
+                    displayName: peer.debugDisplayTitle,
+                    username: peer.addressName
+                )
+            )
+        }
+        //
+        
         let previousAvailablePanes = self.currentAvailablePanes
         let availablePanes = data?.availablePanes ?? []
         self.currentAvailablePanes = data?.availablePanes
@@ -1330,6 +1369,9 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                     }
                 }
                 let pane = PeerInfoPendingPane(
+                    // Nicegram NftSticker
+                    nftsViewModel: self.nftsViewModel,
+                    //
                     context: self.context,
                     updatedPresentationData: self.updatedPresentationData,
                     chatControllerInteraction: self.chatControllerInteraction!,
@@ -1557,6 +1599,10 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
             let content: TabSelectorComponent.Item.Content
             var canReorder = false
             switch key {
+            // Nicegram NftSticker
+            case .nftSticker:
+                content = .text(FeatNftSticker.strings.userProfileTabName())
+            //
             // Nicegram NCG-7303 Spy on friends
             case .spyOnFriends:
                 content = .text(l("SpyOnFriends.Title"))

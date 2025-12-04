@@ -457,8 +457,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             idleTimerManager: {
                 IdleTimerManagerImpl(contextProvider: contextProvider)
             },
-            lottieView: {
-                LottieViewImpl()
+            lottieBridge: {
+                LottieBridgeImpl()
             },
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
