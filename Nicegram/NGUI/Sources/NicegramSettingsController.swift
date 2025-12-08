@@ -846,12 +846,8 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
             enabled ? settings : nil
         }
     
-    let pinnedChatsSignal = PinnedChatsContainer.shared.getPinnedChatsUseCase()
-        .publisher()
-        .combineLatestThreadSafe(
-            adsgramSettingsPublisher
-        )
-        .map { pinnedChats, adsgramSettings in
+    let pinnedChatsSignal = adsgramSettingsPublisher
+        .map { adsgramSettings in
             var entries = [NicegramSettingsControllerEntry.PinnedChat]()
             
             if let adsgramSettings {
@@ -870,24 +866,6 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
                     )
                 )
             }
-            
-            entries.append(
-                contentsOf: pinnedChats.map { chat in
-                    NicegramSettingsControllerEntry.PinnedChat(
-                        title: chat.name,
-                        enabled: chat.isPinned,
-                        setEnabled: { value in
-                            Task {
-                                let setChatPinnedUseCase = PinnedChatsContainer.shared.setChatPinnedUseCase()
-                                await setChatPinnedUseCase(
-                                    id: chat.id,
-                                    pinned: value
-                                )
-                            }
-                        }
-                    )
-                }
-            )
             
             for i in entries.startIndex..<entries.endIndex {
                 entries[i].index = Int32(i + 1)

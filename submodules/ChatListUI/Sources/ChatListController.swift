@@ -121,6 +121,9 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     // Nicegram, ChatListWidget
     @Injected(\ChatListWidgetModule.chatListWidgetViewModel)
     private var chatListWidgetViewModel
+
+    @Injected(\PinnedChatsContainer.pinnedBannerManager)
+    private var pinnedBannerManager
     //
     
     public let context: AccountContext
@@ -2974,6 +2977,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.chatListNicegramData.isChatListVisible.value = isVisible
         
         self.chatListWidgetViewModel.set(isViewVisible: isVisible)
+        self.pinnedBannerManager.set(isViewVisible: isVisible)
         
         if isVisible, !oldIsVisible {
             chatListDisplayNode.effectiveContainerNode.currentItemNode.forEachItemNode { itemNode in

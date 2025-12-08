@@ -1,14 +1,10 @@
 import Factory
 import FeatOnboardingLegacy
-import FeatPinnedChats
 import NGData
 
 class LaunchOnboardingBridgeImpl {
     @Injected(\NicegramSettingsModule.nicegramSettingsRepository)
     private var nicegramSettingsRepository
-    
-    @Injected(\PinnedChatsContainer.setChatPinnedUseCase)
-    private var setChatPinnedUseCase
 }
 
 extension LaunchOnboardingBridgeImpl: LaunchOnboardingBridge {
@@ -17,11 +13,6 @@ extension LaunchOnboardingBridgeImpl: LaunchOnboardingBridge {
         dataControlEnabled: Bool,
         focusModeOption: FocusModeOption?
     ) async {
-        await setChatPinnedUseCase(
-            id: PinnedChat.AI_ID,
-            pinned: aiEnabled
-        )
-        
         await nicegramSettingsRepository.update {
             $0.with(\.trackDigitalFootprint, dataControlEnabled)
         }

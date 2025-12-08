@@ -1,5 +1,8 @@
+import Combine
 import MemberwiseInit
 import NGUtils
+import Postbox
+import SwiftSignalKit
 import TelegramBridge
 import TelegramCore
 
@@ -10,26 +13,38 @@ class TelegramPeerInfoProviderImpl {
 
 extension TelegramPeerInfoProviderImpl: TelegramPeerInfoProvider {
     func currentPeerInfo() async throws -> TelegramPeerInfo {
-        let context = try await contextProvider.awaitContext()
-        let peerId = context.account.peerId
-        let view = try await context.account.postbox
-            .peerView(id: peerId)
-            .awaitForFirstValue()
-        
-        let peer = try view.peers[peerId].unwrap()
-        let user = peer as? TelegramUser
-        
-        let cachedData = view.cachedData
-        let cachedUserData = cachedData as? CachedUserData
-        
-        return TelegramPeerInfo(
-            id: .init(peerId),
-            birthday: .init(cachedUserData?.birthday),
-            description: cachedData?.aboutText ?? "",
-            fullname: peer.debugDisplayTitle,
-            isPremium: user?.flags.contains(.isPremium) ?? false,
-            username: peer.usernameWithAtSign
-        )
+        try await currentPeerInfoPublisher().awaitForFirstValue().unwrap()
+    }
+    
+    func currentPeerInfoPublisher() -> AnyPublisher<TelegramPeerInfo?, Never> {
+        let signal = contextProvider.contextSignal()
+        |> mapToSignal { context -> Signal<PeerView, NoError> in
+            guard let context else { return .complete() }
+            return context.account.postbox.peerView(id: context.account.peerId)
+        }
+        |> map { view -> TelegramPeerInfo? in
+            do {
+                let peer = try view.peers[view.peerId].unwrap()
+                let user = peer as? TelegramUser
+                
+                let cachedData = view.cachedData
+                let cachedUserData = cachedData as? CachedUserData
+                
+                return TelegramPeerInfo(
+                    id: .init(peer.id),
+                    birthday: .init(cachedUserData?.birthday),
+                    description: cachedData?.aboutText ?? "",
+                    fullname: peer.debugDisplayTitle,
+                    isPremium: user?.flags.contains(.isPremium) ?? false,
+                    username: peer.usernameWithAtSign
+                )
+            } catch {
+                return nil
+            }
+        }
+        return signal
+            .toPublisher()
+            .eraseToAnyPublisher()
     }
 }
 
