@@ -249,7 +249,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/new-assistant",
-        "revision" : "eb8358a426ccf23e15abfd62da36b486c72a31d4"
+        "revision" : "dbe174aa74d72137bedc9dce7acfe984a5a5f630"
       }
     },
     {
