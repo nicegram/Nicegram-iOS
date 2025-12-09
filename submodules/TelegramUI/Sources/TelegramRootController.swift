@@ -360,8 +360,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         if #available(iOS 15.0, *) {
             let assistantController = NativeControllerWrapper(
                 controller: AssistantTgHelper.assistantTab(),
-                accountContext: self.context,
-                adjustSafeArea: true
+                accountContext: self.context
             )
             assistantController.tabBarItem = tabBarItem(
                 title: "Nicegram",

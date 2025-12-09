@@ -248,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "75034f0e2aacbc23016955975b1461f4af8a1363"
+        "branch" : "feat/new-assistant",
+        "revision" : "eb8358a426ccf23e15abfd62da36b486c72a31d4"
       }
     },
     {
@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "372dd96d6111eaa615085bb1615d686839c06cdc"
+        "branch" : "feat/new-assistant",
+        "revision" : "0c421a696b8a6911bb16e89ec3904e6a309a580a"
       }
     },
     {
@@ -293,8 +293,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "405f10d2161127c90665ffcee050f305b0330bdc",
-        "version" : "6.12.2"
+        "revision" : "d2919b9f21fb0584705c557fbb67b681f0cd847f",
+        "version" : "6.12.3"
       }
     },
     {
@@ -554,8 +554,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "7e848e081d07f7b495d3cc53c41a09cc717a8eb9",
-        "version" : "4.4.3"
+        "revision" : "99771910b79dbbc861e7ea05dc0bdabea42b01c7",
+        "version" : "4.4.4"
       }
     },
     {
@@ -581,8 +581,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "4c27acf5394b645b70d8ba19dc249c0472d5f618",
-        "version" : "1.7.0"
+        "revision" : "31073495cae9caf243c440eac94b3ab067e3d7bc",
+        "version" : "1.8.0"
       }
     }
   ],
