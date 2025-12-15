@@ -76,11 +76,6 @@ class NGDeeplinkHandler {
             return handleOnboarding(url: url)
         case "specialOffer":
             return handleSpecialOffer(url: url)
-        case "refferaldraw":
-            if #available(iOS 15.0, *) {
-                AssistantTgHelper.showReferralDrawFromDeeplink()
-            }
-            return true
         case "tgAuthSuccess":
             if #available(iOS 15.0, *) {
                 AssistantTgHelper.routeToAssistant(source: .generic)

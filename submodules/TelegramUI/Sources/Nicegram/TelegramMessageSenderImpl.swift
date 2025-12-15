@@ -16,16 +16,7 @@ extension TelegramMessageSenderImpl: TelegramMessageSender {
         do {
             let context = try contextProvider.context().unwrap()
             
-            let peerSignal = context.engine.peers.resolvePeerByName(name: botName, referrer: nil)
-             |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
-                 guard case let .result(result) = result else {
-                     return .complete()
-                 }
-                 return .single(result)
-             }
-            guard let peer = try await peerSignal.awaitForFirstValue() else {
-                throw UnexpectedError()
-            }
+            let peer = try await getPeer(username: botName)
             
             try await context.engine.messages
                 .requestStartBot(botPeerId: peer.id, payload: start)
@@ -53,10 +44,38 @@ extension TelegramMessageSenderImpl: TelegramMessageSender {
             bubbleUpEmojiOrStickersets: []
         )
 
-        try? await enqueueMessages(
+        _ = try? await enqueueMessages(
             account: context.account,
             peerId: peerId,
             messages: [message]
         ).awaitForFirstValue()
+    }
+    
+    func sendMessage(toUsername username: String, text: String) async {
+        do {
+            let peer = try await getPeer(username: username)
+            
+            await sendMessage(
+                to: TelegramBridge.TelegramId(peer.id),
+                text: text
+            )
+        } catch {}
+    }
+}
+
+private extension TelegramMessageSenderImpl {
+    func getPeer(username: String) async throws -> EnginePeer {
+        let context = try contextProvider.context().unwrap()
+        
+        let peerSignal = context.engine.peers.resolvePeerByName(name: username, referrer: nil)
+         |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
+             guard case let .result(result) = result else {
+                 return .complete()
+             }
+             return .single(result)
+         }
+        let peer = try await peerSignal.awaitForFirstValue().unwrap()
+        
+        return peer
     }
 }
