@@ -11,7 +11,6 @@ import NGDataSharing
 import NGEntryPoint
 import NGEnv
 import NGLogging
-import NGLottie
 import NGRemoteConfig
 import NGRepoUser
 import NGStrings
@@ -456,9 +455,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             idleTimerManager: {
                 IdleTimerManagerImpl(contextProvider: contextProvider)
-            },
-            lottieBridge: {
-                LottieBridgeImpl()
             },
             remoteConfig: {
                 RemoteConfigServiceImpl.shared

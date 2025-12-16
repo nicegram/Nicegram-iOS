@@ -1,7 +1,6 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "//Nicegram/NGLottie:NGLottie",
     "//Nicegram/NGLogging:NGLogging",
     "//Nicegram/NGData:NGData",
     "//Nicegram/NGWebUtils:NGWebUtils",
