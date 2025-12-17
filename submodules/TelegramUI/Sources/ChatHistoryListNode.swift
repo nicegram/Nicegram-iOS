@@ -1016,13 +1016,13 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             context?.account.viewTracker.refreshStoriesForMessageIds(messageIds: Set(messageIds.map(\.messageId)))
         }
         self.translationProcessingManager.process = { [weak self, weak context] messageIds in
-            if let context = context, let translationLang = self?.translationLang {
+            if let context, let translationLang = self?.translationLang {
                 let _ = translateMessageIds(context: context, messageIds: Array(messageIds.map(\.messageId)), fromLang: translationLang.fromLang, toLang: translationLang.toLang).startStandalone()
             }
         }
-        self.factCheckProcessingManager.process = { [weak self, weak context] messageIds in
-            if let context = context, let translationLang = self?.translationLang {
-                let _ = translateMessageIds(context: context, messageIds: Array(messageIds.map(\.messageId)), fromLang: translationLang.fromLang, toLang: translationLang.toLang).startStandalone()
+        self.factCheckProcessingManager.process = { [weak context] messageIds in
+            if let context {
+                let _ = context.engine.messages.getMessagesFactCheck(messageIds: Array(messageIds.map(\.messageId))).startStandalone()
             }
         }
         
@@ -2898,6 +2898,8 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                             if !message.text.isEmpty {
                                 messageIdsToTranslate.append(message.id)
                             } else if let _ = message.media.first(where: { $0 is TelegramMediaPoll }) {
+                                messageIdsToTranslate.append(message.id)
+                            } else if let audioTranscription = message.attributes.first(where: { $0 is AudioTranscriptionMessageAttribute }) as? AudioTranscriptionMessageAttribute, !audioTranscription.text.isEmpty && !audioTranscription.isPending {
                                 messageIdsToTranslate.append(message.id)
                             }
                         case let .MessageGroupEntry(_, messages, _):

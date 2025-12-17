@@ -74,6 +74,7 @@ final class ChatbotSearchResultItemComponent: Component {
         private weak var state: EmptyComponentState?
         
         var customUpdateIsHighlighted: ((Bool) -> Void)?
+        var enumerateSiblings: (((UIView) -> Void) -> Void)?
         private(set) var separatorInset: CGFloat = 0.0
         
         override init(frame: CGRect) {

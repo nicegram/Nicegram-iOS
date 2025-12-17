@@ -120,20 +120,20 @@ private func mappedInsertEntries(context: AccountContext, presentationData: Item
     return entries.map { entry -> ListViewInsertItem in
         switch entry.entry {
             case let .displayTab(_, text, value):
-                return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, noCorners: false, sectionId: 0, style: .blocks, updated: { value in
+                return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enabled: true, noCorners: false, sectionId: 0, style: .blocks, updated: { value in
                     nodeInteraction.updateShowCallsTab(value)
                 }), directionHint: entry.directionHint)
             case let .displayTabInfo(_, text):
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: 0), directionHint: entry.directionHint)
             case .openNewCall:
-                let item = ItemListPeerActionItem(presentationData: presentationData, style: showSettings ? .blocks : .plain, icon: PresentationResourcesRootController.callListCallIcon(presentationData.theme), title: presentationData.strings.CallList_NewCall, hasSeparator: false, sectionId: 1, height: .generic, noInsets: !showSettings, editing: false, action: {
+                let item = ItemListPeerActionItem(presentationData: presentationData, style: showSettings ? .blocks : .plain, systemStyle: .glass, icon: PresentationResourcesRootController.callListCallIcon(presentationData.theme), title: presentationData.strings.CallList_NewCall, hasSeparator: false, sectionId: 1, height: .generic, noInsets: !showSettings, editing: false, action: {
                     nodeInteraction.openNewCall()
                 })
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
             case let .groupCall(peer, _, isActive):
-                return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListGroupCallItem(presentationData: presentationData, context: context, style: showSettings ? .blocks : .plain, peer: peer, isActive: isActive, editing: false, interaction: nodeInteraction), directionHint: entry.directionHint)
+                return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListGroupCallItem(presentationData: presentationData, systemStyle: .glass, context: context, style: showSettings ? .blocks : .plain, peer: peer, isActive: isActive, editing: false, interaction: nodeInteraction), directionHint: entry.directionHint)
             case let .messageEntry(topMessage, messages, _, _, dateTimeFormat, editing, hasActiveRevealControls, displayHeader, _):
-                return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListCallItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, context: context, style: showSettings ? .blocks : .plain, topMessage: topMessage, messages: messages, editing: editing, revealed: hasActiveRevealControls, displayHeader: displayHeader, interaction: nodeInteraction), directionHint: entry.directionHint)
+                return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListCallItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, context: context, style: showSettings ? .blocks : .plain, topMessage: topMessage, messages: messages, editing: editing, revealed: hasActiveRevealControls, displayHeader: displayHeader, interaction: nodeInteraction), directionHint: entry.directionHint)
             case let .holeEntry(_, theme):
                 return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListHoleItem(theme: theme), directionHint: entry.directionHint)
         }
@@ -144,20 +144,20 @@ private func mappedUpdateEntries(context: AccountContext, presentationData: Item
     return entries.map { entry -> ListViewUpdateItem in
         switch entry.entry {
             case let .displayTab(_, text, value):
-                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, noCorners: false, sectionId: 0, style: .blocks, updated: { value in
+                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enabled: true, noCorners: false, sectionId: 0, style: .blocks, updated: { value in
                     nodeInteraction.updateShowCallsTab(value)
                 }), directionHint: entry.directionHint)
             case let .displayTabInfo(_, text):
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: 0), directionHint: entry.directionHint)
             case .openNewCall:
-                let item = ItemListPeerActionItem(presentationData: presentationData, style: showSettings ? .blocks : .plain, icon: PresentationResourcesRootController.callListCallIcon(presentationData.theme), title: presentationData.strings.CallList_NewCall, hasSeparator: false, sectionId: 1, height: .generic, noInsets: !showSettings, editing: false, action: {
+                let item = ItemListPeerActionItem(presentationData: presentationData, style: showSettings ? .blocks : .plain, systemStyle: .glass, icon: PresentationResourcesRootController.callListCallIcon(presentationData.theme), title: presentationData.strings.CallList_NewCall, hasSeparator: false, sectionId: 1, height: .generic, noInsets: !showSettings, editing: false, action: {
                     nodeInteraction.openNewCall()
                 })
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
             case let .groupCall(peer, _, isActive):
-                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListGroupCallItem(presentationData: presentationData, context: context, style: showSettings ? .blocks : .plain, peer: peer, isActive: isActive, editing: false, interaction: nodeInteraction), directionHint: entry.directionHint)
+                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListGroupCallItem(presentationData: presentationData, systemStyle: .glass, context: context, style: showSettings ? .blocks : .plain, peer: peer, isActive: isActive, editing: false, interaction: nodeInteraction), directionHint: entry.directionHint)
             case let .messageEntry(topMessage, messages, _, _, dateTimeFormat, editing, hasActiveRevealControls, displayHeader, _):
-                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListCallItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, context: context, style: showSettings ? .blocks : .plain, topMessage: topMessage, messages: messages, editing: editing, revealed: hasActiveRevealControls, displayHeader: displayHeader, interaction: nodeInteraction), directionHint: entry.directionHint)
+                return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListCallItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, context: context, style: showSettings ? .blocks : .plain, topMessage: topMessage, messages: messages, editing: editing, revealed: hasActiveRevealControls, displayHeader: displayHeader, interaction: nodeInteraction), directionHint: entry.directionHint)
             case let .holeEntry(_, theme):
                 return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: CallListHoleItem(theme: theme), directionHint: entry.directionHint)
         }

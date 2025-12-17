@@ -42,7 +42,6 @@ swift_library(
         "//submodules/UndoUI:UndoUI",
         "//submodules/MoreButtonNode:MoreButtonNode",
         "//submodules/InvisibleInkDustNode:InvisibleInkDustNode",
-        "//submodules/TelegramUI/Components/CameraScreen",
         "//submodules/TelegramUI/Components/MediaEditor",
         "//submodules/RadialStatusNode",
         "//submodules/Camera",
@@ -54,6 +53,10 @@ swift_library(
         "//submodules/TelegramUI/Components/MediaAssetsContext",
         "//submodules/TelegramUI/Components/AvatarBackground",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/TelegramUI/Components/LottieComponent",
     ],
     visibility = [
         "//visibility:public",

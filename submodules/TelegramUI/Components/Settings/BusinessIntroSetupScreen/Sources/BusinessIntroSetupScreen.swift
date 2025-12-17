@@ -749,6 +749,7 @@ final class BusinessIntroSetupScreenComponent: Component {
             introSectionItems.append(AnyComponentWithIdentity(id: introSectionItems.count, component: AnyComponent(Rectangle(color: .clear, height: 346.0, tag: self.introPlaceholderTag))))
             introSectionItems.append(AnyComponentWithIdentity(id: introSectionItems.count, component: AnyComponent(ListMultilineTextFieldItemComponent(
                 externalState: self.titleInputState,
+                style: .glass,
                 context: component.context,
                 theme: environment.theme,
                 strings: environment.strings,
@@ -780,6 +781,7 @@ final class BusinessIntroSetupScreenComponent: Component {
             self.resetTitle = nil
             introSectionItems.append(AnyComponentWithIdentity(id: introSectionItems.count, component: AnyComponent(ListMultilineTextFieldItemComponent(
                 externalState: self.textInputState,
+                style: .glass,
                 context: component.context,
                 theme: environment.theme,
                 strings: environment.strings,
@@ -830,6 +832,7 @@ final class BusinessIntroSetupScreenComponent: Component {
             
             introSectionItems.append(AnyComponentWithIdentity(id: introSectionItems.count, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
+                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -859,6 +862,7 @@ final class BusinessIntroSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.Business_Intro_CustomizeSectionHeader,
@@ -946,11 +950,13 @@ final class BusinessIntroSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(VStack([
                                 AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(

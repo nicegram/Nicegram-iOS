@@ -62,7 +62,7 @@ private enum TranslationSettingsControllerEntry: ItemListNodeEntry {
         let arguments = arguments as! TranslationSettingsControllerArguments
         switch self {
             case let .language(_, _, title, subtitle, value, code):
-                return LocalizationListItem(presentationData: presentationData, id: code, title: title, subtitle: subtitle, checked: value, activity: false, loading: false, editing: LocalizationListItemEditing(editable: false, editing: false, revealed: false, reorderable: false), sectionId: self.section, alwaysPlain: false, action: {
+                return LocalizationListItem(presentationData: presentationData, systemStyle: .glass, id: code, title: title, subtitle: subtitle, checked: value, activity: false, loading: false, editing: LocalizationListItemEditing(editable: false, editing: false, revealed: false, reorderable: false), sectionId: self.section, alwaysPlain: false, action: {
                     arguments.updateLanguageSelected(code, !value)
                 }, setItemWithRevealedOptions: { _, _ in }, removeItem: { _ in })
         }

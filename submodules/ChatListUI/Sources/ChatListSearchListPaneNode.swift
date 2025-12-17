@@ -367,7 +367,7 @@ private enum ChatListRecentEntry: Comparable, Identifiable {
                     animationCache: animationCache,
                     animationRenderer: animationRenderer,
                     storyStats: storyStats.flatMap { stats in
-                        return (stats.totalCount, unseen: stats.unseenCount, stats.hasUnseenCloseFriends)
+                        return (stats.totalCount, unseen: stats.unseenCount, stats.hasUnseenCloseFriends, hasLiveItems: stats.hasLiveItems)
                     },
                     openStories: { itemPeer, sourceNode in
                         guard case let .peer(_, chatPeer) = itemPeer, let peer = chatPeer else {
@@ -829,7 +829,7 @@ public enum ChatListSearchEntry: Comparable, Identifiable {
                         }
                     }
                 }, arrowAction: nil, animationCache: interaction.animationCache, animationRenderer: interaction.animationRenderer, storyStats: storyStats.flatMap { stats in
-                    return (stats.totalCount, stats.unseenCount, stats.hasUnseenCloseFriends)
+                    return (stats.totalCount, stats.unseenCount, stats.hasUnseenCloseFriends, stats.hasLiveItems)
                 }, openStories: { itemPeer, sourceNode in
                     guard case let .peer(_, chatPeer) = itemPeer, let peer = chatPeer else {
                         return
@@ -1002,7 +1002,7 @@ public enum ChatListSearchEntry: Comparable, Identifiable {
                         }
                     }
                 }, arrowAction: nil, animationCache: interaction.animationCache, animationRenderer: interaction.animationRenderer, storyStats: storyStats.flatMap { stats in
-                    return (stats.totalCount, stats.unseenCount, stats.hasUnseenCloseFriends)
+                    return (stats.totalCount, stats.unseenCount, stats.hasUnseenCloseFriends, stats.hasLiveItems)
                 }, openStories: { itemPeer, sourceNode in
                     guard case let .peer(_, chatPeer) = itemPeer, let peer = chatPeer else {
                         return
@@ -1080,7 +1080,7 @@ public enum ChatListSearchEntry: Comparable, Identifiable {
                         peerContextAction(EnginePeer(peer.peer), .search(nil), node, gesture, location)
                     }
                 }, animationCache: interaction.animationCache, animationRenderer: interaction.animationRenderer, storyStats: storyStats.flatMap { stats in
-                    return (stats.totalCount, stats.unseenCount, stats.hasUnseenCloseFriends)
+                    return (stats.totalCount, stats.unseenCount, stats.hasUnseenCloseFriends, stats.hasLiveItems)
                 }, openStories: { itemPeer, sourceNode in
                     guard case let .peer(_, chatPeer) = itemPeer, let peer = chatPeer else {
                         return
@@ -1205,7 +1205,8 @@ public enum ChatListSearchEntry: Comparable, Identifiable {
                                 stats: EngineChatList.StoryStats(
                                     totalCount: stats.totalCount,
                                     unseenCount: stats.unseenCount,
-                                    hasUnseenCloseFriends: stats.hasUnseenCloseFriends
+                                    hasUnseenCloseFriends: stats.hasUnseenCloseFriends,
+                                    hasLiveItems: stats.hasLiveItems
                                 ),
                                 hasUnseenCloseFriends: stats.hasUnseenCloseFriends
                             )

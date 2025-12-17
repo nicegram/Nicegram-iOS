@@ -165,13 +165,13 @@ private enum ReactionNotificationSettingsEntry: ItemListNodeEntry {
         case let .categoriesHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .messages(title, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: title, text: text, textColor: .accent, value: value, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, text: text, textColor: .accent, value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleMessages(value)
             }, action: {
                 arguments.openMessages()
             })
         case let .stories(title, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: title, text: text, textColor: .accent, value: value, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, text: text, textColor: .accent, value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleStories(value)
             }, action: {
                 arguments.openStories()
@@ -179,11 +179,11 @@ private enum ReactionNotificationSettingsEntry: ItemListNodeEntry {
         case let .optionsHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .previews(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updatePreviews(value)
             })
         case let .sound(text, value, sound):
-            return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                 arguments.openSound(sound)
             }, tag: self.tag)
         }

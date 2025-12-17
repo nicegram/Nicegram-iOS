@@ -12,6 +12,7 @@ import AppBundle
 
 public final class ItemListAddressItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
+    let systemStyle: ItemListSystemStyle
     let label: String
     let text: String
     let imageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?
@@ -25,8 +26,9 @@ public final class ItemListAddressItem: ListViewItem, ItemListItem {
     
     public let tag: Any?
     
-    public init(theme: PresentationTheme, label: String, text: String, imageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?, selected: Bool? = nil, sectionId: ItemListSectionId, style: ItemListStyle, displayDecorations: Bool = true, action: (() -> Void)?, longTapAction: ((ASDisplayNode, String) -> Void)? = nil, linkItemAction: ((TextLinkItemActionType, TextLinkItem) -> Void)? = nil, tag: Any? = nil) {
+    public init(theme: PresentationTheme, systemStyle: ItemListSystemStyle = .legacy, label: String, text: String, imageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?, selected: Bool? = nil, sectionId: ItemListSectionId, style: ItemListStyle, displayDecorations: Bool = true, action: (() -> Void)?, longTapAction: ((ASDisplayNode, String) -> Void)? = nil, linkItemAction: ((TextLinkItemActionType, TextLinkItem) -> Void)? = nil, tag: Any? = nil) {
         self.theme = theme
+        self.systemStyle = systemStyle
         self.label = label
         self.text = text
         self.imageSignal = imageSignal
@@ -167,6 +169,7 @@ public class ItemListAddressItemNode: ListViewItemNode {
             let leftInset: CGFloat = 16.0 + params.leftInset
             let rightInset: CGFloat = 8.0 + params.rightInset
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
@@ -202,11 +205,16 @@ public class ItemListAddressItemNode: ListViewItemNode {
             let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: string, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - leftOffset - leftInset - rightInset - 98.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             let padding: CGFloat = !item.label.isEmpty ? 39.0 : 20.0
             
+            var verticalInset: CGFloat = 0.0
+            if case .glass = item.systemStyle {
+                verticalInset = 4.0
+            }
+            
             let imageSide = min(90.0, max(66.0, textLayout.size.height + padding - 18.0))
             let imageSize = CGSize(width: imageSide, height: imageSide)
-            let imageApply = makeImageLayout(TransformImageArguments(corners: ImageCorners(radius: 4.0), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets()))
+            let imageApply = makeImageLayout(TransformImageArguments(corners: ImageCorners(radius: item.systemStyle == .glass ? 18.0 : 4.0), imageSize: imageSize, boundingSize: imageSize, intrinsicInsets: UIEdgeInsets()))
             
-            let contentSize = CGSize(width: params.width, height: max(textLayout.size.height + padding, imageSize.height + 14.0))
+            let contentSize = CGSize(width: params.width, height: max(textLayout.size.height + padding, imageSize.height + 14.0) + verticalInset * 2.0)
             
             let nodeLayout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             return (nodeLayout, { [weak self] animation in
@@ -264,11 +272,11 @@ public class ItemListAddressItemNode: ListViewItemNode {
                             selectionNode?.removeFromSupernode()
                         })
                     }
+                                        
+                    strongSelf.labelNode.frame = CGRect(origin: CGPoint(x: leftOffset + leftInset, y: verticalInset + 11.0), size: labelLayout.size)
+                    strongSelf.textNode.frame = CGRect(origin: CGPoint(x: leftOffset + leftInset, y: verticalInset + (item.label.isEmpty ? 11.0 : 31.0)), size: textLayout.size)
                     
-                    strongSelf.labelNode.frame = CGRect(origin: CGPoint(x: leftOffset + leftInset, y: 11.0), size: labelLayout.size)
-                    strongSelf.textNode.frame = CGRect(origin: CGPoint(x: leftOffset + leftInset, y: item.label.isEmpty ? 11.0 : 31.0), size: textLayout.size)
-                    
-                    let imageFrame = CGRect(origin: CGPoint(x: params.width - imageSize.width - rightInset, y: 7.0), size: imageSize)
+                    let imageFrame = CGRect(origin: CGPoint(x: params.width - imageSize.width - rightInset - 3.0, y: verticalInset + 7.0), size: imageSize)
                     strongSelf.imageNode.frame = imageFrame
                     
                     if let icon = strongSelf.iconNode.image {
@@ -335,12 +343,12 @@ public class ItemListAddressItemNode: ListViewItemNode {
                                     strongSelf.bottomStripeNode.isHidden = hasCorners || !item.displayDecorations
                             }
                         
-                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                             strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                             strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
+                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     }
                     
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: contentSize.height + UIScreenPixel + UIScreenPixel))

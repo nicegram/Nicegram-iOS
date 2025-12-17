@@ -39,11 +39,19 @@ private func generateBubbleShadowImage(shadow: UIColor, diameter: CGFloat, shado
 
 
 final class ReactionContextBackgroundNode: ASDisplayNode {
+    struct GlassParams {
+        var isTinted: Bool
+        
+        init(isTinted: Bool) {
+            self.isTinted = isTinted
+        }
+    }
+    
     private let largeCircleSize: CGFloat
     private let smallCircleSize: CGFloat
     
     private let backgroundView: BlurredBackgroundView
-    private let glassBackgroundView: GlassBackgroundView?
+    private let glassBackgroundView: (container: GlassBackgroundContainerView, view: GlassBackgroundView)?
     
     private let backgroundTintView: UIView
     private let backgroundTintMaskOuterContainer: UIView
@@ -59,15 +67,17 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
     private let smallCircleLayer: SimpleLayer
     private let smallCircleShadowLayer: SimpleLayer
     
+    private let glass: GlassParams?
     private var theme: PresentationTheme?
     
-    init(glass: Bool, largeCircleSize: CGFloat, smallCircleSize: CGFloat, maskNode: ASDisplayNode) {
+    init(glass: GlassParams?, largeCircleSize: CGFloat, smallCircleSize: CGFloat, maskNode: ASDisplayNode) {
+        self.glass = glass
         self.largeCircleSize = largeCircleSize
         self.smallCircleSize = smallCircleSize
         
         self.backgroundView = BlurredBackgroundView(color: nil, enableBlur: true)
-        if glass {
-            self.glassBackgroundView = GlassBackgroundView()
+        if glass != nil {
+            self.glassBackgroundView = (GlassBackgroundContainerView(), GlassBackgroundView())
         } else {
             self.glassBackgroundView = nil
         }
@@ -119,8 +129,9 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         
         
         if let glassBackgroundView = self.glassBackgroundView {
-            self.view.addSubview(glassBackgroundView)
-            glassBackgroundView.addSubview(self.backgroundTintView)
+            glassBackgroundView.container.contentView.addSubview(glassBackgroundView.view)
+            self.view.addSubview(glassBackgroundView.container)
+            //glassBackgroundView.addSubview(self.backgroundTintView)
             //glassBackgroundView.maskContentView.layer.addSublayer(self.maskLayer)
         } else {
             self.backgroundView.layer.mask = self.maskLayer
@@ -236,8 +247,16 @@ final class ReactionContextBackgroundNode: ASDisplayNode {
         if let glassBackgroundView = self.glassBackgroundView {
             var glassBackgroundFrame = contentBounds.insetBy(dx: 10.0, dy: 10.0)
             glassBackgroundFrame.size.height -= 8.0
-            transition.updateFrame(view: glassBackgroundView, frame: glassBackgroundFrame, beginWithCurrentState: true)
-            glassBackgroundView.update(size: glassBackgroundFrame.size, cornerRadius: 23.0, isDark: true, tintColor: .init(kind: .custom, color: UIColor(rgb: 0x25272e, alpha: 0.72)), transition: ComponentTransition(transition))
+            transition.updateFrame(view: glassBackgroundView.container, frame: glassBackgroundFrame, beginWithCurrentState: true)
+            transition.updateFrame(view: glassBackgroundView.view, frame: CGRect(origin: CGPoint(), size: glassBackgroundFrame.size), beginWithCurrentState: true)
+            let glassTintColor: GlassBackgroundView.TintColor
+            if let glass = self.glass, glass.isTinted {
+                glassTintColor = .init(kind: .custom, color: UIColor(rgb: 0x25272e, alpha: 0.72))
+            } else {
+                glassTintColor = .init(kind: .panel, color: defaultDarkPresentationTheme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+            }
+            glassBackgroundView.container.update(size: glassBackgroundFrame.size, isDark: true, transition: ComponentTransition(transition))
+            glassBackgroundView.view.update(size: glassBackgroundFrame.size, cornerRadius: 23.0, isDark: true, tintColor: glassTintColor, transition: ComponentTransition(transition))
             
             transition.updateFrame(view: self.backgroundTintView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentBounds.width, height: contentBounds.height)).insetBy(dx: -10.0, dy: -10.0))
         } else {

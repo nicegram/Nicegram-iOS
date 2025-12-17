@@ -183,7 +183,7 @@ private enum NotificationSoundSelectionEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .uploadSound(text):
             let icon = PresentationResourcesItemList.uploadToneIcon(presentationData.theme)
-            return ItemListCheckboxItem(presentationData: presentationData, icon: icon, iconSize: nil, iconPlacement: .check, title: text, style: .left, textColor: .accent, checked: false, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: icon, iconSize: nil, iconPlacement: .check, title: text, style: .left, textColor: .accent, checked: false, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.upload()
             })
         case let .cloudInfo(text):
@@ -193,15 +193,15 @@ private enum NotificationSoundSelectionEntry: ItemListNodeEntry {
         case let .classicHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .none(_, _, text, selected):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: true, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: true, sectionId: self.section, action: {
                 arguments.selectSound(.none)
             })
         case let .default(_, _, text, selected):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectSound(.default)
             })
         case let .sound(_, _, _, text, sound, selected, canBeDeleted):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectSound(sound)
             }, deleteAction: canBeDeleted ? {
                 arguments.deleteSound(sound, text)

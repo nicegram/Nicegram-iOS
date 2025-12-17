@@ -12,7 +12,6 @@ import ViewControllerComponent
 import SheetComponent
 import MultilineTextComponent
 import BundleIconComponent
-import SolidRoundedButtonComponent
 import Markdown
 import BalancedTextComponent
 import ConfettiEffect
@@ -22,6 +21,8 @@ import TelegramStringFormatting
 import UndoUI
 import InvisibleInkDustNode
 import PremiumStarComponent
+import GlassBarButtonComponent
+import ButtonComponent
 
 private final class PremiumGiftCodeSheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -74,9 +75,7 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
         var initialized = false
         
         var peerMap: [EnginePeer.Id: EnginePeer] = [:]
-        
-        var cachedCloseImage: (UIImage, PresentationTheme)?
-        
+                
         var inProgress = false
         
         init(context: AccountContext, subject: PremiumGiftCodeScreen.Subject) {
@@ -132,14 +131,14 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(MultilineTextComponent.self)
         let star = Child(PremiumStarComponent.self)
         let description = Child(BalancedTextComponent.self)
         let linkButton = Child(Button.self)
         let table = Child(TableComponent.self)
         let additional = Child(BalancedTextComponent.self)
-        let button = Child(SolidRoundedButtonComponent.self)
+        let button = Child(ButtonComponent.self)
         
         return { context in
             let environment = context.environment[ViewControllerComponentContainer.Environment.self].value
@@ -155,22 +154,23 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             let textSideInset: CGFloat = 32.0 + environment.safeInsets.left
             
-            let closeImage: UIImage
-            if let (image, theme) = state.cachedCloseImage, theme === environment.theme {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: theme.actionSheet.inputClearButtonColor)!
-                state.cachedCloseImage = (closeImage, theme)
-            }
-            
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Image(image: closeImage)),
-                    action: { [weak component] in
-                        component?.cancel(true)
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 40.0, height: 40.0),
+                    backgroundColor: theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { _ in
+                        component.cancel(true)
                     }
                 ),
-                availableSize: CGSize(width: 30.0, height: 30.0),
+                availableSize: CGSize(width: 40.0, height: 40.0),
                 transition: .immediate
             )
             
@@ -312,7 +312,7 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
                         }
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 52.0),
                 transition: .immediate
             )
             
@@ -462,20 +462,21 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
                 availableSize: CGSize(width: context.availableSize.width - textSideInset * 2.0, height: context.availableSize.height),
                 transition: .immediate
             )
-          
+            
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let button = button.update(
-                component: SolidRoundedButtonComponent(
-                    title: buttonText,
-                    theme: SolidRoundedButtonComponent.Theme(theme: theme),
-                    font: .bold,
-                    fontSize: 17.0,
-                    height: 50.0,
-                    cornerRadius: 10.0,
-                    gloss: gloss,
-                    iconName: nil,
-                    animationName: nil,
-                    iconPosition: .left,
-                    isLoading: state.inProgress,
+                component: ButtonComponent(
+                    background: ButtonComponent.Background(
+                        style: .glass,
+                        color: theme.list.itemCheckColors.fillColor,
+                        foreground: theme.list.itemCheckColors.foregroundColor,
+                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                        cornerRadius: 10.0,
+                    ),
+                    content: AnyComponentWithIdentity(
+                        id: AnyHashable(0),
+                        component: AnyComponent(MultilineTextComponent(text: .plain(NSMutableAttributedString(string: buttonText, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center))))
+                    ),
                     action: { [weak state] in
                         if gloss {
                             component.action()
@@ -488,12 +489,12 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
                         }
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
-                transition: context.transition
+                availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0),
+                transition: .immediate
             )
             
             context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: 28.0))
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: 36.0))
             )
             
             context.add(star
@@ -501,7 +502,7 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
             )
             
             var originY: CGFloat = 0.0
-            originY += star.size.height - 32.0
+            originY += star.size.height - 24.0
             
             context.add(description
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + description.size.height / 2.0))
@@ -523,16 +524,17 @@ private final class PremiumGiftCodeSheetContent: CombinedComponent {
             )
             originY += additional.size.height + 23.0
             
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: originY), size: button.size)
             context.add(button
-                .position(CGPoint(x: buttonFrame.midX, y: buttonFrame.midY))
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + button.size.height / 2.0))
             )
+            originY += button.size.height
+            originY += buttonInsets.bottom
             
             context.add(closeButton
-                .position(CGPoint(x: context.availableSize.width - environment.safeInsets.left - closeButton.size.width, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
             
-            let contentSize = CGSize(width: context.availableSize.width, height: buttonFrame.maxY + 5.0 + environment.safeInsets.bottom)
+            let contentSize = CGSize(width: context.availableSize.width, height: originY)
         
             return contentSize
         }
@@ -612,6 +614,7 @@ private final class PremiumGiftCodeSheetComponent: CombinedComponent {
                         shareLink: context.component.shareLink,
                         displayHiddenTooltip: context.component.displayHiddenTooltip
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -799,10 +802,10 @@ final class GiftLinkButtonContentComponent: CombinedComponent {
         return { context in
             let component = context.component
             
-            let sideInset: CGFloat = 38.0
+            let sideInset: CGFloat = 42.0
             
             let background = background.update(
-                component: RoundedRectangle(color: component.isSeparateSection ? component.theme.list.itemBlocksBackgroundColor : component.theme.list.itemInputField.backgroundColor, cornerRadius: 10.0),
+                component: RoundedRectangle(color: component.isSeparateSection ? component.theme.list.itemBlocksBackgroundColor : component.theme.list.itemInputField.backgroundColor, cornerRadius: 26.0),
                 availableSize: context.availableSize,
                 transition: context.transition
             )
@@ -989,8 +992,8 @@ private final class TableComponent: CombinedComponent {
             if let (currentImage, theme) = context.state.cachedBorderImage, theme === context.component.theme {
                 borderImage = currentImage
             } else {
-                let borderRadius: CGFloat = 5.0
-                borderImage = generateImage(CGSize(width: 16.0, height: 16.0), rotatedContext: { size, context in
+                let borderRadius: CGFloat = 14.0
+                borderImage = generateImage(CGSize(width: borderRadius * 2.0 + 6.0, height: borderRadius * 2.0 + 6.0), rotatedContext: { size, context in
                     let bounds = CGRect(origin: .zero, size: size)
                     context.setFillColor(backgroundColor.cgColor)
                     context.fill(bounds)
@@ -1005,7 +1008,7 @@ private final class TableComponent: CombinedComponent {
                     context.setLineWidth(borderWidth)
                     context.addPath(path)
                     context.strokePath()
-                })!.stretchableImage(withLeftCapWidth: 5, topCapHeight: 5)
+                })!.stretchableImage(withLeftCapWidth: Int(borderRadius), topCapHeight: Int(borderRadius))
                 context.state.cachedBorderImage = (borderImage, context.component.theme)
             }
             

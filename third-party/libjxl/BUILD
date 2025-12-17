@@ -78,7 +78,7 @@ genrule(
 
     mkdir -p "$$BUILD_DIR/Public/jxl"
 
-    PATH="$$PATH:$$CMAKE_DIR/cmake-3.23.1-macos-universal/CMake.app/Contents/bin" sh $$BUILD_DIR/build-libjxl-bazel.sh $$BUILD_ARCH "$$BUILD_DIR/libjxl" "$$BUILD_DIR"
+    PATH="$$CMAKE_DIR/cmake-4.1.2-macos-universal/CMake.app/Contents/bin:$$PATH" sh $$BUILD_DIR/build-libjxl-bazel.sh $$BUILD_ARCH "$$BUILD_DIR/libjxl" "$$BUILD_DIR"
     """ +
     "\n".join([
         "cp -f \"$$BUILD_DIR/build/lib/include/{}\" \"$(location Public/{})\"".format(header, header) for header in headers

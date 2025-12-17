@@ -339,20 +339,23 @@ extension ChatControllerImpl {
         
         var items: [ContextMenuItem] = []
         
-        items.append(.action(ContextMenuActionItem(text: strings.Conversation_ContextMenuOpenProfile, icon: { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.contextMenu.primaryColor)
-        }, action: { [weak self] _, f in
-            f(.default)
-            
-            guard let self, let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer else {
-                return
-            }
-            
-            guard let controller = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) else {
+        if let _ = self.chatLocation.threadId {
+        } else {
+            items.append(.action(ContextMenuActionItem(text: strings.Conversation_ContextMenuOpenProfile, icon: { theme in
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.contextMenu.primaryColor)
+            }, action: { [weak self] _, f in
+                f(.default)
+                
+                guard let self, let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer else {
                     return
                 }
-            (self.navigationController as? NavigationController)?.pushViewController(controller)
-        })))
+                
+                guard let controller = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) else {
+                    return
+                }
+                (self.navigationController as? NavigationController)?.pushViewController(controller)
+            })))
+        }
         
         items.append(.separator)
         items.append(.action(ContextMenuActionItem(text: strings.Conversation_Search, icon: { theme in
@@ -363,7 +366,7 @@ extension ChatControllerImpl {
             self?.beginMessageSearch("")
         })))
         
-        if let threadId = self.chatLocation.threadId {
+        if let threadId = self.chatLocation.threadId, let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer, (peer is TelegramChannel || peer is TelegramGroup) {
             items.append(.action(ContextMenuActionItem(text: strings.CreateTopic_EditTitle, icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.contextMenu.primaryColor)
             }, action: { [weak self] action in

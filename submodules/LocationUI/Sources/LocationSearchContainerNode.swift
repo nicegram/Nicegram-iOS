@@ -136,10 +136,11 @@ final class LocationSearchContainerNode: ASDisplayNode {
         self.themeAndStringsPromise = Promise((self.presentationData.theme, self.presentationData.strings))
         
         self.dimNode = ASDisplayNode()
-        self.dimNode.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        self.dimNode.backgroundColor = .clear // UIColor.black.withAlphaComponent(0.5)
+        
         self.listNode = ListView()
         self.listNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
-        self.listNode.isHidden = true
+        self.listNode.alpha = 0.0
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
@@ -147,12 +148,12 @@ final class LocationSearchContainerNode: ASDisplayNode {
         self.emptyResultsTitleNode = ImmediateTextNode()
         self.emptyResultsTitleNode.attributedText = NSAttributedString(string: self.presentationData.strings.SharedMedia_SearchNoResults, font: Font.semibold(17.0), textColor: self.presentationData.theme.list.freeTextColor)
         self.emptyResultsTitleNode.textAlignment = .center
-        self.emptyResultsTitleNode.isHidden = true
+        self.emptyResultsTitleNode.alpha = 0.0
         
         self.emptyResultsTextNode = ImmediateTextNode()
         self.emptyResultsTextNode.maximumNumberOfLines = 0
         self.emptyResultsTextNode.textAlignment = .center
-        self.emptyResultsTextNode.isHidden = true
+        self.emptyResultsTextNode.alpha = 0.0
         
         super.init()
         
@@ -164,9 +165,7 @@ final class LocationSearchContainerNode: ASDisplayNode {
         
         self.addSubnode(self.emptyResultsTitleNode)
         self.addSubnode(self.emptyResultsTextNode)
-        
-        self.listNode.isHidden = true
-        
+                
         let currentLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         let themeAndStringsPromise = self.themeAndStringsPromise
         
@@ -278,7 +277,7 @@ final class LocationSearchContainerNode: ASDisplayNode {
     }
     
     func scrollToTop() {
-        if !self.listNode.isHidden {
+        if self.listNode.alpha > 0.0 {
             self.listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous, .LowLatency], scrollToItem: ListViewScrollToItem(index: 0, position: .top(0.0), animated: true, curve: .Default(duration: nil), directionHint: .Up), updateSizeAndInsets: nil, stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         }
     }
@@ -354,14 +353,16 @@ final class LocationSearchContainerNode: ASDisplayNode {
                 guard let strongSelf = self else {
                     return
                 }
-                strongSelf.listNode.isHidden = !transition.isSearching
+                
+                let containerTransition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .easeInOut)
+                containerTransition.updateAlpha(node: strongSelf.listNode, alpha: transition.isSearching ? 1.0 : 0.0)
                 strongSelf.dimNode.isHidden = transition.isSearching
                 
                 strongSelf.emptyResultsTextNode.attributedText = NSAttributedString(string: strongSelf.presentationData.strings.Map_SearchNoResultsDescription(transition.query).string, font: Font.regular(15.0), textColor: strongSelf.presentationData.theme.list.freeTextColor)
                 
                 let emptyResults = transition.isSearching && transition.isEmpty
-                strongSelf.emptyResultsTitleNode.isHidden = !emptyResults
-                strongSelf.emptyResultsTextNode.isHidden = !emptyResults
+                containerTransition.updateAlpha(node: strongSelf.emptyResultsTitleNode, alpha: emptyResults ? 1.0 : 0.0)
+                containerTransition.updateAlpha(node: strongSelf.emptyResultsTextNode, alpha: emptyResults ? 1.0 : 0.0)
                 
                 if let (layout, navigationBarHeight) = strongSelf.validLayout {
                     strongSelf.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: .immediate)

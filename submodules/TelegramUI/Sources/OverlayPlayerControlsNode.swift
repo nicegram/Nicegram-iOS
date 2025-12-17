@@ -1126,10 +1126,10 @@ final class OverlayPlayerControlsNode: ASDisplayNode {
             } else {
                 profileAudioComponent = AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: self.presentationData.theme.list.itemCheckColors.fillColor,
                         foreground: self.presentationData.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: self.presentationData.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
                     ),
                     content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
                         HStack([

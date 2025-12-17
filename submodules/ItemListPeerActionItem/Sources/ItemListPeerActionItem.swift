@@ -22,6 +22,7 @@ public enum ItemListPeerActionItemColor {
 public class ItemListPeerActionItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
     let style: ItemListStyle
+    let systemStyle: ItemListSystemStyle
     let icon: UIImage?
     let iconSignal: Signal<UIImage?, NoError>?
     let title: String
@@ -35,9 +36,10 @@ public class ItemListPeerActionItem: ListViewItem, ItemListItem {
     public let sectionId: ItemListSectionId
     public let action: (() -> Void)?
     
-    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .blocks, icon: UIImage?, iconSignal: Signal<UIImage?, NoError>? = nil, title: String, additionalBadgeIcon: UIImage? = nil, alwaysPlain: Bool = false, hasSeparator: Bool = true, sectionId: ItemListSectionId, height: ItemListPeerActionItemHeight = .peerList, color: ItemListPeerActionItemColor = .accent, noInsets: Bool = false, editing: Bool = false, action: (() -> Void)?) {
+    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .blocks, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage?, iconSignal: Signal<UIImage?, NoError>? = nil, title: String, additionalBadgeIcon: UIImage? = nil, alwaysPlain: Bool = false, hasSeparator: Bool = true, sectionId: ItemListSectionId, height: ItemListPeerActionItemHeight = .peerList, color: ItemListPeerActionItemColor = .accent, noInsets: Bool = false, editing: Bool = false, action: (() -> Void)?) {
         self.presentationData = presentationData
         self.style = style
+        self.systemStyle = systemStyle
         self.icon = icon
         self.iconSignal = iconSignal
         self.title = title
@@ -186,22 +188,33 @@ public final class ItemListPeerActionItemNode: ListViewItemNode {
             let leftInset: CGFloat
             let iconOffset: CGFloat
             let verticalInset: CGFloat
-            let verticalOffset: CGFloat
             switch item.height {
                 case .generic:
                     iconOffset = 1.0
-                    verticalInset = 12.0
-                    verticalOffset = 0.0
+                    switch item.systemStyle {
+                    case .glass:
+                        verticalInset = 15.0
+                    case .legacy:
+                        verticalInset = 12.0
+                    }
                     leftInset = (item.icon == nil && item.iconSignal == nil ? 16.0 : 59.0) + params.leftInset
                 case .peerList:
                     iconOffset = 3.0
-                    verticalInset = 14.0
-                    verticalOffset = 0.0
+                    switch item.systemStyle {
+                    case .glass:
+                        verticalInset = 15.0
+                    case .legacy:
+                        verticalInset = 14.0
+                    }
                     leftInset = 65.0 + params.leftInset
                 case .compactPeerList:
                     iconOffset = 3.0
-                    verticalInset = 11.0
-                    verticalOffset = 0.0
+                    switch item.systemStyle {
+                    case .glass:
+                        verticalInset = 15.0
+                    case .legacy:
+                        verticalInset = 11.0
+                    }
                     leftInset = 65.0 + params.leftInset
             }
             
@@ -220,6 +233,7 @@ public final class ItemListPeerActionItemNode: ListViewItemNode {
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.title, font: titleFont, textColor: textColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - editingOffset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             var insets = itemListNeighborsGroupedInsets(neighbors, params)
             if item.noInsets {
@@ -264,7 +278,7 @@ public final class ItemListPeerActionItemNode: ListViewItemNode {
                     
                     strongSelf.iconNode.image = item.icon
                     if let image = item.icon {
-                        transition.updateFrame(node: strongSelf.iconNode, frame: CGRect(origin: CGPoint(x: params.leftInset + editingOffset + floor((leftInset - params.leftInset - image.size.width) / 2.0) + iconOffset, y: floor((contentSize.height - image.size.height) / 2.0)), size: image.size))
+                        transition.updateFrame(node: strongSelf.iconNode, frame: CGRect(origin: CGPoint(x: params.leftInset + editingOffset + floor((leftInset - params.leftInset - image.size.width) / 2.0) + iconOffset, y: floorToScreenPixels((contentSize.height - image.size.height) / 2.0)), size: image.size))
                     } else if let iconSignal = item.iconSignal {
                         let imageSize = CGSize(width: 28.0, height: 28.0)
                         strongSelf.iconDisposable.set((iconSignal
@@ -330,15 +344,15 @@ public final class ItemListPeerActionItemNode: ListViewItemNode {
                                 strongSelf.bottomStripeNode.isHidden = hasCorners || !item.hasSeparator
                         }
                             
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
-                        transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
+                        transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - separatorRightInset - params.rightInset, height: separatorHeight)))
                     }
                     
-                    let titleFrame = CGRect(origin: CGPoint(x: leftInset + editingOffset, y: verticalInset + verticalOffset), size: titleLayout.size)
+                    let titleFrame = CGRect(origin: CGPoint(x: leftInset + editingOffset, y: floorToScreenPixels((contentSize.height - titleLayout.size.height) / 2.0) + 1.0), size: titleLayout.size)
                     transition.updateFrame(node: strongSelf.titleNode, frame: titleFrame)
                     
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: layout.contentSize.height + UIScreenPixel + UIScreenPixel))

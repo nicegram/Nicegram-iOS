@@ -55,8 +55,17 @@ func updatePeers(transaction: Transaction, accountPeerId: PeerId, peers: Accumul
                 let isMin = (flags & (1 << 20)) != 0
                 let storiesUnavailable = (flags2 & (1 << 4)) != 0
                 
-                if let storiesMaxId = storiesMaxId {
-                    transaction.setStoryItemsInexactMaxId(peerId: user.peerId, id: storiesMaxId)
+                if let storiesMaxId {
+                    switch storiesMaxId {
+                    case let .recentStory(flags, maxId):
+                        if let maxId {
+                            transaction.setStoryItemsInexactMaxId(peerId: user.peerId, id: maxId, hasLiveItems: (flags & (1 << 0)) != 0)
+                        } else {
+                            if !isMin && storiesUnavailable {
+                                transaction.clearStoryItemsInexactMaxId(peerId: user.peerId)
+                            }
+                        }
+                    }
                 } else if !isMin && storiesUnavailable {
                     transaction.clearStoryItemsInexactMaxId(peerId: user.peerId)
                 }
@@ -76,8 +85,17 @@ func updatePeers(transaction: Transaction, accountPeerId: PeerId, peers: Accumul
             let isMin = (flags & (1 << 12)) != 0
             let storiesUnavailable = (flags2 & (1 << 3)) != 0
             
-            if let storiesMaxId = storiesMaxId {
-                transaction.setStoryItemsInexactMaxId(peerId: chat.peerId, id: storiesMaxId)
+            if let storiesMaxId {
+                switch storiesMaxId {
+                case let .recentStory(flags, maxId):
+                    if let maxId {
+                        transaction.setStoryItemsInexactMaxId(peerId: chat.peerId, id: maxId, hasLiveItems: (flags & (1 << 0)) != 0)
+                    } else {
+                        if !isMin && storiesUnavailable {
+                            transaction.clearStoryItemsInexactMaxId(peerId: chat.peerId)
+                        }
+                    }
+                }
             } else if !isMin && storiesUnavailable {
                 transaction.clearStoryItemsInexactMaxId(peerId: chat.peerId)
             }

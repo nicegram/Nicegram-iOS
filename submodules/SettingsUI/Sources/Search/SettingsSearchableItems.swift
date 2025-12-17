@@ -579,26 +579,28 @@ private func privacySearchableItems(context: AccountContext, privacySettings: Ac
         |> deliverOnMainQueue).start(next: { info, callSettings in
             let current: SelectivePrivacySettings
             switch kind {
-                case .presence:
-                    current = info.presence
-                case .groupInvitations:
-                    current = info.groupInvitations
-                case .voiceCalls:
-                    current = info.voiceCalls
-                case .profilePhoto:
-                    current = info.profilePhoto
-                case .forwards:
-                    current = info.forwards
-                case .phoneNumber:
-                    current = info.phoneNumber
-                case .voiceMessages:
-                    current = info.voiceMessages
-                case .bio:
-                    current = info.bio
-                case .birthday:
-                    current = info.birthday
-                case .giftsAutoSave:
-                    current = info.giftsAutoSave
+            case .presence:
+                current = info.presence
+            case .groupInvitations:
+                current = info.groupInvitations
+            case .voiceCalls:
+                current = info.voiceCalls
+            case .profilePhoto:
+                current = info.profilePhoto
+            case .forwards:
+                current = info.forwards
+            case .phoneNumber:
+                current = info.phoneNumber
+            case .voiceMessages:
+                current = info.voiceMessages
+            case .bio:
+                current = info.bio
+            case .birthday:
+                current = info.birthday
+            case .savedMusic:
+                current = info.savedMusic
+            case .giftsAutoSave:
+                current = info.giftsAutoSave
             }
 
             present(.push, selectivePrivacySettingsController(context: context, kind: kind, current: current, callSettings: callSettings != nil ? (info.voiceCallsP2P, callSettings!.0) : nil, voipConfiguration: callSettings?.1, callIntegrationAvailable: CallKitIntegration.isAvailable, updated: { updated, updatedCallSettings, _, _ in

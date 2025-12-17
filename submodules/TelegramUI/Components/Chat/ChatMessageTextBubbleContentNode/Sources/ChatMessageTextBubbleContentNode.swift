@@ -82,7 +82,10 @@ private func findQuoteRange(string: String, quoteText: String, offset: Int?) -> 
 }
 
 public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
-    private let containerNode: ASDisplayNode
+    public final class ContainerNode: ASDisplayNode {
+    }
+    
+    private let containerNode: ContainerNode
     private let textNode: InteractiveTextNodeWithEntities
     
     private let textAccessibilityOverlayNode: TextAccessibilityOverlayNode
@@ -159,7 +162,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
     }
     
     required public init() {
-        self.containerNode = ASDisplayNode()
+        self.containerNode = ContainerNode()
         self.containerNode.clipsToBounds = true
         
         self.textNode = InteractiveTextNodeWithEntities()

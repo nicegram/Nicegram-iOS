@@ -555,7 +555,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     @discardableResult
-    public func openStoryCamera(customTarget: Stories.PendingTarget?, transitionIn: StoryCameraTransitionIn?, transitionedIn: @escaping () -> Void, transitionOut: @escaping (Stories.PendingTarget?, Bool) -> StoryCameraTransitionOut?) -> StoryCameraTransitionInCoordinator? {
+    public func openStoryCamera(customTarget: Stories.PendingTarget?, resumeLiveStream: Bool, transitionIn: StoryCameraTransitionIn?, transitionedIn: @escaping () -> Void, transitionOut: @escaping (Stories.PendingTarget?, Bool) -> StoryCameraTransitionOut?) -> StoryCameraTransitionInCoordinator? {
         guard let controller = self.viewControllers.last as? ViewController else {
             return nil
         }
@@ -570,6 +570,17 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             transitionOut: nil
         )
         
+        let mediaEditorCustomTarget = customTarget.flatMap { value -> EnginePeer.Id? in
+            switch value {
+            case .myStories:
+                return nil
+            case let .peer(id):
+                return id
+            case let .botPreview(id, _):
+                return id
+            }
+        }
+        
         var presentImpl: ((ViewController) -> Void)?
         var returnToCameraImpl: (() -> Void)?
         var dismissCameraImpl: (() -> Void)?
@@ -577,6 +588,8 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         let cameraController = CameraScreenImpl(
             context: context,
             mode: .story,
+            customTarget: mediaEditorCustomTarget,
+            resumeLiveStream: resumeLiveStream,
             transitionIn: transitionIn.flatMap {
                 if let sourceView = $0.sourceView {
                     return CameraScreenImpl.TransitionIn(
@@ -662,17 +675,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                     )
                 } else {
                     transitionIn = .camera
-                }
-                
-                let mediaEditorCustomTarget = customTarget.flatMap { value -> EnginePeer.Id? in
-                    switch value {
-                    case .myStories:
-                        return nil
-                    case let .peer(id):
-                        return id
-                    case let .botPreview(id, _):
-                        return id
-                    }
                 }
                 
                 let controller = MediaEditorScreenImpl(
@@ -980,6 +982,12 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 }
                 
                 if let media {
+                    #if DEBUG
+                    if !"".isEmpty {
+                        let _ = context.engine.messages.beginStoryLivestream(peerId: context.account.peerId, rtmp: true, privacy: result.options.privacy, isForwardingDisabled: false, messagesEnabled: true, sendPaidMessageStars: 0).startStandalone()
+                    }
+                    #endif
+                    
                     let _ = (context.engine.messages.uploadStory(
                         target: target,
                         media: media,

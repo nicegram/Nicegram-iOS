@@ -13,14 +13,14 @@ enum BotCheckoutActionButtonState: Equatable {
 
 private let titleFont = Font.semibold(17.0)
 
-final class BotCheckoutActionButton: HighlightableButtonNode {
+final class BotCheckoutActionButton: HighlightTrackingButtonNode {
     static var height: CGFloat = 52.0
 
     private var activeFillColor: UIColor
     private var inactiveFillColor: UIColor
     private var foregroundColor: UIColor
 
-    private let activeBackgroundNode: ASImageNode
+    private let activeBackgroundNode: ASDisplayNode
     private var applePayButton: UIButton?
     private let labelNode: TextNode
     
@@ -29,23 +29,17 @@ final class BotCheckoutActionButton: HighlightableButtonNode {
 
     private var placeholderNode: ShimmerEffectNode?
     
-    private var activeImage: UIImage?
-    private var inactiveImage: UIImage?
-    
     init(activeFillColor: UIColor, inactiveFillColor: UIColor, foregroundColor: UIColor) {
         self.activeFillColor = activeFillColor
         self.inactiveFillColor = inactiveFillColor
         self.foregroundColor = foregroundColor
         
-        let diameter: CGFloat = 20.0
-        self.activeImage = generateStretchableFilledCircleImage(diameter: diameter, color: activeFillColor)
-        self.inactiveImage = generateStretchableFilledCircleImage(diameter: diameter, color: inactiveFillColor)
+        let diameter: CGFloat = 52.0
         
-        self.activeBackgroundNode = ASImageNode()
-        self.activeBackgroundNode.displaysAsynchronously = false
-        self.activeBackgroundNode.displayWithoutProcessing = true
+        self.activeBackgroundNode = ASDisplayNode()
         self.activeBackgroundNode.isLayerBacked = true
-        self.activeBackgroundNode.image = self.activeImage
+        self.activeBackgroundNode.backgroundColor = activeFillColor
+        self.activeBackgroundNode.cornerRadius = diameter / 2.0
         
         self.labelNode = TextNode()
         self.labelNode.displaysAsynchronously = false
@@ -55,6 +49,21 @@ final class BotCheckoutActionButton: HighlightableButtonNode {
 
         self.addSubnode(self.activeBackgroundNode)
         self.addSubnode(self.labelNode)
+        
+        self.highligthedChanged = { [weak self] highlighted in
+            guard let self else {
+                return
+            }
+            let transition = ContainedViewLayoutTransition.animated(duration: highlighted ? 0.25 : 0.35, curve: .spring)
+            if highlighted {
+                let highlightedColor = self.activeFillColor.withMultiplied(hue: 1.0, saturation: 0.77, brightness: 1.01)
+                transition.updateBackgroundColor(node: self.activeBackgroundNode, color: highlightedColor)
+                transition.updateTransformScale(node: self, scale: 1.05)
+            } else {
+                transition.updateBackgroundColor(node: self.activeBackgroundNode, color: self.activeFillColor)
+                transition.updateTransformScale(node: self, scale: 1.0)
+            }
+        }
     }
     
     func setState(_ state: BotCheckoutActionButtonState) {
@@ -93,14 +102,8 @@ final class BotCheckoutActionButton: HighlightableButtonNode {
                     placeholderNode.removeFromSupernode()
                 }
                 
-                let image = isEnabled ? self.activeImage : self.inactiveImage
-                if let image = image, let currentImage = self.activeBackgroundNode.image, currentImage !== image {
-                    self.activeBackgroundNode.image = image
-                    self.activeBackgroundNode.layer.animate(from: currentImage.cgImage! as AnyObject, to: image.cgImage! as AnyObject, keyPath: "contents", timingFunction: CAMediaTimingFunctionName.linear.rawValue, duration: 0.2)
-                } else {
-                    self.activeBackgroundNode.image = image
-                }
-
+                self.activeBackgroundNode.backgroundColor = isEnabled ? self.activeFillColor : self.inactiveFillColor
+                
                 let makeLayout = TextNode.asyncLayout(self.labelNode)
                 let (labelLayout, labelApply) = makeLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: title, font: titleFont, textColor: self.foregroundColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: size, alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
                 let _ = labelApply()

@@ -9,8 +9,10 @@ import ButtonComponent
 import ToastComponent
 import LottieComponent
 import MultilineTextComponent
+import BundleIconComponent
 import Markdown
 import TelegramStringFormatting
+import GlassBarButtonComponent
 
 private final class StoryStealthModeSheetContentComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -176,40 +178,7 @@ private final class StoryStealthModeSheetContentComponent: Component {
                     }
                 }
             }
-            
-            if case .upgrade = component.mode {
-                let cancelButton: ComponentView<Empty>
-                if let current = self.cancelButton {
-                    cancelButton = current
-                } else {
-                    cancelButton = ComponentView()
-                    self.cancelButton = cancelButton
-                }
-                let cancelButtonSize = cancelButton.update(
-                    transition: transition,
-                    component: AnyComponent(Button(
-                        content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: environment.theme.list.itemAccentColor)),
-                        action: { [weak self] in
-                            guard let self, let component = self.component else {
-                                return
-                            }
-                            component.dismiss()
-                        }
-                    ).minSize(CGSize(width: 8.0, height: 44.0))),
-                    environment: {},
-                    containerSize: CGSize(width: 200.0, height: 100.0)
-                )
-                if let cancelButtonView = cancelButton.view {
-                    if cancelButtonView.superview == nil {
-                        self.addSubview(cancelButtonView)
-                    }
-                    transition.setFrame(view: cancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0, y: 6.0), size: cancelButtonSize))
-                }
-            } else if let cancelButton = self.cancelButton {
-                self.cancelButton = nil
-                cancelButton.view?.removeFromSuperview()
-            }
-            
+             
             var contentHeight: CGFloat = 0.0
             contentHeight += 32.0
             
@@ -240,6 +209,45 @@ private final class StoryStealthModeSheetContentComponent: Component {
             contentHeight += contentSize.height
             contentHeight += 41.0
             
+            if case .upgrade = component.mode {
+                let cancelButton: ComponentView<Empty>
+                if let current = self.cancelButton {
+                    cancelButton = current
+                } else {
+                    cancelButton = ComponentView()
+                    self.cancelButton = cancelButton
+                }
+                let cancelButtonSize = cancelButton.update(
+                    transition: transition,
+                    component: AnyComponent(GlassBarButtonComponent(
+                        size: CGSize(width: 40.0, height: 40.0),
+                        backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .generic,
+                        component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                            BundleIconComponent(
+                                name: "Navigation/Close",
+                                tintColor: environment.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                            )
+                        )),
+                        action: { _ in
+                            component.dismiss()
+                        }
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: 40.0, height: 40.0)
+                )
+                if let cancelButtonView = cancelButton.view {
+                    if cancelButtonView.superview == nil {
+                        self.addSubview(cancelButtonView)
+                    }
+                    transition.setFrame(view: cancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelButtonSize))
+                }
+            } else if let cancelButton = self.cancelButton {
+                self.cancelButton = nil
+                cancelButton.view?.removeFromSuperview()
+            }
+            
             let buttonText: String
             let content: AnyComponentWithIdentity<Empty>
             switch component.mode {
@@ -266,10 +274,12 @@ private final class StoryStealthModeSheetContentComponent: Component {
                 ))
             }
 
+            let buttonSideInset: CGFloat = 30.0
             let buttonSize = self.button.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -302,9 +312,9 @@ private final class StoryStealthModeSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -316,7 +326,7 @@ private final class StoryStealthModeSheetContentComponent: Component {
             if environment.safeInsets.bottom.isZero {
                 contentHeight += 16.0
             } else {
-                contentHeight += environment.safeInsets.bottom + 14.0
+                contentHeight += environment.safeInsets.bottom + 10.0
             }
             
             return CGSize(width: availableSize.width, height: contentHeight)
@@ -438,6 +448,7 @@ private final class StoryStealthModeSheetScreenComponent: Component {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.overallDarkAppearance ? environment.theme.list.itemBlocksBackgroundColor : environment.theme.list.blocksBackgroundColor),
                     animateOut: self.sheetAnimateOut
                 )),

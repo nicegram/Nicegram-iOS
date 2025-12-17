@@ -318,7 +318,13 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         }
         
         var setupProximityNotificationImpl: ((Bool) -> Void)?
-        self.headerNode = LocationMapHeaderNode(presentationData: presentationData, toggleMapModeSelection: interaction.toggleMapModeSelection, goToUserLocation: interaction.toggleTrackingMode, setupProximityNotification: { reset in
+        self.headerNode = LocationMapHeaderNode(
+            presentationData: presentationData,
+            glass: false,
+            toggleMapModeSelection: interaction.toggleMapModeSelection,
+            updateMapMode: interaction.updateMapMode,
+            goToUserLocation: interaction.toggleTrackingMode,
+            setupProximityNotification: { reset in
             setupProximityNotificationImpl?(reset)
         })
         //self.headerNode.mapNode.isRotateEnabled = false
@@ -714,7 +720,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
             strongSelf.listOffset = max(0.0, offset)
             let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(0.0, offset + overlap)))
             listTransition.updateFrame(node: strongSelf.headerNode, frame: headerFrame)
-            strongSelf.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
+            strongSelf.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsBottomPadding: 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
         }
         
         self.listNode.beganInteractiveDragging = { [weak self] _ in
@@ -952,7 +958,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: headerHeight))
         transition.updateFrame(node: self.headerNode, frame: headerFrame)
         
-        self.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationHeight, topPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, controlsTopPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, offset: 0.0, size: headerFrame.size, transition: transition)
+        self.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationHeight, topPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, controlsTopPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, controlsBottomPadding: 0.0, offset: 0.0, size: headerFrame.size, transition: transition)
         
         let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
         

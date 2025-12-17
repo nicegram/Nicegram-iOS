@@ -52,7 +52,7 @@ final class PeerInfoAvatarTransformContainerNode: ASDisplayNode {
     
     private let playbackStartDisposable = MetaDisposable()
     
-    var storyData: (totalCount: Int, unseenCount: Int, hasUnseenCloseFriends: Bool)?
+    var storyData: (totalCount: Int, unseenCount: Int, hasUnseenCloseFriends: Bool, hasLiveItems: Bool)?
     var storyProgress: Float?
     
     init(context: AccountContext) {
@@ -146,6 +146,7 @@ final class PeerInfoAvatarTransformContainerNode: ASDisplayNode {
                 totalCount: storyData.totalCount,
                 unseenCount: storyData.unseenCount,
                 hasUnseenCloseFriendsItems: storyData.hasUnseenCloseFriends,
+                hasLiveItems: storyData.hasLiveItems,
                 progress: self.storyProgress
             )
         } else if let storyProgress = self.storyProgress {
@@ -153,6 +154,7 @@ final class PeerInfoAvatarTransformContainerNode: ASDisplayNode {
                 totalCount: 1,
                 unseenCount: 1,
                 hasUnseenCloseFriendsItems: false,
+                hasLiveItems: false,
                 progress: storyProgress
             )
         }

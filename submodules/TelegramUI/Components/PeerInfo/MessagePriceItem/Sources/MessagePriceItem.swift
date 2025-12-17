@@ -20,6 +20,7 @@ private let smallTextFont = Font.with(size: 13.0, traits: .monospacedNumbers)
 public final class MessagePriceItem: Equatable, ListViewItem, ItemListItem, ListItemComponentAdaptor.ItemGenerator {
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let systemStyle: ItemListSystemStyle
     let isEnabled: Bool
     let minValue: Int64
     let maxValue: Int64
@@ -30,9 +31,10 @@ public final class MessagePriceItem: Equatable, ListViewItem, ItemListItem, List
     let openSetCustom: (() -> Void)?
     let openPremiumInfo: (() -> Void)?
     
-    public init(theme: PresentationTheme, strings: PresentationStrings, isEnabled: Bool, minValue: Int64, maxValue: Int64, value: Int64, price: String, sectionId: ItemListSectionId, updated: @escaping (Int64, Bool) -> Void, openSetCustom: (() -> Void)? = nil, openPremiumInfo: (() -> Void)? = nil) {
+    public init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, isEnabled: Bool, minValue: Int64, maxValue: Int64, value: Int64, price: String, sectionId: ItemListSectionId, updated: @escaping (Int64, Bool) -> Void, openSetCustom: (() -> Void)? = nil, openPremiumInfo: (() -> Void)? = nil) {
         self.theme = theme
         self.strings = strings
+        self.systemStyle = systemStyle
         self.isEnabled = isEnabled
         self.minValue = minValue
         self.maxValue = maxValue
@@ -248,7 +250,6 @@ private class MessagePriceItemNode: ListViewItemNode {
         self.addSubnode(self.leftTextNode)
         self.addSubnode(self.rightTextNode)
         self.addSubnode(self.centerTextButtonNode)
-        self.centerTextButtonNode.view.addSubview(self.centerTextButtonBackground)
         self.centerTextButtonNode.addSubnode(self.centerLeftTextNode)
         self.centerTextButtonNode.addSubnode(self.centerRightTextNode)
         self.addSubnode(self.lockIconNode)
@@ -283,6 +284,8 @@ private class MessagePriceItemNode: ListViewItemNode {
         self.view.addSubview(sliderView)
         sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
         self.sliderView = sliderView
+        
+        self.centerTextButtonNode.view.insertSubview(self.centerTextButtonBackground, at: 0)
     }
     
     @objc private func centerTextButtonPressed() {
@@ -301,6 +304,7 @@ private class MessagePriceItemNode: ListViewItemNode {
             var contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             contentSize = CGSize(width: params.width, height: 88.0)
             if !item.isEnabled {
@@ -358,20 +362,20 @@ private class MessagePriceItemNode: ListViewItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
-                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
+                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     
                     strongSelf.leftTextNode.attributedText = NSAttributedString(string: "\(item.minValue)", font: Font.regular(13.0), textColor: item.theme.list.itemSecondaryTextColor)
                     strongSelf.rightTextNode.attributedText = NSAttributedString(string: "\(item.maxValue)", font: Font.regular(13.0), textColor: item.theme.list.itemSecondaryTextColor)
                     
                     let centralLeftText = item.value == 0 ? item.strings.Stars_SendMessage_PriceFree : item.strings.Privacy_Messages_Stars(Int32(clamping: item.value))
                     
-                    strongSelf.centerLeftTextNode.attributedText = NSAttributedString(string: centralLeftText, font: textFont, textColor: item.openSetCustom != nil ? item.theme.list.itemAccentColor : item.theme.list.itemPrimaryTextColor)
-                    strongSelf.centerRightTextNode.attributedText = NSAttributedString(string: item.price, font: smallTextFont, textColor: item.openSetCustom != nil ? item.theme.list.itemAccentColor.withMultipliedAlpha(0.5) : item.theme.list.itemSecondaryTextColor)
+                    strongSelf.centerLeftTextNode.attributedText = NSAttributedString(string: centralLeftText, font: textFont, textColor: item.openSetCustom != nil && item.isEnabled ? item.theme.list.itemAccentColor : item.theme.list.itemPrimaryTextColor)
+                    strongSelf.centerRightTextNode.attributedText = NSAttributedString(string: item.price, font: smallTextFont, textColor: item.openSetCustom != nil && item.isEnabled ? item.theme.list.itemAccentColor.withMultipliedAlpha(0.5) : item.theme.list.itemSecondaryTextColor)
                     
                     let leftTextSize = strongSelf.leftTextNode.updateLayout(CGSize(width: 100.0, height: 100.0))
                     let rightTextSize = strongSelf.rightTextNode.updateLayout(CGSize(width: 100.0, height: 100.0))
@@ -398,7 +402,7 @@ private class MessagePriceItemNode: ListViewItemNode {
                     }
                     strongSelf.centerTextButtonBackground.tintColor = item.theme.list.itemAccentColor.withMultipliedAlpha(0.1)
                     
-                    if item.openSetCustom != nil {
+                    if item.openSetCustom != nil && item.isEnabled {
                         strongSelf.centerTextButtonNode.isEnabled = true
                         strongSelf.centerTextButtonBackground.isHidden = false
                     } else {
@@ -442,12 +446,13 @@ private class MessagePriceItemNode: ListViewItemNode {
                         }
                         
                         let sideInset: CGFloat = 16.0
-                        let buttonSize = CGSize(width: params.width - params.leftInset - params.rightInset - sideInset * 2.0, height: 50.0)
+                        let buttonSize = CGSize(width: params.width - params.leftInset - params.rightInset - sideInset * 2.0, height: 52.0)
                         let _ = strongSelf.button.update(
                             transition: .immediate,
                             component: AnyComponent(
                                 ButtonComponent(
                                     background: ButtonComponent.Background(
+                                        style: .glass,
                                         color: item.theme.list.itemCheckColors.fillColor,
                                         foreground: item.theme.list.itemCheckColors.foregroundColor,
                                         pressedColor: item.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)

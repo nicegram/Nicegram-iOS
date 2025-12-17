@@ -44,15 +44,17 @@ class ThemeSettingsAppIconItem: ListViewItem, ItemListItem {
     
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let systemStyle: ItemListSystemStyle
     let icons: [PresentationAppIcon]
     let isPremium: Bool
     let currentIconName: String?
     let updated: (PresentationAppIcon) -> Void
     let tag: ItemListItemTag?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, sectionId: ItemListSectionId, icons: [PresentationAppIcon], isPremium: Bool, currentIconName: String?, updated: @escaping (PresentationAppIcon) -> Void, tag: ItemListItemTag? = nil) {
+    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle, sectionId: ItemListSectionId, icons: [PresentationAppIcon], isPremium: Bool, currentIconName: String?, updated: @escaping (PresentationAppIcon) -> Void, tag: ItemListItemTag? = nil) {
         self.theme = theme
         self.strings = strings
+        self.systemStyle = systemStyle
         self.icons = icons
         self.isPremium = isPremium
         self.currentIconName = currentIconName
@@ -316,7 +318,7 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)

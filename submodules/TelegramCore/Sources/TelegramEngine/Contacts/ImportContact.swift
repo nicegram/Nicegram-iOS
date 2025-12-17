@@ -3,10 +3,17 @@ import TelegramApi
 import SwiftSignalKit
 
 
-func _internal_importContact(account: Account, firstName: String, lastName: String, phoneNumber: String) -> Signal<PeerId?, NoError> {
+func _internal_importContact(account: Account, firstName: String, lastName: String, phoneNumber: String, noteText: String, noteEntities: [MessageTextEntity]) -> Signal<PeerId?, NoError> {
     let accountPeerId = account.peerId
     
-    let input = Api.InputContact.inputPhoneContact(clientId: 1, phone: phoneNumber, firstName: firstName, lastName: lastName)
+    var flags: Int32 = 0
+    var note: Api.TextWithEntities?
+    if !noteText.isEmpty {
+        flags |= (1 << 1)
+        note = .textWithEntities(text: noteText, entities: apiEntitiesFromMessageTextEntities(noteEntities, associatedPeers: SimpleDictionary()))
+    }
+    
+    let input = Api.InputContact.inputPhoneContact(flags: 0, clientId: 1, phone: phoneNumber, firstName: firstName, lastName: lastName, note: note)
     
     return account.network.request(Api.functions.contacts.importContacts(contacts: [input]))
     |> map(Optional.init)
@@ -28,6 +35,11 @@ func _internal_importContact(account: Account, firstName: String, lastName: Stri
                                 peerIds.insert(peerId)
                                 transaction.replaceContactPeerIds(peerIds)
                             }
+                            if !noteText.isEmpty {
+                                transaction.updatePeerCachedData(peerIds: [peerId], update: { peerId, cachedData in
+                                    (cachedData as? CachedUserData)?.withUpdatedNote(.init(text: noteText, entities: noteEntities))
+                                })
+                            }
                             return peerId
                         }
                 }
@@ -41,7 +53,7 @@ public enum AddContactError {
     case generic
 }
 
-func _internal_addContactInteractively(account: Account, peerId: PeerId, firstName: String, lastName: String, phoneNumber: String, addToPrivacyExceptions: Bool) -> Signal<Never, AddContactError> {
+func _internal_addContactInteractively(account: Account, peerId: PeerId, firstName: String, lastName: String, phoneNumber: String, noteText: String, noteEntities: [MessageTextEntity], addToPrivacyExceptions: Bool) -> Signal<Never, AddContactError> {
     let accountPeerId = account.peerId
     
     return account.postbox.transaction { transaction -> (Api.InputUser, String)? in
@@ -60,7 +72,12 @@ func _internal_addContactInteractively(account: Account, peerId: PeerId, firstNa
         if addToPrivacyExceptions {
             flags |= (1 << 0)
         }
-        return account.network.request(Api.functions.contacts.addContact(flags: flags, id: inputUser, firstName: firstName, lastName: lastName, phone: phone, note: nil))
+        var note: Api.TextWithEntities?
+        if !noteText.isEmpty {
+            flags |= (1 << 1)
+            note = .textWithEntities(text: noteText, entities: apiEntitiesFromMessageTextEntities(noteEntities, associatedPeers: SimpleDictionary()))
+        }
+        return account.network.request(Api.functions.contacts.addContact(flags: flags, id: inputUser, firstName: firstName, lastName: lastName, phone: phone, note: note))
         |> mapError { _ -> AddContactError in
             return .generic
         }
@@ -80,6 +97,11 @@ func _internal_addContactInteractively(account: Account, peerId: PeerId, firstNa
                 if !peerIds.contains(peerId) {
                     peerIds.insert(peerId)
                     transaction.replaceContactPeerIds(peerIds)
+                }
+                if !noteText.isEmpty {
+                    transaction.updatePeerCachedData(peerIds: [peerId], update: { peerId, cachedData in
+                        (cachedData as? CachedUserData)?.withUpdatedNote(.init(text: noteText, entities: noteEntities))
+                    })
                 }
                 
                 account.stateManager.addUpdates(result)

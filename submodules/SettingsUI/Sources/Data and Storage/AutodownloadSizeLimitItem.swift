@@ -51,6 +51,7 @@ private func sizeValue(for sliderValue: CGFloat) -> Int64 {
 final class AutodownloadSizeLimitItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let systemStyle: ItemListSystemStyle
     let decimalSeparator: String
     let text: String
     let value: Int64
@@ -58,9 +59,10 @@ final class AutodownloadSizeLimitItem: ListViewItem, ItemListItem {
     let sectionId: ItemListSectionId
     let updated: (Int64) -> Void
     
-    init(theme: PresentationTheme, strings: PresentationStrings, decimalSeparator: String, text: String, value: Int64, range: Range<Int64>?, sectionId: ItemListSectionId, updated: @escaping (Int64) -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, decimalSeparator: String, text: String, value: Int64, range: Range<Int64>?, sectionId: ItemListSectionId, updated: @escaping (Int64) -> Void) {
         self.theme = theme
         self.strings = strings
+        self.systemStyle = systemStyle
         self.decimalSeparator = decimalSeparator
         self.text = text
         self.value = value
@@ -192,6 +194,7 @@ private final class AutodownloadSizeLimitItemNode: ListViewItemNode {
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.text, font: Font.regular(17.0), textColor: item.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width, height: CGFloat.greatestFiniteMagnitude), alignment: .center, lineSpacing: 0.0, cutout: nil, insets: UIEdgeInsets()))
             
@@ -255,12 +258,12 @@ private final class AutodownloadSizeLimitItemNode: ListViewItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
-                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
+                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - separatorRightInset, height: separatorHeight))
                     
                     let _ = textApply()
                     strongSelf.textNode.frame = CGRect(origin: CGPoint(x: floor((params.width - textLayout.size.width) / 2.0), y: 12.0), size: textLayout.size)

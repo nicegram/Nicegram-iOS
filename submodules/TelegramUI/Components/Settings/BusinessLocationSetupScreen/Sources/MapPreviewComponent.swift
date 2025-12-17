@@ -56,6 +56,7 @@ final class MapPreviewComponent: Component {
         private let pinForegroundView: UIImageView
         
         var customUpdateIsHighlighted: ((Bool) -> Void)?
+        var enumerateSiblings: (((UIView) -> Void) -> Void)?
         private(set) var separatorInset: CGFloat = 0.0
         
         override init(frame: CGRect) {

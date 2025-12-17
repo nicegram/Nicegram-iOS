@@ -1431,7 +1431,7 @@ public final class AccountViewTracker {
                             }
                             startIndex += batchCount
                             requests.append(account.network.request(Api.functions.stories.getPeerMaxIDs(id: slice.map(\.1)))
-                            |> `catch` { _ -> Signal<[Int32], NoError> in
+                            |> `catch` { _ -> Signal<[Api.RecentStory], NoError> in
                                 return .single([])
                             }
                             |> mapToSignal { result -> Signal<Never, NoError> in
@@ -1439,10 +1439,13 @@ public final class AccountViewTracker {
                                     for i in 0 ..< result.count {
                                         if i < slice.count {
                                             let value = result[i]
-                                            if value <= 0 {
-                                                transaction.clearStoryItemsInexactMaxId(peerId: slice[i].0)
-                                            } else {
-                                                transaction.setStoryItemsInexactMaxId(peerId: slice[i].0, id: value)
+                                            switch value {
+                                            case let .recentStory(flags, maxId):
+                                                if let maxId {
+                                                    transaction.setStoryItemsInexactMaxId(peerId: slice[i].0, id: maxId, hasLiveItems: (flags & (1 << 0)) != 0)
+                                                } else {
+                                                    transaction.clearStoryItemsInexactMaxId(peerId: slice[i].0)
+                                                }
                                             }
                                         }
                                     }

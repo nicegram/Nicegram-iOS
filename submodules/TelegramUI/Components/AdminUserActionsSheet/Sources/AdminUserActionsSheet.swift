@@ -427,6 +427,14 @@ private final class AdminUserActionsSheetComponent: Component {
             )
         }
         
+        private func calculateLiveStreamResult() -> AdminUserActionsSheet.LiveStreamResult { 
+            return AdminUserActionsSheet.LiveStreamResult(
+                reportSpam: !self.optionReportSelectedPeers.isEmpty,
+                deleteAll: !self.optionDeleteAllSelectedPeers.isEmpty,
+                ban: !self.optionBanSelectedPeers.isEmpty
+            )
+        }
+        
         private func updateScrolling(transition: ComponentTransition) {
             guard let environment = self.environment, let controller = environment.controller(), let itemLayout = self.itemLayout else {
                 return
@@ -578,7 +586,7 @@ private final class AdminUserActionsSheetComponent: Component {
             
             if themeUpdated {
                 self.dimView.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
-                self.backgroundLayer.backgroundColor = environment.theme.list.blocksBackgroundColor.cgColor
+                self.backgroundLayer.backgroundColor = environment.theme.actionSheet.opaqueItemBackgroundColor.cgColor
                 
                 self.navigationBackgroundView.updateColor(color: environment.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
                 self.navigationBarSeparator.backgroundColor = environment.theme.rootController.navigationBar.separatorColor.cgColor
@@ -663,6 +671,9 @@ private final class AdminUserActionsSheetComponent: Component {
                         }
                     }
                 }
+            case .liveStream:
+                availableOptions.append(.deleteAll)
+                availableOptions.append(.ban)
             }
             
             let optionsItem: (OptionsSection) -> AnyComponentWithIdentity<Empty> = { section in
@@ -912,6 +923,13 @@ private final class AdminUserActionsSheetComponent: Component {
                         titleString = environment.strings.Chat_AdminActionSheet_DeleteTitle(Int32(deleteAllMessageCount))
                     }
                 }
+            case let .liveStream(messageCount, deleteAllMessageCount, _):
+                titleString = environment.strings.Chat_AdminActionSheet_DeleteTitle(Int32(messageCount))
+                if let deleteAllMessageCount {
+                    if self.optionDeleteAllSelectedPeers == Set(component.peers.map(\.peer.id)) {
+                        titleString = environment.strings.Chat_AdminActionSheet_DeleteTitle(Int32(deleteAllMessageCount))
+                    }
+                }
             }
             
             let titleSize = self.title.update(
@@ -965,6 +983,7 @@ private final class AdminUserActionsSheetComponent: Component {
                 transition: optionsSectionTransition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.Chat_AdminActionSheet_RestrictSectionHeader,
@@ -974,7 +993,8 @@ private final class AdminUserActionsSheetComponent: Component {
                         maximumNumberOfLines: 0
                     )),
                     footer: nil,
-                    items: optionsSectionItems
+                    items: optionsSectionItems,
+                    isModal: true
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100000.0)
@@ -1042,6 +1062,7 @@ private final class AdminUserActionsSheetComponent: Component {
             }
             
             if case let .channel(channel) = component.chatPeer, channel.isMonoForum {
+            } else if case .liveStream = component.mode {
             } else {
                 var allConfigItems: [(ConfigItem, Bool)] = []
                 if !self.allowedMediaRights.isEmpty || !self.allowedParticipantRights.isEmpty {
@@ -1362,9 +1383,11 @@ private final class AdminUserActionsSheetComponent: Component {
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                        pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                        cornerRadius: 54.0 * 0.5
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -1389,11 +1412,13 @@ private final class AdminUserActionsSheetComponent: Component {
                             completion(self.calculateMonoforumResult())
                         case let .chat(_, _, completion):
                             completion(self.calculateChatResult())
+                        case let .liveStream(_, _, completion):
+                            completion(self.calculateLiveStreamResult())
                         }
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 54.0)
             )
             let bottomPanelHeight = 8.0 + environment.safeInsets.bottom + actionButtonSize.height
             let actionButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: availableSize.height - bottomPanelHeight), size: actionButtonSize)
@@ -1462,6 +1487,7 @@ private final class AdminUserActionsSheetComponent: Component {
 public class AdminUserActionsSheet: ViewControllerComponentContainer {
     public enum Mode {
         case chat(messageCount: Int, deleteAllMessageCount: Int?, completion: (ChatResult) -> Void)
+        case liveStream(messageCount: Int, deleteAllMessageCount: Int?, completion: (LiveStreamResult) -> Void)
         case monoforum(completion: (MonoforumResult) -> Void)
     }
     
@@ -1479,6 +1505,18 @@ public class AdminUserActionsSheet: ViewControllerComponentContainer {
         }
     }
     
+    public final class LiveStreamResult {
+        public let reportSpam: Bool
+        public let deleteAll: Bool
+        public let ban: Bool
+        
+        init(reportSpam: Bool, deleteAll: Bool, ban: Bool) {
+            self.reportSpam = reportSpam
+            self.deleteAll = deleteAll
+            self.ban = ban
+        }
+    }
+    
     public final class MonoforumResult {
         public let ban: Bool
         public let reportSpam: Bool
@@ -1493,9 +1531,9 @@ public class AdminUserActionsSheet: ViewControllerComponentContainer {
     
     private var isDismissed: Bool = false
     
-    public init(context: AccountContext, chatPeer: EnginePeer, peers: [RenderedChannelParticipant], mode: Mode) {
+    public init(context: AccountContext, chatPeer: EnginePeer, peers: [RenderedChannelParticipant], mode: Mode, customTheme: PresentationTheme? = nil) {
         self.context = context
-        super.init(context: context, component: AdminUserActionsSheetComponent(context: context, chatPeer: chatPeer, peers: peers, mode: mode), navigationBarAppearance: .none)
+        super.init(context: context, component: AdminUserActionsSheetComponent(context: context, chatPeer: chatPeer, peers: peers, mode: mode), navigationBarAppearance: .none, theme: customTheme.flatMap({ .custom($0) }) ?? .default)
         
         self.statusBar.statusBarStyle = .Ignore
         self.navigationPresentation = .flatModal

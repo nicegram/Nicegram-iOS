@@ -46,6 +46,8 @@ final class NavigationTransitionCoordinator {
     private let shadowNode: ASImageNode
     private let customTransitionNode: CustomNavigationTransitionNode?
     
+    private var topNodeInitialParameters: (clipsToBounds: Bool, cornerRadius: CGFloat)?
+    
     private let inlineNavigationBarTransition: Bool
     
     private(set) var animatingCompletion = false
@@ -54,7 +56,7 @@ final class NavigationTransitionCoordinator {
     
     private var frameRateLink: SharedDisplayLinkDriver.Link?
     
-    init(transition: NavigationTransition, isInteractive: Bool, isFlat: Bool, container: NavigationContainer, topNode: ASDisplayNode, topNavigationBar: NavigationBar?, bottomNode: ASDisplayNode, bottomNavigationBar: NavigationBar?, didUpdateProgress: ((CGFloat, ContainedViewLayoutTransition, CGRect, CGRect) -> Void)? = nil) {
+    init(transition: NavigationTransition, isInteractive: Bool, isFlat: Bool, container: NavigationContainer, topNode: ASDisplayNode, topNavigationBar: NavigationBar?, bottomNode: ASDisplayNode, bottomNavigationBar: NavigationBar?, screenCornerRadius: CGFloat, didUpdateProgress: ((CGFloat, ContainedViewLayoutTransition, CGRect, CGRect) -> Void)? = nil) {
         self.transition = transition
         self.isInteractive = isInteractive
         self.isFlat = isFlat
@@ -109,6 +111,15 @@ final class NavigationTransitionCoordinator {
         if !self.isFlat {
             self.container.insertSubnode(self.dimNode, belowSubnode: topNode)
             self.container.insertSubnode(self.shadowNode, belowSubnode: self.dimNode)
+            
+            if screenCornerRadius > 0.0 {
+                self.topNodeInitialParameters = (topNode.clipsToBounds, topNode.cornerRadius)
+                if #available(iOS 13.0, *) {
+                    topNode.layer.cornerCurve = .continuous
+                }
+                topNode.clipsToBounds = true
+                topNode.cornerRadius = screenCornerRadius
+            }
         }
         if let customTransitionNode = self.customTransitionNode {
             self.container.addSubnode(customTransitionNode)
@@ -159,7 +170,7 @@ final class NavigationTransitionCoordinator {
             }
         })
         canInvokeCompletion = true
-        transition.updateFrame(node: self.dimNode, frame: CGRect(origin: CGPoint(x: 0.0, y: dimInset), size: CGSize(width: max(0.0, topFrame.minX + self.container.overflowInset), height: self.container.bounds.size.height - dimInset)))
+        transition.updateFrame(node: self.dimNode, frame: CGRect(origin: CGPoint(x: 0.0, y: dimInset), size: CGSize(width: max(0.0, topFrame.minX + self.container.overflowInset + 62.0), height: self.container.bounds.size.height - dimInset)))
         transition.updateFrame(node: self.shadowNode, frame: CGRect(origin: CGPoint(x: self.dimNode.frame.maxX - shadowWidth, y: dimInset), size: CGSize(width: shadowWidth, height: containerSize.height - dimInset)))
         transition.updateAlpha(node: self.dimNode, alpha: (1.0 - position) * 0.15)
         transition.updateAlpha(node: self.shadowNode, alpha: (1.0 - position) * 0.9)
@@ -241,6 +252,8 @@ final class NavigationTransitionCoordinator {
             
             strongSelf.endNavigationBarTransition()
             
+            strongSelf.restoreTopNodeCorners()
+            
             if let currentCompletion = strongSelf.currentCompletion {
                 strongSelf.currentCompletion = nil
                 currentCompletion()
@@ -261,6 +274,8 @@ final class NavigationTransitionCoordinator {
         
         self.endNavigationBarTransition()
         
+        self.restoreTopNodeCorners()
+        
         if let currentCompletion = self.currentCompletion {
             self.currentCompletion = nil
             currentCompletion()
@@ -277,6 +292,8 @@ final class NavigationTransitionCoordinator {
                 strongSelf.customTransitionNode?.removeFromSupernode()
                 
                 strongSelf.endNavigationBarTransition()
+                
+                strongSelf.restoreTopNodeCorners()
                 
                 if let currentCompletion = strongSelf.currentCompletion {
                     strongSelf.currentCompletion = nil
@@ -300,6 +317,8 @@ final class NavigationTransitionCoordinator {
             
             self.endNavigationBarTransition()
             
+            self.restoreTopNodeCorners()
+            
             if let currentCompletion = self.currentCompletion {
                 self.currentCompletion = nil
                 currentCompletion()
@@ -315,5 +334,16 @@ final class NavigationTransitionCoordinator {
                 f()
             })
         }
+    }
+    
+    private func restoreTopNodeCorners() {
+        guard let (clipsToBounds, cornerRadius) = self.topNodeInitialParameters else {
+            return
+        }
+        if #available(iOS 13.0, *) {
+            self.topNode.layer.cornerCurve = .circular
+        }
+        self.topNode.clipsToBounds = clipsToBounds
+        self.topNode.cornerRadius = cornerRadius
     }
 }

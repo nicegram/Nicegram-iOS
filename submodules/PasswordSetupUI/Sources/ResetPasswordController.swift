@@ -72,7 +72,7 @@ private enum ResetPasswordEntry: ItemListNodeEntry, Equatable {
         let arguments = arguments as! ResetPasswordControllerArguments
         switch self {
             case let .code(theme, _, text, value):
-                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: text, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: "", type: .number, spacing: 10.0, tag: ResetPasswordEntryTag.code, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: text, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: "", type: .number, spacing: 10.0, tag: ResetPasswordEntryTag.code, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updateCodeText(updatedText)
                 }, action: {
                 })

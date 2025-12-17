@@ -176,11 +176,11 @@ private enum ChatListFilterPresetListEntry: ItemListNodeEntry {
         case let .suggestedListHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, multiline: true, sectionId: self.section)
         case let .suggestedPreset(_, title, label, preset):
-            return ChatListFilterPresetListSuggestedItem(presentationData: presentationData, title: title.text, label: label, sectionId: self.section, style: .blocks, installAction: {
+            return ChatListFilterPresetListSuggestedItem(presentationData: presentationData, systemStyle: .glass, title: title.text, label: label, sectionId: self.section, style: .blocks, installAction: {
                 arguments.addSuggestedPressed(title, preset)
             }, tag: nil)
         case let .suggestedAddCustom(text):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: nil, title: text, sectionId: self.section, height: .generic, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, sectionId: self.section, height: .generic, editing: false, action: {
                 arguments.addNew()
             })
         case let .listHeader(text):
@@ -194,7 +194,7 @@ private enum ChatListFilterPresetListEntry: ItemListNodeEntry {
                 }
             }
             
-            return ChatListFilterPresetListItem(context: arguments.context, presentationData: presentationData, preset: preset, title: title, label: label, tagColor: resolvedColor, editing: ChatListFilterPresetListItemEditing(editable: true, editing: isEditing, revealed: false), canBeReordered: canBeReordered, canBeDeleted: canBeDeleted, isAllChats: isAllChats, isDisabled: isDisabled, sectionId: self.section, action: {
+            return ChatListFilterPresetListItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, preset: preset, title: title, label: label, tagColor: resolvedColor, editing: ChatListFilterPresetListItemEditing(editable: true, editing: isEditing, revealed: false), canBeReordered: canBeReordered, canBeDeleted: canBeDeleted, isAllChats: isAllChats, isDisabled: isDisabled, sectionId: self.section, action: {
                 if isDisabled {
                     arguments.addNew()
                 } else {
@@ -206,13 +206,13 @@ private enum ChatListFilterPresetListEntry: ItemListNodeEntry {
                 arguments.removePreset(preset.id)
             })
         case let .addItem(text, isEditing):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: nil, title: text, sectionId: self.section, height: .generic, editing: isEditing, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, sectionId: self.section, height: .generic, editing: isEditing, action: {
                 arguments.addNew()
             })
         case let .listFooter(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .displayTags(value):
-            return ItemListSwitchItem(presentationData: presentationData, title: presentationData.strings.ChatListFilterList_ShowTags, value: value == true, enableInteractiveChanges: value != nil, enabled: true, displayLocked: value == nil, sectionId: self.section, style: .blocks, updated: { updatedValue in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: presentationData.strings.ChatListFilterList_ShowTags, value: value == true, enableInteractiveChanges: value != nil, enabled: true, displayLocked: value == nil, sectionId: self.section, style: .blocks, updated: { updatedValue in
                 if value != nil {
                     arguments.updateDisplayTags(updatedValue)
                 } else {

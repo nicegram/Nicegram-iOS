@@ -1054,6 +1054,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     background: .none(clipped: false),
                     header: nil,
                     footer: nil,
@@ -1117,12 +1118,14 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     background: .all,
                     header: nil,
                     footer: nil,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(HStack(boostContents, spacing: 12.0)),
                             icon: nil,
                             action: { [weak self] _ in
@@ -1165,6 +1168,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     background: .all,
                     header: nil,
                     footer: AnyComponent(MultilineTextComponent(
@@ -1179,6 +1183,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         AnyComponentWithIdentity(id: 1, component: AnyComponent(ListItemComponentAdaptor(
                             itemGenerator: PeerNameColorItem(
                                 theme: environment.theme,
+                                systemStyle: .glass,
                                 colors: component.context.peerNameColors,
                                 mode: .profile,
                                 currentColor: profileColor,
@@ -1195,6 +1200,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         ))),
                         AnyComponentWithIdentity(id: 2, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(HStack(profileLogoContents, spacing: 6.0)),
                             icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                 context: component.context,
@@ -1235,11 +1241,13 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
                                     string: environment.strings.Channel_Appearance_ResetProfileColor,
@@ -1311,6 +1319,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1323,6 +1332,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(HStack(emojiPackContents, spacing: 6.0)),
                                 icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                     context: component.context,
@@ -1375,6 +1385,7 @@ final class ChannelAppearanceScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -1387,6 +1398,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(HStack(emojiStatusContents, spacing: 6.0)),
                             icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                 context: component.context,
@@ -1439,6 +1451,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1451,6 +1464,7 @@ final class ChannelAppearanceScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(HStack(stickerPackContents, spacing: 6.0)),
                                 icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                     context: component.context,
@@ -1559,6 +1573,7 @@ final class ChannelAppearanceScreenComponent: Component {
                             AnyComponentWithIdentity(id: 1, component: AnyComponent(ListItemComponentAdaptor(
                                 itemGenerator: PeerNameColorItem(
                                     theme: environment.theme,
+                                    systemStyle: .glass,
                                     colors: component.context.peerNameColors,
                                     mode: .name,
                                     currentColor: resolvedState.nameColor,
@@ -1575,6 +1590,7 @@ final class ChannelAppearanceScreenComponent: Component {
                             ))),
                             AnyComponentWithIdentity(id: 2, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(HStack(replyLogoContents, spacing: 6.0)),
                                 icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                                     context: component.context,
@@ -1731,6 +1747,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1774,10 +1791,12 @@ final class ChannelAppearanceScreenComponent: Component {
                 ))))
             }
             
+            let buttonSideInset: CGFloat = 36.0
             let buttonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -1796,7 +1815,7 @@ final class ChannelAppearanceScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonSideInset * 2.0, height: 52.0)
             )
             contentHeight += buttonSize.height
             
@@ -1805,7 +1824,7 @@ final class ChannelAppearanceScreenComponent: Component {
             
             let buttonY = availableSize.height - bottomInset - environment.safeInsets.bottom - buttonSize.height
             
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: buttonY), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonSideInset, y: buttonY), size: buttonSize)
             if let buttonView = self.actionButton.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)

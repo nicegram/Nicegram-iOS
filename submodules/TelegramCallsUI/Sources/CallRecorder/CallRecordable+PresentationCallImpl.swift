@@ -2,7 +2,7 @@ import NGCallRecorder
 import SwiftSignalKit
 import TelegramCore
 
-extension CallRecordable {
+public extension CallRecordable {
     convenience init(_ call: PresentationCallImpl) {
         let context = call.context
         let peerId = call.peerId

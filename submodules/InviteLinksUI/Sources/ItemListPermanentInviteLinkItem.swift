@@ -33,6 +33,7 @@ private func actionButtonImage(color: UIColor) -> UIImage? {
 public class ItemListPermanentInviteLinkItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let invite: ExportedInvitation?
     let count: Int32
     let peers: [EnginePeer]
@@ -53,6 +54,7 @@ public class ItemListPermanentInviteLinkItem: ListViewItem, ItemListItem {
     public init(
         context: AccountContext,
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle = .legacy,
         invite: ExportedInvitation?,
         count: Int32,
         peers: [EnginePeer],
@@ -72,6 +74,7 @@ public class ItemListPermanentInviteLinkItem: ListViewItem, ItemListItem {
     ) {
         self.context = context
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.invite = invite
         self.count = count
         self.peers = peers
@@ -323,6 +326,8 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -389,7 +394,14 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
             
             let avatarsContent = avatarsContext.update(peers: item.peers, animated: false)
             
-            let verticalInset: CGFloat = 16.0
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 16.0
+            case .legacy:
+                verticalInset = 16.0
+            }
+            
             let fieldHeight: CGFloat = 52.0
             let fieldSpacing: CGFloat = 16.0
             let buttonHeight: CGFloat = 50.0
@@ -439,7 +451,7 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                         strongSelf.topStripeNode.backgroundColor = itemSeparatorColor
                         strongSelf.bottomStripeNode.backgroundColor = itemSeparatorColor
                         strongSelf.backgroundNode.backgroundColor = itemBackgroundColor
-                        strongSelf.fieldNode.image = generateStretchableFilledCircleImage(diameter: 18.0, color: item.presentationData.theme.list.itemInputField.backgroundColor)
+                        strongSelf.fieldNode.image = generateStretchableFilledCircleImage(diameter: item.systemStyle == .glass ? 52.0 : 18.0, color: item.presentationData.theme.list.itemInputField.backgroundColor)
                         strongSelf.addressButtonIconNode.image = actionButtonImage(color: item.presentationData.theme.list.itemInputField.controlColor)
                     }
                                         
@@ -496,12 +508,12 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
+                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     }
                     
                     let fieldFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: CGSize(width: params.width - leftInset - rightInset, height: fieldHeight))
@@ -533,7 +545,7 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                         } else {
                             buttonTheme = SolidRoundedButtonTheme(theme: item.presentationData.theme)
                         }
-                        copyButtonNode = SolidRoundedButtonNode(theme: buttonTheme, height: 50.0, cornerRadius: 11.0)
+                        copyButtonNode = SolidRoundedButtonNode(theme: buttonTheme, glass: item.systemStyle == .glass, height: 52.0, cornerRadius: item.systemStyle == .glass ? 26.0 : 11.0)
                         copyButtonNode.title = item.presentationData.strings.InviteLink_CopyShort
                         copyButtonNode.pressed = { [weak self] in
                             self?.item?.copyAction?()
@@ -552,7 +564,7 @@ public class ItemListPermanentInviteLinkItemNode: ListViewItemNode, ItemListItem
                         } else {
                             buttonTheme = SolidRoundedButtonTheme(theme: item.presentationData.theme)
                         }
-                        shareButtonNode = SolidRoundedButtonNode(theme: buttonTheme, height: 50.0, cornerRadius: 11.0)
+                        shareButtonNode = SolidRoundedButtonNode(theme: buttonTheme, glass: item.systemStyle == .glass, height: 52.0, cornerRadius: item.systemStyle == .glass ? 26.0 : 11.0)
                         if let invite = item.invite, invitationAvailability(invite).isZero {
                             shareButtonNode.title = item.presentationData.strings.InviteLink_ReactivateLink
                         } else {

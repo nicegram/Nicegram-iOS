@@ -226,11 +226,11 @@ final class AvatarEditorScreenComponent: Component {
             
             self.backgroundContainerView = UIView()
             self.backgroundContainerView.clipsToBounds = true
-            self.backgroundContainerView.layer.cornerRadius = 10.0
+            self.backgroundContainerView.layer.cornerRadius = 26.0
             
             self.keyboardContainerView = UIView()
             self.keyboardContainerView.clipsToBounds = true
-            self.keyboardContainerView.layer.cornerRadius = 10.0
+            self.keyboardContainerView.layer.cornerRadius = 26.0
             
             self.panelBackgroundView = BlurredBackgroundView(color: .white)
             self.panelHostView = PagerExternalTopPanelContainer()
@@ -1317,11 +1317,13 @@ final class AvatarEditorScreenComponent: Component {
                 ))))
             }
             
+            let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.buttonView.update(
                 transition: transition,
                 component: AnyComponent(
                     ButtonComponent(
                         background: ButtonComponent.Background(
+                            style: .glass,
                             color: theme.list.itemCheckColors.fillColor,
                             foreground: theme.list.itemCheckColors.foregroundColor,
                             pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -1337,13 +1339,13 @@ final class AvatarEditorScreenComponent: Component {
                     )
                 ),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - bottomInsets.left - bottomInsets.right, height: 52.0)
             )
             if let buttonView = self.buttonView.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
                 }
-                transition.setFrame(view: buttonView, frame: CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize))
+                transition.setFrame(view: buttonView, frame: CGRect(origin: CGPoint(x: bottomInsets.left, y: contentHeight), size: buttonSize))
             }
             
             let bottomPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: contentHeight - 4.0), size: CGSize(width: availableSize.width, height: availableSize.height - contentHeight + 4.0))

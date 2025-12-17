@@ -220,6 +220,15 @@ final class StoryItemImageView: UIView {
                     })
                 }
             }
+        case .liveStream:
+            dimensions = CGSize(width: 128.0, height: 128.0)
+            if isMediaUpdated, let thumbnailData = peer.smallProfileImage?.immediateThumbnailData {
+                if let thumbnailData = decodeTinyThumbnail(data: thumbnailData), let thumbnailImage = UIImage(data: thumbnailData) {
+                    if let image = blurredImage(thumbnailImage, radius: 10.0, iterations: 3) {
+                        self.updateImage(image: image, isCaptureProtected: isCaptureProtected)
+                    }
+                }
+            }
         default:
             break
         }

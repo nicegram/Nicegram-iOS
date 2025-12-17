@@ -514,6 +514,7 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
                 }
                 titleNode.frame = CGRect(origin: CGPoint(x: leftOffset, y: 0.0), size: titleLayout.size)
                 
+                var nameFrame = CGRect()
                 if let (nameLayout, nameApply) = nameLayoutAndApply {
                     let nameNode = nameApply()
                     if node.nameNode == nil {
@@ -521,7 +522,8 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
                         node.nameNode = nameNode
                         node.addSubnode(nameNode)
                     }
-                    nameNode.frame = CGRect(origin: CGPoint(x: leftOffset + authorAvatarInset, y: titleLayout.size.height + titleAuthorSpacing), size: nameLayout.size)
+                    nameFrame = CGRect(origin: CGPoint(x: leftOffset + authorAvatarInset, y: titleLayout.size.height + titleAuthorSpacing), size: nameLayout.size)
+                    nameNode.frame = nameFrame
                     
                     if authorAvatarInset != 0.0 {
                         let avatarNode: AvatarNode
@@ -599,7 +601,7 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
                         node.credibilityIconNode = credibilityIconNode
                         node.addSubnode(credibilityIconNode)
                     }
-                    credibilityIconNode.frame = CGRect(origin: CGPoint(x: titleLayout.size.width + 4.0, y: 16.0), size: credibilityIconImage.size)
+                    credibilityIconNode.frame = CGRect(origin: CGPoint(x: nameFrame.maxX + 4.0, y: 17.0), size: credibilityIconImage.size)
                     credibilityIconNode.image = credibilityIconImage
                 } else {
                     node.credibilityIconNode?.removeFromSupernode()

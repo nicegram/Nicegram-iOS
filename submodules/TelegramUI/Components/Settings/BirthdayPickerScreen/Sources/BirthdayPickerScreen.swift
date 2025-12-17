@@ -4,10 +4,12 @@ import Display
 import ComponentFlow
 import SwiftSignalKit
 import ViewControllerComponent
+import TelegramCore
 import AccountContext
 import SheetComponent
 import ButtonComponent
-import TelegramCore
+import GlassBarButtonComponent
+import BundleIconComponent
 
 private final class BirthdayPickerSheetContentComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -116,18 +118,29 @@ private final class BirthdayPickerSheetContentComponent: Component {
             
             let cancelSize = self.cancel.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: environment.theme.list.itemAccentColor)),
-                    action: { [weak self] in
-                        if let self, let component = self.component {
-                            component.dismiss()
+                component: AnyComponent(
+                    GlassBarButtonComponent(
+                        size: CGSize(width: 40.0, height: 40.0),
+                        backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .generic,
+                        component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                            BundleIconComponent(
+                                name: "Navigation/Close",
+                                tintColor: environment.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                            )
+                        )),
+                        action: { [weak self] _ in
+                            if let self, let component = self.component {
+                                component.dismiss()
+                            }
                         }
-                    }
-                ).minSize(CGSize(width: 32.0, height: 32.0))),
+                    )
+                ),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width, height: 32.0)
+                containerSize: CGSize(width: 40.0, height: 40.0)
             )
-            let cancelFrame = CGRect(origin: CGPoint(x: sideInset, y: 13.0), size: cancelSize)
+            let cancelFrame = CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelSize)
             if let cancelView = self.cancel.view {
                 if cancelView.superview == nil {
                     self.addSubview(cancelView)
@@ -145,10 +158,12 @@ private final class BirthdayPickerSheetContentComponent: Component {
                 buttonTitle = environment.strings.SuggestBirthdate_Accept_Action
             }
             
+            let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.button.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -166,9 +181,9 @@ private final class BirthdayPickerSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - bottomInsets.left - bottomInsets.right, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: bottomInsets.left, y: contentHeight), size: buttonSize)
             if let buttonView = self.button.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
@@ -176,13 +191,8 @@ private final class BirthdayPickerSheetContentComponent: Component {
                 transition.setFrame(view: buttonView, frame: buttonFrame)
             }
             contentHeight += buttonSize.height
-            
-            if environment.safeInsets.bottom.isZero {
-                contentHeight += 16.0
-            } else {
-                contentHeight += environment.safeInsets.bottom + 14.0
-            }
-            
+            contentHeight += bottomInsets.bottom
+                        
             return CGSize(width: availableSize.width, height: contentHeight)
         }
     }
@@ -321,6 +331,7 @@ private final class BirthdayPickerScreenComponent: Component {
                             controller.requestLayout(forceUpdate: true, transition: transition)
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.list.plainBackgroundColor),
                     followContentSizeChanges: true,
                     isScrollEnabled: false,

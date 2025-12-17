@@ -45,11 +45,17 @@ static const void *positionChangedKey = &positionChangedKey;
     if (self != nil) {
         _offIconView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"PermissionSwitchOff.png")];
         _onIconView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"PermissionSwitchOn.png")];
-        self.layer.cornerRadius = 17.0f;
+        if (iosMajorVersion() >= 26) {
+            self.layer.cornerRadius = 14.0f;
+        } else {
+            self.layer.cornerRadius = 17.0f;
+        }
         self.backgroundColor = [UIColor redColor];
         self.tintColor = [UIColor redColor];
         UIView *handleView = self.subviews[0].subviews.lastObject;
-        if (iosMajorVersion() >= 13) {
+        if (iosMajorVersion() >= 26) {
+            handleView = self.subviews[0].subviews.lastObject;
+        } else if (iosMajorVersion() >= 13) {
             handleView = self.subviews[0].subviews[1].subviews.lastObject;
         } else {
             handleView = self.subviews[0].subviews.lastObject;
@@ -91,7 +97,9 @@ static const void *positionChangedKey = &positionChangedKey;
 
 - (void)updateIconFrame {
     CGPoint offset = CGPointZero;
-    if (iosMajorVersion() >= 12) {
+    if (iosMajorVersion() >= 26) {
+        offset = CGPointMake(-10.0, -9.0 - TGScreenPixel);
+    } else if (iosMajorVersion() >= 12) {
         offset = CGPointMake(-7.0, -3.0);
     }
     

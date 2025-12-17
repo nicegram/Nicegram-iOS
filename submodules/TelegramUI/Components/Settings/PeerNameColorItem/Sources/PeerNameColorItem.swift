@@ -261,6 +261,7 @@ public final class PeerNameColorItem: ListViewItem, ItemListItem, ListItemCompon
     public var sectionId: ItemListSectionId
     
     public let theme: PresentationTheme
+    public let systemStyle: ItemListSystemStyle
     public let colors: PeerNameColors
     public let mode: Mode
     public let displayEmptyColor: Bool
@@ -269,8 +270,9 @@ public final class PeerNameColorItem: ListViewItem, ItemListItem, ListItemCompon
     public let updated: (PeerNameColor?) -> Void
     public let tag: ItemListItemTag?
     
-    public init(theme: PresentationTheme, colors: PeerNameColors, mode: Mode, displayEmptyColor: Bool = false, currentColor: PeerNameColor?, isLocked: Bool = false, updated: @escaping (PeerNameColor?) -> Void, tag: ItemListItemTag? = nil, sectionId: ItemListSectionId) {
+    public init(theme: PresentationTheme, systemStyle: ItemListSystemStyle = .legacy, colors: PeerNameColors, mode: Mode, displayEmptyColor: Bool = false, currentColor: PeerNameColor?, isLocked: Bool = false, updated: @escaping (PeerNameColor?) -> Void, tag: ItemListItemTag? = nil, sectionId: ItemListSectionId) {
         self.theme = theme
+        self.systemStyle = systemStyle
         self.colors = colors
         self.mode = mode
         self.displayEmptyColor = displayEmptyColor
@@ -385,6 +387,12 @@ public final class PeerNameColorItemNode: ListViewItemNode, ItemListItemNode {
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
+            var verticalInset: CGFloat = 0.0
+            if case .glass = item.systemStyle {
+                verticalInset += 4.0
+            }
             
             let itemsPerRow: Int
             let displayOrder: [Int32]
@@ -407,7 +415,7 @@ public final class PeerNameColorItemNode: ListViewItemNode, ItemListItemNode {
             
             let rowsCount = ceil(CGFloat(numItems) / CGFloat(itemsPerRow))
             
-            contentSize = CGSize(width: params.width, height: 10.0 + 42.0 * rowsCount)
+            contentSize = CGSize(width: params.width, height: 10.0 + 42.0 * rowsCount + verticalInset * 2.0)
             insets = itemListNeighborsGroupedInsets(neighbors, params)
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
@@ -471,9 +479,9 @@ public final class PeerNameColorItemNode: ListViewItemNode, ItemListItemNode {
                             hasBottomCorners = true
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         
-                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
+                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     }
                     
                     strongSelf.containerNode.frame = CGRect(x: 0.0, y: 0.0, width: contentSize.width, height: contentSize.height)
@@ -515,7 +523,7 @@ public final class PeerNameColorItemNode: ListViewItemNode, ItemListItemNode {
                     
                     let spacing = floorToScreenPixels((params.width - sideInset * 2.0 - iconSize.width * CGFloat(itemsPerRow)) / CGFloat(itemsPerRow - 1))
                     
-                    var origin = CGPoint(x: sideInset, y: 10.0)
+                    var origin = CGPoint(x: sideInset, y: 10.0 + verticalInset)
                     
                     i = 0
                     var validIds = Set<Int32>()

@@ -187,7 +187,7 @@ private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
             case let .accountHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .account(_, peer, selected, _):
-                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context.sharedContext.makeTempAccountContext(account: arguments.context.account), peer: peer, height: .generic, aliasHandling: .standard, nameStyle: .plain, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: false), revealOptions: nil, switchValue: ItemListPeerItemSwitch(value: selected, style: .check), enabled: true, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context.sharedContext.makeTempAccountContext(account: arguments.context.account), peer: peer, height: .generic, aliasHandling: .standard, nameStyle: .plain, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: false), revealOptions: nil, switchValue: ItemListPeerItemSwitch(value: selected, style: .check), enabled: true, selectable: true, sectionId: self.section, action: {
                     arguments.updateSettings { $0.withUpdatedAccount(peer.id) }
                 }, setPeerIdWithRevealedOptions: { _, _ in}, removePeer: { _ in })
             case let .accountInfo(_, text):
@@ -195,19 +195,19 @@ private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
             case let .chatsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .contacts(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedContacts(value) }
                 })
             case let .savedMessages(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedSavedMessages(value) }
                 })
             case let .privateChats(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedPrivateChats(value) }
                 })
             case let .groups(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateSettings { $0.withUpdatedGroups(value) }
                 })
             case let .chatsInfo(_, text):
@@ -215,16 +215,16 @@ private enum IntentsSettingsControllerEntry: ItemListNodeEntry {
             case let .suggestHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .suggestAll(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateSettings { $0.withUpdatedOnlyShared(false) }
                 })
             case let .suggestOnlyShared(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateSettings { $0.withUpdatedOnlyShared(true) }
                 })
 
             case let .resetAll(_, text):
-                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.resetAll()
                 })
         }

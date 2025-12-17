@@ -661,6 +661,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
                             component: AnyComponent(AvatarStoryIndicatorComponent(
                                 hasUnseen: true,
                                 hasUnseenCloseFriendsItems: false,
+                                hasLiveItems: false,
                                 colors: AvatarStoryIndicatorComponent.Colors(
                                     unseenColors: item.presentationData.theme.chatList.storyUnseenColors.array,
                                     unseenCloseFriendsColors: item.presentationData.theme.chatList.storyUnseenPrivateColors.array,

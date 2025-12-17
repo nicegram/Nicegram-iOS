@@ -12,6 +12,9 @@ import AccountContext
 import Markdown
 import TextFormat
 import SolidRoundedButtonNode
+import ComponentFlow
+import ButtonComponent
+import BundleIconComponent
 
 class RecentSessionsHeaderItem: ListViewItem, ItemListItem {
     let context: AccountContext
@@ -75,6 +78,7 @@ class RecentSessionsHeaderItemNode: ListViewItemNode {
     private let titleNode: TextNode
     private var animationNode: AnimatedStickerNode
     private let buttonNode: SolidRoundedButtonNode
+    private let button = ComponentView<Empty>()
     
     private var item: RecentSessionsHeaderItem?
     
@@ -92,7 +96,7 @@ class RecentSessionsHeaderItemNode: ListViewItemNode {
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.animationNode)
-        self.addSubnode(self.buttonNode)
+        //self.addSubnode(self.buttonNode)
     }
     
     override public func didLoad() {
@@ -154,11 +158,45 @@ class RecentSessionsHeaderItemNode: ListViewItemNode {
                         strongSelf.buttonNode.updateTheme(SolidRoundedButtonTheme(theme: item.theme))
                     }
                     
-                    let inset = max(16.0, params.leftInset)
-                    let buttonWidth = min(375, contentSize.width - inset - inset)
-                    let buttonHeight = strongSelf.buttonNode.updateLayout(width: buttonWidth, transition: .immediate)
+                    let buttonSideInset: CGFloat = 36.0
+                    let buttonWidth = min(375, contentSize.width - buttonSideInset * 2.0)
+                    let buttonHeight = 52.0
                     let buttonFrame = CGRect(x: floorToScreenPixels((params.width - buttonWidth) / 2.0), y: contentSize.height - buttonHeight + 4.0, width: buttonWidth, height: buttonHeight)
                     strongSelf.buttonNode.frame = buttonFrame
+                    
+                    let _ = strongSelf.button.update(
+                        transition: .immediate,
+                        component: AnyComponent(ButtonComponent(
+                            background: ButtonComponent.Background(
+                                style: .glass,
+                                color: item.theme.list.itemCheckColors.fillColor,
+                                foreground: item.theme.list.itemCheckColors.foregroundColor,
+                                pressedColor: item.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                            ),
+                            content: AnyComponentWithIdentity(
+                                id: "button",
+                                component: AnyComponent(
+                                    HStack([
+                                        AnyComponentWithIdentity(id: "icon", component: AnyComponent(BundleIconComponent(name: "Settings/QrButtonIcon", tintColor: item.theme.list.itemCheckColors.foregroundColor))),
+                                        AnyComponentWithIdentity(id: "label", component: AnyComponent(
+                                            Text(text: item.context.sharedContext.currentPresentationData.with { $0 }.strings.AuthSessions_LinkDesktopDevice, font: Font.semibold(17.0), color: item.theme.list.itemCheckColors.foregroundColor)
+                                        ))
+                                    ], spacing: 6.0)
+                                )
+                            ),
+                            action: {
+                                item.buttonAction()
+                            }
+                        )),
+                        environment: {},
+                        containerSize: CGSize(width: buttonWidth, height: buttonHeight)
+                    )
+                    if let buttonView = strongSelf.button.view {
+                        if buttonView.superview == nil {
+                            strongSelf.view.addSubview(buttonView)
+                        }
+                        buttonView.frame = buttonFrame
+                    }
                     
                     strongSelf.accessibilityLabel = attributedText.string
                                         

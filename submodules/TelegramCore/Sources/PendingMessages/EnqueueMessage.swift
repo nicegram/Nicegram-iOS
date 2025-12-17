@@ -842,7 +842,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                         }
                     }
                 
-                    if threadId == nil, let peer = transaction.getPeer(peerId), peer.isForum {
+                if threadId == nil, let peer = transaction.getPeer(peerId), (peer is TelegramChannel), peer.isForum {
                         threadId = 1
                     }
                     

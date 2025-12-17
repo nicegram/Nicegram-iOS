@@ -155,13 +155,14 @@ final class TooltipControllerNode: ASDisplayNode {
     }
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if let event = event {
+        let pointInside = self.containerNode.frame.contains(point)
+        
+        if let event {
             var eventIsPresses = false
             if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                 eventIsPresses = event.type == .presses
             }
             if event.type == .touches || eventIsPresses {
-                let pointInside = self.containerNode.frame.contains(point)
                 if self.containerNode.frame.contains(point) || self.dismissByTapOutside {
                     if !self.dismissedByTouchOutside {
                         self.dismissedByTouchOutside = true
@@ -176,7 +177,11 @@ final class TooltipControllerNode: ASDisplayNode {
                 return nil
             }
         }
-        return super.hitTest(point, with: event)
+        if pointInside {
+            return super.hitTest(point, with: event)
+        } else {
+            return nil
+        }
     }
 }
 

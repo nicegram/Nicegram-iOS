@@ -10,6 +10,9 @@ import SearchBarNode
 import ContactListUI
 import SearchUI
 import SolidRoundedButtonNode
+import ItemListUI
+import EdgeEffect
+import ComponentFlow
 
 final class ContactSelectionControllerNode: ASDisplayNode {
     var displayProgress: Bool = false {
@@ -30,6 +33,7 @@ final class ContactSelectionControllerNode: ASDisplayNode {
     private let dimNode: ASDisplayNode
     
     private let context: AccountContext
+    private let listStyle: ItemListStyle
     private var searchDisplayController: SearchDisplayController?
     
     private var containerLayout: (ContainerViewLayout, CGFloat, CGFloat)?
@@ -59,8 +63,26 @@ final class ContactSelectionControllerNode: ASDisplayNode {
     
     var searchContainerNode: ContactsSearchContainerNode?
     
-    init(context: AccountContext, mode: ContactSelectionControllerMode, presentationData: PresentationData, options: Signal<[ContactListAdditionalOption], NoError>, displayDeviceContacts: Bool, displayCallIcons: Bool, multipleSelection: Bool, requirePhoneNumbers: Bool, allowChannelsInSearch: Bool, isPeerEnabled: @escaping (ContactListPeer) -> Bool) {
+    private let topEdgeEffectView: EdgeEffectView
+    private let bottomEdgeEffectView: EdgeEffectView
+    
+    private var contactsAuthorization: AccessType?
+    
+    init(
+        context: AccountContext,
+        listStyle: ItemListStyle,
+        mode: ContactSelectionControllerMode,
+        presentationData: PresentationData,
+        options: Signal<[ContactListAdditionalOption], NoError>,
+        displayDeviceContacts: Bool,
+        displayCallIcons: Bool,
+        multipleSelection: Bool,
+        requirePhoneNumbers: Bool,
+        allowChannelsInSearch: Bool,
+        isPeerEnabled: @escaping (ContactListPeer) -> Bool
+    ) {
         self.context = context
+        self.listStyle = listStyle
         self.presentationData = presentationData
         self.displayDeviceContacts = displayDeviceContacts
         self.displayCallIcons = displayCallIcons
@@ -127,14 +149,31 @@ final class ContactSelectionControllerNode: ASDisplayNode {
         }
         
         var contextActionImpl: ((EnginePeer, ASDisplayNode, ContextGesture?, CGPoint?) -> Void)?
-        self.contactListNode = ContactListNode(context: context, updatedPresentationData: (presentationData, self.presentationDataPromise.get()), presentation: presentation, filters: filters, onlyWriteable: false, isGroupInvitation: false, isPeerEnabled: { peer in
-            return isPeerEnabled(.peer(peer: peer._asPeer(), isGlobal: false, participantCount: nil))
-        }, displayCallIcons: displayCallIcons, contextAction: multipleSelection ? { peer, node, gesture, _, _ in
-            contextActionImpl?(peer, node, gesture, nil)
-        } : nil, multipleSelection: multipleSelection)
+        self.contactListNode = ContactListNode(
+            context: context,
+            updatedPresentationData: (presentationData, self.presentationDataPromise.get()),
+            listStyle: listStyle,
+            presentation: presentation,
+            filters: filters,
+            onlyWriteable: false,
+            isGroupInvitation: false,
+            isPeerEnabled: { peer in
+                return isPeerEnabled(.peer(peer: peer._asPeer(), isGlobal: false, participantCount: nil))
+            },
+            displayCallIcons: displayCallIcons,
+            contextAction: multipleSelection ? { peer, node, gesture, _, _ in
+                contextActionImpl?(peer, node, gesture, nil)
+            } : nil,
+            multipleSelection: multipleSelection)
         
         self.dimNode = ASDisplayNode()
         
+        self.topEdgeEffectView = EdgeEffectView()
+        self.topEdgeEffectView.isUserInteractionEnabled = false
+        
+        self.bottomEdgeEffectView = EdgeEffectView()
+        self.bottomEdgeEffectView.isUserInteractionEnabled = false
+               
         var shareImpl: (() -> Void)?
         self.countPanelNode = ContactSelectionCountPanelNode(theme: self.presentationData.theme, strings: self.presentationData.strings, action: {
             shareImpl?()
@@ -146,11 +185,11 @@ final class ContactSelectionControllerNode: ASDisplayNode {
             return UITracingLayerView()
         })
         
-        self.backgroundColor = self.presentationData.theme.chatList.backgroundColor
+        self.backgroundColor = listStyle == .blocks ? self.presentationData.theme.list.blocksBackgroundColor : self.presentationData.theme.chatList.backgroundColor
         
         self.addSubnode(self.contactListNode)
                 
-        self.dimNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor.withAlphaComponent(0.5)
+        self.dimNode.backgroundColor = .clear // self.presentationData.theme.list.plainBackgroundColor.withAlphaComponent(0.5)
         self.dimNode.alpha = 0.0
         self.dimNode.isUserInteractionEnabled = false
         self.addSubnode(self.dimNode)
@@ -170,6 +209,16 @@ final class ContactSelectionControllerNode: ASDisplayNode {
             }
         }
         
+        self.contactListNode.authorizationUpdated = { [weak self] authorization in
+            guard let self else {
+                return
+            }
+            self.contactsAuthorization = authorization
+            if let (layout, navigationHeight, actualNavigationHeight) = self.containerLayout {
+                self.containerLayoutUpdated(layout, navigationBarHeight: navigationHeight, actualNavigationBarHeight: actualNavigationHeight, transition: .immediate)
+            }
+        }
+        
         shareImpl = { [weak self] in
             self?.requestMultipleAction?(false, nil, nil)
         }
@@ -183,6 +232,11 @@ final class ContactSelectionControllerNode: ASDisplayNode {
                 }
             }
         }
+        
+        if case .blocks = listStyle {
+            self.view.addSubview(self.topEdgeEffectView)
+            self.view.addSubview(self.bottomEdgeEffectView)
+        }
     }
     
     func beginSelection() {
@@ -193,14 +247,18 @@ final class ContactSelectionControllerNode: ASDisplayNode {
     
     func updatePresentationData(_ presentationData: PresentationData) {
         self.presentationData = presentationData
-        self.backgroundColor = self.presentationData.theme.chatList.backgroundColor
+        self.backgroundColor = self.listStyle == .blocks ? self.presentationData.theme.list.blocksBackgroundColor : self.presentationData.theme.chatList.backgroundColor
         self.searchDisplayController?.updatePresentationData(presentationData)
         self.dimNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor.withAlphaComponent(0.5)
+        
+        if let (layout, navigationHeight, actualNavigationHeight) = self.containerLayout {
+            self.containerLayoutUpdated(layout, navigationBarHeight: navigationHeight, actualNavigationBarHeight: actualNavigationHeight, transition: .immediate)
+        }
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, actualNavigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
         self.containerLayout = (layout, navigationBarHeight, actualNavigationBarHeight)
-        
+                
         transition.updateFrame(node: self.dimNode, frame: CGRect(origin: CGPoint(), size: layout.size))
         
         var insets = layout.insets(options: [.input])
@@ -213,17 +271,27 @@ final class ContactSelectionControllerNode: ASDisplayNode {
             searchDisplayController.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: transition)
         }
         
-        self.contactListNode.containerLayoutUpdated(ContainerViewLayout(size: layout.size, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, intrinsicInsets: insets, safeInsets: layout.safeInsets, additionalInsets: layout.additionalInsets, statusBarHeight: layout.statusBarHeight, inputHeight: layout.inputHeight, inputHeightIsInteractivellyChanging: layout.inputHeightIsInteractivellyChanging, inVoiceOver: layout.inVoiceOver), headerInsets: headerInsets, storiesInset: 0.0, transition: transition)
+        let safeInsets = layout.safeInsets
+        var size = layout.size
+        if case .blocks = self.listStyle {
+            if let contactsAuthorization = self.contactsAuthorization, contactsAuthorization != .allowed {
+                insets.top += 23.0
+            } else {
+                insets.top -= 25.0
+            }
+            
+            let inset: CGFloat
+            if layout.size.width >= 375.0 {
+                inset = max(16.0, floor((layout.size.width - 674.0) / 2.0))
+            } else {
+                inset = 0.0
+            }
+            size.width -= inset * 2.0
+        }
         
-        self.contactListNode.frame = CGRect(origin: CGPoint(), size: layout.size)
+        self.contactListNode.containerLayoutUpdated(ContainerViewLayout(size: size, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, intrinsicInsets: insets, safeInsets: safeInsets, additionalInsets: layout.additionalInsets, statusBarHeight: layout.statusBarHeight, inputHeight: layout.inputHeight, inputHeightIsInteractivellyChanging: layout.inputHeightIsInteractivellyChanging, inVoiceOver: layout.inVoiceOver), headerInsets: headerInsets, storiesInset: 0.0, transition: transition)
         
-//        let countPanelHeight = self.countPanelNode.updateLayout(width: layout.size.width, sideInset: layout.safeInsets.left, bottomInset: layout.intrinsicInsets.bottom, transition: transition)
-//        if (self.selectionState?.selectedPeerIndices.isEmpty ?? true) {
-//            transition.updateFrame(node: self.countPanelNode, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height), size: CGSize(width: layout.size.width, height: countPanelHeight)))
-//        } else {
-//            insets.bottom += countPanelHeight
-//            transition.updateFrame(node: self.countPanelNode, frame: CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - countPanelHeight), size: CGSize(width: layout.size.width, height: countPanelHeight)))
-//        }
+        self.contactListNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - size.width) / 2.0), y: 0.0), size: size)
         
         if let searchDisplayController = self.searchDisplayController {
             searchDisplayController.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: transition)
@@ -233,6 +301,16 @@ final class ContactSelectionControllerNode: ASDisplayNode {
             searchContainerNode.frame = CGRect(origin: CGPoint(), size: layout.size)
             searchContainerNode.containerLayoutUpdated(ContainerViewLayout(size: layout.size, metrics: LayoutMetrics(), deviceMetrics: layout.deviceMetrics, intrinsicInsets: layout.intrinsicInsets, safeInsets: layout.safeInsets, additionalInsets: layout.additionalInsets, statusBarHeight: nil, inputHeight: layout.inputHeight, inputHeightIsInteractivellyChanging: layout.inputHeightIsInteractivellyChanging, inVoiceOver: layout.inVoiceOver), navigationBarHeight: navigationBarHeight, transition: transition)
         }
+        
+        let topEdgeEffectHeight: CGFloat = 80.0
+        let topEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: topEdgeEffectHeight))
+        transition.updateFrame(view: self.topEdgeEffectView, frame: topEdgeEffectFrame)
+        self.topEdgeEffectView.update(content: self.presentationData.theme.list.blocksBackgroundColor, blur: true, alpha: 1.0, rect: topEdgeEffectFrame, edge: .top, edgeSize: topEdgeEffectFrame.height, transition: ComponentTransition(transition))
+        
+        let bottomEdgeEffectHeight: CGFloat = 88.0
+        let bottomEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - bottomEdgeEffectHeight - layout.additionalInsets.bottom), size: CGSize(width: layout.size.width, height: bottomEdgeEffectHeight))
+        transition.updateFrame(view: self.bottomEdgeEffectView, frame: bottomEdgeEffectFrame)
+        self.bottomEdgeEffectView.update(content: self.presentationData.theme.list.blocksBackgroundColor, blur: true, alpha: 0.65, rect: bottomEdgeEffectFrame, edge: .bottom, edgeSize: bottomEdgeEffectFrame.height, transition: ComponentTransition(transition))
     }
     
     func scrollToTop() {
@@ -258,51 +336,63 @@ final class ContactSelectionControllerNode: ASDisplayNode {
             categories.insert(.channels)
         }
         
-        let searchContainerNode = ContactsSearchContainerNode(context: self.context, updatedPresentationData: (self.presentationData, self.presentationDataPromise.get()), onlyWriteable: false, categories: categories, filters: self.filters, displayCallIcons: self.displayCallIcons, isPeerEnabled: self.isPeerEnabled, addContact: nil, openPeer: { [weak self] peer, action in
-            if let strongSelf = self {
-                var updated = false
-                strongSelf.contactListNode.updateSelectionState { state -> ContactListNodeGroupSelectionState? in
-                    if let state = state {
-                        updated = true
-                        var foundPeers = state.foundPeers
-                        var selectedPeerMap = state.selectedPeerMap
-                        selectedPeerMap[peer.id] = peer
-                        var exists = false
-                        for foundPeer in foundPeers {
-                            if peer.id == foundPeer.id {
-                                exists = true
-                                break
+        let searchContainerNode = ContactsSearchContainerNode(
+            context: self.context,
+            glass: self.listStyle == .blocks,
+            updatedPresentationData: (self.presentationData, self.presentationDataPromise.get()),
+            onlyWriteable: false,
+            categories: categories,
+            filters: self.filters,
+            displayCallIcons: self.displayCallIcons,
+            isPeerEnabled: self.isPeerEnabled,
+            addContact: nil,
+            openPeer: { [weak self] peer, action in
+                if let strongSelf = self {
+                    var updated = false
+                    strongSelf.contactListNode.updateSelectionState { state -> ContactListNodeGroupSelectionState? in
+                        if let state = state {
+                            updated = true
+                            var foundPeers = state.foundPeers
+                            var selectedPeerMap = state.selectedPeerMap
+                            selectedPeerMap[peer.id] = peer
+                            var exists = false
+                            for foundPeer in foundPeers {
+                                if peer.id == foundPeer.id {
+                                    exists = true
+                                    break
+                                }
                             }
+                            if !exists {
+                                foundPeers.insert(peer, at: 0)
+                            }
+                            return state.withToggledPeerId(peer.id).withFoundPeers(foundPeers).withSelectedPeerMap(selectedPeerMap)
+                        } else {
+                            return nil
                         }
-                        if !exists {
-                            foundPeers.insert(peer, at: 0)
-                        }
-                        return state.withToggledPeerId(peer.id).withFoundPeers(foundPeers).withSelectedPeerMap(selectedPeerMap)
+                    }
+                    if updated {
+                        strongSelf.requestDeactivateSearch?()
                     } else {
-                        return nil
+                        let mappedAction: ContactListAction
+                        switch action {
+                        case .generic:
+                            mappedAction = .generic
+                        case .voiceCall:
+                            mappedAction = .voiceCall
+                        case .videoCall:
+                            mappedAction = .videoCall
+                        }
+                        strongSelf.requestOpenPeerFromSearch?(peer, mappedAction)
                     }
                 }
-                if updated {
-                    strongSelf.requestDeactivateSearch?()
-                } else {
-                    let mappedAction: ContactListAction
-                    switch action {
-                    case .generic:
-                        mappedAction = .generic
-                    case .voiceCall:
-                        mappedAction = .voiceCall
-                    case .videoCall:
-                        mappedAction = .videoCall
-                    }
-                    strongSelf.requestOpenPeerFromSearch?(peer, mappedAction)
+            },
+            openDisabledPeer: { [weak self] peer, reason in
+                guard let self else {
+                    return
                 }
-            }
-        }, openDisabledPeer: { [weak self] peer, reason in
-            guard let self else {
-                return
-            }
-            self.requestOpenDisabledPeerFromSearch?(peer, reason)
-        }, contextAction: nil)
+                self.requestOpenDisabledPeerFromSearch?(peer, reason)
+            },
+            contextAction: nil)
         searchContainerNode.cancel = { [weak self] in
             self?.cancelSearch?()
         }

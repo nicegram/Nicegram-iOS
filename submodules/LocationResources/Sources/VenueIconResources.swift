@@ -80,9 +80,9 @@ private func venueIconData(engine: TelegramEngine, resource: VenueIconResource) 
 private let randomColors = [UIColor(rgb: 0xe56cd5), UIColor(rgb: 0xf89440), UIColor(rgb: 0x9986ff), UIColor(rgb: 0x44b3f5), UIColor(rgb: 0x6dc139), UIColor(rgb: 0xff5d5a), UIColor(rgb: 0xf87aad), UIColor(rgb: 0x6e82b3), UIColor(rgb: 0xf5ba21)]
 
 private let venueColors: [String: UIColor] = [
-    "building/medical": UIColor(rgb: 0x43b3f4),
-    "building/gym": UIColor(rgb: 0x43b3f4),
-    "arts_entertainment": UIColor(rgb: 0xe56dd6),
+    "building/medical": UIColor(rgb: 0x43b3f4), // light blue?
+    "building/gym": UIColor(rgb: 0x43b3f4), // light blue?
+    "arts_entertainment": UIColor(rgb: 0xaf52de), // purple
     "travel/bedandbreakfast": UIColor(rgb: 0x9987ff),
     "travel/hotel": UIColor(rgb: 0x9987ff),
     "travel/hostel": UIColor(rgb: 0x9987ff),
@@ -90,11 +90,11 @@ private let venueColors: [String: UIColor] = [
     "building": UIColor(rgb: 0x6e81b2),
     "education": UIColor(rgb: 0xa57348),
     "event": UIColor(rgb: 0x959595),
-    "food": UIColor(rgb: 0xf7943f),
-    "education/cafeteria": UIColor(rgb: 0xf7943f),
-    "nightlife": UIColor(rgb: 0xe56dd6),
-    "travel/hotel_bar": UIColor(rgb: 0xe56dd6),
-    "parks_outdoors": UIColor(rgb: 0x6cc039),
+    "food": UIColor(rgb: 0xff9500), // orange
+    "education/cafeteria": UIColor(rgb: 0xff9500), // orange
+    "nightlife": UIColor(rgb: 0xaf52de), // purple
+    "travel/hotel_bar": UIColor(rgb: 0xaf52de), // purple
+    "parks_outdoors": UIColor(rgb: 0x6cc138), // green
     "shops": UIColor(rgb: 0xffb300),
     "travel": UIColor(rgb: 0x1c9fff),
     "work": UIColor(rgb: 0xad7854),

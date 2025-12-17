@@ -65,9 +65,10 @@ public final class AnimatableProperty<T: Interpolatable> {
         guard let animation = self.animation, case let .curve(duration, curve) = animation.animation else {
             return false
         }
+        let effectiveDuration = duration * UIView.animationDurationFactor()
         
         let timeFromStart = timestamp - animation.startTimestamp
-        var t = max(0.0, timeFromStart / duration)
+        var t = max(0.0, timeFromStart / effectiveDuration)
         switch curve {
         case .linear:
             break
@@ -80,7 +81,7 @@ public final class AnimatableProperty<T: Interpolatable> {
         }
         self.presentationValue = animation.valueAt(t) as! T
     
-        if timeFromStart <= duration {
+        if timeFromStart <= effectiveDuration {
             return true
         }
         self.animation = nil

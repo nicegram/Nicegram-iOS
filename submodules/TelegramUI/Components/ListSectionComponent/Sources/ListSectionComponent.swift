@@ -7,6 +7,7 @@ import DynamicCornerRadiusView
 
 public protocol ListSectionComponentChildView: AnyObject {
     var customUpdateIsHighlighted: ((Bool) -> Void)? { get set }
+    var enumerateSiblings: (((UIView) -> Void) -> Void)? { get set }
     var separatorInset: CGFloat { get }
 }
 
@@ -189,6 +190,16 @@ public final class ListSectionContentView: UIView {
                                 return
                             }
                             self.updateHighlightedItem(itemId: isHighlighted ? itemId : nil)
+                        }
+                        itemComponentView.enumerateSiblings = { [weak self, weak itemComponentView] f in
+                            guard let self, let itemComponentView else {
+                                return
+                            }
+                            for (_, itemView) in self.itemViews {
+                                if let otherItemView = itemView.contents.view, otherItemView !== itemComponentView {
+                                    f(otherItemView)
+                                }
+                            }
                         }
                     }
                 }
@@ -619,6 +630,7 @@ public final class ListSubSectionComponent: Component {
         private var component: ListSubSectionComponent?
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
+        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public var separatorInset: CGFloat = 0.0
         
         public override init(frame: CGRect) {

@@ -27,12 +27,14 @@ private extension PresentationGroupCallState {
         return PresentationGroupCallState(
             myPeerId: myPeerId,
             networkState: .connecting,
+            connectionMode: .rtc,
             canManageCall: false,
             adminIds: Set(),
             muteState: GroupCallParticipantsContext.Participant.MuteState(canUnmute: true, mutedByYou: false),
             defaultParticipantMuteState: nil,
             messagesAreEnabled: !isChannel,
             canEnableMessages: false,
+            sendPaidMessageStars: nil,
             recordingStartTimestamp: nil,
             title: title,
             raisedHand: false,
@@ -40,7 +42,9 @@ private extension PresentationGroupCallState {
             subscribedToScheduled: subscribedToScheduled,
             isVideoEnabled: false,
             isVideoWatchersLimitReached: false,
-            isMyVideoActive: false
+            isMyVideoActive: false,
+            isUnifiedStream: false,
+            defaultSendAs: nil
         )
     }
 }
@@ -77,7 +81,7 @@ extension CurrentImpl {
         case let .call(callContext):
             return callContext.networkState
         case .mediaStream, .externalMediaStream:
-            return .single(OngoingGroupCallContext.NetworkState(isConnected: true, isTransitioningFromBroadcastToRtc: false))
+            return .single(OngoingGroupCallContext.NetworkState(isConnected: true, isTransitioningFromBroadcastToRtc: false, isBroadcast: true))
         }
     }
     
@@ -520,7 +524,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     }
     
     // Nicegram NCG-5828 call recording
-    let callRecorder: CallRecorder
+    public let callRecorder: CallRecorder
     //
     
     public let account: Account
@@ -810,6 +814,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     private var screencastStateDisposable: Disposable?
     
     public let isStream: Bool
+    private let streamPeerId: EnginePeer.Id?
     // Nicegram NCG-5828 call recording, removed 'private'
     let sharedAudioContext: SharedCallAudioContext?
     
@@ -839,14 +844,14 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
             }
         }
     }
-    private let messagesStatePromise = Promise<GroupCallMessagesContext.State>(GroupCallMessagesContext.State(messages: []))
+    private let messagesStatePromise = Promise<GroupCallMessagesContext.State>(GroupCallMessagesContext.State(messages: [], pinnedMessages: [], topStars: [], totalStars: 0, pendingMyStars: 0))
     public var messagesState: Signal<GroupCallMessagesContext.State, NoError> {
         return self.messagesStatePromise.get()
     }
     
     private var lastErrorAlertTimestamp: Double = 0.0
     
-    init(
+    public init(
         // Nicegram NCG-5828 call recording
         callRecorder: CallRecorder,
         //
@@ -861,6 +866,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         invite: String?,
         joinAsPeerId: EnginePeer.Id?,
         isStream: Bool,
+        streamPeerId: EnginePeer.Id?,
         keyPair: TelegramKeyPair?,
         conferenceSourceId: CallSessionInternalId?,
         isConference: Bool,
@@ -898,6 +904,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         self.hasVideo = false
         self.hasScreencast = false
         self.isStream = isStream
+        self.streamPeerId = streamPeerId
         self.conferenceSourceId = conferenceSourceId
         self.isConference = isConference
         self.beginWithVideo = beginWithVideo
@@ -944,19 +951,26 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
             if let data = accountContext.currentAppConfiguration.with({ $0 }).data, let value = data["group_call_message_ttl"] as? Double {
                 messageLifetime = Int32(value)
             }
+            
+            if streamPeerId != nil {
+                messageLifetime = Int32.max
+            }
+            
             self.messagesContext = accountContext.engine.messages.groupCallMessages(
+                appConfig: accountContext.currentAppConfiguration.with({ $0 }),
                 callId: initialCall.description.id,
                 reference: .id(id: initialCall.description.id, accessHash: initialCall.description.accessHash),
                 e2eContext: self.e2eContext,
-                messageLifetime: messageLifetime
+                messageLifetime: messageLifetime,
+                isLiveStream: streamPeerId != nil
             )
             self.messagesStatePromise.set(self.messagesContext!.state)
         }
         
         var sharedAudioContext = sharedAudioContext
         if sharedAudioContext == nil {
-            var useSharedAudio = !isStream
-            var canReuseCurrent = true
+            var useSharedAudio = true
+            var canReuseCurrent = !isStream
             if let data = self.accountContext.currentAppConfiguration.with({ $0 }).data {
                 if data["ios_killswitch_group_shared_audio"] != nil {
                     useSharedAudio = false
@@ -966,8 +980,12 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 }
             }
             
+            if isStream {
+                useSharedAudio = false
+            }
+            
             if useSharedAudio {
-                let sharedAudioContextValue = SharedCallAudioContext.get(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: true, reuseCurrent: canReuseCurrent && callKitIntegration == nil)
+                let sharedAudioContextValue = SharedCallAudioContext.get(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: true, reuseCurrent: canReuseCurrent && callKitIntegration == nil, enableMicrophone: !isStream)
                 sharedAudioContext = sharedAudioContextValue
             }
         }
@@ -1370,7 +1388,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                             muteState: self.temporaryMuteState ?? GroupCallParticipantsContext.Participant.MuteState(canUnmute: true, mutedByYou: false),
                             volume: nil,
                             about: about,
-                            joinedVideo: self.temporaryJoinedVideo
+                            joinedVideo: self.temporaryJoinedVideo,
+                            paidStarsTotal: nil
                         ))
                         participants.sort(by: { GroupCallParticipantsContext.Participant.compare(lhs: $0, rhs: $1, sortAscending: state.sortAscending) })
                     }
@@ -1451,7 +1470,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                         muteState: self.temporaryMuteState ?? GroupCallParticipantsContext.Participant.MuteState(canUnmute: true, mutedByYou: false),
                         volume: nil,
                         about: about,
-                        joinedVideo: self.temporaryJoinedVideo
+                        joinedVideo: self.temporaryJoinedVideo,
+                        paidStarsTotal: nil
                     ))
                 }
 
@@ -1553,7 +1573,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 adminIds: Set(),
                 isCreator: false,
                 defaultParticipantsAreMuted: callInfo.defaultParticipantsAreMuted ?? GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: self.stateValue.defaultParticipantMuteState == .muted, canChange: true),
-                messagesAreEnabled: callInfo.messagesAreEnabled ?? GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: self.stateValue.messagesAreEnabled, canChange: self.stateValue.canEnableMessages),
+                messagesAreEnabled: callInfo.messagesAreEnabled ?? GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: self.stateValue.messagesAreEnabled, canChange: self.stateValue.canEnableMessages, sendPaidMessagesStars: self.stateValue.sendPaidMessageStars),
                 sortAscending: true,
                 recordingStartTimestamp: nil,
                 title: self.stateValue.title,
@@ -1563,6 +1583,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 isVideoEnabled: callInfo.isVideoEnabled,
                 unmutedVideoLimit: callInfo.unmutedVideoLimit,
                 isStream: callInfo.isStream,
+                sendPaidMessagesStars: self.stateValue.sendPaidMessageStars,
+                defaultSendAs: self.stateValue.defaultSendAs,
                 version: 0
             ),
             previousServiceState: nil,
@@ -1639,7 +1661,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     muteState: self.temporaryMuteState ?? GroupCallParticipantsContext.Participant.MuteState(canUnmute: canManageCall || !state.defaultParticipantsAreMuted.isMuted, mutedByYou: false),
                     volume: nil,
                     about: about,
-                    joinedVideo: self.temporaryJoinedVideo
+                    joinedVideo: self.temporaryJoinedVideo,
+                    paidStarsTotal: nil
                 ))
             }
 
@@ -1678,7 +1701,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     isVideoEnabled: callInfo.isVideoEnabled,
                     unmutedVideoLimit: callInfo.unmutedVideoLimit,
                     isStream: callInfo.isStream,
-                    isCreator: callInfo.isCreator
+                    isCreator: callInfo.isCreator,
+                    defaultSendAs: callInfo.defaultSendAs
                 )), audioSessionControl: self.audioSessionControl)
             } else {
                 self.summaryInfoState.set(.single(SummaryInfoState(info: GroupCallInfo(
@@ -1696,7 +1720,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     isVideoEnabled: state.isVideoEnabled,
                     unmutedVideoLimit: state.unmutedVideoLimit,
                     isStream: callInfo.isStream,
-                    isCreator: callInfo.isCreator
+                    isCreator: callInfo.isCreator,
+                    defaultSendAs: callInfo.defaultSendAs
                 ))))
                 
                 self.summaryParticipantsState.set(.single(SummaryParticipantsState(
@@ -1757,7 +1782,31 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     shouldJoin = callInfo.scheduleTimestamp == nil
                     activeCallInfo = callInfo
                 } else {
-                    activeCallInfo = nil
+                    if case let .id(id, accessHash) = self.initialCall?.reference, case .requesting = internalState, self.isStream {
+                        if self.genericCallContext == nil {
+                            shouldJoin = true
+                        }
+                        activeCallInfo = GroupCallInfo(
+                            id: id,
+                            accessHash: accessHash,
+                            participantCount: 0,
+                            streamDcId: nil,
+                            title: nil,
+                            scheduleTimestamp: nil,
+                            subscribedToScheduled: false,
+                            recordingStartTimestamp: nil,
+                            sortAscending: false,
+                            defaultParticipantsAreMuted: nil,
+                            messagesAreEnabled: nil,
+                            isVideoEnabled: false,
+                            unmutedVideoLimit: 0,
+                            isStream: true,
+                            isCreator: false,
+                            defaultSendAs: nil
+                        )
+                    } else {
+                        activeCallInfo = nil
+                    }
                 }
         }
         if self.leaving {
@@ -2012,11 +2061,14 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 }
 
                 self.currentLocalSsrc = ssrc
+                
                 self.requestDisposable.set((self.accountContext.engine.calls.joinGroupCall(
                     peerId: self.peerId,
                     joinAs: self.joinAsPeerId,
                     callId: callInfo.id,
                     reference: reference,
+                    isStream: self.isStream,
+                    streamPeerId: self.streamPeerId,
                     preferMuted: isEffectivelyMuted,
                     joinPayload: joinPayload,
                     peerAdminIds: peerAdminIds,
@@ -2050,6 +2102,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     }
 
                     if let genericCallContext = self.genericCallContext {
+                        let callInfo = joinCallResult.callInfo
+                        
                         switch genericCallContext {
                         case let .call(callContext):
                             switch joinCallResult.connectionMode {
@@ -2122,10 +2176,19 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 } else {
                     mappedState = .connecting
                 }
+                let mappedMode: PresentationGroupCallState.ConnectionMode
+                if state.isBroadcast {
+                    mappedMode = .stream
+                } else {
+                    mappedMode = .rtc
+                }
 
                 let wasConnecting = self.stateValue.networkState == .connecting
-                if self.stateValue.networkState != mappedState {
-                    self.stateValue.networkState = mappedState
+                if self.stateValue.networkState != mappedState || self.stateValue.connectionMode != mappedMode {
+                    var stateValue = self.stateValue
+                    stateValue.networkState = mappedState
+                    stateValue.connectionMode = mappedMode
+                    self.stateValue = stateValue
                 }
                 let isConnecting = mappedState == .connecting
                 
@@ -2240,24 +2303,28 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
             if case let .established(callInfo, _, _, _, initialState) = internalState {
                 self.summaryInfoState.set(.single(SummaryInfoState(info: callInfo)))
                 
-                self.stateValue.canManageCall = initialState.isCreator || initialState.adminIds.contains(self.accountContext.account.peerId)
-                if self.stateValue.canManageCall && initialState.defaultParticipantsAreMuted.canChange {
-                    self.stateValue.defaultParticipantMuteState = initialState.defaultParticipantsAreMuted.isMuted ? .muted : .unmuted
+                var stateValue = self.stateValue
+                
+                stateValue.canManageCall = initialState.isCreator || initialState.adminIds.contains(self.accountContext.account.peerId)
+                if stateValue.canManageCall && initialState.defaultParticipantsAreMuted.canChange {
+                    stateValue.defaultParticipantMuteState = initialState.defaultParticipantsAreMuted.isMuted ? .muted : .unmuted
                 }
-                if self.stateValue.recordingStartTimestamp != initialState.recordingStartTimestamp {
-                    self.stateValue.recordingStartTimestamp = initialState.recordingStartTimestamp
+                if stateValue.recordingStartTimestamp != initialState.recordingStartTimestamp {
+                    stateValue.recordingStartTimestamp = initialState.recordingStartTimestamp
                 }
-                if self.stateValue.title != initialState.title {
-                    self.stateValue.title = initialState.title
+                if stateValue.title != initialState.title {
+                    stateValue.title = initialState.title
                 }
-                if self.stateValue.scheduleTimestamp != initialState.scheduleTimestamp {
-                    self.stateValue.scheduleTimestamp = initialState.scheduleTimestamp
+                if stateValue.scheduleTimestamp != initialState.scheduleTimestamp {
+                    stateValue.scheduleTimestamp = initialState.scheduleTimestamp
                 }
+                stateValue.defaultSendAs = initialState.defaultSendAs
+                self.stateValue = stateValue
                 
                 let accountContext = self.accountContext
                 let peerId = self.peerId
                 let rawAdminIds: Signal<Set<PeerId>, NoError>
-                if let peerId {
+                if let peerId = peerId ?? self.streamPeerId {
                     if peerId.namespace == Namespaces.Peer.CloudChannel {
                         rawAdminIds = Signal { subscriber in
                             let (disposable, _) = accountContext.peerChannelMemberCategoriesContextsManager.admins(engine: accountContext.engine, postbox: accountContext.account.postbox, network: accountContext.account.network, accountPeerId: accountContext.account.peerId, peerId: peerId, updated: { list in
@@ -2297,7 +2364,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 }
                 
                 let peer: Signal<EnginePeer?, NoError>
-                if let peerId {
+                if let peerId = peerId ?? self.streamPeerId {
                     peer = accountContext.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
                 } else {
                     peer = .single(nil)
@@ -2474,7 +2541,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                                 muteState: self.temporaryMuteState ?? GroupCallParticipantsContext.Participant.MuteState(canUnmute: true, mutedByYou: false),
                                 volume: nil,
                                 about: about,
-                                joinedVideo: self.temporaryJoinedVideo
+                                joinedVideo: self.temporaryJoinedVideo,
+                                paidStarsTotal: nil
                             ))
                             participants.sort(by: { GroupCallParticipantsContext.Participant.compare(lhs: $0, rhs: $1, sortAscending: state.sortAscending) })
                         }
@@ -2624,19 +2692,24 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     
                     self.membersValue = members
                     
-                    self.stateValue.adminIds = adminIds
+                    var stateValue = self.stateValue
+                    stateValue.adminIds = adminIds
                     
-                    self.stateValue.canManageCall = state.isCreator || adminIds.contains(self.accountContext.account.peerId)
-                    if (state.isCreator || self.stateValue.adminIds.contains(self.accountContext.account.peerId)) && state.defaultParticipantsAreMuted.canChange {
-                        self.stateValue.defaultParticipantMuteState = state.defaultParticipantsAreMuted.isMuted ? .muted : .unmuted
+                    stateValue.canManageCall = state.isCreator || adminIds.contains(self.accountContext.account.peerId)
+                    if (state.isCreator || stateValue.adminIds.contains(self.accountContext.account.peerId)) && state.defaultParticipantsAreMuted.canChange {
+                        stateValue.defaultParticipantMuteState = state.defaultParticipantsAreMuted.isMuted ? .muted : .unmuted
                     }
-                    self.stateValue.messagesAreEnabled = state.messagesAreEnabled.isEnabled
-                    self.stateValue.canEnableMessages = state.messagesAreEnabled.canChange
-                    self.stateValue.recordingStartTimestamp = state.recordingStartTimestamp
-                    self.stateValue.title = state.title
-                    self.stateValue.scheduleTimestamp = state.scheduleTimestamp
-                    self.stateValue.isVideoEnabled = state.isVideoEnabled && otherParticipantsWithVideo < state.unmutedVideoLimit
-                    self.stateValue.isVideoWatchersLimitReached = videoWatchingParticipants >= configuration.videoParticipantsMaxCount
+                    stateValue.messagesAreEnabled = state.messagesAreEnabled.isEnabled
+                    stateValue.canEnableMessages = state.messagesAreEnabled.canChange
+                    stateValue.sendPaidMessageStars = state.messagesAreEnabled.sendPaidMessagesStars
+                    stateValue.recordingStartTimestamp = state.recordingStartTimestamp
+                    stateValue.title = state.title
+                    stateValue.scheduleTimestamp = state.scheduleTimestamp
+                    stateValue.isVideoEnabled = state.isVideoEnabled && otherParticipantsWithVideo < state.unmutedVideoLimit
+                    stateValue.isVideoWatchersLimitReached = videoWatchingParticipants >= configuration.videoParticipantsMaxCount
+                    stateValue.isUnifiedStream = state.isStream
+                    stateValue.defaultSendAs = state.defaultSendAs
+                    self.stateValue = stateValue
                     
                     self.summaryInfoState.set(.single(SummaryInfoState(info: GroupCallInfo(
                         id: callInfo.id,
@@ -2653,7 +2726,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                         isVideoEnabled: state.isVideoEnabled,
                         unmutedVideoLimit: state.unmutedVideoLimit,
                         isStream: callInfo.isStream,
-                        isCreator: callInfo.isCreator
+                        isCreator: callInfo.isCreator,
+                        defaultSendAs: callInfo.defaultSendAs
                     ))))
                     
                     self.summaryParticipantsState.set(.single(SummaryParticipantsState(
@@ -2665,6 +2739,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                     if didUpdateInvitedPeers {
                         self.invitedPeersValue = updatedInvitedPeers
                     }
+                    
+                    self.messagesContext?.updateSettings(minMessagePrice: stateValue.sendPaidMessageStars ?? 0)
                 }))
                 
                 self.isFailedEventDisposable?.dispose()
@@ -3292,6 +3368,10 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         })
     }
     
+    public func addExternalAudioData(data: Data) {
+        self.genericCallContext?.addExternalAudioData(data: data)
+    }
+    
     public func requestVideo() {
         if self.videoCapturer == nil {
             let videoCapturer = OngoingCallVideoCapturer()
@@ -3307,7 +3387,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         }
     }
 
-    func requestVideo(capturer: OngoingCallVideoCapturer, useFrontCamera: Bool = true) {
+    public func requestVideo(capturer: OngoingCallVideoCapturer, useFrontCamera: Bool = true) {
         self.videoCapturer = capturer
         self.useFrontCamera = useFrontCamera
         
@@ -3335,7 +3415,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
     
     public func disableVideo() {
         self.hasVideo = false
-        self.useFrontCamera = true;
+        self.useFrontCamera = true
         if let _ = self.videoCapturer {
             self.videoCapturer = nil
             self.isVideoMutedDisposable.set(nil)
@@ -3663,7 +3743,7 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                 return
             }
             
-            if let value = value {
+            if let value {
                 var reference: InternalGroupCallReference = .id(id: value.id, accessHash: value.accessHash)
                 if let current = self.initialCall {
                     switch current.reference {
@@ -3924,8 +4004,8 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         self.participantsContext?.updateDefaultParticipantsAreMuted(isMuted: isMuted)
     }
     
-    public func updateMessagesEnabled(isEnabled: Bool) {
-        self.participantsContext?.updateMessagesEnabled(isEnabled: isEnabled)
+    public func updateMessagesEnabled(isEnabled: Bool, sendPaidMessageStars: Int64?) {
+        self.participantsContext?.updateMessagesEnabled(isEnabled: isEnabled, sendPaidMessageStars: sendPaidMessageStars)
     }
     
     func video(endpointId: String) -> Signal<OngoingGroupCallContext.VideoFrameData, NoError>? {
@@ -4018,9 +4098,39 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         })
     }
     
-    public func sendMessage(randomId: Int64? = nil, text: String, entities: [MessageTextEntity]) {
+    public func sendMessage(fromId: PeerId?, isAdmin: Bool, randomId: Int64? = nil, text: String, entities: [MessageTextEntity], paidStars: Int64?) {
         if let messagesContext = self.messagesContext {
-            messagesContext.send(fromId: self.joinAsPeerId, randomId: randomId, text: text, entities: entities)
+            messagesContext.send(fromId: fromId ?? self.joinAsPeerId, isAdmin: isAdmin, randomId: randomId, text: text, entities: entities, paidStars: paidStars)
+        }
+    }
+    
+    public func sendStars(fromId: PeerId?, isAdmin: Bool, amount: Int64, delay: Bool) {
+        if let messagesContext = self.messagesContext {
+            messagesContext.sendStars(fromId: fromId ?? self.joinAsPeerId, isAdmin: isAdmin, amount: amount, delay: delay)
+        }
+    }
+    
+    public func cancelSendStars() {
+        if let messagesContext = self.messagesContext {
+            messagesContext.cancelSendStars()
+        }
+    }
+    
+    public func commitSendStars() {
+        if let messagesContext = self.messagesContext {
+            messagesContext.commitSendStars()
+        }
+    }
+    
+    public func deleteMessage(id: GroupCallMessagesContext.Message.Id, reportSpam: Bool) {
+        if let messagesContext = self.messagesContext {
+            messagesContext.deleteMessage(id: id, reportSpam: reportSpam)
+        }
+    }
+    
+    public func deleteAllMessages(authorId: EnginePeer.Id, reportSpam: Bool) {
+        if let messagesContext = self.messagesContext {
+            messagesContext.deleteAllMessages(authorId: authorId, reportSpam: reportSpam)
         }
     }
 }

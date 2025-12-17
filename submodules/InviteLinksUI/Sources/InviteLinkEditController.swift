@@ -292,7 +292,7 @@ private enum InviteLinksEditEntry: ItemListNodeEntry {
             case let .titleHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .title(_, placeholder, value):
-                return ItemListSingleLineInputItem(context: arguments.context, presentationData: presentationData, title: NSAttributedString(), text: value, placeholder: placeholder, maxLength: 32, sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(), text: value, placeholder: placeholder, maxLength: 32, sectionId: self.section, textUpdated: { value in
                     arguments.updateState { state in
                         var updatedState = state
                         updatedState.title = value
@@ -302,7 +302,7 @@ private enum InviteLinksEditEntry: ItemListNodeEntry {
             case let .titleInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .subscriptionFeeToggle(_, text, value, enabled):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateState { state in
                         var updatedState = state
                         updatedState.subscriptionEnabled = value
@@ -325,7 +325,7 @@ private enum InviteLinksEditEntry: ItemListNodeEntry {
                     title.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: NSRange(range, in: title.string))
                     title.addAttribute(.baselineOffset, value: -1.0, range: NSRange(range, in: title.string))
                 }
-                return ItemListSingleLineInputItem(context: arguments.context, presentationData: presentationData, title: title, text: value.flatMap { "\($0)" } ?? "", placeholder: placeholder, label: label, type: .number, spacing: 3.0, enabled: enabled, tag: InviteLinksEditEntryTag.subscriptionFee, sectionId: self.section, textUpdated: { text in
+                return ItemListSingleLineInputItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: title, text: value.flatMap { "\($0)" } ?? "", placeholder: placeholder, label: label, type: .number, spacing: 3.0, enabled: enabled, tag: InviteLinksEditEntryTag.subscriptionFee, sectionId: self.section, textUpdated: { text in
                     arguments.updateState { state in
                         var updatedState = state
                         if var value = Int64(text).flatMap({ StarsAmount(value: $0, nanos: 0) }) {
@@ -343,7 +343,7 @@ private enum InviteLinksEditEntry: ItemListNodeEntry {
             case let .subscriptionFeeInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section)
             case let .requestApproval(_, text, value, enabled):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateState { state in
                         var updatedState = state
                         updatedState.requestApproval = value
@@ -373,7 +373,7 @@ private enum InviteLinksEditEntry: ItemListNodeEntry {
                 } else {
                     text = presentationData.strings.InviteLink_Create_TimeLimitExpiryDateNever
                 }
-                return ItemListDisclosureItem(presentationData: presentationData, title: presentationData.strings.InviteLink_Create_TimeLimitExpiryDate, enabled: enabled, label: text, labelStyle: active ? .coloredText(theme.list.itemAccentColor) : .text, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: presentationData.strings.InviteLink_Create_TimeLimitExpiryDate, enabled: enabled, label: text, labelStyle: active ? .coloredText(theme.list.itemAccentColor) : .text, sectionId: self.section, style: .blocks, disclosureStyle: .none, action: {
                     arguments.dismissInput()
                     arguments.updateState { state in
                         var updatedState = state
@@ -437,7 +437,7 @@ private enum InviteLinksEditEntry: ItemListNodeEntry {
                 } else {
                     text = focused ? "" : presentationData.strings.InviteLink_Create_UsersLimitNumberOfUsersUnlimited
                 }
-                return ItemListSingleLineInputItem(context: arguments.context, presentationData: presentationData, title: NSAttributedString(string: presentationData.strings.InviteLink_Create_UsersLimitNumberOfUsers, textColor: theme.list.itemPrimaryTextColor), text: text, placeholder: "", type: .number, alignment: .right, enabled: enabled, selectAllOnFocus: true, secondaryStyle: !customValue, tag: InviteLinksEditEntryTag.usage, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: presentationData.strings.InviteLink_Create_UsersLimitNumberOfUsers, textColor: theme.list.itemPrimaryTextColor), text: text, placeholder: "", type: .number, alignment: .right, enabled: enabled, selectAllOnFocus: true, secondaryStyle: !customValue, tag: InviteLinksEditEntryTag.usage, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updateState { state in
                         var updatedState = state
                         if updatedText.isEmpty {
@@ -472,7 +472,7 @@ private enum InviteLinksEditEntry: ItemListNodeEntry {
             case let .usageInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .revoke(_, text):
-                return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
                     arguments.revoke()
                 }, tag: nil)
         }
@@ -494,7 +494,7 @@ private func inviteLinkEditControllerEntries(invite: ExportedInvitation?, state:
             var label: String = ""
             if let subscriptionFee = state.subscriptionFee, subscriptionFee > StarsAmount.zero {
                 let usdRate = Double(configuration.usdWithdrawRate) / 1000.0 / 100.0
-                label = presentationData.strings.InviteLink_Create_FeePerMonth("≈\(formatTonUsdValue(subscriptionFee.value, divide: false, rate: usdRate, dateTimeFormat: presentationData.dateTimeFormat))").string
+                label = presentationData.strings.InviteLink_Create_FeePerMonth("~\(formatTonUsdValue(subscriptionFee.value, divide: false, rate: usdRate, dateTimeFormat: presentationData.dateTimeFormat))").string
             }
             entries.append(.subscriptionFee(presentationData.theme, presentationData.strings.InviteLink_Create_FeePlaceholder, isEditingEnabled, state.subscriptionFee, label, StarsAmount(value: configuration.maxFee, nanos: 0)))
         }

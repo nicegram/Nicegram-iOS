@@ -42,6 +42,8 @@ swift_library(
         "//submodules/ReactionSelectionNode",
         "//submodules/TelegramUI/Components/Chat/TopMessageReactions",
         "//submodules/TelegramUI/Components/MinimizedContainer",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/TelegramUI/Components/EdgeEffect",
     ],
     visibility = [
         "//visibility:public",

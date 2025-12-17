@@ -178,6 +178,7 @@ private enum EnergeSavingSettingsScreenEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .all(value):
             return EnergyUsageBatteryLevelItem(
+                systemStyle: .glass,
                 theme: presentationData.theme,
                 strings: presentationData.strings,
                 value: value,
@@ -192,7 +193,7 @@ private enum EnergeSavingSettingsScreenEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: presentationData.strings.PowerSavingScreen_OptionsHeader, sectionId: self.section)
         case let .item(_, type, value, enabled):
             let (iconName, title, text) = type.title(strings: presentationData.strings)
-            return ItemListSwitchItem(presentationData: presentationData, icon: UIImage(bundleImageName: iconName)?.precomposed(), title: title, text: text, value: value, enableInteractiveChanges: true, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: iconName)?.precomposed(), title: title, text: text, value: value, enableInteractiveChanges: true, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleItem(type)
             }, activatedWhileDisabled: {
                 arguments.displayDisabledTooltip()

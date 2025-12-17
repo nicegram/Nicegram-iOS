@@ -176,6 +176,7 @@ public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
 
     let presentationData: ItemListPresentationData
     let style: ItemListStyle
+    let systemStyle: ItemListSystemStyle
     public let sectionId: ItemListSectionId
     let sortOrder: PresentationPersonNameOrder
     let displayOrder: PresentationPersonNameOrder
@@ -207,7 +208,7 @@ public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
     let arrowAction: (() -> Void)?
     let animationCache: AnimationCache?
     let animationRenderer: MultiAnimationRenderer?
-    let storyStats: (total: Int, unseen: Int, hasUnseenCloseFriends: Bool)?
+    let storyStats: (total: Int, unseen: Int, hasUnseenCloseFriends: Bool, hasLiveItems: Bool)?
     let openStories: ((ContactsPeerItemPeer, ASDisplayNode) -> Void)?
     let adButtonAction: ((ASDisplayNode) -> Void)?
     let visibilityUpdated: ((Bool) -> Void)?
@@ -221,6 +222,7 @@ public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
     public init(
         presentationData: ItemListPresentationData,
         style: ItemListStyle = .plain,
+        systemStyle: ItemListSystemStyle = .legacy,
         sectionId: ItemListSectionId = 0,
         sortOrder: PresentationPersonNameOrder,
         displayOrder: PresentationPersonNameOrder,
@@ -253,13 +255,14 @@ public class ContactsPeerItem: ItemListItem, ListViewItemWithHeader {
         contextAction: ((ASDisplayNode, ContextGesture?, CGPoint?) -> Void)? = nil, arrowAction: (() -> Void)? = nil,
         animationCache: AnimationCache? = nil,
         animationRenderer: MultiAnimationRenderer? = nil,
-        storyStats: (total: Int, unseen: Int, hasUnseenCloseFriends: Bool)? = nil,
+        storyStats: (total: Int, unseen: Int, hasUnseenCloseFriends: Bool, hasLiveItems: Bool)? = nil,
         openStories: ((ContactsPeerItemPeer, ASDisplayNode) -> Void)? = nil,
         adButtonAction: ((ASDisplayNode) -> Void)? = nil,
         visibilityUpdated: ((Bool) -> Void)? = nil
     ) {
         self.presentationData = presentationData
         self.style = style
+        self.systemStyle = systemStyle
         self.sectionId = sectionId
         self.sortOrder = sortOrder
         self.displayOrder = displayOrder
@@ -1153,6 +1156,9 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
             if case .app = item.peerMode {
                 verticalInset += 2.0
             }
+            if case .glass = item.systemStyle {
+                verticalInset += 4.0
+            }
             
             let statusHeightComponent: CGFloat
             if statusAttributedString == nil {
@@ -1286,7 +1292,8 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                     return AvatarNode.StoryStats(
                                         totalCount: stats.total,
                                         unseenCount: stats.unseen,
-                                        hasUnseenCloseFriendsItems: stats.hasUnseenCloseFriends
+                                        hasUnseenCloseFriendsItems: stats.hasUnseenCloseFriends,
+                                        hasLiveItems: stats.hasLiveItems
                                     )
                                 },
                                 presentationParams: AvatarNode.StoryPresentationParams(
@@ -1846,16 +1853,17 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                             }
                             
                             let separatorHeight = UIScreenPixel
+                            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
                             
-                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                             
                             let topHighlightInset: CGFloat = (first || !nodeLayout.insets.top.isZero) ? 0.0 : separatorHeight
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: nodeLayout.contentSize.width, height: nodeLayout.contentSize.height))
                             strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                             strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - topHighlightInset), size: CGSize(width: nodeLayout.size.width, height: nodeLayout.size.height + topHighlightInset))
                             strongSelf.topSeparatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(nodeLayout.insets.top, separatorHeight)), size: CGSize(width: nodeLayout.contentSize.width, height: separatorHeight))
-                            strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: max(0.0, nodeLayout.size.width - leftInset), height: separatorHeight))
-                            if !item.alwaysShowLastSeparator {
+                            strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: max(0.0, nodeLayout.size.width - leftInset - separatorRightInset), height: separatorHeight))
+                            if !item.alwaysShowLastSeparator && item.style != .blocks {
                                 strongSelf.separatorNode.isHidden = last
                             }
                             

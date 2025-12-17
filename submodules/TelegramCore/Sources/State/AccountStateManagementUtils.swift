@@ -1678,15 +1678,17 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                     break
                 }
             case let .updateGroupCall(_, channelId, call):
-                updatedState.updateGroupCall(peerId: channelId.flatMap { PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value($0)) }, call: call)
-                updatedState.updateGroupCall(peerId: channelId.flatMap { PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value($0)) }, call: call)
+                updatedState.updateGroupCall(peerId: channelId?.peerId, call: call)
             case let .updateGroupCallChainBlocks(call, subChainId, blocks, nextOffset):
                 if case let .inputGroupCall(id, accessHash) = call {
                     updatedState.updateGroupCallChainBlocks(id: id, accessHash: accessHash, subChainId: subChainId, blocks: blocks.map { $0.makeData() }, nextOffset: nextOffset)
                 }
-            case let .updateGroupCallMessage(call, fromId, randomId, message):
+            case let .updateGroupCallMessage(call, message):
                 if case let .inputGroupCall(id, _) = call {
-                    updatedState.updateGroupCallMessage(id: id, authorId: fromId.peerId, randomId: randomId, text: message)
+                    switch message {
+                    case let .groupCallMessage(flags, messageId, fromId, date, message, paidMessageStars):
+                        updatedState.updateGroupCallMessage(id: id, authorId: fromId.peerId, isFromAdmin: (flags & (1 << 1)) != 0, messageId: messageId, text: message, date: date, paidMessageStars: paidMessageStars)
+                    }
                 }
             case let .updateGroupCallEncryptedMessage(call, fromId, encryptedMessage):
                 if case let .inputGroupCall(id, _) = call {
@@ -1898,6 +1900,12 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
                 updatedState.updateStarsReactionsDefaultPrivacy(privacy: mappedPrivacy)
             case let .updateMonoForumNoPaidException(flags, channelId, savedPeerId):
                 updatedState.updateMonoForumNoPaidException(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), threadId: savedPeerId.peerId.toInt64(), isFree: (flags & (1 << 0)) != 0)
+            case let .updateStarGiftAuctionState(giftId, state):
+                if let state = GiftAuctionContext.State.AuctionState(apiAuctionState: state, peers: updatedState.peers) {
+                    updatedState.updateStarGiftAuctionState(giftId: giftId, state: state)
+                }
+            case let .updateStarGiftAuctionUserState(giftId, userState):
+                updatedState.updateStarGiftAuctionMyState(giftId: giftId, state: GiftAuctionContext.State.MyState(apiAuctionUserState: userState))
             default:
                 break
         }
@@ -3621,7 +3629,7 @@ private func optimizedOperations(_ operations: [AccountStateMutationOperation]) 
     var currentAddQuickReplyMessages: OptimizeAddMessagesState?
     for operation in operations {
         switch operation {
-        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateGroupCallMessage, .UpdateGroupCallOpaqueMessage, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateWallpaper, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException:
+        case .DeleteMessages, .DeleteMessagesWithGlobalIds, .EditMessage, .UpdateMessagePoll, .UpdateMessageReactions, .UpdateMedia, .MergeApiChats, .MergeApiUsers, .MergePeerPresences, .UpdatePeer, .ReadInbox, .ReadOutbox, .ReadGroupFeedInbox, .ResetReadState, .ResetIncomingReadState, .UpdatePeerChatUnreadMark, .ResetMessageTagSummary, .UpdateNotificationSettings, .UpdateGlobalNotificationSettings, .UpdateSecretChat, .AddSecretMessages, .ReadSecretOutbox, .AddPeerInputActivity, .AddPeerLiveTypingDraftUpdate, .UpdateCachedPeerData, .UpdatePinnedItemIds, .UpdatePinnedSavedItemIds, .UpdatePinnedTopic, .UpdatePinnedTopicOrder, .ReadMessageContents, .UpdateMessageImpressionCount, .UpdateMessageForwardsCount, .UpdateInstalledStickerPacks, .UpdateRecentGifs, .UpdateChatInputState, .UpdateCall, .AddCallSignalingData, .UpdateLangPack, .UpdateMinAvailableMessage, .UpdateIsContact, .UpdatePeerChatInclusion, .UpdatePeersNearby, .UpdateTheme, .SyncChatListFilters, .UpdateChatListFilter, .UpdateChatListFilterOrder, .UpdateReadThread, .UpdateMessagesPinned, .UpdateGroupCallParticipants, .UpdateGroupCall, .UpdateGroupCallChainBlocks, .UpdateGroupCallMessage, .UpdateGroupCallOpaqueMessage, .UpdateAutoremoveTimeout, .UpdateAttachMenuBots, .UpdateAudioTranscription, .UpdateConfig, .UpdateExtendedMedia, .ResetForumTopic, .UpdateStory, .UpdateReadStories, .UpdateStoryStealthMode, .UpdateStorySentReaction, .UpdateNewAuthorization, .UpdateWallpaper, .UpdateStarsBalance, .UpdateStarsRevenueStatus, .UpdateStarsReactionsDefaultPrivacy, .ReportMessageDelivery, .UpdateMonoForumNoPaidException, .UpdateStarGiftAuctionState, .UpdateStarGiftAuctionMyState:
                 if let currentAddMessages = currentAddMessages, !currentAddMessages.messages.isEmpty {
                     result.append(.AddMessages(currentAddMessages.messages, currentAddMessages.location))
                 }
@@ -3762,6 +3770,8 @@ func replayFinalState(
     var updatedStarsRevenueStatus: [PeerId: StarsRevenueStats.Balances] = [:]
     var updatedStarsReactionsDefaultPrivacy: TelegramPaidReactionPrivacy?
     var reportMessageDelivery = Set<MessageId>()
+    var updatedStarGiftAuctionState: [Int64: GiftAuctionContext.State.AuctionState] = [:]
+    var updatedStarGiftAuctionMyState: [Int64: GiftAuctionContext.State.MyState] = [:]
     
     var holesFromPreviousStateMessageIds: [MessageId] = []
     var clearHolesFromPreviousStateForChannelMessagesWithPts: [PeerIdAndMessageNamespace: Int32] = [:]
@@ -3855,7 +3865,12 @@ func replayFinalState(
                             }
 
                             if id.namespace == Namespaces.Message.Cloud && id.peerId.namespace == Namespaces.Peer.CloudUser {
-                                addedConferenceInvitationMessagesIds.append(id)
+                                inner: for media in message.media {
+                                    if let action = media as? TelegramMediaAction, case .conferenceCall = action.action {
+                                        addedConferenceInvitationMessagesIds.append(id)
+                                        break inner
+                                    }
+                                }
                             }
                         }
                         if message.flags.contains(.WasScheduled) {
@@ -4880,10 +4895,10 @@ func replayFinalState(
                     callId,
                     .state(update: GroupCallParticipantsContext.Update.StateUpdate(participants: participants, version: version))
                 ))
-            case let .UpdateGroupCallMessage(callId, authorId, randomId, text):
+            case let .UpdateGroupCallMessage(callId, authorId, isFromAdmin, messageId, text, date, paidMessageStars):
                 switch text {
                 case let .textWithEntities(text, entities):
-                    groupCallMessageUpdates.append(GroupCallMessageUpdate(callId: callId, update: .newPlaintextMessage(authorId: authorId, randomId: randomId, text: text, entities: messageTextEntitiesFromApiEntities(entities))))
+                    groupCallMessageUpdates.append(GroupCallMessageUpdate(callId: callId, update: .newPlaintextMessage(authorId: authorId, isFromAdmin: isFromAdmin, messageId: messageId, text: text, entities: messageTextEntitiesFromApiEntities(entities), timestamp: date, paidMessageStars: paidMessageStars)))
                 }
             case let .UpdateGroupCallOpaqueMessage(callId, authorId, data):
                 groupCallMessageUpdates.append(GroupCallMessageUpdate(callId: callId, update: .newOpaqueMessage(authorId: authorId, data: data)))
@@ -4904,7 +4919,7 @@ func replayFinalState(
                         }
                         
                         switch call {
-                        case let .groupCall(flags, _, _, participantsCount, title, _, recordStartDate, scheduleDate, _, _, _, _):
+                        case let .groupCall(flags, _, _, participantsCount, title, _, recordStartDate, scheduleDate, _, _, _, _, sendPaidMessagesStars, _):
                             let isMin = (flags & (1 << 19)) != 0
                             let isMuted = (flags & (1 << 1)) != 0
                             let canChange = (flags & (1 << 2)) != 0
@@ -4912,7 +4927,7 @@ func replayFinalState(
                             let defaultParticipantsAreMuted = GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: isMuted, canChange: canChange)
                             let messagesEnabled = (flags & (1 << 17)) != 0
                             let canChangeMessagesEnabled = (flags & (1 << 18)) != 0
-                            let messagesAreEnabled = GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: messagesEnabled, canChange: canChangeMessagesEnabled)
+                            let messagesAreEnabled = GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: messagesEnabled, canChange: canChangeMessagesEnabled, sendPaidMessagesStars: sendPaidMessagesStars)
                             updatedGroupCallParticipants.append((
                                 info.id,
                                 .call(isTerminated: false, defaultParticipantsAreMuted: defaultParticipantsAreMuted, messagesAreEnabled: messagesAreEnabled, title: title, recordingStartTimestamp: recordStartDate, scheduleTimestamp: scheduleDate, isVideoEnabled: isVideoEnabled, participantCount: Int(participantsCount), isMin: isMin)
@@ -4924,7 +4939,7 @@ func replayFinalState(
                 case let .groupCallDiscarded(callId, _, _):
                     updatedGroupCallParticipants.append((
                         callId,
-                        .call(isTerminated: true, defaultParticipantsAreMuted: GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: false, canChange: false), messagesAreEnabled: GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: false, canChange: false), title: nil, recordingStartTimestamp: nil, scheduleTimestamp: nil, isVideoEnabled: false, participantCount: nil, isMin: false)
+                        .call(isTerminated: true, defaultParticipantsAreMuted: GroupCallParticipantsContext.State.DefaultParticipantsAreMuted(isMuted: false, canChange: false), messagesAreEnabled: GroupCallParticipantsContext.State.MessagesAreEnabled(isEnabled: false, canChange: false, sendPaidMessagesStars: nil), title: nil, recordingStartTimestamp: nil, scheduleTimestamp: nil, isVideoEnabled: false, participantCount: nil, isMin: false)
                     ))
                     
                     if let peerId {
@@ -5156,12 +5171,12 @@ func replayFinalState(
                     if let currentIndex = updatedPeerEntries.firstIndex(where: { $0.id == storedItem.id }) {
                         if case .item = storedItem {
                             if let codedEntry = CodableEntry(storedItem) {
-                                updatedPeerEntries[currentIndex] = StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends)
+                                updatedPeerEntries[currentIndex] = StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream)
                             }
                         }
                     } else {
                         if let codedEntry = CodableEntry(storedItem) {
-                            updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends))
+                            updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream))
                         }
                     }
                     if case .item = storedItem {
@@ -5246,7 +5261,7 @@ func replayFinalState(
                             folderIds: item.folderIds
                         ))
                         if let entry = CodableEntry(updatedItem) {
-                            updatedPeerEntries[index] = StoryItemsTableEntry(value: entry, id: item.id, expirationTimestamp: item.expirationTimestamp, isCloseFriends: item.isCloseFriends)
+                            updatedPeerEntries[index] = StoryItemsTableEntry(value: entry, id: item.id, expirationTimestamp: item.expirationTimestamp, isCloseFriends: item.isCloseFriends, isLiveStream: item.isLiveStream)
                         }
                     }
                 }
@@ -5320,6 +5335,10 @@ func replayFinalState(
                         transaction.setMessageHistoryThreadInfo(peerId: peerId, threadId: threadId, info: entry)
                     }
                 }
+            case let .UpdateStarGiftAuctionState(giftId, state):
+                updatedStarGiftAuctionState[giftId] = state
+            case let .UpdateStarGiftAuctionMyState(giftId, state):
+                updatedStarGiftAuctionMyState[giftId] = state
         }
     }
     
@@ -5868,6 +5887,8 @@ func replayFinalState(
         updatedStarsRevenueStatus: updatedStarsRevenueStatus,
         sentScheduledMessageIds: finalState.state.sentScheduledMessageIds,
         reportMessageDelivery: reportMessageDelivery,
-        addedConferenceInvitationMessagesIds: addedConferenceInvitationMessagesIds
+        addedConferenceInvitationMessagesIds: addedConferenceInvitationMessagesIds,
+        updatedStarGiftAuctionState: updatedStarGiftAuctionState,
+        updatedStarGiftAuctionMyState: updatedStarGiftAuctionMyState
     )
 }

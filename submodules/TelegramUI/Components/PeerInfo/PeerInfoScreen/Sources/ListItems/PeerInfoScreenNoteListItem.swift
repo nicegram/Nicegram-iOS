@@ -101,8 +101,8 @@ final class PeerInfoScreenNoteListItemNode: PeerInfoScreenItemNode {
             environment: {},
             containerSize: CGSize(width: width - sideInset * 2.0, height: .greatestFiniteMagnitude)
         )
-        let textFieldFrame = CGRect(origin: CGPoint(x: sideInset, y: 3.0), size: textFieldSize)
-        let height: CGFloat = 4.0 + textFieldSize.height
+        let textFieldFrame = CGRect(origin: CGPoint(x: sideInset, y: 7.0), size: textFieldSize)
+        let height: CGFloat = 12.0 + textFieldSize.height
         if let textFieldView = self.textField.view {
             if textFieldView.superview == nil {
                 self.view.addSubview(textFieldView)
@@ -118,7 +118,7 @@ final class PeerInfoScreenNoteListItemNode: PeerInfoScreenItemNode {
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         

@@ -1242,7 +1242,6 @@ open class InteractiveTextNode: ASDisplayNode, TextNodeProtocol, UIGestureRecogn
         if !canHandleTapAtPoint(point) {
             return nil
         }
-        
         guard let result = super.hitTest(point, with: event) else {
             return nil
         }

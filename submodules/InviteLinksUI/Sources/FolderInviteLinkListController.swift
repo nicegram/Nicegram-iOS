@@ -169,7 +169,7 @@ private enum InviteLinksListEntry: ItemListNodeEntry {
         case let .mainLinkHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .mainLink(link, isGenerating):
-            return ItemListFolderInviteLinkItem(context: arguments.context, presentationData: presentationData, invite: link, count: 0, peers: [], displayButton: true, enableButton: !isGenerating, buttonTitle: presentationData.strings.FolderLinkScreen_LinkActionCopy, secondaryButtonTitle: link != nil ? presentationData.strings.FolderLinkScreen_LinkActionShare : nil, displayImporters: false, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
+            return ItemListFolderInviteLinkItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, invite: link, count: 0, peers: [], displayButton: true, enableButton: !isGenerating, buttonTitle: presentationData.strings.FolderLinkScreen_LinkActionCopy, secondaryButtonTitle: link != nil ? presentationData.strings.FolderLinkScreen_LinkActionShare : nil, displayImporters: false, buttonColor: nil, sectionId: self.section, style: .blocks, copyAction: {
                 if let link {
                     arguments.copyLink(link.link)
                 }
@@ -197,6 +197,7 @@ private enum InviteLinksListEntry: ItemListNodeEntry {
         case let .peer(_, peer, isSelected, disabledReasonText):
             return ItemListPeerItem(
                 presentationData: presentationData,
+                systemStyle: .glass,
                 dateTimeFormat: PresentationDateTimeFormat(),
                 nameDisplayOrder: presentationData.nameDisplayOrder,
                 context: arguments.context,

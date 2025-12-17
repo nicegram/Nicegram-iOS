@@ -385,7 +385,7 @@ extension ChatControllerImpl {
             }
         
             let reactionsAttribute = mergedMessageReactions(attributes: message.attributes, isTags: false)
-            let _ = (ChatSendStarsScreen.initialData(context: self.context, peerId: message.id.peerId, messageId: message.id, topPeers: reactionsAttribute?.topPeers ?? [], completion: { [weak self] amount, privacy, isBecomingTop, transitionOut in
+            let _ = (ChatSendStarsScreen.initialData(context: self.context, peerId: message.id.peerId, reactSubject: .message(message.id), topPeers: reactionsAttribute?.topPeers ?? [], completion: { [weak self] amount, privacy, isBecomingTop, transitionOut in
                 guard let self, amount > 0 else {
                     return
                 }

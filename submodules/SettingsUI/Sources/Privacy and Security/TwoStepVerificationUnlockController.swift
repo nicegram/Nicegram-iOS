@@ -132,7 +132,7 @@ private enum TwoStepVerificationUnlockSettingsEntry: ItemListNodeEntry {
         let arguments = arguments as! TwoStepVerificationUnlockSettingsControllerArguments
         switch self {
             case let .passwordEntry(theme, _, text, value):
-                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: text, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: "", type: .password, spacing: 10.0, tag: TwoStepVerificationUnlockSettingsEntryTag.password, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: text, textColor: theme.list.itemPrimaryTextColor), text: value, placeholder: "", type: .password, spacing: 10.0, tag: TwoStepVerificationUnlockSettingsEntryTag.password, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updatePasswordText(updatedText)
                 }, action: {
                     arguments.checkPassword()
@@ -151,21 +151,21 @@ private enum TwoStepVerificationUnlockSettingsEntry: ItemListNodeEntry {
                     }
                 })
             case let .passwordSetup(_, text):
-                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openSetupPassword()
                 })
             case let .passwordSetupInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section)
             case let .changePassword(_, text):
-                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openSetupPassword()
                 })
             case let .turnPasswordOff(_, text):
-                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openDisablePassword()
                 })
             case let .setupRecoveryEmail(_, text):
-                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openSetupEmail()
                 })
             case let .passwordInfo(_, text):
@@ -173,7 +173,7 @@ private enum TwoStepVerificationUnlockSettingsEntry: ItemListNodeEntry {
             case let .pendingEmailConfirmInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .pendingEmailConfirmCode(_, _, title, text):
-                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: ""), text: text, placeholder: title, type: .number, sectionId: self.section, textUpdated: { value in
+                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: ""), text: text, placeholder: title, type: .number, sectionId: self.section, textUpdated: { value in
                     arguments.updateEmailCode(value)
                 }, action: {})
             case let .pendingEmailInfo(_, text):
@@ -184,7 +184,7 @@ private enum TwoStepVerificationUnlockSettingsEntry: ItemListNodeEntry {
                     }
                 })
             case let .pendingEmailOpenConfirm(_, text):
-                return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+                return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openConfirmEmail()
                 })
         }

@@ -21,6 +21,7 @@ swift_library(
         "//submodules/Components/MultilineTextComponent",
         "//submodules/Components/BalancedTextComponent",
         "//submodules/TelegramPresentationData",
+        "//submodules/TelegramNotices",
         "//submodules/AccountContext",
         "//submodules/AppBundle",
         "//submodules/ItemListUI",
@@ -43,6 +44,8 @@ swift_library(
         "//submodules/TelegramUI/Components/TabSelectorComponent",
         "//submodules/TelegramUI/Components/Gifts/GiftSetupScreen",
         "//submodules/TelegramUI/Components/Gifts/GiftViewScreen",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
     ],
     visibility = [
         "//visibility:public",

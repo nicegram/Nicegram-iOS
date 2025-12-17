@@ -608,7 +608,7 @@ private enum NotificationPeerExceptionEntry: ItemListNodeEntry {
         let arguments = arguments as! NotificationPeerExceptionArguments
         switch self {
         case let .remove(_, _, strings):
-            return ItemListActionItem(presentationData: presentationData, title: strings.Notification_Exceptions_RemoveFromExceptions, kind: .generic, alignment: .center, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: strings.Notification_Exceptions_RemoveFromExceptions, kind: .generic, alignment: .center, sectionId: self.section, style: .blocks, action: {
                 arguments.removeFromExceptions()
             })
         case let .switcher(_, _, strings, mode, selected):
@@ -619,7 +619,7 @@ private enum NotificationPeerExceptionEntry: ItemListNodeEntry {
             case .alwaysOff:
                 title = strings.Notification_Exceptions_AlwaysOff
             }
-            return ItemListCheckboxItem(presentationData: presentationData, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                  arguments.selectMode(mode)
             })
         case let .switcherHeader(_, _, text):
@@ -632,7 +632,7 @@ private enum NotificationPeerExceptionEntry: ItemListNodeEntry {
             case .alwaysOff:
                 title = strings.Notification_Exceptions_MessagePreviewAlwaysOff
             }
-            return ItemListCheckboxItem(presentationData: presentationData, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectDisplayPreviews(value)
             })
         case let .showSender(_, _, strings, value, selected):
@@ -643,7 +643,7 @@ private enum NotificationPeerExceptionEntry: ItemListNodeEntry {
             case .alwaysOff:
                 title = strings.Notification_Exceptions_MessagePreviewAlwaysOff
             }
-            return ItemListCheckboxItem(presentationData: presentationData, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectHideStoriesSender(value)
             })
         case let .cloudHeader(_, text):
@@ -652,7 +652,7 @@ private enum NotificationPeerExceptionEntry: ItemListNodeEntry {
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .uploadSound(_, text):
             let icon = PresentationResourcesItemList.uploadToneIcon(presentationData.theme)
-            return ItemListCheckboxItem(presentationData: presentationData, icon: icon, iconSize: nil, iconPlacement: .check, title: text, style: .left, textColor: .accent, checked: false, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: icon, iconSize: nil, iconPlacement: .check, title: text, style: .left, textColor: .accent, checked: false, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.upload()
             })
         case let .displayPreviewsHeader(_, _, text):
@@ -665,7 +665,7 @@ private enum NotificationPeerExceptionEntry: ItemListNodeEntry {
             case .alwaysOff:
                 title = strings.Notification_Exceptions_MessagePreviewAlwaysOff
             }
-            return ItemListCheckboxItem(presentationData: presentationData, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: title, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectStoriesMuted(value)
             })
         case let .storyNotificationsHeader(_, _, text):
@@ -675,15 +675,15 @@ private enum NotificationPeerExceptionEntry: ItemListNodeEntry {
         case let .soundClassicHeader(_, _, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .none(_, _, _, text, selected):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: true, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: true, sectionId: self.section, action: {
                 arguments.selectSound(.none)
             })
         case let .default(_, _, _, text, selected):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectSound(.default)
             })
         case let .sound(_, _, _, text, sound, selected, canBeDeleted):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: selected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.selectSound(sound)
             }, deleteAction: canBeDeleted ? {
                 arguments.deleteSound(sound, text)

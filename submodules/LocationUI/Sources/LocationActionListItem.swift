@@ -82,13 +82,13 @@ private func generateLiveLocationIcon(theme: PresentationTheme, type: LiveLocati
         switch type {
         case .start:
             imageName = "Location/SendLiveLocationIcon"
-            color = UIColor(rgb: 0x6cc139)
+            color = UIColor(rgb: 0x6cc138)
         case .stop:
             imageName = "Location/SendLocationIcon"
             color = UIColor(rgb: 0xff6464)
         case .extend:
             imageName = "Location/SendLocationIcon"
-            color = UIColor(rgb: 0x6cc139)
+            color = UIColor(rgb: 0x6cc138)
         }
         
         context.clear(CGRect(origin: CGPoint(), size: size))
@@ -283,8 +283,8 @@ final class LocationActionListItemNode: ListViewItemNode {
             let verticalInset: CGFloat = 8.0
             let iconSize: CGFloat = 40.0
             
-            let titleFont = Font.medium(item.presentationData.fontSize.itemListBaseFontSize)
-            let subtitleFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 14.0 / 17.0))
+            let titleFont = Font.semibold(item.presentationData.fontSize.itemListBaseFontSize)
+            let subtitleFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 15.0 / 17.0))
             
             let titleAttributedString = NSAttributedString(string: item.title, font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor)
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset - 15.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
@@ -392,6 +392,7 @@ final class LocationActionListItemNode: ListViewItemNode {
 
                         let separatorHeight = UIScreenPixel
                         let topHighlightInset: CGFloat = separatorHeight
+                        let separatorRightInset: CGFloat = 16.0
                         
                         let iconNodeFrame = CGRect(origin: CGPoint(x: params.leftInset + 15.0, y: floorToScreenPixels((contentSize.height - bottomInset - iconSize) / 2.0)), size: CGSize(width: iconSize, height: iconSize))
                         strongSelf.iconNode.frame = iconNodeFrame
@@ -401,7 +402,7 @@ final class LocationActionListItemNode: ListViewItemNode {
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentSize.width, height: contentSize.height))
                         strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - topHighlightInset), size: CGSize(width: contentSize.width, height: contentSize.height + topHighlightInset))
-                        strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width, height: separatorHeight))
+                        strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width - leftInset - params.rightInset - separatorRightInset, height: separatorHeight))
                         strongSelf.separatorNode.isHidden = !hasSeparator
                         
                         if let (beginTimestamp, timeout) = item.beginTimeAndTimeout {

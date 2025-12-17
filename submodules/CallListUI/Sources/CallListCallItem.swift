@@ -65,6 +65,7 @@ private func callListNeighbors(item: ListViewItem, topItem: ListViewItem?, botto
 
 class CallListCallItem: ListViewItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let dateTimeFormat: PresentationDateTimeFormat
     let context: AccountContext
     let style: ItemListStyle
@@ -78,8 +79,9 @@ class CallListCallItem: ListViewItem {
     let headerAccessoryItem: ListViewAccessoryItem?
     let header: ListViewItemHeader?
     
-    init(presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, context: AccountContext, style: ItemListStyle, topMessage: EngineMessage, messages: [EngineMessage], editing: Bool, revealed: Bool, displayHeader: Bool, interaction: CallListNodeInteraction) {
+    init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle, dateTimeFormat: PresentationDateTimeFormat, context: AccountContext, style: ItemListStyle, topMessage: EngineMessage, messages: [EngineMessage], editing: Bool, revealed: Bool, displayHeader: Bool, interaction: CallListNodeInteraction) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.dateTimeFormat = dateTimeFormat
         self.context = context
         self.style = style
@@ -345,6 +347,8 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -550,7 +554,13 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             let (statusLayout, statusApply) = makeStatusLayout(TextNodeLayoutArguments(attributedString: statusAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(0.0, params.width - leftInset - dateRightInset - dateLayout.size.width - (item.editing ? -30.0 : 10.0)), height: CGFloat.infinity), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             let titleSpacing: CGFloat = -1.0
-            let verticalInset: CGFloat = 6.0
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 10.0
+            case .legacy:
+                verticalInset = 6.0
+            }
             
             let nodeLayout = ListViewItemNodeLayout(contentSize: CGSize(width: params.width, height: titleLayout.size.height + titleSpacing + statusLayout.size.height + verticalInset * 2.0), insets: UIEdgeInsets(top: firstWithHeader ? 29.0 : 0.0, left: 0.0, bottom: 0.0, right: 0.0))
             
@@ -672,12 +682,12 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
                                             strongSelf.bottomStripeNode.isHidden = hasCorners
                                     }
                                 
-                                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                                     
                                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: nodeLayout.size.width, height: separatorHeight))
-                                    transition.updateFrameAdditive(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width - bottomStripeInset, height: separatorHeight)))
+                                    transition.updateFrameAdditive(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)))
                             }
                             
                     

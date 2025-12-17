@@ -280,9 +280,9 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
         for media in item.message.media {
             if let action = media as? TelegramMediaAction {
                 switch action.action {
-                case let .starGift(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+                case let .starGift(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     releasedBy = gift.releasedBy
-                case let .starGiftUnique(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+                case let .starGiftUnique(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     releasedBy = gift.releasedBy
                 default:
                     break
@@ -430,6 +430,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                 var buttonTitle = item.presentationData.strings.Notification_PremiumGift_View
                 var buttonIcon: String?
                 var ribbonTitle = ""
+                var customRibbonColors: [UIColor]?
                 var textSpacing: CGFloat = 0.0
                 var isStarGift = false
                 
@@ -452,8 +453,8 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                 for media in item.message.media {
                     if let action = media as? TelegramMediaAction {
                         switch action.action {
-                        case let .giftPremium(_, _, monthsValue, _, _, giftText, giftEntities):
-                            months = monthsValue
+                        case let .giftPremium(_, _, daysValue, _, _, giftText, giftEntities):
+                            months = max(3, Int32(round(Float(daysValue) / 30.0)))
                             if months == 12 {
                                 title = item.presentationData.strings.Notification_PremiumGift_YearsTitle(1)
                             } else {
@@ -554,16 +555,27 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                 buttonTitle = item.presentationData.strings.Notification_PremiumPrize_View
                                 hasServiceMessage = false
                             }
-                        case let .starGift(gift, convertStars, giftText, giftEntities, _, savedToProfile, converted, upgraded, canUpgrade, upgradeStars, isRefunded, isPrepaidUpgrade, _, channelPeerId, senderPeerId, _, _, _, _):
+                        case let .starGift(gift, convertStars, giftText, giftEntities, _, savedToProfile, converted, upgraded, canUpgrade, upgradeStars, isRefunded, isPrepaidUpgrade, _, channelPeerId, senderPeerId, _, _, _, _, _, toPeerId, _):
+                            var incoming = incoming
+                            var convertStars = convertStars
                             if case let .generic(gift) = gift {
+                                if gift.flags.contains(.isAuction) {
+                                    convertStars = nil
+                                }
                                 if let releasedBy = gift.releasedBy, let peer = item.message.peers[releasedBy], let addressName = peer.addressName {
                                     creatorButtonTitle = item.presentationData.strings.Notification_StarGift_ReleasedBy("**@\(addressName)**").string
                                 }
-                                
                                 isStarGift = true
-                                var authorName = item.message.author.flatMap { EnginePeer($0) }?.compactDisplayTitle ?? ""
-                                                                
-                                let isSelfGift = item.message.id.peerId == item.context.account.peerId
+                                
+                                var isSelfGift = item.message.id.peerId == item.context.account.peerId
+                                if item.message.id.peerId.isTelegramNotifications, let toPeerId {
+                                    if toPeerId == item.context.account.peerId {
+                                        isSelfGift = true
+                                    } else {
+                                        incoming = false
+                                    }
+                                }
+                                
                                 let isChannelGift = item.message.id.peerId.namespace == Namespaces.Peer.CloudChannel || channelPeerId != nil
                                 if isSelfGift {
                                     title = item.presentationData.strings.Notification_StarGift_Self_Title
@@ -572,10 +584,17 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                         title = item.presentationData.strings.Gift_View_Unknown_Title
                                     } else {
                                         if let senderPeerId, let name = item.message.peers[senderPeerId].flatMap(EnginePeer.init)?.compactDisplayTitle {
-                                            authorName = name
-                                            title = item.presentationData.strings.Notification_StarGift_Title(authorName).string
-                                        } else if !incoming, let name = item.message.peers[item.message.id.peerId].flatMap(EnginePeer.init)?.compactDisplayTitle {
-                                            title = item.presentationData.strings.Notification_StarGift_TitleTo(name).string
+                                            title = item.presentationData.strings.Notification_StarGift_Title(name).string
+                                        } else if !incoming {
+                                            var recipientPeerId = item.message.id.peerId
+                                            if let toPeerId {
+                                                recipientPeerId = toPeerId
+                                            }
+                                            if let name = item.message.peers[recipientPeerId].flatMap(EnginePeer.init)?.compactDisplayTitle {
+                                                title = item.presentationData.strings.Notification_StarGift_TitleTo(name).string
+                                            } else {
+                                                title = item.presentationData.strings.Gift_View_Unknown_Title
+                                            }
                                         } else {
                                             title = item.presentationData.strings.Gift_View_Unknown_Title
                                         }
@@ -614,8 +633,12 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                             }
                                         }
                                     } else {
+                                        var recipientPeerId = item.message.id.peerId
+                                        if let toPeerId {
+                                            recipientPeerId = toPeerId
+                                        }
                                         var peerName = ""
-                                        if let peer = item.message.peers[item.message.id.peerId] {
+                                        if let peer = item.message.peers[recipientPeerId] {
                                             peerName = EnginePeer(peer).compactDisplayTitle
                                         }
                                         if peerName.isEmpty {
@@ -637,6 +660,8 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                                 if let starsRange = formattedString.ranges.last {
                                                     entities.append(MessageTextEntity(range: starsRange.range.lowerBound ..< starsRange.range.upperBound, type: .Bold))
                                                 }
+                                            } else {
+                                                text = item.presentationData.strings.Notification_StarGift_Subtitle_OtherNoConvert
                                             }
                                         }
                                     }
@@ -662,7 +687,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                     }
                                 }
                             }
-                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _, _, _, _, _, _, _):
+                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _, _, _, _, _, _, _, fromOffer):
                             if case let .unique(uniqueGift) = gift {
                                 isStarGift = true
                                 
@@ -691,7 +716,12 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                     title = item.presentationData.strings.Notification_StarGift_Title(authorName).string
                                 }    
                                 text = isStoryEntity ? "**\(item.presentationData.strings.Notification_StarGift_Collectible) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: item.presentationData.dateTimeFormat))**" : "**\(uniqueGift.title) #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: item.presentationData.dateTimeFormat))**"
-                                ribbonTitle = isStoryEntity ? "" : item.presentationData.strings.Notification_StarGift_Gift
+                                if fromOffer {
+                                    ribbonTitle = incoming ? "" : item.presentationData.strings.Notification_StarGift_Sold
+                                    customRibbonColors = [UIColor(rgb: 0xd9433a), UIColor(rgb: 0xff645b)]
+                                } else {
+                                    ribbonTitle = isStoryEntity ? "" : item.presentationData.strings.Notification_StarGift_Gift
+                                }
                                 buttonTitle = isStoryEntity ? "" : item.presentationData.strings.Notification_StarGift_View
                                 modelTitle = item.presentationData.strings.Notification_StarGift_Model
                                 backdropTitle = item.presentationData.strings.Notification_StarGift_Backdrop
@@ -873,10 +903,10 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                     }
                 ), textAlignment: .center)
                 
-                let (creatorButtonTitleLayout, creatorButtonTitleApply) = makeCreatorButtonTitleLayout(TextNodeLayoutArguments(attributedString: creatorButtonAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .middle, constrainedSize: CGSize(width: giftSize.width - 32.0, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
+                let (creatorButtonTitleLayout, creatorButtonTitleApply) = makeCreatorButtonTitleLayout(TextNodeLayoutArguments(attributedString: creatorButtonAttributedString, backgroundColor: nil, maximumNumberOfLines: 2, truncationType: .middle, constrainedSize: CGSize(width: giftSize.width - 32.0, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
 
                 if modelTitle == nil && !creatorButtonTitle.isEmpty {
-                    textSpacing += 28.0
+                    textSpacing += creatorButtonTitleLayout.size.height + 13.0
                 }
                 
                 giftSize.height = titleLayout.size.height + textSpacing + clippedTextHeight + 164.0
@@ -885,7 +915,8 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                     giftSize.height += 70.0
                     
                     if !creatorButtonTitle.isEmpty {
-                        giftSize.height += 28.0
+                        giftSize.height += creatorButtonTitleLayout.size.height + 13.0
+                        //28.0
                     }
                 }
                 
@@ -1049,7 +1080,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                             
                             var attributesOffsetY: CGFloat = 0.0
                             
-                            let creatorButtonSize = CGSize(width: creatorButtonTitleLayout.size.width + 18.0, height: 18.0)
+                            let creatorButtonSize = CGSize(width: creatorButtonTitleLayout.size.width + 18.0, height: creatorButtonTitleLayout.size.height + 3.0)
                             let creatorButtonOriginY = modelTitle == nil ? titleFrame.maxY + 4.0 : clippingTextFrame.maxY + 5.0
                             let creatorButtonFrame = CGRect(origin: CGPoint(x: mediaBackgroundFrame.minX + floorToScreenPixels((mediaBackgroundFrame.width - creatorButtonSize.width) / 2.0), y: creatorButtonOriginY), size: creatorButtonSize)
                             if !creatorButtonTitle.isEmpty {
@@ -1260,7 +1291,9 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                             
                             if ribbonTextLayout.size.width > 0.0 {
                                 if strongSelf.ribbonBackgroundNode.image == nil {
-                                    if let uniqueBackgroundColor {
+                                    if let customRibbonColors {
+                                        strongSelf.ribbonBackgroundNode.image = generateGradientTintedImage(image: UIImage(bundleImageName: "Premium/GiftRibbon"), colors: customRibbonColors, direction: .mirroredDiagonal)
+                                    } else if let uniqueBackgroundColor {
                                         let colors = [
                                             uniqueBackgroundColor.withMultiplied(hue: 0.97, saturation: 1.45, brightness: 0.89),
                                             uniqueBackgroundColor.withMultiplied(hue: 1.01, saturation: 1.22, brightness: 1.04)

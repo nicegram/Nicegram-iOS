@@ -40,7 +40,6 @@ class BazelCommandLine:
         self.additional_args = None
         self.build_number = None
         self.configuration_args = None
-        self.configuration_path = None
         self.split_submodules = False
         self.custom_target = None
         self.continue_on_error = False
@@ -68,7 +67,7 @@ class BazelCommandLine:
             '--verbose_failures',
 
             # Asynchronously upload cache artifacts
-            '--experimental_remote_cache_async',
+            '--remote_cache_async',
         ]
 
         self.common_build_args = [
@@ -89,12 +88,6 @@ class BazelCommandLine:
             # invoking a smaller number of frontend processes and passing them batches of
             # source files.
             '--features=swift.enable_batch_mode',
-
-            # https://docs.bazel.build/versions/master/command-line-reference.html
-            # Set the number of parallel jobs per module to saturate the available CPU resources.
-            #'--swiftcopt=-j{}'.format(os.cpu_count() - 1),
-            '--@build_bazel_rules_swift//swift:copt="-j{}"'.format(os.cpu_count() - 1),
-            '--@build_bazel_rules_swift//swift:copt="-whole-module-optimization"',
         ]
 
         self.common_release_args = [
@@ -146,9 +139,6 @@ class BazelCommandLine:
 
     def set_split_swiftmodules(self, value):
         self.split_submodules = value
-
-    def set_configuration_path(self, path):
-        self.configuration_path = path
 
     def set_disable_provisioning_profiles(self):
         self.disable_provisioning_profiles = True
@@ -203,8 +193,6 @@ class BazelCommandLine:
 
                 # Require DSYM files as build output.
                 '--output_groups=+dsyms',
-
-                #'--@build_bazel_rules_swift//swift:copt="-num-threads 0"',
             ] + self.common_release_args
         else:
             raise Exception('Unknown configuration {}'.format(configuration))
@@ -296,13 +284,6 @@ class BazelCommandLine:
         if self.disable_provisioning_profiles:
             combined_arguments += ['--//Telegram:disableProvisioningProfiles']
 
-        if self.configuration_path is None:
-            raise Exception('configuration_path is not defined')
-
-        combined_arguments += [
-            '--override_repository=build_configuration={}'.format(self.configuration_path)
-        ]
-
         combined_arguments += self.common_args
         combined_arguments += self.common_build_args
         combined_arguments += self.get_define_arguments()
@@ -337,13 +318,6 @@ class BazelCommandLine:
 
         combined_arguments += ['Tests/AllTests']
 
-        if self.configuration_path is None:
-            raise Exception('configuration_path is not defined')
-
-        combined_arguments += [
-            '--override_repository=build_configuration={}'.format(self.configuration_path)
-        ]
-
         combined_arguments += self.common_args
         combined_arguments += self.common_build_args
         combined_arguments += self.get_define_arguments()
@@ -371,13 +345,6 @@ class BazelCommandLine:
         ]
         combined_arguments += self.get_startup_bazel_arguments()
         combined_arguments += ['aquery']
-
-        if self.configuration_path is None:
-            raise Exception('configuration_path is not defined')
-
-        combined_arguments += [
-            '--override_repository=build_configuration={}'.format(self.configuration_path)
-        ]
 
         combined_arguments += [
             '-c', 'dbg',
@@ -425,13 +392,6 @@ class BazelCommandLine:
 
         if self.disable_provisioning_profiles:
             combined_arguments += ['--//Telegram:disableProvisioningProfiles']
-
-        if self.configuration_path is None:
-            raise Exception('configuration_path is not defined')
-
-        combined_arguments += [
-            '--override_repository=build_configuration={}'.format(self.configuration_path)
-        ]
 
         combined_arguments += self.common_args
         combined_arguments += self.common_build_args
@@ -563,9 +523,6 @@ def resolve_configuration(base_path, bazel_command_line: BazelCommandLine, argum
             file.write('    "{}",\n'.format(file_name))
         file.write('])\n')
 
-    if bazel_command_line is not None:
-        bazel_command_line.set_configuration_path(configuration_repository_path)
-
 
 def generate_project(bazel, arguments):
     bazel_command_line = BazelCommandLine(
@@ -618,7 +575,6 @@ def generate_project(bazel, arguments):
         disable_provisioning_profiles=disable_provisioning_profiles,
         include_release=project_include_release,
         generate_dsym=generate_dsym,
-        configuration_path=bazel_command_line.configuration_path,
         bazel_app_arguments=bazel_command_line.get_project_generation_arguments(),
         target_name=target_name
     )
@@ -995,14 +951,10 @@ if __name__ == '__main__':
     buildParser.add_argument(
         '--configuration',
         choices=[
-            'debug_universal',
             'debug_arm64',
-            'debug_armv7',
             'debug_sim_arm64',
             'release_sim_arm64',
             'release_arm64',
-            'release_armv7',
-            'release_universal'
         ],
         required=True,
         help='Build configuration'
@@ -1243,14 +1195,10 @@ if __name__ == '__main__':
     spm_parser.add_argument(
         '--configuration',
         choices=[
-            'debug_universal',
             'debug_arm64',
-            'debug_armv7',
             'debug_sim_arm64',
             'release_sim_arm64',
             'release_arm64',
-            'release_armv7',
-            'release_universal'
         ],
         required=True,
         help='Build configuration'

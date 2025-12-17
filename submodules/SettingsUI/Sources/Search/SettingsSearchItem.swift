@@ -124,7 +124,7 @@ final class SettingsSearchItem: ItemListControllerSearch {
         }
     }
     
-    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> NavigationBarContentNode & ItemListControllerSearchNavigationContentNode {
+    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)? {
         let updateActivated: (Bool) -> Void = self.updateActivated
         if let current = current as? NavigationBarSearchContentNode {
             current.updateThemeAndPlaceholder(theme: self.theme, placeholder: self.placeholder)

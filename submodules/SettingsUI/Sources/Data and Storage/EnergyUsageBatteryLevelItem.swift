@@ -5,19 +5,22 @@ import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
 import TelegramPresentationData
-import LegacyComponents
 import ItemListUI
 import PresentationDataUtils
 import AppBundle
+import ComponentFlow
+import SliderComponent
 
 class EnergyUsageBatteryLevelItem: ListViewItem, ItemListItem {
+    let systemStyle: ItemListSystemStyle
     let theme: PresentationTheme
     let strings: PresentationStrings
     let value: Int32
     let sectionId: ItemListSectionId
     let updated: (Int32) -> Void
     
-    init(theme: PresentationTheme, strings: PresentationStrings, value: Int32, sectionId: ItemListSectionId, updated: @escaping (Int32) -> Void) {
+    init(systemStyle: ItemListSystemStyle = .legacy, theme: PresentationTheme, strings: PresentationStrings, value: Int32, sectionId: ItemListSectionId, updated: @escaping (Int32) -> Void) {
+        self.systemStyle = systemStyle
         self.theme = theme
         self.strings = strings
         self.value = value
@@ -75,11 +78,11 @@ class EnergyUsageBatteryLevelItemNode: ListViewItemNode {
     private let bottomStripeNode: ASDisplayNode
     private let maskNode: ASImageNode
     
-    private var sliderView: TGPhotoEditorSliderView?
     private let leftTextNode: ImmediateTextNode
     private let rightTextNode: ImmediateTextNode
     private let centerTextNode: ImmediateTextNode
     private let centerMeasureTextNode: ImmediateTextNode
+    private let slider = ComponentView<Empty>()
     
     private let batteryImage: UIImage?
     private let batteryBackgroundNode: ASImageNode
@@ -117,48 +120,20 @@ class EnergyUsageBatteryLevelItemNode: ListViewItemNode {
         self.addSubnode(self.batteryBackgroundNode)
         self.addSubnode(self.batteryForegroundNode)
     }
-    
-    override func didLoad() {
-        super.didLoad()
         
-        let sliderView = TGPhotoEditorSliderView()
-        sliderView.enableEdgeTap = true
-        sliderView.enablePanHandling = true
-        sliderView.trackCornerRadius = 1.0
-        sliderView.lineSize = 4.0
-        sliderView.minimumValue = 0.0
-        sliderView.startValue = 0.0
-        sliderView.maximumValue = 1.0
-        sliderView.disablesInteractiveTransitionGestureRecognizer = true
-        sliderView.displayEdges = true
-        if let item = self.item, let params = self.layoutParams {
-            sliderView.value = rescaleBatteryValueToSlider(CGFloat(item.value) / 100.0)
-            sliderView.backgroundColor = item.theme.list.itemBlocksBackgroundColor
-            sliderView.backColor = item.theme.list.itemSwitchColors.frameColor
-            sliderView.trackColor = item.theme.list.itemAccentColor
-            sliderView.knobImage = PresentationResourcesItemList.knobImage(item.theme)
-            
-            sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + 18.0, y: 36.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 18.0 * 2.0, height: 44.0))
-        }
-        self.view.addSubview(sliderView)
-        sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
-        self.sliderView = sliderView
-    }
-    
     func asyncLayout() -> (_ item: EnergyUsageBatteryLevelItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
-        let currentItem = self.item
-        
         return { item, params, neighbors in
-            var themeUpdated = false
-            if currentItem?.theme !== item.theme {
-                themeUpdated = true
-            }
-            
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
-            contentSize = CGSize(width: params.width, height: 88.0)
+            var verticalInset: CGFloat = 0.0
+            if case .glass = item.systemStyle {
+                verticalInset = 4.0
+            }
+            
+            contentSize = CGSize(width: params.width, height: 88.0 + verticalInset * 2.0)
             insets = itemListNeighborsGroupedInsets(neighbors, params)
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
@@ -210,12 +185,12 @@ class EnergyUsageBatteryLevelItemNode: ListViewItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
-                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
+                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     
                     strongSelf.leftTextNode.attributedText = NSAttributedString(string: item.strings.PowerSaving_BatteryLevelLimit_Off, font: Font.regular(13.0), textColor: item.theme.list.itemSecondaryTextColor)
                     strongSelf.rightTextNode.attributedText = NSAttributedString(string: item.strings.PowerSaving_BatteryLevelLimit_On, font: Font.regular(13.0), textColor: item.theme.list.itemSecondaryTextColor)
@@ -246,10 +221,10 @@ class EnergyUsageBatteryLevelItemNode: ListViewItemNode {
                     
                     let sideInset: CGFloat = 18.0
                     
-                    strongSelf.leftTextNode.frame = CGRect(origin: CGPoint(x: params.leftInset + sideInset, y: 15.0), size: leftTextSize)
-                    strongSelf.rightTextNode.frame = CGRect(origin: CGPoint(x: params.width - params.leftInset - sideInset - rightTextSize.width, y: 15.0), size: rightTextSize)
+                    strongSelf.leftTextNode.frame = CGRect(origin: CGPoint(x: params.leftInset + sideInset, y: 15.0 + verticalInset), size: leftTextSize)
+                    strongSelf.rightTextNode.frame = CGRect(origin: CGPoint(x: params.width - params.leftInset - sideInset - rightTextSize.width, y: 15.0 + verticalInset), size: rightTextSize)
                     
-                    var centerFrame = CGRect(origin: CGPoint(x: floor((params.width - centerMeasureTextSize.width) / 2.0), y: 11.0), size: centerTextSize)
+                    var centerFrame = CGRect(origin: CGPoint(x: floor((params.width - centerMeasureTextSize.width) / 2.0), y: 11.0 + verticalInset), size: centerTextSize)
                     if !strongSelf.batteryBackgroundNode.isHidden {
                         centerFrame.origin.x -= 12.0
                     }
@@ -304,15 +279,30 @@ class EnergyUsageBatteryLevelItemNode: ListViewItemNode {
                         strongSelf.batteryForegroundNode.frame = strongSelf.batteryBackgroundNode.frame
                     }
                     
-                    if let sliderView = strongSelf.sliderView {
-                        if themeUpdated {
-                            sliderView.backgroundColor = item.theme.list.itemBlocksBackgroundColor
-                            sliderView.backColor = item.theme.list.itemSecondaryTextColor
-                            sliderView.trackColor = item.theme.list.itemAccentColor.withAlphaComponent(0.45)
-                            sliderView.knobImage = PresentationResourcesItemList.knobImage(item.theme)
+                    let sliderSize = strongSelf.slider.update(
+                        transition: .immediate,
+                        component: AnyComponent(
+                            SliderComponent(
+                                content: .continuous(.init(
+                                    value: rescaleBatteryValueToSlider(CGFloat(item.value) / 100.0),
+                                    minValue: nil,
+                                    valueUpdated: { [weak self] value in
+                                        self?.item?.updated(Int32(rescaleSliderToBatteryValue(value) * 100.0))
+                                    }
+                                )),
+                                useNative: true,
+                                trackBackgroundColor: item.theme.list.itemSwitchColors.frameColor,
+                                trackForegroundColor: item.theme.list.itemAccentColor
+                            )
+                        ),
+                        environment: {},
+                        containerSize: CGSize(width: params.width - params.leftInset - params.rightInset - 15.0 * 2.0, height: 44.0)
+                    )
+                    if let sliderView = strongSelf.slider.view {
+                        if sliderView.superview == nil {
+                            strongSelf.view.addSubview(sliderView)
                         }
-                        
-                        sliderView.frame = CGRect(origin: CGPoint(x: params.leftInset + 18.0, y: 36.0), size: CGSize(width: params.width - params.leftInset - params.rightInset - 18.0 * 2.0, height: 44.0))
+                        sliderView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((params.width - sliderSize.width) / 2.0), y: 36.0 + verticalInset), size: sliderSize)
                     }
                 }
             })
@@ -325,13 +315,6 @@ class EnergyUsageBatteryLevelItemNode: ListViewItemNode {
     
     override func animateRemoved(_ currentTimestamp: Double, duration: Double) {
         self.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false)
-    }
-    
-    @objc func sliderValueChanged() {
-        guard let sliderView = self.sliderView else {
-            return
-        }
-        self.item?.updated(Int32(rescaleSliderToBatteryValue(sliderView.value) * 100.0))
     }
 }
 

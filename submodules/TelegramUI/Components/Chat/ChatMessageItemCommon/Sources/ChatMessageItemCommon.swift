@@ -147,7 +147,7 @@ public struct ChatMessageItemLayoutConstants {
         let instantVideo = ChatMessageItemInstantVideoConstants(insets: UIEdgeInsets(top: 4.0, left: 0.0, bottom: 4.0, right: 0.0), dimensions: CGSize(width: 212.0, height: 212.0))
         let wallpapers = ChatMessageItemWallpaperLayoutConstants(maxTextWidth: 180.0)
         
-        return ChatMessageItemLayoutConstants(avatarInset: 44.0, timestampHeaderHeight: 34.0, timestampDateAndTopicHeaderHeight: 7.0 * 2.0 + 20.0 * 2.0 + 7.0, bubble: bubble, image: image, video: video, text: text, file: file, instantVideo: instantVideo, wallpapers: wallpapers)
+        return ChatMessageItemLayoutConstants(avatarInset: 34.0 + 4.0, timestampHeaderHeight: 34.0, timestampDateAndTopicHeaderHeight: 7.0 * 2.0 + 20.0 * 2.0 + 7.0, bubble: bubble, image: image, video: video, text: text, file: file, instantVideo: instantVideo, wallpapers: wallpapers)
     }
     
     public static var regular: ChatMessageItemLayoutConstants {
@@ -159,7 +159,7 @@ public struct ChatMessageItemLayoutConstants {
         let instantVideo = ChatMessageItemInstantVideoConstants(insets: UIEdgeInsets(top: 4.0, left: 0.0, bottom: 4.0, right: 0.0), dimensions: CGSize(width: 240.0, height: 240.0))
         let wallpapers = ChatMessageItemWallpaperLayoutConstants(maxTextWidth: 180.0)
         
-        return ChatMessageItemLayoutConstants(avatarInset: 44.0, timestampHeaderHeight: 34.0, timestampDateAndTopicHeaderHeight: 7.0 * 2.0 + 20.0 * 2.0 + 7.0, bubble: bubble, image: image, video: video, text: text, file: file, instantVideo: instantVideo, wallpapers: wallpapers)
+        return ChatMessageItemLayoutConstants(avatarInset: 34.0 + 4.0, timestampHeaderHeight: 34.0, timestampDateAndTopicHeaderHeight: 7.0 * 2.0 + 20.0 * 2.0 + 7.0, bubble: bubble, image: image, video: video, text: text, file: file, instantVideo: instantVideo, wallpapers: wallpapers)
     }
 }
 

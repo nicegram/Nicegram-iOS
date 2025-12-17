@@ -40,6 +40,7 @@ public enum ApiMessageWrapped {
         public let reportDeliveryUntilDate: Int32?
         public let paidMessageStars: Int64?
         public let suggestedPost: Api.SuggestedPost?
+        public let scheduleRepeatPeriod: Int32?
     }
 
     public struct MessageEmpty {
@@ -63,7 +64,7 @@ public enum ApiMessageWrapped {
 
     public init(_ apiMessage: Api.Message) {
         switch apiMessage {
-        case let .message(flags, flags2, id, fromId, fromBoostsApplied, peerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupedId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, effect, factcheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost):
+        case let .message(flags, flags2, id, fromId, fromBoostsApplied, peerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupedId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, effect, factcheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost, scheduleRepeatPeriod):
             self = .message(Message(
                 flags: flags,
                 flags2: flags2,
@@ -95,7 +96,8 @@ public enum ApiMessageWrapped {
                 factcheck: factcheck,
                 reportDeliveryUntilDate: reportDeliveryUntilDate,
                 paidMessageStars: paidMessageStars,
-                suggestedPost: suggestedPost
+                suggestedPost: suggestedPost,
+                scheduleRepeatPeriod: scheduleRepeatPeriod
             ))
         case let .messageEmpty(flags, id, peerId):
             self = .messageEmpty(MessageEmpty(

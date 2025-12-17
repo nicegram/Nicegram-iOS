@@ -1182,6 +1182,135 @@ public func authorizeWithPassword(accountManager: AccountManager<TelegramAccount
     }
 }
 
+public final class AuthorizationPasskeyData {
+    public let id: String
+    public let clientData: String
+    public let authenticatorData: Data
+    public let signature: Data
+    public let userHandle: String
+    
+    public init(id: String, clientData: String, authenticatorData: Data, signature: Data, userHandle: String) {
+        self.id = id
+        self.clientData = clientData
+        self.authenticatorData = authenticatorData
+        self.signature = signature
+        self.userHandle = userHandle
+    }
+}
+
+public final class AuthorizeWithPasskeyResult {
+    public let updatedAccount: UnauthorizedAccount
+    
+    init(updatedAccount: UnauthorizedAccount) {
+        self.updatedAccount = updatedAccount
+    }
+}
+
+public func authorizeWithPasskey(accountManager: AccountManager<TelegramAccountManagerTypes>, account: UnauthorizedAccount, passkey: AuthorizationPasskeyData, foreignDatacenter: (id: Int, authKeyId: Int64)?, forcedPasswordSetupNotice: @escaping (Int32) -> (NoticeEntryKey, CodableEntry)?, syncContacts: Bool) -> Signal<AuthorizeWithPasskeyResult, AuthorizationCodeVerificationError> {
+    let userHandle = passkey.userHandle.components(separatedBy: ":")
+    var targetDatacenterId: Int?
+    if foreignDatacenter == nil && userHandle.count >= 2 {
+        targetDatacenterId = Int(userHandle[0])
+    }
+    
+    if let targetDatacenterId, account.masterDatacenterId != Int32(targetDatacenterId) {
+        let initialDatacenterId = account.masterDatacenterId
+        return account.network.getAuthKeyId()
+        |> castError(AuthorizationCodeVerificationError.self)
+        |> mapToSignal { sourceAuthKeyId -> Signal<AuthorizeWithPasskeyResult, AuthorizationCodeVerificationError> in
+            let updatedAccount = account.changedMasterDatacenterId(accountManager: accountManager, masterDatacenterId: Int32(targetDatacenterId))
+            return updatedAccount
+            |> mapToSignalPromotingError { updatedAccount -> Signal<AuthorizeWithPasskeyResult, AuthorizationCodeVerificationError> in
+                return authorizeWithPasskey(accountManager: accountManager, account: updatedAccount, passkey: passkey, foreignDatacenter: (Int(initialDatacenterId), sourceAuthKeyId), forcedPasswordSetupNotice: forcedPasswordSetupNotice, syncContacts: syncContacts)
+            }
+        }
+    }
+    
+    var flags: Int32 = 0
+    if foreignDatacenter != nil {
+        flags |= 1 << 0
+    }
+    return account.network.request(Api.functions.auth.finishPasskeyLogin(flags: flags, credential: .inputPasskeyCredentialPublicKey(id: passkey.id, rawId: passkey.id, response: .inputPasskeyResponseLogin(clientData: .dataJSON(data: passkey.clientData), authenticatorData: Buffer(data: passkey.authenticatorData), signature: Buffer(data: passkey.signature), userHandle: passkey.userHandle)), fromDcId: (foreignDatacenter?.id).flatMap(Int32.init), fromAuthKeyId: foreignDatacenter?.authKeyId), automaticFloodWait: false)
+    |> map { authorization in
+        return .authorization(authorization)
+    }
+    |> `catch` { error -> Signal<AuthorizationCodeResult, AuthorizationCodeVerificationError> in
+        switch (error.errorCode, error.errorDescription ?? "") {
+            case (401, "SESSION_PASSWORD_NEEDED"):
+                return account.network.request(Api.functions.account.getPassword(), automaticFloodWait: false)
+                |> mapError { error -> AuthorizationCodeVerificationError in
+                    if error.errorDescription.hasPrefix("FLOOD_WAIT") {
+                        return .limitExceeded
+                    } else {
+                        return .generic
+                    }
+                }
+                |> mapToSignal { result -> Signal<AuthorizationCodeResult, AuthorizationCodeVerificationError> in
+                    switch result {
+                        case let .password(_, _, _, _, hint, _, _, _, _, _, _):
+                            return .single(.password(hint: hint ?? ""))
+                    }
+                }
+            case let (_, errorDescription):
+                if errorDescription.hasPrefix("FLOOD_WAIT") {
+                    return .fail(.limitExceeded)
+                } else if errorDescription == "PHONE_CODE_INVALID" || errorDescription == "EMAIL_CODE_INVALID" {
+                    return .fail(.invalidCode)
+                } else if errorDescription == "CODE_HASH_EXPIRED" || errorDescription == "PHONE_CODE_EXPIRED" {
+                    return .fail(.codeExpired)
+                } else if errorDescription == "PHONE_NUMBER_UNOCCUPIED" {
+                    return .single(.signUp)
+                } else if errorDescription == "EMAIL_TOKEN_INVALID" {
+                    return .fail(.invalidEmailToken)
+                } else if errorDescription == "EMAIL_ADDRESS_INVALID" {
+                    return .fail(.invalidEmailAddress)
+                } else {
+                    return .fail(.generic)
+                }
+        }
+    }
+    |> mapToSignal { result -> Signal<AuthorizeWithPasskeyResult, AuthorizationCodeVerificationError> in
+        return account.postbox.transaction { transaction -> Signal<AuthorizeWithPasskeyResult, AuthorizationCodeVerificationError> in
+            switch result {
+            case .signUp:
+                return .fail(.generic)
+            case let .password(hint):
+                transaction.setState(UnauthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, contents: .passwordEntry(hint: hint, number: nil, code: nil, suggestReset: false, syncContacts: syncContacts)))
+                return .single(AuthorizeWithPasskeyResult(updatedAccount: account))
+            case let .authorization(authorization):
+                switch authorization {
+                case let .authorization(_, otherwiseReloginDays, _, futureAuthToken, user):
+                    if let futureAuthToken = futureAuthToken {
+                        storeFutureLoginToken(accountManager: accountManager, token: futureAuthToken.makeData())
+                    }
+                    
+                    let user = TelegramUser(user: user)
+                    var isSupportUser = false
+                    if let phone = user.phone, phone.hasPrefix("42") {
+                        isSupportUser = true
+                    }
+                    let state = AuthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, peerId: user.id, state: nil, invalidatedChannels: [])
+                    initializedAppSettingsAfterLogin(transaction: transaction, appVersion: account.networkArguments.appVersion, syncContacts: syncContacts)
+                    transaction.setState(state)
+                    if let otherwiseReloginDays = otherwiseReloginDays, let value = forcedPasswordSetupNotice(otherwiseReloginDays) {
+                        transaction.setNoticeEntry(key: value.0, value: value.1)
+                    }
+                    return accountManager.transaction { transaction -> AuthorizeWithPasskeyResult in
+                        switchToAuthorizedAccount(transaction: transaction, account: account, isSupportUser: isSupportUser)
+                        return AuthorizeWithPasskeyResult(updatedAccount: account)
+                    }
+                    |> castError(AuthorizationCodeVerificationError.self)
+                case .authorizationSignUpRequired:
+                    return .fail(.generic)
+                }
+            }
+        }
+        |> mapError { _ -> AuthorizationCodeVerificationError in
+        }
+        |> switchToLatest
+    }
+}
+
 public enum PasswordRecoveryRequestError {
     case limitExceeded
     case generic
@@ -1481,3 +1610,4 @@ func _internal_reportMissingCode(network: Network, phoneNumber: String, phoneCod
         return .complete()
     }
 }
+

@@ -4,6 +4,7 @@ import UIKit
 public final class Button: Component {
     public let content: AnyComponent<Empty>
     public let minSize: CGSize?
+    public let hitTestEdgeInsets: UIEdgeInsets?
     public let tag: AnyObject?
     public let automaticHighlight: Bool
     public let isEnabled: Bool
@@ -22,6 +23,7 @@ public final class Button: Component {
         self.init(
             content: content,
             minSize: nil,
+            hitTestEdgeInsets: nil,
             tag: nil,
             automaticHighlight: automaticHighlight,
             isEnabled: isEnabled,
@@ -34,6 +36,7 @@ public final class Button: Component {
     private init(
         content: AnyComponent<Empty>,
         minSize: CGSize? = nil,
+        hitTestEdgeInsets: UIEdgeInsets? = nil,
         tag: AnyObject? = nil,
         automaticHighlight: Bool = true,
         isEnabled: Bool = true,
@@ -44,6 +47,7 @@ public final class Button: Component {
     ) {
         self.content = content
         self.minSize = minSize
+        self.hitTestEdgeInsets = hitTestEdgeInsets
         self.tag = tag
         self.automaticHighlight = automaticHighlight
         self.isEnabled = isEnabled
@@ -57,6 +61,22 @@ public final class Button: Component {
         return Button(
             content: self.content,
             minSize: minSize,
+            hitTestEdgeInsets: self.hitTestEdgeInsets,
+            tag: self.tag,
+            automaticHighlight: self.automaticHighlight,
+            isEnabled: self.isEnabled,
+            isExclusive: self.isExclusive,
+            action: self.action,
+            holdAction: self.holdAction,
+            highlightedAction: self.highlightedAction
+        )
+    }
+    
+    public func withHitTestEdgeInsets(_ hitTestEdgeInsets: UIEdgeInsets?) -> Button {
+        return Button(
+            content: self.content,
+            minSize: self.minSize,
+            hitTestEdgeInsets: hitTestEdgeInsets,
             tag: self.tag,
             automaticHighlight: self.automaticHighlight,
             isEnabled: self.isEnabled,
@@ -71,6 +91,7 @@ public final class Button: Component {
         return Button(
             content: self.content,
             minSize: self.minSize,
+            hitTestEdgeInsets: self.hitTestEdgeInsets,
             tag: self.tag,
             automaticHighlight: self.automaticHighlight,
             isEnabled: self.isEnabled,
@@ -86,6 +107,7 @@ public final class Button: Component {
         return Button(
             content: self.content,
             minSize: self.minSize,
+            hitTestEdgeInsets: self.hitTestEdgeInsets,
             tag: self.tag,
             automaticHighlight: self.automaticHighlight,
             isEnabled: self.isEnabled,
@@ -100,6 +122,7 @@ public final class Button: Component {
         return Button(
             content: self.content,
             minSize: self.minSize,
+            hitTestEdgeInsets: self.hitTestEdgeInsets,
             tag: tag,
             automaticHighlight: self.automaticHighlight,
             isEnabled: self.isEnabled,
@@ -115,6 +138,9 @@ public final class Button: Component {
             return false
         }
         if lhs.minSize != rhs.minSize {
+            return false
+        }
+        if lhs.hitTestEdgeInsets != rhs.hitTestEdgeInsets {
             return false
         }
         if lhs.tag !== rhs.tag {
@@ -173,6 +199,14 @@ public final class Button: Component {
         
         private var holdActionTriggerred: Bool = false
         private var holdActionTimer: Timer?
+        
+        public override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+            var bounds = self.bounds
+            if let hitTestEdgeInsets = self.component?.hitTestEdgeInsets {
+                bounds = bounds.insetBy(dx: hitTestEdgeInsets.left, dy: hitTestEdgeInsets.top)
+            }
+            return bounds.contains(point)
+        }
         
         override init(frame: CGRect) {
             self.contentView = ComponentHostView<Empty>()

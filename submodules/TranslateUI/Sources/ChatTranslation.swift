@@ -172,6 +172,11 @@ public func translateMessageIds(context: AccountContext, messageIds: [EngineMess
                         messageIdsToTranslate.append(messageId)
                         messageIdsSet.insert(messageId)
                     }
+                } else if let audioTranscription = message.attributes.first(where: { $0 is AudioTranscriptionMessageAttribute }) as? AudioTranscriptionMessageAttribute, !audioTranscription.text.isEmpty && !audioTranscription.isPending {
+                    if !messageIdsSet.contains(messageId) {
+                        messageIdsToTranslate.append(messageId)
+                        messageIdsSet.insert(messageId)
+                    }
                 }
             } else {
                 if !messageIdsSet.contains(messageId) {

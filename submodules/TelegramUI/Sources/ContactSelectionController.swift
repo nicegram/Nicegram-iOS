@@ -15,9 +15,13 @@ import SearchBarNode
 import ChatSendAudioMessageContextPreview
 import ChatSendMessageActionUI
 import ContextUI
+import ComponentFlow
+import BundleIconComponent
+import GlassBarButtonComponent
 
 class ContactSelectionControllerImpl: ViewController, ContactSelectionController, PresentableController, AttachmentContainable {
     private let context: AccountContext
+    private let style: ContactSelectionControllerParams.Style
     private let mode: ContactSelectionControllerMode
     private let autoDismiss: Bool
     
@@ -44,6 +48,9 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     private let requirePhoneNumbers: Bool
     private let allowChannelsInSearch: Bool
     
+    private var closeButtonNode: BarComponentHostNode?
+    private var searchButtonNode: BarComponentHostNode?
+    
     private let openProfile: ((EnginePeer) -> Void)?
     private let sendMessage: ((EnginePeer) -> Void)?
     
@@ -63,7 +70,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     private let isPeerEnabled: (ContactListPeer) -> Bool
     var dismissed: (() -> Void)?
     
-    var presentScheduleTimePicker: (@escaping (Int32) -> Void) -> Void = { _ in }
+    var presentScheduleTimePicker: (@escaping (Int32, Int32?) -> Void) -> Void = { _ in }
     
     private let createActionDisposable = MetaDisposable()
     private let confirmationDisposable = MetaDisposable()
@@ -71,6 +78,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
     
+    private var isSearching = false
     private var searchContentNode: NavigationBarContentNode?
     
     var displayNavigationActivity: Bool = false {
@@ -101,6 +109,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     
     init(_ params: ContactSelectionControllerParams) {
         self.context = params.context
+        self.style = params.style
         self.mode = params.mode
         self.autoDismiss = params.autoDismiss
         self.titleProducer = params.title
@@ -118,18 +127,19 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
         
         self.presentationData = params.updatedPresentationData?.initial ?? params.context.sharedContext.currentPresentationData.with { $0 }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData))
+        var glass = false
+        if case .glass = params.style {
+            glass = true
+            self.presentationData = self.presentationData.withUpdated(theme: self.presentationData.theme.withModalBlocksBackground())
+        }
+        
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme, hideBackground: glass, hideSeparator: glass), strings: NavigationBarStrings(presentationStrings: self.presentationData.strings)))
         
         self.blocksBackgroundWhenInOverlay = true
         self.acceptsFocusWhenInOverlay = true
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        
-        self.title = self.titleProducer(self.presentationData.strings)
-        
-        self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
-        
+                
         self.scrollToTop = { [weak self] in
             if let strongSelf = self {
                 if let searchContentNode = strongSelf.searchContentNode as? NavigationBarSearchContentNode {
@@ -141,14 +151,17 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
         
         self.presentationDataDisposable = ((params.updatedPresentationData?.signal ?? params.context.sharedContext.presentationData)
         |> deliverOnMainQueue).startStrict(next: { [weak self] presentationData in
-            if let strongSelf = self {
-                let previousTheme = strongSelf.presentationData.theme
-                let previousStrings = strongSelf.presentationData.strings
+            if let self {
+                let previousTheme = self.presentationData.theme
+                let previousStrings = self.presentationData.strings
                 
-                strongSelf.presentationData = presentationData
+                self.presentationData = presentationData
+                if case .glass = params.style {
+                    self.presentationData = self.presentationData.withUpdated(theme: self.presentationData.theme.withModalBlocksBackground())
+                }
                 
                 if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
-                    strongSelf.updateThemeAndStrings()
+                    self.updateThemeAndStrings()
                 }
             }
         })
@@ -160,11 +173,25 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
             self.navigationBar?.setContentNode(self.searchContentNode, animated: false)
         }
         
+        self.title = self.titleProducer(self.presentationData.strings)
+        
+        if glass {
+
+        } else {
+            self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
+            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
+        }
+        
         if self.multipleSelection == .always {
-            self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationCompactSearchIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.beginSearch))
+            if glass {
+            } else {
+                self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationCompactSearchIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.beginSearch))
+            }
         } else if self.multipleSelection == .possible {
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Select, style: .plain, target: self, action: #selector(self.beginSelection))
         }
+        
+        self.updateNavigationButtons()
         
         self.getCurrentSendMessageContextMediaPreview = { [weak self] in
             guard let self else {
@@ -205,14 +232,89 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
         self.contactsNode.beginSelection()
     }
     
+    private func updateNavigationButtons() {
+        guard case .glass = self.style else {
+            return
+        }
+        let barButtonSize = CGSize(width: 40.0, height: 40.0)
+        let closeComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
+            id: "close",
+            component: AnyComponent(GlassBarButtonComponent(
+                size: barButtonSize,
+                backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                isDark: self.presentationData.theme.overallDarkAppearance,
+                state: .generic,
+                component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                    BundleIconComponent(
+                        name: "Navigation/Close",
+                        tintColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                    )
+                )),
+                action: { [weak self] _ in
+                    self?.cancelPressed()
+                }
+            ))
+        )
+        
+        let searchComponent: AnyComponentWithIdentity<Empty>?
+        if !self.isSearching && self.multipleSelection == .always {
+            searchComponent = AnyComponentWithIdentity(
+                id: "search",
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: self.presentationData.theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "search", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Search",
+                            tintColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { [weak self] _ in
+                        self?.beginSearch()
+                    }
+                ))
+            )
+        } else {
+            searchComponent = nil
+        }
+        
+        let closeButtonNode: BarComponentHostNode
+        if let current = self.closeButtonNode {
+            closeButtonNode = current
+            closeButtonNode.component = closeComponent
+        } else {
+            closeButtonNode = BarComponentHostNode(component: closeComponent, size: barButtonSize)
+            self.closeButtonNode = closeButtonNode
+            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: closeButtonNode)
+        }
+                
+        let searchButtonNode: BarComponentHostNode
+        if let current = self.searchButtonNode {
+            searchButtonNode = current
+            searchButtonNode.component = searchComponent
+        } else {
+            searchButtonNode = BarComponentHostNode(component: searchComponent, size: barButtonSize)
+            self.searchButtonNode = searchButtonNode
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: searchButtonNode)
+        }
+    }
+    
     private func updateThemeAndStrings() {
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
-        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(presentationData: self.presentationData))
+        var glass = false
+        if case .glass = self.style {
+            glass = true
+        }
+        self.navigationBar?.updatePresentationData(NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme, hideBackground: glass, hideSeparator: glass), strings: NavigationBarStrings(presentationStrings: self.presentationData.strings)))
         (self.searchContentNode as? NavigationBarSearchContentNode)?.updateThemeAndPlaceholder(theme: self.presentationData.theme, placeholder: self.presentationData.strings.Common_Search)
         self.title = self.titleProducer(self.presentationData.strings)
         self.tabBarItem.title = self.presentationData.strings.Contacts_Title
         self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
         self.contactsNode.updatePresentationData(self.presentationData)
+        
+        self.updateNavigationButtons()
     }
     
     @objc func cancelPressed() {
@@ -222,7 +324,19 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     }
     
     override func loadDisplayNode() {
-        self.displayNode = ContactSelectionControllerNode(context: self.context, mode: self.mode, presentationData: self.presentationData, options: self.options, displayDeviceContacts: self.displayDeviceContacts, displayCallIcons: self.displayCallIcons, multipleSelection: self.multipleSelection == .always, requirePhoneNumbers: self.requirePhoneNumbers, allowChannelsInSearch: self.allowChannelsInSearch, isPeerEnabled: self.isPeerEnabled)
+        self.displayNode = ContactSelectionControllerNode(
+            context: self.context,
+            listStyle: self.style == .glass ? .blocks : .plain,
+            mode: self.mode,
+            presentationData: self.presentationData,
+            options: self.options,
+            displayDeviceContacts: self.displayDeviceContacts,
+            displayCallIcons: self.displayCallIcons,
+            multipleSelection: self.multipleSelection == .always,
+            requirePhoneNumbers: self.requirePhoneNumbers,
+            allowChannelsInSearch: self.allowChannelsInSearch,
+            isPeerEnabled: self.isPeerEnabled
+        )
         self._ready.set(self.contactsNode.contactListNode.ready)
         
         self.contactsNode.navigationBar = self.navigationBar
@@ -334,39 +448,56 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     
     private func activateSearch() {
         if self.displayNavigationBar {
+            self.isSearching = true
             if let searchContentNode = self.searchContentNode as? NavigationBarSearchContentNode {
                 self.contactsNode.activateSearch(placeholderNode: searchContentNode.placeholderNode)
                 self.setDisplayNavigationBar(false, transition: .animated(duration: 0.5, curve: .spring))
             } else if self.multipleSelection == .always {
-                let contentNode = ContactsSearchNavigationContentNode(presentationData: self.presentationData, dismissSearch: { [weak self] in
-                    if let strongSelf = self, let navigationBar = strongSelf.navigationBar, let searchContentNode = strongSelf.searchContentNode as? ContactsSearchNavigationContentNode {
-                        searchContentNode.deactivate()
-                        strongSelf.searchContentNode = nil
-                        navigationBar.setContentNode(nil, animated: true)
-                        strongSelf.contactsNode.deactivateOverlaySearch()
-                    }
-                }, updateSearchQuery: { [weak self] query in
-                    if let strongSelf = self {
-                        strongSelf.contactsNode.searchContainerNode?.searchTextUpdated(text: query)
-                    }
-                })
-                self.searchContentNode = contentNode
-                self.navigationBar?.setContentNode(contentNode, animated: true)
+                if case .glass = self.style {
+                    self.updateNavigationButtons()
+                    self.requestAttachmentMenuExpansion()
+                    self.updateTabBarVisibility(false, .animated(duration: 0.4, curve: .spring))
+                } else {
+                    let contentNode = ContactsSearchNavigationContentNode(presentationData: self.presentationData, dismissSearch: { [weak self] in
+                        if let strongSelf = self, let navigationBar = strongSelf.navigationBar, let searchContentNode = strongSelf.searchContentNode as? ContactsSearchNavigationContentNode {
+                            searchContentNode.deactivate()
+                            strongSelf.searchContentNode = nil
+                            navigationBar.setContentNode(nil, animated: true)
+                            strongSelf.contactsNode.deactivateOverlaySearch()
+                        }
+                    }, updateSearchQuery: { [weak self] query in
+                        if let strongSelf = self {
+                            strongSelf.contactsNode.searchContainerNode?.searchTextUpdated(text: query)
+                        }
+                    })
+                    self.searchContentNode = contentNode
+                    self.navigationBar?.setContentNode(contentNode, animated: true)
+                    contentNode.activate()
+                }
                 self.contactsNode.activateOverlaySearch()
-                contentNode.activate()
             }
         }
     }
     
     private func deactivateSearch() {
-        if !self.displayNavigationBar {
+        self.isSearching = false
+        if case .glass = self.style {
+            self.updateNavigationButtons()
             self.contactsNode.prepareDeactivateSearch()
-            self.setDisplayNavigationBar(true, transition: .animated(duration: 0.5, curve: .spring))
-            if let searchContentNode = self.searchContentNode as? NavigationBarSearchContentNode {
-                self.contactsNode.deactivateSearch(placeholderNode: searchContentNode.placeholderNode)
+            self.contactsNode.deactivateOverlaySearch()
+            
+            self.updateTabBarVisibility(true, .animated(duration: 0.4, curve: .spring))
+        } else {
+            if !self.displayNavigationBar {
+                self.contactsNode.prepareDeactivateSearch()
+                
+                self.setDisplayNavigationBar(true, transition: .animated(duration: 0.5, curve: .spring))
+                if let searchContentNode = self.searchContentNode as? NavigationBarSearchContentNode {
+                    self.contactsNode.deactivateSearch(placeholderNode: searchContentNode.placeholderNode)
+                }
+            } else if let searchContentNode = self.searchContentNode as? ContactsSearchNavigationContentNode {
+                searchContentNode.cancel()
             }
-        } else if let searchContentNode = self.searchContentNode as? ContactsSearchNavigationContentNode {
-            searchContentNode.cancel()
         }
     }
     
@@ -515,7 +646,7 @@ final class ContactsPickerContext: AttachmentMediaPickerContext {
     }
     
     func schedule(parameters: ChatSendMessageActionSheetController.SendParameters?) {
-        self.controller?.presentScheduleTimePicker ({ time in
+        self.controller?.presentScheduleTimePicker ({ time, repeatPeriod in
             self.controller?.contactsNode.requestMultipleAction?(false, time, parameters)
         })
     }

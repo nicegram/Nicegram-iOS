@@ -284,7 +284,7 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
         let arguments = arguments as! ThemeSettingsControllerArguments
         switch self {
             case let .chatPreview(theme, wallpaper, fontSize, chatBubbleCorners, strings, dateTimeFormat, nameDisplayOrder, items):
-                return ThemeSettingsChatPreviewItem(context: arguments.context, theme: theme, componentTheme: theme, strings: strings, sectionId: self.section, fontSize: fontSize, chatBubbleCorners: chatBubbleCorners, wallpaper: wallpaper, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, messageItems: items)
+                return ThemeSettingsChatPreviewItem(context: arguments.context, systemStyle: .glass, theme: theme, componentTheme: theme, strings: strings, sectionId: self.section, fontSize: fontSize, chatBubbleCorners: chatBubbleCorners, wallpaper: wallpaper, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, messageItems: items)
             case let .themes(theme, strings, chatThemes, currentTheme, nightMode, animatedEmojiStickers, themeSpecificAccentColors, themeSpecificChatWallpapers):
                 return ThemeCarouselThemeItem(context: arguments.context, theme: theme, strings: strings, sectionId: self.section, themes: chatThemes, hasNoTheme: false, animatedEmojiStickers: animatedEmojiStickers, themeSpecificAccentColors: themeSpecificAccentColors, themeSpecificChatWallpapers: themeSpecificChatWallpapers, nightMode: nightMode, currentTheme: currentTheme, updatedTheme: { theme in
                     if let theme {
@@ -294,11 +294,11 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
                     arguments.themeContextAction(false, theme, node, gesture)
                 }, tag: ThemeSettingsEntryTag.theme)
             case let .chatTheme(_, text):
-                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                     arguments.openThemeSettings()
                 })
             case let .wallpaper(_, text):
-                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                     arguments.openWallpaperSettings()
                 })
             case let .nameColor(_, text, _, nameColor, profileColor):
@@ -312,23 +312,23 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
             
                 let colorImage = generateSettingsMenuPeerColorsLabelIcon(colors: colors)
             
-                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: "", labelStyle: .image(image: colorImage, size: colorImage.size), sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: "", labelStyle: .image(image: colorImage, size: colorImage.size), sectionId: self.section, style: .blocks, action: {
                     arguments.openNameColorSettings()
                 })
             case let .autoNight(_, title, value, enabled):
-                return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleNightTheme(value)
                 }, tag: nil)
             case let .autoNightTheme(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openAutoNightTheme()
                 })
             case let .textSize(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openTextSize()
                 })
             case let .bubbleSettings(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openBubbleSettings()
                 })
             case let .themeListHeader(_, text):
@@ -336,21 +336,21 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
             case let .iconHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .iconItem(theme, strings, icons, isPremium, value):
-                return ThemeSettingsAppIconItem(theme: theme, strings: strings, sectionId: self.section, icons: icons, isPremium: isPremium, currentIconName: value, updated: { icon in
+                return ThemeSettingsAppIconItem(theme: theme, strings: strings, systemStyle: .glass, sectionId: self.section, icons: icons, isPremium: isPremium, currentIconName: value, updated: { icon in
                     arguments.selectAppIcon(icon)
                 }, tag: ThemeSettingsEntryTag.icon)
             case .powerSaving:
-                return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: presentationData.strings.AppearanceSettings_Animations, label: "", labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: presentationData.strings.AppearanceSettings_Animations, label: "", labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openPowerSavingSettings()
                 })
             case .stickersAndEmoji:
-                return ItemListDisclosureItem(presentationData: presentationData, icon: nil, title: presentationData.strings.ChatSettings_StickersAndReactions, label: "", labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: presentationData.strings.ChatSettings_StickersAndReactions, label: "", labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openStickersAndEmoji()
                 })
             case let .otherHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .showNextMediaOnTap(_, title, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleShowNextMediaOnTap(value)
                 }, tag: ThemeSettingsEntryTag.animations)
             case let .showNextMediaOnTapInfo(_, text):

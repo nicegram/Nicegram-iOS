@@ -18,6 +18,10 @@ import UIKitRuntimeUtils
 public final class GiftCompositionComponent: Component {
     public class ExternalState {
         public fileprivate(set) var previewPatternColor: UIColor?
+        public fileprivate(set) var previewModel: StarGift.UniqueGift.Attribute?
+        public fileprivate(set) var previewBackdrop: StarGift.UniqueGift.Attribute?
+        public fileprivate(set) var previewSymbol: StarGift.UniqueGift.Attribute?
+        
         public init() {
             self.previewPatternColor = nil
         }
@@ -35,6 +39,8 @@ public final class GiftCompositionComponent: Component {
     let animationOffset: CGPoint?
     let animationScale: CGFloat?
     let displayAnimationStars: Bool
+    let animateScaleOnTransition: Bool
+    let alwaysAnimateTransition: Bool
     let revealedAttributes: Set<StarGift.UniqueGift.Attribute.AttributeType>
     let externalState: ExternalState?
     let requestUpdate: (ComponentTransition) -> Void
@@ -46,6 +52,8 @@ public final class GiftCompositionComponent: Component {
         animationOffset: CGPoint? = nil,
         animationScale: CGFloat? = nil,
         displayAnimationStars: Bool = false,
+        animateScaleOnTransition: Bool = true,
+        alwaysAnimateTransition: Bool = false,
         revealedAttributes: Set<StarGift.UniqueGift.Attribute.AttributeType> = Set(),
         externalState: ExternalState? = nil,
         requestUpdate: @escaping (ComponentTransition) -> Void = { _ in }
@@ -56,6 +64,8 @@ public final class GiftCompositionComponent: Component {
         self.animationOffset = animationOffset
         self.animationScale = animationScale
         self.displayAnimationStars = displayAnimationStars
+        self.animateScaleOnTransition = animateScaleOnTransition
+        self.alwaysAnimateTransition = alwaysAnimateTransition
         self.revealedAttributes = revealedAttributes
         self.externalState = externalState
         self.requestUpdate = requestUpdate
@@ -78,6 +88,9 @@ public final class GiftCompositionComponent: Component {
             return false
         }
         if lhs.displayAnimationStars != rhs.displayAnimationStars {
+            return false
+        }
+        if lhs.animateScaleOnTransition != rhs.animateScaleOnTransition {
             return false
         }
         if lhs.revealedAttributes != rhs.revealedAttributes {
@@ -111,7 +124,12 @@ public final class GiftCompositionComponent: Component {
         private var animatePreviewTransition = false
         private var animateBackdropSwipe = false
         
-        private enum SpinState { case idle, spinning, decelerating, settled }
+        private enum SpinState {
+            case idle
+            case spinning
+            case decelerating
+            case settled
+        }
         private var spinState: SpinState = .idle
         private var spinLink: SharedDisplayLinkDriver.Link?
         private var lastSpawnTime: CFTimeInterval?
@@ -124,18 +142,17 @@ public final class GiftCompositionComponent: Component {
         private var decelerationStepIndex: Int = 0
         private var decelContainer: UIView?
         private var decelItemHosts: [UIView] = []
-        private let decelAnimationKey = "decel.container.move"
         
         private var activeWrappers: [UIView] = []
 
-        private struct SpinGeom {
+        private struct SpinParams {
             var availableSize: CGSize
             var iconSize: CGSize
             var scale: CGFloat
             var centerX: CGFloat
             var centerY: CGFloat
         }
-        private var spinGeom: SpinGeom?
+        private var spinGeom: SpinParams?
 
         private var spinPool: [StarGift.UniqueGift.Attribute] = []
         private var spinPoolIndex: Int = 0
@@ -285,7 +302,7 @@ public final class GiftCompositionComponent: Component {
             self.spinPoolIndex = 0
             let centerY = 88.0 + (self.component?.animationOffset?.y ?? 0.0)
 
-            self.spinGeom = SpinGeom(
+            self.spinGeom = SpinParams(
                 availableSize: availableSize,
                 iconSize: iconSize,
                 scale: scale,
@@ -667,18 +684,23 @@ public final class GiftCompositionComponent: Component {
                 loop = true
                 self.stopSpinIfNeeded()
                 
-                if self.previewModels.isEmpty {
+                if self.previewModels.isEmpty || sampleAttributes.count == 3 {
                     var models: [StarGift.UniqueGift.Attribute] = []
                     var patterns: [StarGift.UniqueGift.Attribute] = []
                     var backdrops: [StarGift.UniqueGift.Attribute] = []
                     for attribute in sampleAttributes {
                         switch attribute {
-                        case .model:   models.append(attribute)
+                        case .model: models.append(attribute)
                         case .pattern: patterns.append(attribute)
                         case .backdrop: backdrops.append(attribute)
                         default: break
                         }
                     }
+                    
+                    if self.previewModels != models && sampleAttributes.count == 3 {
+                        self.animatePreviewTransition = true
+                    }
+                    
                     self.previewModels = models
                     self.previewPatterns = patterns
                     self.previewBackdrops = backdrops
@@ -703,19 +725,22 @@ public final class GiftCompositionComponent: Component {
                     }
                     if case let .model(_, file, _) = self.previewModels[Int(self.previewModelIndex)] {
                         animationFile = file
+                        component.externalState?.previewModel = self.previewModels[Int(self.previewModelIndex)]
                     }
-                    if case let .pattern(_, file, _) = self.previewPatterns[Int(self.previewPatternIndex)] {
+                    if !self.previewPatterns.isEmpty, case let .pattern(_, file, _) = self.previewPatterns[Int(self.previewPatternIndex)] {
                         patternFile = file
                         files[file.fileId.id] = file
+                        component.externalState?.previewSymbol = self.previewPatterns[Int(self.previewPatternIndex)]
                     }
-                    if case let .backdrop(_, _, innerColorValue, outerColorValue, patternColorValue, _, _) = self.previewBackdrops[Int(self.previewBackdropIndex)] {
+                    if !self.previewBackdrops.isEmpty, case let .backdrop(_, _, innerColorValue, outerColorValue, patternColorValue, _, _) = self.previewBackdrops[Int(self.previewBackdropIndex)] {
                         backgroundColor = UIColor(rgb: UInt32(bitPattern: outerColorValue))
                         secondBackgroundColor = UIColor(rgb: UInt32(bitPattern: innerColorValue))
                         patternColor = UIColor(rgb: UInt32(bitPattern: patternColorValue))
+                        component.externalState?.previewBackdrop = self.previewBackdrops[Int(self.previewBackdropIndex)]
                     }
                 }
                 
-                if self.previewTimer == nil {
+                if self.previewTimer == nil && sampleAttributes.count > 3 {
                     self.previewTimer = SwiftSignalKit.Timer(timeout: 2.0, repeat: true, completion: { [weak self] in
                         guard let self, !self.previewModels.isEmpty else { return }
                         self.previewModelIndex = (self.previewModelIndex + 1) % Int32(self.previewModels.count)
@@ -751,7 +776,9 @@ public final class GiftCompositionComponent: Component {
             }
             
             var animateTransition = false
-            if self.animatePreviewTransition {
+            if component.alwaysAnimateTransition {
+                animateTransition = true
+            } else if self.animatePreviewTransition {
                 animateTransition = true
                 self.animatePreviewTransition = false
             } else if let previousComponent, case .preview = previousComponent.subject, case .unique = component.subject {
@@ -771,6 +798,9 @@ public final class GiftCompositionComponent: Component {
                         if case .unique = component.subject {
                             bounce = self.previewPatternIndex == -1
                             background = false
+                        }
+                        if !component.animateScaleOnTransition {
+                            bounce = false
                         }
                         backgroundView.animateTransition(background: background, bounce: bounce)
                     }
@@ -893,7 +923,7 @@ public final class GiftCompositionComponent: Component {
                     )
                 } else if self.spinState == .spinning {
                     let centerY = 88.0 + (component.animationOffset?.y ?? 0.0)
-                    self.spinGeom = SpinGeom(
+                    self.spinGeom = SpinParams(
                         availableSize: availableSize,
                         iconSize: iconSize,
                         scale: scaleValue,

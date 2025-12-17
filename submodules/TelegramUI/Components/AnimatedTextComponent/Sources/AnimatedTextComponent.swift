@@ -27,7 +27,7 @@ public final class AnimatedTextComponent: Component {
         public enum Content: Equatable {
             case text(String)
             case number(Int, minDigits: Int)
-            case icon(String, offset: CGPoint)
+            case icon(String, tint: Bool, offset: CGPoint)
         }
         
         public var id: AnyHashable
@@ -149,7 +149,7 @@ public final class AnimatedTextComponent: Component {
                     } else {
                         itemText = valueText.map(String.init)
                     }
-                case let .icon(iconName, _):
+                case let .icon(iconName, _, _):
                     let characterKey = CharacterKey(itemId: item.id, index: 0, value: iconName)
                     validKeys.append(characterKey)
                 }
@@ -188,11 +188,11 @@ public final class AnimatedTextComponent: Component {
             for item in component.items {
                 enum AnimatedTextCharacter {
                     case text(String)
-                    case icon(String, CGPoint)
+                    case icon(String, Bool, CGPoint)
                     
                     var value: String {
                         switch self {
-                        case let .text(value), let .icon(value, _):
+                        case let .text(value), let .icon(value, _, _):
                             return value
                         }
                     }
@@ -216,8 +216,8 @@ public final class AnimatedTextComponent: Component {
                     } else {
                         itemText = valueText.map { .text(String($0)) }
                     }
-                case let .icon(iconName, offset):
-                    itemText = [.icon(iconName, offset)]
+                case let .icon(iconName, tint, offset):
+                    itemText = [.icon(iconName, tint, offset)]
                 }
                 var index = 0
                 for character in itemText {
@@ -243,10 +243,10 @@ public final class AnimatedTextComponent: Component {
                             font: component.font,
                             color: component.color
                         ))
-                    case let .icon(iconName, offset):
+                    case let .icon(iconName, tint, offset):
                         characterComponent = AnyComponent(BundleIconComponent(
                             name: iconName,
-                            tintColor: component.color
+                            tintColor: tint ? component.color : nil
                         ))
                         characterOffset = offset
                     }

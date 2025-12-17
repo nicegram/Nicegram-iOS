@@ -139,6 +139,7 @@ private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
                 context: arguments.context,
                 theme: presentationData.theme,
                 strings: presentationData.strings,
+                systemStyle: .glass,
                 sectionId: self.section,
                 fontSize: fontSize,
                 chatBubbleCorners: chatBubbleCorners,
@@ -155,7 +156,7 @@ private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
         case let .demoDescription(text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .quickReaction(title, reaction, availableReactions):
-            return ItemListReactionItem(context: arguments.context, presentationData: presentationData, title: title, reaction: reaction, availableReactions: availableReactions, sectionId: self.section, style: .blocks, action: {
+            return ItemListReactionItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, title: title, reaction: reaction, availableReactions: availableReactions, sectionId: self.section, style: .blocks, action: {
                 arguments.openQuickReaction()
             })
         case let .quickReactionDescription(text):

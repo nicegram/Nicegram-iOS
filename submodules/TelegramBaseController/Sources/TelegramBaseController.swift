@@ -89,6 +89,10 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
     private var locationBroadcastMessages: [EngineMessage.Id: EngineMessage]?
     private var locationBroadcastAccessoryPanel: LocationBroadcastNavigationAccessoryPanel?
     
+    private var giftAuctionAccessoryPanel: GiftAuctionAccessoryPanel?
+    private var giftAuctionStates: [GiftAuctionContext.State] = []
+    private var giftAuctionDisposable: Disposable?
+    
     private var groupCallPanelData: GroupCallPanelData?
     public private(set) var groupCallAccessoryPanel: GroupCallNavigationAccessoryPanel?
     
@@ -358,6 +362,22 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
             }
         }
         
+        if let giftAuctionsManager = context.giftAuctionsManager, case .summary = locationBroadcastPanelSource {
+            self.giftAuctionDisposable = (giftAuctionsManager.state
+            |> deliverOnMainQueue).start(next: { [weak self] states in
+                guard let self else {
+                    return
+                }
+                self.giftAuctionStates = states.filter { state in
+                    if case .ongoing = state.auctionState {
+                        return true
+                    } else {
+                        return false
+                    }
+                }
+            })
+        }
+        
         self.presentationDataDisposable = (self.updatedPresentationData.1
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             if let strongSelf = self {
@@ -519,6 +539,63 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
                 })
             } else {
                 groupCallAccessoryPanel.removeFromSupernode()
+            }
+        }
+        
+        if !self.giftAuctionStates.isEmpty {
+            let panelHeight: CGFloat = 56.0
+            let panelFrame = CGRect(origin: CGPoint(x: 0.0, y: panelStartY), size: CGSize(width: layout.size.width, height: panelHeight))
+            additionalHeight += panelHeight
+            panelStartY += panelHeight
+            
+            let giftAuctionAccessoryPanel: GiftAuctionAccessoryPanel
+            if let current = self.giftAuctionAccessoryPanel {
+                giftAuctionAccessoryPanel = current
+                transition.updateFrame(node: giftAuctionAccessoryPanel, frame: panelFrame)
+                giftAuctionAccessoryPanel.updateLayout(size: panelFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, isHidden: !self.displayNavigationBar, transition: transition)
+            } else {
+                giftAuctionAccessoryPanel = GiftAuctionAccessoryPanel(context: self.context, theme: self.presentationData.theme, strings: self.presentationData.strings, tapAction: { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    if self.giftAuctionStates.count == 1, let gift = self.giftAuctionStates.first?.gift, case let .generic(gift) = gift {
+                        if let giftAuctionsManager = self.context.giftAuctionsManager {
+                            let _ = (giftAuctionsManager.auctionContext(for: .giftId(gift.id))
+                            |> deliverOnMainQueue).start(next: { [weak self] auction in
+                                guard let self, let auction else {
+                                    return
+                                }
+                                let controller = self.context.sharedContext.makeGiftAuctionBidScreen(context: self.context, toPeerId: auction.currentBidPeerId ?? self.context.account.peerId, text: nil, entities: nil, hideName: false, auctionContext: auction, acquiredGifts: nil)
+                                self.push(controller)
+                            })
+                        }
+                    } else {
+                        let controller = self.context.sharedContext.makeGiftAuctionActiveBidsScreen(context: self.context)
+                        self.push(controller)
+                    }
+                })
+                if let accessoryPanelContainer = self.accessoryPanelContainer {
+                    accessoryPanelContainer.addSubnode(giftAuctionAccessoryPanel)
+                } else {
+                    self.navigationBar?.additionalContentNode.addSubnode(giftAuctionAccessoryPanel)
+                }
+                self.giftAuctionAccessoryPanel = giftAuctionAccessoryPanel
+                giftAuctionAccessoryPanel.frame = panelFrame
+
+                giftAuctionAccessoryPanel.updateLayout(size: panelFrame.size, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, isHidden: !self.displayNavigationBar, transition: .immediate)
+                if transition.isAnimated {
+                    giftAuctionAccessoryPanel.animateIn(transition)
+                }
+            }
+            giftAuctionAccessoryPanel.update(states: self.giftAuctionStates)
+        } else if let giftAuctionAccessoryPanel = self.giftAuctionAccessoryPanel {
+            self.giftAuctionAccessoryPanel = nil
+            if transition.isAnimated {
+                giftAuctionAccessoryPanel.animateOut(transition, completion: { [weak giftAuctionAccessoryPanel] in
+                    giftAuctionAccessoryPanel?.removeFromSupernode()
+                })
+            } else {
+                giftAuctionAccessoryPanel.removeFromSupernode()
             }
         }
         

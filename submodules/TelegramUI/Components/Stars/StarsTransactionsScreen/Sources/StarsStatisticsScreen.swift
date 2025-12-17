@@ -466,6 +466,7 @@ final class StarsStatisticsScreenComponent: Component {
                     transition: .immediate,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: strings.Stars_BotRevenue_Revenue_Title.uppercased(),
@@ -501,6 +502,7 @@ final class StarsStatisticsScreenComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: strings.Stars_BotRevenue_Proceeds_Title.uppercased(),
@@ -656,6 +658,7 @@ final class StarsStatisticsScreenComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: strings.Stars_BotRevenue_Withdraw_Balance.uppercased(),
@@ -774,7 +777,7 @@ final class StarsStatisticsScreenComponent: Component {
             let panelTransition = transition
             if !panelItems.isEmpty {
                 let panelContainerInset: CGFloat = self.listIsExpanded ? 0.0 : 16.0
-                let panelContainerCornerRadius: CGFloat = self.listIsExpanded ? 0.0 : 11.0
+                let panelContainerCornerRadius: CGFloat = self.listIsExpanded ? 0.0 : 26.0
                 
                 let panelContainerSize = self.panelContainer.update(
                     transition: panelTransition,
@@ -910,7 +913,7 @@ public final class StarsStatisticsScreen: ViewControllerComponentContainer {
                 guard let self, let starsContext = context.starsContext else {
                     return
                 }
-                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, completion: { [weak self] stars in
+                let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, customTheme: nil, completion: { [weak self] stars in
                     guard let self else {
                         return
                     }

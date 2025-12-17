@@ -684,11 +684,12 @@ final class ContextControllerNode: ViewControllerTracingNode, ASScrollViewDelega
                     self.contentReady.set(.single(true))
                     
                     let transitionInfo = source.transitionInfo()
-                    if let transitionInfo = transitionInfo {
+                    if let transitionInfo {
                         let referenceView = transitionInfo.referenceView
                         self.contentContainerNode.contentNode = .reference(view: referenceView)
                         self.contentAreaInScreenSpace = transitionInfo.contentAreaInScreenSpace
                         self.customPosition = transitionInfo.customPosition
+                        
                         var projectedFrame = convertFrame(referenceView.bounds, from: referenceView, to: self.view)
                         projectedFrame.origin.x += transitionInfo.insets.left
                         projectedFrame.size.width -= transitionInfo.insets.left + transitionInfo.insets.right

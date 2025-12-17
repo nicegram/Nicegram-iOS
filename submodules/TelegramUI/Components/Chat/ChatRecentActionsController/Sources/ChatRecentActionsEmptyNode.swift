@@ -54,7 +54,7 @@ public final class ChatRecentActionsEmptyNode: ASDisplayNode {
         self.textNode.isUserInteractionEnabled = false
         
         // Nicegram Unblock
-        self.buttonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0, gloss: true)
+        self.buttonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0, isShimmering: true)
         //
         
         super.init()

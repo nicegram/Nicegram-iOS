@@ -87,7 +87,7 @@ private enum ConfirmPhoneNumberCodeEntry: ItemListNodeEntry {
         let arguments = arguments as! ConfirmPhoneNumberCodeControllerArguments
         switch self {
             case let .codeEntry(_, _, title, text):
-                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: title, textColor: .black), text: text, placeholder: "", type: .number, spacing: 10.0, tag: ConfirmPhoneNumberCodeTag.input, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: title, textColor: .black), text: text, placeholder: "", type: .number, spacing: 10.0, tag: ConfirmPhoneNumberCodeTag.input, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updateEntryText(updatedText)
                 }, action: {
                     arguments.next()

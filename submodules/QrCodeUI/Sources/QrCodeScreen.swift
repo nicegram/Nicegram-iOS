@@ -269,7 +269,7 @@ public final class QrCodeScreen: ViewController {
             self.cancelButton = HighlightableButtonNode()
             self.cancelButton.setTitle(self.presentationData.strings.Common_Done, with: Font.bold(17.0), with: accentColor, for: .normal)
             
-            self.buttonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), height: 52.0, cornerRadius: 11.0, gloss: false)
+            self.buttonNode = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), height: 52.0, cornerRadius: 11.0, isShimmering: false)
             
             self.textNode = ImmediateTextNode()
             self.textNode.maximumNumberOfLines = 3

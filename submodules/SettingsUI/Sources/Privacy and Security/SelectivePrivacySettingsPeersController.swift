@@ -217,7 +217,7 @@ private enum SelectivePrivacyPeersEntry: ItemListNodeEntry {
         case let .premiumUsersItem(editing, enabled):
             let peer: EnginePeer = .user(TelegramUser(
                 id: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(1)), accessHash: nil, firstName: presentationData.strings.PrivacySettings_CategoryPremiumUsers, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil))
-            return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, customAvatarIcon: premiumAvatarIcon, presence: nil, text: .none, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
+            return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, customAvatarIcon: premiumAvatarIcon, presence: nil, text: .none, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
             }, setPeerIdWithRevealedOptions: { previousId, id in
                 arguments.setPeerIdWithRevealedOptions(previousId, id)
             }, removePeer: { peerId in
@@ -226,7 +226,7 @@ private enum SelectivePrivacyPeersEntry: ItemListNodeEntry {
         case let .botsItem(editing, enabled):
             let peer: EnginePeer = .user(TelegramUser(
                 id: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: EnginePeer.Id.Id._internalFromInt64Value(2)), accessHash: nil, firstName: presentationData.strings.PrivacySettings_CategoryBots, lastName: nil, username: nil, phone: nil, photo: [], botInfo: nil, restrictionInfo: nil, flags: [], emojiStatus: nil, usernames: [], storiesHidden: nil, nameColor: nil, backgroundEmojiId: nil, profileColor: nil, profileBackgroundEmojiId: nil, subscriberCount: nil, verificationIconFileId: nil))
-            return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, customAvatarIcon: botsIcon, presence: nil, text: .none, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
+            return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer, customAvatarIcon: botsIcon, presence: nil, text: .none, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
             }, setPeerIdWithRevealedOptions: { previousId, id in
                 arguments.setPeerIdWithRevealedOptions(previousId, id)
             }, removePeer: { peerId in
@@ -248,7 +248,7 @@ private enum SelectivePrivacyPeersEntry: ItemListNodeEntry {
                     }
                 }
             }
-            return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(peer.peer), presence: nil, text: text, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
+            return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(peer.peer), presence: nil, text: text, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
                 arguments.openPeer(EnginePeer(peer.peer))
             }, setPeerIdWithRevealedOptions: { previousId, id in
                 arguments.setPeerIdWithRevealedOptions(previousId, id)
@@ -256,7 +256,7 @@ private enum SelectivePrivacyPeersEntry: ItemListNodeEntry {
                 arguments.removePeer(peerId)
             })
         case let .addItem(text, editing):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: text, sectionId: self.section, height: .compactPeerList, editing: editing, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: text, sectionId: self.section, height: .compactPeerList, editing: editing, action: {
                     arguments.addPeer()
                 })
         case let .headerItem(text):
@@ -264,7 +264,7 @@ private enum SelectivePrivacyPeersEntry: ItemListNodeEntry {
         case let .footerItem(text):
             return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section)
         case let .deleteItem(text):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
                 arguments.deleteAll()
             })
         }

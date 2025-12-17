@@ -22,7 +22,7 @@ public func ChangePhoneNumberController(context: AccountContext) -> ViewControll
     let requestDisposable = MetaDisposable()
     let changePhoneDisposable = MetaDisposable()
     
-    let controller = AuthorizationSequencePhoneEntryController(sharedContext: context.sharedContext, account: nil, countriesConfiguration: context.currentCountriesConfiguration.with { $0 }, isTestingEnvironment: false, otherAccountPhoneNumbers: (nil, []), network: context.account.network, presentationData: presentationData, openUrl: { _ in }, back: {
+    let controller = AuthorizationSequencePhoneEntryController(sharedContext: context.sharedContext, account: nil, countriesConfiguration: context.currentCountriesConfiguration.with { $0 }, apiId: 0, apiHash: "", isTestingEnvironment: false, otherAccountPhoneNumbers: (nil, []), network: context.account.network, presentationData: presentationData, openUrl: { _ in }, back: {
         dismissImpl?()
     })
     controller.loginWithNumber = { [weak controller] phoneNumber, _ in
@@ -183,10 +183,10 @@ public func ChangePhoneNumberController(context: AccountContext) -> ViewControll
                 if let (_, countryCode) = lookupCountryIdByNumber(phone, configuration: context.currentCountriesConfiguration.with { $0 }), let codeValue = Int32(countryCode.code) {
                     initialCountryCode = codeValue
                 } else {
-                    initialCountryCode = AuthorizationSequenceController.defaultCountryCode()
+                    initialCountryCode = AuthorizationSequenceCountrySelectionController.defaultCountryCode()
                 }
             } else {
-                initialCountryCode = AuthorizationSequenceController.defaultCountryCode()
+                initialCountryCode = AuthorizationSequenceCountrySelectionController.defaultCountryCode()
             }
             controller.updateData(countryCode: initialCountryCode, countryName: nil, number: "")
             controller.updateCountryCode()

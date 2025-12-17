@@ -389,6 +389,7 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
             return ItemListFilterTitleInputItem(
                 context: arguments.context,
                 presentationData: presentationData,
+                systemStyle: .glass,
                 text: value,
                 enableAnimations: enableAnimations,
                 placeholder: placeholder,
@@ -407,12 +408,13 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
         case .includePeerInfo(let text), .excludePeerInfo(let text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .addIncludePeer(title):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: title, alwaysPlain: false, sectionId: self.section, height: .peerList, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: title, alwaysPlain: false, sectionId: self.section, height: .peerList, editing: false, action: {
                 arguments.openAddIncludePeer()
             })
         case let .includeCategory(_, category, title, isRevealed):
             return ChatListFilterPresetCategoryItem(
                 presentationData: presentationData,
+                systemStyle: .glass,
                 title: title,
                 icon: ChatListFilterCategoryIcon(category: category),
                 isRevealed: isRevealed,
@@ -429,12 +431,13 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
                 }
             )
         case let .addExcludePeer(title):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: title, alwaysPlain: false, sectionId: self.section, height: .peerList, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(presentationData.theme), title: title, alwaysPlain: false, sectionId: self.section, height: .peerList, editing: false, action: {
                 arguments.openAddExcludePeer()
             })
         case let .excludeCategory(_, category, title, isRevealed):
             return ChatListFilterPresetCategoryItem(
                 presentationData: presentationData,
+                systemStyle: .glass,
                 title: title,
                 icon: ChatListFilterCategoryIcon(category: category),
                 isRevealed: isRevealed,
@@ -451,7 +454,7 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
                 }
             )
         case let .includePeer(_, peer, isRevealed):
-            return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer.chatMainPeer!, height: .peerList, aliasHandling: .threatSelfAsSaved, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: isRevealed), revealOptions: ItemListPeerItemRevealOptions(options: [ItemListPeerItemRevealOption(type: .destructive, title: presentationData.strings.Common_Delete, action: {
+            return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer.chatMainPeer!, height: .peerList, aliasHandling: .threatSelfAsSaved, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: isRevealed), revealOptions: ItemListPeerItemRevealOptions(options: [ItemListPeerItemRevealOption(type: .destructive, title: presentationData.strings.Common_Delete, action: {
                 arguments.deleteIncludePeer(peer.peerId)
             })]), switchValue: nil, enabled: true, selectable: false, sectionId: self.section, action: nil, setPeerIdWithRevealedOptions: { lhs, rhs in
                 arguments.setItemIdWithRevealedOptions(lhs.flatMap { .peer($0) }, rhs.flatMap { .peer($0) })
@@ -465,7 +468,7 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
                 arguments.peerContextAction(peer, sourceNode, gesture, nil)
             })
         case let .excludePeer(_, peer, isRevealed):
-            return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer.chatMainPeer!, height: .peerList, aliasHandling: .threatSelfAsSaved, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: isRevealed), revealOptions: ItemListPeerItemRevealOptions(options: [ItemListPeerItemRevealOption(type: .destructive, title: presentationData.strings.Common_Delete, action: {
+            return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: PresentationDateTimeFormat(), nameDisplayOrder: .firstLast, context: arguments.context, peer: peer.chatMainPeer!, height: .peerList, aliasHandling: .threatSelfAsSaved, presence: nil, text: .none, label: .none, editing: ItemListPeerItemEditing(editable: true, editing: false, revealed: isRevealed), revealOptions: ItemListPeerItemRevealOptions(options: [ItemListPeerItemRevealOption(type: .destructive, title: presentationData.strings.Common_Delete, action: {
                 arguments.deleteExcludePeer(peer.peerId)
             })]), switchValue: nil, enabled: true, selectable: false, sectionId: self.section, action: nil, setPeerIdWithRevealedOptions: { lhs, rhs in
                 arguments.setItemIdWithRevealedOptions(lhs.flatMap { .peer($0) }, rhs.flatMap { .peer($0) })
@@ -479,11 +482,11 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
                 arguments.peerContextAction(peer, sourceNode, gesture, nil)
             })
         case let .includeExpand(text):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(presentationData.theme), title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(presentationData.theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.expandSection(.include)
             })
         case let .excludeExpand(text):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.downArrowImage(presentationData.theme), title: text, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.downArrowImage(presentationData.theme), title: text, sectionId: self.section, editing: false, action: {
                 arguments.expandSection(.exclude)
             })
         case let .tagColorHeader(name, color, isPremium):
@@ -507,6 +510,7 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
         case let .tagColor(colors, color, isPremium):
             return PeerNameColorItem(
                 theme: presentationData.theme,
+                systemStyle: .glass,
                 colors: colors,
                 mode: .folderTag,
                 displayEmptyColor: true,
@@ -526,11 +530,11 @@ private enum ChatListFilterPresetEntry: ItemListNodeEntry {
         case .inviteLinkHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: presentationData.strings.ChatListFilter_SectionShare, badge: nil, sectionId: self.section)
         case let .inviteLinkCreate(hasLinks):
-            return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.linkIcon(presentationData.theme), title: hasLinks ? presentationData.strings.ChatListFilter_CreateLink : presentationData.strings.ChatListFilter_CreateLinkNew, sectionId: self.section, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.linkIcon(presentationData.theme), title: hasLinks ? presentationData.strings.ChatListFilter_CreateLink : presentationData.strings.ChatListFilter_CreateLinkNew, sectionId: self.section, editing: false, action: {
                 arguments.createLink()
             })
         case let .inviteLink(_, link):
-            return ItemListFolderInviteLinkListItem(presentationData: presentationData, invite: link, share: false, sectionId: self.section, style: .blocks, tapAction: { invite in
+            return ItemListFolderInviteLinkListItem(presentationData: presentationData, systemStyle: .glass, invite: link, share: false, sectionId: self.section, style: .blocks, tapAction: { invite in
                 arguments.openLink(invite)
             }, removeAction: { invite in
                 arguments.removeLink(invite)

@@ -8,6 +8,9 @@ import TelegramStringFormatting
 import SearchBarNode
 import AppBundle
 import TelegramCore
+import ComponentFlow
+import BundleIconComponent
+import GlassBarButtonComponent
 
 private func loadCountryCodes() -> [Country] {
     guard let filePath = getAppBundle().path(forResource: "PhoneCountries", ofType: "txt") else {
@@ -289,10 +292,31 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
         return nil
     }
     
+    public static func defaultCountryCode() -> Int32 {
+        let countryId = (Locale.current as NSLocale).object(forKey: .countryCode) as? String
+     
+        var countryCode: Int32 = 1
+        if let countryId = countryId {
+            let normalizedId = countryId.uppercased()
+            for (code, idAndName) in countryCodeToIdAndName {
+                if idAndName.0 == normalizedId {
+                    countryCode = Int32(code)
+                    break
+                }
+            }
+        }
+        
+        return countryCode
+    }
+    
     private let theme: PresentationTheme
     private let strings: PresentationStrings
     private let displayCodes: Bool
+    private let glass: Bool
     
+    
+    private var closeButtonNode: BarComponentHostNode?
+    private var searchButtonNode: BarComponentHostNode?
     private var navigationContentNode: AuthorizationSequenceCountrySelectionNavigationContentNode?
     
     private var controllerNode: AuthorizationSequenceCountrySelectionControllerNode {
@@ -302,29 +326,36 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
     public var completeWithCountryCode: ((Int, String) -> Void)?
     public var dismissed: (() -> Void)?
     
-    public init(strings: PresentationStrings, theme: PresentationTheme, displayCodes: Bool = true) {
+    public init(strings: PresentationStrings, theme: PresentationTheme, displayCodes: Bool = true, glass: Bool = false) {
         self.theme = theme
         self.strings = strings
         self.displayCodes = displayCodes
+        self.glass = glass
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: theme), strings: NavigationBarStrings(presentationStrings: strings)))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: theme, hideBackground: glass, hideSeparator: glass), strings: NavigationBarStrings(presentationStrings: strings)))
+        
+        self._hasGlassStyle = glass
         
         self.navigationPresentation = .modal
         
         self.statusBar.statusBarStyle = theme.rootController.statusBarStyle.style
         
-        let navigationContentNode = AuthorizationSequenceCountrySelectionNavigationContentNode(theme: theme, strings: strings, cancel: { [weak self] in
-            self?.dismissed?()
-            self?.dismiss()
-        })
-        self.navigationContentNode = navigationContentNode
-        navigationContentNode.setQueryUpdated { [weak self] query in
-            guard let strongSelf = self, strongSelf.isNodeLoaded else {
-                return
+        if glass {
+            self.title = strings.Login_SelectCountry
+        } else {
+            let navigationContentNode = AuthorizationSequenceCountrySelectionNavigationContentNode(theme: theme, strings: strings, cancel: { [weak self] in
+                self?.dismissed?()
+                self?.dismiss()
+            })
+            self.navigationContentNode = navigationContentNode
+            navigationContentNode.setQueryUpdated { [weak self] query in
+                guard let strongSelf = self, strongSelf.isNodeLoaded else {
+                    return
+                }
+                strongSelf.controllerNode.updateSearchQuery(query)
             }
-            strongSelf.controllerNode.updateSearchQuery(query)
+            self.navigationBar?.setContentNode(navigationContentNode, animated: false)
         }
-        self.navigationBar?.setContentNode(navigationContentNode, animated: false)
     }
     
     required public init(coder aDecoder: NSCoder) {
@@ -332,11 +363,15 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
     }
     
     override public func loadDisplayNode() {
-        self.displayNode = AuthorizationSequenceCountrySelectionControllerNode(theme: self.theme, strings: self.strings, displayCodes: self.displayCodes, itemSelected: { [weak self] args in
+        self.displayNode = AuthorizationSequenceCountrySelectionControllerNode(theme: self.theme, strings: self.strings, displayCodes: self.displayCodes, glass: self.glass, itemSelected: { [weak self] args in
             let (_, countryId, code) = args
             self?.completeWithCountryCode?(code, countryId)
             self?.dismiss()
         })
+        self.controllerNode.deactivateSearch = { [weak self] in
+            self?.controllerNode.isSearching = false
+            self?.requestLayout(transition: .animated(duration: 0.5, curve: .spring))
+        }
         self.displayNodeDidLoad()
     }
     
@@ -348,9 +383,80 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
         }
     }
     
+    private func updateNavigationButtons() {
+        guard self.glass else {
+            return
+        }
+        let barButtonSize = CGSize(width: 40.0, height: 40.0)
+        let closeComponent: AnyComponentWithIdentity<Empty> = AnyComponentWithIdentity(
+            id: "close",
+            component: AnyComponent(GlassBarButtonComponent(
+                size: barButtonSize,
+                backgroundColor: self.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                isDark: self.theme.overallDarkAppearance,
+                state: .generic,
+                component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                    BundleIconComponent(
+                        name: "Navigation/Close",
+                        tintColor: self.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                    )
+                )),
+                action: { [weak self] _ in
+                    self?.cancelPressed()
+                }
+            ))
+        )
+        
+        let searchComponent: AnyComponentWithIdentity<Empty>?
+        if !self.controllerNode.isSearching {
+            searchComponent = AnyComponentWithIdentity(
+                id: "search",
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: self.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: self.theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "search", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Search",
+                            tintColor: self.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { [weak self] _ in
+                        self?.controllerNode.isSearching = true
+                        self?.requestLayout(transition: .animated(duration: 0.5, curve: .spring))
+                    }
+                ))
+            )
+        } else {
+            searchComponent = nil
+        }
+        
+        let closeButtonNode: BarComponentHostNode
+        if let current = self.closeButtonNode {
+            closeButtonNode = current
+            closeButtonNode.component = closeComponent
+        } else {
+            closeButtonNode = BarComponentHostNode(component: closeComponent, size: barButtonSize)
+            self.closeButtonNode = closeButtonNode
+            self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: closeButtonNode)
+        }
+                
+        let searchButtonNode: BarComponentHostNode
+        if let current = self.searchButtonNode {
+            searchButtonNode = current
+            searchButtonNode.component = searchComponent
+        } else {
+            searchButtonNode = BarComponentHostNode(component: searchComponent, size: barButtonSize)
+            self.searchButtonNode = searchButtonNode
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: searchButtonNode)
+        }
+    }
+    
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
         
+        self.updateNavigationButtons()
         self.controllerNode.containerLayoutUpdated(layout, navigationBarHeight: self.navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)
     }
     

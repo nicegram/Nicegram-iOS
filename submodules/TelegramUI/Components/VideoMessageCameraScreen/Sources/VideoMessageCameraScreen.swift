@@ -122,6 +122,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
     let cameraState: CameraState
     let containerSize: CGSize
     let previewFrame: CGRect
+    let safeInsets: UIEdgeInsets
     let isPreviewing: Bool
     let isMuted: Bool
     let totalDuration: Double
@@ -138,6 +139,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
         cameraState: CameraState,
         containerSize: CGSize,
         previewFrame: CGRect,
+        safeInsets: UIEdgeInsets,
         isPreviewing: Bool,
         isMuted: Bool,
         totalDuration: Double,
@@ -153,6 +155,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
         self.cameraState = cameraState
         self.containerSize = containerSize
         self.previewFrame = previewFrame
+        self.safeInsets = safeInsets
         self.isPreviewing = isPreviewing
         self.isMuted = isMuted
         self.totalDuration = totalDuration
@@ -170,6 +173,9 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             return false
         }
         if lhs.previewFrame != rhs.previewFrame {
+            return false
+        }
+        if lhs.safeInsets != rhs.safeInsets {
             return false
         }
         if lhs.cameraState != rhs.cameraState {
@@ -532,6 +538,11 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
             let state = context.state
             let availableSize = context.component.containerSize
             
+            var sideInset: CGFloat = 8.0
+            if component.safeInsets.bottom <= 32.0 {
+                sideInset += 18.0
+            }
+            
             state.cameraState = component.cameraState
             
             var viewOnceOffset: CGFloat = 102.0
@@ -622,12 +633,12 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                 )
                 
                 context.add(flipButtonBackground
-                    .position(CGPoint(x: flipButton.size.width / 2.0 + 8.0, y: availableSize.height - flipButton.size.height / 2.0 - 8.0))
+                    .position(CGPoint(x: flipButton.size.width / 2.0 + sideInset, y: availableSize.height - flipButton.size.height / 2.0 - 8.0))
                     .appear(.default(scale: true, alpha: true))
                     .disappear(.default(scale: true, alpha: true))
                 )
                 context.add(flipButton
-                    .position(CGPoint(x: flipButton.size.width / 2.0 + 8.0, y: availableSize.height - flipButton.size.height / 2.0 - 8.0))
+                    .position(CGPoint(x: flipButton.size.width / 2.0 + sideInset, y: availableSize.height - flipButton.size.height / 2.0 - 8.0))
                     .appear(.default(scale: true, alpha: true))
                     .disappear(.default(scale: true, alpha: true))
                 )
@@ -701,13 +712,13 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                     )
                     
                     context.add(flashButtonBackground
-                        .position(CGPoint(x: flipButton.size.width + 8.0 + flashButton.size.width / 2.0 + 11.0, y: availableSize.height - flashButton.size.height / 2.0 - 8.0))
+                        .position(CGPoint(x: flipButton.size.width + sideInset + flashButton.size.width / 2.0 + 11.0, y: availableSize.height - flashButton.size.height / 2.0 - 8.0))
                         .appear(.default(scale: true, alpha: true))
                         .disappear(.default(scale: true, alpha: true))
                     )
                     
                     context.add(flashButton
-                        .position(CGPoint(x: flipButton.size.width + 8.0 + flashButton.size.width / 2.0 + 11.0, y: availableSize.height - flashButton.size.height / 2.0 - 8.0))
+                        .position(CGPoint(x: flipButton.size.width + sideInset + flashButton.size.width / 2.0 + 11.0, y: availableSize.height - flashButton.size.height / 2.0 - 8.0))
                         .appear(.default(scale: true, alpha: true))
                         .disappear(.default(scale: true, alpha: true))
                     )
@@ -754,7 +765,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                     transition: context.transition
                 )
                 context.add(viewOnceButton
-                    .position(CGPoint(x: availableSize.width - viewOnceButton.size.width / 2.0 - 8.0, y: availableSize.height - viewOnceButton.size.height / 2.0 - 8.0 - viewOnceOffset))
+                    .position(CGPoint(x: availableSize.width - viewOnceButton.size.width / 2.0 - sideInset, y: availableSize.height - viewOnceButton.size.height / 2.0 - 8.0 - viewOnceOffset))
                     .appear(.default(scale: true, alpha: true))
                     .disappear(.default(scale: true, alpha: true))
                 )
@@ -794,7 +805,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                     transition: context.transition
                 )
                 context.add(recordMoreButton
-                    .position(CGPoint(x: availableSize.width - recordMoreButton.size.width / 2.0 - 8.0, y: availableSize.height - recordMoreButton.size.height / 2.0 - 22.0))
+                    .position(CGPoint(x: availableSize.width - recordMoreButton.size.width / 2.0 - sideInset, y: availableSize.height - recordMoreButton.size.height / 2.0 - 22.0))
                     .appear(.default(scale: true, alpha: true))
                     .disappear(.default(scale: true, alpha: true))
                 )
@@ -1556,6 +1567,7 @@ public class VideoMessageCameraScreen: ViewController {
                         cameraState: self.cameraState,
                         containerSize: backgroundFrame.size,
                         previewFrame: previewFrame,
+                        safeInsets: layout.safeInsets,
                         isPreviewing: self.previewState != nil || self.transitioningToPreview,
                         isMuted: self.previewState?.isMuted ?? true,
                         totalDuration: self.previewState?.composition.duration.seconds ?? 0.0,

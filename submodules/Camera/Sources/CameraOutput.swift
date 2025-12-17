@@ -142,7 +142,7 @@ final class CameraOutput: NSObject {
         }
         
         self.videoOutput.alwaysDiscardsLateVideoFrames = false
-        self.videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey: use32BGRA ? kCVPixelFormatType_32BGRA : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange] as [String : Any]
+        self.videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey: use32BGRA ? kCVPixelFormatType_32BGRA : kCVPixelFormatType_420YpCbCr8BiPlanarFullRange] as [String : Any]
     }
     
     deinit {
@@ -481,90 +481,91 @@ final class CameraOutput: NSObject {
     private var videoSwitchSampleTimeOffset: CMTime?
     
     func processVideoRecording(_ sampleBuffer: CMSampleBuffer, fromAdditionalOutput: Bool) {
+        guard let videoRecorder = self.videoRecorder, videoRecorder.isRecording else {
+            return
+        }
         guard let formatDescriptor = CMSampleBufferGetFormatDescription(sampleBuffer) else {
             return
         }
         let type = CMFormatDescriptionGetMediaType(formatDescriptor)
         
-        if let videoRecorder = self.videoRecorder, videoRecorder.isRecording {
-            if case .roundVideo = self.currentMode, type == kCMMediaType_Video {
-                let currentTimestamp = CACurrentMediaTime()
-                let duration: Double = 0.2
-                if !self.exclusive {
-                    var transitionFactor: CGFloat = 0.0
-                    if case .front = self.currentPosition {
-                        transitionFactor = 1.0
-                        if self.lastSwitchTimestamp > 0.0, currentTimestamp - self.lastSwitchTimestamp < duration {
-                            transitionFactor = max(0.0, (currentTimestamp - self.lastSwitchTimestamp) / duration)
-                        }
-                    } else {
-                        transitionFactor = 0.0
-                        if self.lastSwitchTimestamp > 0.0, currentTimestamp - self.lastSwitchTimestamp < duration {
-                            transitionFactor = 1.0 - max(0.0, (currentTimestamp - self.lastSwitchTimestamp) / duration)
-                        }
-                    }
-                    
-                    if (transitionFactor == 1.0 && fromAdditionalOutput)
-                        || (transitionFactor == 0.0 && !fromAdditionalOutput)
-                        || (transitionFactor > 0.0 && transitionFactor < 1.0) {                        
-                        if let processedSampleBuffer = self.processRoundVideoSampleBuffer(sampleBuffer, additional: fromAdditionalOutput, transitionFactor: transitionFactor) {
-                            let presentationTime = CMSampleBufferGetPresentationTimeStamp(processedSampleBuffer)
-                            if let lastSampleTimestamp = self.lastSampleTimestamp, lastSampleTimestamp > presentationTime {
-                                
-                            } else {
-                                videoRecorder.appendSampleBuffer(processedSampleBuffer)
-                                self.lastSampleTimestamp = presentationTime
-                            }
-                        }
+        if case .roundVideo = self.currentMode, type == kCMMediaType_Video {
+            let currentTimestamp = CACurrentMediaTime()
+            let duration: Double = 0.2
+            if !self.exclusive {
+                var transitionFactor: CGFloat = 0.0
+                if case .front = self.currentPosition {
+                    transitionFactor = 1.0
+                    if self.lastSwitchTimestamp > 0.0, currentTimestamp - self.lastSwitchTimestamp < duration {
+                        transitionFactor = max(0.0, (currentTimestamp - self.lastSwitchTimestamp) / duration)
                     }
                 } else {
-                    var additional = self.currentPosition == .front
-                    var transitionFactor = self.currentPosition == .front ? 1.0 : 0.0
-                    if self.lastSwitchTimestamp > 0.0 {
-                        if self.needsCrossfadeTransition {
-                            self.needsCrossfadeTransition = false
-                            self.crossfadeTransitionStart = currentTimestamp + 0.03
-                            self.needsSwitchSampleOffset = true
-                        }
-                        if self.crossfadeTransitionStart > 0.0, currentTimestamp - self.crossfadeTransitionStart < duration {
-                            if case .front = self.currentPosition {
-                                transitionFactor = max(0.0, (currentTimestamp - self.crossfadeTransitionStart) / duration)
-                            } else {
-                                transitionFactor = 1.0 - max(0.0, (currentTimestamp - self.crossfadeTransitionStart) / duration)
-                            }
-                        } else if currentTimestamp - self.lastSwitchTimestamp < 0.05 {
-                            additional = !additional
-                            transitionFactor = 1.0 - transitionFactor
-                            self.needsCrossfadeTransition = true
-                        }
+                    transitionFactor = 0.0
+                    if self.lastSwitchTimestamp > 0.0, currentTimestamp - self.lastSwitchTimestamp < duration {
+                        transitionFactor = 1.0 - max(0.0, (currentTimestamp - self.lastSwitchTimestamp) / duration)
                     }
-                    if let processedSampleBuffer = self.processRoundVideoSampleBuffer(sampleBuffer, additional: additional, transitionFactor: transitionFactor) {
-                        videoRecorder.appendSampleBuffer(processedSampleBuffer)
-                    } else {
-                        videoRecorder.appendSampleBuffer(sampleBuffer)
+                }
+                
+                if (transitionFactor == 1.0 && fromAdditionalOutput)
+                    || (transitionFactor == 0.0 && !fromAdditionalOutput)
+                    || (transitionFactor > 0.0 && transitionFactor < 1.0) {
+                    if let processedSampleBuffer = self.processRoundVideoSampleBuffer(sampleBuffer, additional: fromAdditionalOutput, transitionFactor: transitionFactor) {
+                        let presentationTime = CMSampleBufferGetPresentationTimeStamp(processedSampleBuffer)
+                        if let lastSampleTimestamp = self.lastSampleTimestamp, lastSampleTimestamp > presentationTime {
+                            
+                        } else {
+                            videoRecorder.appendSampleBuffer(processedSampleBuffer)
+                            self.lastSampleTimestamp = presentationTime
+                        }
                     }
                 }
             } else {
-                if type == kCMMediaType_Audio {
-                    if self.needsSwitchSampleOffset {
-                        self.needsSwitchSampleOffset = false
-                        
-                        if let lastAudioSampleTime = self.lastAudioSampleTime {
-                            let videoSampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-                            let offset = videoSampleTime - lastAudioSampleTime
-                            if let current = self.videoSwitchSampleTimeOffset {
-                                self.videoSwitchSampleTimeOffset = current + offset
-                            } else {
-                                self.videoSwitchSampleTimeOffset = offset
-                            }
-                            self.lastAudioSampleTime = nil
-                        }
+                var additional = self.currentPosition == .front
+                var transitionFactor = self.currentPosition == .front ? 1.0 : 0.0
+                if self.lastSwitchTimestamp > 0.0 {
+                    if self.needsCrossfadeTransition {
+                        self.needsCrossfadeTransition = false
+                        self.crossfadeTransitionStart = currentTimestamp + 0.03
+                        self.needsSwitchSampleOffset = true
                     }
-                    
-                    self.lastAudioSampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer) + CMSampleBufferGetDuration(sampleBuffer)
+                    if self.crossfadeTransitionStart > 0.0, currentTimestamp - self.crossfadeTransitionStart < duration {
+                        if case .front = self.currentPosition {
+                            transitionFactor = max(0.0, (currentTimestamp - self.crossfadeTransitionStart) / duration)
+                        } else {
+                            transitionFactor = 1.0 - max(0.0, (currentTimestamp - self.crossfadeTransitionStart) / duration)
+                        }
+                    } else if currentTimestamp - self.lastSwitchTimestamp < 0.05 {
+                        additional = !additional
+                        transitionFactor = 1.0 - transitionFactor
+                        self.needsCrossfadeTransition = true
+                    }
                 }
-                videoRecorder.appendSampleBuffer(sampleBuffer)
+                if let processedSampleBuffer = self.processRoundVideoSampleBuffer(sampleBuffer, additional: additional, transitionFactor: transitionFactor) {
+                    videoRecorder.appendSampleBuffer(processedSampleBuffer)
+                } else {
+                    videoRecorder.appendSampleBuffer(sampleBuffer)
+                }
             }
+        } else {
+            if type == kCMMediaType_Audio {
+                if self.needsSwitchSampleOffset {
+                    self.needsSwitchSampleOffset = false
+                    
+                    if let lastAudioSampleTime = self.lastAudioSampleTime {
+                        let videoSampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+                        let offset = videoSampleTime - lastAudioSampleTime
+                        if let current = self.videoSwitchSampleTimeOffset {
+                            self.videoSwitchSampleTimeOffset = current + offset
+                        } else {
+                            self.videoSwitchSampleTimeOffset = offset
+                        }
+                        self.lastAudioSampleTime = nil
+                    }
+                }
+                
+                self.lastAudioSampleTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer) + CMSampleBufferGetDuration(sampleBuffer)
+            }
+            videoRecorder.appendSampleBuffer(sampleBuffer)
         }
     }
     
@@ -652,8 +653,8 @@ extension CameraOutput: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureA
                 
         if let videoPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
             self.processSampleBuffer?(sampleBuffer, videoPixelBuffer, connection)
-        } else {
-//            self.processAudioBuffer?(sampleBuffer)
+        } else if sampleBuffer.type == kCMMediaType_Audio {
+            self.processAudioBuffer?(sampleBuffer)
         }
         
         if let masterOutput = self.masterOutput {

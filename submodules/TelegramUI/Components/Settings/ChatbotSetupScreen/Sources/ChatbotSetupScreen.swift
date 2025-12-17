@@ -742,6 +742,7 @@ final class ChatbotSetupScreenComponent: Component {
             self.resetQueryText = nil
             var nameSectionItems: [AnyComponentWithIdentity<Empty>] = []
             nameSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListTextFieldItemComponent(
+                style: .glass,
                 theme: environment.theme,
                 initialText: "",
                 resetText: resetQueryText.flatMap { ListTextFieldItemComponent.ResetText(value: $0) },
@@ -815,6 +816,7 @@ final class ChatbotSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -843,6 +845,7 @@ final class ChatbotSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.ChatbotSetup_RecipientsSectionHeader,
@@ -855,6 +858,7 @@ final class ChatbotSetupScreenComponent: Component {
                     items: [
                         AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(VStack([
                                 AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
@@ -885,6 +889,7 @@ final class ChatbotSetupScreenComponent: Component {
                         ))),
                         AnyComponentWithIdentity(id: 1, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(VStack([
                                 AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
@@ -947,6 +952,7 @@ final class ChatbotSetupScreenComponent: Component {
             var excludedSectionItems: [AnyComponentWithIdentity<Empty>] = []
             excludedSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
+                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -979,6 +985,7 @@ final class ChatbotSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: AnyComponent(MultilineTextComponent(
                         text: .markdown(
@@ -1013,6 +1020,7 @@ final class ChatbotSetupScreenComponent: Component {
             var excludedUsersSectionItems: [AnyComponentWithIdentity<Empty>] = []
             excludedUsersSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
+                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -1044,6 +1052,7 @@ final class ChatbotSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: AnyComponent(MultilineTextComponent(
                         text: .markdown(
@@ -1139,6 +1148,7 @@ final class ChatbotSetupScreenComponent: Component {
                     permissionsItems.append(
                         AnyComponentWithIdentity(id: permission.id, component: AnyComponent(ListActionItemComponent(
                             theme: environment.theme,
+                            style: .glass,
                             title: AnyComponent(HStack(titleItems, spacing: 6.0)),
                             accessory: .toggle(ListActionItemComponent.Toggle(style: .icons, isOn: value, action: { [weak self] value in
                                 guard let self else {
@@ -1218,6 +1228,7 @@ final class ChatbotSetupScreenComponent: Component {
                             permissionsItems.append(
                                 AnyComponentWithIdentity(id: subpermission.id, component: AnyComponent(ListActionItemComponent(
                                     theme: environment.theme,
+                                    style: .glass,
                                     title: AnyComponent(VStack([
                                         AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                             text: .plain(NSAttributedString(
@@ -1267,6 +1278,7 @@ final class ChatbotSetupScreenComponent: Component {
                     transition: permissionsTransition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.ChatbotSetup_PermissionsSectionHeader,

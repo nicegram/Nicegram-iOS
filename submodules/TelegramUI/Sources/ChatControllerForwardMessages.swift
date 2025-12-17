@@ -249,7 +249,7 @@ extension ChatControllerImpl {
                                             return message.withUpdatedAttributes { attributes in
                                                 var attributes = attributes
                                                 attributes.removeAll(where: { $0 is OutgoingScheduleInfoMessageAttribute })
-                                                attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: Int32(Date().timeIntervalSince1970) + 10 * 24 * 60 * 60))
+                                                attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: Int32(Date().timeIntervalSince1970) + 10 * 24 * 60 * 60, repeatPeriod: nil))
                                                 return attributes
                                             }
                                         }
@@ -367,9 +367,9 @@ extension ChatControllerImpl {
                             let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: true)
                             commit(transformedMessages)
                         case .schedule:
-                            strongSelf.presentScheduleTimePicker(completion: { [weak self] scheduleTime in
+                            strongSelf.presentScheduleTimePicker(completion: { [weak self] scheduleTime, repeatPeriod in
                                 if let strongSelf = self {
-                                    let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: false, scheduleTime: scheduleTime)
+                                    let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: false, scheduleTime: scheduleTime, repeatPeriod: repeatPeriod)
                                     commit(transformedMessages)
                                 }
                             })

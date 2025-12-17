@@ -30,7 +30,7 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
     private var avatarVideoNode: AvatarVideoNode?
     
     public private(set) var avatarStoryView: ComponentView<Empty>?
-    public var storyData: (hasUnseen: Bool, hasUnseenCloseFriends: Bool)?
+    public var storyData: (hasUnseen: Bool, hasUnseenCloseFriends: Bool, hasLiveItems: Bool)?
     
     public var statusView: ComponentView<Empty>
     private var starView: StarView?
@@ -241,6 +241,7 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
                 component: AnyComponent(AvatarStoryIndicatorComponent(
                     hasUnseen: storyData.hasUnseen,
                     hasUnseenCloseFriendsItems: storyData.hasUnseenCloseFriends,
+                    hasLiveItems: storyData.hasLiveItems,
                     colors: AvatarStoryIndicatorComponent.Colors(theme: theme),
                     activeLineWidth: 1.0,
                     inactiveLineWidth: 1.0,

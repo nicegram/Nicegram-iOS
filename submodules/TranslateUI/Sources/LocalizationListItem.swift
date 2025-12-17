@@ -26,6 +26,7 @@ public struct LocalizationListItemEditing: Equatable {
 
 public class LocalizationListItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let id: String
     let title: String
     let subtitle: String
@@ -40,8 +41,9 @@ public class LocalizationListItem: ListViewItem, ItemListItem {
     let setItemWithRevealedOptions: ((String?, String?) -> Void)?
     let removeItem: ((String) -> Void)?
     
-    public init(presentationData: ItemListPresentationData, id: String, title: String, subtitle: String, checked: Bool, activity: Bool, loading: Bool, editing: LocalizationListItemEditing, enabled: Bool = true, sectionId: ItemListSectionId, alwaysPlain: Bool, action: @escaping () -> Void, setItemWithRevealedOptions: ((String?, String?) -> Void)?, removeItem: ((String) -> Void)?) {
+    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, id: String, title: String, subtitle: String, checked: Bool, activity: Bool, loading: Bool, editing: LocalizationListItemEditing, enabled: Bool = true, sectionId: ItemListSectionId, alwaysPlain: Bool, action: @escaping () -> Void, setItemWithRevealedOptions: ((String?, String?) -> Void)?, removeItem: ((String) -> Void)?) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.id = id
         self.title = title
         self.subtitle = subtitle
@@ -222,7 +224,16 @@ class LocalizationListItemNode: ItemListRevealOptionsItemNode {
             let (subtitleLayout, subtitleApply) = makeSubtitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.subtitle, font: subtitleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - 50.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             let insets = itemListNeighborsGroupedInsets(neighbors, params)
-            let contentSize = CGSize(width: params.width, height: titleLayout.size.height + 1.0 + subtitleLayout.size.height + 8.0 * 2.0)
+            
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 12.0
+            case .legacy:
+                verticalInset = 8.0
+            }
+            
+            let contentSize = CGSize(width: params.width, height: titleLayout.size.height + 1.0 + subtitleLayout.size.height + verticalInset * 2.0)
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             
@@ -239,6 +250,7 @@ class LocalizationListItemNode: ItemListRevealOptionsItemNode {
             leftInset += 16.0
             
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             var updateCheckImage: UIImage?
             var updatedTheme: PresentationTheme?
@@ -323,15 +335,15 @@ class LocalizationListItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: strongSelf.backgroundNode.frame.size)
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
+                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     
-                    transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: editingOffset + revealOffset + leftInset, y: 8.0), size: titleLayout.size))
+                    transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: editingOffset + revealOffset + leftInset, y: verticalInset), size: titleLayout.size))
                     transition.updateFrame(node: strongSelf.subtitleNode, frame: CGRect(origin: CGPoint(x: editingOffset + revealOffset + leftInset, y: strongSelf.titleNode.frame.maxY + 1.0), size: subtitleLayout.size))
                     
                     strongSelf.titleNode.alpha = item.enabled ? 1.0 : 0.5

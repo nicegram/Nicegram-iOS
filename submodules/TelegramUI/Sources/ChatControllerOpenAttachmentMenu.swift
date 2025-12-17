@@ -36,6 +36,7 @@ import ShareController
 import ComposeTodoScreen
 import ComposePollUI
 import Photos
+import AttachmentFileController
 
 extension ChatControllerImpl {
     enum AttachMenuSubject {
@@ -203,7 +204,7 @@ extension ChatControllerImpl {
                         allButtons.insert(button, at: 1)
                     }
                 
-                    if let user = peer as? TelegramUser, user.botInfo == nil {
+                    if !"".isEmpty, let user = peer as? TelegramUser, user.botInfo == nil {
                         if let index = buttons.firstIndex(where: { $0 == .location }) {
                             buttons.insert(.quickReply, at: index + 1)
                         } else {
@@ -306,12 +307,13 @@ extension ChatControllerImpl {
             
             strongSelf.canReadHistory.set(false)
             
-            let attachmentController = AttachmentController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, chatLocation: strongSelf.chatLocation, isScheduledMessages: isScheduledMessages, buttons: buttons, initialButton: initialButton, makeEntityInputView: { [weak self] in
+            let attachmentController = AttachmentController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, style: .glass, chatLocation: strongSelf.chatLocation, isScheduledMessages: isScheduledMessages, buttons: buttons, initialButton: initialButton, makeEntityInputView: { [weak self] in
                 guard let strongSelf = self else {
                     return nil
                 }
                 return EntityInputView(context: strongSelf.context, isDark: false, areCustomEmojiEnabled: strongSelf.presentationInterfaceState.customEmojiAvailable)
             })
+            attachmentController.attachmentButton = strongSelf.chatDisplayNode.getAttachmentButton()
             attachmentController.shouldMinimizeOnSwipe = { [weak attachmentController] button in
                 if case .app = button {
                     attachmentController?.convertToStandalone()
@@ -416,7 +418,7 @@ extension ChatControllerImpl {
                             hasLiveLocation = false
                         }
                         let sharePeer = (strongSelf.presentationInterfaceState.renderedPeer?.peer).flatMap(EnginePeer.init)
-                        let controller = LocationPickerController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, mode: .share(peer: sharePeer, selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { location, _, _, _, _ in
+                        let controller = LocationPickerController(context: strongSelf.context, style: .glass, updatedPresentationData: strongSelf.updatedPresentationData, mode: .share(peer: sharePeer, selfPeer: selfPeer, hasLiveLocation: hasLiveLocation), completion: { location, _, _, _, _ in
                             guard let strongSelf = self else {
                                 return
                             }
@@ -444,7 +446,7 @@ extension ChatControllerImpl {
                         let _ = currentLocationController.swap(controller)
                     })
                 case .contact:
-                    let contactsController = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: .always, requirePhoneNumbers: true))
+                    let contactsController = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: strongSelf.context, style: .glass, updatedPresentationData: strongSelf.updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: .always, requirePhoneNumbers: true))
                     contactsController.presentScheduleTimePicker = { [weak self] completion in
                         if let strongSelf = self {
                             strongSelf.presentScheduleTimePicker(completion: completion)
@@ -671,7 +673,6 @@ extension ChatControllerImpl {
                                 self.hintPlayNextOutgoingGift()
                                 self.attachmentController?.dismiss(animated: true)
                             })
-                                                        
                             completion(controller, controller.mediaPickerContext)
                             strongSelf.controllerNavigationDisposable.set(nil)
                             
@@ -969,7 +970,7 @@ extension ChatControllerImpl {
                             }
                         }, presentSchedulePicker: { [weak self] _, done in
                             if let strongSelf = self {
-                                strongSelf.presentScheduleTimePicker(style: .media, completion: { [weak self] time in
+                                strongSelf.presentScheduleTimePicker(style: .media, completion: { [weak self] time, repeatPeriod in
                                     if let strongSelf = self {
                                         done(time)
                                         if strongSelf.presentationInterfaceState.subject != .scheduledMessages && time != scheduleWhenOnlineTimestamp {
@@ -1026,7 +1027,7 @@ extension ChatControllerImpl {
                     })], actionLayout: .vertical), in: .window(.root))
                 }, presentSchedulePicker: { [weak self] _, done in
                     if let strongSelf = self {
-                        strongSelf.presentScheduleTimePicker(style: .media, completion: { [weak self] time in
+                        strongSelf.presentScheduleTimePicker(style: .media, completion: { [weak self] time, repeatPeriod in
                             if let strongSelf = self {
                                 done(time)
                                 if strongSelf.presentationInterfaceState.subject != .scheduledMessages && time != scheduleWhenOnlineTimestamp {
@@ -1249,6 +1250,7 @@ extension ChatControllerImpl {
         let controller = MediaPickerScreenImpl(
             context: self.context,
             updatedPresentationData: self.updatedPresentationData,
+            style: .glass,
             peer: (self.presentationInterfaceState.renderedPeer?.peer).flatMap(EnginePeer.init),
             threadTitle: self.contentData?.state.threadInfo?.title,
             chatLocation: self.chatLocation,
@@ -1298,7 +1300,7 @@ extension ChatControllerImpl {
         }
         controller.presentSchedulePicker = { [weak self] media, done in
             if let strongSelf = self {
-                strongSelf.presentScheduleTimePicker(style: media ? .media : .default, completion: { [weak self] time in
+                strongSelf.presentScheduleTimePicker(style: media ? .media : .default, completion: { [weak self] time, repeatPeriod in
                     if let strongSelf = self {
                         done(time)
                         if strongSelf.presentationInterfaceState.subject != .scheduledMessages && time != scheduleWhenOnlineTimestamp {
@@ -1464,7 +1466,7 @@ extension ChatControllerImpl {
                         strongSelf.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                     }, presentSchedulePicker: { [weak self] media, done in
                         if let strongSelf = self {
-                            strongSelf.presentScheduleTimePicker(style: media ? .media : .default, completion: { [weak self] time in
+                            strongSelf.presentScheduleTimePicker(style: media ? .media : .default, completion: { [weak self] time, repeatPeriod in
                                 if let strongSelf = self {
                                      done(time)
                                      if strongSelf.presentationInterfaceState.subject != .scheduledMessages && time != scheduleWhenOnlineTimestamp {
@@ -1894,7 +1896,7 @@ extension ChatControllerImpl {
                 }
             }, presentSchedulePicker: { [weak self] _, done in
                 if let strongSelf = self {
-                    strongSelf.presentScheduleTimePicker(style: .media, completion: { [weak self] time in
+                    strongSelf.presentScheduleTimePicker(style: .media, completion: { [weak self] time, repeatPeriod in
                         if let strongSelf = self {
                             done(time)
                             if strongSelf.presentationInterfaceState.subject != .scheduledMessages && time != scheduleWhenOnlineTimestamp {

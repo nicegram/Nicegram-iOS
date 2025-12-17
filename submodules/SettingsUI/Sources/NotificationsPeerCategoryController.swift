@@ -278,11 +278,11 @@ private enum NotificationsPeerCategoryEntry: ItemListNodeEntry {
             case let .enableHeader(text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .enable(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateEnabled(updatedValue)
                 }, tag: self.tag)
             case let .enableImportant(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateEnabledImportant(updatedValue)
                 }, tag: self.tag)
             case let .importantInfo(_, text):
@@ -290,21 +290,21 @@ private enum NotificationsPeerCategoryEntry: ItemListNodeEntry {
             case let .optionsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .previews(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updatePreviews(value)
                 })
             case let .sound(_, text, value, sound):
-                return ItemListDisclosureItem(presentationData: presentationData, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openSound(sound)
                 }, tag: self.tag)
             case let .exceptionsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .addException(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, height: .peerList, color: .accent, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.plusIconImage(theme), title: text, sectionId: self.section, height: .peerList, color: .accent, editing: false, action: {
                     arguments.addException()
                 })
             case let .exception(_, _, _, dateTimeFormat, nameDisplayOrder, peer, description, _, editing, revealed, canRemove):
-                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(description, .secondary), label: .none, editing: ItemListPeerItemEditing(editable: canRemove, editing: canRemove && editing, revealed: canRemove && revealed), switchValue: nil, enabled: true, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: peer, presence: nil, text: .text(description, .secondary), label: .none, editing: ItemListPeerItemEditing(editable: canRemove, editing: canRemove && editing, revealed: canRemove && revealed), switchValue: nil, enabled: true, selectable: true, sectionId: self.section, action: {
                     arguments.openException(peer)
                 }, setPeerIdWithRevealedOptions: { peerId, fromPeerId in
                     arguments.updateRevealedPeerId(peerId)
@@ -312,7 +312,7 @@ private enum NotificationsPeerCategoryEntry: ItemListNodeEntry {
                     arguments.removePeer(peer)
                 }, hasTopStripe: false, hasTopGroupInset: false, noInsets: false)
             case let .removeAllExceptions(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.deleteIconImage(theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.deleteIconImage(theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                     arguments.removeAllExceptions()
                 })
         }

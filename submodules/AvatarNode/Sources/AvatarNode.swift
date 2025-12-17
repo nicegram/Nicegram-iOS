@@ -1186,17 +1186,20 @@ public final class AvatarNode: ASDisplayNode {
         public var totalCount: Int
         public var unseenCount: Int
         public var hasUnseenCloseFriendsItems: Bool
+        public var hasLiveItems: Bool
         public var progress: Float?
         
         public init(
             totalCount: Int,
             unseenCount: Int,
             hasUnseenCloseFriendsItems: Bool,
+            hasLiveItems: Bool,
             progress: Float? = nil
         ) {
             self.totalCount = totalCount
             self.unseenCount = unseenCount
             self.hasUnseenCloseFriendsItems = hasUnseenCloseFriendsItems
+            self.hasLiveItems = hasLiveItems
             self.progress = progress
         }
     }
@@ -1484,6 +1487,7 @@ public final class AvatarNode: ASDisplayNode {
                 component: AnyComponent(AvatarStoryIndicatorComponent(
                     hasUnseen: storyStats.unseenCount != 0,
                     hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriendsItems,
+                    hasLiveItems: storyStats.hasLiveItems,
                     colors: AvatarStoryIndicatorComponent.Colors(
                         unseenColors: storyPresentationParams.colors.unseenColors,
                         unseenCloseFriendsColors: storyPresentationParams.colors.unseenCloseFriendsColors,

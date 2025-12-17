@@ -13,6 +13,7 @@ import AccountContext
 public class ItemListReactionItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let availableReactions: AvailableReactions?
     let reaction: MessageReaction.Reaction
     let title: String
@@ -26,6 +27,7 @@ public class ItemListReactionItem: ListViewItem, ItemListItem {
     public init(
         context: AccountContext,
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle = .glass,
         availableReactions: AvailableReactions?,
         reaction: MessageReaction.Reaction,
         title: String,
@@ -38,6 +40,7 @@ public class ItemListReactionItem: ListViewItem, ItemListItem {
     ) {
         self.context = context
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.availableReactions = availableReactions
         self.reaction = reaction
         self.title = title
@@ -200,6 +203,8 @@ public class ItemListReactionItemNode: ListViewItemNode, ItemListItemNode {
             var contentSize: CGSize
             var insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -228,7 +233,15 @@ public class ItemListReactionItemNode: ListViewItemNode, ItemListItemNode {
             
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.title, font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - 80.0 - sideImageInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            contentSize.height = max(contentSize.height, titleLayout.size.height + 22.0)
+            
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 15.0
+            case .legacy:
+                verticalInset = 11.0
+            }
+            contentSize.height = max(contentSize.height, titleLayout.size.height + verticalInset * 2.0)
             
             if !item.enabled {
                 if currentDisabledOverlayNode == nil {
@@ -350,12 +363,12 @@ public class ItemListReactionItemNode: ListViewItemNode, ItemListItemNode {
                                     strongSelf.bottomStripeNode.isHidden = hasCorners
                             }
                             
-                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                             
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                             strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                             strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
-                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
+                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     }
                     
                     if strongSelf.imageNode == nil, let availableReactions = item.availableReactions {

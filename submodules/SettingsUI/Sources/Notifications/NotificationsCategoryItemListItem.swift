@@ -9,6 +9,7 @@ import ItemListUI
 
 public class NotificationsCategoryItemListItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let icon: UIImage?
     let title: String
     let subtitle: String
@@ -20,8 +21,9 @@ public class NotificationsCategoryItemListItem: ListViewItem, ItemListItem {
     public let tag: ItemListItemTag?
     public let shimmeringIndex: Int?
     
-    public init(presentationData: ItemListPresentationData, icon: UIImage? = nil, title: String, subtitle: String, enabled: Bool = true, label: String, sectionId: ItemListSectionId, style: ItemListStyle, action: (() -> Void)?, tag: ItemListItemTag? = nil, shimmeringIndex: Int? = nil) {
+    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .glass, icon: UIImage? = nil, title: String, subtitle: String, enabled: Bool = true, label: String, sectionId: ItemListSectionId, style: ItemListStyle, action: (() -> Void)?, tag: ItemListItemTag? = nil, shimmeringIndex: Int? = nil) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.icon = icon
         self.title = title
         self.subtitle = subtitle
@@ -191,6 +193,8 @@ public class NotificationsCategoryItemListItemNode: ListViewItemNode, ItemListIt
             let contentSize: CGSize
             let insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -215,7 +219,14 @@ public class NotificationsCategoryItemListItemNode: ListViewItemNode, ItemListIt
             
             let (subtitleLayout, subtitleApply) = makeSubtitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.subtitle, font: detailFont, textColor: detailColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: textConstrain, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
                         
-            let verticalInset: CGFloat = 11.0
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 15.0
+            case .legacy:
+                verticalInset = 11.0
+            }
+            
             let titleSpacing: CGFloat = 1.0
             
             let height: CGFloat
@@ -332,15 +343,15 @@ public class NotificationsCategoryItemListItemNode: ListViewItemNode, ItemListIt
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                         strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
+                        strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     }
                     
-                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: 11.0), size: titleLayout.size)
+                    let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: titleLayout.size)
                     strongSelf.titleNode.frame = titleFrame
                     
                     let subtitleFrame = CGRect(origin: CGPoint(x: leftInset, y: titleFrame.maxY + titleSpacing), size: subtitleLayout.size)

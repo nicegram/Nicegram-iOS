@@ -21,9 +21,9 @@ swift_library(
         "//submodules/Markdown",
         "//submodules/ComponentFlow",
         "//submodules/Components/ViewControllerComponent",
-        "//submodules/Components/BundleIconComponent",
         "//submodules/Components/MultilineTextComponent",
         "//submodules/Components/BalancedTextComponent",
+        "//submodules/Components/BundleIconComponent",
         "//submodules/TelegramUI/Components/AnimatedTextComponent",
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/TelegramUI/Components/BackButtonComponent",
@@ -54,6 +54,7 @@ swift_library(
         "//submodules/UndoUI",
         "//submodules/ShareController",
         "//submodules/ContextUI",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
     ],
     visibility = [
         "//visibility:public",

@@ -196,6 +196,7 @@ public final class HashtagListItemComponent: Component {
         private var isExtractedToContextMenu: Bool = false
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
+        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public private(set) var separatorInset: CGFloat = 0.0
         
         override init(frame: CGRect) {

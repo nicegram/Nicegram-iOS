@@ -54,7 +54,7 @@ final class PeerInfoHeaderEditingContentNode: ASDisplayNode {
         let avatarFrame = CGRect(origin: CGPoint(x: floor((width - avatarSize) / 2.0), y: statusBarHeight + 22.0), size: CGSize(width: avatarSize, height: avatarSize))
         transition.updateFrameAdditiveToCenter(node: self.avatarNode, frame: CGRect(origin: avatarFrame.center, size: CGSize()))
         
-        var contentHeight: CGFloat = statusBarHeight + 10.0 + avatarSize + 20.0
+        var contentHeight: CGFloat = statusBarHeight + 10.0 + avatarSize + 28.0
         
         if canEditPeerInfo(context: self.context, peer: peer, chatLocation: chatLocation, threadData: threadData)  {
             if self.avatarButtonNode.supernode == nil {
@@ -65,7 +65,7 @@ final class PeerInfoHeaderEditingContentNode: ASDisplayNode {
             
             let avatarTextSize = self.avatarTextNode.updateLayout(CGSize(width: width, height: 32.0))
             transition.updateFrame(node: self.avatarTextNode, frame: CGRect(origin: CGPoint(), size: avatarTextSize))
-            transition.updateFrame(node: self.avatarButtonNode, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((width - avatarTextSize.width) / 2.0), y: contentHeight - 1.0), size: avatarTextSize))
+            transition.updateFrame(node: self.avatarButtonNode, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((width - avatarTextSize.width) / 2.0), y: contentHeight - 5.0), size: avatarTextSize))
             contentHeight += 32.0
         }
         

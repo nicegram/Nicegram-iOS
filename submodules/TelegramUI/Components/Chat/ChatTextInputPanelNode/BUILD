@@ -31,7 +31,6 @@ swift_library(
         "//submodules/Pasteboard",
         "//submodules/ChatPresentationInterfaceState",
         "//submodules/ManagedAnimationNode",
-        "//submodules/AttachmentUI",
         "//submodules/TelegramUI/Components/EditableChatTextNode",
         "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
         "//submodules/Components/LottieAnimationComponent",
@@ -64,6 +63,10 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatInputAutocompletePanel",
         "//submodules/TelegramUI/Components/Chat/ChatRecordingPreviewInputPanelNode",
         "//submodules/TelegramUI/Components/Chat/ChatInputContextPanelNode",
+        "//submodules/TelegramUI/Components/AnimatedTextComponent",
+        "//submodules/TelegramUI/Components/RasterizedCompositionComponent",
+        "//submodules/TelegramUI/Components/StarsParticleEffect",
+        "//submodules/TelegramUI/Components/Calls/VideoChatMicButtonComponent",
     ],
     visibility = [
         "//visibility:public",

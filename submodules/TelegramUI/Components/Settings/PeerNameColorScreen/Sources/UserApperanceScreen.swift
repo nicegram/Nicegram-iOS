@@ -593,6 +593,7 @@ final class UserAppearanceScreenComponent: Component {
                             options: options ?? [],
                             purpose: .buyStarGift(requiredStars: resellAmount.amount.value),
                             targetPeerId: nil,
+                            customTheme: nil,
                             completion: { [weak self, weak starsContext] stars in
                                 guard let self, let starsContext else {
                                     return
@@ -773,10 +774,12 @@ final class UserAppearanceScreenComponent: Component {
                                 releasedBy: nil,
                                 valueAmount: nil,
                                 valueCurrency: nil,
+                                valueUsdAmount: nil,
                                 flags: [],
                                 themePeerId: nil,
                                 peerColor: nil,
-                                hostPeerId: nil
+                                hostPeerId: nil,
+                                minOfferStars: nil
                             )
                             signal = component.context.engine.accountData.setStarGiftStatus(starGift: gift, expirationDate: emojiStatus.expirationDate)
                         } else {
@@ -1277,6 +1280,7 @@ final class UserAppearanceScreenComponent: Component {
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemComponentAdaptor(
                                 itemGenerator: PeerNameColorItem(
                                     theme: environment.theme,
+                                    systemStyle: .glass,
                                     colors: component.context.peerNameColors,
                                     mode: .profile,
                                     currentColor: resolvedState.profileColor,
@@ -1609,6 +1613,7 @@ final class UserAppearanceScreenComponent: Component {
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemComponentAdaptor(
                                 itemGenerator: PeerNameColorItem(
                                     theme: environment.theme,
+                                    systemStyle: .glass,
                                     colors: component.context.peerNameColors,
                                     mode: .name,
                                     currentColor: resolvedState.nameColor.nameColor,

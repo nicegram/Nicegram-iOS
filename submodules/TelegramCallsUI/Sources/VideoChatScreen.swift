@@ -40,6 +40,7 @@ import ReactionSelectionNode
 import EntityKeyboard
 import GlassBackgroundComponent
 import PremiumUI
+import VideoChatMicButtonComponent
 
 extension VideoChatCall {
     var myAudioLevelAndSpeaking: Signal<(Float, Bool), NoError> {
@@ -167,7 +168,7 @@ extension VideoChatCall {
     func setMessagesEnabled(isEnabled: Bool) {
         switch self {
         case let .group(group):
-            group.updateMessagesEnabled(isEnabled: isEnabled)
+            group.updateMessagesEnabled(isEnabled: isEnabled, sendPaidMessageStars: nil)
         case .conferenceSource:
             break
         }
@@ -1212,12 +1213,14 @@ final class VideoChatScreenComponent: Component {
                 let callState = PresentationGroupCallState(
                     myPeerId: accountPeerId,
                     networkState: mappedNetworkState,
+                    connectionMode: .rtc,
                     canManageCall: false,
                     adminIds: Set([accountPeerId, conferenceSourcePeerId]),
                     muteState: isMuted ? GroupCallParticipantsContext.Participant.MuteState(canUnmute: true, mutedByYou: true) : nil,
                     defaultParticipantMuteState: nil,
                     messagesAreEnabled: true,
                     canEnableMessages: false,
+                    sendPaidMessageStars: nil,
                     recordingStartTimestamp: nil,
                     title: nil,
                     raisedHand: false,
@@ -1225,7 +1228,9 @@ final class VideoChatScreenComponent: Component {
                     subscribedToScheduled: false,
                     isVideoEnabled: true,
                     isVideoWatchersLimitReached: false,
-                    isMyVideoActive: false
+                    isMyVideoActive: false,
+                    isUnifiedStream: false,
+                    defaultSendAs: nil
                 )
                 
                 return .single((callState, invitedPeers.compactMap({ peer -> VideoChatScreenComponent.InvitedPeer? in
@@ -1271,7 +1276,8 @@ final class VideoChatScreenComponent: Component {
                         muteState: nil,
                         volume: nil,
                         about: nil,
-                        joinedVideo: false
+                        joinedVideo: false,
+                        paidStarsTotal: nil
                     ))
                 }
                 if let remotePeer {
@@ -1297,7 +1303,8 @@ final class VideoChatScreenComponent: Component {
                         muteState: nil,
                         volume: nil,
                         about: nil,
-                        joinedVideo: false
+                        joinedVideo: false,
+                        paidStarsTotal: nil
                     ))
                 }
                 let members = PresentationGroupCallMembers(
@@ -1401,7 +1408,7 @@ final class VideoChatScreenComponent: Component {
             )
             self.inputMediaInteraction?.forceTheme = defaultDarkColorPresentationTheme
             
-            let _ = (allowedStoryReactions(context: context)
+            let _ = (allowedStoryReactions(account: context.account)
             |> deliverOnMainQueue).start(next: { [weak self] reactionItems in
                 self?.reactionItems = reactionItems
             })
@@ -1421,7 +1428,7 @@ final class VideoChatScreenComponent: Component {
                     return
                 }
                 let entities = generateTextEntities(text.string, enabledTypes: [.mention, .hashtag], currentEntities: generateChatInputTextEntities(text))
-                call.sendMessage(randomId: randomId, text: text.string, entities: entities)
+                call.sendMessage(fromId: nil, isAdmin: false, randomId: randomId, text: text.string, entities: entities, paidStars: nil)
             }
             
             inputPanelView.clearSendMessageInput(updateState: true)
@@ -1886,6 +1893,7 @@ final class VideoChatScreenComponent: Component {
                                 }
                             }
                         } else {
+                            //TODO:localized
                             if event.joined {
                                 self.lastTitleEvent = "\(event.peer.compactDisplayTitle) joined"
                             } else {
@@ -2356,7 +2364,7 @@ final class VideoChatScreenComponent: Component {
                             name: "Call/PanelIcon",
                             tintColor: .white
                         )),
-                        background: AnyComponent(GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter + 10.0, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .panel, color: panelColor))),
+                        background: AnyComponent(GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter + 10.0, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .custom, color: panelColor))),
                         effectAlignment: .center,
                         minSize: CGSize(width: navigationButtonDiameter + 10.0, height: navigationButtonDiameter),
                         action: { [weak self] in
@@ -3535,7 +3543,7 @@ final class VideoChatScreenComponent: Component {
                         context: call.accountContext,
                         theme: environment.theme,
                         strings: environment.strings,
-                        style: .glass,
+                        style: .videoChat,
                         placeholder: .plain(environment.strings.VoiceChat_MessagePlaceholder),
                         sendPaidMessageStars: nil,
                         maxLength: characterLimit,
@@ -3590,6 +3598,7 @@ final class VideoChatScreenComponent: Component {
                         },
                         timeoutAction: nil,
                         forwardAction: nil,
+                        paidMessageAction: nil,
                         moreAction: nil,
                         presentCaptionPositionTooltip: nil,
                         presentVoiceMessagesUnavailableTooltip: nil,
@@ -3732,7 +3741,7 @@ final class VideoChatScreenComponent: Component {
                         context: call.accountContext,
                         animationCache: call.accountContext.animationCache,
                         presentationData: call.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: defaultDarkPresentationTheme),
-                        style: .glass,
+                        style: .glass(isTinted: true),
                         items: reactionItems.map { ReactionContextItem.reaction(item: $0, icon: .none) },
                         selectedItems: Set(),
                         title: nil,
@@ -3851,7 +3860,7 @@ final class VideoChatScreenComponent: Component {
                             guard case let .group(groupCall) = self.currentCall, let call = groupCall as? PresentationGroupCallImpl else {
                                 return
                             }
-                            call.sendMessage(text: text, entities: entities)
+                            call.sendMessage(fromId: nil, isAdmin: false, text: text, entities: entities, paidStars: nil)
                         })
                     }
                     
@@ -4309,9 +4318,9 @@ private func hasFirstResponder(_ view: UIView) -> Bool {
     return false
 }
 
-private func allowedStoryReactions(context: AccountContext) -> Signal<[ReactionItem], NoError> {
+func allowedStoryReactions(account: Account) -> Signal<[ReactionItem], NoError> {
     let viewKey: PostboxViewKey = .orderedItemList(id: Namespaces.OrderedItemList.CloudTopReactions)
-    let topReactions = context.account.postbox.combinedView(keys: [viewKey])
+    let topReactions = account.postbox.combinedView(keys: [viewKey])
     |> map { views -> [RecentReactionItem] in
         guard let view = views.views[viewKey] as? OrderedItemListView else {
             return []
@@ -4322,7 +4331,7 @@ private func allowedStoryReactions(context: AccountContext) -> Signal<[ReactionI
     }
 
     return combineLatest(
-        context.engine.stickers.availableReactions(),
+        TelegramEngine(account: account).stickers.availableReactions(),
         topReactions
     )
     |> take(1)

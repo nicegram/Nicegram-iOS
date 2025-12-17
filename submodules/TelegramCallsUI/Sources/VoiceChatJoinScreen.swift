@@ -10,7 +10,6 @@ import TelegramUIPreferences
 import AccountContext
 import AlertUI
 import PresentationDataUtils
-import PeerInfoUI
 import ShareController
 import AvatarNode
 import UndoUI

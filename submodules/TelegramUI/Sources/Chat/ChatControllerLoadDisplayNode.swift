@@ -126,6 +126,7 @@ import ChatMediaInputStickerGridItem
 import AdsInfoScreen
 import PostSuggestionsSettingsScreen
 import ChatSendStarsScreen
+import ChatSendAsContextMenu
 
 extension ChatControllerImpl {
     func reloadChatLocation(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, historyNode: ChatHistoryListNodeImpl, apply: @escaping ((ContainedViewLayoutTransition?) -> Void) -> Void) {
@@ -270,7 +271,8 @@ extension ChatControllerImpl {
                 return AvatarNode.StoryStats(
                     totalCount: storyStats.totalCount,
                     unseenCount: storyStats.unseenCount,
-                    hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriends
+                    hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriends,
+                    hasLiveItems: storyStats.hasLiveItems
                 )
             }, presentationParams: AvatarNode.StoryPresentationParams(
                 colors: AvatarNode.Colors(theme: self.presentationData.theme),
@@ -950,7 +952,7 @@ extension ChatControllerImpl {
             }, messageCorrelationId)
         }
         
-        self.chatDisplayNode.sendMessages = { [weak self] messages, silentPosting, scheduleTime, isAnyMessageTextPartitioned, postpone in
+        self.chatDisplayNode.sendMessages = { [weak self] messages, silentPosting, scheduleTime, repeatPeriod, isAnyMessageTextPartitioned, postpone in
             guard let strongSelf = self else {
                 return
             }
@@ -998,7 +1000,7 @@ extension ChatControllerImpl {
                     }
                 }
                 
-                let transformedMessages = strongSelf.transformEnqueueMessages(messages, silentPosting: silentPosting ?? false, scheduleTime: scheduleTime, postpone: postpone)
+                let transformedMessages = strongSelf.transformEnqueueMessages(messages, silentPosting: silentPosting ?? false, scheduleTime: scheduleTime, repeatPeriod: repeatPeriod, postpone: postpone)
                 
                 var forwardedMessages: [[EnqueueMessage]] = []
                 var forwardSourcePeerIds = Set<PeerId>()
@@ -1031,7 +1033,7 @@ extension ChatControllerImpl {
                                     return message.withUpdatedAttributes { attributes in
                                         var attributes = attributes
                                         attributes.removeAll(where: { $0 is OutgoingScheduleInfoMessageAttribute })
-                                        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: Int32(Date().timeIntervalSince1970) + 10 * 24 * 60 * 60))
+                                        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: Int32(Date().timeIntervalSince1970) + 10 * 24 * 60 * 60, repeatPeriod: nil))
                                         return attributes
                                     }
                                 }
@@ -1058,7 +1060,7 @@ extension ChatControllerImpl {
                                 return message.withUpdatedAttributes { attributes in
                                     var attributes = attributes
                                     attributes.removeAll(where: { $0 is OutgoingScheduleInfoMessageAttribute })
-                                    attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: Int32(Date().timeIntervalSince1970) + 10 * 24 * 60 * 60))
+                                    attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: Int32(Date().timeIntervalSince1970) + 10 * 24 * 60 * 60, repeatPeriod: nil))
                                     return attributes
                                 }
                             }
@@ -3996,7 +3998,12 @@ extension ChatControllerImpl {
             
             var items: [ContextMenuItem] = []
             items.append(.custom(ChatSendAsPeerTitleContextItem(text: strongSelf.presentationInterfaceState.strings.Conversation_SendMesageAs.uppercased()), false))
-            items.append(.custom(ChatSendAsPeerListContextItem(context: strongSelf.context, chatPeerId: peerId, peers: peers, selectedPeerId: myPeerId, isPremium: isPremium, presentToast: { [weak self] peer in
+            items.append(.custom(ChatSendAsPeerListContextItem(context: strongSelf.context, chatPeerId: peerId, peers: peers, selectedPeerId: myPeerId, isPremium: isPremium, action: { [weak self] peer in
+                guard let self else {
+                    return
+                }
+                let _ = self.context.engine.peers.updatePeerSendAsPeer(peerId: peerId, sendAs: peer.id).startStandalone()
+            }, presentToast: { [weak self] peer in
                 if let strongSelf = self {
                     HapticFeedback().impact()
                     
@@ -4374,7 +4381,7 @@ extension ChatControllerImpl {
                 guard let self else {
                     return
                 }
-                let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, completion: { _ in
+                let controller = self.context.sharedContext.makeStarsPurchaseScreen(context: self.context, starsContext: starsContext, options: options, purpose: .generic, targetPeerId: nil, customTheme: nil, completion: { _ in
                 })
                 self.push(controller)
             })

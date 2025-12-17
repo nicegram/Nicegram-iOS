@@ -816,7 +816,7 @@ final class StorageUsageScreenComponent: Component {
             
             self.keepDurationSectionContainerView = UIView()
             self.keepDurationSectionContainerView.clipsToBounds = true
-            self.keepDurationSectionContainerView.layer.cornerRadius = 10.0
+            self.keepDurationSectionContainerView.layer.cornerRadius = 26.0
             
             self.headerProgressBackgroundLayer = SimpleLayer()
             self.headerProgressForegroundLayer = SimpleLayer()

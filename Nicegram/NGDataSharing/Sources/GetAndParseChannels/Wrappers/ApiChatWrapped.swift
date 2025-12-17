@@ -25,7 +25,7 @@ public enum ApiChatWrapped {
         public let defaultBannedRights: Api.ChatBannedRights?
         public let participantsCount: Int32?
         public let usernames: [Api.Username]?
-        public let storiesMaxId: Int32?
+        public let storiesMaxId: Api.RecentStory?
         public let color: Api.PeerColor?
         public let profileColor: Api.PeerColor?
         public let emojiStatus: Api.EmojiStatus?

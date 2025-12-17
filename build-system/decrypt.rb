@@ -52,9 +52,9 @@ class EncryptionV2
     iv = keyIv[32..43]
     auth_data = keyIv[44..-1]
 
-    puts "key: #{key.inspect}"
-    puts "iv: #{iv.inspect}"
-    puts "auth_data: #{auth_data.inspect}"
+    #puts "key: #{key.inspect}"
+    #puts "iv: #{iv.inspect}"
+    #puts "auth_data: #{auth_data.inspect}"
 
     cipher.key = key
     cipher.iv = iv

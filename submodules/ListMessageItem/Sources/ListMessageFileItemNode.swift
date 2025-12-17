@@ -25,7 +25,7 @@ import EmojiStatusComponent
 
 private let extensionImageCache = Atomic<[UInt32: UIImage]>(value: [:])
 
-private let redColors: (UInt32, UInt32) = (0xed6b7b, 0xe63f45)
+private let redColors: (UInt32, UInt32) = (0xff875f, 0xff5069)
 private let greenColors: (UInt32, UInt32) = (0x99de6f, 0x5fb84f)
 private let blueColors: (UInt32, UInt32) = (0x72d5fd, 0x2a9ef1)
 private let yellowColors: (UInt32, UInt32) = (0xffa24b, 0xed705c)
@@ -63,11 +63,22 @@ private func generateExtensionImage(colors: (UInt32, UInt32)) -> UIImage? {
         
         context.restoreGState()
         
+        context.saveGState()
+        let rounded = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: 13).cgPath
+        let full = UIBezierPath(rect: CGRect(origin: .zero, size: size)).cgPath
+        context.addPath(full)
+        context.addPath(rounded)
+        context.setBlendMode(.destinationOut)
+        context.drawPath(using: .eoFill)
+        context.setBlendMode(.normal)
+        context.restoreGState()
+        
         context.beginPath()
         let _ = try? drawSvgPath(context, path: "M6,0 L26.7573593,0 C27.5530088,-8.52837125e-16 28.3160705,0.316070521 28.8786797,0.878679656 L39.1213203,11.1213203 C39.6839295,11.6839295 40,12.4469912 40,13.2426407 L40,34 C40,37.3137085 37.3137085,40 34,40 L6,40 C2.6862915,40 4.05812251e-16,37.3137085 0,34 L0,6 C-4.05812251e-16,2.6862915 2.6862915,6.08718376e-16 6,0 ")
         context.clip()
-        
-        context.setFillColor(UIColor(rgb: 0xffffff, alpha: 0.2).cgColor)
+
+        context.setBlendMode(.overlay)
+        context.setFillColor(UIColor(rgb: 0xffffff, alpha: 0.5).cgColor)
         context.translateBy(x: 40.0 - 14.0, y: 0.0)
         let _ = try? drawSvgPath(context, path: "M-1,0 L14,0 L14,15 L14,14 C14,12.8954305 13.1045695,12 12,12 L4,12 C2.8954305,12 2,11.1045695 2,10 L2,2 C2,0.8954305 1.1045695,-2.02906125e-16 0,0 L-1,0 L-1,0 Z ")
     })
@@ -607,6 +618,8 @@ public final class ListMessageFileItemNode: ListMessageNode {
             let descriptionFont = Font.regular(floor(item.presentationData.fontSize.baseDisplaySize * 14.0 / 17.0))
             let dateFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 14.0 / 17.0))
             
+            let iconCornerRadius: CGFloat = item.systemStyle == .glass ? 12.0 : 6.0
+            
             let leftInset: CGFloat = 65.0 + params.leftInset
             let rightInset: CGFloat = 8.0 + params.rightInset
             
@@ -1021,7 +1034,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
                 switch iconImage {
                     case let .imageRepresentation(_, representation):
                         let iconSize = CGSize(width: 40.0, height: 40.0)
-                        let imageCorners = ImageCorners(radius: 6.0)
+                        let imageCorners = ImageCorners(radius: iconCornerRadius, curve: item.systemStyle == .glass ? .continuous : .circular)
                         let arguments = TransformImageArguments(corners: imageCorners, imageSize: representation.dimensions.cgSize.aspectFilled(iconSize), boundingSize: iconSize, intrinsicInsets: UIEdgeInsets(), emptyColor: item.presentationData.theme.theme.list.mediaPlaceholderColor)
                         iconImageApply = iconImageLayout(arguments)
                     case .albumArt:
@@ -1068,7 +1081,14 @@ public final class ListMessageFileItemNode: ListMessageNode {
                 insets.bottom += 35.0
             }
             
-            let nodeLayout = ListViewItemNodeLayout(contentSize: CGSize(width: params.width, height: 8.0 * 2.0 + titleNodeLayout.height - 5.0 + descriptionNodeLayout.height + (textNodeLayout.size.height > 0.0 ? textNodeLayout.size.height + 3.0 : 0.0)), insets: insets)
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
+            var verticalInset: CGFloat = 0.0
+            if case .glass = item.systemStyle {
+                verticalInset += 2.0 + UIScreenPixel
+            }
+            
+            let nodeLayout = ListViewItemNodeLayout(contentSize: CGSize(width: params.width, height: verticalInset * 2.0 + 8.0 * 2.0 + titleNodeLayout.height - 5.0 + descriptionNodeLayout.height + (textNodeLayout.size.height > 0.0 ? textNodeLayout.size.height + 3.0 : 0.0)), insets: insets)
             
             return (nodeLayout, { animation in
                 if let strongSelf = self {
@@ -1173,7 +1193,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
                         })
                     }
                     
-                    transition.updateFrame(node: strongSelf.separatorNode, frame: CGRect(origin: CGPoint(x: leftInset + leftOffset, y: nodeLayout.contentSize.height - UIScreenPixel), size: CGSize(width: params.width - leftInset - leftOffset, height: UIScreenPixel)))
+                    transition.updateFrame(node: strongSelf.separatorNode, frame: CGRect(origin: CGPoint(x: leftInset + leftOffset, y: nodeLayout.contentSize.height - UIScreenPixel), size: CGSize(width: params.width - leftInset - leftOffset - separatorRightInset - params.rightInset, height: UIScreenPixel)))
                     strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - UIScreenPixel), size: CGSize(width: params.width, height: nodeLayout.size.height + UIScreenPixel - nodeLayout.insets.bottom))
                     
                     if let backgroundNode = strongSelf.backgroundNode {
@@ -1204,13 +1224,13 @@ public final class ListMessageFileItemNode: ListMessageNode {
                             strongSelf.separatorNode.isHidden = false
                         }
 
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         if let backgroundNode = strongSelf.backgroundNode {
-                            strongSelf.maskNode.frame = backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
+                            strongSelf.maskNode.frame = backgroundNode.frame.insetBy(dx: params.leftInset, dy: -UIScreenPixel)
                         }
                     }
                     
-                    transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset - 1.0, y: 7.0), size: titleNodeLayout))
+                    transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset - 1.0, y: 7.0 + verticalInset), size: titleNodeLayout))
                     let _ = titleNodeApply()
                     
                     var descriptionOffset: CGFloat = 0.0
@@ -1228,7 +1248,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
                         }
                     }
                     
-                    transition.updateFrame(node: strongSelf.textNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset + descriptionOffset, y: strongSelf.titleNode.frame.maxY + 1.0), size: textNodeLayout.size))
+                    transition.updateFrame(node: strongSelf.textNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset + descriptionOffset, y: strongSelf.titleNode.frame.maxY + 1.0 + verticalInset), size: textNodeLayout.size))
                     let _ = textNodeApply()
                     
                     transition.updateFrame(node: strongSelf.descriptionNode, frame: CGRect(origin: CGPoint(x: leftOffset + leftInset + descriptionOffset - 1.0, y: strongSelf.titleNode.frame.maxY - 3.0 + (textNodeLayout.size.height > 0.0 ? textNodeLayout.size.height + 3.0 : 0.0)), size: descriptionNodeLayout))
@@ -1239,10 +1259,10 @@ public final class ListMessageFileItemNode: ListMessageNode {
                     strongSelf.dateNode.isHidden = !item.isGlobalSearchResult
                     
                     let iconSize = CGSize(width: 40.0, height: 40.0)
-                    let iconFrame = CGRect(origin: CGPoint(x: params.leftInset + leftOffset + 12.0, y: 8.0), size: iconSize)
+                    let iconFrame = CGRect(origin: CGPoint(x: params.leftInset + leftOffset + 12.0, y: 8.0 + verticalInset), size: iconSize)
                     transition.updateFrame(node: strongSelf.extensionIconNode, frame: iconFrame)
                     strongSelf.extensionIconNode.image = extensionIconImage
-                    transition.updateFrame(node: strongSelf.extensionIconText, frame: CGRect(origin: CGPoint(x: iconFrame.minX + floorToScreenPixels((iconFrame.width - extensionTextLayout.size.width) / 2.0), y: iconFrame.minY + 7.0 + floorToScreenPixels((iconFrame.height - extensionTextLayout.size.height) / 2.0)), size: extensionTextLayout.size))
+                    transition.updateFrame(node: strongSelf.extensionIconText, frame: CGRect(origin: CGPoint(x: iconFrame.minX + floorToScreenPixels((iconFrame.width - extensionTextLayout.size.width) / 2.0), y: iconFrame.minY + 5.0 + floorToScreenPixels((iconFrame.height - extensionTextLayout.size.height) / 2.0)), size: extensionTextLayout.size))
                     
                     transition.updateFrame(node: strongSelf.iconStatusNode, frame: iconFrame)
                     
@@ -1348,7 +1368,7 @@ public final class ListMessageFileItemNode: ListMessageNode {
                         if let media = selectedMedia as? TelegramMediaFile, media.isInstantVideo {
                             shapes.append(.circle(iconFrame))
                         } else {
-                            shapes.append(.roundedRect(rect: iconFrame, cornerRadius: 6.0))
+                            shapes.append(.roundedRect(rect: iconFrame, cornerRadius: iconCornerRadius))
                         }
                             
                         shimmerNode.update(backgroundColor: item.presentationData.theme.theme.list.itemBlocksBackgroundColor, foregroundColor: item.presentationData.theme.theme.list.mediaPlaceholderColor, shimmeringColor: item.presentationData.theme.theme.list.itemBlocksBackgroundColor.withAlphaComponent(0.4), shapes: shapes, size: nodeLayout.contentSize)

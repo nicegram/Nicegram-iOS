@@ -261,6 +261,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
                         }
                     } : nil,
                     forwardAction: nil,
+                    paidMessageAction: nil,
                     moreAction: nil,
                     presentCaptionPositionTooltip: { [weak self] sourceView in
                         if let self {

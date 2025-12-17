@@ -128,7 +128,7 @@ public func tagsForStoreMessage(incoming: Bool, attributes: [MessageAttribute], 
 
 func apiMessagePeerId(_ messsage: Api.Message) -> PeerId? {
     switch messsage {
-        case let .message(_, _, _, _, _, messagePeerId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+        case let .message(_, _, _, _, _, messagePeerId, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
             let chatPeerId = messagePeerId
             return chatPeerId.peerId
         case let .messageEmpty(_, _, peerId):
@@ -144,7 +144,7 @@ func apiMessagePeerId(_ messsage: Api.Message) -> PeerId? {
 
 func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
     switch message {
-        case let .message(_, _, _, fromId, _, chatPeerId, savedPeerId, fwdHeader, viaBotId, viaBusinessBotId, replyTo, _, _, media, _, entities, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+        case let .message(_, _, _, fromId, _, chatPeerId, savedPeerId, fwdHeader, viaBotId, viaBusinessBotId, replyTo, _, _, media, _, entities, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
             let peerId: PeerId = chatPeerId.peerId
             
             var result = [peerId]
@@ -232,7 +232,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             }
             
             switch action {
-            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund, .messageActionSuggestBirthday:
+            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund, .messageActionSuggestBirthday, .messageActionStarGiftPurchaseOffer, .messageActionStarGiftPurchaseOfferDeclined:
                     break
                 case let .messageActionChannelMigrateFrom(_, chatId):
                     result.append(PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatId)))
@@ -279,7 +279,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
 
 func apiMessageAssociatedMessageIds(_ message: Api.Message) -> (replyIds: ReferencedReplyMessageIds, generalIds: [MessageId])? {
     switch message {
-        case let .message(_, _, id, _, _, chatPeerId, _, _, _, _, replyTo, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+        case let .message(_, _, id, _, _, chatPeerId, _, _, _, _, replyTo, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
             if let replyTo = replyTo {
                 let peerId: PeerId = chatPeerId.peerId
                 
@@ -495,6 +495,16 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
             return (TelegramMediaGiveawayResults(flags: flags, launchMessageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: launchMsgId), additionalChannelsCount: additionalPeersCount ?? 0, winnersPeerIds: winners.map { PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value($0)) }, winnersCount: winnersCount, unclaimedCount: unclaimedCount, prize: prize, untilDate: untilDate, prizeDescription: prizeDescription), nil, nil, nil, nil, nil)
         case let .messageMediaPaidMedia(starsAmount, apiExtendedMedia):
             return (TelegramMediaPaidContent(amount: starsAmount, extendedMedia: apiExtendedMedia.compactMap({ TelegramExtendedMedia(apiExtendedMedia: $0, peerId: peerId) })), nil, nil, nil, nil, nil)
+        case let .messageMediaVideoStream(flags, call):
+            if let call = GroupCallReference(call) {
+                let kind: TelegramMediaLiveStream.Kind
+                if (flags & (1 << 0)) != 0 {
+                    kind = .rtmp
+                } else {
+                    kind = .rtc
+                }
+                return (TelegramMediaLiveStream(call: call, kind: kind), nil, nil, nil, nil, nil)
+            }
         }
     }
     
@@ -702,7 +712,7 @@ func messageTextEntitiesFromApiEntities(_ entities: [Api.MessageEntity]) -> [Mes
 extension StoreMessage {
     convenience init?(apiMessage: Api.Message, accountPeerId: PeerId, peerIsForum: Bool, namespace: MessageId.Namespace = Namespaces.Message.Cloud) {
         switch apiMessage {
-            case let .message(flags, flags2, id, fromId, boosts, chatPeerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupingId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, messageEffectId, factCheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost):
+            case let .message(flags, flags2, id, fromId, boosts, chatPeerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupingId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, messageEffectId, factCheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost, scheduledRepeatPeriod):
                 var attributes: [MessageAttribute] = []
             
                 if (flags2 & (1 << 4)) != 0 {
@@ -778,10 +788,12 @@ extension StoreMessage {
                                 }
                             } else if peerId.namespace == Namespaces.Peer.CloudUser, peerIsForum {
                                 //TODO:release
-                                let threadIdValue = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId)
-                                
-                                threadMessageId = threadIdValue
-                                threadId = Int64(threadIdValue.id)
+                                if isForumTopic {
+                                    let threadIdValue = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId)
+                                    
+                                    threadMessageId = threadIdValue
+                                    threadId = Int64(threadIdValue.id)
+                                }
                             }
                             attributes.append(ReplyMessageAttribute(messageId: MessageId(peerId: replyPeerId, namespace: Namespaces.Message.Cloud, id: replyToMsgId), threadMessageId: threadMessageId, quote: quote, isQuote: isQuote, todoItemId: todoItemId))
                         }
@@ -955,6 +967,10 @@ extension StoreMessage {
             
                 if let paidMessageStars {
                     attributes.append(PaidStarsMessageAttribute(stars: StarsAmount(value: paidMessageStars, nanos: 0), postponeSending: false))
+                }
+            
+                if let scheduledRepeatPeriod {
+                    attributes.append(ScheduledRepeatAttribute(repeatPeriod: scheduledRepeatPeriod))
                 }
             
                 var entitiesAttribute: TextEntitiesMessageAttribute?

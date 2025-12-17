@@ -625,11 +625,11 @@ final class ContextSourceContainer: ASDisplayNode {
                     forceKeepBlur: false,
                     transition: .immediate
                 )
-            case .extracted:
+            case let .extracted(extracted):
                 self.backgroundNode.updateColor(
-                    color: presentationData.theme.contextMenu.dimColor,
-                    enableBlur: true,
-                    forceKeepBlur: true,
+                    color: extracted.blurBackground ? presentationData.theme.contextMenu.dimColor : .clear,
+                    enableBlur: extracted.blurBackground,
+                    forceKeepBlur: extracted.blurBackground,
                     transition: .immediate
                 )
             case .controller:

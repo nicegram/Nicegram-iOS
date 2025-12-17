@@ -8,6 +8,8 @@ import DirectionalPanGesture
 import TelegramPresentationData
 import MapKit
 import WebKit
+import ComponentFlow
+import EdgeEffect
 
 private let overflowInset: CGFloat = 0.0
 
@@ -27,10 +29,13 @@ public func attachmentDefaultTopInset(layout: ContainerViewLayout?) -> CGFloat {
 }
 
 final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
+    private let glass: Bool
     let wrappingNode: ASDisplayNode
     let clipNode: ASDisplayNode
+    let bottomClipNode: ASDisplayNode
     let container: NavigationContainer
-        
+    private let pillView: UIImageView
+    
     private(set) var isReady: Bool = false
     private(set) var dismissProgress: CGFloat = 0.0
     var isReadyUpdated: (() -> Void)?
@@ -66,6 +71,12 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
         }
     }
     
+    var presentationData: PresentationData {
+        didSet {
+            self.pillView.tintColor = self.presentationData.theme.list.itemPrimaryTextColor.withMultipliedAlpha(self.presentationData.theme.overallDarkAppearance ? 0.2 : 0.07)
+        }
+    }
+    
     private var panGestureRecognizer: UIPanGestureRecognizer?
     
     var isPanningUpdated: (Bool) -> Void = { _ in }
@@ -74,14 +85,18 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
     var isInnerPanGestureEnabled: (() -> Bool)?
     var onExpandAnimationCompleted: () -> Void = {}
     
-    init(isFullSize: Bool) {
+    init(presentationData: PresentationData, isFullSize: Bool, glass: Bool) {
+        self.presentationData = presentationData
         self.isFullSize = isFullSize
         if isFullSize {
             self.isExpanded = true
         }
+        self.glass = glass
         
         self.wrappingNode = ASDisplayNode()
         self.clipNode = ASDisplayNode()
+        self.bottomClipNode = ASDisplayNode()
+        self.bottomClipNode.clipsToBounds = true
         
         var controllerRemovedImpl: ((ViewController) -> Void)?
         self.container = NavigationContainer(isFlat: false, controllerRemoved: { c in
@@ -90,12 +105,17 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
         self.container.clipsToBounds = true
         self.container.overflowInset = overflowInset
         self.container.shouldAnimateDisappearance = true
+                
+        self.pillView = UIImageView()
+        self.pillView.image = generateStretchableFilledCircleImage(diameter: 5.0, color: .white)?.withRenderingMode(.alwaysTemplate)
+        self.pillView.tintColor = self.presentationData.theme.list.itemPrimaryTextColor.withMultipliedAlpha(self.presentationData.theme.overallDarkAppearance ? 0.2 : 0.07)
         
         super.init()
         
         self.addSubnode(self.wrappingNode)
         self.wrappingNode.addSubnode(self.clipNode)
-        self.clipNode.addSubnode(self.container)
+        self.clipNode.addSubnode(self.bottomClipNode)
+        self.bottomClipNode.addSubnode(self.container)
         
         self.isReady = self.container.isReady
         self.container.isReadyUpdated = { [weak self] in
@@ -110,7 +130,7 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
             }
         }
         
-        applySmoothRoundedCorners(self.container.layer)
+        //applySmoothRoundedCorners(self.container.layer)
         
         controllerRemovedImpl = { [weak self] c in
             self?.controllerRemoved?(c)
@@ -126,6 +146,13 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
         panRecognizer.cancelsTouchesInView = true
         self.panGestureRecognizer = panRecognizer
         self.wrappingNode.view.addGestureRecognizer(panRecognizer)
+                
+        if self.glass {
+            self.clipNode.view.addSubview(self.pillView)
+        }
+        
+        self.clipNode.layer.cornerCurve = .continuous
+        self.bottomClipNode.layer.cornerCurve = .continuous
     }
     
     func cancelPanGesture() {
@@ -449,6 +476,8 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
         if self.isDismissed {
             return
         }
+        self.bottomClipNode.cornerRadius = layout.deviceMetrics.screenCornerRadius - 2.0
+        
         self.isUpdatingState = true
         
         let isFirstTime = self.validLayout == nil
@@ -480,13 +509,17 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
         })
         
         let modalProgress: CGFloat
+        let scaleProgress: CGFloat
         if isLandscape {
             modalProgress = 0.0
+            scaleProgress = 1.0
         } else {
             if self.isFullSize, self.panGestureArguments != nil {
                 modalProgress = 1.0 - min(1.0, max(0.0, -1.0 * self.bounds.minY / defaultTopInset))
+                scaleProgress = min(1.0, max(0.0, -1.0 * self.bounds.minY / defaultTopInset))
             } else {
                 modalProgress = 1.0 - topInset / defaultTopInset
+                scaleProgress = topInset / defaultTopInset
             }
         }
         
@@ -514,7 +547,7 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
             if isLandscape {
                 self.clipNode.cornerRadius = 0.0
             } else {
-                self.clipNode.cornerRadius = 10.0
+                self.clipNode.cornerRadius = self.glass ? 38.0 : 10.0
             }
             
             if #available(iOS 11.0, *) {
@@ -562,7 +595,10 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
                 let scaledTopInset: CGFloat = containerTopInset * (1.0 - coveredByModalTransition) + maxScaledTopInset * coveredByModalTransition
                 containerFrame = unscaledFrame.offsetBy(dx: -overflowInset, dy: scaledTopInset - (unscaledFrame.midY - containerScale * unscaledFrame.height / 2.0))
                 
-                clipFrame = CGRect(x: containerFrame.minX + overflowInset, y: containerFrame.minY, width: containerFrame.width - overflowInset * 2.0, height: containerFrame.height)
+                let topPortion = self.wrappingNode.frame.minY
+                let clipTopOffset: CGFloat = 2.0 * scaleProgress + UIScreenPixel
+                
+                clipFrame = CGRect(x: containerFrame.minX + overflowInset, y: containerFrame.minY + clipTopOffset, width: containerFrame.width - overflowInset * 2.0, height: containerFrame.height - topPortion)
             }
         } else {
             containerLayout = ContainerViewLayout(size: layout.size, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, intrinsicInsets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0), safeInsets: .zero, additionalInsets: .zero, statusBarHeight: isFullscreen ? layout.statusBarHeight : nil, inputHeight: isFullscreen ? layout.inputHeight : nil, inputHeightIsInteractivellyChanging: false, inVoiceOver: layout.inVoiceOver)
@@ -573,9 +609,19 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
             clipFrame = unscaledFrame
         }
         transition.updateFrameAsPositionAndBounds(node: self.clipNode, frame: clipFrame)
-        transition.updateFrameAsPositionAndBounds(node: self.container, frame: CGRect(origin: CGPoint(x: containerFrame.minX, y: 0.0), size: containerFrame.size))
+        
+        let clipDeltaScale: CGFloat = 1.0 - (clipFrame.width - 10.0) / clipFrame.width
+        let clipScale = 1.0 - clipDeltaScale + clipDeltaScale * (1.0 - scaleProgress)
+        transition.updateTransformScale(node: self.clipNode, scale: CGPoint(x: clipScale, y: clipScale))
+        
+        transition.updateFrameAsPositionAndBounds(node: self.bottomClipNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -100.0), size: CGSize(width: clipFrame.size.width, height: self.clipNode.bounds.height + 100.0)))
+        transition.updateFrameAsPositionAndBounds(node: self.container, frame: CGRect(origin: CGPoint(x: containerFrame.minX, y: 100.0), size: containerFrame.size))
         transition.updateTransformScale(node: self.container, scale: containerScale)
         self.container.update(layout: containerLayout, canBeClosed: true, controllers: controllers, transition: transition)
+        
+        let pillSize = CGSize(width: 36.0, height: 5.0)
+        transition.updateFrame(view: self.pillView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((clipFrame.width - pillSize.width) / 2.0), y: 5.0), size: pillSize))
+        self.pillView.isHidden = layout.metrics.isTablet
         
         self.isUpdatingState = false
     }
@@ -647,7 +693,7 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
     }
     
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
-        let convertedPoint = self.view.convert(point, to: self.container.view)
+        let convertedPoint = self.view.convert(point, to: self.bottomClipNode.view)
         if !self.container.frame.contains(convertedPoint) {
             return false
         }

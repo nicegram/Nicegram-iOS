@@ -935,8 +935,12 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
             switch self.source {
             case .location, .reference, .controller:
                 actionsStackPresentation = .inline
-            case .extracted:
-                actionsStackPresentation = .modal
+            case let .extracted(extracted):
+                if extracted.blurBackground {
+                    actionsStackPresentation = .modal
+                } else {
+                    actionsStackPresentation = .inline
+                }
             }
             
             let additionalActionsSize = self.additionalActionsStackNode.update(

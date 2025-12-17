@@ -28,7 +28,7 @@ import ChatInputTextNode
 private let counterFont = Font.with(size: 14.0, design: .regular, traits: [.monospacedNumbers])
 private let minInputFontSize: CGFloat = 5.0
 
-private func calclulateTextFieldMinHeight(_ presentationInterfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
+private func calclulateTextFieldMinHeight(_ presentationInterfaceState: ChatPresentationInterfaceState, glass: Bool = false, metrics: LayoutMetrics) -> CGFloat {
     let baseFontSize = max(minInputFontSize, presentationInterfaceState.fontSize.baseDisplaySize)
     var result: CGFloat
     if baseFontSize.isEqual(to: 26.0) {
@@ -49,25 +49,34 @@ private func calclulateTextFieldMinHeight(_ presentationInterfaceState: ChatPres
         result = max(33.0, result)
     }
     
+    if glass {
+        result = max(38.0, result)
+    }
+    
     return result
 }
 
-private func calculateTextFieldRealInsets(_ presentationInterfaceState: ChatPresentationInterfaceState) -> UIEdgeInsets {
+private func calculateTextFieldRealInsets(_ presentationInterfaceState: ChatPresentationInterfaceState, glass: Bool = false) -> UIEdgeInsets {
     let baseFontSize = max(minInputFontSize, presentationInterfaceState.fontSize.baseDisplaySize)
     let top: CGFloat
     let bottom: CGFloat
-    if baseFontSize.isEqual(to: 14.0) {
-        top = 2.0
+    if glass {
+        top = 4.0
         bottom = 1.0
-    } else if baseFontSize.isEqual(to: 15.0) {
-        top = 1.0
-        bottom = 1.0
-    } else if baseFontSize.isEqual(to: 16.0) {
-        top = 0.5
-        bottom = 0.0
     } else {
-        top = 0.0
-        bottom = 0.0
+        if baseFontSize.isEqual(to: 14.0) {
+            top = 2.0
+            bottom = 1.0
+        } else if baseFontSize.isEqual(to: 15.0) {
+            top = 1.0
+            bottom = 1.0
+        } else if baseFontSize.isEqual(to: 16.0) {
+            top = 0.5
+            bottom = 0.0
+        } else {
+            top = 0.0
+            bottom = 0.0
+        }
     }
     return UIEdgeInsets(top: 4.5 + top, left: 0.0, bottom: 5.5 + bottom, right: 32.0)
 }
@@ -243,15 +252,16 @@ private func makeTextInputTheme(context: AccountContext, interfaceState: ChatPre
 public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, ASEditableTextNodeDelegate, ChatInputTextNodeDelegate {
     private let context: AccountContext
     
+    private let glass: Bool
     private let isCaption: Bool
     private let isAttachment: Bool
     
     private let presentController: (ViewController) -> Void
     private let makeEntityInputView: () -> AttachmentTextInputPanelInputView?
     
-    private var textPlaceholderNode: ImmediateTextNode
+    public var textPlaceholderNode: ImmediateTextNode
     private let textInputContainerBackgroundNode: ASImageNode
-    private let textInputContainer: ASDisplayNode
+    public let textInputContainer: ASDisplayNode
     public var textInputNode: ChatInputTextNode?
     private var dustNode: InvisibleInkDustNode?
     private var customEmojiContainerView: CustomEmojiContainerView?
@@ -265,7 +275,11 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     private let actionButtons: AttachmentTextInputActionButtonsNode
     private let counterTextNode: ImmediateTextNode
     
-    private let inputModeView: ComponentHostView<Empty>
+    public var opaqueActionButtons: ASDisplayNode {
+        return self.actionButtons
+    }
+    
+    public let inputModeView: ComponentHostView<Empty>
 
     private var validLayout: (CGFloat, CGFloat, CGFloat, UIEdgeInsets, CGFloat, LayoutMetrics, Bool)?
     
@@ -314,6 +328,10 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     }
     
     public var interfaceInteraction: ChatPanelInterfaceInteraction?
+    
+    public func animateIn(transition: ContainedViewLayoutTransition) {
+        self.actionButtons.animateIn(transition: transition)
+    }
     
     public func updateSendButtonEnabled(_ enabled: Bool, animated: Bool) {
         self.actionButtons.isUserInteractionEnabled = enabled
@@ -379,9 +397,10 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     
     private var maxCaptionLength: Int32?
     
-    public init(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, isCaption: Bool = false, isAttachment: Bool = false, isScheduledMessages: Bool = false, presentController: @escaping (ViewController) -> Void, makeEntityInputView: @escaping () -> AttachmentTextInputPanelInputView?) {
+    public init(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, glass: Bool = false, isCaption: Bool = false, isAttachment: Bool = false, isScheduledMessages: Bool = false, presentController: @escaping (ViewController) -> Void, makeEntityInputView: @escaping () -> AttachmentTextInputPanelInputView?) {
         self.context = context
         self.presentationInterfaceState = presentationInterfaceState
+        self.glass = glass
         self.isCaption = isCaption
         self.isAttachment = isAttachment
         self.presentController = presentController
@@ -401,7 +420,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         self.textInputContainerBackgroundNode.displaysAsynchronously = false
         
         self.textInputContainer = ASDisplayNode()
-        if !isCaption {
+        if !isCaption && !glass {
             self.textInputContainer.addSubnode(self.textInputContainerBackgroundNode)
         }
         
@@ -420,7 +439,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         self.oneLineNode = TextNodeWithEntities()
         self.oneLineNode.textNode.isUserInteractionEnabled = false
         
-        self.actionButtons = AttachmentTextInputActionButtonsNode(presentationInterfaceState: presentationInterfaceState, presentController: presentController)
+        self.actionButtons = AttachmentTextInputActionButtonsNode(presentationInterfaceState: presentationInterfaceState, glass: glass, presentController: presentController)
         self.counterTextNode = ImmediateTextNode()
         self.counterTextNode.textAlignment = .center
         
@@ -441,7 +460,10 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         
         self.addSubnode(self.textInputContainer)
         self.addSubnode(self.textInputBackgroundNode)
-        self.textInputBackgroundNode.addSubnode(self.textInputBackgroundImageNode)
+        
+        if !glass {
+            self.textInputBackgroundNode.addSubnode(self.textInputBackgroundImageNode)
+        }
         
         self.addSubnode(self.textPlaceholderNode)
         
@@ -589,7 +611,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         
         if let presentationInterfaceState = self.presentationInterfaceState {
             refreshChatTextInputTypingAttributes(textInputNode.textView, theme: presentationInterfaceState.theme, baseFontSize: baseFontSize)
-            textInputNode.textContainerInset = calculateTextFieldRealInsets(presentationInterfaceState)
+            textInputNode.textContainerInset = calculateTextFieldRealInsets(presentationInterfaceState, glass: self.glass)
         }
         
         if !self.textInputContainer.bounds.size.width.isZero {
@@ -628,21 +650,21 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     
     private func textFieldMaxHeight(_ maxHeight: CGFloat, metrics: LayoutMetrics) -> CGFloat {
         let textFieldInsets = self.textFieldInsets(metrics: metrics)
-        return max(33.0, maxHeight - (textFieldInsets.top + textFieldInsets.bottom + self.textInputViewInternalInsets.top + self.textInputViewInternalInsets.bottom))
+        return max(self.glass ? 40.0 : 33.0, maxHeight - (textFieldInsets.top + textFieldInsets.bottom + self.textInputViewInternalInsets.top + self.textInputViewInternalInsets.bottom))
     }
     
     private func calculateTextFieldMetrics(width: CGFloat, maxHeight: CGFloat, metrics: LayoutMetrics) -> (accessoryButtonsWidth: CGFloat, textFieldHeight: CGFloat) {
         var textFieldInsets = self.textFieldInsets(metrics: metrics)
         if self.actionButtons.frame.width > 44.0 {
-            textFieldInsets.right = self.actionButtons.frame.width
+            textFieldInsets.right = self.actionButtons.frame.width - 6.0
         }
         let fieldMaxHeight = textFieldMaxHeight(maxHeight, metrics: metrics)
         
         var textFieldMinHeight: CGFloat = 35.0
         var textFieldRealInsets = UIEdgeInsets()
         if let presentationInterfaceState = self.presentationInterfaceState {
-            textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, metrics: metrics)
-            textFieldRealInsets = calculateTextFieldRealInsets(presentationInterfaceState)
+            textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, glass: self.glass, metrics: metrics)
+            textFieldRealInsets = calculateTextFieldRealInsets(presentationInterfaceState, glass: self.glass)
         }
         
         let textFieldHeight: CGFloat
@@ -666,7 +688,12 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     
     private func textFieldInsets(metrics: LayoutMetrics) -> UIEdgeInsets {
         var insets = UIEdgeInsets(top: 6.0, left: 6.0, bottom: 6.0, right: 42.0)
-        if case .regular = metrics.widthClass, case .regular = metrics.heightClass {
+        if self.glass {
+            insets.left = 8.0
+            insets.top = 0.0
+            insets.bottom = 0.0
+            insets.right += 3.0
+        } else if case .regular = metrics.widthClass, case .regular = metrics.heightClass {
             insets.top += 1.0
             insets.bottom += 1.0
         }
@@ -680,7 +707,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     }
     
     func minimalHeight(interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics) -> CGFloat {
-        let textFieldMinHeight = calclulateTextFieldMinHeight(interfaceState, metrics: metrics)
+        let textFieldMinHeight = calclulateTextFieldMinHeight(interfaceState, glass: self.glass, metrics: metrics)
         var minimalHeight: CGFloat = 14.0 + textFieldMinHeight
         if case .regular = metrics.widthClass, case .regular = metrics.heightClass {
             minimalHeight += 2.0
@@ -689,6 +716,9 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     }
     
     override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard self.isUserInteractionEnabled else {
+            return nil
+        }
         if !self.inputModeView.isHidden, let result = self.inputModeView.hitTest(self.view.convert(point, to: self.inputModeView), with: event) {
             return result
         }
@@ -703,7 +733,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         
         let leftInset = leftInset + 8.0
         let rightInset = rightInset + 8.0
-    
+        
         var transition = transition
         if let previousAdditionalSideInsets = previousAdditionalSideInsets, previousAdditionalSideInsets.right != additionalSideInsets.right {
             if case .animated = transition {
@@ -758,7 +788,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
                 
                 self.actionButtons.updateTheme(theme: interfaceState.theme, wallpaper: interfaceState.chatWallpaper)
                 
-                let textFieldMinHeight = calclulateTextFieldMinHeight(interfaceState, metrics: metrics)
+                let textFieldMinHeight = calclulateTextFieldMinHeight(interfaceState, glass: self.glass, metrics: metrics)
                 let minimalInputHeight: CGFloat = 2.0 + textFieldMinHeight
                 
                 let backgroundColor: UIColor
@@ -820,17 +850,17 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
                     }
                     self.actionButtons.sendButtonHasApplyIcon = sendButtonHasApplyIcon
                     if self.actionButtons.sendButtonHasApplyIcon {
-                        self.actionButtons.sendButton.setImage(PresentationResourcesChat.chatInputPanelApplyIconImage(interfaceState.theme), for: [])
+                        self.actionButtons.setImage(PresentationResourcesChat.chatInputPanelApplyIconImage(interfaceState.theme))
                     } else {
-                        self.actionButtons.sendButton.setImage(PresentationResourcesChat.chatInputPanelSendIconImage(interfaceState.theme), for: [])
+                        self.actionButtons.setImage(PresentationResourcesChat.chatInputPanelSendIconImage(interfaceState.theme))
                     }
                 }
             }
         }
         
-        var textFieldMinHeight: CGFloat = 33.0
+        var textFieldMinHeight: CGFloat = self.glass ? 40.0 : 33.0
         if let presentationInterfaceState = self.presentationInterfaceState {
-            textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, metrics: metrics)
+            textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, glass: self.glass, metrics: metrics)
         }
         let minimalHeight: CGFloat = 14.0 + textFieldMinHeight
         
@@ -852,7 +882,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         
         var textInputViewRealInsets = UIEdgeInsets()
         if let presentationInterfaceState = self.presentationInterfaceState {
-            textInputViewRealInsets = calculateTextFieldRealInsets(presentationInterfaceState)
+            textInputViewRealInsets = calculateTextFieldRealInsets(presentationInterfaceState, glass: self.glass)
         }
         
         if self.isCaption {
@@ -922,7 +952,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
             let textFieldFrame = CGRect(origin: CGPoint(x: self.textInputViewInternalInsets.left, y: self.textInputViewInternalInsets.top), size: CGSize(width: textInputFrame.size.width - (self.textInputViewInternalInsets.left + self.textInputViewInternalInsets.right), height: textInputFrame.size.height - self.textInputViewInternalInsets.top - textInputViewInternalInsets.bottom))
             let shouldUpdateLayout = textFieldFrame.size != textInputNode.frame.size
             if let presentationInterfaceState = self.presentationInterfaceState {
-                textInputNode.textContainerInset = calculateTextFieldRealInsets(presentationInterfaceState)
+                textInputNode.textContainerInset = calculateTextFieldRealInsets(presentationInterfaceState, glass: self.glass)
             }
             transition.updateFrame(node: textInputNode, frame: textFieldFrame)
             if shouldUpdateLayout {
@@ -931,6 +961,10 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         }
         
         self.actionButtons.updateAccessibility()
+        
+        if self.glass {
+            panelHeight += 11.0
+        }
         
         return panelHeight
     }
@@ -943,11 +977,14 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         let leftInset = leftInsetValue + 8.0
         let rightInset = rightInsetValue + 8.0
         
-        var textFieldMinHeight: CGFloat = 33.0
+        var textFieldMinHeight: CGFloat = self.glass ? 40.0 : 33.0
         if let presentationInterfaceState = self.presentationInterfaceState {
-            textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, metrics: metrics)
+            textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, glass: self.glass, metrics: metrics)
         }
-        let minimalHeight: CGFloat = 14.0 + textFieldMinHeight
+        var minimalHeight: CGFloat = textFieldMinHeight
+        if !self.glass {
+            minimalHeight += 14.0
+        }
         
         var panelHeight = panelHeight
         var composeButtonsOffset: CGFloat = 0.0
@@ -980,7 +1017,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
                 text = "⭐️\(sendPaidMessageStars.value * Int64(count))"
                 isPaidMessage = true
             } else {
-                isMinimized = !self.isAttachment || inputHasText
+                isMinimized = !self.isAttachment || inputHasText || self.glass
                 text = presentationInterfaceState.strings.MediaPicker_Send
             }
             actionButtonsSize = self.actionButtons.updateLayout(size: CGSize(width: 44.0, height: minimalHeight), transition: transition, minimized: isMinimized, text: text, interfaceState: presentationInterfaceState)
@@ -989,10 +1026,12 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
             actionButtonsSize = CGSize(width: 44.0, height: minimalHeight)
         }
         
-        let actionButtonsFrame = CGRect(origin: CGPoint(x: width - rightInset - actionButtonsSize.width + 1.0 - UIScreenPixel + composeButtonsOffset, y: panelHeight - minimalHeight), size: actionButtonsSize)
+        let actionButtonsOriginOffset: CGFloat = self.glass ? -6.0 : 0.0
+        let actionButtonsFrame = CGRect(origin: CGPoint(x: width - rightInset - actionButtonsSize.width + 1.0 - UIScreenPixel + composeButtonsOffset + actionButtonsOriginOffset, y: panelHeight - minimalHeight - 1.0), size: actionButtonsSize)
         transition.updateFrame(node: self.actionButtons, frame: actionButtonsFrame)
         
-        let textInputBackgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: baseWidth - textFieldInsets.left - textFieldInsets.right + composeButtonsOffset - textBackgroundInset, height: textInputFrame.size.height))
+        let textInputHeight = panelHeight - textFieldInsets.top - textFieldInsets.bottom
+        let textInputBackgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: baseWidth - textFieldInsets.left - textFieldInsets.right + composeButtonsOffset - textBackgroundInset, height: textInputHeight))
         transition.updateFrame(node: self.textInputContainerBackgroundNode, frame: textInputBackgroundFrame)
         
         transition.updateFrame(layer: self.textInputBackgroundNode.layer, frame: CGRect(x: leftInset + textFieldInsets.left, y: textFieldInsets.top, width: baseWidth - textFieldInsets.left - textFieldInsets.right + composeButtonsOffset - textBackgroundInset, height: panelHeight - textFieldInsets.top - textFieldInsets.bottom))
@@ -1000,13 +1039,13 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         
         var textInputViewRealInsets = UIEdgeInsets()
         if let presentationInterfaceState = self.presentationInterfaceState {
-            textInputViewRealInsets = calculateTextFieldRealInsets(presentationInterfaceState)
+            textInputViewRealInsets = calculateTextFieldRealInsets(presentationInterfaceState, glass: self.glass)
             
             var colors: [String: UIColor] = [:]
             let colorKeys: [String] = [
                 "__allcolors__"
             ]
-            let color = defaultDarkPresentationTheme.chat.inputPanel.inputControlColor
+            let color = self.theme?.chat.inputPanel.inputControlColor ?? defaultDarkPresentationTheme.chat.inputPanel.inputControlColor
             for colorKey in colorKeys {
                 colors[colorKey] = color
             }
@@ -1028,7 +1067,11 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
                 environment: {},
                 containerSize: CGSize(width: 32.0, height: 32.0)
             )
-            transition.updateFrame(view: self.inputModeView, frame: CGRect(origin: CGPoint(x: textInputBackgroundFrame.maxX - inputNodeSize.width - 1.0, y: textInputBackgroundFrame.maxY - inputNodeSize.height - 1.0), size: inputNodeSize))
+            var inputNodeOffset: CGPoint = CGPoint(x: -1.0, y: -1.0)
+            if self.glass {
+                inputNodeOffset = CGPoint(x: -6.0, y: -4.0)
+            }
+            transition.updateFrame(view: self.inputModeView, frame: CGRect(origin: CGPoint(x: textInputBackgroundFrame.maxX - inputNodeSize.width + inputNodeOffset.x, y: textInputBackgroundFrame.maxY - inputNodeSize.height + inputNodeOffset.y), size: inputNodeSize))
         }
         
         let placeholderFrame: CGRect
@@ -1294,7 +1337,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
             let panelHeight = self.panelHeight(textFieldHeight: textFieldHeight, metrics: metrics)
             var textFieldMinHeight: CGFloat = 33.0
             if let presentationInterfaceState = self.presentationInterfaceState {
-                textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, metrics: metrics)
+                textFieldMinHeight = calclulateTextFieldMinHeight(presentationInterfaceState, glass: self.glass, metrics: metrics)
             }
             let minimalHeight: CGFloat = 14.0 + textFieldMinHeight
             
@@ -1464,12 +1507,12 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
             if sendButtonHasApplyIcon != self.actionButtons.sendButtonHasApplyIcon {
                 self.actionButtons.sendButtonHasApplyIcon = sendButtonHasApplyIcon
                 if self.actionButtons.sendButtonHasApplyIcon {
-                    self.actionButtons.sendButton.setImage(PresentationResourcesChat.chatInputPanelApplyIconImage(interfaceState.theme), for: [])
+                    self.actionButtons.setImage(PresentationResourcesChat.chatInputPanelApplyIconImage(interfaceState.theme))
                 } else {
                     if case .scheduledMessages = interfaceState.subject {
-                        self.actionButtons.sendButton.setImage(PresentationResourcesChat.chatInputPanelScheduleButtonImage(interfaceState.theme), for: [])
+                        self.actionButtons.setImage(PresentationResourcesChat.chatInputPanelScheduleButtonImage(interfaceState.theme))
                     } else {
-                        self.actionButtons.sendButton.setImage(PresentationResourcesChat.chatInputPanelSendIconImage(interfaceState.theme), for: [])
+                        self.actionButtons.setImage(PresentationResourcesChat.chatInputPanelSendIconImage(interfaceState.theme))
                     }
                 }
             }
@@ -1917,7 +1960,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
 
     public func frameForInputActionButton() -> CGRect? {
         if !self.actionButtons.alpha.isZero {
-            return self.actionButtons.frame.insetBy(dx: 0.0, dy: 6.0).offsetBy(dx: 4.0, dy: 0.0)
+            return self.actionButtons.frame.insetBy(dx: 0.0, dy: self.glass ? 0.0 : 6.0).offsetBy(dx: 4.0, dy: 0.0)
         }
         return nil
     }

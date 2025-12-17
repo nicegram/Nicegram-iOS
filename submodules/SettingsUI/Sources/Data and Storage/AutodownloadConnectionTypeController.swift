@@ -153,31 +153,31 @@ private enum AutodownloadMediaCategoryEntry: ItemListNodeEntry {
         let arguments = arguments as! AutodownloadMediaConnectionTypeControllerArguments
         switch self {
             case let .master(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleMaster(value)
                 })
             case let .dataUsageHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .dataUsageItem(theme, strings, value, customPosition, enabled):
-                return AutodownloadDataUsagePickerItem(theme: theme, strings: strings, value: value, customPosition: customPosition, enabled: enabled, sectionId: self.section, updated: { preset in
+                return AutodownloadDataUsagePickerItem(theme: theme, strings: strings, systemStyle: .glass, value: value, customPosition: customPosition, enabled: enabled, sectionId: self.section, updated: { preset in
                     arguments.changePreset(preset)
                 })
             case let .typesHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .photos(_, text, value, enabled):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Photos")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Photos")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.photo)
                 })
             case let .stories(_, text, value, enabled):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Stories")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Stories")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.story)
                 })
             case let .videos(_, text, value, enabled):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Videos")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Videos")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.video)
                 })
             case let .files(_, text, value, enabled):
-                return ItemListDisclosureItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/Files")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Files")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.file)
                 })
             case let .voiceMessagesInfo(_, text):

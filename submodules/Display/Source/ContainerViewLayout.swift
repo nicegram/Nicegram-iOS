@@ -202,4 +202,9 @@ public extension ContainerViewLayout {
     var standardInputHeight: CGFloat {
         return self.deviceMetrics.standardInputHeight(inLandscape: self.orientation == .landscape)
     }
+    
+    static func concentricInsets(bottomInset: CGFloat, innerDiameter: CGFloat, sideInset: CGFloat) -> UIEdgeInsets {
+        let mappedBottomInset: CGFloat = max(bottomInset, sideInset)
+        return UIEdgeInsets(top: 0.0, left: sideInset, bottom: mappedBottomInset, right: sideInset)
+    }
 }

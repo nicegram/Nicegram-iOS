@@ -16,6 +16,7 @@ class ForwardPrivacyChatPreviewItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let systemStyle: ItemListSystemStyle
     let sectionId: ItemListSectionId
     let fontSize: PresentationFontSize
     let chatBubbleCorners: PresentationChatBubbleCorners
@@ -26,10 +27,11 @@ class ForwardPrivacyChatPreviewItem: ListViewItem, ItemListItem {
     let linkEnabled: Bool
     let tooltipText: String
     
-    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, sectionId: ItemListSectionId, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, wallpaper: TelegramWallpaper, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, peerName: String, linkEnabled: Bool, tooltipText: String) {
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, sectionId: ItemListSectionId, fontSize: PresentationFontSize, chatBubbleCorners: PresentationChatBubbleCorners, wallpaper: TelegramWallpaper, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, peerName: String, linkEnabled: Bool, tooltipText: String) {
         self.context = context
         self.theme = theme
         self.strings = strings
+        self.systemStyle = systemStyle
         self.sectionId = sectionId
         self.fontSize = fontSize
         self.chatBubbleCorners = chatBubbleCorners
@@ -247,7 +249,7 @@ class ForwardPrivacyChatPreviewItemNode: ListViewItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     let backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
 

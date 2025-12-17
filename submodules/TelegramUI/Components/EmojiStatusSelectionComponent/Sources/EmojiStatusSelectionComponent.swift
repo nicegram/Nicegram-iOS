@@ -1327,7 +1327,7 @@ public final class EmojiStatusSelectionController: ViewController {
                                 return
                             }
                             if !self.context.isPremium || count < 3, let pushController = controller.pushController {
-                                let controller = self.context.sharedContext.makeGiftWearPreviewScreen(context: self.context, gift: gift)
+                                let controller = self.context.sharedContext.makeGiftWearPreviewScreen(context: self.context, gift: .unique(gift), attributes: nil)
                                 pushController(controller)
                             } else {
                                 let _ = (self.context.engine.accountData.setStarGiftStatus(starGift: gift, expirationDate: nil)

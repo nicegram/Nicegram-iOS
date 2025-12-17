@@ -748,7 +748,7 @@ private final class ContextControllerActionsListCustomItemNode: ASDisplayNode, C
                 getController: self.getController,
                 actionSelected: { result in
                     switch result {
-                    case .dismissWithoutContent:
+                    case .default, .dismissWithoutContent:
                         self.requestDismiss(result)
                     default:
                         break

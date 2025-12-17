@@ -58,6 +58,9 @@ swift_library(
         "//submodules/DeviceAccess",
         "//submodules/TelegramUI/Components/Utils/GenerateStickerPlaceholderImage",
         "//submodules/AvatarNode",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/Components/BundleIconComponent",
+        "//submodules/TelegramUI/Components/LottieComponent",
     ],
     visibility = [
         "//visibility:public",

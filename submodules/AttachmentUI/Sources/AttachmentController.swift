@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import Postbox
+import ComponentFlow
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -16,6 +17,8 @@ import LegacyMessageInputPanelInputView
 import AttachmentTextInputPanelNode
 import ChatSendMessageActionUI
 import MinimizedContainer
+import ComponentFlow
+import GlassBackgroundComponent
 
 public enum AttachmentButtonType: Equatable {
     case gallery
@@ -308,42 +311,74 @@ public extension AttachmentMediaPickerContext {
     }
 }
 
-private func generateShadowImage() -> UIImage? {
-    return generateImage(CGSize(width: 140.0, height: 140.0), rotatedContext: { size, context in
+private func generateShadowImage(glass: Bool) -> UIImage? {
+    let shadowInset: CGFloat = 60.0
+    let middle: CGFloat = 10.0
+    let innerSide = glass ? 62.0 * 2.0 : 10.0 * 2.0
+    let side = innerSide + middle + shadowInset * 2.0
+    return generateImage(CGSize(width: side, height: side), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
         context.saveGState()
-        context.setShadow(offset: CGSize(), blur: 60.0, color: UIColor(white: 0.0, alpha: 0.4).cgColor)
+        context.setShadow(offset: CGSize(), blur: glass ? 80.0 : 60.0, color: UIColor(white: 0.0, alpha: glass ? 0.3 : 0.4).cgColor)
 
-        let path = UIBezierPath(roundedRect: CGRect(x: 60.0, y: 60.0, width: 20.0, height: 20.0), cornerRadius: 10.0).cgPath
-        context.addPath(path)
-        context.fillPath()
-        
-        context.restoreGState()
-        
-        context.setBlendMode(.clear)
-        context.addPath(path)
-        context.fillPath()
-    })?.stretchableImage(withLeftCapWidth: 70, topCapHeight: 70)
+        if glass {
+            let firstPath = UIBezierPath(roundedRect: CGRect(x: shadowInset, y: shadowInset, width: innerSide + middle, height: innerSide + middle), cornerRadius: 62.0).cgPath
+            let secondPath = UIBezierPath(roundedRect: CGRect(x: shadowInset, y: shadowInset, width: innerSide + middle, height: innerSide * 0.65), cornerRadius: 38.0).cgPath
+            context.addPath(firstPath)
+            context.addPath(secondPath)
+            context.fillPath()
+            
+            context.restoreGState()
+            
+            context.setBlendMode(.clear)
+            context.addPath(firstPath)
+            context.addPath(secondPath)
+            context.fillPath()
+        } else {
+            let path = UIBezierPath(roundedRect: CGRect(x: shadowInset, y: shadowInset, width: innerSide, height: innerSide), cornerRadius: 10.0).cgPath
+            context.addPath(path)
+            context.fillPath()
+            
+            context.restoreGState()
+            
+            context.setBlendMode(.clear)
+            context.addPath(path)
+            context.fillPath()
+        }
+    })?.stretchableImage(withLeftCapWidth: Int(side / 2.0), topCapHeight: Int(side / 2.0))
 }
 
-private func generateMaskImage() -> UIImage? {
+private func generateMaskImage(glass: Bool) -> UIImage? {
     return generateImage(CGSize(width: 390.0, height: 220.0), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
         context.setFillColor(UIColor.white.cgColor)
         
-        let path = UIBezierPath(roundedRect: CGRect(x: 0.0, y: 0.0, width: 390.0, height: 209.0), cornerRadius: 10.0).cgPath
-        context.addPath(path)
-        context.fillPath()
-        
+        if glass {
+            let firstPath = UIBezierPath(roundedRect: CGRect(x: 0.0, y: 0.0, width: 390.0, height: 209.0), cornerRadius: 62.0).cgPath
+            let secondPath = UIBezierPath(roundedRect: CGRect(x: 0.0, y: 0.0, width: 390.0, height: 130.0), cornerRadius: 38.0).cgPath
+            context.addPath(firstPath)
+            context.addPath(secondPath)
+            context.fillPath()
+        } else {
+            let path = UIBezierPath(roundedRect: CGRect(x: 0.0, y: 0.0, width: 390.0, height: 209.0), cornerRadius: 10.0).cgPath
+            context.addPath(path)
+            context.fillPath()
+        }
         try? drawSvgPath(context, path: "M183.219,208.89 H206.781 C205.648,208.89 204.567,209.371 203.808,210.214 L197.23,217.523 C196.038,218.848 193.962,218.848 192.77,217.523 L186.192,210.214 C185.433,209.371 184.352,208.89 183.219,208.89 Z ")
     })?.stretchableImage(withLeftCapWidth: 195, topCapHeight: 110)
 }
 
 public class AttachmentController: ViewController, MinimizableController {
+    public enum Style {
+        case glass
+        case legacy
+    }
+    
     private let context: AccountContext
     private let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
+    private let style: Style
     private let chatLocation: ChatLocation?
     private let isScheduledMessages: Bool
     private var buttons: [AttachmentButtonType]
@@ -380,6 +415,8 @@ public class AttachmentController: ViewController, MinimizableController {
     public var isFullscreen: Bool {
         return self.mainController.isFullscreen
     }
+    
+    public weak var attachmentButton: UIView?
         
     private final class Node: ASDisplayNode {
         private weak var controller: AttachmentController?
@@ -426,7 +463,7 @@ public class AttachmentController: ViewController, MinimizableController {
                         if let strongSelf = self {
                             strongSelf.panel.updateLoadingProgress(progress)
                             if let layout = strongSelf.validLayout {
-                                strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.4, curve: .spring))
+                                strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.5, curve: .spring))
                             }
                         }
                     }))
@@ -441,7 +478,7 @@ public class AttachmentController: ViewController, MinimizableController {
                                 if let strongSelf = self {
                                     strongSelf.panel.updateMainButtonState(mainButtonState)
                                     if let layout = strongSelf.validLayout {
-                                        strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.4, curve: .spring))
+                                        strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.5, curve: .spring))
                                     }
                                 }
                             })
@@ -458,7 +495,7 @@ public class AttachmentController: ViewController, MinimizableController {
                                 if let strongSelf = self {
                                     strongSelf.panel.updateSecondaryButtonState(mainButtonState)
                                     if let layout = strongSelf.validLayout {
-                                        strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.4, curve: .spring))
+                                        strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.5, curve: .spring))
                                     }
                                 }
                             })
@@ -491,11 +528,20 @@ public class AttachmentController: ViewController, MinimizableController {
                  
         private let wrapperNode: ASDisplayNode
         
+        private var presentationData: PresentationData
+        private var presentationDataDisposable: Disposable?
+        
         private var isMinimizing = false
         
         init(controller: AttachmentController, makeEntityInputView: @escaping () -> AttachmentTextInputPanelInputView?) {
             self.controller = controller
             self.makeEntityInputView = makeEntityInputView
+            
+            if let updatedPresentationData = controller.updatedPresentationData {
+                self.presentationData = updatedPresentationData.initial
+            } else {
+                self.presentationData = controller.context.sharedContext.currentPresentationData.with { $0 }
+            }
             
             self.dim = ASDisplayNode()
             self.dim.alpha = 0.0
@@ -507,9 +553,18 @@ public class AttachmentController: ViewController, MinimizableController {
             self.wrapperNode = ASDisplayNode()
             self.wrapperNode.clipsToBounds = true
             
-            self.container = AttachmentContainer(isFullSize: controller.isFullSize)
+            self.container = AttachmentContainer(presentationData: self.presentationData, isFullSize: controller.isFullSize, glass: controller.style == .glass)
             self.container.canHaveKeyboardFocus = true
-            self.panel = AttachmentPanel(controller: controller, context: controller.context, chatLocation: controller.chatLocation, isScheduledMessages: controller.isScheduledMessages, updatedPresentationData: controller.updatedPresentationData, makeEntityInputView: makeEntityInputView)
+            
+            let panelStyle: AttachmentPanel.Style
+            switch controller.style {
+            case .glass:
+                panelStyle = .glass
+            case .legacy:
+                panelStyle = .legacy
+            }
+            
+            self.panel = AttachmentPanel(controller: controller, style: panelStyle, context: controller.context, chatLocation: controller.chatLocation, isScheduledMessages: controller.isScheduledMessages, updatedPresentationData: controller.updatedPresentationData, makeEntityInputView: makeEntityInputView)
             self.panel.fromMenu = controller.fromMenu
             self.panel.isStandalone = controller.isStandalone
             
@@ -529,10 +584,10 @@ public class AttachmentController: ViewController, MinimizableController {
             }
             
             self.container.updateModalProgress = { [weak self] progress, topInset, bounds, transition in
-                if let strongSelf = self, let layout = strongSelf.validLayout, !strongSelf.isDismissing {
+                if let strongSelf = self, let controller = strongSelf.controller,  let layout = strongSelf.validLayout, !strongSelf.isDismissing {
                     var transition = transition
                     if strongSelf.container.supernode == nil {
-                        transition = .animated(duration: 0.4, curve: .spring)
+                        transition = .animated(duration: 0.5, curve: .spring)
                     }
                     
                     strongSelf.modalProgress = progress
@@ -540,33 +595,38 @@ public class AttachmentController: ViewController, MinimizableController {
                     strongSelf.controller?.minimizedBounds = bounds
                     
                     if !strongSelf.isMinimizing {
-                        strongSelf.controller?.updateModalStyleOverlayTransitionFactor(progress, transition: transition)
+                        if controller.style != .glass || strongSelf.didMaximizeOnce {
+                            strongSelf.controller?.updateModalStyleOverlayTransitionFactor(progress, transition: transition)
+                        }
                         strongSelf.containerLayoutUpdated(layout, transition: transition)
                     }
                 }
             }
             self.container.isReadyUpdated = { [weak self] in
                 if let strongSelf = self, let layout = strongSelf.validLayout {
-                    strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.4, curve: .spring))
+                    strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.5, curve: .spring))
                 }
             }
             
             self.container.interactivelyDismissed = { [weak self] velocity in
-                if let strongSelf = self, let layout = strongSelf.validLayout {
-                    if let controller = strongSelf.controller, controller.shouldMinimizeOnSwipe?(strongSelf.currentType) == true {
-                        var delta = layout.size.height
-                        if let minimizedTopEdgeOffset = controller.minimizedTopEdgeOffset {
-                            delta -= minimizedTopEdgeOffset
-                        }
-                        let damping: CGFloat = 180.0
-                        let initialVelocity: CGFloat = delta > 0.0 ? velocity / delta : 0.0
-
-                        strongSelf.minimize(damping: damping, initialVelocity: initialVelocity)
-                        
-                        return false
-                    } else {
-                        strongSelf.controller?.dismiss(animated: true)
-                    }
+                guard let self, let controller = self.controller, let layout = self.validLayout else {
+                    return true
+                }
+                let damping: CGFloat = 180.0
+                var delta = layout.size.height
+                if let minimizedTopEdgeOffset = controller.minimizedTopEdgeOffset {
+                    delta -= minimizedTopEdgeOffset
+                }
+                let initialVelocity: CGFloat = delta > 0.0 ? velocity / delta : 0.0
+                
+                if controller.shouldMinimizeOnSwipe?(self.currentType) == true {
+                    self.minimize(damping: damping, initialVelocity: initialVelocity)
+                    return false
+                } else {
+                    controller.willDismiss()
+                    self.animateOut(damping: damping, initialVelocity: initialVelocity, completion: {
+                        self.controller?.dismiss(animated: false)
+                    })
                 }
                 return true
             }
@@ -637,7 +697,7 @@ public class AttachmentController: ViewController, MinimizableController {
             
             self.panel.beganTextEditing = { [weak self] in
                 if let strongSelf = self {
-                    strongSelf.container.update(isExpanded: true, transition: .animated(duration: 0.4, curve: .spring))
+                    strongSelf.container.update(isExpanded: true, transition: .animated(duration: 0.5, curve: .spring))
                 }
             }
             
@@ -699,6 +759,17 @@ public class AttachmentController: ViewController, MinimizableController {
                 
                 return currentController.getCurrentSendMessageContextMediaPreview?()
             }
+            
+            if let updatedPresentationData = controller.updatedPresentationData {
+                self.presentationDataDisposable = (updatedPresentationData.signal
+                |> deliverOnMainQueue).start(next: { [weak self] presentationData in
+                    guard let self else {
+                        return
+                    }
+                    self.presentationData = presentationData
+                    self.container.presentationData = presentationData
+                })
+            }
         }
         
         deinit {
@@ -708,6 +779,7 @@ public class AttachmentController: ViewController, MinimizableController {
             self.mainButtonStateDisposable.dispose()
             self.secondaryButtonStateDisposable.dispose()
             self.bottomPanelBackgroundColorDisposable.dispose()
+            self.presentationDataDisposable?.dispose()
         }
         
         private var inputContainerHeight: CGFloat?
@@ -751,12 +823,14 @@ public class AttachmentController: ViewController, MinimizableController {
             }
         }
         
+        private var didMaximizeOnce = false
         fileprivate func minimize(damping: CGFloat? = nil, initialVelocity: CGFloat? = nil) {
             guard let controller = self.controller, let navigationController = controller.navigationController as? NavigationController else {
                 return
             }
-            navigationController.minimizeViewController(controller, damping: damping, velocity: initialVelocity, beforeMaximize: { navigationController, completion in
-                controller.mainController.beforeMaximize(navigationController: navigationController, completion: completion)
+            navigationController.minimizeViewController(controller, damping: damping, velocity: initialVelocity, beforeMaximize: { [weak self, weak controller] navigationController, completion in
+                self?.didMaximizeOnce = true
+                controller?.mainController.beforeMaximize(navigationController: navigationController, completion: completion)
             }, setupContainer: { [weak self] current in
                 let minimizedContainer: MinimizedContainerImpl?
                 if let current = current as? MinimizedContainerImpl {
@@ -783,7 +857,7 @@ public class AttachmentController: ViewController, MinimizableController {
         fileprivate func updateSelectionCount(_ count: Int, animated: Bool = true) {
             self.selectionCount = count
             if let layout = self.validLayout {
-                self.containerLayoutUpdated(layout, transition: animated ? .animated(duration: 0.4, curve: .spring) : .immediate)
+                self.containerLayoutUpdated(layout, transition: animated ? .animated(duration: 0.5, curve: .spring) : .immediate)
             }
         }
         
@@ -808,7 +882,7 @@ public class AttachmentController: ViewController, MinimizableController {
         
         func switchToController(_ type: AttachmentButtonType, animated: Bool = true) -> Bool {
             guard self.currentType != type else {
-                if self.animating {
+                if self.isAnimating {
                     return false
                 }
                 if let controller = self.currentControllers.last {
@@ -822,12 +896,15 @@ public class AttachmentController: ViewController, MinimizableController {
             self.controller?.requestController(type, { [weak self] controller, mediaPickerContext in
                 if let strongSelf = self {
                     if let controller = controller  {
+                        if case .glass = strongSelf.controller?.style {
+                            controller._hasGlassStyle = true
+                        }
                         strongSelf.controller?._ready.set(controller.ready.get())
                         controller._presentedInModal = true
                         controller.navigation_setPresenting(strongSelf.controller)
                         controller.requestAttachmentMenuExpansion = { [weak self] in
                             if let strongSelf = self, !strongSelf.container.isTracking {
-                                strongSelf.container.update(isExpanded: true, transition: .animated(duration: 0.4, curve: .spring))
+                                strongSelf.container.update(isExpanded: true, transition: .animated(duration: 0.5, curve: .spring))
                             }
                         }
                         controller.updateNavigationStack = { [weak self] f in
@@ -836,7 +913,7 @@ public class AttachmentController: ViewController, MinimizableController {
                                 strongSelf.currentControllers = controllers
                                 strongSelf.mediaPickerContext = mediaPickerContext
                                 if let layout = strongSelf.validLayout {
-                                    strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.4, curve: .spring))
+                                    strongSelf.containerLayoutUpdated(layout, transition: .animated(duration: 0.5, curve: .spring))
                                 }
                             }
                         }
@@ -902,9 +979,9 @@ public class AttachmentController: ViewController, MinimizableController {
             guard let snapshotView = self.container.container.view.snapshotView(afterScreenUpdates: false) else {
                 return
             }
-            
+            snapshotView.alpha = 0.0
             snapshotView.frame = self.container.container.frame
-            self.container.clipNode.view.addSubview(snapshotView)
+            self.container.bottomClipNode.view.insertSubview(snapshotView, at: self.container.bottomClipNode.view.subviews.count)
             
             let _ = (controller.ready.get()
             |> filter {
@@ -915,22 +992,22 @@ public class AttachmentController: ViewController, MinimizableController {
                 guard let strongSelf = self, let layout = strongSelf.validLayout else {
                     return
                 }
-                
+                let _ = layout
                 if case .compact = layout.metrics.widthClass {
-                    let offset = 25.0
+                    let offset = 10.0
                     
-                    let initialPosition = strongSelf.container.clipNode.layer.position
+                    let initialPosition = strongSelf.container.wrappingNode.layer.position
                     let targetPosition = initialPosition.offsetBy(dx: 0.0, dy: offset)
                     var startPosition = initialPosition
-                    if let presentation = strongSelf.container.clipNode.layer.presentation() {
+                    if let presentation = strongSelf.container.wrappingNode.layer.presentation() {
                         startPosition = presentation.position
                     }
                     
-                    strongSelf.container.clipNode.layer.animatePosition(from: startPosition, to: targetPosition, duration: 0.2, removeOnCompletion: false, completion: { [weak self] finished in
+                    strongSelf.container.wrappingNode.layer.animatePosition(from: startPosition, to: targetPosition, duration: 0.2, removeOnCompletion: false, completion: { [weak self] finished in
                         if let strongSelf = self, finished {
-                            strongSelf.container.clipNode.layer.animateSpring(from: NSValue(cgPoint: targetPosition), to: NSValue(cgPoint: initialPosition), keyPath: "position", duration: 0.4, delay: 0.0, initialVelocity: 0.0, damping: 70.0, removeOnCompletion: false, completion: { [weak self] finished in
+                            strongSelf.container.wrappingNode.layer.animateSpring(from: NSValue(cgPoint: targetPosition), to: NSValue(cgPoint: initialPosition), keyPath: "position", duration: 0.3, delay: 0.0, initialVelocity: 0.0, damping: 70.0, removeOnCompletion: false, completion: { [weak self] finished in
                                 if finished {
-                                    self?.container.clipNode.layer.removeAllAnimations()
+                                    self?.container.wrappingNode.layer.removeAllAnimations()
                                 }
                             })
                         }
@@ -944,13 +1021,13 @@ public class AttachmentController: ViewController, MinimizableController {
             })
         }
         
-        private var animating = false
+        private var isAnimating = false
         func animateIn() {
             guard let layout = self.validLayout, let controller = self.controller else {
                 return
             }
             
-            self.animating = true
+            self.isAnimating = true
             if case .regular = layout.metrics.widthClass {
                 if controller.animateAppearance {
                     let targetPosition = self.position
@@ -960,30 +1037,98 @@ public class AttachmentController: ViewController, MinimizableController {
                     let transition = ContainedViewLayoutTransition.animated(duration: 0.4, curve: .spring)
                     transition.animateView(allowUserInteraction: true, {
                         self.position = targetPosition
-                    }, completion: { _ in
-                        self.animating = false
+                    }, completion: {  _ in
+                        self.isAnimating = false
                     })
                 } else {
-                    self.animating = false
+                    self.isAnimating = false
                 }
                 ContainedViewLayoutTransition.animated(duration: 0.3, curve: .linear).updateAlpha(node: self.dim, alpha: 0.1)
             } else {
                 ContainedViewLayoutTransition.animated(duration: 0.3, curve: .linear).updateAlpha(node: self.dim, alpha: 1.0)
                 
-                let targetPosition = self.container.position
-                let startPosition = targetPosition.offsetBy(dx: 0.0, dy: layout.size.height)
-                
-                self.container.position = startPosition
-                let transition = ContainedViewLayoutTransition.animated(duration: 0.4, curve: .spring)
-                transition.animateView(allowUserInteraction: true, {
-                    self.container.position = targetPosition
-                }, completion: { _ in
-                    self.animating = false
-                })
+                if case .glass = controller.style, let attachmentButton = controller.attachmentButton {
+                    let positionTransition: ContainedViewLayoutTransition = .animated(duration: 0.4, curve: .customSpring(damping: 110.0, initialVelocity: 1.1))
+                    let cornersTransition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)
+                    let scaleTransition: ContainedViewLayoutTransition = .animated(duration: 0.45, curve: .customSpring(damping: 110.0, initialVelocity: 0.0))
+                    
+                    let buttonTransition = ContainedViewLayoutTransition.animated(duration: 0.15, curve: .easeInOut)
+                    
+                    let targetFrame = self.container.clipNode.view.convert(self.container.clipNode.view.bounds, to: self.view)
+                        
+                    let sourceButtonFrame = attachmentButton.convert(attachmentButton.bounds, to: self.view)
+                    let sourceButtonScale = sourceButtonFrame.width / targetFrame.width
+                    
+                    if let sourceGlassView = findParentGlassBackgroundView(attachmentButton), let glassParams = sourceGlassView.params {
+                        let containerView = ClipContainerView()
+                        containerView.update(bounds: CGRect(origin: CGPoint(x: 0.0, y: (targetFrame.height - targetFrame.width) * 0.5), size: CGSize(width: targetFrame.width, height: targetFrame.width)), topCornerRadius: targetFrame.width * 0.5, bottomCornerRadius: targetFrame.width * 0.5, boundsTransition: .immediate, cornersTransition: .immediate)
+                        containerView.frame = targetFrame
+                        self.view.addSubview(containerView)
+                        
+                        let localGlassView = GlassBackgroundView()
+                        localGlassView.update(
+                            size: targetFrame.size,
+                            cornerRadius: 0.0,
+                            isDark: glassParams.isDark,
+                            tintColor: glassParams.tintColor,
+                            transition: .immediate
+                        )
+                        localGlassView.frame = CGRect(origin: .zero, size: targetFrame.size)
+                        containerView.contentView.addSubview(localGlassView)
+                        
+                        let initialContainerBounds = self.container.bounds
+                        let initialContainerFrame = self.container.frame
+                        let initialBottomClipRadius = self.container.bottomClipNode.cornerRadius
+                        
+                        let clipInnerFrame = self.container.container.view.convert(self.container.container.view.bounds, to: self.container.view)
+                        self.container.bounds = CGRect(origin: .zero, size: self.container.bounds.size)
+                        self.container.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((targetFrame.width - self.container.frame.width) / 2.0), y: -clipInnerFrame.minY), size: self.container.frame.size)
+                        self.container.view.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                        self.container.bottomClipNode.cornerRadius = 0.0
+                        containerView.contentView.addSubnode(self.container)
+                                                
+                        let buttonIcon = GlassBackgroundView.ContentImageView()
+                        let presentationData = controller.context.sharedContext.currentPresentationData.with { $0 }
+                        buttonIcon.image = PresentationResourcesChat.chatInputPanelAttachmentButtonImage(presentationData.theme)
+                        buttonIcon.tintColor = presentationData.theme.chat.inputPanel.panelControlColor
+                        if let image = buttonIcon.image {
+                            buttonIcon.bounds = CGRect(origin: .zero, size: image.size)
+                            buttonIcon.center = CGPoint(x: targetFrame.width * 0.5, y: targetFrame.height * 0.5)
+                            buttonIcon.transform = CGAffineTransformMakeScale(1.0 / sourceButtonScale, 1.0 / sourceButtonScale)
+                        }
+                        localGlassView.contentView.addSubview(buttonIcon)
+                        ComponentTransition(buttonTransition).animateBlur(layer: buttonIcon.layer, fromRadius: 0.0, toRadius: 10.0)
+                        
+                        containerView.update(bounds: CGRect(origin: .zero, size: targetFrame.size), topCornerRadius: 38.0, bottomCornerRadius: layout.deviceMetrics.screenCornerRadius - 2.0, boundsTransition: scaleTransition, cornersTransition: cornersTransition)
+                        scaleTransition.animateBounds(layer: containerView.layer, from: CGRect(origin: .zero, size: CGSize(width: targetFrame.width, height: targetFrame.width)))
+                        scaleTransition.animateTransformScale(view: containerView, from: sourceButtonScale)
+                        positionTransition.animatePosition(layer: containerView.layer, from: sourceButtonFrame.center, to: containerView.center, completion: { _ in
+                            self.container.bottomClipNode.cornerRadius = initialBottomClipRadius
+                            self.container.bounds = initialContainerBounds
+                            self.container.frame = initialContainerFrame
+                            self.wrapperNode.addSubnode(self.container)
+                            containerView.removeFromSuperview()
+                            sourceGlassView.isHidden = false
+                            self.isAnimating = false
+                        })
+                        sourceGlassView.isHidden = true
+                    }
+                } else {
+                    let targetPosition = self.container.position
+                    let startPosition = targetPosition.offsetBy(dx: 0.0, dy: layout.size.height)
+                    
+                    self.container.position = startPosition
+                    let transition = ContainedViewLayoutTransition.animated(duration: 0.4, curve: .spring)
+                    transition.animateView(allowUserInteraction: true, {
+                        self.container.position = targetPosition
+                    }, completion: { _ in
+                        self.isAnimating = false
+                    })
+                }
             }
         }
         
-        func animateOut(completion: @escaping () -> Void = {}) {
+        func animateOut(damping: CGFloat? = nil, initialVelocity: CGFloat? = nil, completion: @escaping () -> Void = {}) {
             guard let controller = self.controller else {
                 return
             }
@@ -993,28 +1138,98 @@ public class AttachmentController: ViewController, MinimizableController {
                 return
             }
             
-            self.animating = true
-            if case .regular = layout.metrics.widthClass {
+            self.isAnimating = true
+            
+            switch layout.metrics.widthClass {
+            case .regular:
                 self.layer.allowsGroupOpacity = true
                 self.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { [weak self] _ in
                     let _ = self?.container.dismiss(transition: .immediate, completion: completion)
-                    self?.animating = false
+                    self?.isAnimating = false
                     self?.layer.removeAllAnimations()
                 })
-            } else {
-                let positionTransition: ContainedViewLayoutTransition = .animated(duration: 0.25, curve: .easeInOut)
-                positionTransition.updatePosition(node: self.container, position: CGPoint(x: self.container.position.x, y: self.bounds.height + self.container.bounds.height / 2.0), completion: { [weak self] _ in
-                    let _ = self?.container.dismiss(transition: .immediate, completion: completion)
-                    self?.animating = false
-                })
+            case .compact:
                 let alphaTransition: ContainedViewLayoutTransition = .animated(duration: 0.25, curve: .easeInOut)
                 alphaTransition.updateAlpha(node: self.dim, alpha: 0.0)
                 
-                self.controller?.updateModalStyleOverlayTransitionFactor(0.0, transition: positionTransition)
-                
-                if controller.fromMenu && self.hasButton, let (_, _, getTransition) = controller.getInputContainerNode(), let inputTransition = getTransition() {
-                    self.panel.animateTransitionOut(inputTransition: inputTransition, dismissed: true, transition: positionTransition)
-                    self.containerLayoutUpdated(layout, transition: positionTransition)
+                if case .glass = controller.style, let attachmentButton = controller.attachmentButton {
+                    let positionTransition: ContainedViewLayoutTransition = .animated(duration: 0.4, curve: .customSpring(damping: 110.0, initialVelocity: initialVelocity ?? 0.0))
+                    let cornersTransition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .customSpring(damping: 124.0, initialVelocity: initialVelocity ?? 0.0))
+                    let scaleTransition: ContainedViewLayoutTransition = .animated(duration: 0.3, curve: .customSpring(damping: 124.0, initialVelocity: initialVelocity ?? 0.0))
+                    
+                    let buttonTransition = ContainedViewLayoutTransition.animated(duration: 0.22, curve: .easeInOut)
+
+                    let initialFrame = self.container.clipNode.view.convert(self.container.clipNode.view.bounds, to: self.view)
+                    
+                    let targetButtonFrame = attachmentButton.convert(attachmentButton.bounds, to: self.view)
+                    let targetButtonScale = targetButtonFrame.width / initialFrame.width
+                    
+                    if let sourceGlassView = findParentGlassBackgroundView(attachmentButton), let glassParams = sourceGlassView.params {
+                        let containerView = ClipContainerView()
+                        containerView.frame = initialFrame
+                        containerView.update(bounds: CGRect(origin: .zero, size: initialFrame.size), topCornerRadius: 38.0, bottomCornerRadius: layout.deviceMetrics.screenCornerRadius - 2.0, boundsTransition: .immediate, cornersTransition: .immediate)
+                        self.view.addSubview(containerView)
+                        
+                        let localGlassView = GlassBackgroundView()
+                        localGlassView.update(
+                            size: initialFrame.size,
+                            cornerRadius: 0.0,
+                            isDark: glassParams.isDark,
+                            tintColor: glassParams.tintColor,
+                            transition: .immediate
+                        )
+                        localGlassView.frame = CGRect(origin: .zero, size: initialFrame.size)
+                        containerView.contentView.addSubview(localGlassView)
+                        
+                        let clipInnerFrame = self.container.container.view.convert(self.container.container.view.bounds, to: self.container.view)
+                        self.container.bounds = CGRect(origin: .zero, size: self.container.bounds.size)
+                        self.container.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((initialFrame.width - self.container.frame.width) / 2.0), y: -clipInnerFrame.minY), size: self.container.frame.size)
+                        self.container.isUserInteractionEnabled = false
+                        self.container.view.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.12, removeOnCompletion: false)
+                        containerView.contentView.addSubnode(self.container)
+                        
+                        let buttonIcon = GlassBackgroundView.ContentImageView()
+                        let presentationData = controller.context.sharedContext.currentPresentationData.with { $0 }
+                        buttonIcon.image = PresentationResourcesChat.chatInputPanelAttachmentButtonImage(presentationData.theme)
+                        buttonIcon.tintColor = presentationData.theme.chat.inputPanel.panelControlColor
+                        if let image = buttonIcon.image {
+                            buttonIcon.bounds = CGRect(origin: .zero, size: image.size)
+                            buttonIcon.center = CGPoint(x: initialFrame.width * 0.5, y: initialFrame.height * 0.5)
+                            buttonIcon.transform = CGAffineTransformMakeScale(1.0 / targetButtonScale, 1.0 / targetButtonScale)
+                        }
+                        localGlassView.contentView.addSubview(buttonIcon)
+                        ComponentTransition(buttonTransition).animateBlur(layer: buttonIcon.layer, fromRadius: 10.0, toRadius: 0.0)
+                        ComponentTransition(buttonTransition).animateBlur(layer: sourceGlassView.contentView.layer, fromRadius: 10.0, toRadius: 0.0)
+                        
+                        containerView.update(bounds: CGRect(origin: CGPoint(x: 0.0, y: (initialFrame.height - initialFrame.width) * 0.5), size: CGSize(width: initialFrame.width, height: initialFrame.width)), topCornerRadius: initialFrame.width * 0.5, bottomCornerRadius: initialFrame.width * 0.5, boundsTransition: scaleTransition, cornersTransition: cornersTransition)
+                        scaleTransition.updateBounds(layer: containerView.layer, bounds: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: initialFrame.width, height: initialFrame.width)))
+                        
+                        scaleTransition.updateTransformScale(layer: containerView.layer, scale: targetButtonScale)
+                        positionTransition.updatePosition(layer: containerView.layer, position: targetButtonFrame.center, completion: { [weak self] _ in
+                            let _ = self?.container.dismiss(transition: .immediate, completion: completion)
+                            self?.isAnimating = false
+                        })
+                        
+                        localGlassView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, delay: 0.2, timingFunction: CAMediaTimingFunctionName.linear.rawValue, removeOnCompletion: false)
+                        scaleTransition.animateTransformScale(view: sourceGlassView, from: 1.0 / targetButtonScale)
+                        
+                        positionTransition.animatePosition(layer: sourceGlassView.layer, from: self.view.convert(initialFrame.center, to: sourceGlassView.superview), to: sourceGlassView.center)
+                    }
+                } else {
+                    let positionTransition: ContainedViewLayoutTransition = .animated(duration: 0.25, curve: .easeInOut)
+                    positionTransition.updatePosition(node: self.container, position: CGPoint(x: self.container.position.x, y: self.bounds.height + self.container.bounds.height / 2.0), completion: { [weak self] _ in
+                        let _ = self?.container.dismiss(transition: .immediate, completion: completion)
+                        self?.isAnimating = false
+                    })
+                    
+                    if controller.style != .glass || self.didMaximizeOnce {
+                        self.controller?.updateModalStyleOverlayTransitionFactor(0.0, transition: positionTransition)
+                    }
+                    
+                    if controller.fromMenu && self.hasButton, let (_, _, getTransition) = controller.getInputContainerNode(), let inputTransition = getTransition() {
+                        self.panel.animateTransitionOut(inputTransition: inputTransition, dismissed: true, transition: positionTransition)
+                        self.containerLayoutUpdated(layout, transition: positionTransition)
+                    }
                 }
             }
         }
@@ -1072,7 +1287,8 @@ public class AttachmentController: ViewController, MinimizableController {
                     self.wrapperNode.view.mask = nil
                     self.shadowNode.alpha = 0.0
                 } else {
-                    let availableHeight = layout.size.height - (layout.inputHeight ?? 0.0) - 60.0
+                    let inputHeight = layout.inputHeight ?? 0.0
+                    let availableHeight = layout.size.height - inputHeight
                     
                     let size = CGSize(width: 390.0, height: min(620.0, availableHeight))
                     
@@ -1080,9 +1296,9 @@ public class AttachmentController: ViewController, MinimizableController {
                     let masterWidth = min(max(320.0, floor(layout.size.width / 3.0)), floor(layout.size.width / 2.0))
                     
                     let position: CGPoint
-                    let positionY = layout.size.height - size.height - insets.bottom - 40.0
+                    let positionY = layout.size.height - size.height - insets.bottom - (inputHeight > 0.0 ? 0.0 : 54.0)
                     if let sourceRect = controller.getSourceRect?() {
-                        position = CGPoint(x: min(layout.size.width - size.width - 28.0, floor(sourceRect.midX - size.width / 2.0)), y: min(positionY, sourceRect.minY - size.height))
+                        position = CGPoint(x: min(layout.size.width - size.width - 28.0, floor(sourceRect.midX - size.width / 2.0) - 2.0), y: min(positionY, sourceRect.minY - size.height))
                     } else {
                         position = CGPoint(x: masterWidth - 174.0, y: positionY)
                     }
@@ -1104,7 +1320,7 @@ public class AttachmentController: ViewController, MinimizableController {
                         self.wrapperNode.cornerRadius = 10.0
                     } else if self.wrapperNode.view.mask == nil {
                         let maskView = UIImageView()
-                        maskView.image = generateMaskImage()
+                        maskView.image = generateMaskImage(glass: controller.style == .glass)
                         maskView.contentMode = .scaleToFill
                         self.wrapperNode.view.mask = maskView
                     }
@@ -1115,7 +1331,7 @@ public class AttachmentController: ViewController, MinimizableController {
                     
                     self.shadowNode.alpha = 1.0
                     if self.shadowNode.image == nil {
-                        self.shadowNode.image = generateShadowImage()
+                        self.shadowNode.image = generateShadowImage(glass: controller.style == .glass)
                     }
                 }
             } else {
@@ -1148,22 +1364,36 @@ public class AttachmentController: ViewController, MinimizableController {
             if !self.isPanelVisible {
                 hasPanel = false
             }
-                            
+            
+            var panelOffset: CGFloat = 0.0
+            if case .glass = controller.style {
+                if layout.metrics.isTablet {
+                    panelOffset = 18.0
+                } else {
+                    panelOffset = 8.0
+                }
+            }
+            
             let isEffecitvelyCollapsedUpdated = (self.selectionCount > 0) != (self.panel.isSelecting)
             let panelHeight = self.panel.update(layout: containerLayout, buttons: self.controller?.buttons ?? [], isSelecting: self.selectionCount > 0, selectionCount: self.selectionCount, elevateProgress: !hasPanel && !hasButton, transition: transition)
             if hasPanel || hasButton {
-                containerInsets.bottom = panelHeight
+                containerInsets.bottom = panelHeight + panelOffset
             }
                         
             var panelTransition = transition
             if isEffecitvelyCollapsedUpdated {
-                panelTransition = .animated(duration: 0.25, curve: .easeInOut)
+                if case .glass = controller.style {
+                } else {
+                    panelTransition = .animated(duration: 0.25, curve: .easeInOut)
+                }
             }
             var panelY = containerRect.height - panelHeight
+            if case .glass = controller.style {
+                panelY -= panelOffset
+            }
             if !hasPanel && !hasButton {
                 panelY = containerRect.height
             }
-                        
             panelTransition.updateFrame(node: self.panel, frame: CGRect(origin: CGPoint(x: 0.0, y: panelY), size: CGSize(width: containerRect.width, height: panelHeight)))
             
             var shadowFrame = containerRect.insetBy(dx: -60.0, dy: -60.0)
@@ -1182,7 +1412,7 @@ public class AttachmentController: ViewController, MinimizableController {
                 }
                 
                 let controllers = self.currentControllers
-                if !self.animating {
+                if !self.isAnimating {
                     containerTransition.updateFrame(node: self.container, frame: CGRect(origin: CGPoint(), size: containerRect.size))
                 }
                 
@@ -1190,9 +1420,9 @@ public class AttachmentController: ViewController, MinimizableController {
                 
                 self.container.update(layout: containerLayout, controllers: controllers, coveredByModalTransition: 0.0, transition: self.switchingController ? .immediate : transition)
                                     
-                if self.container.supernode == nil, !controllers.isEmpty && self.container.isReady && !self.isDismissing {
+                if self.container.supernode == nil, !controllers.isEmpty && self.container.isReady && !self.isDismissing && !self.isAnimating {
                     self.wrapperNode.addSubnode(self.container)
-                    
+                                        
                     if fromMenu, let _ = controller.getInputContainerNode() {
                         self.addSubnode(self.panel)
                     } else {
@@ -1220,6 +1450,7 @@ public class AttachmentController: ViewController, MinimizableController {
     public init(
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
+        style: Style = .legacy,
         chatLocation: ChatLocation?,
         isScheduledMessages: Bool = false,
         buttons: [AttachmentButtonType],
@@ -1231,6 +1462,7 @@ public class AttachmentController: ViewController, MinimizableController {
     {
         self.context = context
         self.updatedPresentationData = updatedPresentationData
+        self.style = style
         self.chatLocation = chatLocation
         self.isScheduledMessages = isScheduledMessages
         self.buttons = buttons
@@ -1241,6 +1473,8 @@ public class AttachmentController: ViewController, MinimizableController {
         self.makeEntityInputView = makeEntityInputView
         
         super.init(navigationBarPresentationData: nil)
+        
+        self._hasGlassStyle = style == .glass
         
         self.statusBar.statusBarStyle = .Ignore
         self.blocksBackgroundWhenInOverlay = true
@@ -1435,14 +1669,57 @@ public class AttachmentController: ViewController, MinimizableController {
     
     public func makeContentSnapshotView() -> UIView? {
         let snapshotView = self.view.snapshotView(afterScreenUpdates: false)
+        let navigationBarHeight = self.validLayout.flatMap { self.navigationLayout(layout: $0) }?.defaultContentHeight ?? 56.0
         if let contentSnapshotView = self.mainController.makeContentSnapshotView() {
             if !self.mainController.isFullscreen {
                 if let layout = self.validLayout {
-                    contentSnapshotView.frame = contentSnapshotView.frame.offsetBy(dx: 0.0, dy: (layout.statusBarHeight ?? 0.0) + 10.0 + 56.0)
+                    contentSnapshotView.frame = contentSnapshotView.frame.offsetBy(dx: 0.0, dy: (layout.statusBarHeight ?? 0.0) + 10.0 + navigationBarHeight)
                 }
             }
             snapshotView?.addSubview(contentSnapshotView)
         }
         return snapshotView
+    }
+}
+
+private func findParentGlassBackgroundView(_ view: UIView) -> GlassBackgroundView? {
+    if let view = view as? GlassBackgroundView {
+        return view
+    } else if let superview = view.superview {
+        return findParentGlassBackgroundView(superview)
+    }
+    return nil
+}
+
+private final class ClipContainerView: UIView {
+    private let clipView = UIView()
+    let contentView = UIView()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        self.clipView.clipsToBounds = true
+        self.clipView.layer.cornerCurve = .continuous
+        self.clipView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        
+        self.contentView.clipsToBounds = true
+        self.contentView.layer.cornerCurve = .continuous
+        self.contentView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        
+        self.addSubview(self.clipView)
+        self.clipView.addSubview(self.contentView)
+    }
+    
+    required init?(coder: NSCoder) {
+        preconditionFailure()
+    }
+    
+    func update(bounds: CGRect, topCornerRadius: CGFloat, bottomCornerRadius: CGFloat, boundsTransition: ContainedViewLayoutTransition, cornersTransition: ContainedViewLayoutTransition) {
+        cornersTransition.updateCornerRadius(layer: self.clipView.layer, cornerRadius: topCornerRadius)
+        cornersTransition.updateCornerRadius(layer: self.contentView.layer, cornerRadius: bottomCornerRadius)
+        
+        boundsTransition.updateFrame(view: self.clipView, frame: CGRect(origin: .zero, size: bounds.size))
+        boundsTransition.updatePosition(layer: self.contentView.layer, position: CGPoint(x: bounds.size.width * 0.5, y: bounds.size.height * 0.5))
+        boundsTransition.updateBounds(layer: self.contentView.layer, bounds: bounds)
     }
 }

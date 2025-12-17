@@ -82,6 +82,7 @@ private final class AvatarComponent: Component {
                     AvatarStoryIndicatorComponent(
                         hasUnseen: true,
                         hasUnseenCloseFriendsItems: false,
+                        hasLiveItems: false,
                         colors: AvatarStoryIndicatorComponent.Colors(unseenColors: colors, unseenCloseFriendsColors: colors, seenColors: colors),
                         activeLineWidth: 3.0,
                         inactiveLineWidth: 3.0,

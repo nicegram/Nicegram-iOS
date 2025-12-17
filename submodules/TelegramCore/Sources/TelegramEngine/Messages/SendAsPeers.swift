@@ -96,7 +96,6 @@ func _internal_cachedPeerSendAsAvailablePeers(account: Account, peerId: PeerId) 
     }
 }
 
-
 func _internal_peerSendAsAvailablePeers(accountPeerId: PeerId, network: Network, postbox: Postbox, peerId: PeerId) -> Signal<[SendAsPeer], NoError> {
     return postbox.transaction { transaction -> Peer? in
         return transaction.getPeer(peerId)
@@ -213,6 +212,116 @@ func _internal_updatePeerSendAsPeer(account: Account, peerId: PeerId, sendAs: Pe
             }
             |> castError(UpdatePeerSendAsPeerError.self)
             |> ignoreValues
+        }
+    }
+}
+
+func _internal_cachedLiveStorySendAsAvailablePeers(account: Account, peerId: PeerId) -> Signal<[SendAsPeer], NoError> {
+    let key = ValueBoxKey(length: 8)
+    key.setInt64(0, value: peerId.toInt64())
+    return account.postbox.transaction { transaction -> ([SendAsPeer], Int32)? in
+        let cached = transaction.retrieveItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedLiveStorySendAsPeers, key: key))?.get(CachedSendAsPeers.self)
+        if let cached = cached {
+            var peers: [SendAsPeer] = []
+            for peerId in cached.peerIds {
+                if let peer = transaction.getPeer(peerId) {
+                    var subscribers: Int32?
+                    if let cachedData = transaction.getPeerCachedData(peerId: peerId) as? CachedChannelData {
+                        subscribers = cachedData.participantsSummary.memberCount
+                    }
+                    peers.append(SendAsPeer(peer: peer, subscribers: subscribers, isPremiumRequired: cached.premiumRequiredPeerIds.contains(peer.id)))
+                }
+            }
+            return (peers, cached.timestamp)
+        } else {
+            return nil
+        }
+    }
+    |> mapToSignal { cachedPeersAndTimestamp -> Signal<[SendAsPeer], NoError> in
+        let initialSignal: Signal<[SendAsPeer], NoError>
+        if let (cachedPeers, _) = cachedPeersAndTimestamp {
+            initialSignal = .single(cachedPeers)
+        } else {
+            initialSignal = .complete()
+        }
+        return initialSignal
+        |> then(_internal_liveStorySendAsAvailablePeers(account: account, peerId: peerId)
+        |> mapToSignal { peers -> Signal<[SendAsPeer], NoError> in
+            return account.postbox.transaction { transaction -> [SendAsPeer] in
+                let currentTimestamp = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                var premiumRequiredPeerIds = Set<PeerId>()
+                for peer in peers {
+                    if peer.isPremiumRequired {
+                        premiumRequiredPeerIds.insert(peer.peer.id)
+                    }
+                }
+                if let entry = CodableEntry(CachedSendAsPeers(peerIds: peers.map { $0.peer.id }, premiumRequiredPeerIds: premiumRequiredPeerIds, timestamp: currentTimestamp)) {
+                    transaction.putItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedLiveStorySendAsPeers, key: key), entry: entry)
+                }
+                return peers
+            }
+        })
+    }
+}
+
+func _internal_liveStorySendAsAvailablePeers(account: Account, peerId: PeerId) -> Signal<[SendAsPeer], NoError> {
+    return account.postbox.transaction { transaction -> Peer? in
+        return transaction.getPeer(peerId)
+    }
+    |> mapToSignal { peer -> Signal<[SendAsPeer], NoError> in
+        guard let peer else {
+            return .single([])
+        }
+        guard let inputPeer = apiInputPeer(peer) else {
+            return .single([])
+        }
+        
+        return account.network.request(Api.functions.channels.getSendAs(flags: 1 << 1, peer: inputPeer))
+        |> map(Optional.init)
+        |> `catch` { _ -> Signal<Api.channels.SendAsPeers?, NoError> in
+            return .single(nil)
+        }
+        |> mapToSignal { result -> Signal<[SendAsPeer], NoError> in
+            guard let result = result else {
+                return .single([])
+            }
+            switch result {
+            case let .sendAsPeers(sendAsPeers, chats, _):
+                return account.postbox.transaction { transaction -> [SendAsPeer] in
+                    var subscribers: [PeerId: Int32] = [:]
+                    let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: [])
+                    
+                    var premiumRequiredPeerIds = Set<PeerId>()
+                    for sendAsPeer in sendAsPeers {
+                        if case let .sendAsPeer(flags, peer) = sendAsPeer, (flags & (1 << 0)) != 0 {
+                            premiumRequiredPeerIds.insert(peer.peerId)
+                        }
+                    }
+                    for chat in chats {
+                        if let groupOrChannel = parsedPeers.get(chat.peerId) {
+                            switch chat {
+                            case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _):
+                                if let participantsCount = participantsCount {
+                                    subscribers[groupOrChannel.id] = participantsCount
+                                }
+                            case let .chat(_, _, _, _, participantsCount, _, _, _, _, _):
+                                subscribers[groupOrChannel.id] = participantsCount
+                            default:
+                                break
+                            }
+                        }
+                    }
+                    updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: parsedPeers)
+                    
+                    var peers: [Peer] = []
+                    for chat in chats {
+                        if let peer = transaction.getPeer(chat.peerId) {
+                            peers.append(peer)
+                        }
+                    }
+                    return peers.map { SendAsPeer(peer: $0, subscribers: subscribers[$0.id], isPremiumRequired: premiumRequiredPeerIds.contains($0.id)) }
+                }
+            }
         }
     }
 }

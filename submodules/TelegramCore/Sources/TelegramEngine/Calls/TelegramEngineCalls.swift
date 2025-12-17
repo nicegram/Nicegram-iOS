@@ -55,11 +55,11 @@ public extension TelegramEngine {
         }
 
         public func getGroupCallParticipants(reference: InternalGroupCallReference, offset: String, ssrcs: [UInt32], limit: Int32, sortAscending: Bool?) -> Signal<GroupCallParticipantsContext.State, GetGroupCallParticipantsError> {
-            return _internal_getGroupCallParticipants(account: self.account, reference: reference, offset: offset, ssrcs: ssrcs, limit: limit, sortAscending: sortAscending)
+            return _internal_getGroupCallParticipants(account: self.account, reference: reference, offset: offset, ssrcs: ssrcs, limit: limit, sortAscending: sortAscending, isStream: false)
         }
 
-        public func joinGroupCall(peerId: PeerId?, joinAs: PeerId?, callId: Int64, reference: InternalGroupCallReference, preferMuted: Bool, joinPayload: String, peerAdminIds: Signal<[PeerId], NoError>, inviteHash: String? = nil, generateE2E: ((Data?) -> JoinGroupCallE2E?)?) -> Signal<JoinGroupCallResult, JoinGroupCallError> {
-            return _internal_joinGroupCall(account: self.account, peerId: peerId, joinAs: joinAs, callId: callId, reference: reference, preferMuted: preferMuted, joinPayload: joinPayload, peerAdminIds: peerAdminIds, inviteHash: inviteHash, generateE2E: generateE2E)
+        public func joinGroupCall(peerId: PeerId?, joinAs: PeerId?, callId: Int64, reference: InternalGroupCallReference, isStream: Bool, streamPeerId: PeerId?, preferMuted: Bool, joinPayload: String, peerAdminIds: Signal<[PeerId], NoError>, inviteHash: String? = nil, generateE2E: ((Data?) -> JoinGroupCallE2E?)?) -> Signal<JoinGroupCallResult, JoinGroupCallError> {
+            return _internal_joinGroupCall(account: self.account, peerId: peerId, joinAs: joinAs, callId: callId, reference: reference, isStream: isStream, streamPeerId: streamPeerId, preferMuted: preferMuted, joinPayload: joinPayload, peerAdminIds: peerAdminIds, inviteHash: inviteHash, generateE2E: generateE2E)
         }
 
         public func joinGroupCallAsScreencast(callId: Int64, accessHash: Int64, joinPayload: String) -> Signal<JoinGroupCallAsScreencastResult, JoinGroupCallError> {
@@ -176,8 +176,8 @@ public extension TelegramEngine {
             }
         }
         
-        public func getGroupCallStreamCredentials(peerId: EnginePeer.Id, revokePreviousCredentials: Bool) -> Signal<GroupCallStreamCredentials, GetGroupCallStreamCredentialsError> {
-            return _internal_getGroupCallStreamCredentials(account: self.account, peerId: peerId, revokePreviousCredentials: revokePreviousCredentials)
+        public func getGroupCallStreamCredentials(peerId: EnginePeer.Id, isLiveStream: Bool, revokePreviousCredentials: Bool) -> Signal<GroupCallStreamCredentials, GetGroupCallStreamCredentialsError> {
+            return _internal_getGroupCallStreamCredentials(account: self.account, peerId: peerId, isLiveStream: isLiveStream, revokePreviousCredentials: revokePreviousCredentials)
         }
         
         public func getGroupCallPersistentSettings(callId: Int64) -> Signal<CodableEntry?, NoError> {

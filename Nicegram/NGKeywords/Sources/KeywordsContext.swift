@@ -74,7 +74,7 @@ public final class KeywordsContext {
                                 if let self {
                                     let convertedMessages = messages.compactMap {
                                         switch $0 {
-                                        case let .message(_, _, id, _, _, peerId, _, _, _, _, _, date, message, _, _, _, _, _, _, _, postAuthor, _, _, _, _, _, _, _, _, _, _):
+                                        case let .message(_, _, id, _, _, peerId, _, _, _, _, _, date, message, _, _, _, _, _, _, _, postAuthor, _, _, _, _, _, _, _, _, _, _, _):
                                             
                                             let peerId: Int64 = switch peerId {
                                             case let .peerChannel(channelId): channelId

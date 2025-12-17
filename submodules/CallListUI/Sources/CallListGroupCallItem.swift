@@ -57,6 +57,7 @@ private func callListNeighbors(item: ListViewItem, topItem: ListViewItem?, botto
 
 class CallListGroupCallItem: ListViewItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let context: AccountContext
     let style: ItemListStyle
     let peer: EnginePeer
@@ -68,8 +69,9 @@ class CallListGroupCallItem: ListViewItem {
     let headerAccessoryItem: ListViewAccessoryItem?
     let header: ListViewItemHeader?
     
-    init(presentationData: ItemListPresentationData, context: AccountContext, style: ItemListStyle, peer: EnginePeer, isActive: Bool, editing: Bool, interaction: CallListNodeInteraction) {
+    init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, context: AccountContext, style: ItemListStyle, peer: EnginePeer, isActive: Bool, editing: Bool, interaction: CallListNodeInteraction) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.context = context
         self.style = style
         self.peer = peer

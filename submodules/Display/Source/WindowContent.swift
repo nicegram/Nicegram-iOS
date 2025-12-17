@@ -1240,6 +1240,9 @@ public class Window1 {
                 let updatedInputOffset = inputHeightOffsetForLayout(self.windowLayout)
                 if !previousInputOffset.isEqual(to: updatedInputOffset) {
                     let hide = updatingLayout.transition.isAnimated && updatingLayout.layout.upperKeyboardInputPositionBound == updatingLayout.layout.size.height
+                    if hide {
+                        print("hide with \(updatingLayout.transition)")
+                    }
                     self.keyboardManager?.updateInteractiveInputOffset(updatedInputOffset, transition: updatingLayout.transition, completion: { [weak self] in
                         if let strongSelf = self, hide {
                             strongSelf.updateLayout {
@@ -1377,8 +1380,14 @@ public class Window1 {
         }
         
         if canDismiss, let inputHeight = self.windowLayout.inputHeight, currentLocation.y + (self.keyboardGestureAccessoryHeight ?? 0.0) > self.windowLayout.size.height - inputHeight {
+            let springDuration: CGFloat
+            if #available(iOS 26.0, *) {
+                springDuration = 0.3832
+            } else {
+                springDuration = 0.25
+            }
             self.updateLayout {
-                $0.update(upperKeyboardInputPositionBound: self.windowLayout.size.height, transition: .animated(duration: 0.25, curve: .spring), overrideTransition: false)
+                $0.update(upperKeyboardInputPositionBound: self.windowLayout.size.height, transition: .animated(duration: springDuration, curve: .spring), overrideTransition: false)
             }
         } else {
             self.updateLayout {

@@ -63,6 +63,7 @@ import MediaEditorScreen
 import BusinessIntroSetupScreen
 import TelegramNotices
 import BotSettingsScreen
+import Camera
 import CameraScreen
 import BirthdayPickerScreen
 import StarsTransactionsScreen
@@ -88,6 +89,10 @@ import PostSuggestionsSettingsScreen
 import ForumSettingsScreen
 import ForumCreateTopicScreen
 import GlassBackgroundComponent
+import AttachmentFileController
+import NewContactScreen
+import PasskeysScreen
+import GiftDemoScreen
 
 import NGCore
 import NGData
@@ -3424,6 +3429,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                                     options: options ?? [],
                                     purpose: .transferStarGift(requiredStars: transferStars),
                                     targetPeerId: nil,
+                                    customTheme: nil,
                                     completion: { stars in
                                         starsContext.add(balance: StarsAmount(value: stars, nanos: 0))
                                         proceed(true)
@@ -3775,6 +3781,57 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return editorController
     }
     
+    public func makeCameraScreen(context: AccountContext, mode: CameraScreenMode, cameraHolder: Any?, transitionIn: CameraScreenTransitionIn?, transitionOut: @escaping (Bool) -> CameraScreenTransitionOut?, completion: @escaping (Any, @escaping () -> Void) -> Void, transitionedOut: (() -> Void)?) -> ViewController {
+        let mappedTransitionIn = transitionIn.flatMap {
+            if let sourceView = $0.sourceView {
+                return CameraScreenImpl.TransitionIn(
+                    sourceView: sourceView,
+                    sourceRect: $0.sourceRect,
+                    sourceCornerRadius: $0.sourceCornerRadius,
+                    useFillAnimation: $0.useFillAnimation
+                )
+            } else {
+                return nil
+            }
+        }
+        let mappedMode: CameraScreenImpl.Mode
+        switch mode {
+        case .sticker:
+            mappedMode = .sticker
+        case .avatar:
+            mappedMode = .avatar
+        case .story:
+            mappedMode = .story
+        }
+        let controller = CameraScreenImpl(
+            context: context,
+            mode: mappedMode,
+            holder: cameraHolder as? CameraHolder,
+            transitionIn: mappedTransitionIn,
+            transitionOut: { value in
+                return transitionOut(value).flatMap {
+                    if let destinationView = $0.destinationView {
+                        return CameraScreenImpl.TransitionOut(
+                            destinationView: destinationView,
+                            destinationRect: $0.destinationRect,
+                            destinationCornerRadius: $0.destinationCornerRadius,
+                            completion: $0.completion
+                        )
+                    } else {
+                        return nil
+                    }
+                }
+            },
+            completion: { result, _, _, commit in
+                completion(result, commit)
+            }
+        )
+        if let transitionedOut {
+            controller.transitionedOut = transitionedOut
+        }
+        return controller
+    }
+    
     public func makeMediaPickerScreen(context: AccountContext, hasSearch: Bool, completion: @escaping (Any) -> Void) -> ViewController {
         return mediaPickerController(context: context, hasSearch: hasSearch, completion: completion)
     }
@@ -3830,8 +3887,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return StarsTransactionsScreen(context: context, starsContext: starsContext)
     }
         
-    public func makeStarsPurchaseScreen(context: AccountContext, starsContext: StarsContext, options: [Any], purpose: StarsPurchasePurpose, targetPeerId: EnginePeer.Id?, completion: @escaping (Int64) -> Void) -> ViewController {
-        return StarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: purpose, targetPeerId: targetPeerId, completion: completion)
+    public func makeStarsPurchaseScreen(context: AccountContext, starsContext: StarsContext, options: [Any], purpose: StarsPurchasePurpose, targetPeerId: EnginePeer.Id?, customTheme: PresentationTheme?, completion: @escaping (Int64) -> Void) -> ViewController {
+        return StarsPurchaseScreen(context: context, starsContext: starsContext, options: options, purpose: purpose, targetPeerId: targetPeerId, customTheme: customTheme, completion: completion)
     }
         
     public func makeStarsTransferScreen(context: AccountContext, starsContext: StarsContext, invoice: TelegramMediaInvoice, source: BotPaymentInvoiceSource, extendedMedia: [TelegramExtendedMedia], inputData: Signal<(StarsContext.State, BotPaymentForm, EnginePeer?, EnginePeer?)?, NoError>, completion: @escaping (Bool) -> Void) -> ViewController {
@@ -3881,6 +3938,8 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             mode = .suggestedPost(mode: .sender(channel: channel, isFromAdmin: isFromAdmin), price: current, timestamp: timestamp, completion: completion)
         case let .postSuggestionModification(current, timestamp, completion):
             mode = .suggestedPost(mode: .admin, price: current, timestamp: timestamp, completion: completion)
+        case let .starGiftOffer(peer, gift, completion):
+            mode = .starGiftOffer(peer: peer, gift: gift, completion: completion)
         }
         return StarsWithdrawScreen(context: context, mode: mode)
     }
@@ -3913,9 +3972,44 @@ public final class SharedAccountContextImpl: SharedAccountContext {
         return controller
     }
     
-    public func makeGiftWearPreviewScreen(context: AccountContext, gift: StarGift.UniqueGift) -> ViewController {
-        let controller = GiftViewScreen(context: context, subject: .wearPreview(gift))
-        return controller
+    public func makeGiftWearPreviewScreen(context: AccountContext, gift: StarGift, attributes: [StarGift.UniqueGift.Attribute]?) -> ViewController {
+        return GiftViewScreen(context: context, subject: .wearPreview(gift, attributes))
+    }
+    
+    public func makeGiftUpgradePreviewScreen(context: AccountContext, attributes: [StarGift.UniqueGift.Attribute], peerName: String) -> ViewController {
+        return GiftViewScreen(context: context, subject: .upgradePreview(attributes, peerName))
+    }
+    
+    public func makeGiftAuctionInfoScreen(context: AccountContext, auctionContext: GiftAuctionContext, completion: (() -> Void)?) -> ViewController {
+        return GiftAuctionInfoScreen(context: context, auctionContext: auctionContext, completion: completion)
+    }
+    
+    public func makeGiftAuctionBidScreen(context: AccountContext, toPeerId: EnginePeer.Id, text: String?, entities: [MessageTextEntity]?, hideName: Bool, auctionContext: GiftAuctionContext, acquiredGifts: Signal<[GiftAuctionAcquiredGift], NoError>?) -> ViewController {
+        return GiftAuctionBidScreen(context: context, toPeerId: toPeerId, text: text, entities: entities, hideName: hideName, auctionContext: auctionContext, acquiredGifts: acquiredGifts)
+    }
+    
+    public func makeGiftAuctionViewScreen(context: AccountContext, auctionContext: GiftAuctionContext, completion: @escaping (Signal<[GiftAuctionAcquiredGift], NoError>, [StarGift.UniqueGift.Attribute]?) -> Void) -> ViewController {
+        return GiftAuctionViewScreen(context: context, auctionContext: auctionContext, completion: completion)
+    }
+    
+    public func makeGiftAuctionActiveBidsScreen(context: AccountContext) -> ViewController {
+        return GiftAuctionActiveBidsScreen(context: context)
+    }
+    
+    public func makeGiftOfferScreen(context: AccountContext, gift: StarGift.UniqueGift, peer: EnginePeer, amount: CurrencyAmount, commit: @escaping () -> Void) -> ViewController {
+        return giftOfferAlertController(context: context, gift: gift, peer: peer, amount: amount, commit: commit)
+    }
+    
+    public func makeGiftUpgradeVariantsPreviewScreen(context: AccountContext, gift: StarGift, attributes: [StarGift.UniqueGift.Attribute]) -> ViewController {
+        return GiftUpgradePreviewScreen(context: context, gift: gift, attributes: attributes)
+    }
+    
+    public func makeGiftAuctionWearPreviewScreen(context: AccountContext, auctionContext: GiftAuctionContext, acquiredGifts: Signal<[GiftAuctionAcquiredGift], NoError>?, attributes: [StarGift.UniqueGift.Attribute], completion: @escaping () -> Void) -> ViewController {
+        return GiftAuctionWearPreviewScreen(context: context, auctionContext: auctionContext, attributes: attributes, completion: completion)
+    }
+    
+    public func makeGiftDemoScreen(context: AccountContext) -> ViewController {
+        return GiftDemoScreen(context: context)
     }
     
     public func makeStorySharingScreen(context: AccountContext, subject: StorySharingSubject, parentController: ViewController) -> ViewController {
@@ -4097,6 +4191,22 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             openSettings: openSettings,
             completion: completion
         )
+    }
+    
+    public func makeChannelMembersSearchController(params: ChannelMembersSearchControllerParams) -> ChannelMembersSearchController {
+        return ChannelMembersSearchControllerImpl(params: params)
+    }
+    
+    public func makeNewContactScreen(context: AccountContext, peer: EnginePeer?, phoneNumber: String?, shareViaException: Bool, completion: @escaping (EnginePeer?, DeviceContactStableId?, DeviceContactExtendedData?) -> Void) -> ViewController {
+        return NewContactScreen(context: context, initialData: NewContactScreen.initialData(peer: peer, phoneNumber: phoneNumber, shareViaException: shareViaException), completion: completion)
+    }
+    
+    public func makeLoginEmailSetupController(context: AccountContext, blocking: Bool, emailPattern: String?, canAutoDismissIfNeeded: Bool, navigationController: NavigationController?, completion: @escaping () -> Void, dismiss: @escaping () -> Void) -> ViewController {
+        return loginEmailSetupController(context: context, blocking: blocking, emailPattern: emailPattern, canAutoDismissIfNeeded: canAutoDismissIfNeeded, navigationController: navigationController, completion: completion, dismiss: dismiss)
+    }
+    
+    public func makePasskeySetupController(context: AccountContext, displaySkip: Bool, navigationController: NavigationController?, completion: @escaping () -> Void, dismiss: @escaping () -> Void) -> ViewController {
+        return PasskeysScreen(context: context, displaySkip: displaySkip, initialPasskeysData: nil, passkeysDataUpdated: { _ in }, completion: completion, cancel: dismiss)
     }
 }
 

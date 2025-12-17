@@ -286,7 +286,7 @@ public final class MediaEditor {
     }
     
     public var sourceIsVideo: Bool {
-        self.player != nil
+        return self.player != nil
     }
     
     public var resultIsVideo: Bool {
@@ -2258,13 +2258,11 @@ public final class MediaEditor {
                     Queue.mainQueue().after(delay - (currentTime - previousUpdateTime)) {
                         self.scheduledUpdate = false
                         self.previousUpdateTime = CACurrentMediaTime()
-                        self.renderer.willRenderFrame()
-                        self.renderer.renderFrame()
+                        self.requestRenderFrame()
                     }
                 } else {
                     self.previousUpdateTime = currentTime
-                    self.renderer.willRenderFrame()
-                    self.renderer.renderFrame()
+                    self.requestRenderFrame()
                 }
             }
         }

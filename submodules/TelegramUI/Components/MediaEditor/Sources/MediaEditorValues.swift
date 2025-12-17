@@ -41,17 +41,21 @@ public enum EditorToolKey: Int32, CaseIterable {
 public struct VideoPositionChange: Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case additional
+        case translationFrom
         case timestamp
     }
     
     public let additional: Bool
+    public let translationFrom: CGPoint?
     public let timestamp: Double
     
     public init(
         additional: Bool,
+        translationFrom: CGPoint? = nil,
         timestamp: Double
     ) {
         self.additional = additional
+        self.translationFrom = translationFrom
         self.timestamp = timestamp
     }
 }
@@ -888,8 +892,12 @@ public final class MediaEditorValues: Codable, Equatable, CustomStringConvertibl
         return MediaEditorValues(peerId: self.peerId, originalDimensions: self.originalDimensions, cropOffset: self.cropOffset, cropRect: self.cropRect, cropScale: self.cropScale, cropRotation: self.cropRotation, cropMirroring: self.cropMirroring, cropOrientation: self.cropOrientation, gradientColors: self.gradientColors, videoTrimRange: videoTrimRange, videoIsMuted: self.videoIsMuted, videoIsFullHd: self.videoIsFullHd, videoIsMirrored: self.videoIsMirrored, videoVolume: self.videoVolume, additionalVideoPath: path, additionalVideoIsDual: isDual, additionalVideoPosition: self.additionalVideoPosition, additionalVideoScale: self.additionalVideoScale, additionalVideoRotation: self.additionalVideoRotation, additionalVideoPositionChanges: positionChanges, additionalVideoTrimRange: self.additionalVideoTrimRange, additionalVideoOffset: self.additionalVideoOffset, additionalVideoVolume: self.additionalVideoVolume, collage: self.collage, nightTheme: self.nightTheme, drawing: self.drawing, maskDrawing: self.maskDrawing, entities: self.entities, toolValues: self.toolValues, audioTrack: self.audioTrack, audioTrackTrimRange: self.audioTrackTrimRange, audioTrackOffset: self.audioTrackOffset, audioTrackVolume: self.audioTrackVolume, audioTrackSamples: self.audioTrackSamples, collageTrackSamples: self.collageTrackSamples, coverImageTimestamp: self.coverImageTimestamp, coverDimensions: self.coverDimensions, qualityPreset: self.qualityPreset)
     }
     
-    func withUpdatedAdditionalVideo(position: CGPoint, scale: CGFloat, rotation: CGFloat) -> MediaEditorValues {
+    public func withUpdatedAdditionalVideo(position: CGPoint, scale: CGFloat, rotation: CGFloat) -> MediaEditorValues {
         return MediaEditorValues(peerId: self.peerId, originalDimensions: self.originalDimensions, cropOffset: self.cropOffset, cropRect: self.cropRect, cropScale: self.cropScale, cropRotation: self.cropRotation, cropMirroring: self.cropMirroring, cropOrientation: self.cropOrientation, gradientColors: self.gradientColors, videoTrimRange: videoTrimRange, videoIsMuted: self.videoIsMuted, videoIsFullHd: self.videoIsFullHd, videoIsMirrored: self.videoIsMirrored, videoVolume: self.videoVolume, additionalVideoPath: self.additionalVideoPath, additionalVideoIsDual: self.additionalVideoIsDual, additionalVideoPosition: position, additionalVideoScale: scale, additionalVideoRotation: rotation, additionalVideoPositionChanges: self.additionalVideoPositionChanges, additionalVideoTrimRange: self.additionalVideoTrimRange, additionalVideoOffset: self.additionalVideoOffset, additionalVideoVolume: self.additionalVideoVolume, collage: self.collage, nightTheme: self.nightTheme, drawing: self.drawing, maskDrawing: self.maskDrawing, entities: self.entities, toolValues: self.toolValues, audioTrack: self.audioTrack, audioTrackTrimRange: self.audioTrackTrimRange, audioTrackOffset: self.audioTrackOffset, audioTrackVolume: self.audioTrackVolume, audioTrackSamples: self.audioTrackSamples, collageTrackSamples: self.collageTrackSamples, coverImageTimestamp: self.coverImageTimestamp, coverDimensions: self.coverDimensions, qualityPreset: self.qualityPreset)
+    }
+    
+    public func withUpdatedAdditionalVideoPositionChanges(additionalVideoPositionChanges: [VideoPositionChange]) -> MediaEditorValues {
+        return MediaEditorValues(peerId: self.peerId, originalDimensions: self.originalDimensions, cropOffset: self.cropOffset, cropRect: self.cropRect, cropScale: self.cropScale, cropRotation: self.cropRotation, cropMirroring: self.cropMirroring, cropOrientation: self.cropOrientation, gradientColors: self.gradientColors, videoTrimRange: videoTrimRange, videoIsMuted: self.videoIsMuted, videoIsFullHd: self.videoIsFullHd, videoIsMirrored: self.videoIsMirrored, videoVolume: self.videoVolume, additionalVideoPath: self.additionalVideoPath, additionalVideoIsDual: self.additionalVideoIsDual, additionalVideoPosition: self.additionalVideoPosition, additionalVideoScale: self.additionalVideoScale, additionalVideoRotation: self.additionalVideoRotation, additionalVideoPositionChanges: additionalVideoPositionChanges, additionalVideoTrimRange: self.additionalVideoTrimRange, additionalVideoOffset: self.additionalVideoOffset, additionalVideoVolume: self.additionalVideoVolume, collage: self.collage, nightTheme: self.nightTheme, drawing: self.drawing, maskDrawing: self.maskDrawing, entities: self.entities, toolValues: self.toolValues, audioTrack: self.audioTrack, audioTrackTrimRange: self.audioTrackTrimRange, audioTrackOffset: self.audioTrackOffset, audioTrackVolume: self.audioTrackVolume, audioTrackSamples: self.audioTrackSamples, collageTrackSamples: self.collageTrackSamples, coverImageTimestamp: self.coverImageTimestamp, coverDimensions: self.coverDimensions, qualityPreset: self.qualityPreset)
     }
     
     func withUpdatedAdditionalVideoTrimRange(_ additionalVideoTrimRange: Range<Double>?) -> MediaEditorValues {

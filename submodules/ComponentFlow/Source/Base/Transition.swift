@@ -58,6 +58,19 @@ private extension ComponentTransition.Animation.Curve {
             preconditionFailure()
         }
     }
+
+    var viewAnimationOptions: UIView.AnimationOptions {
+        switch self {
+            case .linear:
+                return [.curveLinear]
+            case .easeInOut:
+                return [.curveEaseInOut]
+            case .spring:
+                return UIView.AnimationOptions(rawValue: 7 << 16)
+            case .custom:
+                return []
+        }
+    }
 }
 
 public extension ComponentTransition.Animation {
@@ -66,6 +79,24 @@ public extension ComponentTransition.Animation {
             return true
         } else {
             return false
+        }
+    }
+}
+
+public extension ComponentTransition {
+    func animateView(allowUserInteraction: Bool = false, delay: Double = 0.0, _ f: @escaping () -> Void, completion: ((Bool) -> Void)? = nil) {
+        switch self.animation {
+        case .none:
+            f()
+            completion?(true)
+        case let .curve(duration, curve):
+            var options = curve.viewAnimationOptions
+            if allowUserInteraction {
+                options.insert(.allowUserInteraction)
+            }
+            UIView.animate(withDuration: duration, delay: delay, options: options, animations: {
+                f()
+            }, completion: completion)
         }
     }
 }
@@ -1305,11 +1336,19 @@ public struct ComponentTransition {
         )
     }
     
-    public func animateBlur(layer: CALayer, fromRadius: CGFloat, toRadius: CGFloat, removeOnCompletion: Bool = true, completion: ((Bool) -> Void)? = nil) {
+    public func animateBlur(layer: CALayer, fromRadius: CGFloat, toRadius: CGFloat, delay: Double = 0.0, removeOnCompletion: Bool = true, completion: ((Bool) -> Void)? = nil) {
+        let duration: Double
+        switch self.animation {
+        case let .curve(durationValue, _):
+            duration = durationValue
+        case .none:
+            return
+        }
+        
         if let blurFilter = CALayer.blur() {
             blurFilter.setValue(toRadius as NSNumber, forKey: "inputRadius")
             layer.filters = [blurFilter]
-            layer.animate(from: fromRadius as NSNumber, to: toRadius as NSNumber, keyPath: "filters.gaussianBlur.inputRadius", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: 0.3, removeOnCompletion: removeOnCompletion, completion: { [weak layer] flag in
+            layer.animate(from: fromRadius as NSNumber, to: toRadius as NSNumber, keyPath: "filters.gaussianBlur.inputRadius", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: duration, delay: delay, removeOnCompletion: removeOnCompletion, completion: { [weak layer] flag in
                 if let layer {
                     if toRadius <= 0.0 {
                         layer.filters = nil

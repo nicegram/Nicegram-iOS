@@ -40,6 +40,7 @@ public enum ItemListStickerPackItemControl: Equatable {
 public final class ItemListStickerPackItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
     let context: AccountContext
+    let systemStyle: ItemListSystemStyle
     let packInfo: StickerPackCollectionInfo.Accessor
     let itemCount: String
     let topItem: StickerPackItem?
@@ -56,9 +57,10 @@ public final class ItemListStickerPackItem: ListViewItem, ItemListItem {
     let removePack: () -> Void
     let toggleSelected: () -> Void
     
-    public init(presentationData: ItemListPresentationData, context: AccountContext, packInfo: StickerPackCollectionInfo.Accessor, itemCount: String, topItem: StickerPackItem?, unread: Bool, control: ItemListStickerPackItemControl, editing: ItemListStickerPackItemEditing, enabled: Bool, playAnimatedStickers: Bool, style: ItemListStyle = .blocks, sectionId: ItemListSectionId, action: (() -> Void)?, setPackIdWithRevealedOptions: @escaping (ItemCollectionId?, ItemCollectionId?) -> Void, addPack: @escaping () -> Void, removePack: @escaping () -> Void, toggleSelected: @escaping () -> Void) {
+    public init(presentationData: ItemListPresentationData, context: AccountContext, systemStyle: ItemListSystemStyle = .legacy, packInfo: StickerPackCollectionInfo.Accessor, itemCount: String, topItem: StickerPackItem?, unread: Bool, control: ItemListStickerPackItemControl, editing: ItemListStickerPackItemEditing, enabled: Bool, playAnimatedStickers: Bool, style: ItemListStyle = .blocks, sectionId: ItemListSectionId, action: (() -> Void)?, setPackIdWithRevealedOptions: @escaping (ItemCollectionId?, ItemCollectionId?) -> Void, addPack: @escaping () -> Void, removePack: @escaping () -> Void, toggleSelected: @escaping () -> Void) {
         self.presentationData = presentationData
         self.context = context
+        self.systemStyle = systemStyle
         self.packInfo = packInfo
         self.itemCount = itemCount
         self.topItem = topItem
@@ -409,10 +411,19 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             
             let leftInset: CGFloat = 65.0 + params.leftInset
             
-            let verticalInset: CGFloat = 11.0
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 13.0
+            case .legacy:
+                verticalInset = 11.0
+            }
+            
             let titleSpacing: CGFloat = 2.0
             
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let insets: UIEdgeInsets
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
@@ -775,13 +786,13 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: strongSelf.backgroundNode.frame.size)
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
-                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
+                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)))
                     
                     if let unreadImage = unreadImage {
                         strongSelf.unreadNode.image = unreadImage

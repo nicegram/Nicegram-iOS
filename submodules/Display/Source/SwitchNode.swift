@@ -23,7 +23,9 @@ open class SwitchNode: ASDisplayNode {
     public var frameColor = UIColor(rgb: 0xe0e0e0) {
         didSet {
             if self.isNodeLoaded {
-                (self.view as! UISwitch).tintColor = self.frameColor
+                if oldValue != self.frameColor {
+                    (self.view as! UISwitch).tintColor = self.frameColor
+                }
             }
         }
     }
@@ -37,7 +39,9 @@ open class SwitchNode: ASDisplayNode {
     public var contentColor = UIColor(rgb: 0x42d451) {
         didSet {
             if self.isNodeLoaded {
-                (self.view as! UISwitch).onTintColor = self.contentColor
+                if oldValue != self.contentColor {
+                    (self.view as! UISwitch).onTintColor = self.contentColor
+                }
             }
         }
     }

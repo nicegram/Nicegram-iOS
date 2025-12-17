@@ -159,6 +159,18 @@ public final class PresentationThemeRootNavigationBar {
         let resolvedClearButtonForegroundColor = clearButtonForegroundColor ?? self.clearButtonForegroundColor
         return PresentationThemeRootNavigationBar(buttonColor: buttonColor ?? self.buttonColor, disabledButtonColor: disabledButtonColor ?? self.disabledButtonColor, primaryTextColor: primaryTextColor ?? self.primaryTextColor, secondaryTextColor: secondaryTextColor ?? self.secondaryTextColor, controlColor: controlColor ?? self.controlColor, accentTextColor: accentTextColor ?? self.accentTextColor, blurredBackgroundColor: blurredBackgroundColor ?? self.blurredBackgroundColor, opaqueBackgroundColor: opaqueBackgroundColor ?? self.opaqueBackgroundColor, separatorColor: separatorColor ?? self.separatorColor, badgeBackgroundColor: badgeBackgroundColor ?? self.badgeBackgroundColor, badgeStrokeColor: badgeStrokeColor ?? self.badgeStrokeColor, badgeTextColor: badgeTextColor ?? self.badgeTextColor, segmentedBackgroundColor: segmentedBackgroundColor ?? self.segmentedBackgroundColor, segmentedForegroundColor: segmentedForegroundColor ?? self.segmentedForegroundColor, segmentedTextColor: segmentedTextColor ?? self.segmentedTextColor, segmentedDividerColor: segmentedDividerColor ?? self.segmentedDividerColor, clearButtonBackgroundColor: resolvedClearButtonBackgroundColor, clearButtonForegroundColor: resolvedClearButtonForegroundColor)
     }
+    
+    public var glassBarButtonBackgroundColor: UIColor {
+        return self.opaqueBackgroundColor.mixedWith(self.primaryTextColor, alpha: 0.1).withAlphaComponent(0.85)
+    }
+    
+    public var glassBarButtonForegroundColor: UIColor {
+        if self.primaryTextColor.lightness > 0.8 {
+            return self.primaryTextColor.withAlphaComponent(0.8)
+        } else {
+            return self.primaryTextColor.withAlphaComponent(0.57)
+        }
+    }
 }
 
 public final class PresentationThemeNavigationSearchBar {

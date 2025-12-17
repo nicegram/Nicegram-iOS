@@ -53,7 +53,7 @@ public struct CallId: Equatable  {
     }
 }
 
-public struct GroupCallReference: Equatable {
+public struct GroupCallReference: Codable, Equatable {
     public var id: Int64
     public var accessHash: Int64
     

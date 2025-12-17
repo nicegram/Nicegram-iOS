@@ -28,6 +28,7 @@ private func actionButtonImage(color: UIColor) -> UIImage? {
 public class ItemListFolderInviteLinkItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let invite: ExportedChatFolderLink?
     let count: Int32
     let peers: [EnginePeer]
@@ -49,6 +50,7 @@ public class ItemListFolderInviteLinkItem: ListViewItem, ItemListItem {
     public init(
         context: AccountContext,
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle = .legacy,
         invite: ExportedChatFolderLink?,
         count: Int32,
         peers: [EnginePeer],
@@ -69,6 +71,7 @@ public class ItemListFolderInviteLinkItem: ListViewItem, ItemListItem {
     ) {
         self.context = context
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.invite = invite
         self.count = count
         self.peers = peers
@@ -339,7 +342,7 @@ public class ItemListFolderInviteLinkItemNode: ListViewItemNode, ItemListItemNod
             let verticalInset: CGFloat = 16.0
             let fieldHeight: CGFloat = 52.0
             let fieldSpacing: CGFloat = 16.0
-            let buttonHeight: CGFloat = 50.0
+            let buttonHeight: CGFloat = 52.0
             
             var height = verticalInset * 2.0 + fieldHeight + fieldSpacing + buttonHeight + 54.0
             
@@ -379,7 +382,7 @@ public class ItemListFolderInviteLinkItemNode: ListViewItemNode, ItemListItemNod
                         strongSelf.topStripeNode.backgroundColor = itemSeparatorColor
                         strongSelf.bottomStripeNode.backgroundColor = itemSeparatorColor
                         strongSelf.backgroundNode.backgroundColor = itemBackgroundColor
-                        strongSelf.fieldNode.image = generateStretchableFilledCircleImage(diameter: 18.0, color: item.presentationData.theme.list.itemInputField.backgroundColor)
+                        strongSelf.fieldNode.image = generateStretchableFilledCircleImage(diameter: 52.0, color: item.presentationData.theme.list.itemInputField.backgroundColor)
                         strongSelf.addressButtonIconNode.image = actionButtonImage(color: item.presentationData.theme.list.itemInputField.controlColor)
                     }
                                         
@@ -436,7 +439,7 @@ public class ItemListFolderInviteLinkItemNode: ListViewItemNode, ItemListItemNod
                                 strongSelf.bottomStripeNode.isHidden = hasCorners
                         }
                         
-                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                        strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                         strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
@@ -454,7 +457,7 @@ public class ItemListFolderInviteLinkItemNode: ListViewItemNode, ItemListItemNod
                     strongSelf.addressButtonNode.frame = strongSelf.containerNode.bounds
                     strongSelf.referenceContainerNode.frame =  strongSelf.containerNode.bounds
                     strongSelf.addressButtonIconNode.frame = strongSelf.containerNode.bounds
-                                        
+                                                           
                     let shareButtonNode: SolidRoundedButtonNode
                     if let currentShareButtonNode = strongSelf.shareButtonNode {
                         shareButtonNode = currentShareButtonNode
@@ -465,7 +468,7 @@ public class ItemListFolderInviteLinkItemNode: ListViewItemNode, ItemListItemNod
                         } else {
                             buttonTheme = SolidRoundedButtonTheme(theme: item.presentationData.theme)
                         }
-                        shareButtonNode = SolidRoundedButtonNode(theme: buttonTheme, height: 50.0, cornerRadius: 11.0)
+                        shareButtonNode = SolidRoundedButtonNode(theme: buttonTheme, glass: item.systemStyle == .glass, height: buttonHeight, cornerRadius: buttonHeight * 0.5)
                         shareButtonNode.pressed = { [weak self] in
                             self?.item?.shareAction?()
                         }
@@ -485,7 +488,7 @@ public class ItemListFolderInviteLinkItemNode: ListViewItemNode, ItemListItemNod
                             } else {
                                 buttonTheme = SolidRoundedButtonTheme(theme: item.presentationData.theme)
                             }
-                            secondaryButtonNode = SolidRoundedButtonNode(theme: buttonTheme, height: 50.0, cornerRadius: 11.0)
+                            secondaryButtonNode = SolidRoundedButtonNode(theme: buttonTheme, glass: item.systemStyle == .glass, height: buttonHeight, cornerRadius: buttonHeight * 0.5)
                             secondaryButtonNode.pressed = { [weak self] in
                                 self?.item?.secondaryAction?()
                             }

@@ -684,6 +684,7 @@ extension ChatControllerImpl {
     func sendMediaRecording(
         silentPosting: Bool? = nil,
         scheduleTime: Int32? = nil,
+        repeatPeriod: Int32? = nil,
         viewOnce: Bool = false,
         messageEffect: ChatSendMessageEffect? = nil,
         postpone: Bool = false
@@ -709,8 +710,6 @@ extension ChatControllerImpl {
                 }
                 return
             }
-            
-            
             
             self.chatDisplayNode.setupSendActionOnViewUpdate({ [weak self] in
                 if let strongSelf = self {
@@ -754,7 +753,7 @@ extension ChatControllerImpl {
             if let silentPosting = silentPosting {
                 transformedMessages = self.transformEnqueueMessages(messages, silentPosting: silentPosting, postpone: postpone)
             } else if let scheduleTime = scheduleTime {
-                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: false, scheduleTime: scheduleTime, postpone: postpone)
+                transformedMessages = self.transformEnqueueMessages(messages, silentPosting: false, scheduleTime: scheduleTime, repeatPeriod: repeatPeriod, postpone: postpone)
             } else {
                 transformedMessages = self.transformEnqueueMessages(messages)
             }

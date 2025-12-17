@@ -21,3 +21,10 @@ build --spawn_strategy=standalone
 
 build --strategy=SwiftCompile=standalone
 build --define RULES_SWIFT_BUILD_DUMMY_WORKER=1
+
+common:index_build --experimental_convenience_symlinks=ignore
+common:index_build --bes_backend= --bes_results_url=
+common:index_build --nolegacy_important_outputs
+common:index_build --show_result=0
+common:index_build --define=buildNumber=10000
+common:index_build --define=telegramVersion=12.2.2

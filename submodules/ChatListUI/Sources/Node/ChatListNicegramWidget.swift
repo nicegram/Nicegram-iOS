@@ -11,16 +11,14 @@ class ChatListNicegramWidget: ListViewItem {
     let height: Double
     let theme: PresentationTheme
     
-    private var widgetView: ChatListNicegramWidgetView?
-    
     init(height: Double, theme: PresentationTheme) {
         self.height = height
         self.theme = theme
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
-        let configure = { [self] () -> Void in
-            let node = ChatListNicegramWidgetNode(widgetView: prepareWidgetView())
+        MainActor.runSyncOrAsync {
+            let node = ChatListNicegramWidgetNode()
             
             let (nodeLayout, apply) = node.asyncLayout()(self, params, false)
             
@@ -31,15 +29,10 @@ class ChatListNicegramWidget: ListViewItem {
                 return (nil, { _ in apply() })
             })
         }
-        if Thread.isMainThread {
-            configure()
-        } else {
-            Queue.mainQueue().async(configure)
-        }
     }
     
     func updateNode(async: @escaping (@escaping () -> Void) -> Void, node: @escaping () -> ListViewItemNode, params: ListViewItemLayoutParams, previousItem: ListViewItem?, nextItem: ListViewItem?, animation: ListViewItemUpdateAnimation, completion: @escaping (ListViewItemNodeLayout, @escaping (ListViewItemApply) -> Void) -> Void) {
-        Queue.mainQueue().async {
+        MainActor.runSyncOrAsync {
             if let nodeValue = node() as? ChatListNicegramWidgetNode {
                 let nodeLayout = nodeValue.asyncLayout()
                 
@@ -53,39 +46,25 @@ class ChatListNicegramWidget: ListViewItem {
             }
         }
     }
-    
-    @preconcurrency @MainActor
-    private func prepareWidgetView() -> ChatListNicegramWidgetView {
-        if let widgetView {
-            widgetView.removeFromSuperview()
-            return widgetView
-        }
-        
-        let view = ChatListNicegramWidgetView()
-        
-        let contentView = makeChatListWidgetView()
-        view.addSubview(contentView)
-        contentView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
-        }
-        
-        self.widgetView = view
-        return view
-    }
 }
 
 final class ChatListNicegramWidgetView: UIView {}
 
 @available(iOS 16.0, *)
 final class ChatListNicegramWidgetNode: ListViewItemNode {
-    private var item: ChatListNicegramWidget?
-    
     private let widgetNode: ASDisplayNode
     
-    init(widgetView: ChatListNicegramWidgetView) {
-        self.widgetNode = ASDisplayNode {
-            widgetView
+    @MainActor
+    init() {
+        let widgetView = makeChatListWidgetView()
+        
+        let widgetContainer = ChatListNicegramWidgetView()
+        widgetContainer.addSubview(widgetView)
+        widgetView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
+        
+        self.widgetNode = ASDisplayNode { widgetContainer }
         
         super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
         
@@ -111,13 +90,32 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
             )
             
             let apply: () -> Void = {
-                guard let self else { return }
-                
-                self.widgetNode.backgroundColor = item.theme.chatList.itemBackgroundColor
-                self.widgetNode.frame = CGRect(origin: .zero, size: size)
+                MainActor.runSyncOrAsync {
+                    guard let self else { return }
+                    
+                    self.widgetNode.backgroundColor = item.theme.chatList.itemBackgroundColor
+                    self.widgetNode.frame = CGRect(origin: .zero, size: size)
+                }
             }
             
             return (layout, apply)
+        }
+    }
+}
+
+private extension MainActor {
+    /// Executes MainActor-isolated code from a synchronous context.
+    /// - If already on the main thread, executes immediately.
+    /// - Otherwise, schedules execution asynchronously on MainActor.
+    static func runSyncOrAsync(
+        _ body: @escaping @MainActor () -> Void
+    ) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated(body)
+        } else {
+            Task { @MainActor in
+                body()
+            }
         }
     }
 }

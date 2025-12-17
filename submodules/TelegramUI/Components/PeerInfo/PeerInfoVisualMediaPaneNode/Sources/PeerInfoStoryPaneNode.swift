@@ -2189,6 +2189,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         if case .location = scope {
             let mapNode = LocationMapHeaderNode(
                 presentationData: self.presentationData,
+                glass: false,
                 toggleMapModeSelection: { [weak self] in
                     guard let self else {
                         return
@@ -2197,6 +2198,8 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                     var state = self.locationViewState
                     state.displayingMapModeOptions = !state.displayingMapModeOptions
                     self.locationViewState = state
+                },
+                updateMapMode: { _ in
                 },
                 goToUserLocation: { [weak self] in
                     guard let self else {
@@ -3723,6 +3726,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
             navigationBarHeight: 0.0,
             topPadding: mapOverscrollInset + self.additionalNavigationHeight,
             controlsTopPadding: controlsTopPadding,
+            controlsBottomPadding: 0.0,
             offset: mapOffset,
             size: mapSize,
             transition: transition

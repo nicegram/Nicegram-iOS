@@ -1,4 +1,676 @@
 public extension Api {
+    enum KeyboardButtonRow: TypeConstructorDescription {
+        case keyboardButtonRow(buttons: [Api.KeyboardButton])
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .keyboardButtonRow(let buttons):
+                    if boxed {
+                        buffer.appendInt32(2002815875)
+                    }
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(buttons.count))
+                    for item in buttons {
+                        item.serialize(buffer, true)
+                    }
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .keyboardButtonRow(let buttons):
+                return ("keyboardButtonRow", [("buttons", buttons as Any)])
+    }
+    }
+    
+        public static func parse_keyboardButtonRow(_ reader: BufferReader) -> KeyboardButtonRow? {
+            var _1: [Api.KeyboardButton]?
+            if let _ = reader.readInt32() {
+                _1 = Api.parseVector(reader, elementSignature: 0, elementType: Api.KeyboardButton.self)
+            }
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.KeyboardButtonRow.keyboardButtonRow(buttons: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum LabeledPrice: TypeConstructorDescription {
+        case labeledPrice(label: String, amount: Int64)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .labeledPrice(let label, let amount):
+                    if boxed {
+                        buffer.appendInt32(-886477832)
+                    }
+                    serializeString(label, buffer: buffer, boxed: false)
+                    serializeInt64(amount, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .labeledPrice(let label, let amount):
+                return ("labeledPrice", [("label", label as Any), ("amount", amount as Any)])
+    }
+    }
+    
+        public static func parse_labeledPrice(_ reader: BufferReader) -> LabeledPrice? {
+            var _1: String?
+            _1 = parseString(reader)
+            var _2: Int64?
+            _2 = reader.readInt64()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.LabeledPrice.labeledPrice(label: _1!, amount: _2!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum LangPackDifference: TypeConstructorDescription {
+        case langPackDifference(langCode: String, fromVersion: Int32, version: Int32, strings: [Api.LangPackString])
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .langPackDifference(let langCode, let fromVersion, let version, let strings):
+                    if boxed {
+                        buffer.appendInt32(-209337866)
+                    }
+                    serializeString(langCode, buffer: buffer, boxed: false)
+                    serializeInt32(fromVersion, buffer: buffer, boxed: false)
+                    serializeInt32(version, buffer: buffer, boxed: false)
+                    buffer.appendInt32(481674261)
+                    buffer.appendInt32(Int32(strings.count))
+                    for item in strings {
+                        item.serialize(buffer, true)
+                    }
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .langPackDifference(let langCode, let fromVersion, let version, let strings):
+                return ("langPackDifference", [("langCode", langCode as Any), ("fromVersion", fromVersion as Any), ("version", version as Any), ("strings", strings as Any)])
+    }
+    }
+    
+        public static func parse_langPackDifference(_ reader: BufferReader) -> LangPackDifference? {
+            var _1: String?
+            _1 = parseString(reader)
+            var _2: Int32?
+            _2 = reader.readInt32()
+            var _3: Int32?
+            _3 = reader.readInt32()
+            var _4: [Api.LangPackString]?
+            if let _ = reader.readInt32() {
+                _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.LangPackString.self)
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.LangPackDifference.langPackDifference(langCode: _1!, fromVersion: _2!, version: _3!, strings: _4!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum LangPackLanguage: TypeConstructorDescription {
+        case langPackLanguage(flags: Int32, name: String, nativeName: String, langCode: String, baseLangCode: String?, pluralCode: String, stringsCount: Int32, translatedCount: Int32, translationsUrl: String)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .langPackLanguage(let flags, let name, let nativeName, let langCode, let baseLangCode, let pluralCode, let stringsCount, let translatedCount, let translationsUrl):
+                    if boxed {
+                        buffer.appendInt32(-288727837)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeString(name, buffer: buffer, boxed: false)
+                    serializeString(nativeName, buffer: buffer, boxed: false)
+                    serializeString(langCode, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 1) != 0 {serializeString(baseLangCode!, buffer: buffer, boxed: false)}
+                    serializeString(pluralCode, buffer: buffer, boxed: false)
+                    serializeInt32(stringsCount, buffer: buffer, boxed: false)
+                    serializeInt32(translatedCount, buffer: buffer, boxed: false)
+                    serializeString(translationsUrl, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .langPackLanguage(let flags, let name, let nativeName, let langCode, let baseLangCode, let pluralCode, let stringsCount, let translatedCount, let translationsUrl):
+                return ("langPackLanguage", [("flags", flags as Any), ("name", name as Any), ("nativeName", nativeName as Any), ("langCode", langCode as Any), ("baseLangCode", baseLangCode as Any), ("pluralCode", pluralCode as Any), ("stringsCount", stringsCount as Any), ("translatedCount", translatedCount as Any), ("translationsUrl", translationsUrl as Any)])
+    }
+    }
+    
+        public static func parse_langPackLanguage(_ reader: BufferReader) -> LangPackLanguage? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: String?
+            _2 = parseString(reader)
+            var _3: String?
+            _3 = parseString(reader)
+            var _4: String?
+            _4 = parseString(reader)
+            var _5: String?
+            if Int(_1!) & Int(1 << 1) != 0 {_5 = parseString(reader) }
+            var _6: String?
+            _6 = parseString(reader)
+            var _7: Int32?
+            _7 = reader.readInt32()
+            var _8: Int32?
+            _8 = reader.readInt32()
+            var _9: String?
+            _9 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
+            let _c6 = _6 != nil
+            let _c7 = _7 != nil
+            let _c8 = _8 != nil
+            let _c9 = _9 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
+                return Api.LangPackLanguage.langPackLanguage(flags: _1!, name: _2!, nativeName: _3!, langCode: _4!, baseLangCode: _5, pluralCode: _6!, stringsCount: _7!, translatedCount: _8!, translationsUrl: _9!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum LangPackString: TypeConstructorDescription {
+        case langPackString(key: String, value: String)
+        case langPackStringDeleted(key: String)
+        case langPackStringPluralized(flags: Int32, key: String, zeroValue: String?, oneValue: String?, twoValue: String?, fewValue: String?, manyValue: String?, otherValue: String)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .langPackString(let key, let value):
+                    if boxed {
+                        buffer.appendInt32(-892239370)
+                    }
+                    serializeString(key, buffer: buffer, boxed: false)
+                    serializeString(value, buffer: buffer, boxed: false)
+                    break
+                case .langPackStringDeleted(let key):
+                    if boxed {
+                        buffer.appendInt32(695856818)
+                    }
+                    serializeString(key, buffer: buffer, boxed: false)
+                    break
+                case .langPackStringPluralized(let flags, let key, let zeroValue, let oneValue, let twoValue, let fewValue, let manyValue, let otherValue):
+                    if boxed {
+                        buffer.appendInt32(1816636575)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    serializeString(key, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 0) != 0 {serializeString(zeroValue!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 1) != 0 {serializeString(oneValue!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 2) != 0 {serializeString(twoValue!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 3) != 0 {serializeString(fewValue!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 4) != 0 {serializeString(manyValue!, buffer: buffer, boxed: false)}
+                    serializeString(otherValue, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .langPackString(let key, let value):
+                return ("langPackString", [("key", key as Any), ("value", value as Any)])
+                case .langPackStringDeleted(let key):
+                return ("langPackStringDeleted", [("key", key as Any)])
+                case .langPackStringPluralized(let flags, let key, let zeroValue, let oneValue, let twoValue, let fewValue, let manyValue, let otherValue):
+                return ("langPackStringPluralized", [("flags", flags as Any), ("key", key as Any), ("zeroValue", zeroValue as Any), ("oneValue", oneValue as Any), ("twoValue", twoValue as Any), ("fewValue", fewValue as Any), ("manyValue", manyValue as Any), ("otherValue", otherValue as Any)])
+    }
+    }
+    
+        public static func parse_langPackString(_ reader: BufferReader) -> LangPackString? {
+            var _1: String?
+            _1 = parseString(reader)
+            var _2: String?
+            _2 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.LangPackString.langPackString(key: _1!, value: _2!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_langPackStringDeleted(_ reader: BufferReader) -> LangPackString? {
+            var _1: String?
+            _1 = parseString(reader)
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.LangPackString.langPackStringDeleted(key: _1!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_langPackStringPluralized(_ reader: BufferReader) -> LangPackString? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: String?
+            _2 = parseString(reader)
+            var _3: String?
+            if Int(_1!) & Int(1 << 0) != 0 {_3 = parseString(reader) }
+            var _4: String?
+            if Int(_1!) & Int(1 << 1) != 0 {_4 = parseString(reader) }
+            var _5: String?
+            if Int(_1!) & Int(1 << 2) != 0 {_5 = parseString(reader) }
+            var _6: String?
+            if Int(_1!) & Int(1 << 3) != 0 {_6 = parseString(reader) }
+            var _7: String?
+            if Int(_1!) & Int(1 << 4) != 0 {_7 = parseString(reader) }
+            var _8: String?
+            _8 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 2) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 3) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 4) == 0) || _7 != nil
+            let _c8 = _8 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
+                return Api.LangPackString.langPackStringPluralized(flags: _1!, key: _2!, zeroValue: _3, oneValue: _4, twoValue: _5, fewValue: _6, manyValue: _7, otherValue: _8!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    enum MaskCoords: TypeConstructorDescription {
+        case maskCoords(n: Int32, x: Double, y: Double, zoom: Double)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .maskCoords(let n, let x, let y, let zoom):
+                    if boxed {
+                        buffer.appendInt32(-1361650766)
+                    }
+                    serializeInt32(n, buffer: buffer, boxed: false)
+                    serializeDouble(x, buffer: buffer, boxed: false)
+                    serializeDouble(y, buffer: buffer, boxed: false)
+                    serializeDouble(zoom, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .maskCoords(let n, let x, let y, let zoom):
+                return ("maskCoords", [("n", n as Any), ("x", x as Any), ("y", y as Any), ("zoom", zoom as Any)])
+    }
+    }
+    
+        public static func parse_maskCoords(_ reader: BufferReader) -> MaskCoords? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Double?
+            _2 = reader.readDouble()
+            var _3: Double?
+            _3 = reader.readDouble()
+            var _4: Double?
+            _4 = reader.readDouble()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.MaskCoords.maskCoords(n: _1!, x: _2!, y: _3!, zoom: _4!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
+    indirect enum MediaArea: TypeConstructorDescription {
+        case inputMediaAreaChannelPost(coordinates: Api.MediaAreaCoordinates, channel: Api.InputChannel, msgId: Int32)
+        case inputMediaAreaVenue(coordinates: Api.MediaAreaCoordinates, queryId: Int64, resultId: String)
+        case mediaAreaChannelPost(coordinates: Api.MediaAreaCoordinates, channelId: Int64, msgId: Int32)
+        case mediaAreaGeoPoint(flags: Int32, coordinates: Api.MediaAreaCoordinates, geo: Api.GeoPoint, address: Api.GeoPointAddress?)
+        case mediaAreaStarGift(coordinates: Api.MediaAreaCoordinates, slug: String)
+        case mediaAreaSuggestedReaction(flags: Int32, coordinates: Api.MediaAreaCoordinates, reaction: Api.Reaction)
+        case mediaAreaUrl(coordinates: Api.MediaAreaCoordinates, url: String)
+        case mediaAreaVenue(coordinates: Api.MediaAreaCoordinates, geo: Api.GeoPoint, title: String, address: String, provider: String, venueId: String, venueType: String)
+        case mediaAreaWeather(coordinates: Api.MediaAreaCoordinates, emoji: String, temperatureC: Double, color: Int32)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .inputMediaAreaChannelPost(let coordinates, let channel, let msgId):
+                    if boxed {
+                        buffer.appendInt32(577893055)
+                    }
+                    coordinates.serialize(buffer, true)
+                    channel.serialize(buffer, true)
+                    serializeInt32(msgId, buffer: buffer, boxed: false)
+                    break
+                case .inputMediaAreaVenue(let coordinates, let queryId, let resultId):
+                    if boxed {
+                        buffer.appendInt32(-1300094593)
+                    }
+                    coordinates.serialize(buffer, true)
+                    serializeInt64(queryId, buffer: buffer, boxed: false)
+                    serializeString(resultId, buffer: buffer, boxed: false)
+                    break
+                case .mediaAreaChannelPost(let coordinates, let channelId, let msgId):
+                    if boxed {
+                        buffer.appendInt32(1996756655)
+                    }
+                    coordinates.serialize(buffer, true)
+                    serializeInt64(channelId, buffer: buffer, boxed: false)
+                    serializeInt32(msgId, buffer: buffer, boxed: false)
+                    break
+                case .mediaAreaGeoPoint(let flags, let coordinates, let geo, let address):
+                    if boxed {
+                        buffer.appendInt32(-891992787)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    coordinates.serialize(buffer, true)
+                    geo.serialize(buffer, true)
+                    if Int(flags) & Int(1 << 0) != 0 {address!.serialize(buffer, true)}
+                    break
+                case .mediaAreaStarGift(let coordinates, let slug):
+                    if boxed {
+                        buffer.appendInt32(1468491885)
+                    }
+                    coordinates.serialize(buffer, true)
+                    serializeString(slug, buffer: buffer, boxed: false)
+                    break
+                case .mediaAreaSuggestedReaction(let flags, let coordinates, let reaction):
+                    if boxed {
+                        buffer.appendInt32(340088945)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    coordinates.serialize(buffer, true)
+                    reaction.serialize(buffer, true)
+                    break
+                case .mediaAreaUrl(let coordinates, let url):
+                    if boxed {
+                        buffer.appendInt32(926421125)
+                    }
+                    coordinates.serialize(buffer, true)
+                    serializeString(url, buffer: buffer, boxed: false)
+                    break
+                case .mediaAreaVenue(let coordinates, let geo, let title, let address, let provider, let venueId, let venueType):
+                    if boxed {
+                        buffer.appendInt32(-1098720356)
+                    }
+                    coordinates.serialize(buffer, true)
+                    geo.serialize(buffer, true)
+                    serializeString(title, buffer: buffer, boxed: false)
+                    serializeString(address, buffer: buffer, boxed: false)
+                    serializeString(provider, buffer: buffer, boxed: false)
+                    serializeString(venueId, buffer: buffer, boxed: false)
+                    serializeString(venueType, buffer: buffer, boxed: false)
+                    break
+                case .mediaAreaWeather(let coordinates, let emoji, let temperatureC, let color):
+                    if boxed {
+                        buffer.appendInt32(1235637404)
+                    }
+                    coordinates.serialize(buffer, true)
+                    serializeString(emoji, buffer: buffer, boxed: false)
+                    serializeDouble(temperatureC, buffer: buffer, boxed: false)
+                    serializeInt32(color, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .inputMediaAreaChannelPost(let coordinates, let channel, let msgId):
+                return ("inputMediaAreaChannelPost", [("coordinates", coordinates as Any), ("channel", channel as Any), ("msgId", msgId as Any)])
+                case .inputMediaAreaVenue(let coordinates, let queryId, let resultId):
+                return ("inputMediaAreaVenue", [("coordinates", coordinates as Any), ("queryId", queryId as Any), ("resultId", resultId as Any)])
+                case .mediaAreaChannelPost(let coordinates, let channelId, let msgId):
+                return ("mediaAreaChannelPost", [("coordinates", coordinates as Any), ("channelId", channelId as Any), ("msgId", msgId as Any)])
+                case .mediaAreaGeoPoint(let flags, let coordinates, let geo, let address):
+                return ("mediaAreaGeoPoint", [("flags", flags as Any), ("coordinates", coordinates as Any), ("geo", geo as Any), ("address", address as Any)])
+                case .mediaAreaStarGift(let coordinates, let slug):
+                return ("mediaAreaStarGift", [("coordinates", coordinates as Any), ("slug", slug as Any)])
+                case .mediaAreaSuggestedReaction(let flags, let coordinates, let reaction):
+                return ("mediaAreaSuggestedReaction", [("flags", flags as Any), ("coordinates", coordinates as Any), ("reaction", reaction as Any)])
+                case .mediaAreaUrl(let coordinates, let url):
+                return ("mediaAreaUrl", [("coordinates", coordinates as Any), ("url", url as Any)])
+                case .mediaAreaVenue(let coordinates, let geo, let title, let address, let provider, let venueId, let venueType):
+                return ("mediaAreaVenue", [("coordinates", coordinates as Any), ("geo", geo as Any), ("title", title as Any), ("address", address as Any), ("provider", provider as Any), ("venueId", venueId as Any), ("venueType", venueType as Any)])
+                case .mediaAreaWeather(let coordinates, let emoji, let temperatureC, let color):
+                return ("mediaAreaWeather", [("coordinates", coordinates as Any), ("emoji", emoji as Any), ("temperatureC", temperatureC as Any), ("color", color as Any)])
+    }
+    }
+    
+        public static func parse_inputMediaAreaChannelPost(_ reader: BufferReader) -> MediaArea? {
+            var _1: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _2: Api.InputChannel?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.InputChannel
+            }
+            var _3: Int32?
+            _3 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.MediaArea.inputMediaAreaChannelPost(coordinates: _1!, channel: _2!, msgId: _3!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_inputMediaAreaVenue(_ reader: BufferReader) -> MediaArea? {
+            var _1: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: String?
+            _3 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.MediaArea.inputMediaAreaVenue(coordinates: _1!, queryId: _2!, resultId: _3!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_mediaAreaChannelPost(_ reader: BufferReader) -> MediaArea? {
+            var _1: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Int32?
+            _3 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.MediaArea.mediaAreaChannelPost(coordinates: _1!, channelId: _2!, msgId: _3!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_mediaAreaGeoPoint(_ reader: BufferReader) -> MediaArea? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _3: Api.GeoPoint?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.GeoPoint
+            }
+            var _4: Api.GeoPointAddress?
+            if Int(_1!) & Int(1 << 0) != 0 {if let signature = reader.readInt32() {
+                _4 = Api.parse(reader, signature: signature) as? Api.GeoPointAddress
+            } }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.MediaArea.mediaAreaGeoPoint(flags: _1!, coordinates: _2!, geo: _3!, address: _4)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_mediaAreaStarGift(_ reader: BufferReader) -> MediaArea? {
+            var _1: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _2: String?
+            _2 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.MediaArea.mediaAreaStarGift(coordinates: _1!, slug: _2!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_mediaAreaSuggestedReaction(_ reader: BufferReader) -> MediaArea? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _3: Api.Reaction?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.Reaction
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.MediaArea.mediaAreaSuggestedReaction(flags: _1!, coordinates: _2!, reaction: _3!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_mediaAreaUrl(_ reader: BufferReader) -> MediaArea? {
+            var _1: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _2: String?
+            _2 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            if _c1 && _c2 {
+                return Api.MediaArea.mediaAreaUrl(coordinates: _1!, url: _2!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_mediaAreaVenue(_ reader: BufferReader) -> MediaArea? {
+            var _1: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _2: Api.GeoPoint?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.GeoPoint
+            }
+            var _3: String?
+            _3 = parseString(reader)
+            var _4: String?
+            _4 = parseString(reader)
+            var _5: String?
+            _5 = parseString(reader)
+            var _6: String?
+            _6 = parseString(reader)
+            var _7: String?
+            _7 = parseString(reader)
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = _5 != nil
+            let _c6 = _6 != nil
+            let _c7 = _7 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
+                return Api.MediaArea.mediaAreaVenue(coordinates: _1!, geo: _2!, title: _3!, address: _4!, provider: _5!, venueId: _6!, venueType: _7!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_mediaAreaWeather(_ reader: BufferReader) -> MediaArea? {
+            var _1: Api.MediaAreaCoordinates?
+            if let signature = reader.readInt32() {
+                _1 = Api.parse(reader, signature: signature) as? Api.MediaAreaCoordinates
+            }
+            var _2: String?
+            _2 = parseString(reader)
+            var _3: Double?
+            _3 = reader.readDouble()
+            var _4: Int32?
+            _4 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.MediaArea.mediaAreaWeather(coordinates: _1!, emoji: _2!, temperatureC: _3!, color: _4!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
     enum MediaAreaCoordinates: TypeConstructorDescription {
         case mediaAreaCoordinates(flags: Int32, x: Double, y: Double, w: Double, h: Double, rotation: Double, radius: Double?)
     
@@ -60,15 +732,15 @@ public extension Api {
 }
 public extension Api {
     indirect enum Message: TypeConstructorDescription {
-        case message(flags: Int32, flags2: Int32, id: Int32, fromId: Api.Peer?, fromBoostsApplied: Int32?, peerId: Api.Peer, savedPeerId: Api.Peer?, fwdFrom: Api.MessageFwdHeader?, viaBotId: Int64?, viaBusinessBotId: Int64?, replyTo: Api.MessageReplyHeader?, date: Int32, message: String, media: Api.MessageMedia?, replyMarkup: Api.ReplyMarkup?, entities: [Api.MessageEntity]?, views: Int32?, forwards: Int32?, replies: Api.MessageReplies?, editDate: Int32?, postAuthor: String?, groupedId: Int64?, reactions: Api.MessageReactions?, restrictionReason: [Api.RestrictionReason]?, ttlPeriod: Int32?, quickReplyShortcutId: Int32?, effect: Int64?, factcheck: Api.FactCheck?, reportDeliveryUntilDate: Int32?, paidMessageStars: Int64?, suggestedPost: Api.SuggestedPost?)
+        case message(flags: Int32, flags2: Int32, id: Int32, fromId: Api.Peer?, fromBoostsApplied: Int32?, peerId: Api.Peer, savedPeerId: Api.Peer?, fwdFrom: Api.MessageFwdHeader?, viaBotId: Int64?, viaBusinessBotId: Int64?, replyTo: Api.MessageReplyHeader?, date: Int32, message: String, media: Api.MessageMedia?, replyMarkup: Api.ReplyMarkup?, entities: [Api.MessageEntity]?, views: Int32?, forwards: Int32?, replies: Api.MessageReplies?, editDate: Int32?, postAuthor: String?, groupedId: Int64?, reactions: Api.MessageReactions?, restrictionReason: [Api.RestrictionReason]?, ttlPeriod: Int32?, quickReplyShortcutId: Int32?, effect: Int64?, factcheck: Api.FactCheck?, reportDeliveryUntilDate: Int32?, paidMessageStars: Int64?, suggestedPost: Api.SuggestedPost?, scheduleRepeatPeriod: Int32?)
         case messageEmpty(flags: Int32, id: Int32, peerId: Api.Peer?)
         case messageService(flags: Int32, id: Int32, fromId: Api.Peer?, peerId: Api.Peer, savedPeerId: Api.Peer?, replyTo: Api.MessageReplyHeader?, date: Int32, action: Api.MessageAction, reactions: Api.MessageReactions?, ttlPeriod: Int32?)
     
     public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
     switch self {
-                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate, let paidMessageStars, let suggestedPost):
+                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate, let paidMessageStars, let suggestedPost, let scheduleRepeatPeriod):
                     if boxed {
-                        buffer.appendInt32(-1743401272)
+                        buffer.appendInt32(-1188071729)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt32(flags2, buffer: buffer, boxed: false)
@@ -109,6 +781,7 @@ public extension Api {
                     if Int(flags2) & Int(1 << 5) != 0 {serializeInt32(reportDeliveryUntilDate!, buffer: buffer, boxed: false)}
                     if Int(flags2) & Int(1 << 6) != 0 {serializeInt64(paidMessageStars!, buffer: buffer, boxed: false)}
                     if Int(flags2) & Int(1 << 7) != 0 {suggestedPost!.serialize(buffer, true)}
+                    if Int(flags2) & Int(1 << 10) != 0 {serializeInt32(scheduleRepeatPeriod!, buffer: buffer, boxed: false)}
                     break
                 case .messageEmpty(let flags, let id, let peerId):
                     if boxed {
@@ -138,8 +811,8 @@ public extension Api {
     
     public func descriptionFields() -> (String, [(String, Any)]) {
         switch self {
-                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate, let paidMessageStars, let suggestedPost):
-                return ("message", [("flags", flags as Any), ("flags2", flags2 as Any), ("id", id as Any), ("fromId", fromId as Any), ("fromBoostsApplied", fromBoostsApplied as Any), ("peerId", peerId as Any), ("savedPeerId", savedPeerId as Any), ("fwdFrom", fwdFrom as Any), ("viaBotId", viaBotId as Any), ("viaBusinessBotId", viaBusinessBotId as Any), ("replyTo", replyTo as Any), ("date", date as Any), ("message", message as Any), ("media", media as Any), ("replyMarkup", replyMarkup as Any), ("entities", entities as Any), ("views", views as Any), ("forwards", forwards as Any), ("replies", replies as Any), ("editDate", editDate as Any), ("postAuthor", postAuthor as Any), ("groupedId", groupedId as Any), ("reactions", reactions as Any), ("restrictionReason", restrictionReason as Any), ("ttlPeriod", ttlPeriod as Any), ("quickReplyShortcutId", quickReplyShortcutId as Any), ("effect", effect as Any), ("factcheck", factcheck as Any), ("reportDeliveryUntilDate", reportDeliveryUntilDate as Any), ("paidMessageStars", paidMessageStars as Any), ("suggestedPost", suggestedPost as Any)])
+                case .message(let flags, let flags2, let id, let fromId, let fromBoostsApplied, let peerId, let savedPeerId, let fwdFrom, let viaBotId, let viaBusinessBotId, let replyTo, let date, let message, let media, let replyMarkup, let entities, let views, let forwards, let replies, let editDate, let postAuthor, let groupedId, let reactions, let restrictionReason, let ttlPeriod, let quickReplyShortcutId, let effect, let factcheck, let reportDeliveryUntilDate, let paidMessageStars, let suggestedPost, let scheduleRepeatPeriod):
+                return ("message", [("flags", flags as Any), ("flags2", flags2 as Any), ("id", id as Any), ("fromId", fromId as Any), ("fromBoostsApplied", fromBoostsApplied as Any), ("peerId", peerId as Any), ("savedPeerId", savedPeerId as Any), ("fwdFrom", fwdFrom as Any), ("viaBotId", viaBotId as Any), ("viaBusinessBotId", viaBusinessBotId as Any), ("replyTo", replyTo as Any), ("date", date as Any), ("message", message as Any), ("media", media as Any), ("replyMarkup", replyMarkup as Any), ("entities", entities as Any), ("views", views as Any), ("forwards", forwards as Any), ("replies", replies as Any), ("editDate", editDate as Any), ("postAuthor", postAuthor as Any), ("groupedId", groupedId as Any), ("reactions", reactions as Any), ("restrictionReason", restrictionReason as Any), ("ttlPeriod", ttlPeriod as Any), ("quickReplyShortcutId", quickReplyShortcutId as Any), ("effect", effect as Any), ("factcheck", factcheck as Any), ("reportDeliveryUntilDate", reportDeliveryUntilDate as Any), ("paidMessageStars", paidMessageStars as Any), ("suggestedPost", suggestedPost as Any), ("scheduleRepeatPeriod", scheduleRepeatPeriod as Any)])
                 case .messageEmpty(let flags, let id, let peerId):
                 return ("messageEmpty", [("flags", flags as Any), ("id", id as Any), ("peerId", peerId as Any)])
                 case .messageService(let flags, let id, let fromId, let peerId, let savedPeerId, let replyTo, let date, let action, let reactions, let ttlPeriod):
@@ -236,6 +909,8 @@ public extension Api {
             if Int(_2!) & Int(1 << 7) != 0 {if let signature = reader.readInt32() {
                 _31 = Api.parse(reader, signature: signature) as? Api.SuggestedPost
             } }
+            var _32: Int32?
+            if Int(_2!) & Int(1 << 10) != 0 {_32 = reader.readInt32() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
@@ -267,8 +942,9 @@ public extension Api {
             let _c29 = (Int(_2!) & Int(1 << 5) == 0) || _29 != nil
             let _c30 = (Int(_2!) & Int(1 << 6) == 0) || _30 != nil
             let _c31 = (Int(_2!) & Int(1 << 7) == 0) || _31 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 && _c19 && _c20 && _c21 && _c22 && _c23 && _c24 && _c25 && _c26 && _c27 && _c28 && _c29 && _c30 && _c31 {
-                return Api.Message.message(flags: _1!, flags2: _2!, id: _3!, fromId: _4, fromBoostsApplied: _5, peerId: _6!, savedPeerId: _7, fwdFrom: _8, viaBotId: _9, viaBusinessBotId: _10, replyTo: _11, date: _12!, message: _13!, media: _14, replyMarkup: _15, entities: _16, views: _17, forwards: _18, replies: _19, editDate: _20, postAuthor: _21, groupedId: _22, reactions: _23, restrictionReason: _24, ttlPeriod: _25, quickReplyShortcutId: _26, effect: _27, factcheck: _28, reportDeliveryUntilDate: _29, paidMessageStars: _30, suggestedPost: _31)
+            let _c32 = (Int(_2!) & Int(1 << 10) == 0) || _32 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 && _c19 && _c20 && _c21 && _c22 && _c23 && _c24 && _c25 && _c26 && _c27 && _c28 && _c29 && _c30 && _c31 && _c32 {
+                return Api.Message.message(flags: _1!, flags2: _2!, id: _3!, fromId: _4, fromBoostsApplied: _5, peerId: _6!, savedPeerId: _7, fwdFrom: _8, viaBotId: _9, viaBusinessBotId: _10, replyTo: _11, date: _12!, message: _13!, media: _14, replyMarkup: _15, entities: _16, views: _17, forwards: _18, replies: _19, editDate: _20, postAuthor: _21, groupedId: _22, reactions: _23, restrictionReason: _24, ttlPeriod: _25, quickReplyShortcutId: _26, effect: _27, factcheck: _28, reportDeliveryUntilDate: _29, paidMessageStars: _30, suggestedPost: _31, scheduleRepeatPeriod: _32)
             }
             else {
                 return nil
@@ -367,8 +1043,8 @@ public extension Api {
         case messageActionEmpty
         case messageActionGameScore(gameId: Int64, score: Int32)
         case messageActionGeoProximityReached(fromId: Api.Peer, toId: Api.Peer, distance: Int32)
-        case messageActionGiftCode(flags: Int32, boostPeer: Api.Peer?, months: Int32, slug: String, currency: String?, amount: Int64?, cryptoCurrency: String?, cryptoAmount: Int64?, message: Api.TextWithEntities?)
-        case messageActionGiftPremium(flags: Int32, currency: String, amount: Int64, months: Int32, cryptoCurrency: String?, cryptoAmount: Int64?, message: Api.TextWithEntities?)
+        case messageActionGiftCode(flags: Int32, boostPeer: Api.Peer?, days: Int32, slug: String, currency: String?, amount: Int64?, cryptoCurrency: String?, cryptoAmount: Int64?, message: Api.TextWithEntities?)
+        case messageActionGiftPremium(flags: Int32, currency: String, amount: Int64, days: Int32, cryptoCurrency: String?, cryptoAmount: Int64?, message: Api.TextWithEntities?)
         case messageActionGiftStars(flags: Int32, currency: String, amount: Int64, stars: Int64, cryptoCurrency: String?, cryptoAmount: Int64?, transactionId: String?)
         case messageActionGiftTon(flags: Int32, currency: String, amount: Int64, cryptoCurrency: String, cryptoAmount: Int64, transactionId: String?)
         case messageActionGiveawayLaunch(flags: Int32, stars: Int64?)
@@ -393,7 +1069,9 @@ public extension Api {
         case messageActionSetChatTheme(theme: Api.ChatTheme)
         case messageActionSetChatWallPaper(flags: Int32, wallpaper: Api.WallPaper)
         case messageActionSetMessagesTTL(flags: Int32, period: Int32, autoSettingFrom: Int64?)
-        case messageActionStarGift(flags: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, convertStars: Int64?, upgradeMsgId: Int32?, upgradeStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?, prepaidUpgradeHash: String?, giftMsgId: Int32?)
+        case messageActionStarGift(flags: Int32, gift: Api.StarGift, message: Api.TextWithEntities?, convertStars: Int64?, upgradeMsgId: Int32?, upgradeStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?, prepaidUpgradeHash: String?, giftMsgId: Int32?, toId: Api.Peer?, giftNum: Int32?)
+        case messageActionStarGiftPurchaseOffer(flags: Int32, gift: Api.StarGift, price: Api.StarsAmount, expiresAt: Int32)
+        case messageActionStarGiftPurchaseOfferDeclined(flags: Int32, gift: Api.StarGift, price: Api.StarsAmount)
         case messageActionStarGiftUnique(flags: Int32, gift: Api.StarGift, canExportAt: Int32?, transferStars: Int64?, fromId: Api.Peer?, peer: Api.Peer?, savedId: Int64?, resaleAmount: Api.StarsAmount?, canTransferAt: Int32?, canResellAt: Int32?, dropOriginalDetailsStars: Int64?)
         case messageActionSuggestBirthday(birthday: Api.Birthday)
         case messageActionSuggestProfilePhoto(photo: Api.Photo)
@@ -545,13 +1223,13 @@ public extension Api {
                     toId.serialize(buffer, true)
                     serializeInt32(distance, buffer: buffer, boxed: false)
                     break
-                case .messageActionGiftCode(let flags, let boostPeer, let months, let slug, let currency, let amount, let cryptoCurrency, let cryptoAmount, let message):
+                case .messageActionGiftCode(let flags, let boostPeer, let days, let slug, let currency, let amount, let cryptoCurrency, let cryptoAmount, let message):
                     if boxed {
-                        buffer.appendInt32(1456486804)
+                        buffer.appendInt32(834962247)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 1) != 0 {boostPeer!.serialize(buffer, true)}
-                    serializeInt32(months, buffer: buffer, boxed: false)
+                    serializeInt32(days, buffer: buffer, boxed: false)
                     serializeString(slug, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 2) != 0 {serializeString(currency!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 2) != 0 {serializeInt64(amount!, buffer: buffer, boxed: false)}
@@ -559,14 +1237,14 @@ public extension Api {
                     if Int(flags) & Int(1 << 3) != 0 {serializeInt64(cryptoAmount!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 4) != 0 {message!.serialize(buffer, true)}
                     break
-                case .messageActionGiftPremium(let flags, let currency, let amount, let months, let cryptoCurrency, let cryptoAmount, let message):
+                case .messageActionGiftPremium(let flags, let currency, let amount, let days, let cryptoCurrency, let cryptoAmount, let message):
                     if boxed {
-                        buffer.appendInt32(1818391802)
+                        buffer.appendInt32(1223234306)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeString(currency, buffer: buffer, boxed: false)
                     serializeInt64(amount, buffer: buffer, boxed: false)
-                    serializeInt32(months, buffer: buffer, boxed: false)
+                    serializeInt32(days, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 0) != 0 {serializeString(cryptoCurrency!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt64(cryptoAmount!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 1) != 0 {message!.serialize(buffer, true)}
@@ -784,9 +1462,9 @@ public extension Api {
                     serializeInt32(period, buffer: buffer, boxed: false)
                     if Int(flags) & Int(1 << 0) != 0 {serializeInt64(autoSettingFrom!, buffer: buffer, boxed: false)}
                     break
-                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId, let prepaidUpgradeHash, let giftMsgId):
+                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId, let prepaidUpgradeHash, let giftMsgId, let toId, let giftNum):
                     if boxed {
-                        buffer.appendInt32(-229775366)
+                        buffer.appendInt32(-366202413)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     gift.serialize(buffer, true)
@@ -799,6 +1477,25 @@ public extension Api {
                     if Int(flags) & Int(1 << 12) != 0 {serializeInt64(savedId!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 14) != 0 {serializeString(prepaidUpgradeHash!, buffer: buffer, boxed: false)}
                     if Int(flags) & Int(1 << 15) != 0 {serializeInt32(giftMsgId!, buffer: buffer, boxed: false)}
+                    if Int(flags) & Int(1 << 18) != 0 {toId!.serialize(buffer, true)}
+                    if Int(flags) & Int(1 << 19) != 0 {serializeInt32(giftNum!, buffer: buffer, boxed: false)}
+                    break
+                case .messageActionStarGiftPurchaseOffer(let flags, let gift, let price, let expiresAt):
+                    if boxed {
+                        buffer.appendInt32(2000845012)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    gift.serialize(buffer, true)
+                    price.serialize(buffer, true)
+                    serializeInt32(expiresAt, buffer: buffer, boxed: false)
+                    break
+                case .messageActionStarGiftPurchaseOfferDeclined(let flags, let gift, let price):
+                    if boxed {
+                        buffer.appendInt32(1940760427)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    gift.serialize(buffer, true)
+                    price.serialize(buffer, true)
                     break
                 case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars, let fromId, let peer, let savedId, let resaleAmount, let canTransferAt, let canResellAt, let dropOriginalDetailsStars):
                     if boxed {
@@ -949,10 +1646,10 @@ public extension Api {
                 return ("messageActionGameScore", [("gameId", gameId as Any), ("score", score as Any)])
                 case .messageActionGeoProximityReached(let fromId, let toId, let distance):
                 return ("messageActionGeoProximityReached", [("fromId", fromId as Any), ("toId", toId as Any), ("distance", distance as Any)])
-                case .messageActionGiftCode(let flags, let boostPeer, let months, let slug, let currency, let amount, let cryptoCurrency, let cryptoAmount, let message):
-                return ("messageActionGiftCode", [("flags", flags as Any), ("boostPeer", boostPeer as Any), ("months", months as Any), ("slug", slug as Any), ("currency", currency as Any), ("amount", amount as Any), ("cryptoCurrency", cryptoCurrency as Any), ("cryptoAmount", cryptoAmount as Any), ("message", message as Any)])
-                case .messageActionGiftPremium(let flags, let currency, let amount, let months, let cryptoCurrency, let cryptoAmount, let message):
-                return ("messageActionGiftPremium", [("flags", flags as Any), ("currency", currency as Any), ("amount", amount as Any), ("months", months as Any), ("cryptoCurrency", cryptoCurrency as Any), ("cryptoAmount", cryptoAmount as Any), ("message", message as Any)])
+                case .messageActionGiftCode(let flags, let boostPeer, let days, let slug, let currency, let amount, let cryptoCurrency, let cryptoAmount, let message):
+                return ("messageActionGiftCode", [("flags", flags as Any), ("boostPeer", boostPeer as Any), ("days", days as Any), ("slug", slug as Any), ("currency", currency as Any), ("amount", amount as Any), ("cryptoCurrency", cryptoCurrency as Any), ("cryptoAmount", cryptoAmount as Any), ("message", message as Any)])
+                case .messageActionGiftPremium(let flags, let currency, let amount, let days, let cryptoCurrency, let cryptoAmount, let message):
+                return ("messageActionGiftPremium", [("flags", flags as Any), ("currency", currency as Any), ("amount", amount as Any), ("days", days as Any), ("cryptoCurrency", cryptoCurrency as Any), ("cryptoAmount", cryptoAmount as Any), ("message", message as Any)])
                 case .messageActionGiftStars(let flags, let currency, let amount, let stars, let cryptoCurrency, let cryptoAmount, let transactionId):
                 return ("messageActionGiftStars", [("flags", flags as Any), ("currency", currency as Any), ("amount", amount as Any), ("stars", stars as Any), ("cryptoCurrency", cryptoCurrency as Any), ("cryptoAmount", cryptoAmount as Any), ("transactionId", transactionId as Any)])
                 case .messageActionGiftTon(let flags, let currency, let amount, let cryptoCurrency, let cryptoAmount, let transactionId):
@@ -1001,8 +1698,12 @@ public extension Api {
                 return ("messageActionSetChatWallPaper", [("flags", flags as Any), ("wallpaper", wallpaper as Any)])
                 case .messageActionSetMessagesTTL(let flags, let period, let autoSettingFrom):
                 return ("messageActionSetMessagesTTL", [("flags", flags as Any), ("period", period as Any), ("autoSettingFrom", autoSettingFrom as Any)])
-                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId, let prepaidUpgradeHash, let giftMsgId):
-                return ("messageActionStarGift", [("flags", flags as Any), ("gift", gift as Any), ("message", message as Any), ("convertStars", convertStars as Any), ("upgradeMsgId", upgradeMsgId as Any), ("upgradeStars", upgradeStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any), ("prepaidUpgradeHash", prepaidUpgradeHash as Any), ("giftMsgId", giftMsgId as Any)])
+                case .messageActionStarGift(let flags, let gift, let message, let convertStars, let upgradeMsgId, let upgradeStars, let fromId, let peer, let savedId, let prepaidUpgradeHash, let giftMsgId, let toId, let giftNum):
+                return ("messageActionStarGift", [("flags", flags as Any), ("gift", gift as Any), ("message", message as Any), ("convertStars", convertStars as Any), ("upgradeMsgId", upgradeMsgId as Any), ("upgradeStars", upgradeStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any), ("prepaidUpgradeHash", prepaidUpgradeHash as Any), ("giftMsgId", giftMsgId as Any), ("toId", toId as Any), ("giftNum", giftNum as Any)])
+                case .messageActionStarGiftPurchaseOffer(let flags, let gift, let price, let expiresAt):
+                return ("messageActionStarGiftPurchaseOffer", [("flags", flags as Any), ("gift", gift as Any), ("price", price as Any), ("expiresAt", expiresAt as Any)])
+                case .messageActionStarGiftPurchaseOfferDeclined(let flags, let gift, let price):
+                return ("messageActionStarGiftPurchaseOfferDeclined", [("flags", flags as Any), ("gift", gift as Any), ("price", price as Any)])
                 case .messageActionStarGiftUnique(let flags, let gift, let canExportAt, let transferStars, let fromId, let peer, let savedId, let resaleAmount, let canTransferAt, let canResellAt, let dropOriginalDetailsStars):
                 return ("messageActionStarGiftUnique", [("flags", flags as Any), ("gift", gift as Any), ("canExportAt", canExportAt as Any), ("transferStars", transferStars as Any), ("fromId", fromId as Any), ("peer", peer as Any), ("savedId", savedId as Any), ("resaleAmount", resaleAmount as Any), ("canTransferAt", canTransferAt as Any), ("canResellAt", canResellAt as Any), ("dropOriginalDetailsStars", dropOriginalDetailsStars as Any)])
                 case .messageActionSuggestBirthday(let birthday):
@@ -1284,7 +1985,7 @@ public extension Api {
             let _c8 = (Int(_1!) & Int(1 << 3) == 0) || _8 != nil
             let _c9 = (Int(_1!) & Int(1 << 4) == 0) || _9 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
-                return Api.MessageAction.messageActionGiftCode(flags: _1!, boostPeer: _2, months: _3!, slug: _4!, currency: _5, amount: _6, cryptoCurrency: _7, cryptoAmount: _8, message: _9)
+                return Api.MessageAction.messageActionGiftCode(flags: _1!, boostPeer: _2, days: _3!, slug: _4!, currency: _5, amount: _6, cryptoCurrency: _7, cryptoAmount: _8, message: _9)
             }
             else {
                 return nil
@@ -1315,7 +2016,7 @@ public extension Api {
             let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
             let _c7 = (Int(_1!) & Int(1 << 1) == 0) || _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
-                return Api.MessageAction.messageActionGiftPremium(flags: _1!, currency: _2!, amount: _3!, months: _4!, cryptoCurrency: _5, cryptoAmount: _6, message: _7)
+                return Api.MessageAction.messageActionGiftPremium(flags: _1!, currency: _2!, amount: _3!, days: _4!, cryptoCurrency: _5, cryptoAmount: _6, message: _7)
             }
             else {
                 return nil
@@ -1773,6 +2474,12 @@ public extension Api {
             if Int(_1!) & Int(1 << 14) != 0 {_10 = parseString(reader) }
             var _11: Int32?
             if Int(_1!) & Int(1 << 15) != 0 {_11 = reader.readInt32() }
+            var _12: Api.Peer?
+            if Int(_1!) & Int(1 << 18) != 0 {if let signature = reader.readInt32() {
+                _12 = Api.parse(reader, signature: signature) as? Api.Peer
+            } }
+            var _13: Int32?
+            if Int(_1!) & Int(1 << 19) != 0 {_13 = reader.readInt32() }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
@@ -1784,8 +2491,55 @@ public extension Api {
             let _c9 = (Int(_1!) & Int(1 << 12) == 0) || _9 != nil
             let _c10 = (Int(_1!) & Int(1 << 14) == 0) || _10 != nil
             let _c11 = (Int(_1!) & Int(1 << 15) == 0) || _11 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 {
-                return Api.MessageAction.messageActionStarGift(flags: _1!, gift: _2!, message: _3, convertStars: _4, upgradeMsgId: _5, upgradeStars: _6, fromId: _7, peer: _8, savedId: _9, prepaidUpgradeHash: _10, giftMsgId: _11)
+            let _c12 = (Int(_1!) & Int(1 << 18) == 0) || _12 != nil
+            let _c13 = (Int(_1!) & Int(1 << 19) == 0) || _13 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 {
+                return Api.MessageAction.messageActionStarGift(flags: _1!, gift: _2!, message: _3, convertStars: _4, upgradeMsgId: _5, upgradeStars: _6, fromId: _7, peer: _8, savedId: _9, prepaidUpgradeHash: _10, giftMsgId: _11, toId: _12, giftNum: _13)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_messageActionStarGiftPurchaseOffer(_ reader: BufferReader) -> MessageAction? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.StarGift?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.StarGift
+            }
+            var _3: Api.StarsAmount?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.StarsAmount
+            }
+            var _4: Int32?
+            _4 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.MessageAction.messageActionStarGiftPurchaseOffer(flags: _1!, gift: _2!, price: _3!, expiresAt: _4!)
+            }
+            else {
+                return nil
+            }
+        }
+        public static func parse_messageActionStarGiftPurchaseOfferDeclined(_ reader: BufferReader) -> MessageAction? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Api.StarGift?
+            if let signature = reader.readInt32() {
+                _2 = Api.parse(reader, signature: signature) as? Api.StarGift
+            }
+            var _3: Api.StarsAmount?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.StarsAmount
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.MessageAction.messageActionStarGiftPurchaseOfferDeclined(flags: _1!, gift: _2!, price: _3!)
             }
             else {
                 return nil

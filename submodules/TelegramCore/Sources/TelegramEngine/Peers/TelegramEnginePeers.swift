@@ -1175,6 +1175,10 @@ public extension TelegramEngine {
             return _internal_updatePeerSendAsPeer(account: self.account, peerId: peerId, sendAs: sendAs)
         }
         
+        public func liveStorySendAsAvailablePeers(peerId: PeerId) -> Signal<[SendAsPeer], NoError> {
+            return _internal_cachedLiveStorySendAsAvailablePeers(account: self.account, peerId: peerId)
+        }
+        
         public func updatePeerReactionSettings(peerId: PeerId, reactionSettings: PeerReactionSettings) -> Signal<Never, UpdatePeerAllowedReactionsError> {
             return _internal_updatePeerReactionSettings(account: account, peerId: peerId, reactionSettings: reactionSettings)
         }

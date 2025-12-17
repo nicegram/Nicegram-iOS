@@ -45,6 +45,9 @@ swift_library(
         "//submodules/AnimatedCountLabelNode",
         "//submodules/HexColor",
         "//submodules/QrCodeUI",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/Components/BundleIconComponent",
+        "//submodules/Components/SheetComponent",
     ],
     visibility = [
         "//visibility:public",

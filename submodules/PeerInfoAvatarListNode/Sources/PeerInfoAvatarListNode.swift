@@ -678,10 +678,10 @@ private final class VariableBlurView: UIVisualEffectView {
         variableBlur.setValue(self.maxBlurRadius, forKey: "inputRadius")
         variableBlur.setValue(gradientImageRef, forKey: "inputMaskImage")
         variableBlur.setValue(true, forKey: "inputNormalizeEdges")
-        variableBlur.setValue(UIScreenScale, forKey: "scale")
         
         let backdropLayer = self.subviews.first?.layer
         backdropLayer?.filters = [variableBlur]
+        backdropLayer?.setValue(UIScreenScale, forKey: "scale")
     }
 }
 

@@ -1169,10 +1169,12 @@ private final class JoinAffiliateProgramScreenComponent: Component {
             case .active:
                 actionButtonTitle = environment.strings.AffiliateProgram_ActionCopyLink
             }
+            
             let actionButtonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -1206,7 +1208,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - 30.0 * 2.0, height: 52.0)
             )
             
             let bottomTextSize = self.bottomText.update(

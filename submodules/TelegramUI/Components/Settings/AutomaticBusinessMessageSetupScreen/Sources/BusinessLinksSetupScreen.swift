@@ -404,6 +404,7 @@ final class BusinessLinksSetupScreenComponent: Component {
             var createLinkSectionItems: [AnyComponentWithIdentity<Empty>] = []
             createLinkSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
+                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -441,6 +442,7 @@ final class BusinessLinksSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: footerText.isEmpty ? nil : AnyComponent(MultilineTextComponent(
                         text: .markdown(text: footerText, attributes: MarkdownAttributes(
@@ -592,6 +594,7 @@ final class BusinessLinksSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.Business_Links_LinksSectionHeader,

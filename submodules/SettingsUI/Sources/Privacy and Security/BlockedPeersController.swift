@@ -124,7 +124,7 @@ private enum BlockedPeersEntry: ItemListNodeEntry {
         let arguments = arguments as! BlockedPeersControllerArguments
         switch self {
             case let .add(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.blockAccentIcon(theme), title: text, sectionId: self.section, height: .generic, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.blockAccentIcon(theme), title: text, sectionId: self.section, height: .generic, editing: false, action: {
                     arguments.addPeer()
                 })
             case let .peerItem(_, _, strings, dateTimeFormat, nameDisplayOrder, peer, editing, enabled):
@@ -132,7 +132,7 @@ private enum BlockedPeersEntry: ItemListNodeEntry {
                     arguments.removePeer(peer.id)
                 })])
                 
-                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(peer), presence: nil, text: .none, label: .none, editing: editing, revealOptions: revealOptions, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(peer), presence: nil, text: .none, label: .none, editing: editing, revealOptions: revealOptions, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: {
                     arguments.openPeer(peer)
                 }, setPeerIdWithRevealedOptions: { previousId, id in
                     arguments.setPeerIdWithRevealedOptions(previousId, id)

@@ -202,10 +202,10 @@ public enum CreateForumChannelTopicError {
 }
 
 func _internal_createForumChannelTopic(account: Account, peerId: PeerId, title: String, iconColor: Int32, iconFileId: Int64?) -> Signal<Int64, CreateForumChannelTopicError> {
-    return _internal_createForumChannelTopic(postbox: account.postbox, network: account.network, stateManager: account.stateManager, accountPeerId: account.peerId, peerId: peerId, title: title, iconColor: iconColor, iconFileId: iconFileId)
+    return _internal_createForumChannelTopic(postbox: account.postbox, network: account.network, stateManager: account.stateManager, accountPeerId: account.peerId, peerId: peerId, title: title, iconColor: iconColor, iconFileId: iconFileId, isTitleMissing: false)
 }
     
-func _internal_createForumChannelTopic(postbox: Postbox, network: Network, stateManager: AccountStateManager, accountPeerId: PeerId, peerId: PeerId, title: String, iconColor: Int32, iconFileId: Int64?) -> Signal<Int64, CreateForumChannelTopicError> {
+func _internal_createForumChannelTopic(postbox: Postbox, network: Network, stateManager: AccountStateManager, accountPeerId: PeerId, peerId: PeerId, title: String, iconColor: Int32, iconFileId: Int64?, isTitleMissing: Bool) -> Signal<Int64, CreateForumChannelTopicError> {
     return postbox.transaction { transaction -> Peer? in
         return transaction.getPeer(peerId)
     }
@@ -222,6 +222,9 @@ func _internal_createForumChannelTopic(postbox: Postbox, network: Network, state
             flags |= (1 << 3)
         }
         flags |= (1 << 0)
+        if isTitleMissing {
+            flags |= (1 << 4)
+        }
         return network.request(Api.functions.messages.createForumTopic(
             flags: flags,
             peer: inputPeer,

@@ -952,9 +952,15 @@ private final class StoryContainerScreenComponent: Component {
                 } else {
                     let itemViewFrame = currentItemView.convert(currentItemView.bounds, to: self)
                     if location.x < itemViewFrame.minX {
-                        self.navigate(direction: .previous)
+                        if slice.previousItemId == nil && currentItemView.preventTapNavigation() {
+                        } else {
+                            self.navigate(direction: .previous)
+                        }
                     } else if location.x > itemViewFrame.maxX {
-                        self.navigate(direction: .next)
+                        if slice.nextItemId == nil && currentItemView.preventTapNavigation() {
+                        } else {
+                            self.navigate(direction: .next)
+                        }
                     }
                 }
             }
@@ -1007,6 +1013,9 @@ private final class StoryContainerScreenComponent: Component {
         }
         
         func animateIn() {
+            self.isAnimatingOut = false
+            self.didAnimateOut = false
+            
             if let component = self.component {
                 component.focusedItemPromise.set(self.focusedItem.get())
             }
@@ -1335,6 +1344,7 @@ private final class StoryContainerScreenComponent: Component {
                             hasTrending: true,
                             hasSearch: true,
                             hideBackground: true,
+                            maskEdge: .clip,
                             sendGif: nil
                         )
                     )
@@ -1380,6 +1390,13 @@ private final class StoryContainerScreenComponent: Component {
                         self.dismissWithoutTransitionOut = true
                         environment.controller()?.dismiss()
                     } else {
+                        var transition: ComponentTransition = .immediate
+                        if let previousState = self.stateValue, let previousSlice = previousState.slice, let slice = stateValue?.slice {
+                            if previousSlice.item.id == slice.item.id {
+                                transition = .spring(duration: 0.4)
+                            }
+                        }
+                        
                         self.stateValue = stateValue
                         
                         if update {
@@ -1387,7 +1404,7 @@ private final class StoryContainerScreenComponent: Component {
                                 self.environment?.controller()?.dismiss()
                             } else {
                                 if !self.isUpdating {
-                                    self.state?.updated(transition: .immediate)
+                                    self.state?.updated(transition: transition)
                                 }
                             }
                         } else {
@@ -1395,7 +1412,7 @@ private final class StoryContainerScreenComponent: Component {
                                 guard let self else {
                                     return
                                 }
-                                self.state?.updated(transition: .immediate)
+                                self.state?.updated(transition: transition)
                             }
                         }
                     }
@@ -1609,12 +1626,14 @@ private final class StoryContainerScreenComponent: Component {
                                 inputHeight: environment.inputHeight,
                                 metrics: environment.metrics,
                                 deviceMetrics: environment.deviceMetrics,
+                                isEmbeddedInCamera: false,
                                 isProgressPaused: isProgressPaused || i != focusedIndex,
                                 isAudioMuted: self.audioMode == .off || (self.audioMode == .ambient && !(self.isMuteSwitchOn || self.areHeadphonesConnected)),
                                 audioMode: self.audioMode,
                                 hideUI: (i == focusedIndex && (self.itemSetPanState?.didBegin == false || self.itemSetPinchState != nil)),
                                 visibilityFraction: 1.0 - abs(panFraction + cubeAdditionalRotationFraction),
                                 isPanning: self.itemSetPanState?.didBegin == true,
+                                isCentral: i == focusedIndex,
                                 pinchState: self.itemSetPinchState,
                                 presentController: { [weak self] c, a in
                                     guard let self, let environment = self.environment else {
@@ -1869,16 +1888,18 @@ private final class StoryContainerScreenComponent: Component {
                             if let previousRotationFraction = itemSetView.rotationFraction, !itemSetTransition.animation.isImmediate {
                                 let fromT = previousRotationFraction
                                 let toT = panFraction + cubeAdditionalRotationFraction
-                                itemSetTransition.setTransformAsKeyframes(view: itemSetView, transform: { sourceT, isFinal in
-                                    let t = fromT * (1.0 - sourceT) + toT * sourceT
-                                    if isFinal {
-                                        if abs(t - 0.0) <= 0.0001 {
-                                            return CATransform3DIdentity
+                                if abs(fromT - toT) > CGFloat.leastNonzeroMagnitude {
+                                    itemSetTransition.setTransformAsKeyframes(view: itemSetView, transform: { sourceT, isFinal in
+                                        let t = fromT * (1.0 - sourceT) + toT * sourceT
+                                        if isFinal {
+                                            if abs(t - 0.0) <= 0.0001 {
+                                                return CATransform3DIdentity
+                                            }
                                         }
-                                    }
-                                    
-                                    return calculateCubeTransform(rotationFraction: t, sideAngle: sideAngle, cubeSize: itemFrame.size)
-                                })
+                                        
+                                        return calculateCubeTransform(rotationFraction: t, sideAngle: sideAngle, cubeSize: itemFrame.size)
+                                    })
+                                }
                             } else {
                                 let updatedTransform: CATransform3D
                                 if abs(panFraction + cubeAdditionalRotationFraction) <= 0.0001 {
@@ -1936,7 +1957,7 @@ private final class StoryContainerScreenComponent: Component {
                     size: availableSize,
                     metrics: environment.metrics,
                     deviceMetrics: environment.deviceMetrics,
-                    intrinsicInsets: UIEdgeInsets(top: environment.statusBarHeight, left: 0.0, bottom: contentDerivedBottomInset + presentationContextInsets.bottom, right: 0.0),
+                    intrinsicInsets: UIEdgeInsets(top: environment.statusBarHeight + 54.0, left: 0.0, bottom: contentDerivedBottomInset + presentationContextInsets.bottom, right: 0.0),
                     safeInsets: UIEdgeInsets(top: 0.0, left: presentationContextInsets.left, bottom: 0.0, right: presentationContextInsets.right),
                     additionalInsets: UIEdgeInsets(),
                     statusBarHeight: nil,
@@ -2146,6 +2167,40 @@ public class StoryContainerScreen: ViewControllerComponentContainer {
             componentView.dismissWithoutTransitionOut = true
         }
         self.dismiss(completion: completion)
+    }
+    
+    func dismissForPictureInPicture() {
+        if !self.isDismissed {
+            self.isDismissed = true
+            self.didAnimateIn = false
+            
+            /*if let componentView = self.node.hostView.componentView as? StoryContainerScreenComponent.View {
+                componentView.endEditing(true)
+                
+                componentView.animateOut(completion: { [weak self] in
+                    self?.dismiss(animated: false)
+                })
+            } else {
+                self.dismiss(animated: false)
+            }*/
+            self.dismiss(animated: false)
+        }
+    }
+    
+    func restoreForPictureInPicture(navigationController: NavigationController, completion: @escaping () -> Void) {
+        if self.isDismissed {
+            self.isDismissed = false
+            
+            navigationController.pushViewController(self, animated: false, completion: completion)
+            
+            if !self.didAnimateIn {
+                self.didAnimateIn = true
+                
+                if let componentView = self.node.hostView.componentView as? StoryContainerScreenComponent.View {
+                    componentView.animateIn()
+                }
+            }
+        }
     }
     
     override public func dismiss(completion: (() -> Void)? = nil) {

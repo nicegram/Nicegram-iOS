@@ -139,7 +139,7 @@ public func customizeDefaultDarkTintedPresentationTheme(theme: PresentationTheme
                 opaqueBackgroundColor: mainBackgroundColor,
                 separatorColor: mainSeparatorColor,
                 segmentedBackgroundColor: mainInputColor,
-                segmentedForegroundColor: mainBackgroundColor,
+                segmentedForegroundColor: mainSecondaryTextColor?.withAlphaComponent(0.4),
                 segmentedDividerColor: mainSecondaryTextColor?.withAlphaComponent(0.5)
             ),
             navigationSearchBar: rootController.navigationSearchBar.withUpdated(
@@ -571,7 +571,7 @@ public func makeDefaultDarkTintedPresentationTheme(extendingThemeReference: Pres
         badgeStrokeColor: UIColor(rgb: 0xef5b5b),
         badgeTextColor: UIColor(rgb: 0xffffff),
         segmentedBackgroundColor: mainInputColor,
-        segmentedForegroundColor: mainBackgroundColor,
+        segmentedForegroundColor: mainSecondaryTextColor.withAlphaComponent(0.4),
         segmentedTextColor: UIColor(rgb: 0xffffff),
         segmentedDividerColor: mainSecondaryTextColor.withAlphaComponent(0.5),
         clearButtonBackgroundColor: UIColor(rgb: 0xffffff, alpha: 0.1),
