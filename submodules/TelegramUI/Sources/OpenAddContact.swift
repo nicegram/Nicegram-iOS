@@ -14,24 +14,31 @@ func openAddContactImpl(context: AccountContext, firstName: String = "", lastNam
     |> take(1)
     |> deliverOnMainQueue).startStandalone(next: { value in
         switch value {
-            case .allowed:
-                let contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: firstName, lastName: lastName, phoneNumbers: [DeviceContactPhoneNumberData(label: label, value: phoneNumber)]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
-                present(deviceContactInfoController(context: ShareControllerAppAccountContext(context: context), environment: ShareControllerAppEnvironment(sharedContext: context.sharedContext), subject: .create(peer: nil, contactData: contactData, isSharing: false, shareViaException: false, completion: { peer, stableId, contactData in
+        case .allowed:
+            let controller = context.sharedContext.makeNewContactScreen(
+                context: context,
+                peer: nil,
+                phoneNumber: phoneNumber,
+                shareViaException: false,
+                completion: { peer, stableId, contactData in
                     if let peer = peer {
-                        if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                        if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                             pushController(infoController)
                         }
-                    } else {
+                    } else if let stableId, let contactData {
                         pushController(deviceContactInfoController(context: ShareControllerAppAccountContext(context: context), environment: ShareControllerAppEnvironment(sharedContext: context.sharedContext), subject: .vcard(nil, stableId, contactData), completed: nil, cancelled: nil))
                     }
-                }), completed: completed, cancelled: nil), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
-            case .notDetermined:
-                DeviceAccess.authorizeAccess(to: .contacts)
-            default:
-                let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                present(textAlertController(context: context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
-                    context.sharedContext.applicationBindings.openSettings()
-                })]), nil)
+                    completed()
+                }
+            )
+            pushController(controller)
+        case .notDetermined:
+            DeviceAccess.authorizeAccess(to: .contacts)
+        default:
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            present(textAlertController(context: context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
+                context.sharedContext.applicationBindings.openSettings()
+            })]), nil)
         }
     })
 }

@@ -344,7 +344,7 @@ private final class GiftTransferAlertContentNode: AlertContentNode {
                 id: "fiatValue",
                 title: strings.Gift_Unique_Value,
                 component: AnyComponent(
-                    MultilineTextComponent(text: .plain(NSAttributedString(string: "≈\(formatCurrencyAmount(valueAmount, currency: valueCurrency))", font: tableFont, textColor: tableTextColor)))
+                    MultilineTextComponent(text: .plain(NSAttributedString(string: "~\(formatCurrencyAmount(valueAmount, currency: valueCurrency))", font: tableFont, textColor: tableTextColor)))
                 ),
                 insets: UIEdgeInsets(top: 0.0, left: 10.0, bottom: 0.0, right: 12.0)
             ))

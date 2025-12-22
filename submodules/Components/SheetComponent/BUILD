@@ -14,6 +14,7 @@ swift_library(
         "//submodules/ComponentFlow:ComponentFlow",
         "//submodules/Components/ViewControllerComponent:ViewControllerComponent",
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
+        "//submodules/TelegramUI/Components/DynamicCornerRadiusView",
     ],
     visibility = [
         "//visibility:public",

@@ -13,6 +13,7 @@ import BalancedTextComponent
 import MultilineTextComponent
 import BundleIconComponent
 import ButtonComponent
+import GlassBarButtonComponent
 import AccountContext
 import PresentationDataUtils
 import TelegramUIPreferences
@@ -61,7 +62,6 @@ private final class SheetContent: CombinedComponent {
     }
     
     final class State: ComponentState {
-        var cachedCloseImage: (UIImage, PresentationTheme)?
     }
     
     func makeState() -> State {
@@ -69,9 +69,8 @@ private final class SheetContent: CombinedComponent {
     }
         
     static var body: Body {
-        let background = Child(RoundedRectangle.self)
         let icon = Child(ZStack<Empty>.self)
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(Text.self)
         let text = Child(BalancedTextComponent.self)
         
@@ -80,7 +79,6 @@ private final class SheetContent: CombinedComponent {
         return { context in
             let environment = context.environment[EnvironmentType.self]
             let component = context.component
-            let state = context.state
             
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             let theme = presentationData.theme
@@ -88,15 +86,6 @@ private final class SheetContent: CombinedComponent {
                         
             var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
                         
-            let background = background.update(
-                component: RoundedRectangle(color: theme.actionSheet.opaqueItemBackgroundColor, cornerRadius: 8.0),
-                availableSize: CGSize(width: context.availableSize.width, height: 1000.0),
-                transition: .immediate
-            )
-            context.add(background
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
-            )
-
             let icon = icon.update(
                 component: ZStack([
                     AnyComponentWithIdentity(
@@ -118,25 +107,27 @@ private final class SheetContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: icon.size.height / 2.0 + 31.0))
             )
             
-            let closeImage: UIImage
-            if let (image, cacheTheme) = state.cachedCloseImage, theme === cacheTheme {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: theme.actionSheet.inputClearButtonColor)!
-                state.cachedCloseImage = (closeImage, theme)
-            }
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Image(image: closeImage)),
-                    action: {
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 40.0, height: 40.0),
+                    backgroundColor: theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { _ in
                         component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 30.0, height: 30.0),
+                availableSize: CGSize(width: 40.0, height: 40.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: context.availableSize.width - closeButton.size.width, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
@@ -191,13 +182,15 @@ private final class SheetContent: CombinedComponent {
                         
             let controller = environment.controller() as? AgeVerificationScreen
                         
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
                         pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
+                        cornerRadius: 10.0,
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -209,17 +202,14 @@ private final class SheetContent: CombinedComponent {
                         controller?.complete(result: true)
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - 16.0 * 2.0, height: 50),
+                availableSize: CGSize(width: context.availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0),
                 transition: .immediate
             )
             context.add(button
-                .clipsToBounds(true)
-                .cornerRadius(10.0)
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
             )
             contentSize.height += button.size.height
- 
-            contentSize.height += 48.0
+            contentSize.height += buttonInsets.bottom
             
             return contentSize
         }
@@ -266,7 +256,8 @@ private final class AgeVerificationSheetComponent: CombinedComponent {
                             })
                         }
                     )),
-                    backgroundColor: .color(environment.theme.list.modalBlocksBackgroundColor),
+                    style: .glass,
+                    backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
                     animateOut: animateOut
@@ -373,27 +364,6 @@ public final class AgeVerificationScreen: ViewControllerComponentContainer {
             view.dismissAnimated()
         }
     }
-}
-
-func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor: UIColor) -> UIImage? {
-    return generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        
-        context.setFillColor(backgroundColor.cgColor)
-        context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
-        
-        context.setLineWidth(2.0)
-        context.setLineCap(.round)
-        context.setStrokeColor(foregroundColor.cgColor)
-        
-        context.move(to: CGPoint(x: 10.0, y: 10.0))
-        context.addLine(to: CGPoint(x: 20.0, y: 20.0))
-        context.strokePath()
-        
-        context.move(to: CGPoint(x: 20.0, y: 10.0))
-        context.addLine(to: CGPoint(x: 10.0, y: 20.0))
-        context.strokePath()
-    })
 }
 
 public func presentAgeVerification(context: AccountContext, parentController: ViewController, completion: @escaping () -> Void) {

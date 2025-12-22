@@ -51,7 +51,7 @@ final class DataButtonComponent: Component {
             super.init(frame: frame)
 
             self.clipsToBounds = true
-            self.layer.cornerRadius = 10.0
+            self.layer.cornerRadius = 26.0
             
             self.highligthedChanged = { [weak self] isHighlighted in
                 guard let self, let component = self.component, let highlightBackgroundFrame = self.highlightBackgroundFrame else {
@@ -111,7 +111,7 @@ final class DataButtonComponent: Component {
                 containerSize: CGSize(width: availableSize.width, height: 100.0)
             )
             
-            let height: CGFloat = 44.0
+            let height: CGFloat = 52.0
             
             let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) / 2.0), y: floor((height - titleSize.height) / 2.0)), size: titleSize)
             

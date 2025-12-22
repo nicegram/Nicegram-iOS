@@ -176,7 +176,7 @@ final class MessageListComponent: Component {
                     component: AnyComponent(MessageItemComponent(
                         context: component.context,
                         icon: item.icon,
-                        isNotification: item.isNotification,
+                        style: item.isNotification ? .notification : .generic,
                         text: item.text,
                         entities: item.entities,
                         availableReactions: component.availableReactions,

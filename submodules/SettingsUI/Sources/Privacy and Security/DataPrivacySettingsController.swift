@@ -229,17 +229,17 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
         case let .contactsHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .deleteContacts(_, text, value):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.deleteContacts()
             })
         case let .syncContacts(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                 arguments.updateSyncContacts(updatedValue)
             })
         case let .syncContactsInfo(_, text):
             return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         case let .frequentContacts(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                 arguments.updateSuggestFrequentContacts(updatedValue)
             })
         case let .frequentContactsInfo(_, text):
@@ -247,13 +247,13 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
         case let .chatsHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .deleteCloudDrafts(_, text, value):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: value ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.deleteCloudDrafts()
             })
         case let .paymentHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .clearPaymentInfo(_, text, enabled):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: enabled ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: enabled ? .generic : .disabled, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.clearPaymentInfo()
             })
         case let .paymentInfo(_, text):
@@ -261,7 +261,7 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
         case let .secretChatLinkPreviewsHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .secretChatLinkPreviews(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                 arguments.updateSecretChatLinkPreviews(updatedValue)
             })
         case let .secretChatLinkPreviewsInfo(_, text):
@@ -269,6 +269,7 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
         case .botList:
             return ItemListDisclosureItem(
                 presentationData: presentationData,
+                systemStyle: .glass,
                 title: presentationData.strings.Settings_BotListSettings,
                 label: "",
                 sectionId: self.section,

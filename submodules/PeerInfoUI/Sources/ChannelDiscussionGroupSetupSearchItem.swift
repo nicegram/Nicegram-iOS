@@ -39,7 +39,7 @@ final class ChannelDiscussionGroupSetupSearchItem: ItemListControllerSearch {
         }
     }
     
-    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> NavigationBarContentNode & ItemListControllerSearchNavigationContentNode {
+    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)? {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         if let current = current as? ChannelDiscussionSearchNavigationContentNode {
             current.updateTheme(presentationData.theme)

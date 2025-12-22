@@ -89,7 +89,6 @@ swift_library(
         "//submodules/AnimatedAvatarSetNode:AnimatedAvatarSetNode",
         "//submodules/AlertUI:AlertUI",
         "//submodules/DirectionalPanGesture:DirectionalPanGesture",
-        "//submodules/PeerInfoUI:PeerInfoUI",
         "//submodules/AnimatedCountLabelNode:AnimatedCountLabelNode",
         "//submodules/DeviceProximity:DeviceProximity",
         "//submodules/ManagedAnimationNode:ManagedAnimationNode",
@@ -134,6 +133,9 @@ swift_library(
         "//submodules/TelegramUI/Components/TextFieldComponent",
         "//submodules/ReactionSelectionNode",
         "//submodules/TelegramUI/Components/EntityKeyboard",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/PremiumUI",
+        "//submodules/TelegramUI/Components/Calls/VideoChatMicButtonComponent",
     ],
     visibility = [
         "//visibility:public",

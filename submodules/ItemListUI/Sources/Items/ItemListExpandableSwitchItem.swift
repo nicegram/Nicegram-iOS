@@ -34,6 +34,7 @@ public class ItemListExpandableSwitchItem: ListViewItem, ItemListItem {
     }
     
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let icon: UIImage?
     let title: String
     let value: Bool
@@ -56,8 +57,9 @@ public class ItemListExpandableSwitchItem: ListViewItem, ItemListItem {
     
     public let selectable: Bool = true
     
-    public init(presentationData: ItemListPresentationData, icon: UIImage? = nil, title: String, value: Bool, isExpanded: Bool, subItems: [SubItem], type: ItemListExpandableSwitchItemNodeType = .regular, enableInteractiveChanges: Bool = true, enabled: Bool = true, displayLocked: Bool = false, disableLeadingInset: Bool = false, maximumNumberOfLines: Int = 1, noCorners: Bool = false, sectionId: ItemListSectionId, style: ItemListStyle, updated: @escaping (Bool) -> Void, activatedWhileDisabled: @escaping () -> Void = {}, selectAction: @escaping () -> Void, subAction: @escaping (SubItem) -> Void, tag: ItemListItemTag? = nil) {
+    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage? = nil, title: String, value: Bool, isExpanded: Bool, subItems: [SubItem], type: ItemListExpandableSwitchItemNodeType = .regular, enableInteractiveChanges: Bool = true, enabled: Bool = true, displayLocked: Bool = false, disableLeadingInset: Bool = false, maximumNumberOfLines: Int = 1, noCorners: Bool = false, sectionId: ItemListSectionId, style: ItemListStyle, updated: @escaping (Bool) -> Void, activatedWhileDisabled: @escaping () -> Void = {}, selectAction: @escaping () -> Void, subAction: @escaping (SubItem) -> Void, tag: ItemListItemTag? = nil) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.icon = icon
         self.title = title
         self.value = value
@@ -156,6 +158,7 @@ private final class SubItemNode: HighlightTrackingButtonNode {
         self.action = action
         
         let leftInset: CGFloat = 60.0
+        let separatorRightInset: CGFloat = 16.0
         
         if themeUpdated {
             self.separatorNode.backgroundColor = presentationData.theme.list.itemBlocksSeparatorColor
@@ -179,7 +182,7 @@ private final class SubItemNode: HighlightTrackingButtonNode {
         
         checkNode.setSelected(item.isSelected, animated: transition.isAnimated)
         
-        transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: leftInset, y: size.height - UIScreenPixel), size: CGSize(width: size.width - leftInset, height: UIScreenPixel)))
+        transition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(x: leftInset, y: size.height - UIScreenPixel), size: CGSize(width: size.width - leftInset - separatorRightInset, height: UIScreenPixel)))
         
         self.textNode.attributedText = NSAttributedString(string: item.title, font: Font.regular(17.0), textColor: presentationData.theme.list.itemPrimaryTextColor)
         let titleSize = self.textNode.updateLayout(CGSize(width: size.width - leftInset, height: 100.0))
@@ -305,6 +308,8 @@ public class ItemListExpandableSwitchItemNode: ListViewItemNode, ItemListItemNod
             var contentSize: CGSize
             var insets: UIEdgeInsets
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
             
@@ -324,12 +329,12 @@ public class ItemListExpandableSwitchItemNode: ListViewItemNode, ItemListItemNod
             case .plain:
                 itemBackgroundColor = item.presentationData.theme.list.plainBackgroundColor
                 itemSeparatorColor = item.presentationData.theme.list.itemPlainSeparatorColor
-                contentSize = CGSize(width: params.width, height: 44.0)
+                contentSize = CGSize(width: params.width, height: item.systemStyle == .glass ? 52.0 : 44.0)
                 insets = itemListNeighborsPlainInsets(neighbors)
             case .blocks:
                 itemBackgroundColor = item.presentationData.theme.list.itemBlocksBackgroundColor
                 itemSeparatorColor = item.presentationData.theme.list.itemBlocksSeparatorColor
-                contentSize = CGSize(width: params.width, height: 44.0)
+                contentSize = CGSize(width: params.width, height: item.systemStyle == .glass ? 52.0 : 44.0)
                 insets = itemListNeighborsGroupedInsets(neighbors, params)
             }
             
@@ -347,13 +352,21 @@ public class ItemListExpandableSwitchItemNode: ListViewItemNode, ItemListItemNod
             
             let titleValue = "\(item.subItems.filter(\.isSelected).count)/\(item.subItems.count)"
             let (titleValueLayout, titleValueApply) = makeTitleValueLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: titleValue, font: Font.bold(14.0), textColor: item.presentationData.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - params.rightInset - 64.0 - titleLayout.size.width, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
+                        
+            let verticalInset: CGFloat
+            switch item.systemStyle {
+            case .glass:
+                verticalInset = 15.0
+            case .legacy:
+                verticalInset = 11.0
+            }
             
-            contentSize.height = max(contentSize.height, titleLayout.size.height + 22.0)
+            contentSize.height = max(contentSize.height, titleLayout.size.height + verticalInset * 2.0)
             
             let mainContentHeight = contentSize.height
             var effectiveSubItemsHeight: CGFloat = 0.0
             if item.isExpanded {
-                effectiveSubItemsHeight = CGFloat(item.subItems.count) * 44.0
+                effectiveSubItemsHeight = CGFloat(item.subItems.count) * (item.systemStyle == .glass ? 52.0 : 44.0)
             }
             contentSize.height += effectiveSubItemsHeight
             
@@ -494,14 +507,14 @@ public class ItemListExpandableSwitchItemNode: ListViewItemNode, ItemListItemNod
                                     strongSelf.bottomTopStripeNode.isHidden = false
                             }
                             
-                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                             
                             let backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                             animation.animator.updateFrame(layer: strongSelf.backgroundNode.layer, frame: backgroundFrame, completion: nil)
                             animation.animator.updateFrame(layer: strongSelf.maskNode.layer, frame: backgroundFrame.insetBy(dx: params.leftInset, dy: 0.0), completion: nil)
                             animation.animator.updateFrame(layer: strongSelf.topStripeNode.layer, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)), completion: nil)
                             animation.animator.updateFrame(layer: strongSelf.bottomTopStripeNode.layer, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: mainContentHeight - separatorHeight), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)), completion: nil)
-                            animation.animator.updateFrame(layer: strongSelf.bottomStripeNode.layer, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)), completion: nil)
+                            animation.animator.updateFrame(layer: strongSelf.bottomStripeNode.layer, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)), completion: nil)
                     }
                     
                     strongSelf.titleNode.frame = CGRect(origin: CGPoint(x: leftInset, y: floorToScreenPixels((mainContentHeight - titleLayout.size.height) / 2.0)), size: titleLayout.size)
@@ -564,12 +577,12 @@ public class ItemListExpandableSwitchItemNode: ListViewItemNode, ItemListItemNod
                         lockedIconNode.removeFromSupernode()
                     }
                     
-                    strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: 44.0 + UIScreenPixel + UIScreenPixel))
+                    strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: params.width, height: (item.systemStyle == .glass ? 52.0 : 44.0) + UIScreenPixel + UIScreenPixel))
                     
                     animation.animator.updateFrame(layer: strongSelf.subItemContainer.layer, frame: CGRect(origin: CGPoint(x: 0.0, y: mainContentHeight), size: CGSize(width: params.width, height: effectiveSubItemsHeight)), completion: nil)
                     
                     var validIds: [AnyHashable] = []
-                    let subItemSize = CGSize(width: params.width - params.leftInset - params.rightInset, height: 44.0)
+                    let subItemSize = CGSize(width: params.width - params.leftInset - params.rightInset, height: item.systemStyle == .glass ? 52.0 : 44.0)
                     var nextSubItemPosition = CGPoint(x: params.leftInset, y: 0.0)
                     for subItem in item.subItems {
                         validIds.append(subItem.id)

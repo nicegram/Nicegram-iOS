@@ -275,6 +275,7 @@ final class StoryPreviewComponent: Component {
                     inputModeAction: nil,
                     timeoutAction: nil,
                     forwardAction: {},
+                    paidMessageAction: nil,
                     moreAction: { _, _ in },
                     presentCaptionPositionTooltip: nil,
                     presentVoiceMessagesUnavailableTooltip: nil,

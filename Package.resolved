@@ -73,6 +73,15 @@
       }
     },
     {
+      "identity" : "dotlottie-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LottieFiles/dotlottie-ios.git",
+      "state" : {
+        "revision" : "4213e7298eb94b81ce08c226302759c34ce59366",
+        "version" : "0.11.1"
+      }
+    },
+    {
       "identity" : "factory",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hmlongco/Factory.git",
@@ -149,8 +158,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/groue/GRDB.swift.git",
       "state" : {
-        "revision" : "18497b68fdbb3a09528d260a0a0e1e7e61c8c53d",
-        "version" : "7.8.0"
+        "revision" : "aa0079aeb82a4bf00324561a40bffe68c6fe1c26",
+        "version" : "7.9.0"
       }
     },
     {
@@ -249,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "a2e2c1038984170964e7a84b5fc19603b6f01f17"
+        "revision" : "bc681051f4e9b68e096478455961efc4d629b4a3"
       }
     },
     {
@@ -258,7 +267,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "f56e5eb3d3a490ed8080b7827e2b13b95a098bec"
+        "revision" : "08f9d614e77ee788d0493a9ff0f24f0a57e459d6"
       }
     },
     {
@@ -554,8 +563,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "99771910b79dbbc861e7ea05dc0bdabea42b01c7",
-        "version" : "4.4.4"
+        "revision" : "63fc782aad80da883583045444c8c8b6ca0de92e",
+        "version" : "4.4.5"
       }
     },
     {

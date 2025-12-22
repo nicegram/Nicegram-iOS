@@ -173,8 +173,8 @@ final class LocationLiveListItemNode: ListViewItemNode {
             let rightInset: CGFloat = params.rightInset
             let verticalInset: CGFloat = 8.0
             
-            let titleFont = Font.medium(item.presentationData.fontSize.itemListBaseFontSize)
-            let subtitleFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 14.0 / 17.0))
+            let titleFont = Font.semibold(item.presentationData.fontSize.itemListBaseFontSize)
+            let subtitleFont = Font.regular(floor(item.presentationData.fontSize.itemListBaseFontSize * 15.0 / 17.0))
             
             var title: String = ""
             if let author = item.message.author {
@@ -302,6 +302,7 @@ final class LocationLiveListItemNode: ListViewItemNode {
 
                         let separatorHeight = UIScreenPixel
                         let topHighlightInset: CGFloat = separatorHeight
+                        let separatorRightInset: CGFloat = 16.0
                         let avatarSize: CGFloat = 40.0
                         
                         if let peer = item.message.author {
@@ -312,7 +313,7 @@ final class LocationLiveListItemNode: ListViewItemNode {
 
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: contentSize.width, height: contentSize.height))
                         strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - topHighlightInset), size: CGSize(width: contentSize.width, height: contentSize.height + topHighlightInset))
-                        strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width, height: separatorHeight))
+                        strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width - leftInset - params.rightInset - separatorRightInset, height: separatorHeight))
                         strongSelf.separatorNode.isHidden = !hasSeparator
                         
                         var liveBroadcastingTimeout: Int32 = 0

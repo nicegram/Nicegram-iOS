@@ -7,20 +7,7 @@ import TelegramPresentationData
 import AccountContext
 import SearchUI
 
-public enum ChannelMembersSearchControllerMode {
-    case promote
-    case ban
-    case inviteToCall
-}
-
-public enum ChannelMembersSearchFilter {
-    case exclude([EnginePeer.Id])
-    case disable([EnginePeer.Id])
-    case excludeNonMembers
-    case excludeBots
-}
-
-public final class ChannelMembersSearchController: ViewController {
+public final class ChannelMembersSearchControllerImpl: ViewController, ChannelMembersSearchController {
     private let queue = Queue()
     
     private let context: AccountContext
@@ -43,15 +30,15 @@ public final class ChannelMembersSearchController: ViewController {
     
     private var searchContentNode: NavigationBarSearchContentNode?
     
-    public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, peerId: EnginePeer.Id, forceTheme: PresentationTheme? = nil, mode: ChannelMembersSearchControllerMode, filters: [ChannelMembersSearchFilter] = [], openPeer: @escaping (EnginePeer, RenderedChannelParticipant?) -> Void) {
-        self.context = context
-        self.peerId = peerId
-        self.mode = mode
-        self.openPeer = openPeer
-        self.filters = filters
-        self.presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
-        self.forceTheme = forceTheme
-        if let forceTheme = forceTheme {
+    public init(params: ChannelMembersSearchControllerParams) {
+        self.context = params.context
+        self.peerId = params.peerId
+        self.mode = params.mode
+        self.openPeer = params.openPeer
+        self.filters = params.filters
+        self.presentationData = params.updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
+        self.forceTheme = params.forceTheme
+        if let forceTheme = params.forceTheme {
             self.presentationData = self.presentationData.withUpdated(theme: forceTheme)
         }
         
@@ -79,7 +66,7 @@ public final class ChannelMembersSearchController: ViewController {
         })
         self.navigationBar?.setContentNode(self.searchContentNode, animated: false)
         
-        self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
+        self.presentationDataDisposable = ((params.updatedPresentationData?.signal ?? params.context.sharedContext.presentationData)
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             guard let strongSelf = self else {
                 return
@@ -88,7 +75,7 @@ public final class ChannelMembersSearchController: ViewController {
             strongSelf.controllerNode.updatePresentationData(presentationData)
         })
         
-        let _ = (context.account.postbox.loadedPeerWithId(peerId)
+        let _ = (params.context.account.postbox.loadedPeerWithId(peerId)
         |> take(1)
         |> deliverOnMainQueue).start(next: { [weak self] peer in
             if let strongSelf = self {

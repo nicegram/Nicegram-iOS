@@ -443,7 +443,7 @@ public final class StorySubscriptionsContext {
                                             updatedPeerEntries.append(previousEntry)
                                         } else {
                                             if let codedEntry = CodableEntry(storedItem) {
-                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends))
+                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream))
                                             }
                                         }
                                     }
@@ -2608,7 +2608,7 @@ public final class PeerExpiringStoryListContext {
                                             updatedPeerEntries.append(previousEntry)
                                         } else {
                                             if let codedEntry = CodableEntry(storedItem) {
-                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends))
+                                                updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream))
                                             }
                                         }
                                     }
@@ -2699,6 +2699,20 @@ public final class PeerExpiringStoryListContext {
             return self.items.contains(where: { $0.id > self.maxReadId && $0.isCloseFriends })
         }
         
+        public var hasLiveItems: Bool {
+            return self.items.contains(where: { item in
+                switch item {
+                case let .item(item):
+                    if case .liveStream = item.media {
+                        return true
+                    }
+                default:
+                    break
+                }
+                return false
+            })
+        }
+        
         public init(items: [Item], isCached: Bool, maxReadId: Int32, isLoading: Bool) {
             self.items = items
             self.isCached = isCached
@@ -2775,7 +2789,7 @@ public func _internal_pollPeerStories(postbox: Postbox, network: Network, accoun
                                     updatedPeerEntries.append(previousEntry)
                                 } else {
                                     if let codedEntry = CodableEntry(storedItem) {
-                                        updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends))
+                                        updatedPeerEntries.append(StoryItemsTableEntry(value: codedEntry, id: storedItem.id, expirationTimestamp: storedItem.expirationTimestamp, isCloseFriends: storedItem.isCloseFriends, isLiveStream: storedItem.isLiveStream))
                                     }
                                 }
                             }

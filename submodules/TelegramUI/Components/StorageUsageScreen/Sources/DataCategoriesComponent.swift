@@ -82,7 +82,7 @@ final class DataCategoriesComponent: Component {
             super.init(frame: frame)
             
             self.clipsToBounds = true
-            self.layer.cornerRadius = 10.0
+            self.layer.cornerRadius = 26.0
             
             self.addSubview(self.containerView)
         }

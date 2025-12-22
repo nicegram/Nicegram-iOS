@@ -326,7 +326,7 @@ private func pushDeviceContactData(accountPeerId: PeerId, postbox: Postbox, netw
         batches = batches
         |> mapToSignal { intermediateResult -> Signal<PushDeviceContactsResult, NoError> in
             return network.request(Api.functions.contacts.importContacts(contacts: zip(0 ..< batch.count, batch).map { index, item -> Api.InputContact in
-                return .inputPhoneContact(clientId: Int64(index), phone: item.0.rawValue, firstName: item.1.firstName, lastName: item.1.lastName)
+                return .inputPhoneContact(flags: 0, clientId: Int64(index), phone: item.0.rawValue, firstName: item.1.firstName, lastName: item.1.lastName, note: nil)
             }))
             |> map(Optional.init)
             |> `catch` { _ -> Signal<Api.contacts.ImportedContacts?, NoError> in

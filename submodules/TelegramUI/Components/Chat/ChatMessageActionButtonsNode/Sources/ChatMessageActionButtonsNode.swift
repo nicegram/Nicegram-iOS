@@ -387,7 +387,7 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     if let backgroundContent = node.backgroundContent {
                         //node.backgroundBlurNode.isHidden = true
                         node.backgroundBlurView?.view.isHidden = true
-                        backgroundContent.frame = CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0))
+                        animation.animator.updateFrame(layer: backgroundContent.layer, frame: CGRect(origin: CGPoint(), size: CGSize(width: max(0.0, width), height: 42.0)), completion: nil)
                         
                         node.backgroundColorNode?.frame = backgroundContent.bounds
                         
@@ -424,9 +424,13 @@ private final class ChatMessageActionButtonNode: ASDisplayNode {
                     
                     if currentMaskPath != effectiveMaskPath {
                         if let effectiveMaskPath = effectiveMaskPath {
-                            let shapeLayer = CAShapeLayer()
-                            shapeLayer.path = effectiveMaskPath
-                            node.layer.mask = shapeLayer
+                            if let shapeLayer = node.layer.mask as? SimpleShapeLayer {
+                                animation.animator.updateShapeLayerPath(layer: shapeLayer, path: effectiveMaskPath, completion: nil)
+                            } else {
+                                let shapeLayer = SimpleShapeLayer()
+                                shapeLayer.path = effectiveMaskPath
+                                node.layer.mask = shapeLayer
+                            }
                         } else {
                             node.layer.mask = nil
                         }

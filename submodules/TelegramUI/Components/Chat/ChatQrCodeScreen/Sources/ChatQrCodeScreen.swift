@@ -36,6 +36,10 @@ import SegmentedControlNode
 import AnimatedCountLabelNode
 import HexColor
 import QrCodeUI
+import ComponentFlow
+import GlassBarButtonComponent
+import SheetComponent
+import BundleIconComponent
 
 private func closeButtonImage(theme: PresentationTheme) -> UIImage? {
     return generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
@@ -717,7 +721,7 @@ public final class ChatQrCodeScreenImpl: ViewController, ChatQrCodeScreen {
 }
 
 private func iconColors(theme: PresentationTheme) -> [String: UIColor] {
-    let accentColor = theme.actionSheet.controlAccentColor
+    let accentColor = theme.rootController.navigationBar.glassBarButtonForegroundColor
     var colors: [String: UIColor] = [:]
     colors["Sunny.Path 14.Path.Stroke 1"] = accentColor
     colors["Sunny.Path 15.Path.Stroke 1"] = accentColor
@@ -745,18 +749,6 @@ private func interpolateColors(from: [String: UIColor], to: [String: UIColor], f
 
 private let defaultEmoticon = "🏠"
 
-private func generateShadowImage() -> UIImage? {
-    return generateImage(CGSize(width: 40.0, height: 40.0), rotatedContext: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        
-        context.setShadow(offset: CGSize(width: 0.0, height: -0.5), blur: 10.0, color: UIColor(rgb: 0x000000, alpha: 0.4).cgColor)
-        context.setFillColor(UIColor(rgb: 0x000000, alpha: 0.4).cgColor)
-        let path = UIBezierPath(roundedRect: CGRect(origin: CGPoint(x: 0.0, y: 8.0), size: CGSize(width: 40.0, height: 40.0)), cornerRadius: 16.0)
-        context.addPath(path.cgPath)
-        context.fillPath()
-    })?.stretchableImage(withLeftCapWidth: 20, topCapHeight: 0)
-}
-
 private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDelegate {
     private let context: AccountContext
     private var presentationData: PresentationData
@@ -768,14 +760,14 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
     private let scrollNodeContentNode: ASDisplayNode
     private let contentContainerNode: ASDisplayNode
     private let topContentContainerNode: SparseNode
-    private let shadowNode: ASImageNode
-    private let effectNode: ASDisplayNode
     private let backgroundNode: ASDisplayNode
-    private let contentBackgroundNode: ASDisplayNode
+    private let contentBackgroundView: SheetBackgroundView
+    private let cancelButton = ComponentView<Empty>()
+    private let switchThemeButton = ComponentView<Empty>()
     private let titleNode: ASTextNode
     private let segmentedNode: SegmentedControlNode
-    private let cancelButton: HighlightableButtonNode
-    private let switchThemeButton: HighlightTrackingButtonNode
+    private let cancelButtonNode: HighlightableButtonNode
+    private let switchThemeButtonNode: HighlightTrackingButtonNode
     private let animationContainerNode: ASDisplayNode
     private var animationNode: AnimationNode
     private let doneButton: SolidRoundedButtonNode
@@ -841,28 +833,17 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         
         self.topContentContainerNode = SparseNode()
         self.topContentContainerNode.isOpaque = false
-
-        self.shadowNode = ASImageNode()
-        self.shadowNode.contentMode = .scaleToFill
-        self.shadowNode.image = generateShadowImage()
         
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.clipsToBounds = true
-        self.backgroundNode.cornerRadius = 16.0
+        self.backgroundNode.cornerRadius = 38.0
         
         self.isDarkAppearance = self.presentationData.theme.overallDarkAppearance
         self.isDarkAppearancePromise = ValuePromise(self.presentationData.theme.overallDarkAppearance)
         
-        let backgroundColor = self.presentationData.theme.actionSheet.itemBackgroundColor
         let textColor = self.presentationData.theme.actionSheet.primaryTextColor
-        let blurStyle: UIBlurEffect.Style = self.presentationData.theme.actionSheet.backgroundType == .light ? .light : .dark
-        
-        self.effectNode = ASDisplayNode(viewBlock: {
-            return UIVisualEffectView(effect: UIBlurEffect(style: blurStyle))
-        })
-        
-        self.contentBackgroundNode = ASDisplayNode()
-        self.contentBackgroundNode.backgroundColor = backgroundColor
+                
+        self.contentBackgroundView = SheetBackgroundView()
         
         self.titleNode = ASTextNode()
         let title: String
@@ -878,19 +859,19 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         self.segmentedNode.isHidden = !self.contentNode.hasVideo
         self.titleNode.isHidden = !self.segmentedNode.isHidden
         
-        self.cancelButton = HighlightableButtonNode()
-        self.cancelButton.setImage(closeButtonImage(theme: self.presentationData.theme), for: .normal)
-        self.cancelButton.accessibilityLabel = self.presentationData.strings.Common_Close
-        self.cancelButton.accessibilityTraits = [.button]
+        self.cancelButtonNode = HighlightableButtonNode()
+        self.cancelButtonNode.setImage(closeButtonImage(theme: self.presentationData.theme), for: .normal)
+        self.cancelButtonNode.accessibilityLabel = self.presentationData.strings.Common_Close
+        self.cancelButtonNode.accessibilityTraits = [.button]
         
-        self.switchThemeButton = HighlightTrackingButtonNode()
+        self.switchThemeButtonNode = HighlightTrackingButtonNode()
         self.animationContainerNode = ASDisplayNode()
         self.animationContainerNode.isUserInteractionEnabled = false
         
         self.animationNode = AnimationNode(animation: self.isDarkAppearance ? "anim_sun_reverse" : "anim_sun", colors: iconColors(theme: self.presentationData.theme), scale: 1.0)
         self.animationNode.isUserInteractionEnabled = false
         
-        self.doneButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), height: 52.0, cornerRadius: 11.0, gloss: false)
+        self.doneButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: self.presentationData.theme), glass: true, height: 52.0, cornerRadius: 26.0)
         switch controller.subject {
         case .peer:
             self.doneButton.title = self.presentationData.strings.InviteLink_QRCode_Share
@@ -898,7 +879,7 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
             self.doneButton.title = self.presentationData.strings.Share_ShareMessage
         }
         
-        self.scanButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(backgroundColor: .clear, foregroundColor: self.presentationData.theme.actionSheet.controlAccentColor), font: .regular, height: 42.0, cornerRadius: 0.0, gloss: false)
+        self.scanButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(backgroundColor: .clear, foregroundColor: self.presentationData.theme.actionSheet.controlAccentColor), font: .regular, height: 42.0, cornerRadius: 0.0)
         self.scanButton.title = presentationData.strings.PeerInfo_QRCode_Scan
         self.scanButton.icon = UIImage(bundleImageName: "Settings/ScanQr")
         
@@ -916,13 +897,10 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         
         self.scrollNodeContentNode.addSubnode(self.contentNode)
         
-        self.scrollNodeContentNode.addSubnode(self.shadowNode)
         self.scrollNodeContentNode.addSubnode(self.backgroundNode)
         self.scrollNodeContentNode.addSubnode(self.contentContainerNode)
         self.scrollNodeContentNode.addSubnode(self.topContentContainerNode)
         
-        self.backgroundNode.addSubnode(self.effectNode)
-        self.backgroundNode.addSubnode(self.contentBackgroundNode)
         self.contentContainerNode.addSubnode(self.titleNode)
         self.contentContainerNode.addSubnode(self.segmentedNode)
         self.contentContainerNode.addSubnode(self.doneButton)
@@ -930,12 +908,12 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         
         self.topContentContainerNode.addSubnode(self.animationContainerNode)
         self.animationContainerNode.addSubnode(self.animationNode)
-        self.topContentContainerNode.addSubnode(self.switchThemeButton)
+        //self.topContentContainerNode.addSubnode(self.switchThemeButtonNode)
         self.topContentContainerNode.addSubnode(self.listNode)
-        self.topContentContainerNode.addSubnode(self.cancelButton)
+        //self.topContentContainerNode.addSubnode(self.cancelButtonNode)
         
-        self.switchThemeButton.addTarget(self, action: #selector(self.switchThemePressed), forControlEvents: .touchUpInside)
-        self.cancelButton.addTarget(self, action: #selector(self.cancelButtonPressed), forControlEvents: .touchUpInside)
+        self.switchThemeButtonNode.addTarget(self, action: #selector(self.switchThemePressed), forControlEvents: .touchUpInside)
+        self.cancelButtonNode.addTarget(self, action: #selector(self.cancelButtonPressed), forControlEvents: .touchUpInside)
         
         self.segmentedNode.selectedIndexChanged = { [weak self] index in
             guard let strongSelf = self, let contentNode = strongSelf.contentNode as? MessageContentNode, let videoNode = contentNode.videoNode else {
@@ -1181,7 +1159,7 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
             }
         }))
         
-        self.switchThemeButton.highligthedChanged = { [weak self] highlighted in
+        self.switchThemeButtonNode.highligthedChanged = { [weak self] highlighted in
             if let strongSelf = self {
                 if highlighted {
                     strongSelf.animationContainerNode.layer.removeAnimation(forKey: "opacity")
@@ -1280,14 +1258,14 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
             self.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: .immediate)
         }
         
-        self.cancelButton.setImage(closeButtonImage(theme: self.presentationData.theme), for: .normal)
+        self.cancelButtonNode.setImage(closeButtonImage(theme: self.presentationData.theme), for: .normal)
         self.doneButton.updateTheme(SolidRoundedButtonTheme(theme: self.presentationData.theme))
         self.scanButton.updateTheme(SolidRoundedButtonTheme(backgroundColor: .clear, foregroundColor: self.presentationData.theme.actionSheet.controlAccentColor))
         
         let previousIconColors = iconColors(theme: previousTheme)
         let newIconColors = iconColors(theme: self.presentationData.theme)
         
-        if !self.switchThemeButton.isUserInteractionEnabled {
+        if !self.switchThemeButtonNode.isUserInteractionEnabled {
             let themeCrossfadeDuration: Double = 0.3
             let themeCrossfadeDelay: Double = 0.25
             
@@ -1312,6 +1290,8 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
             self.wrappingScrollNode.view.contentInsetAdjustmentBehavior = .never
         }
         
+        self.backgroundNode.view.addSubview(self.contentBackgroundView)
+        
         self.listNode.view.disablesInteractiveTransitionGestureRecognizer = true
     }
     
@@ -1320,9 +1300,9 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
     }
 
     @objc private func switchThemePressed() {
-        self.switchThemeButton.isUserInteractionEnabled = false
+        self.switchThemeButtonNode.isUserInteractionEnabled = false
         Queue.mainQueue().after(0.5) {
-            self.switchThemeButton.isUserInteractionEnabled = true
+            self.switchThemeButtonNode.isUserInteractionEnabled = true
         }
         
         self.animateCrossfade(animateIcon: false)
@@ -1372,18 +1352,11 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
             })
         }
         
-        Queue.mainQueue().after(ChatQrCodeScreenImpl.themeCrossfadeDelay) {
-            if let effectView = self.effectNode.view as? UIVisualEffectView {
-                UIView.animate(withDuration: ChatQrCodeScreenImpl.themeCrossfadeDuration, delay: 0.0, options: .curveLinear) {
-                    effectView.effect = UIBlurEffect(style: self.presentationData.theme.actionSheet.backgroundType == .light ? .light : .dark)
-                } completion: { _ in
-                }
-            }
-
-            let previousColor = self.contentBackgroundNode.backgroundColor ?? .clear
-            self.contentBackgroundNode.backgroundColor = self.presentationData.theme.actionSheet.itemBackgroundColor
-            self.contentBackgroundNode.layer.animate(from: previousColor.cgColor, to: (self.contentBackgroundNode.backgroundColor ?? .clear).cgColor, keyPath: "backgroundColor", timingFunction: CAMediaTimingFunctionName.linear.rawValue, duration: ChatQrCodeScreenImpl.themeCrossfadeDuration)
-        }
+//        Queue.mainQueue().after(ChatQrCodeScreenImpl.themeCrossfadeDelay) {
+//            let previousColor = self.contentBackgroundNode.backgroundColor ?? .clear
+//            self.contentBackgroundNode.backgroundColor = self.presentationData.theme.actionSheet.opaqueItemBackgroundColor
+//            self.contentBackgroundNode.layer.animate(from: previousColor.cgColor, to: (self.contentBackgroundNode.backgroundColor ?? .clear).cgColor, keyPath: "backgroundColor", timingFunction: CAMediaTimingFunctionName.linear.rawValue, duration: ChatQrCodeScreenImpl.themeCrossfadeDuration)
+//        }
                 
         if let snapshotView = self.contentContainerNode.view.snapshotView(afterScreenUpdates: false) {
             snapshotView.frame = self.contentContainerNode.frame
@@ -1403,7 +1376,7 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
     
     private var animatedOut = false
     public func animateIn() {
-        let offset = self.bounds.size.height - self.contentBackgroundNode.frame.minY
+        let offset = self.bounds.size.height - self.contentBackgroundView.frame.minY
         
         if let (layout, _) = self.containerLayout {
             self.scrollNodeContentNode.cornerRadius = layout.deviceMetrics.screenCornerRadius
@@ -1424,7 +1397,7 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         
         self.wrappingScrollNode.view.isScrollEnabled = false
         
-        let distance = self.bounds.size.height - self.contentBackgroundNode.frame.minY
+        let distance = self.bounds.size.height - self.contentBackgroundView.frame.minY
         if let velocity {
             let initialVelocity: CGFloat = distance.isZero ? 0.0 : abs(velocity / distance)
             self.wrappingScrollNode.layer.animateSpring(from: 0.0 as NSNumber, to: -distance as NSNumber, keyPath: "bounds.origin.y", duration: 0.45, delay: 0.0, initialVelocity: initialVelocity, damping: 124.0, removeOnCompletion: false, additive: true, completion: { _ in
@@ -1473,24 +1446,81 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         let width = horizontalContainerFillingSizeForLayout(layout: layout, sideInset: 0.0)
         
         let sideInset = floor((layout.size.width - width) / 2.0)
-        let contentContainerFrame = CGRect(origin: CGPoint(x: sideInset, y: layout.size.height - contentHeight), size: CGSize(width: width, height: contentHeight))
+        let contentContainerFrame = CGRect(origin: CGPoint(x: sideInset, y: layout.size.height - contentHeight - 6.0), size: CGSize(width: width, height: contentHeight)).insetBy(dx: 6.0, dy: 0.0)
         let contentFrame = contentContainerFrame
         
         var backgroundFrame = CGRect(origin: CGPoint(x: contentFrame.minX, y: contentFrame.minY), size: CGSize(width: contentFrame.width, height: contentFrame.height + 2000.0))
         if backgroundFrame.minY < contentFrame.minY {
             backgroundFrame.origin.y = contentFrame.minY
         }
-        
-        let shadowFrame = CGRect(x: backgroundFrame.minX, y: backgroundFrame.minY - 8.0, width: backgroundFrame.width, height: 40.0)
-        transition.updateFrame(node: self.shadowNode, frame: shadowFrame)
+    
         transition.updateFrame(node: self.backgroundNode, frame: backgroundFrame)
-        transition.updateFrame(node: self.effectNode, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
-        transition.updateFrame(node: self.contentBackgroundNode, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
+        
+        self.contentBackgroundView.update(size: contentFrame.size, color: self.presentationData.theme.actionSheet.opaqueItemBackgroundColor, topCornerRadius: 38.0, bottomCornerRadius: layout.deviceMetrics.screenCornerRadius - 2.0, transition: .immediate)
+        transition.updateFrame(view: self.contentBackgroundView, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
+        
+        let barButtonSize = CGSize(width: 40.0, height: 40.0)
+        let cancelButtonSize = self.cancelButton.update(
+            transition: .immediate,
+            component: AnyComponent(GlassBarButtonComponent(
+                size: barButtonSize,
+                backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                isDark: self.presentationData.theme.overallDarkAppearance,
+                state: .generic,
+                component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                    BundleIconComponent(
+                        name: "Navigation/Close",
+                        tintColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                    )
+                )),
+                action: { [weak self] _ in
+                    self?.cancelButtonPressed()
+                }
+            )),
+            environment: {},
+            containerSize: barButtonSize
+        )
+        let cancelButtonFrame = CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelButtonSize)
+        if let view = self.cancelButton.view {
+            if view.superview == nil {
+                self.topContentContainerNode.view.addSubview(view)
+            }
+            view.bounds = CGRect(origin: .zero, size: cancelButtonFrame.size)
+            view.center = cancelButtonFrame.center
+        }
+        
+        let switchThemeButtonSize = self.switchThemeButton.update(
+            transition: .immediate,
+            component: AnyComponent(GlassBarButtonComponent(
+                size: barButtonSize,
+                backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                isDark: self.presentationData.theme.overallDarkAppearance,
+                state: .generic,
+                component: AnyComponentWithIdentity(id: "switchTheme", component: AnyComponent(
+                    Rectangle(color: .clear)
+                )),
+                action: { [weak self] _ in
+                    self?.switchThemePressed()
+                }
+            )),
+            environment: {},
+            containerSize: barButtonSize
+        )
+        let switchThemeButtonFrame = CGRect(origin: CGPoint(x: contentFrame.width - switchThemeButtonSize.width - 16.0, y: 16.0), size: switchThemeButtonSize)
+        if let view = self.switchThemeButton.view {
+            if view.superview == nil {
+                self.topContentContainerNode.view.addSubview(view)
+                self.topContentContainerNode.view.bringSubviewToFront(self.animationContainerNode.view)
+            }
+            view.bounds = CGRect(origin: .zero, size: switchThemeButtonFrame.size)
+            view.center = switchThemeButtonFrame.center
+        }
+        
         transition.updateFrame(node: self.wrappingScrollNode, frame: CGRect(origin: CGPoint(), size: layout.size))
         transition.updateFrame(node: self.scrollNodeContentNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: layout.size.height + 2000.0)))
         
         let titleSize = self.titleNode.measure(CGSize(width: width - 90.0, height: titleHeight))
-        let titleFrame = CGRect(origin: CGPoint(x: floor((contentFrame.width - titleSize.width) / 2.0), y: 19.0 + UIScreenPixel), size: titleSize)
+        let titleFrame = CGRect(origin: CGPoint(x: floor((contentFrame.width - titleSize.width) / 2.0), y: 36.0 - titleSize.height / 2.0), size: titleSize)
         transition.updateFrame(node: self.titleNode, frame: titleFrame)
         
         let segmentedSize = self.segmentedNode.updateLayout(.sizeToFit(maximumWidth: width - 90.0, minimumWidth: 160.0, height: 32.0), transition: transition)
@@ -1498,20 +1528,20 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
                 
         let switchThemeSize = CGSize(width: 44.0, height: 44.0)
         let switchThemeFrame = CGRect(origin: CGPoint(x: 3.0, y: 6.0), size: switchThemeSize)
-        transition.updateFrame(node: self.switchThemeButton, frame: switchThemeFrame)
-        transition.updateFrame(node: self.animationContainerNode, frame: switchThemeFrame.insetBy(dx: 9.0, dy: 9.0))
+        transition.updateFrame(node: self.switchThemeButtonNode, frame: switchThemeFrame)
+        transition.updateFrame(node: self.animationContainerNode, frame: switchThemeButtonFrame.insetBy(dx: 5.0, dy: 5.0))
         transition.updateFrameAsPositionAndBounds(node: self.animationNode, frame: CGRect(origin: CGPoint(), size: self.animationContainerNode.frame.size))
         
         let cancelSize = CGSize(width: 44.0, height: 44.0)
         let cancelFrame = CGRect(origin: CGPoint(x: contentFrame.width - cancelSize.width - 3.0, y: 6.0), size: cancelSize)
-        transition.updateFrame(node: self.cancelButton, frame: cancelFrame)
+        transition.updateFrame(node: self.cancelButtonNode, frame: cancelFrame)
         
-        let buttonInset: CGFloat = 16.0
+        let buttonInset: CGFloat = 30.0
         let scanButtonHeight = self.scanButton.updateLayout(width: contentFrame.width - buttonInset * 2.0, transition: transition)
-        transition.updateFrame(node: self.scanButton, frame: CGRect(x: buttonInset, y: contentHeight - scanButtonHeight - insets.bottom - 6.0, width: contentFrame.width, height: scanButtonHeight))
+        transition.updateFrame(node: self.scanButton, frame: CGRect(x: buttonInset, y: contentHeight - scanButtonHeight - insets.bottom, width: contentFrame.width, height: scanButtonHeight))
         
         let doneButtonHeight = self.doneButton.updateLayout(width: contentFrame.width - buttonInset * 2.0, transition: transition)
-        transition.updateFrame(node: self.doneButton, frame: CGRect(x: buttonInset, y: contentHeight - doneButtonHeight - scanButtonHeight - 10.0 - insets.bottom - 6.0, width: contentFrame.width, height: doneButtonHeight))
+        transition.updateFrame(node: self.doneButton, frame: CGRect(x: buttonInset, y: contentHeight - doneButtonHeight - scanButtonHeight - 10.0 - insets.bottom, width: contentFrame.width, height: doneButtonHeight))
                 
         transition.updateFrame(node: self.contentContainerNode, frame: contentContainerFrame)
         transition.updateFrame(node: self.topContentContainerNode, frame: contentContainerFrame)
@@ -1523,7 +1553,7 @@ private class ChatQrCodeScreenNode: ViewControllerTracingNode, ASScrollViewDeleg
         let contentSize = CGSize(width: contentFrame.width, height: 120.0)
         
         self.listNode.bounds = CGRect(x: 0.0, y: 0.0, width: contentSize.height, height: contentSize.width)
-        self.listNode.position = CGPoint(x: contentSize.width / 2.0, y: contentSize.height / 2.0 + titleHeight + 6.0)
+        self.listNode.position = CGPoint(x: contentSize.width / 2.0, y: contentSize.height / 2.0 + titleHeight + 12.0)
         self.listNode.transaction(deleteIndices: [], insertIndicesAndItems: [], updateIndicesAndItems: [], options: [.Synchronous], scrollToItem: nil, updateSizeAndInsets: ListViewUpdateSizeAndInsets(size: CGSize(width: contentSize.height, height: contentSize.width), insets: listInsets, duration: 0.0, curve: .Default(duration: nil)), stationaryItemRange: nil, updateOpaqueState: nil, completion: { _ in })
         
         self.contentNode.updateLayout(size: layout.size, topInset: 44.0, bottomInset: contentHeight, transition: transition)
@@ -1940,7 +1970,9 @@ private class QrContentNode: ASDisplayNode, ContentNode {
             imageSide = 220.0
             
             if size.width > 375.0 {
-                if textLength > 12 {
+                if textLength > 18 {
+                    fontSize = 16.0
+                } else if textLength > 12 {
                     fontSize = 22.0
                 } else {
                     fontSize = 24.0

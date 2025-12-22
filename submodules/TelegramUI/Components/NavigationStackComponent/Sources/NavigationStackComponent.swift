@@ -116,7 +116,7 @@ public final class NavigationStackComponent<ChildEnvironment: Equatable>: Compon
             super.init(frame: frame)
             
             self.dimView.alpha = 0.0
-            self.dimView.backgroundColor = UIColor.black.withAlphaComponent(0.3)
+            self.dimView.backgroundColor = UIColor.black.withAlphaComponent(0.2)
             self.dimView.isUserInteractionEnabled = false
             self.addSubview(self.dimView)
         }

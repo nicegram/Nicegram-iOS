@@ -1,7 +1,6 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "//Nicegram/NGLottie:NGLottie",
     "//Nicegram/NGLogging:NGLogging",
     "//Nicegram/NGData:NGData",
     "//Nicegram/NGWebUtils:NGWebUtils",
@@ -437,6 +436,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatMessageUnsupportedBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageWallpaperBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageGiftBubbleContentNode",
+        "//submodules/TelegramUI/Components/Chat/ChatMessageGiftOfferBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageGiveawayBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageBubbleItemNode",
         "//submodules/TelegramUI/Components/Chat/ChatRecentActionsController",
@@ -499,6 +499,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Stars/StarsIntroScreen",
         "//submodules/TelegramUI/Components/Gifts/GiftOptionsScreen",
         "//submodules/TelegramUI/Components/Gifts/GiftStoreScreen",
+        "//submodules/TelegramUI/Components/Gifts/GiftSetupScreen",
         "//submodules/TelegramUI/Components/ContentReportScreen",
         "//submodules/TelegramUI/Components/PeerInfo/AffiliateProgramSetupScreen",
         "//submodules/TelegramUI/Components/Stars/StarsBalanceOverlayComponent",
@@ -526,7 +527,13 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatInputAccessoryPanel",
         "//submodules/TelegramUI/Components/Chat/ChatInputMessageAccessoryPanel",
         "//submodules/TelegramUI/Components/Chat/ChatRecordingViewOnceButtonNode",
+        "//submodules/TelegramUI/Components/Chat/ChatPanelsComponent",
         "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/AttachmentFileController",
+        "//submodules/TelegramUI/Components/Contacts/NewContactScreen",
+        "//submodules/TelegramUI/Components/Chat/ChatSendAsContextMenu",
+        "//submodules/TelegramUI/Components/Settings/PasskeysScreen",
+        "//submodules/TelegramUI/Components/Gifts/GiftDemoScreen",
     ] + select({
         "@build_bazel_rules_apple//apple:ios_arm64": appcenter_targets,
         "//build-system:ios_sim_arm64": [],

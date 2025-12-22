@@ -12,7 +12,7 @@ import TelegramCore
 import MultilineTextComponent
 import EmojiStatusComponent
 import CheckNode
-import SolidRoundedButtonComponent
+import ButtonComponent
 
 final class StorageCategoriesComponent: Component {
     struct CategoryData: Equatable {
@@ -94,7 +94,7 @@ final class StorageCategoriesComponent: Component {
             super.init(frame: frame)
             
             self.clipsToBounds = true
-            self.layer.cornerRadius = 10.0
+            self.layer.cornerRadius = 26.0
         }
         
         required init?(coder: NSCoder) {
@@ -214,35 +214,48 @@ final class StorageCategoriesComponent: Component {
                     label = dataSizeString(totalSelectedSize, formatting: DataSizeStringFormatting(strings: component.strings, decimalSeparator: "."))
                 }
                 
+                var buttonContents: [AnyComponentWithIdentity<Empty>] = [
+                    AnyComponentWithIdentity(id: "title", component: AnyComponent(
+                        MultilineTextComponent(text: .plain(NSMutableAttributedString(string: clearTitle, font: Font.semibold(17.0), textColor: component.theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center)))
+                    ))
+                ]
+                if let label {
+                    buttonContents.append(
+                        AnyComponentWithIdentity(id: "label", component: AnyComponent(
+                            MultilineTextComponent(text: .plain(NSMutableAttributedString(string: label, font: Font.semibold(17.0), textColor: component.theme.list.itemCheckColors.foregroundColor.withMultipliedAlpha(0.6), paragraphAlignment: .center)))
+                        ))
+                    )
+                }
+                
                 contentHeight += 8.0
                 let buttonSize = self.button.update(
                     transition: transition,
-                    component: AnyComponent(SolidRoundedButtonComponent(
-                        title: clearTitle,
-                        label: label,
-                        theme: SolidRoundedButtonComponent.Theme(
-                            backgroundColor: component.theme.list.itemCheckColors.fillColor,
-                            backgroundColors: [],
-                            foregroundColor: component.theme.list.itemCheckColors.foregroundColor
-                        ),
-                        font: .bold,
-                        fontSize: 17.0,
-                        height: 50.0,
-                        cornerRadius: 10.0,
-                        gloss: false,
-                        isEnabled: totalSelectedSize != 0,
-                        animationName: nil,
-                        iconPosition: .right,
-                        iconSpacing: 4.0,
-                        action: { [weak self] in
-                            guard let self, let component = self.component else {
-                                return
+                    component: AnyComponent(
+                        ButtonComponent(
+                            background: ButtonComponent.Background(
+                                style: .glass,
+                                color: component.theme.list.itemCheckColors.fillColor,
+                                foreground: component.theme.list.itemCheckColors.foregroundColor,
+                                pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                            ),
+                            content: AnyComponentWithIdentity(
+                                id: AnyHashable(0),
+                                component: AnyComponent(
+                                    HStack(buttonContents, spacing: 4.0)
+                                )
+                            ),
+                            isEnabled: totalSelectedSize != 0,
+                            displaysProgress: false,
+                            action: { [weak self] in
+                                guard let self, let component = self.component else {
+                                    return
+                                }
+                                component.clearAction()
                             }
-                            component.clearAction()
-                        }
-                    )),
+                        )
+                    ),
                     environment: {},
-                    containerSize: CGSize(width: availableSize.width - 16.0 * 2.0, height: 50.0)
+                    containerSize: CGSize(width: availableSize.width - 16.0 * 2.0, height: 52.0)
                 )
                 let buttonFrame = CGRect(origin: CGPoint(x: 16.0, y: contentHeight), size: buttonSize)
                 if let buttonView = self.button.view {

@@ -1866,7 +1866,7 @@ public class TrimView: UIView {
             fullTrackHeight = trackHeight
             capsuleOffset = 5.0 - UIScreenPixel
             color = .white
-            highlightColor = UIColor(rgb: 0xf8d74a)
+            highlightColor = UIColor(rgb: 0xffd300)
             
             if isFirstTime {
                 self.borderView.image = generateImage(CGSize(width: 1.0, height: fullTrackHeight), rotatedContext: { size, context in

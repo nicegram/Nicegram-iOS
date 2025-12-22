@@ -403,21 +403,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                         
                                         let sendPaidMessageStars = sendPaidMessageStars.flatMap { StarsAmount(value: $0, nanos: 0) }
                                     
-                                        var disallowedGifts: TelegramDisallowedGifts = []
-                                        if case let .disallowedGiftsSettings(giftFlags) = disallowedStarGifts {
-                                            if (giftFlags & (1 << 0)) != 0 {
-                                                disallowedGifts.insert(.unlimited)
-                                            }
-                                            if (giftFlags & (1 << 1)) != 0 {
-                                                disallowedGifts.insert(.limited)
-                                            }
-                                            if (giftFlags & (1 << 2)) != 0 {
-                                                disallowedGifts.insert(.unique)
-                                            }
-                                            if (giftFlags & (1 << 3)) != 0 {
-                                                disallowedGifts.insert(.premium)
-                                            }
-                                        }
+                                        let disallowedGifts = TelegramDisallowedGifts(apiDisallowedGifts: disallowedStarGifts)
                                     
                                         let botGroupAdminRights = groupAdminRights.flatMap { TelegramChatAdminRights(apiAdminRights: $0) }
                                         let botChannelAdminRights = channelAdminRights.flatMap { TelegramChatAdminRights(apiAdminRights: $0) }

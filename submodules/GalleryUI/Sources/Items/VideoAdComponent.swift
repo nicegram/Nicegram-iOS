@@ -129,8 +129,17 @@ final class VideoAdComponent: Component {
                 self.imageNode.setSignal(signal)
             }
             
+            let color = UIColor(rgb: 0x64d2ff)
+            if self.adIcon == nil {
+                self.adIcon = generateAdIcon(color: color, strings: component.strings)
+            }
+            
             let leftInset: CGFloat = media != nil ? 51.0 : 16.0
             let rightInset: CGFloat = 60.0
+            var titleRightInset: CGFloat = 0.0
+            if let adIcon = self.adIcon {
+                titleRightInset += adIcon.size.width + 16.0
+            }
             
             let titleSize = self.title.update(
                 transition: .immediate,
@@ -138,7 +147,7 @@ final class VideoAdComponent: Component {
                     MultilineTextComponent(text: .plain(NSAttributedString(string: titleString, font: Font.semibold(14.0), textColor: .white)))
                 ),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: availableSize.height)
+                containerSize: CGSize(width: availableSize.width - leftInset - rightInset - titleRightInset, height: availableSize.height)
             )
             
             let textColor = UIColor.white
@@ -193,12 +202,7 @@ final class VideoAdComponent: Component {
                 }
                 textView.frame = textFrame
             }
-            
-            let color = UIColor(rgb: 0x64d2ff)
-            if self.adIcon == nil {
-                self.adIcon = generateAdIcon(color: color, strings: component.strings)
-            }
-            
+                        
             let buttonSize = self.button.update(
                 transition: .immediate,
                 component: AnyComponent(

@@ -8,6 +8,7 @@
 - (instancetype _Nonnull)initWithSeed0:(NSUInteger)seed0 seed1:(NSUInteger)seed1 seed2:(NSUInteger)seed2;
 
 - (float)next;
++ (float)randomWithSeed0:(NSUInteger)seed0 seed1:(NSUInteger)seed1 seed2:(NSUInteger)seed2;
 
 @end
 

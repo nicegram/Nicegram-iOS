@@ -147,7 +147,7 @@ public final class ListSectionHeaderNode: ASDisplayNode {
         }
     }
     
-    public func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat) {
+    public func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, showBackground: Bool = true) {
         self.validLayout = (size, leftInset, rightInset)
         let labelSize = self.label.updateLayout(CGSize(width: max(0.0, size.width - leftInset - rightInset - 18.0), height: size.height))
         self.label.frame = CGRect(origin: CGPoint(x: leftInset + 16.0, y: 6.0 + UIScreenPixel), size: CGSize(width: labelSize.width, height: size.height))
@@ -158,6 +158,7 @@ public final class ListSectionHeaderNode: ASDisplayNode {
             actionButton.frame = CGRect(origin: CGPoint(x: size.width - rightInset - 16.0 - buttonSize.width, y: 6.0 + UIScreenPixel), size: buttonSize)
         }
         
+        self.backgroundLayer.isHidden = !showBackground
         self.backgroundLayer.frame = CGRect(origin: CGPoint(x: 0.0, y: -UIScreenPixel), size: CGSize(width: size.width, height: size.height + UIScreenPixel))
     }
     

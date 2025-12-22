@@ -100,7 +100,8 @@ public final class AccountGroupCallContextImpl: AccountGroupCallContext {
                             isVideoEnabled: state.isVideoEnabled,
                             unmutedVideoLimit: state.unmutedVideoLimit,
                             isStream: state.isStream,
-                            isCreator: state.isCreator
+                            isCreator: state.isCreator,
+                            defaultSendAs: state.defaultSendAs
                         ),
                         topParticipants: topParticipants,
                         participantCount: state.totalCount,

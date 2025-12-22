@@ -1013,8 +1013,10 @@ public final class TextFieldComponent: Component {
             return self.inputState
         }
         
-        public func getAttributedText() -> NSAttributedString {
-            Keyboard.applyAutocorrection(textView: self.textView)
+        public func getAttributedText(applyAutocorrection: Bool = true) -> NSAttributedString {
+            if applyAutocorrection {
+                Keyboard.applyAutocorrection(textView: self.textView)
+            }
             return expandedInputStateAttributedString(self.inputState.inputText)
         }
         

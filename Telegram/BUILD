@@ -532,6 +532,8 @@ associated_domains_fragment = "" if telegram_bundle_id not in nicegram_bundle_id
     <string>applinks:nicegram.app</string>
     <string>applinks:yfqcuhfv.xyz</string>
     <string>applinks:*.t.me</string>
+    <string>webcredentials:t.me</string>
+    <string>webcredentials:telegram.org</string>
 </array>
 """
 
@@ -563,6 +565,12 @@ official_communication_notifications_fragment = """
 """
 # Nicegram, change 'official_bundle_ids' to 'nicegram_bundle_ids'
 communication_notifications_fragment = official_communication_notifications_fragment if telegram_bundle_id in nicegram_bundle_ids else ""
+
+official_notification_filtering_fragment = """
+<key>com.apple.developer.usernotifications.filtering</key>
+<true/>
+"""
+notification_filtering_fragment = official_notification_filtering_fragment if telegram_bundle_id == "ph.telegra.Telegraph" else ""
 
 store_signin_fragment = """
 <key>com.apple.developer.applesignin</key>
@@ -596,6 +604,7 @@ plist_fragment(
         unrestricted_voip_fragment,
         carplay_fragment,
         communication_notifications_fragment,
+        notification_filtering_fragment,
         signin_fragment,
         # Nicegram, keychain_access_groups_fragment
         keychain_access_groups_fragment

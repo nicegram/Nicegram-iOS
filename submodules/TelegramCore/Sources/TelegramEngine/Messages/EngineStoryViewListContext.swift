@@ -645,7 +645,7 @@ public final class EngineStoryViewListContext {
                                                     folderIds: item.folderIds
                                                 ))
                                                 if let entry = CodableEntry(updatedItem) {
-                                                    currentItems[i] = StoryItemsTableEntry(value: entry, id: updatedItem.id, expirationTimestamp: updatedItem.expirationTimestamp, isCloseFriends: updatedItem.isCloseFriends)
+                                                    currentItems[i] = StoryItemsTableEntry(value: entry, id: updatedItem.id, expirationTimestamp: updatedItem.expirationTimestamp, isCloseFriends: updatedItem.isCloseFriends, isLiveStream: updatedItem.isLiveStream)
                                                 }
                                             }
                                         }

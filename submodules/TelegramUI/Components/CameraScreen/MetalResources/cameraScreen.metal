@@ -28,17 +28,18 @@ float smin(float a, float b, float k) {
     return mix(a, b, h) - k * h * (1.0 - h);
 }
 
-float sdfRoundedRectangle(float2 uv, float2 position, float size, float radius) {
-    float2 q = abs(uv - position) - size + radius;
-    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+float sdfRoundedRectangle(float2 uv, float2 center, float2 halfSize, float radius) {
+    float r = min(radius, min(halfSize.x, halfSize.y));
+    float2 q = abs(uv - center) - (halfSize - float2(r));
+    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
 float sdfCircle(float2 uv, float2 position, float radius) {
     return length(uv - position) - radius;
 }
 
-float map(float2 uv, float3 primaryParameters, float2 primaryOffset, float3 secondaryParameters, float2 secondaryOffset) {
-    float primary = sdfRoundedRectangle(uv, primaryOffset, primaryParameters.x, primaryParameters.z);
+float map(float2 uv, float4 primaryParameters, float2 primaryOffset, float3 secondaryParameters, float2 secondaryOffset) {
+    float primary = sdfRoundedRectangle(uv, primaryOffset, primaryParameters.xy, primaryParameters.w);
     float secondary = sdfCircle(uv, secondaryOffset, secondaryParameters.x);
     float metaballs = 1.0;
     metaballs = smin(metaballs, primary, BindingDistance);
@@ -48,35 +49,38 @@ float map(float2 uv, float3 primaryParameters, float2 primaryOffset, float3 seco
 
 fragment half4 cameraBlobFragment(RasterizerData in[[stage_in]],
                               constant uint2 &resolution[[buffer(0)]],
-                              constant float3 &primaryParameters[[buffer(1)]],
+                              constant float4 &primaryParameters[[buffer(1)]],
                               constant float2 &primaryOffset[[buffer(2)]],
-                              constant float3 &secondaryParameters[[buffer(3)]],
-                              constant float2 &secondaryOffset[[buffer(4)]])
+                              constant float3 &primaryColor[[buffer(3)]],
+                              constant float3 &secondaryParameters[[buffer(4)]],
+                              constant float2 &secondaryOffset[[buffer(5)]])
 {
-    float2 R = float2(resolution.x, resolution.y);
-    
+    float2 R = float2(resolution);
     float2 uv;
-    float offset;
+    float axis;
     if (R.x > R.y) {
-        uv = (2.0 * in.position.xy - R.xy) / R.y;
-        offset = uv.x;
+        uv   = (2.0 * in.position.xy - R) / R.y;
+        axis = uv.x;
     } else {
-        uv = (2.0 * in.position.xy - R.xy) / R.x;
-        offset = uv.y;
+        uv   = (2.0 * in.position.xy - R) / R.x;
+        axis = uv.y;
     }
     
     float t = AARadius / resolution.y;
     
-    float cAlpha = min(1.0, 1.0 - primaryParameters.y);
-    float minColor = min(1.0, 1.0 + primaryParameters.y);
-    float bound = primaryParameters.x + 0.05;
-    if (abs(offset) > bound) {
-        cAlpha = mix(0.0, 1.0, min(1.0, (abs(offset) - bound) * 2.4));
-    }
-
-    float c = smoothstep(t, -t, map(uv, primaryParameters, primaryOffset, secondaryParameters, secondaryOffset));
+    float coverage = smoothstep(t, -t, map(uv, primaryParameters, primaryOffset,
+                                           secondaryParameters, secondaryOffset));
     
-    return half4(min(minColor, c), min(minColor, max(cAlpha, 0.231)), min(minColor, max(cAlpha, 0.188)), c);
+    float bound = max(primaryParameters.x, primaryParameters.y) + 0.05;
+    if (abs(axis) > bound) {
+        float extra = min(1.0, (abs(axis) - bound) * 2.4);
+        coverage = mix(0.0, coverage, extra);
+    }
+    
+    float  alpha = coverage;
+    float3 rgb = clamp(primaryColor, 0.0, 1.0) * alpha;
+    
+    return half4(half3(rgb), half(alpha));
 }
 
 struct Rectangle {

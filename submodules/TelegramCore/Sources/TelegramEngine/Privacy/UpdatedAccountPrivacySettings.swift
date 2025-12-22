@@ -33,21 +33,7 @@ func _internal_updateGlobalPrivacySettings(account: Account) -> Signal<Never, No
                     nonContactChatsPrivacy = .everybody
                 }
                 
-                var disallowedGifts: TelegramDisallowedGifts = []
-                if case let .disallowedGiftsSettings(giftFlags) = disallowedStarGifts {
-                    if (giftFlags & (1 << 0)) != 0 {
-                        disallowedGifts.insert(.unlimited)
-                    }
-                    if (giftFlags & (1 << 1)) != 0 {
-                        disallowedGifts.insert(.limited)
-                    }
-                    if (giftFlags & (1 << 2)) != 0 {
-                        disallowedGifts.insert(.unique)
-                    }
-                    if (giftFlags & (1 << 3)) != 0 {
-                        disallowedGifts.insert(.premium)
-                    }
-                }
+                let disallowedGifts = TelegramDisallowedGifts(apiDisallowedGifts: disallowedStarGifts)
                 
                 globalSettings = GlobalPrivacySettings(
                     automaticallyArchiveAndMuteNonContacts: automaticallyArchiveAndMuteNonContacts,
@@ -81,16 +67,17 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
     let birthdayPrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeyBirthday))
     let giftsAutoSavePrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeyStarGiftsAutoSave))
     let noPaidMessagesPrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeyNoPaidMessages))
+    let savedMusicPrivacy = account.network.request(Api.functions.account.getPrivacy(key: .inputPrivacyKeySavedMusic))
     
     let autoremoveTimeout = account.network.request(Api.functions.account.getAccountTTL())
     let globalPrivacySettings = account.network.request(Api.functions.account.getGlobalPrivacySettings())
     let messageAutoremoveTimeout = account.network.request(Api.functions.messages.getDefaultHistoryTTL())
     
-    return combineLatest(lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, giftsAutoSavePrivacy, noPaidMessagesPrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout)
+    return combineLatest(lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, giftsAutoSavePrivacy, noPaidMessagesPrivacy, savedMusicPrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout)
     |> `catch` { _ in
         return .complete()
     }
-    |> mapToSignal { lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, giftsAutoSavePrivacy, noPaidMessagesPrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout -> Signal<AccountPrivacySettings, NoError> in
+    |> mapToSignal { lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, giftsAutoSavePrivacy, noPaidMessagesPrivacy, savedMusicPrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout -> Signal<AccountPrivacySettings, NoError> in
         let accountTimeoutSeconds: Int32
         switch autoremoveTimeout {
             case let .accountDaysTTL(days):
@@ -119,6 +106,7 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
         let birthdayRules: [Api.PrivacyRule]
         let giftsAutoSaveRules: [Api.PrivacyRule]
         let noPaidMessagesRules: [Api.PrivacyRule]
+        let savedMusicRules: [Api.PrivacyRule]
         var apiUsers: [Api.User] = []
         var apiChats: [Api.Chat] = []
         
@@ -217,6 +205,12 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
                 apiChats.append(contentsOf: chats)
                 noPaidMessagesRules = rules
         }
+        switch savedMusicPrivacy {
+        case let .privacyRules(rules, chats, users):
+            apiUsers.append(contentsOf: users)
+            apiChats.append(contentsOf: chats)
+            savedMusicRules = rules
+        }
         
         var peers: [SelectivePrivacyPeer] = []
         for user in apiUsers {
@@ -258,21 +252,7 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
                 nonContactChatsPrivacy = .everybody
             }
             
-            var disallowedGifts: TelegramDisallowedGifts = []
-            if case let .disallowedGiftsSettings(giftFlags) = disallowedStarGifts {
-                if (giftFlags & (1 << 0)) != 0 {
-                    disallowedGifts.insert(.unlimited)
-                }
-                if (giftFlags & (1 << 1)) != 0 {
-                    disallowedGifts.insert(.limited)
-                }
-                if (giftFlags & (1 << 2)) != 0 {
-                    disallowedGifts.insert(.unique)
-                }
-                if (giftFlags & (1 << 3)) != 0 {
-                    disallowedGifts.insert(.premium)
-                }
-            }
+            let disallowedGifts = TelegramDisallowedGifts(apiDisallowedGifts: disallowedStarGifts)
             
             globalSettings = GlobalPrivacySettings(
                 automaticallyArchiveAndMuteNonContacts: automaticallyArchiveAndMuteNonContacts,
@@ -314,6 +294,7 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
                 birthday: SelectivePrivacySettings(apiRules: birthdayRules, peers: peerMap),
                 giftsAutoSave: SelectivePrivacySettings(apiRules: giftsAutoSaveRules, peers: peerMap),
                 noPaidMessages: SelectivePrivacySettings(apiRules: noPaidMessagesRules, peers: peerMap),
+                savedMusic: SelectivePrivacySettings(apiRules: savedMusicRules, peers: peerMap),
                 globalSettings: globalSettings,
                 accountRemovalTimeout: accountTimeoutSeconds,
                 messageAutoremoveTimeout: messageAutoremoveSeconds
@@ -416,10 +397,13 @@ func _internal_updateGlobalPrivacySettings(account: Account, settings: GlobalPri
         if settings.disallowedGifts.contains(.premium) {
             giftFlags |= 1 << 3
         }
+        if settings.disallowedGifts.contains(.channel) {
+            giftFlags |= 1 << 4
+        }
     }
     flags |= 1 << 6
-    let disallowedStargifts = Api.DisallowedGiftsSettings.disallowedGiftsSettings(flags: giftFlags)
     
+    let disallowedStargifts: Api.DisallowedGiftsSettings = .disallowedGiftsSettings(flags: giftFlags)
     return account.network.request(Api.functions.account.setGlobalPrivacySettings(
         settings: .globalPrivacySettings(flags: flags, noncontactPeersPaidStars: noncontactPeersPaidStars, disallowedGifts: disallowedStargifts)
     ))
@@ -480,6 +464,7 @@ public enum UpdateSelectiveAccountPrivacySettingsType {
     case birthday
     case giftsAutoSave
     case noPaidMessages
+    case savedMusic
     
     var apiKey: Api.InputPrivacyKey {
         switch self {
@@ -507,6 +492,8 @@ public enum UpdateSelectiveAccountPrivacySettingsType {
                 return .inputPrivacyKeyStarGiftsAutoSave
             case .noPaidMessages:
                 return .inputPrivacyKeyNoPaidMessages
+            case .savedMusic:
+                return .inputPrivacyKeySavedMusic
         }
     }
 }

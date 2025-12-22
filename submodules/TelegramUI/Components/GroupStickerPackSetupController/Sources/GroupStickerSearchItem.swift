@@ -54,7 +54,7 @@ final class GroupStickerSearchItem: ItemListControllerSearch {
         }
     }
     
-    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> NavigationBarContentNode & ItemListControllerSearchNavigationContentNode {
+    func titleContentNode(current: (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)?) -> (NavigationBarContentNode & ItemListControllerSearchNavigationContentNode)? {
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
         if let current = current as? GroupStickerSearchNavigationContentNode {
             current.updateTheme(presentationData.theme)

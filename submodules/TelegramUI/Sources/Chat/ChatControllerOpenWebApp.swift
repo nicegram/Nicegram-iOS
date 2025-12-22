@@ -42,6 +42,16 @@ func openWebAppImpl(
         presentationData = context.sharedContext.currentPresentationData.with({ $0 })
     }
     
+    var skipTermsOfService = skipTermsOfService
+    if let whiteListedBots = context.currentAppConfiguration.with({ $0 }).data?["whitelisted_bots"] as? [Double] {
+        let botId = botPeer.id.id._internalGetInt64Value()
+        for bot in whiteListedBots {
+            if Int64(bot) == botId {
+                skipTermsOfService = true
+            }
+        }
+    }
+    
     let botName: String
     let botAddress: String
     let botVerified: Bool
@@ -164,7 +174,18 @@ func openWebAppImpl(
                 }, getInputContainerNode: { [weak parentController] in
                     if let parentController = parentController as? ChatControllerImpl, let layout = parentController.validLayout, case .compact = layout.metrics.widthClass {
                         return (parentController.chatDisplayNode.getWindowInputAccessoryHeight(), parentController.chatDisplayNode.inputPanelContainerNode, {
-                            return parentController.chatDisplayNode.textInputPanelNode?.makeAttachmentMenuTransition(accessoryPanelNode: nil)
+                            guard let menuTransition = parentController.chatDisplayNode.textInputPanelNode?.makeAttachmentMenuTransition(accessoryPanelNode: nil) else {
+                                return nil
+                            }
+                            return AttachmentController.InputPanelTransition(
+                                inputNode: menuTransition.inputNode,
+                                accessoryPanelNode: menuTransition.accessoryPanelNode,
+                                menuButtonNode: menuTransition.menuButtonNode,
+                                menuButtonBackgroundView: menuTransition.menuButtonBackgroundView,
+                                menuIconNode: menuTransition.menuIconNode,
+                                menuTextNode: menuTransition.menuTextNode,
+                                prepareForDismiss: menuTransition.prepareForDismiss
+                            )
                         })
                     } else {
                         return nil
@@ -518,6 +539,16 @@ public extension ChatControllerImpl {
         } else {
             peerId = botPeer.id
         }
+        
+        var skipTermsOfService = false
+        if let whiteListedBots = context.currentAppConfiguration.with({ $0 }).data?["whitelisted_bots"] as? [Double] {
+            let botId = botPeer.id.id._internalGetInt64Value()
+            for bot in whiteListedBots {
+                if Int64(bot) == botId {
+                    skipTermsOfService = true
+                }
+            }
+        }
 
         chatController?.attachmentController?.dismiss(animated: true, completion: nil)
         
@@ -646,17 +677,21 @@ public extension ChatControllerImpl {
                             openBotApp(false, false, appSettings)
                         }
                     } else {
-                        let controller = webAppLaunchConfirmationController(context: context, updatedPresentationData: updatedPresentationData, peer: botPeer, requestWriteAccess: botApp.flags.contains(.notActivated) && botApp.flags.contains(.requiresWriteAccess), completion: { allowWrite in
-                            let _ = ApplicationSpecificNotice.setBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id).startStandalone()
-                            openBotApp(allowWrite, false, appSettings)
-                        }, showMore: chatController == nil ? nil : { [weak chatController] in
-                            if let chatController {
-                                chatController.openResolved(result: .peer(botPeer._asPeer(), .info(nil)), sourceMessageId: nil)
-                            }
-                        }, openTerms: {
-                            context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: presentationData.strings.WebApp_LaunchTermsConfirmation_URL, forceExternal: false, presentationData: presentationData, navigationController: parentController?.navigationController as? NavigationController, dismissInput: {})
-                        })
-                        parentController?.present(controller, in: .window(.root))
+                        if skipTermsOfService {
+                            openBotApp(true, false, appSettings)
+                        } else {
+                            let controller = webAppLaunchConfirmationController(context: context, updatedPresentationData: updatedPresentationData, peer: botPeer, requestWriteAccess: botApp.flags.contains(.notActivated) && botApp.flags.contains(.requiresWriteAccess), completion: { allowWrite in
+                                let _ = ApplicationSpecificNotice.setBotGameNotice(accountManager: context.sharedContext.accountManager, peerId: botPeer.id).startStandalone()
+                                openBotApp(allowWrite, false, appSettings)
+                            }, showMore: chatController == nil ? nil : { [weak chatController] in
+                                if let chatController {
+                                    chatController.openResolved(result: .peer(botPeer._asPeer(), .info(nil)), sourceMessageId: nil)
+                                }
+                            }, openTerms: {
+                                context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: presentationData.strings.WebApp_LaunchTermsConfirmation_URL, forceExternal: false, presentationData: presentationData, navigationController: parentController?.navigationController as? NavigationController, dismissInput: {})
+                            })
+                            parentController?.present(controller, in: .window(.root))
+                        }
                     }
                 } else {
                     openBotApp(false, false, appSettings)

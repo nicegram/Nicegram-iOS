@@ -169,5 +169,6 @@ public enum SelectivePrivacySettingsKind {
     case voiceMessages
     case bio
     case birthday
+    case savedMusic
     case giftsAutoSave
 }

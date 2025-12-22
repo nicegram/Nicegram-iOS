@@ -1257,6 +1257,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
             nftsViewModel.update(
                 user: .init(
                     displayName: peer.debugDisplayTitle,
+                    id: .init(peer.id),
                     username: peer.addressName
                 )
             )

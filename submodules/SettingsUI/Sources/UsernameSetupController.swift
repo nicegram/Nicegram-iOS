@@ -198,7 +198,7 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
             case let .publicLinkHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .editablePublicLink(theme, _, prefix, currentText, text, enabled):
-                return ItemListSingleLineInputItem(presentationData: presentationData, title: NSAttributedString(string: enabled ? prefix : "", textColor: theme.list.itemPrimaryTextColor), text: text, placeholder: "", type: .username, spacing: 10.0, clearType: enabled ? .always : .none, enabled: enabled, tag: UsernameEntryTag.username, sectionId: self.section, textUpdated: { updatedText in
+                return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: enabled ? prefix : "", textColor: theme.list.itemPrimaryTextColor), text: text, placeholder: "", type: .username, spacing: 10.0, clearType: enabled ? .always : .none, enabled: enabled, tag: UsernameEntryTag.username, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updatePublicLinkText(currentText, updatedText)
                 }, action: {
                 })
@@ -233,7 +233,7 @@ private enum UsernameSetupEntry: ItemListNodeEntry {
             case let .additionalLinkHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .additionalLink(_, link, _, canToggleIsActive):
-                return AdditionalLinkItem(presentationData: presentationData, username: link, sectionId: self.section, style: .blocks, tapAction: {
+                return AdditionalLinkItem(presentationData: presentationData, systemStyle: .glass, username: link, sectionId: self.section, style: .blocks, tapAction: {
                     if canToggleIsActive  {
                         if link.isActive {
                             arguments.deactivateLink(link.username)

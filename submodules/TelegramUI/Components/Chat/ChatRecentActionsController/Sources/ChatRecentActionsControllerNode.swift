@@ -1462,6 +1462,8 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                         break
                     case .giftCollection:
                         break
+                    case .auction:
+                        break
                     case .sendGift:
                         break
                 }

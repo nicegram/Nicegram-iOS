@@ -13,6 +13,97 @@ import LottieComponent
 import UIKitRuntimeUtils
 import BundleIconComponent
 import TextBadgeComponent
+import LiquidLens
+import AppBundle
+
+private final class TabSelectionRecognizer: UIGestureRecognizer {
+    private var initialLocation: CGPoint?
+    private var currentLocation: CGPoint?
+    
+    override init(target: Any?, action: Selector?) {
+        super.init(target: target, action: action)
+        
+        self.delaysTouchesBegan = false
+        self.delaysTouchesEnded = false
+    }
+    
+    override func reset() {
+        super.reset()
+        
+        self.initialLocation = nil
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesBegan(touches, with: event)
+        
+        if self.initialLocation == nil {
+            self.initialLocation = touches.first?.location(in: self.view)
+        }
+        self.currentLocation = self.initialLocation
+        
+        self.state = .began
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesEnded(touches, with: event)
+        
+        self.state = .ended
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesCancelled(touches, with: event)
+        
+        self.state = .cancelled
+    }
+    
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesMoved(touches, with: event)
+        
+        self.currentLocation = touches.first?.location(in: self.view)
+        
+        self.state = .changed
+    }
+    
+    func translation(in: UIView?) -> CGPoint {
+        if let initialLocation = self.initialLocation, let currentLocation = self.currentLocation {
+            return CGPoint(x: currentLocation.x - initialLocation.x, y: currentLocation.y - initialLocation.y)
+        }
+        return CGPoint()
+    }
+}
+
+public final class TabBarSearchView: UIView {
+    private let backgroundView: GlassBackgroundView
+    private let iconView: GlassBackgroundView.ContentImageView
+    
+    override public init(frame: CGRect) {
+        self.backgroundView = GlassBackgroundView()
+        self.iconView = GlassBackgroundView.ContentImageView()
+
+        super.init(frame: frame)
+
+        self.addSubview(self.backgroundView)
+        self.backgroundView.contentView.addSubview(self.iconView)
+    }
+
+    required public init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    public func update(size: CGSize, isDark: Bool, tintColor: GlassBackgroundView.TintColor, iconColor: UIColor, transition: ComponentTransition) { 
+        transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: size))
+        self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: isDark, tintColor: tintColor, transition: transition)
+
+        if self.iconView.image == nil {
+            self.iconView.image = UIImage(bundleImageName: "Navigation/Search")?.withRenderingMode(.alwaysTemplate)
+        }
+        self.iconView.tintColor = iconColor
+        
+        if let image = self.iconView.image {
+            transition.setFrame(view: self.iconView, frame: CGRect(origin: CGPoint(x: floor((size.width - image.size.width) * 0.5), y: floor((size.height - image.size.height) * 0.5)), size: image.size))
+        }
+    }
+}
 
 // Nicegram ShowTabNames
 private let showTabNames = NGSettings.showTabNames
@@ -87,62 +178,26 @@ public final class TabBarComponent: Component {
     }
     
     public final class View: UIView, UITabBarDelegate, UIGestureRecognizerDelegate {
-        private let backgroundView: GlassBackgroundView
-        private let selectionView: GlassBackgroundView.ContentImageView
+        private let liquidLensView: LiquidLensView
         private let contextGestureContainerView: ContextControllerSourceView
-        private let nativeTabBar: UITabBar?
         
         private var itemViews: [AnyHashable: ComponentView<Empty>] = [:]
         private var selectedItemViews: [AnyHashable: ComponentView<Empty>] = [:]
         
+        private var tabSelectionRecognizer: TabSelectionRecognizer?
         private var itemWithActiveContextGesture: AnyHashable?
         
         private var component: TabBarComponent?
         private weak var state: EmptyComponentState?
+
+        private var selectionGestureState: (startX: CGFloat, currentX: CGFloat)?
+        private var overrideSelectedItemId: AnyHashable?
         
         public override init(frame: CGRect) {
-            self.backgroundView = GlassBackgroundView()
-            self.selectionView = GlassBackgroundView.ContentImageView()
+            self.liquidLensView = LiquidLensView()
             
             self.contextGestureContainerView = ContextControllerSourceView()
             self.contextGestureContainerView.isGestureEnabled = true
-            
-            if #available(iOS 26.0, *) {
-                let nativeTabBar = UITabBar()
-                self.nativeTabBar = nativeTabBar
-                
-                let itemFont = Font.semibold(10.0)
-                let itemColor: UIColor = .clear
-                
-                nativeTabBar.traitOverrides.verticalSizeClass = .compact
-                nativeTabBar.traitOverrides.horizontalSizeClass = .compact
-                nativeTabBar.standardAppearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-                    .foregroundColor: itemColor,
-                    .font: itemFont
-                ]
-                nativeTabBar.standardAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-                    .foregroundColor: itemColor,
-                    .font: itemFont
-                ]
-                nativeTabBar.standardAppearance.inlineLayoutAppearance.normal.titleTextAttributes = [
-                    .foregroundColor: itemColor,
-                    .font: itemFont
-                ]
-                nativeTabBar.standardAppearance.inlineLayoutAppearance.selected.titleTextAttributes = [
-                    .foregroundColor: itemColor,
-                    .font: itemFont
-                ]
-                nativeTabBar.standardAppearance.compactInlineLayoutAppearance.normal.titleTextAttributes = [
-                    .foregroundColor: itemColor,
-                    .font: itemFont
-                ]
-                nativeTabBar.standardAppearance.compactInlineLayoutAppearance.selected.titleTextAttributes = [
-                    .foregroundColor: itemColor,
-                    .font: itemFont
-                ]
-            } else {
-                self.nativeTabBar = nil
-            }
             
             super.init(frame: frame)
             
@@ -153,78 +208,44 @@ public final class TabBarComponent: Component {
             
             self.addSubview(self.contextGestureContainerView)
             
-            if let nativeTabBar = self.nativeTabBar {
-                self.contextGestureContainerView.addSubview(nativeTabBar)
-                nativeTabBar.delegate = self
-                /*let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(self.onLongPressGesture(_:)))
-                longPressGesture.delegate = self
-                self.addGestureRecognizer(longPressGesture)*/
-            } else {
-                self.contextGestureContainerView.addSubview(self.backgroundView)
-                self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.onTapGesture(_:))))
-            }
+            self.contextGestureContainerView.addSubview(self.liquidLensView)
+            let tabSelectionRecognizer = TabSelectionRecognizer(target: self, action: #selector(self.onTabSelectionGesture(_:)))
+            self.tabSelectionRecognizer = tabSelectionRecognizer
+            self.addGestureRecognizer(tabSelectionRecognizer)
             
             self.contextGestureContainerView.shouldBegin = { [weak self] point in
                 guard let self, let component = self.component else {
                     return false
                 }
-                for (id, itemView) in self.itemViews {
-                    if let itemView = itemView.view {
-                        if self.convert(itemView.bounds, from: itemView).contains(point) {
-                            guard let item = component.items.first(where: { $0.id == id }) else {
-                                return false
-                            }
-                            if item.contextAction == nil {
-                                return false
-                            }
-                            
-                            self.itemWithActiveContextGesture = id
-                            
-                            let startPoint = point
-                            self.contextGestureContainerView.contextGesture?.externalUpdated = { [weak self] _, point in
-                                guard let self else {
-                                    return
-                                }
-                                
-                                let dist = sqrt(pow(startPoint.x - point.x, 2.0) + pow(startPoint.y - point.y, 2.0))
-                                if dist > 10.0 {
-                                    self.contextGestureContainerView.contextGesture?.cancel()
-                                }
-                            }
-                            
-                            return true
+                
+                if let itemId = self.item(at: point) {
+                    guard let item = component.items.first(where: { $0.id == itemId }) else {
+                            return false
                         }
-                    }
+                        if item.contextAction == nil {
+                            return false
+                        }
+                        
+                        self.itemWithActiveContextGesture = itemId
+                        
+                        let startPoint = point
+                        self.contextGestureContainerView.contextGesture?.externalUpdated = { [weak self] _, point in
+                            guard let self else {
+                                return
+                            }
+                            
+                            let dist = sqrt(pow(startPoint.x - point.x, 2.0) + pow(startPoint.y - point.y, 2.0))
+                            if dist > 10.0 {
+                                self.contextGestureContainerView.contextGesture?.cancel()
+                            }
+                        }
+                        
+                        return true
                 }
+
                 return false
             }
-            self.contextGestureContainerView.customActivationProgress = { [weak self] _, _ in
-                let _ = self
-                return
-                /*guard let self, let itemWithActiveContextGesture = self.itemWithActiveContextGesture else {
-                    return
-                }
-                guard let itemView = self.itemViews[itemWithActiveContextGesture]?.view else {
-                    return
-                }
-                let scaleSide = itemView.bounds.width
-                let minScale: CGFloat = max(0.7, (scaleSide - 15.0) / scaleSide)
-                let currentScale = 1.0 * (1.0 - progress) + minScale * progress
-
-                switch update {
-                case .update:
-                    let sublayerTransform = CATransform3DScale(CATransform3DIdentity, currentScale, currentScale, 1.0)
-                    itemView.layer.sublayerTransform = sublayerTransform
-                case .begin:
-                    let sublayerTransform = CATransform3DScale(CATransform3DIdentity, currentScale, currentScale, 1.0)
-                    itemView.layer.sublayerTransform = sublayerTransform
-                case .ended:
-                    let sublayerTransform = CATransform3DScale(CATransform3DIdentity, currentScale, currentScale, 1.0)
-                    let previousTransform = itemView.layer.sublayerTransform
-                    itemView.layer.sublayerTransform = sublayerTransform
-
-                    itemView.layer.animate(from: NSValue(caTransform3D: previousTransform), to: NSValue(caTransform3D: sublayerTransform), keyPath: "sublayerTransform", timingFunction: CAMediaTimingFunctionName.easeOut.rawValue, duration: 0.2)
-                }*/
+            self.contextGestureContainerView.customActivationProgress = { _, _ in
             }
             self.contextGestureContainerView.activated = { [weak self] gesture, _ in
                 guard let self, let component = self.component else {
@@ -235,34 +256,14 @@ public final class TabBarComponent: Component {
                 }
                 
                 var itemView: ItemComponent.View?
-                if self.nativeTabBar != nil {
-                    itemView = self.selectedItemViews[itemWithActiveContextGesture]?.view as? ItemComponent.View
-                } else {
-                    itemView = self.itemViews[itemWithActiveContextGesture]?.view as? ItemComponent.View
-                }
+                itemView = self.itemViews[itemWithActiveContextGesture]?.view as? ItemComponent.View
                 
                 guard let itemView else {
                     return
                 }
-                
-                DispatchQueue.main.async { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    if let nativeTabBar = self.nativeTabBar {
-                        func cancelGestures(view: UIView) {
-                            for recognizer in view.gestureRecognizers ?? [] {
-                                if NSStringFromClass(type(of: recognizer)).contains("sSelectionGestureRecognizer") {
-                                    recognizer.state = .cancelled
-                                }
-                            }
-                            for subview in view.subviews {
-                                cancelGestures(view: subview)
-                            }
-                        }
-                        
-                        cancelGestures(view: nativeTabBar)
-                    }
+
+                if let tabSelectionRecognizer = self.tabSelectionRecognizer {
+                    tabSelectionRecognizer.state = .cancelled
                 }
                 
                 guard let item = component.items.first(where: { $0.id == itemWithActiveContextGesture }) else {
@@ -290,58 +291,33 @@ public final class TabBarComponent: Component {
         public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
             return true
         }
-        
-        @objc private func onLongPressGesture(_ recognizer: UILongPressGestureRecognizer) {
-            if case .began = recognizer.state {
-                if let nativeTabBar = self.nativeTabBar {
-                    func cancelGestures(view: UIView) {
-                        for recognizer in view.gestureRecognizers ?? [] {
-                            if NSStringFromClass(type(of: recognizer)).contains("sSelectionGestureRecognizer") {
-                                recognizer.state = .cancelled
-                            }
-                        }
-                        for subview in view.subviews {
-                            cancelGestures(view: subview)
-                        }
-                    }
-                    
-                    cancelGestures(view: nativeTabBar)
+
+        @objc private func onTabSelectionGesture(_ recognizer: TabSelectionRecognizer) {
+            switch recognizer.state {
+            case .began:
+                if let itemId = self.item(at: recognizer.location(in: self)), let itemView = self.itemViews[itemId]?.view {
+                    let startX = itemView.frame.minX - 4.0
+                    self.selectionGestureState = (startX, startX)
+                    self.state?.updated(transition: .spring(duration: 0.4), isLocal: true)
                 }
-            }
-        }
-        
-        @objc private func onTapGesture(_ recognizer: UITapGestureRecognizer) {
-            guard let component = self.component else {
-                return
-            }
-            if case .ended = recognizer.state {
-                let point = recognizer.location(in: self)
-                var closestItemView: (AnyHashable, CGFloat)?
-                for (id, itemView) in self.itemViews {
-                    guard let itemView = itemView.view else {
-                        continue
-                    }
-                    let distance = abs(point.x - itemView.center.x)
-                    if let previousClosestItemView = closestItemView {
-                        if previousClosestItemView.1 > distance {
-                            closestItemView = (id, distance)
-                        }
-                    } else {
-                        closestItemView = (id, distance)
-                    }
+            case .changed:
+                if var selectionGestureState = self.selectionGestureState {
+                    selectionGestureState.currentX = selectionGestureState.startX + recognizer.translation(in: self).x
+                    self.selectionGestureState = selectionGestureState
+                    self.state?.updated(transition: .immediate, isLocal: true)
                 }
-                
-                if let (id, _) = closestItemView {
-                    guard let item = component.items.first(where: { $0.id == id }) else {
+            case .ended, .cancelled:
+                self.selectionGestureState = nil
+                if let component = self.component, let itemId = self.item(at: recognizer.location(in: self)) {
+                    guard let item = component.items.first(where: { $0.id == itemId }) else {
                         return
                     }
+                    self.overrideSelectedItemId = itemId
                     item.action(false)
-                    /*if previousSelectedIndex != closestNode.0 {
-                     if let selectedIndex = self.selectedIndex, let _ = self.tabBarItems[selectedIndex].item.animationName {
-                     container.imageNode.animationNode.play(firstFrame: false, fromIndex: nil)
-                     }
-                     }*/
                 }
+                self.state?.updated(transition: .spring(duration: 0.4), isLocal: true)
+            default:
+                break
             }
         }
         
@@ -361,6 +337,28 @@ public final class TabBarComponent: Component {
             }
             return self.convert(itemView.bounds, from: itemView)
         }
+
+        private func item(at point: CGPoint) -> AnyHashable? {
+            var closestItem: (AnyHashable, CGFloat)?
+            for (id, itemView) in self.itemViews {
+                guard let itemView = itemView.view else {
+                    continue
+                }
+                if itemView.frame.contains(point) {
+                    return id
+                } else {
+                    let distance = abs(point.x - itemView.center.x)
+                    if let closestItemValue = closestItem {
+                        if closestItemValue.1 > distance {
+                            closestItem = (id, distance)
+                        }
+                    } else {
+                        closestItem = (id, distance)
+                    }
+                }
+            }
+            return closestItem?.0
+        }
         
         public override func didMoveToWindow() {
             super.didMoveToWindow()
@@ -369,81 +367,29 @@ public final class TabBarComponent: Component {
         }
         
         func update(component: TabBarComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-            let innerInset: CGFloat = 3.0
-            
+            let innerInset: CGFloat = 4.0
             let availableSize = CGSize(width: min(500.0, availableSize.width), height: availableSize.height)
             
             let previousComponent = self.component
             self.component = component
             self.state = state
+
+            let _ = innerInset
+            let _ = availableSize
+            let _ = previousComponent
             
             self.overrideUserInterfaceStyle = component.theme.overallDarkAppearance ? .dark : .light
-            
-            if let nativeTabBar = self.nativeTabBar {
-                if previousComponent?.items.map(\.item.title) != component.items.map(\.item.title) {
-                    nativeTabBar.items = (0 ..< component.items.count).map { i in
-                        return UITabBarItem(title: component.items[i].item.title, image: nil, tag: i)
-                    }
-                    for (_, itemView) in self.itemViews {
-                        itemView.view?.removeFromSuperview()
-                    }
-                    for (_, selectedItemView) in self.selectedItemViews {
-                        selectedItemView.view?.removeFromSuperview()
-                    }
-                    if let index = component.items.firstIndex(where: { $0.id == component.selectedId }) {
-                        nativeTabBar.selectedItem = nativeTabBar.items?[index]
-                    }
-                }
-                
-                nativeTabBar.frame = CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: component.isTablet ? 74.0 : 83.0))
-                // Nicegram ShowTabNames
-                adjustTabBarSize(&nativeTabBar.frame.size)
-                //
-                nativeTabBar.layoutSubviews()
-            }
-            
-            var nativeItemContainers: [Int: UIView] = [:]
-            var nativeSelectedItemContainers: [Int: UIView] = [:]
-            if let nativeTabBar = self.nativeTabBar {
-                for subview in nativeTabBar.subviews {
-                    if NSStringFromClass(type(of: subview)).contains("PlatterView") {
-                        for subview in subview.subviews {
-                            if NSStringFromClass(type(of: subview)).hasSuffix("SelectedContentView") {
-                                for subview in subview.subviews {
-                                    if NSStringFromClass(type(of: subview)).hasSuffix("TabButton") {
-                                        nativeSelectedItemContainers[nativeSelectedItemContainers.count] = subview
-                                    }
-                                }
-                            } else if NSStringFromClass(type(of: subview)).hasSuffix("ContentView") {
-                                for subview in subview.subviews {
-                                    if NSStringFromClass(type(of: subview)).hasSuffix("TabButton") {
-                                        nativeItemContainers[nativeItemContainers.count] = subview
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
+
+            // Nicegram ShowTabNames, change to 'var'
             var itemSize = CGSize(width: floor((availableSize.width - innerInset * 2.0) / CGFloat(component.items.count)), height: 56.0)
-            itemSize.width = min(94.0, itemSize.width)
+            
             // Nicegram ShowTabNames
             adjustTabBarSize(&itemSize)
             //
             
-            if let itemContainer = nativeItemContainers[0] {
-                itemSize = itemContainer.bounds.size
-            }
-            
-            let contentHeight = itemSize.height + innerInset * 2.0
-            var contentWidth: CGFloat = innerInset
-            
-            if self.selectionView.image?.size.height != itemSize.height {
-                self.selectionView.image = generateStretchableFilledCircleImage(radius: itemSize.height * 0.5, color: .white)?.withRenderingMode(.alwaysTemplate)
-            }
-            self.selectionView.tintColor = component.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.05)
-            
+            let contentWidth: CGFloat = innerInset * 2.0 + CGFloat(component.items.count) * itemSize.width
+            let size = CGSize(width: min(availableSize.width, contentWidth), height: itemSize.height + innerInset * 2.0)
+ 
             var validIds: [AnyHashable] = []
             var selectionFrame: CGRect?
             for index in 0 ..< component.items.count {
@@ -469,14 +415,19 @@ public final class TabBarComponent: Component {
                     self.selectedItemViews[item.id] = selectedItemView
                 }
                 
-                let isItemSelected = component.selectedId == item.id
+                let isItemSelected: Bool
+                if let overrideSelectedItemId = self.overrideSelectedItemId {
+                    isItemSelected = overrideSelectedItemId == item.id
+                } else {
+                    isItemSelected = component.selectedId == item.id
+                }
                 
                 let _ = itemView.update(
                     transition: itemTransition,
                     component: AnyComponent(ItemComponent(
                         item: item,
                         theme: component.theme,
-                        isSelected: self.nativeTabBar == nil ? isItemSelected : false
+                        isSelected: false
                     )),
                     environment: {},
                     containerSize: itemSize
@@ -492,32 +443,19 @@ public final class TabBarComponent: Component {
                     containerSize: itemSize
                 )
                 
-                let itemFrame = CGRect(origin: CGPoint(x: contentWidth, y: floor((contentHeight - itemSize.height) * 0.5)), size: itemSize)
+                let itemFrame = CGRect(origin: CGPoint(x: innerInset + CGFloat(index) * itemSize.width, y: floor((size.height - itemSize.height) * 0.5)), size: itemSize)
                 if let itemComponentView = itemView.view as? ItemComponent.View, let selectedItemComponentView = selectedItemView.view as? ItemComponent.View {
                     if itemComponentView.superview == nil {
                         itemComponentView.isUserInteractionEnabled = false
                         selectedItemComponentView.isUserInteractionEnabled = false
-                        
-                        if self.nativeTabBar != nil {
-                            if let itemContainer = nativeItemContainers[index] {
-                                itemContainer.addSubview(itemComponentView)
-                            }
-                            if let itemContainer = nativeSelectedItemContainers[index] {
-                                itemContainer.addSubview(selectedItemComponentView)
-                            }
-                        } else {
-                            self.contextGestureContainerView.addSubview(itemComponentView)
-                        }
+
+                        self.liquidLensView.contentView.addSubview(itemComponentView)
+                        self.liquidLensView.selectedContentView.addSubview(selectedItemComponentView)
                     }
-                    if self.nativeTabBar != nil {
-                        if let parentView = itemComponentView.superview {
-                            let itemFrame = CGRect(origin: CGPoint(x: floor((parentView.bounds.width - itemSize.width) * 0.5), y: floor((parentView.bounds.height - itemSize.height) * 0.5)), size: itemSize)
-                            itemTransition.setFrame(view: itemComponentView, frame: itemFrame)
-                            itemTransition.setFrame(view: selectedItemComponentView, frame: itemFrame)
-                        }
-                    } else {
-                        itemTransition.setFrame(view: itemComponentView, frame: itemFrame)
-                    }
+                    itemTransition.setFrame(view: itemComponentView, frame: itemFrame)
+                    itemTransition.setPosition(view: selectedItemComponentView, position: itemFrame.center)
+                    itemTransition.setBounds(view: selectedItemComponentView, bounds: CGRect(origin: CGPoint(), size: itemFrame.size))
+                    itemTransition.setScale(view: selectedItemComponentView, scale: self.selectionGestureState != nil ? 1.15 : 1.0)
                     
                     if let previousComponent, previousComponent.selectedId != item.id, isItemSelected {
                         itemComponentView.playSelectionAnimation()
@@ -527,10 +465,7 @@ public final class TabBarComponent: Component {
                 if isItemSelected {
                     selectionFrame = itemFrame
                 }
-                
-                contentWidth += itemFrame.width
             }
-            contentWidth += innerInset
             
             var removeIds: [AnyHashable] = []
             for (id, itemView) in self.itemViews {
@@ -544,33 +479,23 @@ public final class TabBarComponent: Component {
                 self.itemViews.removeValue(forKey: id)
                 self.selectedItemViews.removeValue(forKey: id)
             }
-            
-            if let selectionFrame, self.nativeTabBar == nil {
-                var selectionViewTransition = transition
-                if self.selectionView.superview == nil {
-                    selectionViewTransition = selectionViewTransition.withAnimation(.none)
-                    self.backgroundView.contentView.addSubview(self.selectionView)
-                }
-                selectionViewTransition.setFrame(view: self.selectionView, frame: selectionFrame)
-            } else if self.selectionView.superview != nil {
-                self.selectionView.removeFromSuperview()
-            }
-            
-            let size = CGSize(width: min(availableSize.width, contentWidth), height: contentHeight)
-            
-            transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: size))
-            self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: component.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: transition)
-            
+
             transition.setFrame(view: self.contextGestureContainerView, frame: CGRect(origin: CGPoint(), size: size))
+
+            transition.setFrame(view: self.liquidLensView, frame: CGRect(origin: CGPoint(), size: size))
             
-            if self.nativeTabBar != nil {
-                // Nicegram ShowTabNames, adjust return value
-                var result = CGSize(width: availableSize.width, height: 62.0)
-                adjustTabBarSize(&result)
-                return result
+            let lensSelection: (x: CGFloat, width: CGFloat)
+            if let selectionGestureState = self.selectionGestureState {
+                lensSelection = (selectionGestureState.currentX, itemSize.width + innerInset * 2.0)
+            } else if let selectionFrame {
+                lensSelection = (selectionFrame.minX - innerInset, itemSize.width + innerInset * 2.0)
             } else {
-                return size
+                lensSelection = (0.0, itemSize.width)
             }
+
+            self.liquidLensView.update(size: size, selectionX: lensSelection.x, selectionWidth: lensSelection.width, isDark: component.theme.overallDarkAppearance, isLifted: self.selectionGestureState != nil, transition: transition)
+
+            return size
         }
     }
     

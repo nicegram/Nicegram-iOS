@@ -1508,7 +1508,12 @@ open class NavigationBar: ASDisplayNode {
                     transition = .immediate
                 }
                 self.titleNode.alpha = 1.0
-                transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: contentVerticalOrigin + floorToScreenPixels((nominalHeight - titleSize.height) / 2.0)), size: titleSize))
+                
+                var titleOffset: CGFloat = 0.0
+                if self.presentationData.theme.backgroundColor == .clear && self.presentationData.theme.separatorColor == .clear {
+                    titleOffset += 3.0
+                }
+                transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: contentVerticalOrigin + titleOffset + floorToScreenPixels((nominalHeight - titleSize.height) / 2.0)), size: titleSize))
             }
         }
         

@@ -3,12 +3,12 @@ import UIKit
 import Display
 import TelegramCore
 import SwiftSignalKit
-import PeerInfoUI
 import OverlayStatusController
 import PresentationDataUtils
 import InviteLinksUI
 import UndoUI
 import TelegramPresentationData
+import AccountContext
 
 extension VideoChatScreenComponent.View {
     func openInviteMembers() {
@@ -113,7 +113,7 @@ extension VideoChatScreenComponent.View {
                     filters.append(.excludeBots)
                     
                     var dismissController: (() -> Void)?
-                    let controller = ChannelMembersSearchController(context: groupCall.accountContext, peerId: groupPeer.id, forceTheme: environment.theme, mode: .inviteToCall, filters: filters, openPeer: { [weak self] peer, participant in
+                    let controller = groupCall.accountContext.sharedContext.makeChannelMembersSearchController(params: ChannelMembersSearchControllerParams(context: groupCall.accountContext, peerId: groupPeer.id, forceTheme: environment.theme, mode: .inviteToCall, filters: filters, openPeer: { [weak self] peer, participant in
                         guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                             dismissController?()
                             return
@@ -327,7 +327,7 @@ extension VideoChatScreenComponent.View {
                                 })]), in: .window(.root))
                             }
                         }
-                    })
+                    }))
                     controller.copyInviteLink = { [weak self] in
                         dismissController?()
                         

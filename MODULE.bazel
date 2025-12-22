@@ -29,8 +29,8 @@ local_path_override(
 
 http_file(
     name = "cmake_tar_gz",
-    sha256 = "f794ed92ccb4e9b6619a77328f313497d7decf8fb7e047ba35a348b838e0e1e2",
-    urls = ["https://github.com/Kitware/CMake/releases/download/v3.23.1/cmake-3.23.1-macos-universal.tar.gz"],
+    urls = ["https://github.com/Kitware/CMake/releases/download/v4.1.2/cmake-4.1.2-macos-universal.tar.gz"],
+    sha256 = "3be85f5b999e327b1ac7d804cbc9acd767059e9f603c42ec2765f6ab68fbd367",
 )
 
 http_file(
@@ -60,6 +60,12 @@ bazel_dep(name = "build_configuration")
 local_path_override(
     module_name = "build_configuration",
     path = "./build-input/configuration-repository",
+)
+
+bazel_dep(name = "sourcekit_bazel_bsp", version = "0.3.0")
+local_path_override(
+    module_name = "sourcekit_bazel_bsp",
+    path = "build-system/bazel-rules/sourcekit-bazel-bsp",
 )
 
 # Nicegram, rules_swift_package_manager

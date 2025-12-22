@@ -167,8 +167,6 @@ final class GiftStoreScreenComponent: Component {
                 return
             }
             
-            //, self.state?.starGiftsState?.dataState != .loading
-               
             let availableWidth = self.scrollView.bounds.width
             let availableHeight = self.scrollView.bounds.height
             let contentOffset = self.scrollView.contentOffset.y

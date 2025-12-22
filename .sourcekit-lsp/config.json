@@ -1,0 +1,9 @@
+{
+  "backgroundIndexing": true,
+  "backgroundPreparationMode": "build",
+  "defaultWorkspaceType": "buildServer",
+  "logging": {
+    "level": "error",
+    "privacyLevel": "sensitive"
+  }
+}

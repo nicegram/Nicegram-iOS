@@ -27,7 +27,7 @@ func _internal_outgoingMessageWithChatContextResult(to peerId: PeerId, threadId:
         attributes.append(InlineBotMessageAttribute(peerId: botId, title: nil))
     }
     if let scheduleTime = scheduleTime {
-        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime))
+        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime, repeatPeriod: nil))
     }
     if silentPosting {
         attributes.append(NotificationInfoMessageAttribute(flags: .muted))

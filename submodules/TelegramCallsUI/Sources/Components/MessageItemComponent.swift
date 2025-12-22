@@ -26,9 +26,15 @@ final class MessageItemComponent: Component {
         case animation(String)
     }
     
+    public enum Style {
+        case generic
+        case notification
+        case status
+    }
+    
     private let context: AccountContext
     private let icon: Icon
-    private let isNotification: Bool
+    private let style: Style
     private let text: String
     private let entities: [MessageTextEntity]
     private let availableReactions: [ReactionItem]?
@@ -37,7 +43,7 @@ final class MessageItemComponent: Component {
     init(
         context: AccountContext,
         icon: Icon,
-        isNotification: Bool,
+        style: Style,
         text: String,
         entities: [MessageTextEntity],
         availableReactions: [ReactionItem]?,
@@ -45,7 +51,7 @@ final class MessageItemComponent: Component {
     ) {
         self.context = context
         self.icon = icon
-        self.isNotification = isNotification
+        self.style = style
         self.text = text
         self.entities = entities
         self.availableReactions = availableReactions
@@ -57,6 +63,9 @@ final class MessageItemComponent: Component {
             return false
         }
         if lhs.icon != rhs.icon {
+            return false
+        }
+        if lhs.style != rhs.style {
             return false
         }
         if lhs.text != rhs.text {
@@ -173,27 +182,60 @@ final class MessageItemComponent: Component {
             
             let theme = defaultDarkPresentationTheme
                         
-            let textFont = Font.regular(14.0)
-            let boldTextFont = Font.semibold(14.0)
-            let italicFont = Font.italic(14.0)
-            let boldItalicTextFont = Font.semiboldItalic(14.0)
-            let monospaceFont = Font.monospace(14.0)
+            var fontSize: CGFloat = 14.0
+                                      
+            let minimalHeight: CGFloat
+            let avatarSpacing: CGFloat
+            let avatarInset: CGFloat
+            let avatarSize: CGSize
+            let rightInset: CGFloat
+            var maximumNumberOfLines: Int = 0
+            var hasBackground = true
+            var textVerticalMargin: CGFloat = 15.0
+            switch component.style {
+            case .generic:
+                minimalHeight = 36.0
+                avatarSpacing = 10.0
+                avatarInset = 4.0
+                avatarSize = CGSize(width: 28.0, height: 28.0)
+                rightInset = 13.0
+            case .notification:
+                minimalHeight = 50.0
+                avatarSpacing = 10.0
+                avatarInset = 10.0
+                avatarSize = CGSize(width: 30.0, height: 30.0)
+                rightInset = 15.0
+            case .status:
+                minimalHeight = 24.0
+                avatarSpacing = 4.0
+                avatarInset = 4.0
+                avatarSize = CGSize(width: 16.0, height: 16.0)
+                rightInset = 0.0
+                maximumNumberOfLines = 1
+                hasBackground = false
+                fontSize = 13.0
+                textVerticalMargin = 0.0
+            }
+            
+            let textFont = Font.regular(fontSize)
+            let boldTextFont = Font.semibold(fontSize)
+            let italicFont = Font.italic(fontSize)
+            let boldItalicTextFont = Font.semiboldItalic(fontSize)
+            let monospaceFont = Font.monospace(fontSize)
             let textColor: UIColor = .white
-            let linkColor: UIColor = UIColor(rgb: 0x59b6fa)
-                        
-            let minimalHeight: CGFloat = component.isNotification ? 50.0 : 36.0
+            let linkColor: UIColor = component.style == .status ? textColor : UIColor(rgb: 0x59b6fa)
+            
             let cornerRadius = minimalHeight * 0.5
-            let avatarInset: CGFloat = component.isNotification ? 10.0 : 4.0
-            let avatarSize = CGSize(width: component.isNotification ? 30.0 : 28.0, height: component.isNotification ? 30.0 : 28.0)
-            let avatarSpacing: CGFloat = 10.0
             let iconSpacing: CGFloat = 10.0
-            let rightInset: CGFloat = component.isNotification ? 15.0 : 13.0
                         
             var peerName = ""
-            if !component.isNotification, case let .peer(peer) = component.icon {
-                peerName = peer.compactDisplayTitle
-                if peerName.count > 40 {
-                    peerName = "\(peerName.prefix(40))…"
+            if case let .peer(peer) = component.icon {
+                if case .notification = component.style {
+                } else {
+                    peerName = peer.compactDisplayTitle
+                    if peerName.count > 40 {
+                        peerName = "\(peerName.prefix(40))…"
+                    }
                 }
             }
             
@@ -234,7 +276,7 @@ final class MessageItemComponent: Component {
             }
                         
             let attributedText: NSAttributedString
-            if component.isNotification {
+            if case .notification = component.style {
                 attributedText = parseMarkdownIntoAttributedString(
                     text,
                     attributes: MarkdownAttributes(
@@ -270,7 +312,7 @@ final class MessageItemComponent: Component {
                     animationRenderer: component.context.animationRenderer,
                     placeholderColor: UIColor(rgb: 0xffffff, alpha: 0.3),
                     text: .plain(attributedText),
-                    maximumNumberOfLines: 0,
+                    maximumNumberOfLines: maximumNumberOfLines,
                     lineSpacing: 0.1,
                     spoilerColor: .white,
                     handleSpoilers: true
@@ -283,7 +325,7 @@ final class MessageItemComponent: Component {
             
             let size = CGSize(
                 width: avatarInset + avatarSize.width + spacing + textSize.width + rightInset,
-                height: max(minimalHeight, textSize.height + 15.0)
+                height: max(minimalHeight, textSize.height + textVerticalMargin)
             )
             
             switch component.icon {
@@ -393,6 +435,7 @@ final class MessageItemComponent: Component {
             
             transition.setFrame(view: self.container, frame: CGRect(origin: CGPoint(), size: size))
 
+            self.background.isHidden = !hasBackground
             self.background.update(size: size, cornerRadius: cornerRadius, isDark: true, tintColor: .init(kind: .custom, color: glassColor), transition: transition)
             transition.setFrame(view: self.background, frame: CGRect(origin: CGPoint(), size: size))
             

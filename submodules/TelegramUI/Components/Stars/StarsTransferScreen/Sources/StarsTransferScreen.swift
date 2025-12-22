@@ -21,6 +21,8 @@ import StarsImageComponent
 import ConfettiEffect
 import PremiumPeerShortcutComponent
 import StarsBalanceOverlayComponent
+import GlassBarButtonComponent
+import TelegramStringFormatting
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -68,7 +70,6 @@ private final class SheetContent: CombinedComponent {
     }
     
     final class State: ComponentState {
-        var cachedCloseImage: (UIImage, PresentationTheme)?
         var cachedStarImage: (UIImage, PresentationTheme)?
         
         private let context: AccountContext
@@ -263,7 +264,7 @@ private final class SheetContent: CombinedComponent {
     static var body: Body {
         let background = Child(RoundedRectangle.self)
         let star = Child(StarsImageComponent.self)
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(Text.self)
         let peerShortcut = Child(PremiumPeerShortcutComponent.self)
         
@@ -337,26 +338,30 @@ private final class SheetContent: CombinedComponent {
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: star.size.height / 2.0 - 27.0))
             )
             
-            let closeImage: UIImage
-            if let (image, cacheTheme) = state.cachedCloseImage, theme === cacheTheme {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: theme.actionSheet.inputClearButtonColor)!
-                state.cachedCloseImage = (closeImage, theme)
-            }
+            
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Image(image: closeImage)),
-                    action: {
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 40.0, height: 40.0),
+                    backgroundColor: theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { _ in
                         component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 30.0, height: 30.0),
+                availableSize: CGSize(width: 40.0, height: 40.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: context.availableSize.width - closeButton.size.width, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
+
             
             let constrainedTitleWidth = context.availableSize.width - 16.0 * 2.0
             
@@ -501,13 +506,15 @@ private final class SheetContent: CombinedComponent {
                 availableSize: context.availableSize,
                 transition: .immediate
             )
+            
+            let smallLabelFont = Font.regular(11.0)
+            let labelFont = Font.semibold(14.0)
+            let formattedBalance = formatStarsAmountText(state.balance ?? StarsAmount.zero, dateTimeFormat: environment.dateTimeFormat)
+            let balanceText = tonAmountAttributedString(formattedBalance, integralFont: labelFont, fractionalFont: smallLabelFont, color: textColor, decimalSeparator: environment.dateTimeFormat.decimalSeparator)
+            
             let balanceValue = balanceValue.update(
                 component: MultilineTextComponent(
-                    text: .plain(NSAttributedString(
-                        string: presentationStringsFormattedNumber(state.balance ?? StarsAmount.zero, environment.dateTimeFormat.groupingSeparator),
-                        font: Font.semibold(16.0),
-                        textColor: textColor
-                    )),
+                    text: .plain(balanceText),
                     maximumNumberOfLines: 1
                 ),
                 availableSize: context.availableSize,
@@ -519,15 +526,15 @@ private final class SheetContent: CombinedComponent {
                 transition: .immediate
             )
             
-            let topBalanceOriginY = 11.0
+            let topBalanceOriginY = 19.0
             context.add(balanceTitle
-                .position(CGPoint(x: 16.0 + environment.safeInsets.left + balanceTitle.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height / 2.0))
+                .position(CGPoint(x: context.availableSize.width - 16.0 - environment.safeInsets.left - balanceTitle.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height / 2.0))
             )
             context.add(balanceIcon
-                .position(CGPoint(x: 16.0 + environment.safeInsets.left + balanceIcon.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0 + 1.0 + UIScreenPixel))
+                .position(CGPoint(x: context.availableSize.width - 16.0 - environment.safeInsets.left - balanceIcon.size.width / 2.0 - balanceValue.size.width - 3.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0 + 1.0 + UIScreenPixel))
             )
             context.add(balanceValue
-                .position(CGPoint(x: 16.0 + environment.safeInsets.left + balanceIcon.size.width + 3.0 + balanceValue.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0 + 2.0 - UIScreenPixel))
+                .position(CGPoint(x: context.availableSize.width - 16.0 - environment.safeInsets.left - balanceValue.size.width / 2.0, y: topBalanceOriginY + balanceTitle.size.height + balanceValue.size.height / 2.0))
             )
            
             if state.cachedStarImage == nil || state.cachedStarImage?.1 !== theme {
@@ -557,13 +564,15 @@ private final class SheetContent: CombinedComponent {
             let botTitle = state.botPeer?.compactDisplayTitle ?? ""
             let invoice = component.invoice
             let isMedia = !component.extendedMedia.isEmpty
+            
+            let buttonSideInset: CGFloat = 30.0
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
-                        cornerRadius: 10.0
+                        pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
                     ),
                     content: AnyComponentWithIdentity(
                         id: AnyHashable(0),
@@ -589,6 +598,7 @@ private final class SheetContent: CombinedComponent {
                                     options: state?.options ?? [],
                                     purpose: purpose,
                                     targetPeerId: nil,
+                                    customTheme: nil,
                                     completion: { [weak starsContext] stars in
                                         guard let starsContext else {
                                             return
@@ -649,12 +659,10 @@ private final class SheetContent: CombinedComponent {
                         })
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - 16.0 * 2.0, height: 50),
+                availableSize: CGSize(width: context.availableSize.width - buttonSideInset * 2.0, height: 52),
                 transition: .immediate
             )
             context.add(button
-                .clipsToBounds(true)
-                .cornerRadius(10.0)
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + button.size.height / 2.0))
             )
             contentSize.height += button.size.height
@@ -702,7 +710,11 @@ private final class SheetContent: CombinedComponent {
             )
             contentSize.height += info.size.height
             
-            contentSize.height += 48.0
+            var bottomInset: CGFloat = environment.safeInsets.bottom
+            if bottomInset < 5.0 {
+                bottomInset = 8.0
+            }
+            contentSize.height += 4.0 + bottomInset
             
             return contentSize
         }
@@ -778,6 +790,7 @@ private final class StarsTransferSheetComponent: CombinedComponent {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.list.modalBlocksBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -884,25 +897,4 @@ public final class StarsTransferScreen: ViewControllerComponentContainer {
             view.dismissAnimated()
         }
     }
-}
-
-private func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor: UIColor) -> UIImage? {
-    return generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        
-        context.setFillColor(backgroundColor.cgColor)
-        context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
-        
-        context.setLineWidth(2.0)
-        context.setLineCap(.round)
-        context.setStrokeColor(foregroundColor.cgColor)
-        
-        context.move(to: CGPoint(x: 10.0, y: 10.0))
-        context.addLine(to: CGPoint(x: 20.0, y: 20.0))
-        context.strokePath()
-        
-        context.move(to: CGPoint(x: 20.0, y: 10.0))
-        context.addLine(to: CGPoint(x: 10.0, y: 20.0))
-        context.strokePath()
-    })
 }

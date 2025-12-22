@@ -177,7 +177,7 @@ private final class GiftWithdrawAlertContentNode: AlertContentNode {
                     peer: .transactionPeer(.fragment),
                     photo: nil,
                     media: [],
-                    uniqueGift: nil,
+                    gift: nil,
                     backgroundColor: .clear,
                     size: avatarSize
                 )

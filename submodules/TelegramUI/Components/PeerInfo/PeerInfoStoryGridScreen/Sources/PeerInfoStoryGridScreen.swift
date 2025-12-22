@@ -310,7 +310,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 return
             }
             if let rootController = component.context.sharedContext.mainWindow?.viewController as? TelegramRootControllerInterface {
-                let coordinator = rootController.openStoryCamera(customTarget: nil, transitionIn: nil, transitionedIn: {}, transitionOut: { _, _ in return nil })
+                let coordinator = rootController.openStoryCamera(customTarget: nil, resumeLiveStream: false, transitionIn: nil, transitionedIn: {}, transitionOut: { _, _ in return nil })
                 coordinator?.animateIn()
             }
         }

@@ -18,6 +18,8 @@ import TelegramStringFormatting
 import ListSectionComponent
 import ListActionItemComponent
 import PlainButtonComponent
+import GlassBarButtonComponent
+import BundleIconComponent
 
 private enum ActionTypeSection: Hashable, CaseIterable {
     case members
@@ -486,19 +488,28 @@ private final class RecentActionsSettingsSheetComponent: Component {
             
             let leftButtonSize = self.leftButton.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: environment.theme.list.itemAccentColor)),
-                    action: { [weak self] in
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: CGSize(width: 40.0, height: 40.0),
+                    backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: environment.theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: environment.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { [weak self] _ in
                         guard let self, let controller = self.environment?.controller() else {
                             return
                         }
                         controller.dismiss()
                     }
-                ).minSize(CGSize(width: 44.0, height: 56.0))),
+                )),
                 environment: {},
-                containerSize: CGSize(width: 120.0, height: 100.0)
+                containerSize: CGSize(width: 40.0, height: 40.0)
             )
-            let leftButtonFrame = CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: 0.0), size: leftButtonSize)
+            let leftButtonFrame = CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: 16.0), size: leftButtonSize)
             if let leftButtonView = self.leftButton.view {
                 if leftButtonView.superview == nil {
                     self.navigationBarContainer.addSubview(leftButtonView)
@@ -582,6 +593,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
                 
                 return AnyComponentWithIdentity(id: sectionId, component: AnyComponent(ListActionItemComponent(
                     theme: environment.theme,
+                    style: .glass,
                     title: itemTitle,
                     leftIcon: .check(ListActionItemComponent.LeftIcon.Check(
                         isSelected: selectedCount == totalCount,
@@ -661,6 +673,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
                     
                     subItems.append(AnyComponentWithIdentity(id: actionType, component: AnyComponent(ListActionItemComponent(
                         theme: environment.theme,
+                        style: .glass,
                         title: AnyComponent(VStack([
                             AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -702,7 +715,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - leftButtonFrame.maxX * 2.0, height: 100.0)
             )
-            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: floor((54.0 - titleSize.height) * 0.5)), size: titleSize)
+            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: floor((72.0 - titleSize.height) * 0.5)), size: titleSize)
             if let titleView = title.view {
                 if titleView.superview == nil {
                     self.navigationBarContainer.addSubview(titleView)
@@ -728,6 +741,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
                 transition: optionsSectionTransition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.Channel_AdminLogFilter_FilterActionsTypeTitle,
@@ -796,6 +810,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
             }
             adminsSectionItems.append(AnyComponentWithIdentity(id: adminsSectionItems.count, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
+                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -828,6 +843,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.Channel_AdminLogFilter_FilterActionsAdminsTitle,
@@ -854,10 +870,12 @@ private final class RecentActionsSettingsSheetComponent: Component {
             
             contentHeight += 30.0
             
+            let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let actionButtonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -883,10 +901,10 @@ private final class RecentActionsSettingsSheetComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - bottomInsets.left - bottomInsets.right, height: 52.0)
             )
-            let bottomPanelHeight = 8.0 + environment.safeInsets.bottom + actionButtonSize.height
-            let actionButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: availableSize.height - bottomPanelHeight), size: actionButtonSize)
+            let bottomPanelHeight = actionButtonSize.height + bottomInsets.bottom
+            let actionButtonFrame = CGRect(origin: CGPoint(x: bottomInsets.left, y: availableSize.height - bottomPanelHeight), size: actionButtonSize)
             if let actionButtonView = actionButton.view {
                 if actionButtonView.superview == nil {
                     self.addSubview(actionButtonView)

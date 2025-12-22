@@ -23,6 +23,7 @@ enum ChatListFilterCategoryIcon {
 
 final class ChatListFilterPresetCategoryItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let title: String
     let icon: ChatListFilterCategoryIcon
     let isRevealed: Bool
@@ -33,6 +34,7 @@ final class ChatListFilterPresetCategoryItem: ListViewItem, ItemListItem {
     
     init(
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle,
         title: String,
         icon: ChatListFilterCategoryIcon,
         isRevealed: Bool,
@@ -41,6 +43,7 @@ final class ChatListFilterPresetCategoryItem: ListViewItem, ItemListItem {
         remove: @escaping () -> Void
     ) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.title = title
         self.icon = icon
         self.isRevealed = isRevealed
@@ -185,11 +188,14 @@ class ChatListFilterPresetCategoryItemNode: ItemListRevealOptionsItemNode, ItemL
             titleAttributedString = NSAttributedString(string: item.title, font: titleFont, textColor: titleColor)
 
             let leftInset: CGFloat
-            let verticalInset: CGFloat
+            var verticalInset: CGFloat = 14.0
             let verticalOffset: CGFloat
             let avatarSize: CGFloat
             
-            verticalInset = 14.0
+            if case .glass = item.systemStyle {
+                verticalInset += 4.0
+            }
+            
             verticalOffset = 0.0
             avatarSize = 40.0
             leftInset = 65.0 + params.leftInset
@@ -208,6 +214,7 @@ class ChatListFilterPresetCategoryItemNode: ItemListRevealOptionsItemNode, ItemL
             
             let contentSize = CGSize(width: params.width, height: max(minHeight, rawHeight))
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             let layoutSize = layout.size
@@ -340,12 +347,12 @@ class ChatListFilterPresetCategoryItemNode: ItemListRevealOptionsItemNode, ItemL
                         strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
-                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
+                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)))
                     
                     transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftInset + revealOffset + editingOffset, y: verticalInset + verticalOffset), size: titleLayout.size))
                     

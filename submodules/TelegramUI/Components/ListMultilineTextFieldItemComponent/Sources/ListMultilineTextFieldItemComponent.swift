@@ -12,6 +12,11 @@ import PlainButtonComponent
 import AccountContext
 
 public final class ListMultilineTextFieldItemComponent: Component {
+    public enum Style {
+        case glass
+        case legacy
+    }
+    
     public final class ExternalState {
         public fileprivate(set) var hasText: Bool = false
         public fileprivate(set) var text: NSAttributedString = NSAttributedString()
@@ -50,6 +55,7 @@ public final class ListMultilineTextFieldItemComponent: Component {
     }
     
     public let externalState: ExternalState?
+    public let style: Style
     public let context: AccountContext
     public let theme: PresentationTheme
     public let strings: PresentationStrings
@@ -73,6 +79,7 @@ public final class ListMultilineTextFieldItemComponent: Component {
     
     public init(
         externalState: ExternalState? = nil,
+        style: Style = .legacy,
         context: AccountContext,
         theme: PresentationTheme,
         strings: PresentationStrings,
@@ -95,6 +102,7 @@ public final class ListMultilineTextFieldItemComponent: Component {
         tag: AnyObject? = nil
     ) {
         self.externalState = externalState
+        self.style = style
         self.context = context
         self.theme = theme
         self.strings = strings
@@ -194,6 +202,7 @@ public final class ListMultilineTextFieldItemComponent: Component {
         }
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
+        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public private(set) var separatorInset: CGFloat = 0.0
         
         public override init(frame: CGRect) {
@@ -273,7 +282,14 @@ public final class ListMultilineTextFieldItemComponent: Component {
             self.component = component
             self.state = state
             
-            let verticalInset: CGFloat = 12.0
+            let verticalInset: CGFloat
+            switch component.style {
+            case .glass:
+                verticalInset = 16.0
+            case .legacy:
+                verticalInset = 12.0
+            }
+            
             let leftInset: CGFloat = 16.0
             var rightInset: CGFloat = 16.0
             let modeSelectorSize = CGSize(width: 32.0, height: 32.0)

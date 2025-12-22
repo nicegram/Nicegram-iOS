@@ -37,6 +37,7 @@ import EmojiTextAttachmentView
 public enum ChatMessageAttachedContentActionIcon {
     case instant
     case link
+    case bid
 }
 
 public struct ChatMessageAttachedContentNodeMediaFlags: OptionSet {
@@ -323,7 +324,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
             
             var mediaAndFlags = mediaAndFlags
             if let mediaAndFlagsValue = mediaAndFlags {
-                if mediaAndFlagsValue.0.first is TelegramMediaStory || mediaAndFlagsValue.0.first is WallpaperPreviewMedia || mediaAndFlagsValue.0.first is UniqueGiftPreviewMedia {
+                if mediaAndFlagsValue.0.first is TelegramMediaStory || mediaAndFlagsValue.0.first is WallpaperPreviewMedia || mediaAndFlagsValue.0.first is UniqueGiftPreviewMedia || mediaAndFlagsValue.0.first is GiftAuctionPreviewMedia {
                     var flags = mediaAndFlagsValue.1
                     flags.remove(.preferMediaInline)
                     mediaAndFlags = (mediaAndFlagsValue.0, flags)
@@ -393,6 +394,8 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                     } else if media is TelegramMediaStory {
                         contentMediaValue = media
                     } else if media is UniqueGiftPreviewMedia {
+                        contentMediaValue = media
+                    } else if media is GiftAuctionPreviewMedia {
                         contentMediaValue = media
                     }
                 }
@@ -624,6 +627,8 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             case .link:
                                 buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconLinkIncoming(presentationData.theme.theme)!
                                 cornerIcon = true
+                            case .bid:
+                                buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconBidIncoming(presentationData.theme.theme)!
                             }
                         }
                     } else {
@@ -634,6 +639,8 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             case .link:
                                 buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconLinkOutgoing(presentationData.theme.theme)!
                                 cornerIcon = true
+                            case .bid:
+                                buttonIconImage = PresentationResourcesChat.chatMessageAttachedContentButtonIconBidOutgoing(presentationData.theme.theme)!
                             }
                         }
                     }

@@ -131,12 +131,13 @@ public struct AccountPrivacySettings: Equatable {
     public var birthday: SelectivePrivacySettings
     public var giftsAutoSave: SelectivePrivacySettings
     public var noPaidMessages: SelectivePrivacySettings
+    public var savedMusic: SelectivePrivacySettings
     
     public var globalSettings: GlobalPrivacySettings
     public var accountRemovalTimeout: Int32
     public var messageAutoremoveTimeout: Int32?
     
-    public init(presence: SelectivePrivacySettings, groupInvitations: SelectivePrivacySettings, voiceCalls: SelectivePrivacySettings, voiceCallsP2P: SelectivePrivacySettings, profilePhoto: SelectivePrivacySettings, forwards: SelectivePrivacySettings, phoneNumber: SelectivePrivacySettings, phoneDiscoveryEnabled: Bool, voiceMessages: SelectivePrivacySettings, bio: SelectivePrivacySettings, birthday: SelectivePrivacySettings, giftsAutoSave: SelectivePrivacySettings, noPaidMessages: SelectivePrivacySettings, globalSettings: GlobalPrivacySettings, accountRemovalTimeout: Int32, messageAutoremoveTimeout: Int32?) {
+    public init(presence: SelectivePrivacySettings, groupInvitations: SelectivePrivacySettings, voiceCalls: SelectivePrivacySettings, voiceCallsP2P: SelectivePrivacySettings, profilePhoto: SelectivePrivacySettings, forwards: SelectivePrivacySettings, phoneNumber: SelectivePrivacySettings, phoneDiscoveryEnabled: Bool, voiceMessages: SelectivePrivacySettings, bio: SelectivePrivacySettings, birthday: SelectivePrivacySettings, giftsAutoSave: SelectivePrivacySettings, noPaidMessages: SelectivePrivacySettings, savedMusic: SelectivePrivacySettings, globalSettings: GlobalPrivacySettings, accountRemovalTimeout: Int32, messageAutoremoveTimeout: Int32?) {
         self.presence = presence
         self.groupInvitations = groupInvitations
         self.voiceCalls = voiceCalls
@@ -150,6 +151,7 @@ public struct AccountPrivacySettings: Equatable {
         self.birthday = birthday
         self.giftsAutoSave = giftsAutoSave
         self.noPaidMessages = noPaidMessages
+        self.savedMusic = savedMusic
         self.globalSettings = globalSettings
         self.accountRemovalTimeout = accountRemovalTimeout
         self.messageAutoremoveTimeout = messageAutoremoveTimeout
@@ -193,6 +195,9 @@ public struct AccountPrivacySettings: Equatable {
             return false
         }
         if lhs.noPaidMessages != rhs.noPaidMessages {
+            return false
+        }
+        if lhs.savedMusic != rhs.savedMusic {
             return false
         }
         if lhs.globalSettings != rhs.globalSettings {
@@ -307,6 +312,7 @@ public struct TelegramDisallowedGifts: OptionSet, Codable {
     public static let limited = TelegramDisallowedGifts(rawValue: 1 << 1)
     public static let unique = TelegramDisallowedGifts(rawValue: 1 << 2)
     public static let premium = TelegramDisallowedGifts(rawValue: 1 << 3)
+    public static let channel = TelegramDisallowedGifts(rawValue: 1 << 4)
     
     public static let All: TelegramDisallowedGifts = [
         .unlimited,
@@ -324,6 +330,33 @@ public struct TelegramDisallowedGifts: OptionSet, Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: StringCodingKey.self)
         try container.encode(self.rawValue, forKey: "v")
+    }
+}
+
+extension TelegramDisallowedGifts {
+    init(apiDisallowedGifts: Api.DisallowedGiftsSettings?) {
+        var disallowedGifts: TelegramDisallowedGifts = []
+        switch apiDisallowedGifts {
+        case let .disallowedGiftsSettings(giftFlags):
+            if (giftFlags & (1 << 0)) != 0 {
+                disallowedGifts.insert(.unlimited)
+            }
+            if (giftFlags & (1 << 1)) != 0 {
+                disallowedGifts.insert(.limited)
+            }
+            if (giftFlags & (1 << 2)) != 0 {
+                disallowedGifts.insert(.unique)
+            }
+            if (giftFlags & (1 << 3)) != 0 {
+                disallowedGifts.insert(.premium)
+            }
+            if (giftFlags & (1 << 4)) != 0 {
+                disallowedGifts.insert(.channel)
+            }
+        default:
+            break
+        }
+        self = disallowedGifts
     }
 }
 

@@ -9,11 +9,19 @@ import AnimationCache
 import MultiAnimationRenderer
 
 public final class MultilineTextWithEntitiesComponent: Component {
+    public final class External {
+        public fileprivate(set) var layout: TextNodeLayout?
+        
+        public init() {
+        }
+    }
+    
     public enum TextContent: Equatable {
         case plain(NSAttributedString)
         case markdown(text: String, attributes: MarkdownAttributes)
     }
     
+    public let external: External?
     public let context: AccountContext?
     public let animationCache: AnimationCache?
     public let animationRenderer: MultiAnimationRenderer?
@@ -42,6 +50,7 @@ public final class MultilineTextWithEntitiesComponent: Component {
     public let longTapAction: (([NSAttributedString.Key: Any], Int) -> Void)?
     
     public init(
+        external: External? = nil,
         context: AccountContext?,
         animationCache: AnimationCache?,
         animationRenderer: MultiAnimationRenderer?,
@@ -68,6 +77,7 @@ public final class MultilineTextWithEntitiesComponent: Component {
         tapAction: (([NSAttributedString.Key: Any], Int) -> Void)? = nil,
         longTapAction: (([NSAttributedString.Key: Any], Int) -> Void)? = nil
     ) {
+        self.external = external
         self.context = context
         self.animationCache = animationCache
         self.animationRenderer = animationRenderer
@@ -96,6 +106,9 @@ public final class MultilineTextWithEntitiesComponent: Component {
     }
     
     public static func ==(lhs: MultilineTextWithEntitiesComponent, rhs: MultilineTextWithEntitiesComponent) -> Bool {
+        if lhs.external !== rhs.external {
+            return false
+        }
         if lhs.text != rhs.text {
             return false
         }
@@ -270,8 +283,8 @@ public final class MultilineTextWithEntitiesComponent: Component {
                 constrainedSize.width = maxWidth
             }
             
-            let size = self.textNode.updateLayout(constrainedSize)
-            self.textNode.frame = CGRect(origin: .zero, size: size)
+            let layoutInfo = self.textNode.updateLayoutFullInfo(constrainedSize)
+            self.textNode.frame = CGRect(origin: .zero, size: layoutInfo.size)
             
             if component.handleSpoilers {
                 let spoilerTextNode: ImmediateTextNodeWithEntities
@@ -312,7 +325,11 @@ public final class MultilineTextWithEntitiesComponent: Component {
                 self.textNode.dustNode?.textNode = nil
             }
             
-            return size
+            if let external = component.external {
+                external.layout = layoutInfo
+            }
+            
+            return layoutInfo.size
         }
     }
     

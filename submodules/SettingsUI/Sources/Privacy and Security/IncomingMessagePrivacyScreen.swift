@@ -118,11 +118,11 @@ private enum GlobalAutoremoveEntry: ItemListNodeEntry {
         case .header:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: presentationData.strings.Privacy_Messages_SectionTitle, sectionId: self.section)
         case let .optionEverybody(value):
-            return ItemListCheckboxItem(presentationData: presentationData, title: presentationData.strings.Privacy_Messages_ValueEveryone, style: .left, checked: value == .everybody, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: presentationData.strings.Privacy_Messages_ValueEveryone, style: .left, checked: value == .everybody, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.updateValue(.everybody)
             })
         case let .optionPremium(value, isEnabled):
-            return ItemListCheckboxItem(presentationData: presentationData, icon: isEnabled ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: presentationData.strings.Privacy_Messages_ValueContactsAndPremium, style: .left, checked: isEnabled && value == .requirePremium, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: isEnabled ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: presentationData.strings.Privacy_Messages_ValueContactsAndPremium, style: .left, checked: isEnabled && value == .requirePremium, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 if isEnabled {
                     arguments.updateValue(.requirePremium)
                 } else {
@@ -134,7 +134,7 @@ private enum GlobalAutoremoveEntry: ItemListNodeEntry {
             if case .paidMessages = value  {
                 isChecked = true
             }
-            return ItemListCheckboxItem(presentationData: presentationData, icon: isEnabled || isChecked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: presentationData.strings.Privacy_Messages_ChargeForMessages, style: .left, checked: isChecked, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: isEnabled || isChecked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: presentationData.strings.Privacy_Messages_ChargeForMessages, style: .left, checked: isChecked, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.updateValue(.paidMessages(StarsAmount(value: 400, nanos: 0)))
             })
         case let .footer(value):
@@ -152,7 +152,7 @@ private enum GlobalAutoremoveEntry: ItemListNodeEntry {
         case .priceHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: presentationData.strings.Privacy_Messages_MessagePrice, sectionId: self.section)
         case let .price(value, maxValue, price, isEnabled):
-            return MessagePriceItem(theme: presentationData.theme, strings: presentationData.strings, isEnabled: isEnabled, minValue: 1, maxValue: maxValue, value: value, price: price, sectionId: self.section, updated: { value, _ in
+            return MessagePriceItem(theme: presentationData.theme, strings: presentationData.strings, systemStyle: .glass, isEnabled: isEnabled, minValue: 1, maxValue: maxValue, value: value, price: price, sectionId: self.section, updated: { value, _ in
                 arguments.updateValue(.paidMessages(StarsAmount(value: value, nanos: 0)))
             }, openSetCustom: {
                 arguments.openSetCustomStarsAmount()
@@ -164,7 +164,7 @@ private enum GlobalAutoremoveEntry: ItemListNodeEntry {
         case .exceptionsHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: presentationData.strings.Privacy_Messages_RemoveFeeHeader, sectionId: self.section)
         case let .exceptions(count):
-            return ItemListDisclosureItem(presentationData: presentationData, title: presentationData.strings.Privacy_Messages_RemoveFee, label: count > 0 ? "\(count)" : "", sectionId: self.section, style: .blocks, action: {
+            return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: presentationData.strings.Privacy_Messages_RemoveFee, label: count > 0 ? "\(count)" : "", sectionId: self.section, style: .blocks, action: {
                 arguments.openExceptions()
             })
         case .exceptionsInfo:
@@ -194,7 +194,7 @@ private func incomingMessagePrivacyScreenEntries(presentationData: PresentationD
         
         let usdRate = Double(configuration.usdWithdrawRate) / 1000.0 / 100.0
         
-        let price = "≈\(formatTonUsdValue(amount.value, divide: false, rate: usdRate, dateTimeFormat: presentationData.dateTimeFormat))"
+        let price = "~\(formatTonUsdValue(amount.value, divide: false, rate: usdRate, dateTimeFormat: presentationData.dateTimeFormat))"
         
         entries.append(.price(value: amount.value, maxValue: configuration.paidMessageMaxAmount, price: price, isEnabled: isPremium))
         entries.append(.priceInfo(commission: configuration.paidMessageCommissionPermille / 10, value: price))

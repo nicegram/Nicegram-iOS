@@ -533,6 +533,18 @@ public final class StoryPeerListComponent: Component {
             }
         }
         
+        public var isLiveStreaming: Bool {
+            guard let component = self.component else {
+                return false
+            }
+            for itemSet in self.sortedItems {
+                if itemSet.peer.id == component.context.account.peerId, itemSet.hasLiveItems {
+                    return true
+                }
+            }
+            return false
+        }
+        
         public func transitionViewForItem(peerId: EnginePeer.Id) -> (UIView, StoryContainerScreen.TransitionView)? {
             if self.collapsedButton.isUserInteractionEnabled {
                 return nil
@@ -1054,6 +1066,7 @@ public final class StoryPeerListComponent: Component {
                 }
                 
                 var hasUnseenCloseFriendsItems = itemSet.hasUnseenCloseFriends
+                let hasLiveItems = itemSet.hasLiveItems
                 
                 var hasItems = true
                 var itemRingAnimation: StoryPeerListItemComponent.RingAnimation?
@@ -1139,6 +1152,7 @@ public final class StoryPeerListComponent: Component {
                         totalCount: totalCount,
                         unseenCount: unseenCount,
                         hasUnseenCloseFriendsItems: hasUnseenCloseFriendsItems,
+                        hasLiveItems: hasLiveItems,
                         hasItems: hasItems,
                         ringAnimation: itemRingAnimation,
                         scale: itemScale,
@@ -1278,6 +1292,7 @@ public final class StoryPeerListComponent: Component {
                         totalCount: 1,
                         unseenCount: itemSet.unseenCount != 0 ? 1 : 0,
                         hasUnseenCloseFriendsItems: hasUnseenCloseFriendsItems,
+                        hasLiveItems: itemSet.hasLiveItems,
                         hasItems: hasItems,
                         ringAnimation: itemRingAnimation,
                         scale: itemScale,

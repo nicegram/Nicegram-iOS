@@ -273,7 +273,7 @@ private class RecentSessionScreenNode: ViewControllerTracingNode, ASScrollViewDe
         self.cancelButton.accessibilityLabel = presentationData.strings.Common_Close
         self.cancelButton.accessibilityTraits = [.button]
                 
-        self.terminateButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(backgroundColor: self.presentationData.theme.list.itemBlocksBackgroundColor, foregroundColor: self.presentationData.theme.list.itemDestructiveColor), font: .regular, height: 44.0, cornerRadius: 11.0, gloss: false)
+        self.terminateButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(backgroundColor: self.presentationData.theme.list.itemBlocksBackgroundColor, foregroundColor: self.presentationData.theme.list.itemDestructiveColor), font: .regular, height: 44.0, cornerRadius: 11.0)
         
         var hasSecretChats = false
         var hasIncomingCalls = false

@@ -202,9 +202,9 @@ final class StoragePeerTypeItemComponent: Component {
                 }
             }
             
-            var height: CGFloat = 44.0
+            var height: CGFloat = 52.0
             if subtitleSize != nil {
-                height = 60.0
+                height = 64.0
             }
             
             let titleFrame: CGRect

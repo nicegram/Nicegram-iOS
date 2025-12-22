@@ -640,7 +640,7 @@ final class StarsTransactionsPanelContainerComponent: Component {
             transition.setFrame(view: self.topPanelBackgroundView, frame: CGRect(origin: .zero, size: topPanelFrame.size))
             transition.setFrame(view: self.topPanelMergedBackgroundView, frame: CGRect(origin: .zero, size: topPanelFrame.size))
 
-            transition.setCornerRadius(layer: self.topPanelClippingView.layer, cornerRadius: component.insets.left > 0.0 ? 11.0 : 0.0)
+            transition.setCornerRadius(layer: self.topPanelClippingView.layer, cornerRadius: component.insets.left > 0.0 ? 26.0 : 0.0)
             
             transition.setFrame(layer: self.panelsBackgroundLayer, frame: CGRect(origin: CGPoint(x: component.insets.left, y: topPanelFrame.maxY), size: CGSize(width: containerWidth, height: availableSize.height - topPanelFrame.maxY)))
             

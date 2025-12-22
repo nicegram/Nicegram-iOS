@@ -39,6 +39,7 @@ public final class WebAppTitleView: UIView {
             self.update()
         }
     }
+    private let isAttachMenu: Bool
     
     private var primaryTextColor: UIColor?
     private var secondaryTextColor: UIColor?
@@ -75,9 +76,10 @@ public final class WebAppTitleView: UIView {
         self.setNeedsLayout()
     }
     
-    public init(context: AccountContext, theme: PresentationTheme) {
+    public init(context: AccountContext, theme: PresentationTheme, isAttachMenu: Bool) {
         self.context = context
         self.theme = theme
+        self.isAttachMenu = isAttachMenu
         
         self.titleNode = ImmediateTextNode()
         self.titleNode.displaysAsynchronously = false
@@ -116,6 +118,7 @@ public final class WebAppTitleView: UIView {
         
         
         var totalWidth = titleSize.width
+        let topOffset = self.isAttachMenu ? 3.0 : 0.0
         
         if self.title.isVerified {
             let statusContent: EmojiStatusComponent.Content = .verified(fillColor: self.theme.list.itemCheckColors.fillColor, foregroundColor: self.theme.list.itemCheckColors.foregroundColor, sizeType: .large)
@@ -147,13 +150,13 @@ public final class WebAppTitleView: UIView {
             
             totalWidth += titleIconSize.width + 2.0
             
-            titleCredibilityIconTransition.setFrame(view: titleCredibilityIconView, frame: CGRect(origin: CGPoint(x:floorToScreenPixels((size.width - totalWidth) / 2.0) + titleSize.width + 2.0, y: floorToScreenPixels(floorToScreenPixels((size.height - combinedHeight) / 2.0 + titleSize.height / 2.0) - titleIconSize.height / 2.0)), size: titleIconSize))
+            titleCredibilityIconTransition.setFrame(view: titleCredibilityIconView, frame: CGRect(origin: CGPoint(x:floorToScreenPixels((size.width - totalWidth) / 2.0) + titleSize.width + 2.0, y: topOffset + floorToScreenPixels(floorToScreenPixels((size.height - combinedHeight) / 2.0 + titleSize.height / 2.0) - titleIconSize.height / 2.0)), size: titleIconSize))
         }
         
-        let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - totalWidth) / 2.0), y: floorToScreenPixels((size.height - combinedHeight) / 2.0)), size: titleSize)
+        let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - totalWidth) / 2.0), y: topOffset + floorToScreenPixels((size.height - combinedHeight) / 2.0)), size: titleSize)
         self.titleNode.frame = titleFrame
         
-        let subtitleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - subtitleSize.width) / 2.0), y: floorToScreenPixels((size.height - combinedHeight) / 2.0) + titleSize.height + spacing), size: subtitleSize)
+        let subtitleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - subtitleSize.width) / 2.0), y: topOffset + floorToScreenPixels((size.height - combinedHeight) / 2.0) + titleSize.height + spacing), size: subtitleSize)
         self.subtitleNode.frame = subtitleFrame
     }
 }

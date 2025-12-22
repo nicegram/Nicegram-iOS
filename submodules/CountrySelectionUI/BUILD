@@ -18,6 +18,11 @@ swift_library(
         "//submodules/TelegramStringFormatting:TelegramStringFormatting",
         "//submodules/SearchBarNode:SearchBarNode",
         "//submodules/AppBundle:AppBundle",
+        "//submodules/ComponentFlow",
+        "//submodules/Components/BundleIconComponent",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/TelegramUI/Components/SearchInputPanelComponent",
     ],
     visibility = [
         "//visibility:public",

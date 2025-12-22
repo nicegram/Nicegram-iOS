@@ -42,6 +42,11 @@ open class ViewControllerComponentContainer: ViewController {
         case custom(PresentationTheme)
     }
     
+    public enum Style {
+        case glass
+        case legacy
+    }
+    
     public final class Environment: Equatable {
         public let statusBarHeight: CGFloat
         public let navigationHeight: CGFloat

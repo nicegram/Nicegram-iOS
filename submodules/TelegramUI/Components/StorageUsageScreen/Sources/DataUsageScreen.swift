@@ -23,6 +23,7 @@ import TelegramStringFormatting
 import GalleryData
 import AnimatedTextComponent
 import TelegramUIPreferences
+import SegmentControlComponent
 
 final class DataUsageScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -370,7 +371,7 @@ final class DataUsageScreenComponent: Component {
             
             self.autoDownloadSettingsContainerView = UIView()
             self.autoDownloadSettingsContainerView.clipsToBounds = true
-            self.autoDownloadSettingsContainerView.layer.cornerRadius = 10.0
+            self.autoDownloadSettingsContainerView.layer.cornerRadius = 26.0
             
             super.init(frame: frame)
             

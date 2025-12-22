@@ -33,6 +33,7 @@ private enum ItemBackgroundColor: Equatable {
 
 public class ItemListFolderInviteLinkListItem: ListViewItem, ItemListItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let invite: ExportedChatFolderLink?
     let share: Bool
     public let sectionId: ItemListSectionId
@@ -44,6 +45,7 @@ public class ItemListFolderInviteLinkListItem: ListViewItem, ItemListItem {
     
     public init(
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle,
         invite: ExportedChatFolderLink?,
         share: Bool,
         sectionId: ItemListSectionId,
@@ -54,6 +56,7 @@ public class ItemListFolderInviteLinkListItem: ListViewItem, ItemListItem {
         tag: ItemListItemTag? = nil
     ) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.invite = invite
         self.share = share
         self.sectionId = sectionId
@@ -319,7 +322,10 @@ public class ItemListFolderInviteLinkListItemNode: ItemListRevealOptionsItemNode
             
             let leftInset: CGFloat = 65.0 + params.leftInset
             let rightInset: CGFloat = 16.0 + params.rightInset
-            let verticalInset: CGFloat = subtitleAttributedString.string.isEmpty ? 14.0 : 8.0
+            var verticalInset: CGFloat = subtitleAttributedString.string.isEmpty ? 14.0 : 8.0
+            if case .glass = item.systemStyle {
+                verticalInset += 4.0
+            }
            
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: titleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             let (subtitleLayout, subtitleApply) = makeSubtitleLayout(TextNodeLayoutArguments(attributedString: subtitleAttributedString, backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
@@ -347,6 +353,7 @@ public class ItemListFolderInviteLinkListItemNode: ItemListRevealOptionsItemNode
             
             let contentSize = CGSize(width: params.width, height: max(minHeight, rawHeight))
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             
@@ -453,12 +460,12 @@ public class ItemListFolderInviteLinkListItemNode: ItemListRevealOptionsItemNode
                                     strongSelf.bottomStripeNode.isHidden = hasCorners
                             }
                             
-                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                            strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                             
                             strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                             strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                             strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
+                            strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     }
                     
                     let iconSize: CGSize = CGSize(width: 40.0, height: 40.0)

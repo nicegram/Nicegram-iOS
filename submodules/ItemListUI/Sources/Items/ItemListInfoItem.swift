@@ -20,6 +20,7 @@ public class InfoListItem: ListViewItem {
     public let selectable: Bool = false
     
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let title: String
     let text: InfoListItemText
     let style: ItemListStyle
@@ -28,8 +29,9 @@ public class InfoListItem: ListViewItem {
     let linkAction: ((InfoListItemLinkAction) -> Void)?
     let closeAction: (() -> Void)?
     
-    public init(presentationData: ItemListPresentationData, title: String, text: InfoListItemText, style: ItemListStyle, hasDecorations: Bool = true, isWarning: Bool = false, linkAction: ((InfoListItemLinkAction) -> Void)? = nil, closeAction: (() -> Void)?) {
+    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, title: String, text: InfoListItemText, style: ItemListStyle, hasDecorations: Bool = true, isWarning: Bool = false, linkAction: ((InfoListItemLinkAction) -> Void)? = nil, closeAction: (() -> Void)?) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.title = title
         self.text = text
         self.style = style
@@ -76,9 +78,18 @@ public class InfoListItem: ListViewItem {
 public class ItemListInfoItem: InfoListItem, ItemListItem {
     public let sectionId: ItemListSectionId
     
-    public init(presentationData: ItemListPresentationData, title: String, text: InfoListItemText, style: ItemListStyle, sectionId: ItemListSectionId, linkAction: ((InfoListItemLinkAction) -> Void)? = nil, closeAction: (() -> Void)?) {
+    public init(
+        presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle = .legacy,
+        title: String,
+        text: InfoListItemText,
+        style: ItemListStyle,
+        sectionId: ItemListSectionId,
+        linkAction: ((InfoListItemLinkAction) -> Void)? = nil,
+        closeAction: (() -> Void)?
+    ) {
         self.sectionId = sectionId
-        super.init(presentationData: presentationData, title: title, text: text, style: style, linkAction: linkAction, closeAction: closeAction)
+        super.init(presentationData: presentationData, systemStyle: systemStyle, title: title, text: text, style: style, linkAction: linkAction, closeAction: closeAction)
     }
     
     override public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -237,6 +248,7 @@ public class InfoItemNode: ListViewItemNode {
                 insets = UIEdgeInsets()
             }
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let itemBackgroundColor: UIColor
             let itemSeparatorColor: UIColor
@@ -264,7 +276,12 @@ public class InfoItemNode: ListViewItemNode {
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: item.title, font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 2, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset - badgeDiameter - 8.0, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: attributedText, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            let contentSize = CGSize(width: params.width, height: titleLayout.size.height + textLayout.size.height + 38.0)
+            var verticalInset: CGFloat = 0.0
+            if case .glass = item.systemStyle {
+                verticalInset = 4.0
+            }
+            
+            let contentSize = CGSize(width: params.width, height: titleLayout.size.height + textLayout.size.height + 38.0 + verticalInset * 2.0)
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             
             return (layout, { [weak self] in
@@ -309,6 +326,9 @@ public class InfoItemNode: ListViewItemNode {
                                 hasTopCorners = true
                                 strongSelf.topStripeNode.isHidden = hasCorners || !item.hasDecorations
                         }
+                    } else if case .blocks = item.style, case .glass = item.systemStyle {
+                        strongSelf.topStripeNode.isHidden = true
+                        hasTopCorners = true
                     }
                     let bottomStripeInset: CGFloat
                     if let neighbors = neighbors {
@@ -331,12 +351,12 @@ public class InfoItemNode: ListViewItemNode {
                     strongSelf.badgeNode.isHidden = item.isWarning
                     strongSelf.closeButton.isHidden = item.closeAction == nil
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: separatorHeight))
-                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset, height: separatorHeight))
+                    strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - separatorHeight), size: CGSize(width: params.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     
                     if let updateBadgeImage = updatedBadgeImage {
                         if strongSelf.badgeNode.supernode == nil {
@@ -349,15 +369,15 @@ public class InfoItemNode: ListViewItemNode {
                         strongSelf.closeButton.setImage(updatedCloseIcon, for: [])
                     }
                     
-                    strongSelf.badgeNode.frame = CGRect(origin: CGPoint(x: leftInset, y: 15.0 + (item.isWarning ? 4.0 : 0.0)), size: CGSize(width: badgeDiameter, height: badgeDiameter))
+                    strongSelf.badgeNode.frame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset + 15.0 + (item.isWarning ? 4.0 : 0.0)), size: CGSize(width: badgeDiameter, height: badgeDiameter))
                     
                     strongSelf.labelNode.frame = CGRect(origin: CGPoint(x: strongSelf.badgeNode.frame.midX - labelLayout.size.width / 2.0, y: strongSelf.badgeNode.frame.minY + 2.0 + UIScreenPixel), size: labelLayout.size)
                     
-                    strongSelf.titleNode.frame = CGRect(origin: CGPoint(x: strongSelf.badgeNode.frame.maxX + 8.0, y: 16.0), size: titleLayout.size)
+                    strongSelf.titleNode.frame = CGRect(origin: CGPoint(x: strongSelf.badgeNode.frame.maxX + 8.0, y: verticalInset + 16.0), size: titleLayout.size)
                     
                     strongSelf.textNode.frame = CGRect(origin: CGPoint(x: leftInset, y: strongSelf.titleNode.frame.maxY + 9.0), size: textLayout.size)
                     
-                    strongSelf.closeButton.frame = CGRect(x: params.width - rightInset - 26.0, y: 10.0, width: 32.0, height: 32.0)
+                    strongSelf.closeButton.frame = CGRect(x: params.width - rightInset - 26.0, y: verticalInset + 10.0, width: 32.0, height: 32.0)
                 }
             })
         }

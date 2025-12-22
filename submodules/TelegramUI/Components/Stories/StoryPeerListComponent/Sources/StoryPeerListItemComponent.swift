@@ -373,6 +373,7 @@ public final class StoryPeerListItemComponent: Component {
     public let totalCount: Int
     public let unseenCount: Int
     public let hasUnseenCloseFriendsItems: Bool
+    public let hasLiveItems: Bool
     public let hasItems: Bool
     public let ringAnimation: RingAnimation?
     public let scale: CGFloat
@@ -393,6 +394,7 @@ public final class StoryPeerListItemComponent: Component {
         totalCount: Int,
         unseenCount: Int,
         hasUnseenCloseFriendsItems: Bool,
+        hasLiveItems: Bool,
         hasItems: Bool,
         ringAnimation: RingAnimation?,
         scale: CGFloat,
@@ -412,6 +414,7 @@ public final class StoryPeerListItemComponent: Component {
         self.totalCount = totalCount
         self.unseenCount = unseenCount
         self.hasUnseenCloseFriendsItems = hasUnseenCloseFriendsItems
+        self.hasLiveItems = hasLiveItems
         self.hasItems = hasItems
         self.ringAnimation = ringAnimation
         self.scale = scale
@@ -445,6 +448,9 @@ public final class StoryPeerListItemComponent: Component {
             return false
         }
         if lhs.hasUnseenCloseFriendsItems != rhs.hasUnseenCloseFriendsItems {
+            return false
+        }
+        if lhs.hasLiveItems != rhs.hasLiveItems {
             return false
         }
         if lhs.hasItems != rhs.hasItems {
@@ -494,6 +500,9 @@ public final class StoryPeerListItemComponent: Component {
         private let avatarBackgroundView: UIImageView
         private var avatarNode: AvatarNode?
         private var avatarAddBadgeView: UIImageView?
+        private var avatarLiveBadgeView: UIImageView?
+        private var avatarLiveBadgeMaskSeenLayer: SimpleLayer?
+        private var avatarLiveBadgeMaskUnseenLayer: SimpleLayer?
         private let avatarShapeLayer: SimpleShapeLayer
         private let indicatorMaskSeenLayer: SimpleLayer
         private let indicatorMaskUnseenLayer: SimpleLayer
@@ -551,6 +560,8 @@ public final class StoryPeerListItemComponent: Component {
             
             super.init(frame: frame)
             
+            self.layer.allowsGroupOpacity = true
+            
             self.extractedContainerNode.contentNode.view.addSubview(self.extractedBackgroundView)
             
             self.containerNode.addSubnode(self.extractedContainerNode)
@@ -568,6 +579,15 @@ public final class StoryPeerListItemComponent: Component {
             
             self.avatarContent.layer.addSublayer(self.indicatorColorSeenLayer)
             self.avatarContent.layer.addSublayer(self.indicatorColorUnseenLayer)
+            
+            if let filter = CALayer.luminanceToAlpha() {
+                self.indicatorMaskSeenLayer.filters = [filter]
+                self.indicatorMaskUnseenLayer.filters = [filter]
+            }
+            
+            self.indicatorMaskSeenLayer.backgroundColor = UIColor.black.cgColor
+            self.indicatorMaskUnseenLayer.backgroundColor = UIColor.black.cgColor
+            
             self.indicatorMaskSeenLayer.addSublayer(self.indicatorShapeSeenLayer)
             self.indicatorMaskUnseenLayer.addSublayer(self.indicatorShapeUnseenLayer)
             self.indicatorColorSeenLayer.mask = self.indicatorMaskSeenLayer
@@ -772,6 +792,88 @@ public final class StoryPeerListItemComponent: Component {
                 }
             }
             
+            if component.hasLiveItems {
+                let avatarLiveBadgeView: UIImageView
+                var avatarLiveBadgeTransition = transition
+                if let current = self.avatarLiveBadgeView {
+                    avatarLiveBadgeView = current
+                } else {
+                    avatarLiveBadgeTransition = avatarLiveBadgeTransition.withAnimation(.none)
+                    avatarLiveBadgeView = UIImageView()
+                    self.avatarLiveBadgeView = avatarLiveBadgeView
+                    self.avatarContainer.addSubview(avatarLiveBadgeView)
+                }
+                let avatarLiveBadgeMaskSeenLayer: SimpleLayer
+                if let current = self.avatarLiveBadgeMaskSeenLayer {
+                    avatarLiveBadgeMaskSeenLayer = current
+                } else {
+                    avatarLiveBadgeMaskSeenLayer = SimpleLayer()
+                    avatarLiveBadgeMaskSeenLayer.backgroundColor = UIColor.black.cgColor
+                    self.avatarLiveBadgeMaskSeenLayer = avatarLiveBadgeMaskSeenLayer
+                    self.indicatorMaskSeenLayer.addSublayer(avatarLiveBadgeMaskSeenLayer)
+                }
+                let avatarLiveBadgeMaskUnseenLayer: SimpleLayer
+                if let current = self.avatarLiveBadgeMaskUnseenLayer {
+                    avatarLiveBadgeMaskUnseenLayer = current
+                } else {
+                    avatarLiveBadgeMaskUnseenLayer = SimpleLayer()
+                    avatarLiveBadgeMaskUnseenLayer.backgroundColor = UIColor.black.cgColor
+                    self.avatarLiveBadgeMaskUnseenLayer = avatarLiveBadgeMaskUnseenLayer
+                    self.indicatorMaskUnseenLayer.addSublayer(avatarLiveBadgeMaskUnseenLayer)
+                }
+                if avatarLiveBadgeView.image == nil || themeUpdated {
+                    let liveString = NSAttributedString(string: component.strings.Story_LiveBadge, font: Font.semibold(10.0), textColor: .white)
+                    let liveStringBounds = liveString.boundingRect(with: CGSize(width: 100.0, height: 100.0), options: .usesLineFragmentOrigin, context: nil)
+                    let liveBadgeSize = CGSize(width: ceil(liveStringBounds.width) + 4.0 * 2.0, height: ceil(liveStringBounds.height) + 2.0 * 2.0)
+                    avatarLiveBadgeView.image = generateImage(liveBadgeSize, rotatedContext: { size, context in
+                        UIGraphicsPushContext(context)
+                        defer {
+                            UIGraphicsPopContext()
+                        }
+                        
+                        context.clear(CGRect(origin: CGPoint(), size: size))
+                        context.setFillColor(UIColor(rgb: 0xFF2D55).cgColor)
+                        context.addPath(UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: size), cornerRadius: size.height * 0.5).cgPath)
+                        context.fillPath()
+                        
+                        liveString.draw(at: CGPoint(x: floorToScreenPixels((size.width - liveStringBounds.width) * 0.5), y: floorToScreenPixels((size.height - liveStringBounds.height) * 0.5)))
+                    })
+                }
+                if let image = avatarLiveBadgeView.image {
+                    let badgeSize = image.size
+                    let badgeFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((avatarFrame.width - badgeSize.width) * 0.5), y: avatarFrame.height + 5.0 - badgeSize.height), size: badgeSize)
+                    avatarLiveBadgeTransition.setPosition(view: avatarLiveBadgeView, position: badgeFrame.center)
+                    avatarLiveBadgeTransition.setBounds(view: avatarLiveBadgeView, bounds: CGRect(origin: CGPoint(), size: badgeFrame.size))
+                    
+                    avatarLiveBadgeTransition.setScale(view: avatarLiveBadgeView, scale: max(0.00001, component.expandedAlphaFraction))
+                    avatarLiveBadgeTransition.setAlpha(view: avatarLiveBadgeView, alpha: component.expandedAlphaFraction)
+                    
+                    avatarLiveBadgeMaskSeenLayer.frame = badgeFrame.offsetBy(dx: 8.0, dy: 8.0).insetBy(dx: -2.0, dy: -2.0)
+                    avatarLiveBadgeMaskSeenLayer.cornerRadius = avatarLiveBadgeMaskSeenLayer.bounds.height * 0.5
+                    avatarLiveBadgeMaskUnseenLayer.frame = badgeFrame.offsetBy(dx: 8.0, dy: 8.0).insetBy(dx: -2.0, dy: -2.0)
+                    avatarLiveBadgeMaskUnseenLayer.cornerRadius = avatarLiveBadgeMaskUnseenLayer.bounds.height * 0.5
+                    
+                    avatarLiveBadgeTransition.setScale(layer: avatarLiveBadgeMaskSeenLayer, scale: max(0.00001, component.expandedAlphaFraction))
+                    avatarLiveBadgeTransition.setAlpha(layer: avatarLiveBadgeMaskSeenLayer, alpha: component.expandedAlphaFraction)
+                    
+                    avatarLiveBadgeTransition.setScale(layer: avatarLiveBadgeMaskUnseenLayer, scale: max(0.00001, component.expandedAlphaFraction))
+                    avatarLiveBadgeTransition.setAlpha(layer: avatarLiveBadgeMaskUnseenLayer, alpha: component.expandedAlphaFraction)
+                }
+            } else {
+                if let avatarLiveBadgeView = self.avatarLiveBadgeView {
+                    self.avatarLiveBadgeView = nil
+                    avatarLiveBadgeView.removeFromSuperview()
+                }
+                if let avatarLiveBadgeMaskSeenLayer = self.avatarLiveBadgeMaskSeenLayer {
+                    self.avatarLiveBadgeMaskSeenLayer = nil
+                    avatarLiveBadgeMaskSeenLayer.removeFromSuperlayer()
+                }
+                if let avatarLiveBadgeMaskUnseenLayer = self.avatarLiveBadgeMaskUnseenLayer {
+                    self.avatarLiveBadgeMaskUnseenLayer = nil
+                    avatarLiveBadgeMaskUnseenLayer.removeFromSuperlayer()
+                }
+            }
+            
             self.avatarBackgroundView.isHidden = component.ringAnimation != nil || self.indicatorColorSeenLayer.isHidden
             
             let baseRadius: CGFloat = 30.66
@@ -788,7 +890,9 @@ public final class StoryPeerListItemComponent: Component {
             let seenColors: [CGColor]
             let unseenColors: [CGColor]
             
-            if component.hasUnseenCloseFriendsItems {
+            if component.hasLiveItems {
+                unseenColors = [UIColor(rgb: 0xFF3777).cgColor, UIColor(rgb: 0xFF2D55).cgColor]
+            } else if component.hasUnseenCloseFriendsItems {
                 unseenColors = [component.theme.chatList.storyUnseenPrivateColors.topColor.cgColor, component.theme.chatList.storyUnseenPrivateColors.bottomColor.cgColor]
             } else {
                 unseenColors = [component.theme.chatList.storyUnseenColors.topColor.cgColor, component.theme.chatList.storyUnseenColors.bottomColor.cgColor]
@@ -831,7 +935,12 @@ public final class StoryPeerListItemComponent: Component {
             
             let avatarPath = CGMutablePath()
             avatarPath.addEllipse(in: CGRect(origin: CGPoint(), size: avatarSize).insetBy(dx: -1.0, dy: -1.0))
-            if component.peer.id == component.context.account.peerId && !component.hasItems && component.ringAnimation == nil {
+            if let avatarLiveBadgeView = self.avatarLiveBadgeView {
+                let avatarLiveBadgeFrame = avatarLiveBadgeView.frame
+                if avatarLiveBadgeFrame.height > 4.0 {
+                    avatarPath.addPath(UIBezierPath(roundedRect: avatarLiveBadgeFrame.insetBy(dx: -2.0, dy: -2.0), cornerRadius: avatarLiveBadgeFrame.height * 0.5).cgPath)
+                }
+            } else if component.peer.id == component.context.account.peerId && !component.hasItems && component.ringAnimation == nil {
                 let cutoutSize: CGFloat = 18.0 + UIScreenPixel * 2.0
                 avatarPath.addEllipse(in: CGRect(origin: CGPoint(x: avatarSize.width - cutoutSize + UIScreenPixel, y: avatarSize.height - 1.0 - cutoutSize + UIScreenPixel), size: CGSize(width: cutoutSize, height: cutoutSize)))
             } else if let mappedLeftCenter {
@@ -839,8 +948,8 @@ public final class StoryPeerListItemComponent: Component {
             }
             ComponentTransition.immediate.setShapeLayerPath(layer: self.avatarShapeLayer, path: avatarPath)
             
-            ComponentTransition.immediate.setShapeLayerPath(layer: self.indicatorShapeSeenLayer, path: calculateMergingCircleShape(center: indicatorCenter, leftCenter: mappedLeftCenter, rightCenter: mappedRightCenter, radius: indicatorRadius - indicatorLineUnseenWidth * 0.5, totalCount: component.totalCount, unseenCount: component.unseenCount, isSeen: true, segmentFraction: component.expandedAlphaFraction, rotationFraction: component.expandEffectFraction))
-            ComponentTransition.immediate.setShapeLayerPath(layer: self.indicatorShapeUnseenLayer, path: calculateMergingCircleShape(center: indicatorCenter, leftCenter: mappedLeftCenter, rightCenter: mappedRightCenter, radius: indicatorRadius - indicatorLineUnseenWidth * 0.5, totalCount: component.totalCount, unseenCount: component.unseenCount, isSeen: false, segmentFraction: component.expandedAlphaFraction, rotationFraction: component.expandEffectFraction))
+            ComponentTransition.immediate.setShapeLayerPath(layer: self.indicatorShapeSeenLayer, path: calculateMergingCircleShape(center: indicatorCenter, leftCenter: mappedLeftCenter, rightCenter: mappedRightCenter, radius: indicatorRadius - indicatorLineUnseenWidth * 0.5, totalCount: component.hasLiveItems ? 1 : component.totalCount, unseenCount: component.hasLiveItems ? 1 : component.unseenCount, isSeen: true, segmentFraction: component.expandedAlphaFraction, rotationFraction: component.expandEffectFraction))
+            ComponentTransition.immediate.setShapeLayerPath(layer: self.indicatorShapeUnseenLayer, path: calculateMergingCircleShape(center: indicatorCenter, leftCenter: mappedLeftCenter, rightCenter: mappedRightCenter, radius: indicatorRadius - indicatorLineUnseenWidth * 0.5, totalCount: component.hasLiveItems ? 1 : component.totalCount, unseenCount: component.hasLiveItems ? 1 : component.unseenCount, isSeen: false, segmentFraction: component.expandedAlphaFraction, rotationFraction: component.expandEffectFraction))
             
             let titleString: String
             if component.peer.id == component.context.account.peerId {
@@ -899,7 +1008,7 @@ public final class StoryPeerListItemComponent: Component {
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: titleString, font: Font.regular(11.0), textColor: (component.unseenCount != 0 || component.peer.id == component.context.account.peerId) ? component.theme.list.itemPrimaryTextColor : component.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.5))),
+                    text: .plain(NSAttributedString(string: titleString, font: Font.regular(11.0), textColor: (component.unseenCount != 0 || component.hasLiveItems || component.peer.id == component.context.account.peerId) ? component.theme.list.itemPrimaryTextColor : component.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.5))),
                     maximumNumberOfLines: 1
                 )),
                 environment: {},

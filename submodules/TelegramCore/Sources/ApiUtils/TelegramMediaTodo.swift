@@ -27,7 +27,7 @@ extension TelegramMediaTodo.Completion {
     init(apiCompletion: Api.TodoCompletion) {
         switch apiCompletion {
         case let .todoCompletion(id, completedBy, date):
-            self.init(id: id, date: date, completedBy: EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(completedBy)))
+            self.init(id: id, date: date, completedBy: completedBy.peerId)
         }
     }
 }

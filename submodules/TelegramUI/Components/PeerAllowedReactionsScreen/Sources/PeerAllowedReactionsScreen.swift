@@ -1259,6 +1259,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.PeerInfo_AllowedReactions_MaxCountSectionTitle,
@@ -1293,7 +1294,8 @@ final class PeerAllowedReactionsScreenComponent: Component {
                                         self.allowedReactionCount = index
                                         self.state?.updated(transition: .immediate)
                                     }
-                                ))
+                                )),
+                                preferNative: true
                             )))
                         ],
                         displaySeparators: false
@@ -1349,6 +1351,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                         transition: transition,
                         component: AnyComponent(ListSectionComponent(
                             theme: environment.theme,
+                            style: .glass,
                             header: nil,
                             footer: AnyComponent(MultilineTextComponent(
                                 text: .plain(paidReactionsFooterText),
@@ -1533,10 +1536,12 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 ))))
             }
             
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.actionButton.update(
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -1555,7 +1560,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
             contentHeight += buttonSize.height
             
@@ -1649,7 +1654,7 @@ final class PeerAllowedReactionsScreenComponent: Component {
                 buttonY = availableSize.height - bottomInset - environment.safeInsets.bottom - buttonSize.height
             }
             
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: buttonY), size: buttonSize)
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: buttonY), size: buttonSize)
             if let buttonView = self.actionButton.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)

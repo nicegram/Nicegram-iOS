@@ -520,7 +520,7 @@ public final class GroupCallNavigationAccessoryPanel: ASDisplayNode {
         }
         
         #if DEBUG
-        if data.info.isStream {
+        if data.info.isStream, !"".isEmpty {
             if self.imageDisposable == nil {
                 let engine = self.context.engine
                 let info = data.info

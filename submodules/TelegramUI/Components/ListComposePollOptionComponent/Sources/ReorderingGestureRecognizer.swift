@@ -203,12 +203,12 @@ public final class ReorderGestureRecognizer: UIGestureRecognizer {
 }
 
 public func generateReorderingBackgroundImage(backgroundColor: UIColor) -> UIImage? {
-    return generateImage(CGSize(width: 64.0, height: 64.0), contextGenerator: { size, context in
+    return generateImage(CGSize(width: 84.0, height: 84.0), contextGenerator: { size, context in
         context.clear(CGRect(origin: .zero, size: size))
         
-        context.addPath(UIBezierPath(roundedRect: CGRect(x: 10, y: 10, width: 44, height: 44), cornerRadius: 10).cgPath)
-        context.setShadow(offset: CGSize(width: 0.0, height: 0.0), blur: 24.0, color: UIColor(white: 0.0, alpha: 0.35).cgColor)
+        context.addPath(UIBezierPath(roundedRect: CGRect(x: 16, y: 16, width: 52, height: 52), cornerRadius: 26).cgPath)
+        context.setShadow(offset: CGSize(width: 0.0, height: 0.0), blur: 36.0, color: UIColor(white: 0.0, alpha: 0.2).cgColor)
         context.setFillColor(backgroundColor.cgColor)
         context.fillPath()
-    })?.stretchableImage(withLeftCapWidth: 32, topCapHeight: 32)
+    })?.stretchableImage(withLeftCapWidth: 42, topCapHeight: 42)
 }

@@ -70,6 +70,7 @@ final class StoryIconNode: ASDisplayNode {
             component: AnyComponent(AvatarStoryIndicatorComponent(
                 hasUnseen: true,
                 hasUnseenCloseFriendsItems: false,
+                hasLiveItems: false,
                 colors: AvatarStoryIndicatorComponent.Colors(
                     unseenColors: theme.chatList.storyUnseenColors.array,
                     unseenCloseFriendsColors: theme.chatList.storyUnseenPrivateColors.array,

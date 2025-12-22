@@ -9,7 +9,7 @@ def remove_directory(path):
     if os.path.isdir(path):
         shutil.rmtree(path)
 
-def generate_xcodeproj(build_environment: BuildEnvironment, disable_extensions, disable_provisioning_profiles, include_release, generate_dsym, configuration_path, bazel_app_arguments, target_name):
+def generate_xcodeproj(build_environment: BuildEnvironment, disable_extensions, disable_provisioning_profiles, include_release, generate_dsym, bazel_app_arguments, target_name):
     if '/' in target_name:
         app_target_spec = target_name.split('/')[0] + '/' + target_name.split('/')[1] + ':' + target_name.split('/')[1]
         app_target = target_name
@@ -22,7 +22,6 @@ def generate_xcodeproj(build_environment: BuildEnvironment, disable_extensions, 
     bazel_generate_arguments = [build_environment.bazel_path]
 
     bazel_generate_arguments += ['run', '//{}_xcodeproj'.format(app_target_spec)]
-    bazel_generate_arguments += ['--override_repository=build_configuration={}'.format(configuration_path)]
 
     if target_name == 'Telegram':
         if disable_extensions:
@@ -32,7 +31,6 @@ def generate_xcodeproj(build_environment: BuildEnvironment, disable_extensions, 
     project_bazel_arguments = []
     for argument in bazel_app_arguments:
         project_bazel_arguments.append(argument)
-    project_bazel_arguments += ['--override_repository=build_configuration={}'.format(configuration_path)]
 
     if target_name == 'Telegram':
         if disable_extensions:
@@ -54,5 +52,5 @@ def generate_xcodeproj(build_environment: BuildEnvironment, disable_extensions, 
     return xcodeproj_path
 
 
-def generate(build_environment: BuildEnvironment, disable_extensions, disable_provisioning_profiles, include_release, generate_dsym, configuration_path, bazel_app_arguments, target_name) -> str:
-    return generate_xcodeproj(build_environment, disable_extensions, disable_provisioning_profiles, include_release, generate_dsym, configuration_path, bazel_app_arguments, target_name)
+def generate(build_environment: BuildEnvironment, disable_extensions, disable_provisioning_profiles, include_release, generate_dsym, bazel_app_arguments, target_name) -> str:
+    return generate_xcodeproj(build_environment, disable_extensions, disable_provisioning_profiles, include_release, generate_dsym, bazel_app_arguments, target_name)

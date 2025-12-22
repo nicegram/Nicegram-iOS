@@ -220,7 +220,7 @@ final class StarsBalanceComponent: Component {
         
             let subtitleText: String
             if let rate = component.rate {
-                subtitleText = "≈\(formatTonUsdValue(component.count.value, divide: false, rate: rate, dateTimeFormat: component.dateTimeFormat))"
+                subtitleText = "~\(formatTonUsdValue(component.count.value, divide: false, rate: rate, dateTimeFormat: component.dateTimeFormat))"
             } else {
                 subtitleText = component.strings.Stars_Intro_YourBalance
             }
@@ -282,6 +282,7 @@ final class StarsBalanceComponent: Component {
                     transition: transition,
                     component: AnyComponent(ButtonComponent(
                         background: ButtonComponent.Background(
+                            style: .glass,
                             color: component.theme.list.itemCheckColors.fillColor,
                             foreground: component.theme.list.itemCheckColors.foregroundColor,
                             pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -298,7 +299,7 @@ final class StarsBalanceComponent: Component {
                         }
                     )),
                     environment: {},
-                    containerSize: CGSize(width: withdrawWidth, height: 50.0)
+                    containerSize: CGSize(width: withdrawWidth, height: 52.0)
                 )
                 if let buttonView = self.button.view {
                     if buttonView.superview == nil {
@@ -338,6 +339,7 @@ final class StarsBalanceComponent: Component {
                         transition: transition,
                         component: AnyComponent(ButtonComponent(
                             background: ButtonComponent.Background(
+                                style: .glass,
                                 color: component.theme.list.itemCheckColors.fillColor,
                                 foreground: component.theme.list.itemCheckColors.foregroundColor,
                                 pressedColor: component.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8)
@@ -354,7 +356,7 @@ final class StarsBalanceComponent: Component {
                             }
                         )),
                         environment: {},
-                        containerSize: CGSize(width: withdrawWidth, height: 50.0)
+                        containerSize: CGSize(width: withdrawWidth, height: 52.0)
                     )
                     if let buttonView = self.secondaryButton.view {
                         if buttonView.superview == nil {

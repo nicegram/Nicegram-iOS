@@ -17,6 +17,7 @@ import ComponentFlow
 import AnimatedCountLabelNode
 import GlassBackgroundComponent
 import ComponentDisplayAdapters
+import StarsParticleEffect
 
 private final class EffectBadgeView: UIView {
     private let context: AccountContext
@@ -143,6 +144,7 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
     
     public let sendContainerNode: ASDisplayNode
     public let sendButtonBackgroundView: UIImageView
+    private var sendButtonBackgroundEffectLayer: StarsParticleEffectLayer?
     public let sendButton: HighlightTrackingButtonNode
     public var sendButtonRadialStatusNode: ChatSendButtonRadialStatusNode?
     public var sendButtonHasApplyIcon = false
@@ -171,6 +173,9 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
     let maskContentView: UIView
     
     private var validLayout: CGSize?
+    
+    public var customSendColor: UIColor?
+    public var isSendDisabled: Bool = false
     
     public init(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, presentationContext: ChatPresentationContext?, presentController: @escaping (ViewController) -> Void) {
         self.context = context
@@ -241,7 +246,7 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
         
         self.micButton.layer.allowsGroupOpacity = true
         self.view.addSubview(self.micButtonBackgroundView)
-        self.view.addSubview(self.micButton)
+        self.micButtonBackgroundView.contentView.addSubview(self.micButton)
         
         // Nicegram
         self.addSubnode(self.ngSendContainerNode)
@@ -352,12 +357,11 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
             }
             transition.updateFrame(node: self.textNode, frame: CGRect(origin: CGPoint(x: showTitle ? 5.0 + 7.0 : floorToScreenPixels((innerSize.width - textSize.width) / 2.0), y: floorToScreenPixels((size.height - textSize.height) / 2.0)), size: textSize))
         } else {
-            self.sendButton.imageNode.alpha = 1.0
             self.textNode.isHidden = true
         }
     
         transition.updateFrame(view: self.micButtonBackgroundView, frame: CGRect(origin: CGPoint(), size: size))
-        self.micButtonBackgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark:  interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: ComponentTransition(transition))
+        self.micButtonBackgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark:  interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: true, transition: ComponentTransition(transition))
         
         transition.updateFrame(layer: self.micButton.layer, frame: CGRect(origin: CGPoint(), size: size))
         self.micButton.layoutItems()
@@ -365,9 +369,48 @@ public final class ChatTextInputActionButtonsNode: ASDisplayNode, ChatSendMessag
         // Nicegram
         transition.updateFrame(node: self.ngSendContainerNode, frame: CGRect(origin: CGPoint(), size: innerSize))
         //
+
+        let sendButtonBackgroundFrame = CGRect(origin: CGPoint(), size: innerSize).insetBy(dx: 3.0, dy: 3.0)
+        transition.updateFrame(view: self.sendButtonBackgroundView, frame: sendButtonBackgroundFrame)
         
-        transition.updateFrame(view: self.sendButtonBackgroundView, frame: CGRect(origin: CGPoint(), size: innerSize).insetBy(dx: 3.0, dy: 3.0))
-        self.sendButtonBackgroundView.tintColor = interfaceState.theme.chat.inputPanel.panelControlAccentColor
+        if self.isSendDisabled {
+            transition.updateTintColor(view: self.sendButtonBackgroundView, color: interfaceState.theme.chat.inputPanel.panelControlAccentColor.withMultiplied(hue: 1.0, saturation: 0.0, brightness: 0.5).withMultipliedAlpha(0.25))
+        } else {
+            transition.updateTintColor(view: self.sendButtonBackgroundView, color: self.customSendColor ?? interfaceState.theme.chat.inputPanel.panelControlAccentColor)
+        }
+        
+        if starsAmount == nil {
+            if self.isSendDisabled {
+                transition.updateAlpha(layer: self.sendButton.imageNode.layer, alpha: 0.4)
+            } else {
+                transition.updateAlpha(layer: self.sendButton.imageNode.layer, alpha: 1.0)
+            }
+        }
+        
+        if let _ = self.customSendColor {
+            let sendButtonBackgroundEffectLayer: StarsParticleEffectLayer
+            var sendButtonBackgroundEffectLayerTransition = transition
+            if let current = self.sendButtonBackgroundEffectLayer {
+                sendButtonBackgroundEffectLayer = current
+            } else {
+                sendButtonBackgroundEffectLayerTransition = .immediate
+                sendButtonBackgroundEffectLayer = StarsParticleEffectLayer()
+                self.sendButtonBackgroundEffectLayer = sendButtonBackgroundEffectLayer
+                self.sendButtonBackgroundView.layer.addSublayer(sendButtonBackgroundEffectLayer)
+                if transition.isAnimated {
+                    sendButtonBackgroundEffectLayer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                }
+            }
+            transition.updateFrame(layer: sendButtonBackgroundEffectLayer, frame: CGRect(origin: CGPoint(), size: sendButtonBackgroundFrame.size))
+            sendButtonBackgroundEffectLayer.update(color: UIColor(white: 1.0, alpha: 0.5), size: sendButtonBackgroundFrame.size, cornerRadius: sendButtonBackgroundFrame.height * 0.5, transition: ComponentTransition(sendButtonBackgroundEffectLayerTransition))
+        } else if let sendButtonBackgroundEffectLayer = self.sendButtonBackgroundEffectLayer {
+            self.sendButtonBackgroundEffectLayer = nil
+            transition.updateFrame(layer: sendButtonBackgroundEffectLayer, frame: CGRect(origin: CGPoint(), size: sendButtonBackgroundFrame.size))
+            transition.updateAlpha(layer: sendButtonBackgroundEffectLayer, alpha: 0.0, completion: { [weak sendButtonBackgroundEffectLayer] _ in
+                sendButtonBackgroundEffectLayer?.removeFromSuperlayer()
+            })
+        }
+        
         transition.updateFrame(layer: self.sendButton.layer, frame: CGRect(origin: CGPoint(), size: innerSize))
         let sendContainerFrame = CGRect(origin: CGPoint(), size: innerSize)
         transition.updatePosition(node: self.sendContainerNode, position: sendContainerFrame.center)

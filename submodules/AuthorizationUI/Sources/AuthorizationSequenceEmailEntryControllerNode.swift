@@ -106,14 +106,14 @@ final class AuthorizationSequenceEmailEntryControllerNode: ASDisplayNode, UIText
         self.noticeNode.isUserInteractionEnabled = false
         self.noticeNode.displaysAsynchronously = false
         self.noticeNode.lineSpacing = 0.1
-        self.noticeNode.attributedText = NSAttributedString(string: self.strings.Login_AddEmailText, font: Font.regular(16.0), textColor: self.theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
+        self.noticeNode.attributedText = NSAttributedString(string: self.strings.LoginEmail_Description, font: Font.regular(16.0), textColor: self.theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
         
         if #available(iOS 13.0, *) {
             self.signInWithAppleButton = ASAuthorizationAppleIDButton(authorizationButtonType: .signIn, authorizationButtonStyle: theme.overallDarkAppearance ? .white : .black)
             (self.signInWithAppleButton as? ASAuthorizationAppleIDButton)?.cornerRadius = 11
         }
         
-        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0, gloss: false)
+        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0)
         self.proceedNode.progressType = .embedded
         
         self.codeSeparatorNode = ASDisplayNode()
@@ -218,7 +218,7 @@ final class AuthorizationSequenceEmailEntryControllerNode: ASDisplayNode, UIText
         
         let titleInset: CGFloat = layout.size.width > 320.0 ? 18.0 : 0.0
         
-        self.titleNode.attributedText = NSAttributedString(string: self.mode == .setup ? self.strings.Login_AddEmailTitle : self.strings.Login_EnterNewEmailTitle, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
+        self.titleNode.attributedText = NSAttributedString(string: self.mode == .setup ? self.strings.LoginEmail_Title : self.strings.Login_EnterNewEmailTitle, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
 
         
         let inset: CGFloat = 24.0

@@ -858,7 +858,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(FilledRoundedRectangleComponent(
                     color: environment.theme.list.itemBlocksBackgroundColor,
-                    cornerRadius: .value(11.0),
+                    cornerRadius: .value(26.0),
                     smoothCorners: false
                 )),
                 environment: {},
@@ -882,6 +882,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
                                 string: environment.strings.AffiliateSetup_SectionCommission,
@@ -918,7 +919,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
                                         
                                         self.state?.updated(transition: .immediate)
                                     }
-                                ))
+                                )),
+                                preferNative: true
                             )))
                         ],
                         displaySeparators: false
@@ -951,6 +953,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: AnyComponent(HStack([
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
                                 text: .plain(NSAttributedString(
@@ -995,7 +998,8 @@ final class AffiliateProgramSetupScreenComponent: Component {
                                         self.durationValue = Int(durationItems[value])
                                         self.state?.updated(transition: .immediate)
                                     }
-                                ))
+                                )),
+                                preferNative: true
                             )))
                         ],
                         displaySeparators: false
@@ -1018,6 +1022,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
@@ -1030,6 +1035,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(VStack([
                                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                         text: .plain(NSAttributedString(
@@ -1068,11 +1074,13 @@ final class AffiliateProgramSetupScreenComponent: Component {
                     transition: transition,
                     component: AnyComponent(ListSectionComponent(
                         theme: environment.theme,
+                        style: .glass,
                         header: nil,
                         footer: nil,
                         items: [
                             AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 title: AnyComponent(VStack([
                                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                                         text: .plain(NSAttributedString(
@@ -1363,6 +1371,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                             transition: transition,
                             component: AnyComponent(ListSectionComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 header: AnyComponent(MultilineTextComponent(
                                     text: .plain(NSAttributedString(
                                         string: environment.strings.AffiliateSetup_ConnectedSectionTitle,
@@ -1517,6 +1526,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                             transition: transition,
                             component: AnyComponent(ListSectionComponent(
                                 theme: environment.theme,
+                                style: .glass,
                                 header: AnyComponent(HStack(suggestedHeaderItems, spacing: 4.0, alignment: .alternatingLeftRight)),
                                 footer: nil,
                                 items: suggestedSectionItems,

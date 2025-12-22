@@ -136,7 +136,7 @@ final class CameraCodeFrameView: UIView {
                 layer.path = path.cgPath
             }
             layer.opacity = focused ? 1.0 : 0.0
-            layer.strokeColor = focused ? UIColor(rgb: 0xf8d74a).cgColor : UIColor.white.cgColor
+            layer.strokeColor = focused ? UIColor(rgb: 0xffd300).cgColor : UIColor.white.cgColor
             layer.lineWidth = focused ? 5.0 : 2.0
             layer.shadowOffset = .zero
             layer.shadowRadius = 1.0

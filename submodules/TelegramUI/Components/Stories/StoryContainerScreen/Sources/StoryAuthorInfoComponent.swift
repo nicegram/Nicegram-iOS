@@ -8,6 +8,7 @@ import TelegramStringFormatting
 import MultilineTextComponent
 import TelegramPresentationData
 import AvatarNode
+import PeerNameTextComponent
 
 final class StoryAuthorInfoComponent: Component {
     struct Counters: Equatable {
@@ -16,30 +17,44 @@ final class StoryAuthorInfoComponent: Component {
     }
     
 	let context: AccountContext
+    let theme: PresentationTheme
     let strings: PresentationStrings
+    let isEmbeddedInCamera: Bool
 	let peer: EnginePeer?
     let forwardInfo: EngineStoryItem.ForwardInfo?
     let author: EnginePeer?
     let timestamp: Int32
     let counters: Counters?
     let isEdited: Bool
+    let isLiveStream: Bool
+    let customSubtitle: String?
     
-    init(context: AccountContext, strings: PresentationStrings, peer: EnginePeer?, forwardInfo: EngineStoryItem.ForwardInfo?, author: EnginePeer?, timestamp: Int32, counters: Counters?, isEdited: Bool) {
+    init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, isEmbeddedInCamera: Bool, peer: EnginePeer?, forwardInfo: EngineStoryItem.ForwardInfo?, author: EnginePeer?, timestamp: Int32, counters: Counters?, isEdited: Bool, isLiveStream: Bool, customSubtitle: String?) {
         self.context = context
+        self.theme = theme
         self.strings = strings
+        self.isEmbeddedInCamera = isEmbeddedInCamera
         self.peer = peer
         self.forwardInfo = forwardInfo
         self.author = author
         self.timestamp = timestamp
         self.counters = counters
         self.isEdited = isEdited
+        self.isLiveStream = isLiveStream
+        self.customSubtitle = customSubtitle
     }
 
 	static func ==(lhs: StoryAuthorInfoComponent, rhs: StoryAuthorInfoComponent) -> Bool {
 		if lhs.context !== rhs.context {
 			return false
 		}
+        if lhs.theme !== rhs.theme {
+            return false
+        }
         if lhs.strings !== rhs.strings {
+            return false
+        }
+        if lhs.isEmbeddedInCamera != rhs.isEmbeddedInCamera {
             return false
         }
 		if lhs.peer != rhs.peer {
@@ -60,6 +75,12 @@ final class StoryAuthorInfoComponent: Component {
         if lhs.isEdited != rhs.isEdited {
             return false
         }
+        if lhs.isLiveStream != rhs.isLiveStream {
+            return false
+        }
+        if lhs.customSubtitle != rhs.customSubtitle {
+            return false
+        }
 		return true
 	}
 
@@ -68,6 +89,7 @@ final class StoryAuthorInfoComponent: Component {
         private var repostIconView: UIImageView?
         private var avatarNode: AvatarNode?
 		private let subtitle = ComponentView<Empty>()
+        private var liveBadgeView: UIImageView?
         private var counterLabel: ComponentView<Empty>?
 
         private var component: StoryAuthorInfoComponent?
@@ -94,7 +116,7 @@ final class StoryAuthorInfoComponent: Component {
             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
 
             let title: String
-            if component.peer?.id == component.context.account.peerId {
+            if component.peer?.id == component.context.account.peerId, !component.isEmbeddedInCamera {
                 title = component.strings.Story_HeaderYourStory
             } else {
                 if let _ = component.counters {
@@ -110,7 +132,10 @@ final class StoryAuthorInfoComponent: Component {
             let subtitleColor = UIColor(white: 1.0, alpha: 0.8)
             let subtitle: NSAttributedString
             let subtitleTruncationType: CTLineTruncationType
-            if let forwardInfo = component.forwardInfo {
+            if let customSubtitle = component.customSubtitle {
+                subtitle = NSAttributedString(string: customSubtitle, font: Font.medium(11.0), textColor: titleColor)
+                subtitleTruncationType = .end
+            } else if let forwardInfo = component.forwardInfo {
                 let authorName: String
                 switch forwardInfo {
                 case let .known(peer, _, _):
@@ -160,10 +185,15 @@ final class StoryAuthorInfoComponent: Component {
             
             let titleSize = self.title.update(
                 transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: title, font: Font.medium(14.0), textColor: .white)),
-                    truncationType: .end,
-                    maximumNumberOfLines: 1
+                component: AnyComponent(PeerNameTextComponent(
+                    context: component.context,
+                    peer: component.peer,
+                    text: .custom(title),
+                    font: Font.medium(14.0),
+                    textColor: .white,
+                    iconBackgroundColor: component.theme.list.itemCheckColors.fillColor,
+                    iconForegroundColor: component.theme.list.itemCheckColors.foregroundColor,
+                    strings: component.strings
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - leftInset, height: availableSize.height)
@@ -238,7 +268,42 @@ final class StoryAuthorInfoComponent: Component {
                 avatarNode.view.removeFromSuperview()
             }
             
-            let subtitleFrame = CGRect(origin: CGPoint(x: leftInset + subtitleOffset, y: titleFrame.maxY + spacing + UIScreenPixel), size: subtitleSize)
+            var subtitleFrame = CGRect(origin: CGPoint(x: leftInset + subtitleOffset, y: titleFrame.maxY + spacing + UIScreenPixel), size: subtitleSize)
+            
+            if component.isLiveStream {
+                let liveBadgeView: UIImageView
+                if let current = self.liveBadgeView {
+                    liveBadgeView = current
+                } else {
+                    liveBadgeView = UIImageView()
+                    self.liveBadgeView = liveBadgeView
+                    self.addSubview(liveBadgeView)
+                    let liveString = NSAttributedString(string: component.strings.Story_LiveBadge, font: Font.semibold(10.0), textColor: .white)
+                    let liveStringBounds = liveString.boundingRect(with: CGSize(width: 100.0, height: 100.0), options: .usesLineFragmentOrigin, context: nil)
+                    let liveBadgeSize = CGSize(width: ceil(liveStringBounds.width) + 3.0 * 2.0, height: ceil(liveStringBounds.height) + 1.0 * 2.0)
+                    liveBadgeView.image = generateImage(liveBadgeSize, rotatedContext: { size, context in
+                        UIGraphicsPushContext(context)
+                        defer {
+                            UIGraphicsPopContext()
+                        }
+                        
+                        context.clear(CGRect(origin: CGPoint(), size: size))
+                        context.setFillColor(UIColor(rgb: 0xFF2D55).cgColor)
+                        context.addPath(UIBezierPath(roundedRect: CGRect(origin: CGPoint(), size: size), cornerRadius: size.height * 0.5).cgPath)
+                        context.fillPath()
+                        
+                        liveString.draw(at: CGPoint(x: floorToScreenPixels((size.width - liveStringBounds.width) * 0.5), y: floorToScreenPixels((size.height - liveStringBounds.height) * 0.5)))
+                    })
+                }
+                if let image = liveBadgeView.image {
+                    let liveBadgeFrame = CGRect(origin: CGPoint(x: subtitleFrame.minX, y: subtitleFrame.minY), size: image.size)
+                    liveBadgeView.frame = liveBadgeFrame
+                    subtitleFrame.origin.x += image.size.width + 3.0
+                }
+            } else if let liveBadgeView = self.liveBadgeView {
+                self.liveBadgeView = nil
+                liveBadgeView.removeFromSuperview()
+            }
             
             if let titleView = self.title.view {
                 if titleView.superview == nil {

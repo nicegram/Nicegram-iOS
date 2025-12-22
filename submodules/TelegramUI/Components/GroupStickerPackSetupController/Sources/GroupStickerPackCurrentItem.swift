@@ -24,15 +24,17 @@ enum GroupStickerPackCurrentItemContent: Equatable {
 final class GroupStickerPackCurrentItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
     let strings: PresentationStrings
+    let systemStyle: ItemListSystemStyle
     let account: Account
     let content: GroupStickerPackCurrentItemContent
     let sectionId: ItemListSectionId
     let action: (() -> Void)?
     let remove: (() -> Void)?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, account: Account, content: GroupStickerPackCurrentItemContent, sectionId: ItemListSectionId, action: (() -> Void)?, remove: (() -> Void)?) {
+    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, account: Account, content: GroupStickerPackCurrentItemContent, sectionId: ItemListSectionId, action: (() -> Void)?, remove: (() -> Void)?) {
         self.theme = theme
         self.strings = strings
+        self.systemStyle = systemStyle
         self.account = account
         self.content = content
         self.sectionId = sectionId
@@ -293,8 +295,16 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
             let leftInset: CGFloat = 65.0 + params.leftInset
             
             let insets = itemListNeighborsGroupedInsets(neighbors, params)
-            let contentSize = CGSize(width: params.width, height: 59.0)
+            
+            var verticalInset: CGFloat = 0.0
+            if case .glass = item.systemStyle {
+                verticalInset += 4.0
+            }
+            
+            let contentSize = CGSize(width: params.width, height: 59.0 + verticalInset * 2.0)
+            
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             let layoutSize = layout.size
@@ -404,13 +414,13 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     strongSelf.removeButtonIcon.image = PresentationResourcesItemList.itemListRemoveIconImage(item.theme)
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
-                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
+                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)))
                     
                     let titleVerticalOffset: CGFloat
                     if statusLayout.size.width.isZero {
@@ -418,24 +428,24 @@ class GroupStickerPackCurrentItemNode: ItemListRevealOptionsItemNode {
                     } else {
                         titleVerticalOffset = 11.0
                     }
-                    transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftInset, y: titleVerticalOffset), size: titleLayout.size))
-                    transition.updateFrame(node: strongSelf.statusNode, frame: CGRect(origin: CGPoint(x: leftInset, y: 32.0), size: statusLayout.size))
+                    transition.updateFrame(node: strongSelf.titleNode, frame: CGRect(origin: CGPoint(x: leftInset, y: verticalInset + titleVerticalOffset), size: titleLayout.size))
+                    transition.updateFrame(node: strongSelf.statusNode, frame: CGRect(origin: CGPoint(x: leftInset, y: verticalInset + 32.0), size: statusLayout.size))
                     
                     let boundingSize = CGSize(width: 34.0, height: 34.0)
                     let indicatorSize = CGSize(width: 22.0, height: 22.0)
-                    transition.updateFrame(node: strongSelf.activityIndicator, frame: CGRect(origin: CGPoint(x: params.leftInset + 15.0 + floor((boundingSize.width - indicatorSize.width) / 2.0), y: 11.0 + floor((boundingSize.height - indicatorSize.height) / 2.0)), size: indicatorSize))
+                    transition.updateFrame(node: strongSelf.activityIndicator, frame: CGRect(origin: CGPoint(x: params.leftInset + 15.0 + floor((boundingSize.width - indicatorSize.width) / 2.0), y: verticalInset + 11.0 + floor((boundingSize.height - indicatorSize.height) / 2.0)), size: indicatorSize))
                     
                     if let image = updatedNotFoundImage {
                         strongSelf.notFoundNode.image = image
                     }
                     if let image = strongSelf.notFoundNode.image {
-                        transition.updateFrame(node: strongSelf.notFoundNode, frame: CGRect(origin: CGPoint(x: params.leftInset + 15.0 + floor((boundingSize.width - image.size.width) / 2.0), y: 13.0 + floor((boundingSize.height - image.size.height) / 2.0)), size: image.size))
+                        transition.updateFrame(node: strongSelf.notFoundNode, frame: CGRect(origin: CGPoint(x: params.leftInset + 15.0 + floor((boundingSize.width - image.size.width) / 2.0), y: verticalInset + 13.0 + floor((boundingSize.height - image.size.height) / 2.0)), size: image.size))
                     }
                     
                     if let updatedImageSignal = updatedImageSignal {
                         strongSelf.imageNode.setSignal(updatedImageSignal)
                     }
-                    let imageFrame = CGRect(origin: CGPoint(x: params.leftInset + revealOffset + editingOffset + 15.0 + floor((boundingSize.width - imageSize.width) / 2.0), y: 11.0 + floor((boundingSize.height - imageSize.height) / 2.0)), size: imageSize)
+                    let imageFrame = CGRect(origin: CGPoint(x: params.leftInset + revealOffset + editingOffset + 15.0 + floor((boundingSize.width - imageSize.width) / 2.0), y: verticalInset + 11.0 + floor((boundingSize.height - imageSize.height) / 2.0)), size: imageSize)
                     transition.updateFrame(node: strongSelf.imageNode, frame: imageFrame)
                     
                     strongSelf.removeButton.frame = CGRect(origin: CGPoint(x: layoutSize.width - params.rightInset - layoutSize.height, y: 0.0), size: CGSize(width: layoutSize.height, height: layoutSize.height))

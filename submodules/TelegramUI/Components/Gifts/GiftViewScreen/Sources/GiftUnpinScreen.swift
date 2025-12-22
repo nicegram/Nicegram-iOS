@@ -16,6 +16,7 @@ import ButtonComponent
 import PlainButtonComponent
 import GiftItemComponent
 import AccountContext
+import GlassBarButtonComponent
 
 private final class SheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -62,8 +63,7 @@ private final class SheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let closeButton = Child(Button.self)
-        
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(BalancedTextComponent.self)
         let text = Child(BalancedTextComponent.self)
         let gifts = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
@@ -79,7 +79,6 @@ private final class SheetContent: CombinedComponent {
             let theme = environment.theme
             let strings = environment.strings
             
-            let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             let textSideInset: CGFloat = 32.0 + environment.safeInsets.left
             
             let titleFont = Font.semibold(17.0)
@@ -87,20 +86,29 @@ private final class SheetContent: CombinedComponent {
             let textColor = theme.actionSheet.primaryTextColor
             let secondaryTextColor = theme.actionSheet.secondaryTextColor
         
-            var contentSize = CGSize(width: context.availableSize.width, height: 10.0)
+            var contentSize = CGSize(width: context.availableSize.width, height: 18.0)
         
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Text(text: strings.Common_Cancel, font: Font.regular(17.0), color: theme.actionSheet.controlAccentColor)),
-                    action: { [weak component] in
-                        component?.dismiss()
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 40.0, height: 40.0),
+                    backgroundColor: theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { _ in
+                        component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 100.0, height: 30.0),
+                availableSize: CGSize(width: 40.0, height: 40.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: environment.safeInsets.left + 16.0 + closeButton.size.width / 2.0, y: 28.0))
+                .position(CGPoint(x: environment.safeInsets.left + 16.0 + closeButton.size.width / 2.0, y: 36.0))
             )
             
             let title = title.update(
@@ -234,6 +242,7 @@ private final class SheetContent: CombinedComponent {
             let button = button.update(
                 component: ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: theme.list.itemCheckColors.fillColor,
                         foreground: theme.list.itemCheckColors.foregroundColor,
                         pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -256,7 +265,7 @@ private final class SheetContent: CombinedComponent {
                         }
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                availableSize: CGSize(width: context.availableSize.width - 30.0 * 2.0, height: 52.0),
                 transition: context.transition
             )
             context.add(button
@@ -335,6 +344,7 @@ private final class SheetContainerComponent: CombinedComponent {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     externalState: sheetExternalState,

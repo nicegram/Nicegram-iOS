@@ -120,11 +120,11 @@ private enum GlobalAutoremoveEntry: ItemListNodeEntry {
         case let .sectionHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .timerOption(value, text, isSelected):
-            return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .right, checked: isSelected, zeroSeparatorInsets: false, sectionId: self.section, action: {
+            return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .right, checked: isSelected, zeroSeparatorInsets: false, sectionId: self.section, action: {
                 arguments.updateValue(value)
             })
         case let .customAction(text):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.openCustomValue()
             })
         case let .info(text):

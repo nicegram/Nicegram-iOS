@@ -14,6 +14,7 @@ import TextFieldComponent
 public class ItemListFilterTitleInputItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let text: NSAttributedString
     let enableAnimations: Bool
     let placeholder: String
@@ -29,6 +30,7 @@ public class ItemListFilterTitleInputItem: ListViewItem, ItemListItem {
     public init(
         context: AccountContext,
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle,
         text: NSAttributedString,
         enableAnimations: Bool,
         placeholder: String,
@@ -43,6 +45,7 @@ public class ItemListFilterTitleInputItem: ListViewItem, ItemListItem {
     ) {
         self.context = context
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.text = text
         self.enableAnimations = enableAnimations
         self.placeholder = placeholder
@@ -144,8 +147,9 @@ public class ItemListFilterTitleInputItemNode: ListViewItemNode, UITextFieldDele
             let _ = rightInset
             
             let separatorHeight = UIScreenPixel
-                        
-            let contentSize = CGSize(width: params.width, height: 44.0)
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
+            
+            let contentSize = CGSize(width: params.width, height: item.systemStyle == .glass ? 52.0 : 44.0)
             let insets = itemListNeighborsGroupedInsets(neighbors, params)
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
@@ -200,12 +204,12 @@ public class ItemListFilterTitleInputItemNode: ListViewItemNode, UITextFieldDele
                         self.bottomStripeNode.isHidden = hasCorners
                 }
                 
-                self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                 
                 self.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                 self.maskNode.frame = self.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                 self.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
-                self.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - UIScreenPixel), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight))
+                self.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height - UIScreenPixel), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))
                     
                 self.textField.parentState = self.componentState
                 self.componentState._updated = { [weak self] transition, _ in
@@ -249,7 +253,7 @@ public class ItemListFilterTitleInputItemNode: ListViewItemNode, UITextFieldDele
                     environment: {},
                     containerSize: CGSize(width: layout.size.width - params.leftInset - params.rightInset, height: layout.size.height)
                 )
-                let textFieldFrame = CGRect(origin: CGPoint(x: params.leftInset, y: 0.0), size: textFieldSize)
+                let textFieldFrame = CGRect(origin: CGPoint(x: params.leftInset, y: floorToScreenPixels((layoutSize.height - textFieldSize.height) / 2.0)), size: textFieldSize)
                 if let textFieldView = self.textField.view {
                     if textFieldView.superview == nil {
                         self.view.addSubview(textFieldView)

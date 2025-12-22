@@ -17,13 +17,16 @@ final class TabBarControllerNode: ASDisplayNode {
     private struct Params: Equatable {
         let layout: ContainerViewLayout
         let toolbar: Toolbar?
+        let isTabBarHidden: Bool
         
         init(
             layout: ContainerViewLayout,
-            toolbar: Toolbar?
+            toolbar: Toolbar?,
+            isTabBarHidden: Bool
         ) {
             self.layout = layout
             self.toolbar = toolbar
+            self.isTabBarHidden = isTabBarHidden
         }
     }
     
@@ -161,7 +164,7 @@ final class TabBarControllerNode: ASDisplayNode {
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, toolbar: Toolbar?, transition: ContainedViewLayoutTransition) -> CGFloat {
-        let params = Params(layout: layout, toolbar: toolbar)
+        let params = Params(layout: layout, toolbar: toolbar, isTabBarHidden: self.tabBarHidden)
         if let layoutResult = self.layoutResult, layoutResult.params == params {
             return layoutResult.bottomInset
         } else {

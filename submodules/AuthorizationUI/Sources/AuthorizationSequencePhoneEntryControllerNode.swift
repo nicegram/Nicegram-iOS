@@ -20,6 +20,7 @@ import TelegramAnimatedStickerNode
 import SolidRoundedButtonNode
 import AuthorizationUtils
 import ManagedAnimationNode
+import Markdown
 
 private final class PhoneAndCountryNode: ASDisplayNode {
     let strings: PresentationStrings
@@ -327,7 +328,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let managedAnimationNode: ManagedPhoneAnimationNode
     private let titleNode: ASTextNode
     private let titleActivateAreaNode: AccessibilityAreaNode
-    private let noticeNode: ASTextNode
+    private let noticeNode: ImmediateTextNode
     private let noticeActivateAreaNode: AccessibilityAreaNode
     private let phoneAndCountryNode: PhoneAndCountryNode
     private let contactSyncNode: ContactSyncNode
@@ -338,6 +339,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let exportTokenDisposable = MetaDisposable()
     private let tokenEventsDisposable = MetaDisposable()
     var accountUpdated: ((UnauthorizedAccount) -> Void)?
+    
+    var retryPasskey: (() -> Void)?
     
     private let debugAction: () -> Void
     
@@ -421,7 +424,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.titleActivateAreaNode = AccessibilityAreaNode()
         self.titleActivateAreaNode.accessibilityTraits = .staticText
         
-        self.noticeNode = ASTextNode()
+        self.noticeNode = ImmediateTextNode()
         self.noticeNode.maximumNumberOfLines = 0
         self.noticeNode.isUserInteractionEnabled = true
         self.noticeNode.displaysAsynchronously = false
@@ -446,7 +449,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         
         self.phoneAndCountryNode = PhoneAndCountryNode(strings: strings, theme: theme)
         
-        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0, gloss: false)
+        self.proceedNode = SolidRoundedButtonNode(title: self.strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: self.theme), height: 50.0, cornerRadius: 11.0)
         self.proceedNode.progressType = .embedded
         self.proceedNode.isEnabled = false
         
@@ -478,6 +481,23 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.addSubnode(self.animationNode)
         self.addSubnode(self.managedAnimationNode)
         self.contactSyncNode.isHidden = true
+        
+        self.noticeNode.highlightAttributeAction = { attributes in
+            if let _ = attributes[NSAttributedString.Key(rawValue: "URL")] {
+                return NSAttributedString.Key(rawValue: "URL")
+            } else {
+                return nil
+            }
+        }
+        self.noticeNode.tapAttributeAction = { [weak self] attributes, _ in
+            guard let self else {
+                return
+            }
+            if let _ = attributes[NSAttributedString.Key(rawValue: "URL")] as? String {
+                self.retryPasskey?()
+            }
+        }
+        self.noticeNode.linkHighlightColor = theme.list.itemAccentColor.withAlphaComponent(0.2)
         
         self.phoneAndCountryNode.selectCountryCode = { [weak self] in
             self?.selectCountryCode?()
@@ -525,7 +545,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         //
         
         self.titleNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugTap(_:))))
-        #if DEBUG
+        #if DEBUG && false
         self.noticeNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugQrTap(_:))))
         #endif
     }
@@ -596,6 +616,27 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let _ = self.phoneAndCountryNode.processNumberChange(number: self.phoneAndCountryNode.phoneInputNode.number)
     }
     
+    func updateDisplayPasskeyLoginOption() {
+        if self.account == nil {
+            return
+        }
+        let attributedText = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(self.strings.Login_PhoneWithPasskeySubtitle, attributes: MarkdownAttributes(
+            body: MarkdownAttributeSet(font: Font.regular(17.0), textColor: self.theme.list.itemPrimaryTextColor),
+            bold: MarkdownAttributeSet(font: Font.semibold(17.0), textColor: self.theme.list.itemPrimaryTextColor),
+            link: MarkdownAttributeSet(font: Font.regular(17.0), textColor: self.theme.list.itemAccentColor),
+            linkAttribute: { url in
+                return ("URL", url)
+            }
+        )))
+        let chevronImage = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: self.theme.list.itemAccentColor)
+        
+        if let range = attributedText.string.range(of: ">"), let chevronImage {
+            attributedText.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: attributedText.string))
+        }
+        
+        self.noticeNode.attributedText = attributedText
+    }
+    
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
         var insets = layout.insets(options: [])
         insets.top = layout.statusBarHeight ?? 20.0
@@ -607,7 +648,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let additionalBottomInset: CGFloat = layout.size.width > 320.0 ? 80.0 : 10.0
         
         // Nicegram Onboarding, overwrite 'title' if isNgOnboarding
-        var title = self.account == nil ? strings.Login_NewNumber : strings.Login_PhoneTitle
+        var title = self.account == nil ? self.strings.Login_NewNumber : self.strings.Login_PhoneTitle
         if self.isNgOnboarding {
             title = FeatOnboardingCore.strings.phoneEntryTitle()
         }
@@ -623,7 +664,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let noticeInset: CGFloat = self.account == nil ? 32.0 : 0.0
         
         // Nicegram Onboarding, changed width
-        let noticeSize = self.noticeNode.measure(CGSize(width: maximumWidth - 28.0, height: CGFloat.greatestFiniteMagnitude))
+        let noticeSize = self.noticeNode.updateLayout(CGSize(width: maximumWidth - 28.0, height: CGFloat.greatestFiniteMagnitude))
         let proceedHeight = self.proceedNode.updateLayout(width: maximumWidth - inset * 2.0, transition: transition)
         let proceedSize = CGSize(width: maximumWidth - inset * 2.0, height: proceedHeight)
         
@@ -919,7 +960,7 @@ final class PhoneConfirmationController: ViewController {
             self.cancelButton.accessibilityTraits = [.button]
             self.cancelButton.accessibilityLabel = strings.Login_Edit
             
-            self.proceedNode = SolidRoundedButtonNode(title: strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: theme), height: 50.0, cornerRadius: 11.0, gloss: false)
+            self.proceedNode = SolidRoundedButtonNode(title: strings.Login_Continue, theme: SolidRoundedButtonTheme(theme: theme), height: 50.0, cornerRadius: 11.0)
             self.proceedNode.progressType = .embedded
             
             let font = Font.with(size: 20.0, design: .regular, traits: [.monospacedNumbers])

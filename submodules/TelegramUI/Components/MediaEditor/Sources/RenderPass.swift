@@ -9,7 +9,7 @@ struct VertexData {
     let localPos: simd_float2
 }
 
-enum TextureRotation: Int {
+public enum TextureRotation: Int {
     case rotate0Degrees
     case rotate0DegreesMirrored
     case rotate90Degrees

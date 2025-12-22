@@ -221,7 +221,13 @@ public class InteractiveCheckNode: CheckNode {
         }
     }
     
+    private var lastPressTime: Double?
     @objc private func buttonPressed() {
+        let currentTime = CACurrentMediaTime()
+        if let lastPressTime = self.lastPressTime, currentTime - lastPressTime < 0.5 {
+            return
+        }
+        self.lastPressTime = currentTime
         self.setSelected(!self.selected, animated: true)
         self.valueChanged?(self.selected)
     }

@@ -64,7 +64,7 @@ private final class ChatMessageSelectionInputPanelNodeViewForOverlayContent: UIV
     }
 }
 
-private final class GlassButtonView: HighlightTrackingButton {
+private final class GlassButtonView: UIView {
     private struct Params: Equatable {
         let theme: PresentationTheme
         let size: CGSize
@@ -86,6 +86,7 @@ private final class GlassButtonView: HighlightTrackingButton {
     }
     
     private let backgroundView: GlassBackgroundView
+    let button: HighlightTrackingButton
     private let iconView: GlassBackgroundView.ContentImageView
     
     private var params: Params?
@@ -96,7 +97,7 @@ private final class GlassButtonView: HighlightTrackingButton {
         }
     }
     
-    override var isEnabled: Bool {
+    var isEnabled: Bool = true {
         didSet {
             self.updateIsEnabled()
         }
@@ -125,19 +126,25 @@ private final class GlassButtonView: HighlightTrackingButton {
         self.iconView = GlassBackgroundView.ContentImageView()
         self.backgroundView.contentView.addSubview(self.iconView)
         
+        self.button = HighlightTrackingButton()
+        self.backgroundView.contentView.addSubview(self.button)
+        
         super.init(frame: frame)
         
         self.addSubview(self.backgroundView)
         
-        self.highligthedChanged = { [weak self] highlighted in
-            guard let self else {
-                return
-            }
-            if highlighted && self.isEnabled && !self.isImplicitlyDisabled {
-                self.backgroundView.contentView.alpha = 0.6
-            } else {
-                self.backgroundView.contentView.alpha = 1.0
-                self.backgroundView.contentView.layer.animateAlpha(from: 0.6, to: 1.0, duration: 0.2)
+        if #available(iOS 26.0, *) {
+        } else {
+            self.button.highligthedChanged = { [weak self] highlighted in
+                guard let self else {
+                    return
+                }
+                if highlighted && self.isEnabled && !self.isImplicitlyDisabled {
+                    self.backgroundView.contentView.alpha = 0.6
+                } else {
+                    self.backgroundView.contentView.alpha = 1.0
+                    self.backgroundView.contentView.layer.animateAlpha(from: 0.6, to: 1.0, duration: 0.2)
+                }
             }
         }
     }
@@ -156,17 +163,22 @@ private final class GlassButtonView: HighlightTrackingButton {
     }
     
     private func updateImpl(params: Params, transition: ComponentTransition) {
+        let isEnabled = self.isEnabled && !self.isImplicitlyDisabled
+        
         if let image = self.iconView.image {
             let iconFrame = image.size.centered(in: CGRect(origin: CGPoint(), size: params.size))
             transition.setFrame(view: self.iconView, frame: iconFrame)
         }
         
-        transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: params.size))
-        self.backgroundView.update(size: params.size, cornerRadius: min(params.size.width, params.size.height) * 0.5, isDark: params.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: params.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: transition)
+        transition.setFrame(view: self.button, frame: CGRect(origin: CGPoint(), size: params.size))
         
-        let isEnabled = self.isEnabled && !self.isImplicitlyDisabled
+        transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: params.size))
+        self.backgroundView.update(size: params.size, cornerRadius: min(params.size.width, params.size.height) * 0.5, isDark: params.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: params.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: isEnabled, transition: transition)
+        
         self.iconView.alpha = isEnabled ? 1.0 : 0.5
         self.iconView.tintMask.alpha = self.iconView.alpha
+        
+        self.button.isEnabled = isEnabled
     }
     
     private func updateIsEnabled() {
@@ -283,17 +295,17 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
         self.view.addSubview(self.copyForwardButton)
         self.view.addSubview(self.copyButton)
         
-        self.cloudButton.addTarget(self, action: #selector(self.cloudButtonPressed), for: .touchUpInside)
-        self.copyForwardButton.addTarget(self, action: #selector(self.copyForwardButtonPressed), for: .touchUpInside)
-        self.copyButton.addTarget(self, action: #selector(self.copyButtonPressed), for: .touchUpInside)
+        self.cloudButton.button.addTarget(self, action: #selector(self.cloudButtonPressed), for: .touchUpInside)
+        self.copyForwardButton.button.addTarget(self, action: #selector(self.copyForwardButtonPressed), for: .touchUpInside)
+        self.copyButton.button.addTarget(self, action: #selector(self.copyButtonPressed), for: .touchUpInside)
         //
         
-        self.deleteButton.addTarget(self, action: #selector(self.deleteButtonPressed), for: .touchUpInside)
-        self.reportButton.addTarget(self, action: #selector(self.reportButtonPressed), for: .touchUpInside)
-        self.forwardButton.addTarget(self, action: #selector(self.forwardButtonPressed), for: .touchUpInside)
-        self.shareButton.addTarget(self, action: #selector(self.shareButtonPressed), for: .touchUpInside)
-        self.tagButton.addTarget(self, action: #selector(self.tagButtonPressed), for: .touchUpInside)
-        self.tagEditButton.addTarget(self, action: #selector(self.tagButtonPressed), for: .touchUpInside)
+        self.deleteButton.button.addTarget(self, action: #selector(self.deleteButtonPressed), for: .touchUpInside)
+        self.reportButton.button.addTarget(self, action: #selector(self.reportButtonPressed), for: .touchUpInside)
+        self.forwardButton.button.addTarget(self, action: #selector(self.forwardButtonPressed), for: .touchUpInside)
+        self.shareButton.button.addTarget(self, action: #selector(self.shareButtonPressed), for: .touchUpInside)
+        self.tagButton.button.addTarget(self, action: #selector(self.tagButtonPressed), for: .touchUpInside)
+        self.tagEditButton.button.addTarget(self, action: #selector(self.tagButtonPressed), for: .touchUpInside)
     }
     
     deinit {

@@ -534,7 +534,7 @@ public extension Api {
 }
 public extension Api {
     indirect enum Chat: TypeConstructorDescription {
-        case channel(flags: Int32, flags2: Int32, id: Int64, accessHash: Int64?, title: String, username: String?, photo: Api.ChatPhoto, date: Int32, restrictionReason: [Api.RestrictionReason]?, adminRights: Api.ChatAdminRights?, bannedRights: Api.ChatBannedRights?, defaultBannedRights: Api.ChatBannedRights?, participantsCount: Int32?, usernames: [Api.Username]?, storiesMaxId: Int32?, color: Api.PeerColor?, profileColor: Api.PeerColor?, emojiStatus: Api.EmojiStatus?, level: Int32?, subscriptionUntilDate: Int32?, botVerificationIcon: Int64?, sendPaidMessagesStars: Int64?, linkedMonoforumId: Int64?)
+        case channel(flags: Int32, flags2: Int32, id: Int64, accessHash: Int64?, title: String, username: String?, photo: Api.ChatPhoto, date: Int32, restrictionReason: [Api.RestrictionReason]?, adminRights: Api.ChatAdminRights?, bannedRights: Api.ChatBannedRights?, defaultBannedRights: Api.ChatBannedRights?, participantsCount: Int32?, usernames: [Api.Username]?, storiesMaxId: Api.RecentStory?, color: Api.PeerColor?, profileColor: Api.PeerColor?, emojiStatus: Api.EmojiStatus?, level: Int32?, subscriptionUntilDate: Int32?, botVerificationIcon: Int64?, sendPaidMessagesStars: Int64?, linkedMonoforumId: Int64?)
         case channelForbidden(flags: Int32, id: Int64, accessHash: Int64, title: String, untilDate: Int32?)
         case chat(flags: Int32, id: Int64, title: String, photo: Api.ChatPhoto, participantsCount: Int32, date: Int32, version: Int32, migratedTo: Api.InputChannel?, adminRights: Api.ChatAdminRights?, defaultBannedRights: Api.ChatBannedRights?)
         case chatEmpty(id: Int64)
@@ -544,7 +544,7 @@ public extension Api {
     switch self {
                 case .channel(let flags, let flags2, let id, let accessHash, let title, let username, let photo, let date, let restrictionReason, let adminRights, let bannedRights, let defaultBannedRights, let participantsCount, let usernames, let storiesMaxId, let color, let profileColor, let emojiStatus, let level, let subscriptionUntilDate, let botVerificationIcon, let sendPaidMessagesStars, let linkedMonoforumId):
                     if boxed {
-                        buffer.appendInt32(-26717355)
+                        buffer.appendInt32(473084188)
                     }
                     serializeInt32(flags, buffer: buffer, boxed: false)
                     serializeInt32(flags2, buffer: buffer, boxed: false)
@@ -568,7 +568,7 @@ public extension Api {
                     for item in usernames! {
                         item.serialize(buffer, true)
                     }}
-                    if Int(flags2) & Int(1 << 4) != 0 {serializeInt32(storiesMaxId!, buffer: buffer, boxed: false)}
+                    if Int(flags2) & Int(1 << 4) != 0 {storiesMaxId!.serialize(buffer, true)}
                     if Int(flags2) & Int(1 << 7) != 0 {color!.serialize(buffer, true)}
                     if Int(flags2) & Int(1 << 8) != 0 {profileColor!.serialize(buffer, true)}
                     if Int(flags2) & Int(1 << 9) != 0 {emojiStatus!.serialize(buffer, true)}
@@ -675,8 +675,10 @@ public extension Api {
             if Int(_2!) & Int(1 << 0) != 0 {if let _ = reader.readInt32() {
                 _14 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Username.self)
             } }
-            var _15: Int32?
-            if Int(_2!) & Int(1 << 4) != 0 {_15 = reader.readInt32() }
+            var _15: Api.RecentStory?
+            if Int(_2!) & Int(1 << 4) != 0 {if let signature = reader.readInt32() {
+                _15 = Api.parse(reader, signature: signature) as? Api.RecentStory
+            } }
             var _16: Api.PeerColor?
             if Int(_2!) & Int(1 << 7) != 0 {if let signature = reader.readInt32() {
                 _16 = Api.parse(reader, signature: signature) as? Api.PeerColor

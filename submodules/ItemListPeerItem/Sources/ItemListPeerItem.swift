@@ -440,6 +440,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
     }
     
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let dateTimeFormat: PresentationDateTimeFormat
     let nameDisplayOrder: PresentationPersonNameOrder
     let context: Context
@@ -482,6 +483,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
     
     public init(
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle = .legacy,
         dateTimeFormat: PresentationDateTimeFormat,
         nameDisplayOrder: PresentationPersonNameOrder,
         context: AccountContext,
@@ -523,6 +525,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         openStories: ((UIView) -> Void)? = nil
     ) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.dateTimeFormat = dateTimeFormat
         self.nameDisplayOrder = nameDisplayOrder
         self.context = .account(context)
@@ -566,6 +569,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         
     public init(
         presentationData: ItemListPresentationData,
+        systemStyle: ItemListSystemStyle = .legacy,
         dateTimeFormat: PresentationDateTimeFormat,
         nameDisplayOrder: PresentationPersonNameOrder,
         context: Context,
@@ -607,6 +611,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         openStories: ((UIView) -> Void)? = nil
     ) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.dateTimeFormat = dateTimeFormat
         self.nameDisplayOrder = nameDisplayOrder
         self.context = context
@@ -1153,7 +1158,11 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
             switch item.height {
             case .generic:
                 if case .none = item.text {
-                    verticalInset = 11.0
+                    if case .glass = item.systemStyle {
+                        verticalInset = 15.0
+                    } else {
+                        verticalInset = 11.0
+                    }
                 } else {
                     verticalInset = 6.0
                 }
@@ -1163,9 +1172,17 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                 avatarFontSize = floor(31.0 * 16.0 / 37.0)
             case .peerList:
                 if case .none = item.text {
-                    verticalInset = 14.0
+                    if case .glass = item.systemStyle {
+                        verticalInset = 15.0
+                    } else {
+                        verticalInset = 14.0
+                    }
                 } else {
-                    verticalInset = 8.0
+                    if case .glass = item.systemStyle {
+                        verticalInset = 10.0
+                    } else {
+                        verticalInset = 8.0
+                    }
                 }
                 verticalOffset = 0.0
                 avatarSize = 40.0
@@ -1266,6 +1283,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
             
             let contentSize = CGSize(width: params.width, height: max(minHeight, rawHeight))
             let separatorHeight = UIScreenPixel
+            let separatorRightInset: CGFloat = item.systemStyle == .glass ? 16.0 : 0.0
             
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
             let layoutSize = layout.size
@@ -1438,12 +1456,12 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                         strongSelf.bottomStripeNode.isHidden = hasCorners || !item.displayDecorations
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     transition.updateFrame(node: strongSelf.topStripeNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight)))
-                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset, height: separatorHeight)))
+                    transition.updateFrame(node: strongSelf.bottomStripeNode, frame: CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight)))
                     
                     var titleFrame = CGRect(origin: CGPoint(x: leftInset + revealOffset + editingOffset, y: verticalInset + verticalOffset), size: titleLayout.size)
                     
@@ -1749,7 +1767,8 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                                 return AvatarNode.StoryStats(
                                     totalCount: storyStats.totalCount,
                                     unseenCount: storyStats.unseenCount,
-                                    hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriends
+                                    hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriends,
+                                    hasLiveItems: storyStats.hasLiveItems
                                 )
                             }, presentationParams: AvatarNode.StoryPresentationParams(
                                 colors: AvatarNode.Colors(theme: item.presentationData.theme),

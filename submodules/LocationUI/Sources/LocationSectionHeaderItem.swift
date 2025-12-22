@@ -9,10 +9,12 @@ import ItemListUI
 
 class LocationSectionHeaderItem: ListViewItem {
     let presentationData: ItemListPresentationData
+    let systemStyle: ItemListSystemStyle
     let title: String
     
-    public init(presentationData: ItemListPresentationData, title: String) {
+    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, title: String) {
         self.presentationData = presentationData
+        self.systemStyle = systemStyle
         self.title = title
     }
     
@@ -102,7 +104,7 @@ private class LocationSectionHeaderItemNode: ListViewItemNode {
                         }
 
                         headerNode.frame = CGRect(origin: CGPoint(), size: contentSize)
-                        headerNode.updateLayout(size: contentSize, leftInset: params.leftInset, rightInset: params.rightInset)
+                        headerNode.updateLayout(size: contentSize, leftInset: params.leftInset, rightInset: params.rightInset, showBackground: item.systemStyle == .legacy)
                     }
                 })
             })

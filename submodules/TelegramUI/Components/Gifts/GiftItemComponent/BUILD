@@ -33,6 +33,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Stars/ItemShimmeringLoadingComponent",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoCoverComponent",
         "//submodules/Components/BundleIconComponent",
+        "//submodules/TelegramUI/Components/AnimatedTextComponent"
     ],
     visibility = [
         "//visibility:public",

@@ -1348,9 +1348,9 @@ public final class Transaction {
         self.postbox!.setStoryItems(peerId: peerId, items: items)
     }
     
-    public func setStoryItemsInexactMaxId(peerId: PeerId, id: Int32) {
+    public func setStoryItemsInexactMaxId(peerId: PeerId, id: Int32, hasLiveItems: Bool) {
         assert(!self.disposed)
-        self.postbox!.setStoryItemsInexactMaxId(peerId: peerId, id: id)
+        self.postbox!.setStoryItemsInexactMaxId(peerId: peerId, id: id, hasLiveItems: hasLiveItems)
     }
     
     public func clearStoryItemsInexactMaxId(peerId: PeerId) {
@@ -2476,10 +2476,10 @@ final class PostboxImpl {
         }
     }
     
-    fileprivate func setStoryItemsInexactMaxId(peerId: PeerId, id: Int32) {
+    fileprivate func setStoryItemsInexactMaxId(peerId: PeerId, id: Int32, hasLiveItems: Bool) {
         if let value = self.storyTopItemsTable.get(peerId: peerId), value.id >= id {
         } else {
-            self.storyTopItemsTable.set(peerId: peerId, entry: StoryTopItemsTable.Entry(id: id, isExact: false), events: &self.currentStoryTopItemEvents)
+            self.storyTopItemsTable.set(peerId: peerId, entry: StoryTopItemsTable.Entry(id: id, isExact: false, hasLiveItems: hasLiveItems), events: &self.currentStoryTopItemEvents)
         }
     }
     

@@ -17,7 +17,6 @@ import ListSectionComponent
 import BundleIconComponent
 import LottieComponent
 import ListSwitchItemComponent
-import ListSwitchItemComponent
 import ListActionItemComponent
 import Markdown
 import TelegramStringFormatting
@@ -302,6 +301,7 @@ final class PostSuggestionsSettingsScreenComponent: Component {
             var switchSectionItems: [AnyComponentWithIdentity<Empty>] = []
             switchSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListActionItemComponent(
                 theme: environment.theme,
+                style: .glass,
                 title: AnyComponent(VStack([
                     AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
@@ -326,6 +326,7 @@ final class PostSuggestionsSettingsScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: nil,
                     footer: nil,
                     items: switchSectionItems
@@ -347,7 +348,7 @@ final class PostSuggestionsSettingsScreenComponent: Component {
             var contentSectionItems: [AnyComponentWithIdentity<Empty>] = []
             
             let usdRate = Double(component.usdWithdrawRate) / 1000.0 / 100.0
-            let price = self.starCount == 0 ? "" : "≈\(formatTonUsdValue(Int64(self.starCount), divide: false, rate: usdRate, dateTimeFormat: presentationData.dateTimeFormat))"
+            let price = self.starCount == 0 ? "" : "~\(formatTonUsdValue(Int64(self.starCount), divide: false, rate: usdRate, dateTimeFormat: presentationData.dateTimeFormat))"
             
             contentSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListItemComponentAdaptor(
                 itemGenerator: MessagePriceItem(
@@ -394,6 +395,7 @@ final class PostSuggestionsSettingsScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ListSectionComponent(
                     theme: environment.theme,
+                    style: .glass,
                     header: AnyComponent(MultilineTextComponent(
                         text: .plain(NSAttributedString(
                             string: environment.strings.ChannelMessages_PriceSectionTitle,

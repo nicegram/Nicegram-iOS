@@ -56,6 +56,10 @@ public extension TelegramEngineUnauthorized {
             return _internal_reportMissingCode(network: self.account.network, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, mnc: mnc)
         }
         
+        public func requestPasskeyLoginData(apiId: Int32, apiHash: String) -> Signal<String?, NoError> {
+            return _internal_requestPasskeyLoginData(network: self.account.network, apiId: apiId, apiHash: apiHash)
+        }
+        
         public func state() -> Signal<TelegramEngineAuthorizationState?, NoError> {
             return self.account.postbox.stateView()
             |> map { view -> TelegramEngineAuthorizationState? in
@@ -209,6 +213,22 @@ public extension TelegramEngine {
         
         public func reportMissingCode(phoneNumber: String, phoneCodeHash: String, mnc: String) -> Signal<Never, ReportMissingCodeError> {
             return _internal_reportMissingCode(network: self.account.network, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, mnc: mnc)
+        }
+
+        public func passkeysData() -> Signal<[TelegramPasskey], NoError> {
+            return _internal_passkeysData(network: self.account.network)
+        }
+
+        public func requestPasskeyRegistration() -> Signal<String?, NoError> {
+            return _internal_requestPasskeyRegistration(network: self.account.network)
+        }
+        
+        public func requestCreatePasskey(id: String, clientData: String, attestationObject: Data) -> Signal<TelegramPasskey?, NoError> {
+            return _internal_requestCreatePasskey(network: self.account.network, id: id, clientData: clientData, attestationObject: attestationObject)
+        }
+        
+        public func deletePasskey(id: String) -> Signal<Never, NoError> {
+            return _internal_deletePasskey(network: self.account.network, id: id)
         }
     }
 }

@@ -1066,6 +1066,22 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
         }
     }
     
+    public func getAuthKeyId() -> Signal<Int64, NoError> {
+        let mtContext = self.mtProto.context
+        let datacenterId = self.datacenterId
+        return Signal { subscriber in
+            MTContext.contextQueue().dispatch(onQueue: {
+                var result: Int64 = 0
+                if let authInfo = mtContext?.authInfoForDatacenter(withId: datacenterId, selector: .persistent) {
+                    result = authInfo.authKeyId
+                }
+                subscriber.putNext(result)
+            })
+            
+            return EmptyDisposable
+        }
+    }
+    
     public func requestWithAdditionalInfo<T>(_ data: (FunctionDescription, Buffer, DeserializeFunctionResponse<T>), info: NetworkRequestAdditionalInfo, tag: NetworkRequestDependencyTag? = nil, automaticFloodWait: Bool = true, onFloodWaitError: ((String) -> Void)? = nil) -> Signal<NetworkRequestResult<T>, MTRpcError> {
         let requestService = self.requestService
         return Signal { subscriber in

@@ -11,11 +11,11 @@ import AnimatedStickerNode
 import TelegramAnimatedStickerNode
 
 private func generateButtonImage(backgroundColor: UIColor, highlightColor: UIColor?) -> UIImage? {
-    return generateImage(CGSize(width: 24.0, height: 44.0), contextGenerator: { size, context in
+    return generateImage(CGSize(width: 66.0, height: 52.0), contextGenerator: { size, context in
         let bounds = CGRect(origin: CGPoint(), size: size)
         context.clear(bounds)
         
-        let path = UIBezierPath(roundedRect: bounds, byRoundingCorners: .allCorners, cornerRadii: CGSize(width: 11.0, height: 11.0))
+        let path = UIBezierPath(roundedRect: bounds, byRoundingCorners: .allCorners, cornerRadii: CGSize(width: 26.0, height: 26.0))
         context.addPath(path.cgPath)
         context.clip()
         
@@ -26,7 +26,7 @@ private func generateButtonImage(backgroundColor: UIColor, highlightColor: UICol
             context.setFillColor(backgroundColor.cgColor)
             context.fill(bounds)
         }
-    }, opaque: false)?.stretchableImage(withLeftCapWidth: 11, topCapHeight: 11)
+    }, opaque: false)?.stretchableImage(withLeftCapWidth: 26, topCapHeight: 26)
 }
 
 private let titleFont = Font.bold(17.0)
@@ -177,7 +177,7 @@ final class PrivacyIntroControllerNode: ViewControllerTracingNode {
             AuthorizationLayoutItem(node: self.animationNode, size: animationSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
             AuthorizationLayoutItem(node: self.titleNode, size: titleSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 20.0, maxValue: 30.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
             AuthorizationLayoutItem(node: self.textNode, size: textSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 16.0, maxValue: 16.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
-            AuthorizationLayoutItem(node: self.buttonNode, size: CGSize(width: layout.size.width - buttonInset * 2.0, height: 44.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 40.0, maxValue: 40.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
+            AuthorizationLayoutItem(node: self.buttonNode, size: CGSize(width: layout.size.width - buttonInset * 2.0, height: 52.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 40.0, maxValue: 40.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
             AuthorizationLayoutItem(node: self.noticeNode, size: noticeSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 44.0, maxValue: 44.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 20.0, maxValue: 40.0))
         ]
         

@@ -363,13 +363,15 @@ public final class MediaStreamComponent: CombinedComponent {
             let video = video.update(
                 component: MediaStreamVideoComponent(
                     call: context.component.call,
-                    hasVideo: context.state.hasVideo,
+                    videoEndpointId: context.state.hasVideo ? "unified" : nil,
                     isVisible: environment.isVisible && context.state.isVisibleInHierarchy,
                     isAdmin: context.state.canManageCall,
                     peerTitle: context.state.peerTitle,
+                    addInset: !isFullscreen,
                     isFullscreen: isFullscreen,
                     videoLoading: context.state.videoStalled,
                     callPeer: context.state.chatPeer,
+                    enablePictureInPicture: true,
                     activatePictureInPicture: activatePictureInPicture,
                     deactivatePictureInPicture: deactivatePictureInPicture,
                     bringBackControllerForPictureInPictureDeactivation: { [weak call] completed in
@@ -595,7 +597,7 @@ public final class MediaStreamComponent: CombinedComponent {
                         }
                         
                         let credentialsPromise = Promise<GroupCallStreamCredentials>()
-                        credentialsPromise.set(call.accountContext.engine.calls.getGroupCallStreamCredentials(peerId: peerId, revokePreviousCredentials: false) |> `catch` { _ -> Signal<GroupCallStreamCredentials, NoError> in return .never() })
+                        credentialsPromise.set(call.accountContext.engine.calls.getGroupCallStreamCredentials(peerId: peerId, isLiveStream: false, revokePreviousCredentials: false) |> `catch` { _ -> Signal<GroupCallStreamCredentials, NoError> in return .never() })
                         
                         items.append(.action(ContextMenuActionItem(id: nil, text: presentationData.strings.LiveStream_ViewCredentials, textColor: .primary, textLayout: .singleLine, textFont: .regular, badge: nil, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.contextMenu.primaryColor, backgroundColor: nil)

@@ -9,12 +9,12 @@ private let pinOffset = CGPoint(x: 0.0, y: 33.0)
 
 public enum LocationMapMode {
     case map
-    case sattelite
+    case satellite
     case hybrid
     
     var mapType: MKMapType {
         switch self {
-            case .sattelite:
+            case .satellite:
                 return .satellite
             case .hybrid:
                 return .hybrid
@@ -54,6 +54,14 @@ private class PickerAnnotationContainerView: UIView {
 private class LocationMapView: MKMapView, UIGestureRecognizerDelegate {
     var customHitTest: ((CGPoint) -> Bool)?
     private var allowSelectionChanges = true
+    
+    var onTouch: (() -> Void)?
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        
+        self.onTouch?()
+    }
     
     @objc override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if let customHitTest = self.customHitTest, customHitTest(gestureRecognizer.location(in: self)) {
@@ -232,6 +240,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
     var returnedToUserLocation = true
     var ignoreRegionChanges = false
     var isDragging = false
+    var onTouch: (() -> Void)?
     var beganInteractiveDragging: (() -> Void)?
     var endedInteractiveDragging: ((CLLocationCoordinate2D) -> Void)?
     var disableHorizontalTransitionGesture = false
@@ -352,6 +361,12 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
             }
             
             return false
+        }
+        mapView.onTouch = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.onTouch?()
         }
         self.view.addSubview(self.pickerAnnotationContainerView)
     }

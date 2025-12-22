@@ -16,6 +16,13 @@ import CoreLocation
 import Geocoding
 import PhoneNumberFormat
 import DeviceAccess
+import GlassBarButtonComponent
+import ComponentFlow
+import BundleIconComponent
+import MultilineTextComponent
+import SearchInputPanelComponent
+import ButtonComponent
+import EdgeEffect
 
 private struct LocationPickerTransaction {
     let deletions: [ListViewDeleteItem]
@@ -175,9 +182,9 @@ private enum LocationPickerEntry: Comparable, Identifiable {
                     icon = .location
                 }
                 return LocationActionListItem(presentationData: ItemListPresentationData(presentationData), engine: engine, title: title, subtitle: subtitle, icon: icon, beginTimeAndTimeout: nil, action: {
-                    if let venue = venue {
+                    if let venue {
                         interaction?.sendVenue(venue, queryId, resultId)
-                    } else if let coordinate = coordinate {
+                    } else if let coordinate {
                         interaction?.sendLocation(coordinate, name, address)
                     }
                 }, highlighted: { highlighted in
@@ -192,10 +199,10 @@ private enum LocationPickerEntry: Comparable, Identifiable {
                     }
                 })
             case let .header(_, title):
-                return LocationSectionHeaderItem(presentationData: ItemListPresentationData(presentationData), title: title)
+                return LocationSectionHeaderItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .legacy, title: title)
             case let .venue(_, venue, queryId, resultId, _):
                 let venueType = venue?.venue?.type ?? ""
-                return ItemListVenueItem(presentationData: ItemListPresentationData(presentationData), engine: engine, venue: venue, style: .plain, action: venue.flatMap { venue in
+                return ItemListVenueItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, engine: engine, venue: venue, style: .plain, action: venue.flatMap { venue in
                     return { interaction?.sendVenue(venue, queryId, resultId) }
                 }, infoAction: ["home", "work"].contains(venueType) ? {
                     interaction?.openHomeWorkInfo()
@@ -344,6 +351,15 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
     private let shadeNode: ASDisplayNode
     private let innerShadeNode: ASDisplayNode
     
+    private let cancelButton = ComponentView<Empty>()
+    private let searchButton = ComponentView<Empty>()
+    private let title = ComponentView<Empty>()
+    
+    fileprivate let topEdgeEffectView: EdgeEffectView
+    fileprivate let bottomEdgeEffectView: EdgeEffectView
+    
+    private var sendButton: ComponentView<Empty>?
+    
     private let optionsNode: LocationOptionsNode
     private(set) var searchContainerNode: LocationSearchContainerNode?
     
@@ -359,6 +375,8 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
     private var geocodingDisposable = MetaDisposable()
     
     private let searchVenuesPromise = Promise<CLLocationCoordinate2D?>()
+    
+    private var searchInput: ComponentView<Empty>?
     
     private var validLayout: (layout: ContainerViewLayout, navigationHeight: CGFloat)?
     private var listOffset: CGFloat?
@@ -394,9 +412,16 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         self.emptyResultsTextNode.textAlignment = .center
         self.emptyResultsTextNode.isHidden = true
         
-        self.headerNode = LocationMapHeaderNode(presentationData: presentationData, toggleMapModeSelection: interaction.toggleMapModeSelection, goToUserLocation: interaction.goToUserLocation, showPlacesInThisArea: interaction.showPlacesInThisArea)
+        self.headerNode = LocationMapHeaderNode(
+            presentationData: presentationData,
+            glass: true,
+            toggleMapModeSelection: interaction.toggleMapModeSelection,
+            updateMapMode: interaction.updateMapMode,
+            goToUserLocation: interaction.goToUserLocation,
+            showPlacesInThisArea: interaction.showPlacesInThisArea
+        )
         self.headerNode.mapNode.isRotateEnabled = false
-        
+                
         self.optionsNode = LocationOptionsNode(presentationData: presentationData, updateMapMode: interaction.updateMapMode)
         
         self.shadeNode = ASDisplayNode()
@@ -404,6 +429,12 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         self.shadeNode.alpha = 0.0
         self.innerShadeNode = ASDisplayNode()
         self.innerShadeNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
+
+        self.topEdgeEffectView = EdgeEffectView()
+        self.topEdgeEffectView.isUserInteractionEnabled = false
+        
+        self.bottomEdgeEffectView = EdgeEffectView()
+        self.bottomEdgeEffectView.isUserInteractionEnabled = false
         
         super.init()
         
@@ -411,7 +442,7 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         
         self.addSubnode(self.listNode)
         self.addSubnode(self.headerNode)
-        self.addSubnode(self.optionsNode)
+        //self.addSubnode(self.optionsNode)
         self.listNode.addSubnode(self.emptyResultsTextNode)
         self.shadeNode.addSubnode(self.innerShadeNode)
         self.addSubnode(self.shadeNode)
@@ -780,36 +811,34 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                 if annotations != previousAnnotations {
                     strongSelf.headerNode.mapNode.annotations = annotations
                 }
+                 
+                var updateLayout = false
+                if [.denied, .restricted].contains(access) {
+                    if !strongSelf.locationAccessDenied {
+                        strongSelf.locationAccessDenied = true
+                        strongSelf.locationAccessDeniedUpdated(true)
+                        updateLayout = true
+                    }
+                } else {
+                    if strongSelf.locationAccessDenied {
+                        strongSelf.locationAccessDenied = false
+                        strongSelf.locationAccessDeniedUpdated(false)
+                        updateLayout = true
+                    }
+                }
                 
-                if let (layout, navigationBarHeight) = strongSelf.validLayout {
-                    var updateLayout = false
-                    let transition: ContainedViewLayoutTransition = .animated(duration: 0.45, curve: .spring)
+                if case let .location(_, previousAddress, _) = previousState.selectedLocation, case let .location(_, newAddress, _) = state.selectedLocation, previousAddress != newAddress {
+                    updateLayout = true
+                } else if previousState.displayingMapModeOptions != state.displayingMapModeOptions {
+                    updateLayout = true
+                } else if previousState.selectedLocation.isCustom != state.selectedLocation.isCustom {
+                    updateLayout = true
+                } else if previousState.searchingVenuesAround != state.searchingVenuesAround {
+                    updateLayout = true
+                }
                 
-                    if [.denied, .restricted].contains(access) {
-                        if !strongSelf.locationAccessDenied {
-                            strongSelf.locationAccessDenied = true
-                            strongSelf.locationAccessDeniedUpdated(true)
-                            updateLayout = true
-                        }
-                    } else {
-                        if strongSelf.locationAccessDenied {
-                            strongSelf.locationAccessDenied = false
-                            strongSelf.locationAccessDeniedUpdated(false)
-                            updateLayout = true
-                        }
-                    }
-                    
-                    if previousState.displayingMapModeOptions != state.displayingMapModeOptions {
-                        updateLayout = true
-                    } else if previousState.selectedLocation.isCustom != state.selectedLocation.isCustom {
-                        updateLayout = true
-                    } else if previousState.searchingVenuesAround != state.searchingVenuesAround {
-                        updateLayout = true
-                    }
-                    
-                    if updateLayout {
-                        strongSelf.containerLayoutUpdated(layout, navigationHeight: navigationBarHeight, transition: transition)
-                    }
+                if updateLayout {
+                    strongSelf.requestLayout(transition: .animated(duration: 0.45, curve: .spring))
                 }
                 
                 let locale = localeWithStrings(presentationData.strings)
@@ -907,7 +936,13 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                     setupGeocoding(coordinate, false, { [weak self] geoAddress, _, address, cityName, streetName, countryCode, isStreet in
                         self?.updateState { state in
                             var state = state
-                            state.selectedLocation = .location(coordinate, address, global)
+                            
+                            var shortAddress = ""
+                            if let streetName {
+                                shortAddress.append(streetName)
+                            }
+                            
+                            state.selectedLocation = .location(coordinate, shortAddress, global)
                             state.geoAddress = geoAddress
                             state.city = cityName
                             state.street = streetName
@@ -950,15 +985,15 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         }
         
         self.listNode.updateFloatingHeaderOffset = { [weak self] offset, listTransition in
-            guard let strongSelf = self, let (layout, navigationBarHeight) = strongSelf.validLayout, strongSelf.listNode.scrollEnabled else {
+            guard let self, let (layout, navigationBarHeight) = self.validLayout, self.listNode.scrollEnabled else {
                 return
             }
-            let overlap: CGFloat = 6.0
-            strongSelf.listOffset = max(0.0, offset)
+            let overlap: CGFloat = 0.0 //6.0
+            self.listOffset = max(0.0, offset)
             let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(0.0, offset + overlap)))
-            listTransition.updateFrame(node: strongSelf.headerNode, frame: headerFrame)
-            strongSelf.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
-            strongSelf.layoutEmptyResultsPlaceholder(transition: listTransition)
+            listTransition.updateFrame(node: self.headerNode, frame: headerFrame)
+            self.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: self.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: self.state.displayingMapModeOptions ? 38.0 : 0.0, controlsBottomPadding: self.isPickingLocation ? 94.0 : 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
+            self.layoutEmptyResultsPlaceholder(transition: listTransition)
         }
         
         self.listNode.beganInteractiveDragging = { [weak self] _ in
@@ -972,18 +1007,33 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
             }
         }
                 
-        self.headerNode.mapNode.beganInteractiveDragging = { [weak self] in
-            guard let strongSelf = self else {
+        self.headerNode.mapNode.onTouch = { [weak self] in
+            guard let self else {
                 return
             }
-            strongSelf.beganInteractiveDragging()
-            strongSelf.updateState { state in
+            if self.state.displayingMapModeOptions {
+                self.updateState { state in
+                    var state = state
+                    state.displayingMapModeOptions = false
+                    return state
+                }
+            }
+        }
+        
+        self.headerNode.mapNode.beganInteractiveDragging = { [weak self] in
+            guard let self, let controller = self.controller else {
+                return
+            }
+            self.beganInteractiveDragging()
+            self.updateState { state in
                 var state = state
                 state.displayingMapModeOptions = false
                 state.selectedLocation = .selecting
                 state.searchingVenuesAround = false
                 return state
             }
+            
+            controller.updateTabBarVisibility(false, .animated(duration: 0.4, curve: .spring))
         }
         
         self.headerNode.mapNode.endedInteractiveDragging = { [weak self] coordinate in
@@ -1081,7 +1131,7 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
             if let strongSelf = self {
                 strongSelf.emptyResultsTextNode.isHidden = transition.isLoading || !transition.isEmpty
                 
-                strongSelf.emptyResultsTextNode.attributedText = NSAttributedString(string: strongSelf.presentationData.strings.Map_NoPlacesNearby, font: Font.regular(15.0), textColor: strongSelf.presentationData.theme.list.freeTextColor)
+                strongSelf.emptyResultsTextNode.attributedText = NSAttributedString(string: strongSelf.presentationData.strings.Map_NoPlacesNearby, font: Font.regular(15.0), textColor: strongSelf.presentationData.theme.list.itemSecondaryTextColor)
                 
                 strongSelf.layoutEmptyResultsPlaceholder(transition: .immediate)
             }
@@ -1089,17 +1139,22 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
     }
     
     func activateSearch(navigationBar: NavigationBar) -> Signal<Bool, NoError> {
-        guard let (layout, navigationBarHeight) = self.validLayout, self.searchContainerNode == nil, let coordinate = self.headerNode.mapNode.mapCenterCoordinate else {
+        guard self.searchContainerNode == nil, let coordinate = self.headerNode.mapNode.mapCenterCoordinate else {
             return .complete()
         }
-        
+                
         let searchContainerNode = LocationSearchContainerNode(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, coordinate: coordinate, interaction: self.interaction, story: self.source == .story)
         self.insertSubnode(searchContainerNode, belowSubnode: navigationBar)
         self.searchContainerNode = searchContainerNode
-        
+                
         searchContainerNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
         
-        self.containerLayoutUpdated(layout, navigationHeight: navigationBarHeight, transition: .immediate)
+        self.requestLayout(transition: .animated(duration: 0.4, curve: .spring))
+        
+        if let sendButtonView = self.sendButton?.view {
+            self.view.insertSubview(sendButtonView, belowSubview: searchContainerNode.view)
+            self.view.insertSubview(self.bottomEdgeEffectView, belowSubview: sendButtonView)
+        }
         
         return searchContainerNode.isSearching
     }
@@ -1112,6 +1167,16 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
             searchContainerNode?.removeFromSupernode()
         })
         self.searchContainerNode = nil
+        
+        self.deactivateInput()
+        
+        self.requestLayout(transition: .animated(duration: 0.4, curve: .spring))
+    }
+    
+    func deactivateInput() {
+        if let searchInputView = self.searchInput?.view as? SearchInputPanelComponent.View {
+            let _ = searchInputView.deactivateInput()
+        }
     }
     
     func scrollToTop() {
@@ -1140,12 +1205,27 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         let emptyTextSize = self.emptyResultsTextNode.updateLayout(CGSize(width: layout.size.width - layout.safeInsets.left - layout.safeInsets.right - padding * 2.0, height: CGFloat.greatestFiniteMagnitude))
         transition.updateFrame(node: self.emptyResultsTextNode, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - emptyTextSize.width) / 2.0), y: headerHeight + actionsInset + floor((layout.size.height - headerHeight - actionsInset - emptyTextSize.height - layout.intrinsicInsets.bottom - layout.additionalInsets.bottom) / 2.0)), size: emptyTextSize))
     }
+    
+    var isPickingLocation: Bool {
+        return (self.state.selectedLocation.isCustom || self.state.forceSelection) && !self.state.searchingVenuesAround
+    }
+    
+    func requestLayout(transition: ContainedViewLayoutTransition) {
+        if let (layout, navigationHeight) = self.validLayout {
+            self.containerLayoutUpdated(layout, navigationHeight: navigationHeight, transition: transition)
+        }
+    }
 
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationHeight: CGFloat, transition: ContainedViewLayoutTransition) {
         let isFirstLayout = self.validLayout == nil
         self.validLayout = (layout, navigationHeight)
         
-        let isPickingLocation = (self.state.selectedLocation.isCustom || self.state.forceSelection) && !self.state.searchingVenuesAround
+        var glass = false
+        if let controller = self.controller, controller._hasGlassStyle {
+            glass = true
+        }
+        
+        let isPickingLocation = self.isPickingLocation
         let optionsHeight: CGFloat = 38.0
         var actionHeight: CGFloat?
         self.listNode.forEachItemNode { itemNode in
@@ -1155,14 +1235,17 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                 }
             }
         }
-        
-//        let topInset: CGFloat = floor((layout.size.height - navigationHeight) / 2.0 + navigationHeight)
-        let topInset: CGFloat = 240.0
-        let overlap: CGFloat = 6.0
+    
+        let topInset: CGFloat = glass ? 300.0 : 240.0
+        let overlap: CGFloat = glass ? 0.0 : 6.0
         let headerHeight: CGFloat
         if isPickingLocation, let actionHeight = actionHeight {
             self.listOffset = topInset
-            headerHeight = layout.size.height - actionHeight - layout.intrinsicInsets.bottom + overlap - 2.0
+            if glass {
+                headerHeight = layout.size.height
+            } else {
+                headerHeight = layout.size.height - actionHeight - layout.intrinsicInsets.bottom + overlap - 2.0
+            }
         } else if let listOffset = self.listOffset {
             headerHeight = max(0.0, listOffset + overlap)
         } else {
@@ -1171,7 +1254,7 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: headerHeight))
         transition.updateFrame(node: self.headerNode, frame: headerFrame)
         
-        self.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationHeight, topPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, controlsTopPadding: self.state.displayingMapModeOptions ? optionsHeight : 0.0, offset: 0.0, size: headerFrame.size, transition: transition)
+        self.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationHeight, topPadding: self.state.displayingMapModeOptions && !glass ? optionsHeight : 0.0, controlsTopPadding: self.state.displayingMapModeOptions && !glass ? optionsHeight : 0.0, controlsBottomPadding: isPickingLocation ? 94.0 : 0.0, offset: 0.0, size: headerFrame.size, transition: transition)
             
         let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)
         let scrollToItem: ListViewScrollToItem?
@@ -1267,6 +1350,255 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
             self.controller?.updateTabBarAlpha(1.0, .immediate)
         }
         
+        if glass {
+            let topEdgeEffectFrame = CGRect(origin: .zero, size: CGSize(width: layout.size.width, height: 80.0))
+            transition.updateFrame(view: self.topEdgeEffectView, frame: topEdgeEffectFrame)
+            self.topEdgeEffectView.update(content: self.headerNode.mapNode.mapMode == .map ? self.presentationData.theme.list.plainBackgroundColor : .clear, blur: true, alpha: 0.65, rect: topEdgeEffectFrame, edge: .top, edgeSize: topEdgeEffectFrame.height, transition: ComponentTransition(transition))
+            if self.topEdgeEffectView.superview == nil {
+                self.view.addSubview(self.topEdgeEffectView)
+            }
+            
+            let titleSize = self.title.update(
+                transition: ComponentTransition(transition),
+                component: AnyComponent(
+                    MultilineTextComponent(
+                        text: .plain(
+                            NSAttributedString(
+                                string: self.presentationData.strings.Map_ChooseLocationTitle,
+                                font: Font.semibold(17.0),
+                                textColor: self.headerNode.mapNode.mapMode == .map ? self.presentationData.theme.rootController.navigationBar.primaryTextColor : .white
+                            )
+                        )
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: 200.0, height: 40.0)
+            )
+            let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - titleSize.width) / 2.0), y: floorToScreenPixels((navigationHeight - titleSize.height) / 2.0) + 3.0), size: titleSize)
+            if let titleView = self.title.view {
+                if titleView.superview == nil {
+                    self.view.addSubview(titleView)
+                }
+                transition.updateFrame(view: titleView, frame: titleFrame)
+            }
+            
+            let barButtonSize = CGSize(width: 40.0, height: 40.0)
+            let cancelButtonSize = self.cancelButton.update(
+                transition: ComponentTransition(transition),
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: self.presentationData.theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: isPickingLocation ? "back" : "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: isPickingLocation ? "Navigation/Back" : "Navigation/Close",
+                            tintColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { [weak self] _ in
+                        guard let self else {
+                            return
+                        }
+                        if isPickingLocation {
+                            self.goToUserLocation()
+                        } else {
+                            self.controller?.dismiss()
+                        }
+                    }
+                )),
+                environment: {},
+                containerSize: barButtonSize
+            )
+            let cancelButtonFrame = CGRect(origin: CGPoint(x: layout.safeInsets.left + 16.0, y: 16.0), size: cancelButtonSize)
+            if let cancelButtonView = self.cancelButton.view {
+                if cancelButtonView.superview == nil {
+                    self.view.addSubview(cancelButtonView)
+                }
+                transition.updateFrame(view: cancelButtonView, frame: cancelButtonFrame)
+            }
+            
+            let searchButtonSize = self.searchButton.update(
+                transition: ComponentTransition(transition),
+                component: AnyComponent(GlassBarButtonComponent(
+                    size: barButtonSize,
+                    backgroundColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: self.presentationData.theme.overallDarkAppearance,
+                    state: .glass,
+                    component: AnyComponentWithIdentity(id: "search", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Search",
+                            tintColor: self.presentationData.theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { [weak self] _ in
+                        self?.controller?.searchPressed()
+                    }
+                )),
+                environment: {},
+                containerSize: barButtonSize
+            )
+            let searchButtonFrame = CGRect(origin: CGPoint(x: layout.size.width - layout.safeInsets.left - 16.0 - searchButtonSize.width, y: 16.0), size: searchButtonSize)
+            if let searchButtonView = self.searchButton.view {
+                if searchButtonView.superview == nil {
+                    self.view.addSubview(searchButtonView)
+                }
+                transition.updateFrameAsPositionAndBounds(layer: searchButtonView.layer, frame: searchButtonFrame)
+                
+                if let _ = self.searchContainerNode {
+                    transition.updateAlpha(layer: searchButtonView.layer, alpha: 0.0)
+                    transition.updateTransformScale(layer: searchButtonView.layer, scale: 0.01)
+                } else {
+                    transition.updateAlpha(layer: searchButtonView.layer, alpha: 1.0)
+                    transition.updateTransformScale(layer: searchButtonView.layer, scale: 1.0)
+                }
+            }
+                        
+            if let _ = self.searchContainerNode {
+                let searchInput: ComponentView<Empty>
+                if let current = self.searchInput {
+                    searchInput = current
+                } else {
+                    searchInput = ComponentView()
+                    self.searchInput = searchInput
+                }
+                
+                let searchInputTransition: ComponentTransition = self.searchInput?.view == nil ? .immediate : ComponentTransition(transition)
+                let searchInputSize = searchInput.update(
+                    transition: searchInputTransition,
+                    component: AnyComponent(
+                        SearchInputPanelComponent(
+                            theme: self.presentationData.theme,
+                            strings: self.presentationData.strings,
+                            metrics: layout.metrics,
+                            safeInsets: layout.safeInsets,
+                            placeholder: self.presentationData.strings.Map_Search,
+                            updated: { [weak self] query in
+                                guard let self, let controller = self.controller else {
+                                    return
+                                }
+                                controller.updateSearchQuery(query)
+                            },
+                            cancel: { [weak self] in
+                                guard let self, let controller = self.controller else {
+                                    return
+                                }
+                                controller.dismissSearchPressed()
+                            }
+                        )
+                    ),
+                    environment: {},
+                    containerSize: CGSize(width: layout.size.width, height: layout.size.height)
+                )
+                
+                let bottomInset: CGFloat = layout.insets(options: .input).bottom
+                let searchInputFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - bottomInset - searchInputSize.height), size: searchInputSize)
+                if let searchInputView = searchInput.view as? SearchInputPanelComponent.View {
+                    if searchInputView.superview == nil {
+                        self.view.addSubview(searchInputView)
+                        searchInputView.frame = CGRect(origin: CGPoint(x: searchInputFrame.minX, y: layout.size.height), size: searchInputFrame.size)
+                        
+                        searchInputView.activateInput()
+                    }
+                    transition.updateFrame(view: searchInputView, frame: searchInputFrame)
+                }
+            } else if let searchInput = self.searchInput {
+                self.searchInput = nil
+                if let searchInputView = searchInput.view {
+                    transition.updateFrame(view: searchInputView, frame: CGRect(origin: CGPoint(x: searchInputView.frame.minX, y: layout.size.height), size: searchInputView.frame.size), completion: { _ in
+                        searchInputView.removeFromSuperview()
+                    })
+                }
+            }
+                        
+            let bottomEdgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - 88.0 - layout.additionalInsets.bottom), size: CGSize(width: layout.size.width, height: 88.0))
+            transition.updateFrame(view: self.bottomEdgeEffectView, frame: bottomEdgeEffectFrame)
+            self.bottomEdgeEffectView.update(content: self.presentationData.theme.list.plainBackgroundColor, blur: true, alpha: 0.65, rect: bottomEdgeEffectFrame, edge: .bottom, edgeSize: bottomEdgeEffectFrame.height, transition: ComponentTransition(transition))
+            if self.bottomEdgeEffectView.superview == nil {
+                self.view.addSubview(self.bottomEdgeEffectView)
+            }
+            
+            if isPickingLocation {
+                let sendButton: ComponentView<Empty>
+                if let current = self.sendButton {
+                    sendButton = current
+                } else {
+                    sendButton = ComponentView()
+                    self.sendButton = sendButton
+                }
+                
+                let buttonBackground = ButtonComponent.Background(
+                    style: .glass,
+                    color: self.presentationData.theme.list.itemCheckColors.fillColor,
+                    foreground: self.presentationData.theme.list.itemCheckColors.foregroundColor,
+                    pressedColor: self.presentationData.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                )
+                var buttonContents: [AnyComponentWithIdentity<Empty>] = [
+                    AnyComponentWithIdentity(
+                        id: AnyHashable("label"),
+                        component: AnyComponent(MultilineTextComponent(text: .plain(NSAttributedString(string: self.presentationData.strings.Location_SendLocation, font: Font.semibold(17.0), textColor: self.presentationData.theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center))))
+                    )
+                ]
+                
+                var address: String?
+                if case let .location(_, addressValue, _) = self.state.selectedLocation {
+                    address = addressValue
+                }
+                
+                buttonContents.append(
+                    AnyComponentWithIdentity(
+                        id: AnyHashable(address ?? "locating"),
+                        component: AnyComponent(MultilineTextComponent(text: .plain(NSAttributedString(string: address ?? self.presentationData.strings.Map_Locating, font: Font.medium(13.0), textColor: self.presentationData.theme.list.itemCheckColors.foregroundColor.withMultipliedAlpha(0.7), paragraphAlignment: .center))))
+                    )
+                )
+                
+                let sendButtonSize = sendButton.update(
+                    transition: ComponentTransition(transition),
+                    component: AnyComponent(
+                        ButtonComponent(
+                            background: buttonBackground,
+                            content: AnyComponentWithIdentity(
+                                id: AnyHashable("send"),
+                                component: AnyComponent(
+                                    VStack(buttonContents, spacing: 1.0)
+                                )
+                            ),
+                            action: { [weak self] in
+                                guard let self else {
+                                    return
+                                }
+                                if case let .location(coordinate, _, _) = self.state.selectedLocation {
+                                    self.interaction.sendLocation(coordinate, nil, nil)
+                                }
+                            }
+                        )
+                    ),
+                    environment: {},
+                    containerSize: CGSize(width: layout.size.width - 36.0 * 2.0, height: 52.0)
+                )
+                let sendButtonFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - sendButtonSize.width) / 2.0), y: layout.size.height - insets.bottom - sendButtonSize.height - 14.0), size: sendButtonSize)
+                if let sendButtonView = sendButton.view {
+                    if sendButtonView.superview == nil {
+                        self.view.addSubview(sendButtonView)
+                        
+                        sendButtonView.alpha = 0.0
+                        sendButtonView.transform = .identity
+                        
+                        transition.animateTransformScale(view: sendButtonView, from: 0.01)
+                        transition.updateAlpha(layer: sendButtonView.layer, alpha: 1.0)
+                    }
+                    transition.updateFrameAsPositionAndBounds(layer: sendButtonView.layer, frame: sendButtonFrame)
+                }
+            } else if let sendButton = self.sendButton {
+                self.sendButton = nil
+                if let sendButtonView = sendButton.view {
+                    transition.updateAlpha(layer: sendButtonView.layer, alpha: 0.0, completion: { _ in
+                        sendButtonView.removeFromSuperview()
+                    })
+                    transition.updateTransformScale(layer: sendButtonView.layer, scale: 0.01)
+                }
+            }
+        }
     }
     
     func updateSendActionHighlight(_ highlighted: Bool) {
@@ -1275,6 +1607,10 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
     }
     
     func goToUserLocation() {
+        guard let controller = self.controller else {
+            return
+        }
+        
         self.searchVenuesPromise.set(.single(nil))
         self.updateState { state in
             var state = state
@@ -1283,6 +1619,8 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
             state.searchingVenuesAround = false
             return state
         }
+        
+        controller.updateTabBarVisibility(true, .animated(duration: 0.4, curve: .spring))
     }
     
     func requestPlacesAtSelectedLocation() {

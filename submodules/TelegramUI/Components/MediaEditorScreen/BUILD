@@ -68,6 +68,8 @@ swift_library(
         "//submodules/TelegramUI/Components/MediaAssetsContext",
         "//submodules/CheckNode",
         "//submodules/TelegramNotices",
+        "//submodules/TelegramUI/Components/AttachmentFileController",
+        "//submodules/SaveToCameraRoll",
     ],
     visibility = [
         "//visibility:public",

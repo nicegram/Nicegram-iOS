@@ -100,17 +100,25 @@ final class NetworkBroadcastPartSource: BroadcastPartSource {
             
             return (dataSource
             |> deliverOn(self.queue)
-            |> mapToSignal { [weak self] dataSource -> Signal<EngineCallStreamState?, NoError> in
+            |> mapToSignal { [weak self] dataSource -> Signal<Int64?, NoError> in
                 if let dataSource = dataSource {
                     self?.dataSource = dataSource
                     return engine.calls.requestStreamState(dataSource: dataSource, callId: callId, accessHash: accessHash)
+                    |> mapToSignal { value in
+                        if let value {
+                            return .single(value.channels.first?.latestTimestamp ?? 0)
+                        } else {
+                            return engine.calls.serverTime()
+                            |> map(Optional.init)
+                        }
+                    }
                 } else {
                     return .single(nil)
                 }
             }
             |> deliverOn(self.queue)).start(next: { result in
-                if let channel = result?.channels.first {
-                    completion(channel.latestTimestamp)
+                if let result {
+                    completion(result)
                 } else {
                     completion(0)
                 }
@@ -252,10 +260,12 @@ public final class OngoingGroupCallContext {
     public struct NetworkState: Equatable {
         public var isConnected: Bool
         public var isTransitioningFromBroadcastToRtc: Bool
+        public var isBroadcast: Bool
         
-        public init(isConnected: Bool, isTransitioningFromBroadcastToRtc: Bool) {
+        public init(isConnected: Bool, isTransitioningFromBroadcastToRtc: Bool, isBroadcast: Bool) {
             self.isConnected = isConnected
             self.isTransitioningFromBroadcastToRtc = isTransitioningFromBroadcastToRtc
+            self.isBroadcast = isBroadcast
         }
     }
     
@@ -473,7 +483,7 @@ public final class OngoingGroupCallContext {
 #endif
         
         let joinPayload = Promise<(String, UInt32)>()
-        let networkState = ValuePromise<NetworkState>(NetworkState(isConnected: false, isTransitioningFromBroadcastToRtc: false), ignoreRepeated: true)
+        let networkState = ValuePromise<NetworkState>(NetworkState(isConnected: false, isTransitioningFromBroadcastToRtc: false, isBroadcast: false), ignoreRepeated: true)
         let isMuted = ValuePromise<Bool>(true, ignoreRepeated: true)
         let isNoiseSuppressionEnabled = ValuePromise<Bool>(true, ignoreRepeated: true)
         let audioLevels = ValuePipe<[(AudioLevelKey, Float, Bool)]>()
@@ -520,7 +530,7 @@ public final class OngoingGroupCallContext {
             
 #if os(iOS)
             if sharedAudioDevice == nil && !isStream {
-                self.audioDevice = OngoingCallContext.AudioDevice.create(enableSystemMute: false)
+                self.audioDevice = OngoingCallContext.AudioDevice.create(enableSystemMute: false, enableMicrophone: true)
             } else {
                 self.audioDevice = sharedAudioDevice
             }
@@ -779,7 +789,7 @@ public final class OngoingGroupCallContext {
                     guard let strongSelf = self else {
                         return
                     }
-                    strongSelf.networkState.set(NetworkState(isConnected: state.isConnected, isTransitioningFromBroadcastToRtc: state.isTransitioningFromBroadcastToRtc))
+                    strongSelf.networkState.set(NetworkState(isConnected: state.isConnected, isTransitioningFromBroadcastToRtc: state.isTransitioningFromBroadcastToRtc, isBroadcast: state.isBroadcast))
                 }
             }
             

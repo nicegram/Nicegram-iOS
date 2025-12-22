@@ -20,6 +20,7 @@ public enum BotPaymentInvoiceSource {
     case starGiftResale(slug: String, toPeerId: EnginePeer.Id, ton: Bool)
     case starGiftPrepaidUpgrade(peerId: EnginePeer.Id, hash: String)
     case starGiftDropOriginalDetails(reference: StarGiftReference)
+    case starGiftAuctionBid(update: Bool, hideName: Bool, peerId: EnginePeer.Id?, giftId: Int64, bidAmount: Int64, text: String?, entities: [MessageTextEntity]?)
 }
 
 public struct BotPaymentInvoiceFields: OptionSet {
@@ -423,6 +424,31 @@ func _internal_parseInputInvoice(transaction: Transaction, source: BotPaymentInv
         return .inputInvoiceStarGiftPrepaidUpgrade(peer: inputPeer, hash: hash)
     case let .starGiftDropOriginalDetails(reference):
         return reference.apiStarGiftReference(transaction: transaction).flatMap { .inputInvoiceStarGiftDropOriginalDetails(stargift: $0) }
+        
+    case let .starGiftAuctionBid(update, hideName, peerId, giftId, bidAmount, text, entities):
+        var flags: Int32 = 0
+        var inputPeer: Api.InputPeer?
+        var message: Api.TextWithEntities?
+        if update {
+            flags |= (1 << 2)
+        }
+        if let peerId {
+            guard let peer = transaction.getPeer(peerId).flatMap(apiInputPeer) else {
+                return nil
+            }
+            flags |= (1 << 3)
+            inputPeer = peer
+            
+            if hideName {
+                flags |= (1 << 0)
+            }
+            
+            if let text, !text.isEmpty {
+                flags |= (1 << 1)
+                message = .textWithEntities(text: text, entities: entities.flatMap { apiEntitiesFromMessageTextEntities($0, associatedPeers: SimpleDictionary()) } ?? [])
+            }
+        }
+        return .inputInvoiceStarGiftAuctionBid(flags: flags, peer: inputPeer, giftId: giftId, bidAmount: bidAmount, message: message)
     }
 }
 
@@ -765,7 +791,7 @@ func _internal_sendBotPaymentForm(account: Account, formId: Int64, source: BotPa
                                                     receiptMessageId = id
                                                 }
                                             }
-                                        case .giftCode, .stars, .starsGift, .starsChatSubscription, .starGift, .starGiftUpgrade, .starGiftTransfer, .premiumGift, .starGiftResale, .starGiftPrepaidUpgrade, .starGiftDropOriginalDetails:
+                                        case .giftCode, .stars, .starsGift, .starsChatSubscription, .starGift, .starGiftUpgrade, .starGiftTransfer, .premiumGift, .starGiftResale, .starGiftPrepaidUpgrade, .starGiftDropOriginalDetails, .starGiftAuctionBid:
                                             receiptMessageId = nil
                                         }
                                     }

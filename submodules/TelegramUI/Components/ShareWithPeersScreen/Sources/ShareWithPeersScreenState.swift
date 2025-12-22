@@ -55,6 +55,7 @@ public extension ShareWithPeersScreen {
         var stateValue: State?
         
         public let subject: Subject
+        public let liveStream: Bool
         public let editing: Bool
         public private(set) var initialPeerIds: Set<EnginePeer.Id> = Set()
         let blockedPeersContext: BlockedPeersContext?
@@ -74,6 +75,7 @@ public extension ShareWithPeersScreen {
         public init(
             context: AccountContext,
             subject: Subject = .chats(blocked: false),
+            liveStream: Bool = false,
             editing: Bool = false,
             initialSelectedPeers: [EngineStoryPrivacy.Base: [EnginePeer.Id]] = [:],
             initialPeerIds: Set<EnginePeer.Id> = Set(),
@@ -82,6 +84,7 @@ public extension ShareWithPeersScreen {
             blockedPeersContext: BlockedPeersContext? = nil
         ) {
             self.subject = subject
+            self.liveStream = liveStream
             self.editing = editing
             self.initialPeerIds = initialPeerIds
             self.blockedPeersContext = blockedPeersContext
@@ -98,6 +101,13 @@ public extension ShareWithPeersScreen {
              
             switch subject {
             case let .peers(peers, _):
+                let peers = peers.filter { peer in
+                    if liveStream, case let .channel(channel) = peer, case .group = channel.info {
+                        return false
+                    } else {
+                        return true
+                    }
+                }
                 self.stateDisposable = (.single(peers)
                 |> mapToSignal { peers -> Signal<([EnginePeer], [EnginePeer.Id: Optional<Int>]), NoError> in
                     return context.engine.data.subscribe(
@@ -721,7 +731,7 @@ final class PeersListStoredState: Codable {
     }
 }
 
-private func peersListStoredState(engine: TelegramEngine, base: Stories.Item.Privacy.Base) -> Signal<[EnginePeer.Id], NoError> {
+func peersListStoredState(engine: TelegramEngine, base: Stories.Item.Privacy.Base) -> Signal<[EnginePeer.Id], NoError> {
     let key = EngineDataBuffer(length: 4)
     key.setInt32(0, value: base.rawValue)
     

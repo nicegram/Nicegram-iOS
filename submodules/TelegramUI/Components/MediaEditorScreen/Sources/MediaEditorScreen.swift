@@ -50,6 +50,8 @@ import UIKitRuntimeUtils
 import ImageObjectSeparation
 import SaveProgressScreen
 import TelegramNotices
+import AttachmentFileController
+import SaveToCameraRoll
 
 private let playbackButtonTag = GenericComponentViewTag()
 private let muteButtonTag = GenericComponentViewTag()
@@ -1453,6 +1455,7 @@ final class MediaEditorScreenComponent: Component {
                             controller.presentTimeoutSetup(sourceView: view, gesture: gesture)
                         },
                         forwardAction: nil,
+                        paidMessageAction: nil,
                         moreAction: nil,
                         presentCaptionPositionTooltip: nil,
                         presentVoiceMessagesUnavailableTooltip: nil,
@@ -3150,7 +3153,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             self.previewContainerView = UIView()
             self.previewContainerView.alpha = 0.0
             self.previewContainerView.clipsToBounds = true
-            self.previewContainerView.layer.cornerRadius = 12.0
+            self.previewContainerView.layer.cornerRadius = 30.0 //12.0
             if #available(iOS 13.0, *) {
                 self.previewContainerView.layer.cornerCurve = .continuous
             }
@@ -3731,7 +3734,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                 } else if case let .gift(gift) = subject {
                     isGift = true
-                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil, dropOriginalDetailsStars: nil, assigned: false))]
+                    let media: [Media] = [TelegramMediaAction(action: .starGiftUnique(gift: .unique(gift), isUpgrade: false, isTransferred: false, savedToProfile: false, canExportDate: nil, transferStars: nil, isRefunded: false, isPrepaidUpgrade: false, peerId: nil, senderId: nil, savedId: nil, resaleAmount: nil, canTransferDate: nil, canResaleDate: nil, dropOriginalDetailsStars: nil, assigned: false, fromOffer: false))]
                     let message = Message(stableId: 0, stableVersion: 0, id: MessageId(peerId: self.context.account.peerId, namespace: Namespaces.Message.Cloud, id: -1), globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: nil, timestamp: 0, flags: [], tags: [], globalTags: [], localTags: [], customTags: [], forwardInfo: nil, author: nil, text: "", attributes: [], media: media, peers: SimpleDictionary(), associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: nil, associatedStories: [:])
                     messages = .single([message])
                 } else {
@@ -5106,8 +5109,65 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             }
             controller.push(locationController)
         }
-        
+                
         func presentAudioPicker() {
+            guard let controller = self.controller else {
+                return
+            }
+            
+            let audioController = storyAudioPickerController(
+                context: self.context,
+                selectFromFiles: { [weak self] in
+                    self?.presentAudioFilePicker()
+                },
+                dismissed: { [weak self] in
+                    if let self {
+                        self.mediaEditor?.play()
+                    }
+                },
+                completion: { [weak self] file in
+                    guard let self else {
+                        return
+                    }
+                    let _ = (fetchMediaData(
+                        context: self.context,
+                        postbox: self.context.account.postbox,
+                        userLocation: .other,
+                        mediaReference: file
+                    ) |> deliverOnMainQueue).start(next: { [weak self] state, _ in
+                        guard let self else {
+                            return
+                        }
+                        if case let .data(data) = state {
+                            let path = data.path
+                            
+                            try? FileManager.default.createDirectory(atPath: draftPath(engine: self.context.engine), withIntermediateDirectories: true)
+                            
+                            var originalFileName: String = "audio_\(Int.random(in: 0 ..< .max)).mp3"
+                            if let file = file.media as? TelegramMediaFile {
+                                originalFileName = file.fileName ?? "\(file.fileId.id).mp3"
+                            }
+                            
+                            let fileName = "audio_\(originalFileName)"
+                            let copyPath = fullDraftPath(peerId: self.context.account.peerId, path: fileName)
+                            
+                            try? FileManager.default.removeItem(atPath: copyPath)
+                            do {
+                                try FileManager.default.copyItem(atPath: path, toPath: copyPath)
+                            } catch let e {
+                                Logger.shared.log("MediaEditor", "copy file error \(e)")
+                                return
+                            }
+                            
+                            self.insertAudio(path: copyPath, fileName: fileName)
+                        }
+                    })
+                }
+            )
+            controller.push(audioController)
+        }
+        
+        func presentAudioFilePicker() {
             var isSettingTrack = false
             self.controller?.present(legacyICloudFilePicker(theme: self.presentationData.theme, mode: .import, documentTypes: ["public.mp3", "public.mpeg-4-audio", "public.aac-audio", "org.xiph.flac"], forceDarkTheme: true, dismissed: { [weak self] in
                 if let self {
@@ -5118,7 +5178,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                 }
             }, completion: { [weak self] urls in
-                guard let self, let mediaEditor = self.mediaEditor, !urls.isEmpty, let url = urls.first else {
+                guard let self, !urls.isEmpty, let url = urls.first else {
                     return
                 }
                 isSettingTrack = true
@@ -5131,7 +5191,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                 let coordinator = NSFileCoordinator(filePresenter: nil)
                 var error: NSError?
                 coordinator.coordinate(readingItemAt: url, options: .forUploading, error: &error, byAccessor: { sourceUrl in
-                    let fileName =  "audio_\(sourceUrl.lastPathComponent)"
+                    let fileName = "audio_\(sourceUrl.lastPathComponent)"
                     let copyPath = fullDraftPath(peerId: self.context.account.peerId, path: fileName)
                     
                     try? FileManager.default.removeItem(atPath: copyPath)
@@ -5146,92 +5206,9 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     }
                     
                     Queue.mainQueue().async {
-                        let audioAsset = AVURLAsset(url: URL(fileURLWithPath: copyPath))
-                        
-                        func loadValues(asset: AVAsset, retryCount: Int, completion: @escaping () -> Void) {
-                            asset.loadValuesAsynchronously(forKeys: ["tracks", "duration"], completionHandler: {
-                                if asset.statusOfValue(forKey: "tracks", error: nil) == .loading {
-                                    if retryCount < 2 {
-                                        Queue.mainQueue().after(0.1, {
-                                            loadValues(asset: asset, retryCount: retryCount + 1, completion: completion)
-                                        })
-                                    } else {
-                                        completion()
-                                    }
-                                } else {
-                                    completion()
-                                }
-                            })
-                        }
-                        
-                        loadValues(asset: audioAsset, retryCount: 0, completion: {
-                            var audioDuration: Double = 0.0
-                            guard let track = audioAsset.tracks(withMediaType: .audio).first else {
-                                Logger.shared.log("MediaEditor", "track is nil")
-                                if isScopedResource {
-                                    url.stopAccessingSecurityScopedResource()
-                                }
-                                return
-                            }
-                            
-                            audioDuration = track.timeRange.duration.seconds
-                            if audioDuration.isZero {
-                                Logger.shared.log("MediaEditor", "duration is zero")
-                                if isScopedResource {
-                                    url.stopAccessingSecurityScopedResource()
-                                }
-                                return
-                            }
-                            
-                            func maybeFixMisencodedText(_ text: String) -> String {
-                                let charactersToSearchFor = CharacterSet(charactersIn: "àåèîóûþÿ")
-                                if text.lowercased().rangeOfCharacter(from: charactersToSearchFor) != nil {
-                                    if let data = text.data(using: .windowsCP1252), let string = String(data: data, encoding: .windowsCP1251) {
-                                        return string
-                                    } else {
-                                        return text
-                                    }
-                                } else {
-                                    return text
-                                }
-                            }
-                            
-                            var artist: String?
-                            var title: String?
-                            for data in audioAsset.commonMetadata {
-                                if data.commonKey == .commonKeyArtist, let value = data.stringValue {
-                                    artist = maybeFixMisencodedText(value)
-                                }
-                                if data.commonKey == .commonKeyTitle, let value = data.stringValue {
-                                    title = maybeFixMisencodedText(value)
-                                }
-                            }
-                            
-                            Queue.mainQueue().async {
-                                var audioTrimRange: Range<Double>?
-                                var audioOffset: Double?
-                                
-                                if let videoDuration = mediaEditor.originalCappedDuration {
-                                    if let videoStart = mediaEditor.values.videoTrimRange?.lowerBound {
-                                        audioOffset = -videoStart
-                                    } else if let _ = mediaEditor.values.additionalVideoPath, let videoStart = mediaEditor.values.additionalVideoTrimRange?.lowerBound {
-                                        audioOffset = -videoStart
-                                    }
-                                    audioTrimRange = 0 ..< min(videoDuration, audioDuration)
-                                } else {
-                                    audioTrimRange = 0 ..< min(15, audioDuration)
-                                }
-                                
-                                mediaEditor.setAudioTrack(MediaAudioTrack(path: fileName, artist: artist, title: title, duration: audioDuration), trimRange: audioTrimRange, offset: audioOffset)
-
-                                mediaEditor.seek(mediaEditor.values.videoTrimRange?.lowerBound ?? 0.0, andPlay: true)
-                                
-                                self.requestUpdate(transition: .easeInOut(duration: 0.2))
-                                if isScopedResource {
-                                    url.stopAccessingSecurityScopedResource()
-                                }
-                                
-                                mediaEditor.play()
+                        self.insertAudio(path: copyPath, fileName: fileName, dispose: {
+                            if isScopedResource {
+                                url.stopAccessingSecurityScopedResource()
                             }
                         })
                     }
@@ -5241,6 +5218,94 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     Logger.shared.log("MediaEditor", "coordinator error \(error)")
                 }
             }), in: .window(.root))
+        }
+        
+        private func insertAudio(path: String, fileName: String, dispose: (() -> Void)? = nil) {
+            guard let mediaEditor = self.mediaEditor else {
+                return
+            }
+            let audioAsset = AVURLAsset(url: URL(fileURLWithPath: path))
+            
+            func loadValues(asset: AVAsset, retryCount: Int, completion: @escaping () -> Void) {
+                asset.loadValuesAsynchronously(forKeys: ["tracks", "duration"], completionHandler: {
+                    if asset.statusOfValue(forKey: "tracks", error: nil) == .loading {
+                        if retryCount < 2 {
+                            Queue.mainQueue().after(0.1, {
+                                loadValues(asset: asset, retryCount: retryCount + 1, completion: completion)
+                            })
+                        } else {
+                            completion()
+                        }
+                    } else {
+                        completion()
+                    }
+                })
+            }
+            
+            loadValues(asset: audioAsset, retryCount: 0, completion: {
+                var audioDuration: Double = 0.0
+                guard let track = audioAsset.tracks(withMediaType: .audio).first else {
+                    Logger.shared.log("MediaEditor", "track is nil")
+                    dispose?()
+                    return
+                }
+                
+                audioDuration = track.timeRange.duration.seconds
+                if audioDuration.isZero {
+                    Logger.shared.log("MediaEditor", "duration is zero")
+                    dispose?()
+                    return
+                }
+                
+                func maybeFixMisencodedText(_ text: String) -> String {
+                    let charactersToSearchFor = CharacterSet(charactersIn: "àåèîóûþÿ")
+                    if text.lowercased().rangeOfCharacter(from: charactersToSearchFor) != nil {
+                        if let data = text.data(using: .windowsCP1252), let string = String(data: data, encoding: .windowsCP1251) {
+                            return string
+                        } else {
+                            return text
+                        }
+                    } else {
+                        return text
+                    }
+                }
+                
+                var artist: String?
+                var title: String?
+                for data in audioAsset.commonMetadata {
+                    if data.commonKey == .commonKeyArtist, let value = data.stringValue {
+                        artist = maybeFixMisencodedText(value)
+                    }
+                    if data.commonKey == .commonKeyTitle, let value = data.stringValue {
+                        title = maybeFixMisencodedText(value)
+                    }
+                }
+                
+                Queue.mainQueue().async {
+                    var audioTrimRange: Range<Double>?
+                    var audioOffset: Double?
+                    
+                    if let videoDuration = mediaEditor.originalCappedDuration {
+                        if let videoStart = mediaEditor.values.videoTrimRange?.lowerBound {
+                            audioOffset = -videoStart
+                        } else if let _ = mediaEditor.values.additionalVideoPath, let videoStart = mediaEditor.values.additionalVideoTrimRange?.lowerBound {
+                            audioOffset = -videoStart
+                        }
+                        audioTrimRange = 0 ..< min(videoDuration, audioDuration)
+                    } else {
+                        audioTrimRange = 0 ..< min(15, audioDuration)
+                    }
+                    
+                    mediaEditor.setAudioTrack(MediaAudioTrack(path: fileName, artist: artist, title: title, duration: audioDuration), trimRange: audioTrimRange, offset: audioOffset)
+
+                    mediaEditor.seek(mediaEditor.values.videoTrimRange?.lowerBound ?? 0.0, andPlay: true)
+                    
+                    self.requestUpdate(transition: .easeInOut(duration: 0.2))
+                    dispose?()
+                    
+                    mediaEditor.play()
+                }
+            })
         }
         
         func presentVideoRemoveConfirmation() {
@@ -7640,7 +7705,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         }
         let imagesReady = ValuePromise<Bool>(false, ignoreRepeated: true)
         Queue.concurrentDefaultQueue().async {
-            if !isVideo, let data = try? WebP.convert(toWebP: image, quality: 97.0) {
+            if !isVideo, let data = try? WebP.convert(toWebP: image, quality: 90.0) {
                 self.context.account.postbox.mediaBox.storeResourceData(isVideo ? thumbnailResource.id : resource.id, data: data, synchronous: true)
             }
             if let thumbnailImage = generateScaledImage(image: image, size: CGSize(width: 320.0, height: 320.0), opaque: false, scale: 1.0), let data = try? WebP.convert(toWebP: thumbnailImage, quality: 90.0) {

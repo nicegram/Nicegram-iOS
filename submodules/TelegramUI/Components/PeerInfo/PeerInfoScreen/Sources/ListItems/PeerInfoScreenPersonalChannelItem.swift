@@ -372,7 +372,7 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
             }
             
             if isExtracted {
-                strongSelf.extractedBackgroundImageNode.image = generateStretchableFilledCircleImage(diameter: 28.0, color: theme.list.plainBackgroundColor)
+                strongSelf.extractedBackgroundImageNode.image = generateStretchableFilledCircleImage(diameter: 52.0, color: theme.list.plainBackgroundColor)
             }
             
             if let extractedRect = strongSelf.extractedRect, let nonExtractedRect = strongSelf.nonExtractedRect {
@@ -621,7 +621,7 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
             interaction: chatListNodeInteraction
         )
         var itemNode: ListViewItemNode?
-        let params = ListViewItemLayoutParams(width: width - safeInsets.left - safeInsets.right, leftInset: 0.0, rightInset: 0.0, availableHeight: 1000.0)
+        let params = ListViewItemLayoutParams(width: width - safeInsets.left - safeInsets.right - 4.0, leftInset: 0.0, rightInset: 0.0, availableHeight: 1000.0)
         if let current = self.itemNode {
             itemNode = current
             chatListItem.updateNode(
@@ -657,7 +657,7 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
             itemNode = outItemNode
         }
         
-        let height = itemNode?.contentSize.height ?? 50.0
+        var height = itemNode?.contentSize.height ?? 50.0
         
         if self.itemNode !== itemNode {
             self.itemNode?.removeFromSupernode()
@@ -668,7 +668,7 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
                 self.contextSourceNode.contentNode.addSubnode(itemNode)
             }
         }
-        let itemFrame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
+        let itemFrame = CGRect(origin: CGPoint(x: safeInsets.left, y: 4.0), size: CGSize(width: width - safeInsets.left - safeInsets.right - 4.0, height: height))
         if let itemNode = self.itemNode {
             itemNode.frame = itemFrame
         }
@@ -697,6 +697,8 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
             }
         }
         
+        height += 8.0
+        
         let highlightNodeOffset: CGFloat = topItem == nil ? 0.0 : UIScreenPixel
         self.selectionNode.update(size: CGSize(width: width, height: height + highlightNodeOffset), theme: presentationData.theme, transition: transition)
         transition.updateFrame(node: self.selectionNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -highlightNodeOffset), size: CGSize(width: width, height: height + highlightNodeOffset)))
@@ -708,7 +710,7 @@ private final class PeerInfoScreenPersonalChannelItemNode: PeerInfoScreenItemNod
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         

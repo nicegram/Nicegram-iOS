@@ -21,7 +21,6 @@ import UndoUI
 import AlertUI
 import PresentationDataUtils
 import DirectionalPanGesture
-import PeerInfoUI
 import AvatarNode
 import TooltipUI
 import LegacyUI

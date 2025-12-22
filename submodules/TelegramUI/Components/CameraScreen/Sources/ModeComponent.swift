@@ -4,6 +4,7 @@ import Display
 import ComponentFlow
 import MultilineTextComponent
 import TelegramPresentationData
+import GlassBackgroundComponent
 
 extension CameraMode {
     func title(strings: PresentationStrings) -> String {
@@ -12,11 +13,14 @@ extension CameraMode {
             return strings.Story_Camera_Photo
         case .video:
             return strings.Story_Camera_Video
+        case .live:
+            return strings.Story_Camera_Live
         }
     }
 }
 
-private let buttonSize = CGSize(width: 55.0, height: 44.0)
+private let buttonSize = CGSize(width: 55.0, height: 48.0)
+private let tabletButtonSize = CGSize(width: 55.0, height: 44.0)
 
 final class ModeComponent: Component {
     let isTablet: Bool
@@ -88,22 +92,30 @@ final class ModeComponent: Component {
                 self.pressed()
             }
             
-            func update(value: String, selected: Bool, tintColor: UIColor) {
+            func update(isTablet: Bool, value: String, selected: Bool, tintColor: UIColor) -> CGSize {
                 let accentColor: UIColor
                 let normalColor: UIColor
                 if tintColor.rgb == 0xffffff {
-                    accentColor = UIColor(rgb: 0xf8d74a)
+                    accentColor = UIColor(rgb: 0xffd300)
                     normalColor = .white
                 } else {
                     accentColor = tintColor
                     normalColor = tintColor.withAlphaComponent(0.5)
                 }
-                self.setAttributedTitle(NSAttributedString(string: value.uppercased(), font: Font.with(size: 14.0, design: .camera, weight: .semibold), textColor: selected ? accentColor : normalColor, paragraphAlignment: .center), for: .normal)
+                
+                let title = NSMutableAttributedString(string: value.uppercased(), font: Font.with(size: 14.0, design: .regular, weight: .medium), textColor: selected ? accentColor : normalColor, paragraphAlignment: .center)
+                title.addAttribute(.kern, value: -0.5 as NSNumber, range: NSMakeRange(0, title.length))
+                self.setAttributedTitle(title, for: .normal)
+                self.sizeToFit()
+                
+                return CGSize(width: self.titleLabel?.bounds.size.width ?? 0.0, height: isTablet ? tabletButtonSize.height : buttonSize.height)
             }
         }
         
-        private var containerView = UIView()
-        private var itemViews: [ItemView] = []
+        private var backgroundView = UIView()
+        private var glassContainerView = GlassBackgroundContainerView()
+        private var selectionView = GlassBackgroundView()
+        private var itemViews: [Int32: ItemView] = [:]
         
         public func matches(tag: Any) -> Bool {
             if let component = self.component, let componentTag = component.tag {
@@ -118,9 +130,14 @@ final class ModeComponent: Component {
         init() {
             super.init(frame: CGRect())
             
+            self.backgroundView.backgroundColor = UIColor(rgb: 0xffffff, alpha: 0.11)
+            self.backgroundView.layer.cornerRadius = 24.0
+            
             self.layer.allowsGroupOpacity = true
             
-            self.addSubview(self.containerView)
+            self.addSubview(self.backgroundView)
+            self.backgroundView.addSubview(self.glassContainerView)
+            self.glassContainerView.contentView.addSubview(self.selectionView)
         }
 
         required init?(coder aDecoder: NSCoder) {
@@ -131,15 +148,19 @@ final class ModeComponent: Component {
         func animateOutToEditor(transition: ComponentTransition) {
             self.animatedOut = true
             
-            transition.setAlpha(view: self.containerView, alpha: 0.0)
-            transition.setSublayerTransform(view: self.containerView, transform: CATransform3DMakeTranslation(0.0, -buttonSize.height, 0.0))
+            transition.setAlpha(view: self.backgroundView, alpha: 0.0)
+            transition.setSublayerTransform(view: self, transform: CATransform3DMakeTranslation(0.0, -buttonSize.height, 0.0))
         }
         
         func animateInFromEditor(transition: ComponentTransition) {
             self.animatedOut = false
             
-            transition.setAlpha(view: self.containerView, alpha: 1.0)
-            transition.setSublayerTransform(view: self.containerView, transform: CATransform3DIdentity)
+            transition.setAlpha(view: self.backgroundView, alpha: 1.0)
+            transition.setSublayerTransform(view: self, transform: CATransform3DIdentity)
+        }
+        
+        override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+            return self.backgroundView.frame.contains(point)
         }
                 
         func update(component: ModeComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
@@ -147,57 +168,92 @@ final class ModeComponent: Component {
         
             let isTablet = component.isTablet
             let updatedMode = component.updatedMode
+            
+            self.glassContainerView.isHidden = component.isTablet
+            self.backgroundView.backgroundColor = component.isTablet ? .clear : UIColor(rgb: 0xffffff, alpha: 0.11)
         
-            let spacing: CGFloat = isTablet ? 9.0 : 14.0
+            let inset: CGFloat = 23.0
+            let spacing: CGFloat = isTablet ? 9.0 : 40.0
       
             var i = 0
-            var itemFrame = CGRect(origin: .zero, size: buttonSize)
+            var itemFrame = CGRect(origin: isTablet ? .zero : CGPoint(x: inset, y: 0.0), size: buttonSize)
             var selectedCenter = itemFrame.minX
+            var selectedFrame = itemFrame
             
-            for mode in component.availableModes {
+            var validKeys: Set<Int32> = Set()
+            for mode in component.availableModes.reversed() {
+                let id = mode.rawValue
+                validKeys.insert(id)
+                
                 let itemView: ItemView
-                if self.itemViews.count == i {
-                    itemView = ItemView()
-                    self.containerView.addSubview(itemView)
-                    self.itemViews.append(itemView)
+                if let current = self.itemViews[id] {
+                    itemView = current
                 } else {
-                    itemView = self.itemViews[i]
+                    itemView = ItemView()
+                    self.backgroundView.addSubview(itemView)
+                    self.itemViews[id] = itemView
                 }
                 itemView.pressed = {
                     updatedMode(mode)
                 }
                
-                itemView.update(value: mode.title(strings: component.strings), selected: mode == component.currentMode, tintColor: component.tintColor)
-                itemView.bounds = CGRect(origin: .zero, size: itemFrame.size)
+                let itemSize = itemView.update(isTablet: component.isTablet, value: mode.title(strings: component.strings), selected: mode == component.currentMode, tintColor: component.tintColor)
+                itemView.bounds = CGRect(origin: .zero, size: itemSize)
+                itemFrame = CGRect(origin: itemFrame.origin, size: itemSize)
+                
+                if mode == component.currentMode {
+                    selectedFrame = itemFrame
+                }
                 
                 if isTablet {
                     itemView.center = CGPoint(x: availableSize.width / 2.0, y: itemFrame.midY)
                     if mode == component.currentMode {
                         selectedCenter = itemFrame.midY
                     }
-                    itemFrame = itemFrame.offsetBy(dx: 0.0, dy: buttonSize.height + spacing)
+                    itemFrame = itemFrame.offsetBy(dx: 0.0, dy: tabletButtonSize.height + spacing)
                 } else {
                     itemView.center = CGPoint(x: itemFrame.midX, y: itemFrame.midY)
                     if mode == component.currentMode {
                         selectedCenter = itemFrame.midX
                     }
-                    itemFrame = itemFrame.offsetBy(dx: buttonSize.width + spacing, dy: 0.0)
+                    itemFrame = itemFrame.offsetBy(dx: itemFrame.width + spacing, dy: 0.0)
                 }
-                                
                 i += 1
+            }
+            
+            var removeKeys: [Int32] = []
+            for (id, itemView) in self.itemViews {
+                if !validKeys.contains(id) {
+                    removeKeys.append(id)
+                    
+                    transition.setAlpha(view: itemView, alpha: 0.0, completion: { _ in
+                        itemView.removeFromSuperview()
+                    })
+                }
+            }
+            for id in removeKeys {
+                self.itemViews.removeValue(forKey: id)
             }
             
             let totalSize: CGSize
             let size: CGSize
             if isTablet {
-                totalSize = CGSize(width: availableSize.width, height: buttonSize.height * CGFloat(component.availableModes.count) + spacing * CGFloat(component.availableModes.count - 1))
+                totalSize = CGSize(width: availableSize.width, height: tabletButtonSize.height * CGFloat(component.availableModes.count) + spacing * CGFloat(component.availableModes.count - 1))
                 size = CGSize(width: availableSize.width, height: availableSize.height)
-                transition.setFrame(view: self.containerView, frame: CGRect(origin: CGPoint(x: 0.0, y: availableSize.height / 2.0 - selectedCenter), size: totalSize))
+                transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: 0.0, y: availableSize.height / 2.0 - selectedCenter), size: totalSize))
             } else {
                 size = CGSize(width: availableSize.width, height: buttonSize.height)
-                totalSize = CGSize(width: buttonSize.width * CGFloat(component.availableModes.count) + spacing * CGFloat(component.availableModes.count - 1), height: buttonSize.height)
-                transition.setFrame(view: self.containerView, frame: CGRect(origin: CGPoint(x: availableSize.width / 2.0 - selectedCenter, y: 0.0), size: totalSize))
+                totalSize = CGSize(width: itemFrame.minX - spacing + inset, height: buttonSize.height)
+                transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - totalSize.width) / 2.0), y: 0.0), size: totalSize))
             }
+            
+            let containerFrame = CGRect(origin: .zero, size: self.backgroundView.frame.size)
+            transition.setFrame(view: self.glassContainerView, frame: containerFrame)
+            
+            let selectionFrame = selectedFrame.insetBy(dx: -20.0, dy: 3.0)
+            self.glassContainerView.update(size: containerFrame.size, isDark: true, transition: .immediate)
+            self.selectionView.update(size: selectionFrame.size, cornerRadius: selectionFrame.height * 0.5, isDark: true, tintColor: .init(kind: .custom, color: UIColor(rgb: 0xffffff, alpha: 0.16)), transition: transition)
+            transition.setFrame(view: self.selectionView, frame: selectionFrame)
             
             return size
         }
@@ -284,7 +340,7 @@ final class HintLabelComponent: Component {
                 
                 view.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - textSize.width) / 2.0), y: 0.0), size: textSize)
             }
-            
+                        
             return CGSize(width: availableSize.width, height: textSize.height)
         }
     }

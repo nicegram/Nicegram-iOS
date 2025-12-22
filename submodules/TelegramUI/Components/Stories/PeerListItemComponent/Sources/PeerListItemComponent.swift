@@ -464,6 +464,7 @@ public final class PeerListItemComponent: Component {
         private var isExtractedToContextMenu: Bool = false
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
+        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public private(set) var separatorInset: CGFloat = 0.0
         
         override init(frame: CGRect) {
@@ -940,7 +941,8 @@ public final class PeerListItemComponent: Component {
                         return AvatarNode.StoryStats(
                             totalCount: storyStats.totalCount == 0 ? 0 : 1,
                             unseenCount: storyStats.unseenCount == 0 ? 0 : 1,
-                            hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriends
+                            hasUnseenCloseFriendsItems: storyStats.hasUnseenCloseFriends,
+                            hasLiveItems: storyStats.hasLiveItems
                         )
                     }, presentationParams: AvatarNode.StoryPresentationParams(
                         colors: AvatarNode.Colors(theme: component.theme),

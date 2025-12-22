@@ -114,7 +114,7 @@ final class StarsOverviewItemComponent: Component {
                 transition: .immediate,
                 component: AnyComponent(
                     MultilineTextComponent(
-                        text: .plain(NSAttributedString(string: "≈\(usdValueString)", font: Font.regular(13.0), textColor: component.theme.list.itemSecondaryTextColor))
+                        text: .plain(NSAttributedString(string: "~\(usdValueString)", font: Font.regular(13.0), textColor: component.theme.list.itemSecondaryTextColor))
                     )
                 ),
                 environment: {},

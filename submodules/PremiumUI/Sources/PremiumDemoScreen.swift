@@ -17,6 +17,7 @@ import SolidRoundedButtonComponent
 import BlurredBackgroundComponent
 import Markdown
 import TelegramUIPreferences
+import GlassBarButtonComponent
 
 public final class PremiumGradientBackgroundComponent: Component {
     public let colors: [UIColor]
@@ -154,7 +155,7 @@ public final class PremiumGradientBackgroundComponent: Component {
     }
 }
 
-final class DemoPageEnvironment: Equatable {
+public final class DemoPageEnvironment: Equatable {
     public let isDisplaying: Bool
     public let isCentral: Bool
     public let position: CGFloat
@@ -519,7 +520,6 @@ private final class DemoSheetContent: CombinedComponent {
     
     final class State: ComponentState {
         private let context: AccountContext
-        var cachedCloseImage: UIImage?
         
         var isPremium: Bool?
         var reactions: [AvailableReactions.Reaction]?
@@ -682,7 +682,7 @@ private final class DemoSheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let background = Child(PremiumGradientBackgroundComponent.self)
         let pager = Child(DemoPagerComponent.self)
         let button = Child(SolidRoundedButtonComponent.self)
@@ -695,9 +695,7 @@ private final class DemoSheetContent: CombinedComponent {
             let strings = environment.strings
             
             let state = context.state
-            
-            let sideInset: CGFloat = 16.0 + environment.safeInsets.left
-                    
+                                
             let background = background.update(
                 component: PremiumGradientBackgroundComponent(colors: [
                     UIColor(rgb: 0x0077ff),
@@ -711,15 +709,7 @@ private final class DemoSheetContent: CombinedComponent {
             context.add(background
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
             )
-            
-            let closeImage: UIImage
-            if let image = state.cachedCloseImage {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: .clear, foregroundColor: UIColor(rgb: 0xffffff))!
-                state.cachedCloseImage = closeImage
-            }
-            
+                        
             var isStandalone = false
             if case .other = component.source {
                 isStandalone = true
@@ -1140,38 +1130,30 @@ private final class DemoSheetContent: CombinedComponent {
                     .position(CGPoint(x: context.availableSize.width / 2.0, y: pager.size.height / 2.0))
                 )
             }
-                        
+            
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(ZStack([
-                        AnyComponentWithIdentity(
-                            id: "background",
-                            component: AnyComponent(
-                                BlurredBackgroundComponent(
-                                    color: UIColor(rgb: 0x888888, alpha: 0.1)
-                                )
-                            )
-                        ),
-                        AnyComponentWithIdentity(
-                            id: "icon",
-                            component: AnyComponent(
-                                Image(image: closeImage)
-                            )
-                        ),
-                    ])),
-                    action: { [weak component] in
-                        component?.dismiss()
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 40.0, height: 40.0),
+                    backgroundColor: UIColor(rgb: 0x7f76f4),
+                    isDark: false,
+                    state: .tintedGlass,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: .white
+                        )
+                    )),
+                    action: { _ in
+                        component.dismiss()
                     }
                 ),
-                availableSize: CGSize(width: 30.0, height: 30.0),
+                availableSize: CGSize(width: 40.0, height: 40.0),
                 transition: .immediate
             )
             context.add(closeButton
-                .position(CGPoint(x: context.availableSize.width - environment.safeInsets.left - closeButton.size.width, y: 28.0))
-                .clipsToBounds(true)
-                .cornerRadius(15.0)
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
-                         
+                                                 
             var measuredTextHeight: CGFloat?
             var text: String
             switch component.subject {
@@ -1309,6 +1291,7 @@ private final class DemoSheetContent: CombinedComponent {
                 }
             }
             
+            let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let button = button.update(
                 component: SolidRoundedButtonComponent(
                     title: buttonText,
@@ -1324,9 +1307,10 @@ private final class DemoSheetContent: CombinedComponent {
                     ),
                     font: .bold,
                     fontSize: 17.0,
-                    height: 50.0,
-                    cornerRadius: 11.0,
+                    height: 52.0,
+                    cornerRadius: 26.0,
                     gloss: state.isPremium != true,
+                    glass: true,
                     animationName: isStandalone ? buttonAnimationName : nil,
                     iconPosition: .right,
                     iconSpacing: 4.0,
@@ -1340,7 +1324,7 @@ private final class DemoSheetContent: CombinedComponent {
                         }
                     }
                 ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                availableSize: CGSize(width: context.availableSize.width - bottomInsets.left - bottomInsets.right, height: 52.0),
                 transition: context.transition
             )
         
@@ -1358,19 +1342,12 @@ private final class DemoSheetContent: CombinedComponent {
                 }
             }
               
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight + 20.0), size: button.size)
+            let buttonFrame = CGRect(origin: CGPoint(x: bottomInsets.left, y: contentHeight + 20.0), size: button.size)
             context.add(button
                 .position(CGPoint(x: buttonFrame.midX, y: buttonFrame.midY))
             )
-        
-            let bottomPanelPadding: CGFloat = 12.0
-            let bottomInset: CGFloat
-            if case .regular = environment.metrics.widthClass {
-                bottomInset = bottomPanelPadding
-            } else {
-                bottomInset = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom + 5.0 : bottomPanelPadding
-            }
-            return CGSize(width: context.availableSize.width, height: buttonFrame.maxY + bottomInset)
+            
+            return CGSize(width: context.availableSize.width, height: buttonFrame.maxY + bottomInsets.bottom)
         }
     }
 }
@@ -1428,6 +1405,7 @@ private final class DemoSheetComponent: CombinedComponent {
                             })
                         }
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: context.component.source == .other,
                     animateOut: animateOut

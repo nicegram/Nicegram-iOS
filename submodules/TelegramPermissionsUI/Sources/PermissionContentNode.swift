@@ -107,7 +107,7 @@ public final class PermissionContentNode: ASDisplayNode {
         self.textNode.displaysAsynchronously = false
         self.textNode.isAccessibilityElement = true
         
-        self.actionButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), height: 52.0, cornerRadius: 9.0, gloss: true)
+        self.actionButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(theme: theme), height: 52.0, cornerRadius: 9.0, isShimmering: true)
         
         self.footerNode = ImmediateTextNode()
         self.footerNode.textAlignment = .center

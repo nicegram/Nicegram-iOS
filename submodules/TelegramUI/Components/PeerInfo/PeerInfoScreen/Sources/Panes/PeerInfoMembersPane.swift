@@ -183,7 +183,8 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
                         return (
                             total: storyStats.totalCount,
                             unseen: storyStats.unseenCount,
-                            hasUnseenCloseFriends: storyStats.hasUnseenCloseFriends
+                            hasUnseenCloseFriends: storyStats.hasUnseenCloseFriends,
+                            hasLiveItems: storyStats.hasLiveItems
                         )
                     },
                     openStories: { _, sourceNode in

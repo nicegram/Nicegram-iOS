@@ -90,7 +90,7 @@ private final class WindowRootViewControllerView: UIView {
     }
 }
 
-private final class WindowRootViewController: UIViewController {
+private final class WindowRootViewController: UIViewController, UIWindowSceneDelegate {
     private var voiceOverStatusObserver: AnyObject?
     private var registeredForPreviewing = false
     
@@ -183,7 +183,7 @@ private final class WindowRootViewController: UIViewController {
     
     init() {
         super.init(nibName: nil, bundle: nil)
-        
+                
         self.extendedLayoutIncludesOpaqueBars = true
         
         self.voiceOverStatusObserver = NotificationCenter.default.addObserver(forName: UIAccessibility.voiceOverStatusDidChangeNotification, object: nil, queue: OperationQueue.main, using: { _ in
@@ -193,6 +193,10 @@ private final class WindowRootViewController: UIViewController {
             self._systemUserInterfaceStyle.set(WindowUserInterfaceStyle(style: self.traitCollection.userInterfaceStyle))
         } else {
             self._systemUserInterfaceStyle.set(.light)
+        }
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            windowScene.delegate = self
         }
     }
     
@@ -204,6 +208,11 @@ private final class WindowRootViewController: UIViewController {
         if let voiceOverStatusObserver = self.voiceOverStatusObserver {
             NotificationCenter.default.removeObserver(voiceOverStatusObserver)
         }
+    }
+    
+    @available(iOS 26.0, *)
+    func preferredWindowingControlStyle(for windowScene: UIWindowScene) -> UIWindowScene.WindowingControlStyle {
+        return .minimal
     }
     
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {

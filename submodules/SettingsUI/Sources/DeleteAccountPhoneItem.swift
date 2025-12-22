@@ -75,7 +75,7 @@ private func generatePhoneInputBackground(color: UIColor, strokeColor: UIColor) 
 }
 
 
-class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
+final class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
     let strings: PresentationStrings
     let value: (Int32?, String?, String)
@@ -83,7 +83,7 @@ class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
     let selectCountryCode: () -> Void
     let updated: (Int) -> Void
     
-    init(theme: PresentationTheme, strings: PresentationStrings, value: (Int32?, String?, String), sectionId: ItemListSectionId, selectCountryCode: @escaping () -> Void, updated: @escaping (Int) -> Void) {
+    public init(theme: PresentationTheme, strings: PresentationStrings, value: (Int32?, String?, String), sectionId: ItemListSectionId, selectCountryCode: @escaping () -> Void, updated: @escaping (Int) -> Void) {
         self.theme = theme
         self.strings = strings
         self.value = value
@@ -126,7 +126,7 @@ class DeleteAccountPhoneItem: ListViewItem, ItemListItem {
     }
 }
 
-class DeleteAccountPhoneItemNode: ListViewItemNode, ItemListItemNode {
+final class DeleteAccountPhoneItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode

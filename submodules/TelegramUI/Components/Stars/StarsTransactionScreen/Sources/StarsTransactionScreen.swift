@@ -14,7 +14,7 @@ import SheetComponent
 import MultilineTextComponent
 import MultilineTextWithEntitiesComponent
 import BundleIconComponent
-import SolidRoundedButtonComponent
+import ButtonComponent
 import Markdown
 import BalancedTextComponent
 import AvatarNode
@@ -27,6 +27,7 @@ import StarsAvatarComponent
 import MiniAppListScreen
 import PremiumStarComponent
 import GiftAnimationComponent
+import GlassBarButtonComponent
 
 private final class StarsTransactionSheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -86,8 +87,6 @@ private final class StarsTransactionSheetContent: CombinedComponent {
         
         var peerMap: [EnginePeer.Id: EnginePeer] = [:]
         
-        var cachedCloseImage: (UIImage, PresentationTheme)?
-        var cachedOverlayCloseImage: UIImage?
         var cachedChevronImage: (UIImage, PresentationTheme)?
         
         var inProgress = false
@@ -153,7 +152,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
     }
     
     static var body: Body {
-        let closeButton = Child(Button.self)
+        let closeButton = Child(GlassBarButtonComponent.self)
         let title = Child(MultilineTextComponent.self)
         let star = Child(StarsImageComponent.self)
         let activeStar = Child(PremiumStarComponent.self)
@@ -165,8 +164,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
         let table = Child(TableComponent.self)
         let additional = Child(BalancedTextComponent.self)
         let status = Child(BalancedTextComponent.self)
-        let cancelButton = Child(SolidRoundedButtonComponent.self)
-        let button = Child(SolidRoundedButtonComponent.self)
+        let cancelButton = Child(ButtonComponent.self)
+        let button = Child(ButtonComponent.self)
         
         let transactionStatusBackgound = Child(RoundedRectangle.self)
         let transactionStatusText = Child(MultilineTextComponent.self)
@@ -189,23 +188,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             let textSideInset: CGFloat = 32.0 + environment.safeInsets.left
-            
-            let closeImage: UIImage
-            if let (image, theme) = state.cachedCloseImage, theme === environment.theme {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0x808084, alpha: 0.1), foregroundColor: theme.actionSheet.inputClearButtonColor)!
-                state.cachedCloseImage = (closeImage, theme)
-            }
-            
-            let closeOverlayImage: UIImage
-            if let image = state.cachedOverlayCloseImage {
-                closeOverlayImage = image
-            } else {
-                closeOverlayImage = generateCloseButtonImage(backgroundColor: UIColor(rgb: 0xffffff, alpha: 0.1), foregroundColor: .white)!
-                state.cachedOverlayCloseImage = closeOverlayImage
-            }
-                        
+                                    
             let titleText: String
             let amountText: String
             var descriptionText: String
@@ -231,6 +214,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             var photo: TelegramMediaWebFile?
             var transactionStatus: (String, UIColor)? = nil
             var isGift = false
+            var isGiftAuctionBid = false
             var isSubscription = false
             var isSubscriber = false
             var isSubscriptionFee = false
@@ -371,7 +355,12 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 if let starGift = transaction.starGift {
                     switch starGift {
                     case .generic:
-                        titleText = strings.Stars_Transaction_Gift_Title
+                        if transaction.flags.contains(.isStarGiftAuctionBid) {
+                            titleText = strings.Stars_Transaction_GiftAuctionBid
+                            isGiftAuctionBid = true
+                        } else {
+                            titleText = strings.Stars_Transaction_Gift_Title
+                        }
                         descriptionText = ""
                     case let .unique(gift):
                         titleText = gift.title
@@ -435,7 +424,24 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                     isGift = true
                 } else if let starrefCommissionPermille = transaction.starrefCommissionPermille {
                     isRefProgram = true
-                    if transaction.flags.contains(.isPaidMessage) {
+                    if transaction.flags.contains(.isLiveStreamPaidMessage) {
+                        isPaidMessage = true
+                        if transaction.flags.contains(.isReaction) {
+                            titleText = strings.Stars_Transaction_LiveStreamReaction
+                        } else {
+                            titleText = strings.Stars_Transaction_LiveStreamPaidMessage(transaction.paidMessageCount ?? 1)
+                        }
+                        if !transaction.flags.contains(.isRefund) {
+                            countOnTop = true
+                            if transaction.flags.contains(.isReaction) {
+                                descriptionText = strings.Stars_Transaction_LiveStreamReaction_Text(formatPermille(1000 - starrefCommissionPermille)).string
+                            } else {
+                                descriptionText = strings.Stars_Transaction_LiveStreamPaidMessage_Text(formatPermille(1000 - starrefCommissionPermille)).string
+                            }
+                        } else {
+                            descriptionText = ""
+                        }
+                    } else if transaction.flags.contains(.isPaidMessage) {
                         isPaidMessage = true
                         titleText = strings.Stars_Transaction_PaidMessage(transaction.paidMessageCount ?? 1)
                         if !transaction.flags.contains(.isRefund) {
@@ -485,6 +491,13 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         if let months = transaction.premiumGiftMonths {
                             premiumGiftMonths = months
                             titleText = strings.Stars_Transaction_TelegramPremium(months)
+                        } else if transaction.flags.contains(.isLiveStreamPaidMessage) {
+                            isPaidMessage = true
+                            if transaction.flags.contains(.isReaction) {
+                                titleText = strings.Stars_Transaction_LiveStreamReaction
+                            } else {
+                                titleText = strings.Stars_Transaction_LiveStreamPaidMessage(transaction.paidMessageCount ?? 1)
+                            }
                         } else if transaction.flags.contains(.isPaidMessage) {
                             isPaidMessage = true
                             titleText = strings.Stars_Transaction_PaidMessage(transaction.paidMessageCount ?? 1)
@@ -655,15 +668,20 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 descriptionText = modifiedString
             }
             
-            var closeButtonImage = closeImage
-            if case .unique = giftAnimationSubject {
-                closeButtonImage = closeOverlayImage
-            }
             let closeButton = closeButton.update(
-                component: Button(
-                    content: AnyComponent(Image(image: closeButtonImage)),
-                    action: { [weak component] in
-                        component?.cancel(true)
+                component: GlassBarButtonComponent(
+                    size: CGSize(width: 40.0, height: 40.0),
+                    backgroundColor: theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    isDark: theme.overallDarkAppearance,
+                    state: .generic,
+                    component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                        BundleIconComponent(
+                            name: "Navigation/Close",
+                            tintColor: theme.rootController.navigationBar.glassBarButtonForegroundColor
+                        )
+                    )),
+                    action: { _ in
+                        component.cancel(true)
                     }
                 ),
                 availableSize: CGSize(width: 30.0, height: 30.0),
@@ -911,7 +929,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 ))
             }
             
-            if isGift, toPeer == nil {
+            if isGift && !isGiftAuctionBid, toPeer == nil {
                 tableItems.append(.init(
                     id: "from",
                     title: strings.Stars_Transaction_From,
@@ -934,7 +952,7 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                         )
                     )
                 ))
-            } else if let toPeer, !isRefProgram {
+            } else if let toPeer, !isRefProgram && !isGiftAuctionBid {
                 let title: String
                 if isGiftUpgrade {
                     title = strings.Stars_Transaction_GiftFrom
@@ -1615,18 +1633,19 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             
             if let cancelButtonText {
                 let cancelButton = cancelButton.update(
-                    component: SolidRoundedButtonComponent(
-                        title: cancelButtonText,
-                        theme: SolidRoundedButtonComponent.Theme(backgroundColor: .clear, foregroundColor: linkColor),
-                        font: .regular,
-                        fontSize: 17.0,
-                        height: 50.0,
-                        cornerRadius: 10.0,
-                        gloss: false,
-                        iconName: nil,
-                        animationName: nil,
-                        iconPosition: .left,
-                        isLoading: state.inProgress,
+                    component: ButtonComponent(
+                        background: ButtonComponent.Background(
+                            style: .glass,
+                            color: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.1),
+                            foreground: theme.list.itemCheckColors.fillColor,
+                            pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.8),
+                        ),
+                        content: AnyComponentWithIdentity(
+                            id: AnyHashable(0),
+                            component: AnyComponent(MultilineTextComponent(text: .plain(NSMutableAttributedString(string: cancelButtonText, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.fillColor, paragraphAlignment: .center))))
+                        ),
+                        isEnabled: true,
+                        displaysProgress: state.inProgress,
                         action: {
                             component.cancel(true)
                             if isSubscription {
@@ -1634,13 +1653,12 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             }
                         }
                     ),
-                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                    availableSize: CGSize(width: context.availableSize.width - 30.0 * 2.0, height: 52.0),
                     transition: context.transition
                 )
                 
-                let cancelButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: originY), size: cancelButton.size)
                 context.add(cancelButton
-                    .position(CGPoint(x: cancelButtonFrame.midX, y: cancelButtonFrame.midY))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + cancelButton.size.height / 2.0))
                 )
                 originY += cancelButton.size.height
                 originY += 8.0
@@ -1648,18 +1666,19 @@ private final class StarsTransactionSheetContent: CombinedComponent {
             
             if let buttonText {
                 let button = button.update(
-                    component: SolidRoundedButtonComponent(
-                        title: buttonText,
-                        theme: SolidRoundedButtonComponent.Theme(theme: theme),
-                        font: .bold,
-                        fontSize: 17.0,
-                        height: 50.0,
-                        cornerRadius: 10.0,
-                        gloss: false,
-                        iconName: nil,
-                        animationName: nil,
-                        iconPosition: .left,
-                        isLoading: state.inProgress,
+                    component: ButtonComponent(
+                        background: ButtonComponent.Background(
+                            style: .glass,
+                            color: theme.list.itemCheckColors.fillColor,
+                            foreground: theme.list.itemCheckColors.foregroundColor,
+                            pressedColor: theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9),
+                        ),
+                        content: AnyComponentWithIdentity(
+                            id: AnyHashable(0),
+                            component: AnyComponent(MultilineTextComponent(text: .plain(NSMutableAttributedString(string: buttonText, font: Font.semibold(17.0), textColor: theme.list.itemCheckColors.foregroundColor, paragraphAlignment: .center))))
+                        ),
+                        isEnabled: true,
+                        displaysProgress: state.inProgress,
                         action: {
                             component.cancel(true)
                             if isSubscription && cancelButtonText == nil {
@@ -1667,20 +1686,19 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                             }
                         }
                     ),
-                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: 50.0),
+                    availableSize: CGSize(width: context.availableSize.width - 30.0 * 2.0, height: 52.0),
                     transition: context.transition
                 )
                 
-                let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: originY), size: button.size)
                 context.add(button
-                    .position(CGPoint(x: buttonFrame.midX, y: buttonFrame.midY))
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: originY + button.size.height / 2.0))
                 )
                 originY += button.size.height
                 originY += 7.0
             }
             
             context.add(closeButton
-                .position(CGPoint(x: context.availableSize.width - environment.safeInsets.left - closeButton.size.width, y: 28.0))
+                .position(CGPoint(x: 16.0 + closeButton.size.width / 2.0, y: 16.0 + closeButton.size.height / 2.0))
             )
             
             let effectiveBottomInset: CGFloat = environment.metrics.isTablet ? 0.0 : environment.safeInsets.bottom
@@ -1773,6 +1791,7 @@ private final class StarsTransactionSheetComponent: CombinedComponent {
                         updateSubscription: context.component.updateSubscription,
                         sendGift: context.component.sendGift
                     )),
+                    style: .glass,
                     backgroundColor: .color(environment.theme.actionSheet.opaqueItemBackgroundColor),
                     followContentSizeChanges: true,
                     clipsContent: true,
@@ -2177,6 +2196,7 @@ private final class TableComponent: CombinedComponent {
     }
     
     final class State: ComponentState {
+        var cachedLeftColumnImage: (UIImage, PresentationTheme)?
         var cachedBorderImage: (UIImage, PresentationTheme)?
     }
     
@@ -2185,7 +2205,7 @@ private final class TableComponent: CombinedComponent {
     }
 
     public static var body: Body {
-        let leftColumnBackground = Child(Rectangle.self)
+        let leftColumnBackground = Child(Image.self)
         let verticalBorder = Child(Rectangle.self)
         let titleChildren = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
         let valueChildren = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
@@ -2196,9 +2216,11 @@ private final class TableComponent: CombinedComponent {
             let verticalPadding: CGFloat = 11.0
             let horizontalPadding: CGFloat = 12.0
             let borderWidth: CGFloat = 1.0
+            let borderRadius: CGFloat = 14.0
             
             let backgroundColor = context.component.theme.actionSheet.opaqueItemBackgroundColor
             let borderColor = backgroundColor.mixedWith(context.component.theme.list.itemBlocksSeparatorColor, alpha: 0.6)
+            let secondaryBackgroundColor = context.component.theme.overallDarkAppearance ? context.component.theme.list.itemModalBlocksBackgroundColor : context.component.theme.list.itemInputField.backgroundColor
             
             var leftColumnWidth: CGFloat = 0.0
             
@@ -2260,8 +2282,24 @@ private final class TableComponent: CombinedComponent {
                 i += 1
             }
             
+            let leftColumnImage: UIImage
+            if let (currentImage, theme) = context.state.cachedLeftColumnImage, theme === context.component.theme {
+                leftColumnImage = currentImage
+            } else {
+                leftColumnImage = generateImage(CGSize(width: borderRadius * 2.0 + 4.0, height: borderRadius * 2.0 + 4.0), rotatedContext: { size, context in
+                    let bounds = CGRect(origin: .zero, size: CGSize(width: size.width + borderRadius, height: size.height))
+                    context.clear(bounds)
+                    
+                    let path = CGPath(roundedRect: bounds.insetBy(dx: borderWidth / 2.0, dy: borderWidth / 2.0), cornerWidth: borderRadius, cornerHeight: borderRadius, transform: nil)
+                    context.setFillColor(secondaryBackgroundColor.cgColor)
+                    context.addPath(path)
+                    context.fillPath()
+                })!.stretchableImage(withLeftCapWidth: Int(borderRadius), topCapHeight: Int(borderRadius))
+                context.state.cachedLeftColumnImage = (leftColumnImage, context.component.theme)
+            }
+            
             let leftColumnBackground = leftColumnBackground.update(
-                component: Rectangle(color: context.component.theme.list.itemInputField.backgroundColor),
+                component: Image(image: leftColumnImage),
                 availableSize: CGSize(width: leftColumnWidth, height: totalHeight),
                 transition: context.transition
             )
@@ -2274,11 +2312,9 @@ private final class TableComponent: CombinedComponent {
             if let (currentImage, theme) = context.state.cachedBorderImage, theme === context.component.theme {
                 borderImage = currentImage
             } else {
-                let borderRadius: CGFloat = 5.0
-                borderImage = generateImage(CGSize(width: 16.0, height: 16.0), rotatedContext: { size, context in
+                borderImage = generateImage(CGSize(width: borderRadius * 2.0 + 4.0, height: borderRadius * 2.0 + 4.0), rotatedContext: { size, context in
                     let bounds = CGRect(origin: .zero, size: size)
-                    context.setFillColor(backgroundColor.cgColor)
-                    context.fill(bounds)
+                    context.clear(bounds)
                     
                     let path = CGPath(roundedRect: bounds.insetBy(dx: borderWidth / 2.0, dy: borderWidth / 2.0), cornerWidth: borderRadius, cornerHeight: borderRadius, transform: nil)
                     context.setBlendMode(.clear)
@@ -2290,7 +2326,7 @@ private final class TableComponent: CombinedComponent {
                     context.setLineWidth(borderWidth)
                     context.addPath(path)
                     context.strokePath()
-                })!.stretchableImage(withLeftCapWidth: 5, topCapHeight: 5)
+                })!.stretchableImage(withLeftCapWidth: Int(borderRadius), topCapHeight: Int(borderRadius))
                 context.state.cachedBorderImage = (borderImage, context.component.theme)
             }
             
@@ -2404,7 +2440,7 @@ private final class PeerCellComponent: Component {
             let avatarNaturalSize = self.avatar.update(
                 transition: .immediate,
                 component: AnyComponent(
-                    StarsAvatarComponent(context: component.context, theme: component.theme, peer: .transactionPeer(peer), photo: nil, media: [], uniqueGift: nil, backgroundColor: .clear)
+                    StarsAvatarComponent(context: component.context, theme: component.theme, peer: .transactionPeer(peer), photo: nil, media: [], gift: nil, backgroundColor: .clear)
                 ),
                 environment: {},
                 containerSize: CGSize(width: 40.0, height: 40.0)

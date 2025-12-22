@@ -199,29 +199,35 @@ public class ComposeControllerImpl: ViewController, ComposeController {
                 }
                 
                 switch status {
-                    case .allowed:
-                        let contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: "", lastName: "", phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: "+")]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
-                        (strongSelf.navigationController as? NavigationController)?.pushViewController(strongSelf.context.sharedContext.makeDeviceContactInfoController(context: ShareControllerAppAccountContext(context: strongSelf.context), environment: ShareControllerAppEnvironment(sharedContext: strongSelf.context.sharedContext), subject: .create(peer: nil, contactData: contactData, isSharing: false, shareViaException: false, completion: { peer, stableId, contactData in
+                case .allowed:
+                    let controller = strongSelf.context.sharedContext.makeNewContactScreen(
+                        context: strongSelf.context,
+                        peer: nil,
+                        phoneNumber: nil,
+                        shareViaException: false,
+                        completion: { [weak self] peer, stableId, contactData in
                             guard let strongSelf = self else {
                                 return
                             }
                             if let peer = peer {
                                 DispatchQueue.main.async {
                                     if let navigationController = strongSelf.navigationController as? NavigationController {
-                                        strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(EnginePeer(peer))))
+                                        strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(peer)))
                                     }
                                 }
-                            } else {
+                            } else if let stableId, let contactData {
                                 (strongSelf.navigationController as? NavigationController)?.replaceAllButRootController(strongSelf.context.sharedContext.makeDeviceContactInfoController(context: ShareControllerAppAccountContext(context: strongSelf.context), environment: ShareControllerAppEnvironment(sharedContext: strongSelf.context.sharedContext), subject: .vcard(nil, stableId, contactData), completed: nil, cancelled: nil), animated: true)
                             }
-                        }), completed: nil, cancelled: nil))
-                    case .notDetermined:
-                        DeviceAccess.authorizeAccess(to: .contacts)
-                    default:
-                        let presentationData = strongSelf.presentationData
-                        strongSelf.present(textAlertController(context: strongSelf.context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
-                            self?.context.sharedContext.applicationBindings.openSettings()
-                        })]), in: .window(.root))
+                        }
+                    )
+                    (strongSelf.navigationController as? NavigationController)?.pushViewController(controller)
+                case .notDetermined:
+                    DeviceAccess.authorizeAccess(to: .contacts)
+                default:
+                    let presentationData = strongSelf.presentationData
+                    strongSelf.present(textAlertController(context: strongSelf.context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
+                        self?.context.sharedContext.applicationBindings.openSettings()
+                    })]), in: .window(.root))
                 }
             })
         }

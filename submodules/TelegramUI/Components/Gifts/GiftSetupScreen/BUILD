@@ -46,8 +46,12 @@ swift_library(
         "//submodules/InAppPurchaseManager",
         "//submodules/Components/BlurredBackgroundComponent",
         "//submodules/ProgressNavigationButtonNode",
-        "//submodules/TelegramUI/Components/Gifts/GiftViewScreen",
         "//submodules/ConfettiEffect",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/AnimatedTextComponent",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
+        "//submodules/TelegramUI/Components/MessageInputPanelComponent",
+        "//submodules/TelegramUI/Components/Gifts/GiftRemainingCountComponent",
     ],
     visibility = [
         "//visibility:public",

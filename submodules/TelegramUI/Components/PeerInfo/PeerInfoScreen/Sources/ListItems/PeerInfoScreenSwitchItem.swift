@@ -166,9 +166,9 @@ private final class PeerInfoScreenSwitchItemNode: PeerInfoScreenItemNode {
         self.activateArea.accessibilityHint = presentationData.strings.VoiceOver_Common_SwitchHint
         
         let textSize = self.textNode.updateLayout(CGSize(width: width - leftInset - rightInset, height: .greatestFiniteMagnitude))
-        let textFrame = CGRect(origin: CGPoint(x: leftInset, y: 12.0), size: textSize)
+        let textFrame = CGRect(origin: CGPoint(x: leftInset, y: 16.0), size: textSize)
         
-        let height = textSize.height + 24.0
+        let height = textSize.height + 32.0
         
         if let icon = item.icon {
             if self.iconNode.supernode == nil {
@@ -199,7 +199,7 @@ private final class PeerInfoScreenSwitchItemNode: PeerInfoScreenItemNode {
             self.lockedButtonNode?.frame = switchFrame
             
             if let lockedIconNode = self.lockedIconNode, let icon = lockedIconNode.image {
-                lockedIconNode.frame = CGRect(origin: CGPoint(x: switchFrame.minX + 10.0 + UIScreenPixel, y: switchFrame.minY + 9.0), size: icon.size)
+                lockedIconNode.frame = CGRect(origin: CGPoint(x: switchFrame.minX + 16.0 - UIScreenPixel, y: switchFrame.minY + 8.0), size: icon.size)
             }
         }
         
@@ -207,7 +207,7 @@ private final class PeerInfoScreenSwitchItemNode: PeerInfoScreenItemNode {
         let hasTopCorners = hasCorners && topItem == nil
         let hasBottomCorners = hasCorners && bottomItem == nil
         
-        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+        self.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(presentationData.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: true) : nil
         self.maskNode.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         self.bottomSeparatorNode.isHidden = hasBottomCorners
         
@@ -215,7 +215,9 @@ private final class PeerInfoScreenSwitchItemNode: PeerInfoScreenItemNode {
         self.selectionNode.update(size: CGSize(width: width, height: height + highlightNodeOffset), theme: presentationData.theme, transition: transition)
         transition.updateFrame(node: self.selectionNode, frame: CGRect(origin: CGPoint(x: 0.0, y: -highlightNodeOffset), size: CGSize(width: width, height: height + highlightNodeOffset)))
         
-        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: sideInset, y: height - UIScreenPixel), size: CGSize(width: width - sideInset, height: UIScreenPixel)))
+        let separatorRightInset: CGFloat = 16.0
+        
+        transition.updateFrame(node: self.bottomSeparatorNode, frame: CGRect(origin: CGPoint(x: sideInset, y: height - UIScreenPixel), size: CGSize(width: width - sideInset - separatorRightInset, height: UIScreenPixel)))
         transition.updateAlpha(node: self.bottomSeparatorNode, alpha: bottomItem == nil ? 0.0 : 1.0)
         
         self.activateArea.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))

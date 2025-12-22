@@ -196,7 +196,7 @@ private class VoiceChatRecordingSetupControllerNode: ViewControllerTracingNode, 
                 
         self.doneButton = VoiceChatActionButton()
         
-        self.cancelButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(backgroundColor: buttonColor, foregroundColor: buttonTextColor), font: .regular, height: 52.0, cornerRadius: 11.0, gloss: false)
+        self.cancelButton = SolidRoundedButtonNode(theme: SolidRoundedButtonTheme(backgroundColor: buttonColor, foregroundColor: buttonTextColor), font: .regular, height: 52.0, cornerRadius: 11.0)
         self.cancelButton.title = self.presentationData.strings.Common_Cancel
         
         self.modeContainerNode = ASDisplayNode()

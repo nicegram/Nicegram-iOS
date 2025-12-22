@@ -609,8 +609,22 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                     let coefficient: CGFloat = 0.4
                     return bandingStart + (1.0 - (1.0 / ((bandedOffset * coefficient / range) + 1.0))) * range
                 }
+                
+                var hasLiveStream = false
+                if let componentView = self.controller?.chatListHeaderView(), let storyPeerListView = componentView.storyPeerListView(), storyPeerListView.isLiveStreaming {
+                    hasLiveStream = true
+                }
                      
                 if case .compact = layout.metrics.widthClass, self.controller?.isStoryPostingAvailable == true && !(self.context.sharedContext.callManager?.hasActiveCall ?? false) {
+                    if hasLiveStream {
+                        if translation.x >= 30.0 {
+                            self.panRecognizer?.cancel()
+                            
+                            self.controller?.displayContinueLiveStream()
+                        }
+                        return
+                    }
+                    
                     let cameraIsAlreadyOpened = self.controller?.hasStoryCameraTransition ?? false
                     if selectedIndex <= 0 && translation.x > 0.0 {
                         transitionFraction = 0.0

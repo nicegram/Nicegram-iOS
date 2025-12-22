@@ -506,6 +506,10 @@ final class VideoFinishPass: RenderPass {
         let mirroring: Bool
         let baseScale: CGFloat
         
+        func with(position: CGPoint) -> VideoPosition {
+            return VideoPosition(position: position, size: self.size, scale: self.scale, rotation: self.rotation, mirroring: self.mirroring, baseScale: baseScale)
+        }
+        
         func with(size: CGSize, baseScale: CGFloat) -> VideoPosition {
             return VideoPosition(position: self.position, size: size, scale: self.scale, rotation: self.rotation, mirroring: self.mirroring, baseScale: baseScale)
         }
@@ -568,6 +572,9 @@ final class VideoFinishPass: RenderPass {
         if let additionalInput {
             var previousChange: VideoPositionChange?
             for change in self.videoPositionChanges {
+                if let _ = change.translationFrom {
+                    continue
+                }
                 if timestamp >= change.timestamp {
                     previousChange = change
                 }
@@ -595,6 +602,29 @@ final class VideoFinishPass: RenderPass {
             }
         }
         
+        var translationTransitionFraction = 1.0
+        var previousAdditionalPosition = additionalPosition
+        if let _ = additionalInput {
+            var previousChange: VideoPositionChange?
+            for change in self.videoPositionChanges {
+                guard let _ = change.translationFrom else {
+                    continue
+                }
+                if timestamp >= change.timestamp {
+                    previousChange = change
+                }
+                if timestamp < change.timestamp {
+                    break
+                }
+            }
+            if let previousChange, let translationFrom = previousChange.translationFrom {
+                previousAdditionalPosition = previousAdditionalPosition.with(position: translationFrom)
+                if previousChange.timestamp > 0.0 && timestamp < previousChange.timestamp + transitionDuration {
+                    translationTransitionFraction = (timestamp - previousChange.timestamp) / transitionDuration
+                }
+            }
+        }
+        
         var backgroundVideoState = VideoState(texture: backgroundTexture, textureRotation: backgroundTextureRotation, position: mainPosition, roundness: 0.0, alpha: 1.0)
         var foregroundVideoState: VideoState?
         var disappearingVideoState: VideoState?
@@ -614,6 +644,10 @@ final class VideoFinishPass: RenderPass {
                 backgroundVideoState = VideoState(texture: backgroundTexture, textureRotation: backgroundTextureRotation, position: backgroundInitialPosition.mixed(with: mainPosition, fraction: springFraction), roundness: Float(1.0 - springFraction), alpha: 1.0)
                 
                 foregroundAlpha = min(1.0, max(0.0, Float(transitionFraction) * 2.5))
+            }
+            if translationTransitionFraction < 1.0 {
+                let springFraction = lookupSpringValue(translationTransitionFraction)
+                foregroundPosition = previousAdditionalPosition.mixed(with: foregroundPosition, fraction: springFraction)
             }
             
             var isVisible = true

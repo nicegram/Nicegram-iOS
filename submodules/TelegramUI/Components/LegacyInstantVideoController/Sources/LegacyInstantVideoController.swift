@@ -253,7 +253,7 @@ public func legacyInstantVideoController(theme: PresentationTheme, forStory: Boo
                         attributes.append(NotificationInfoMessageAttribute(flags: .muted))
                     }
                     if let scheduleTime = scheduleTime {
-                        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime))
+                        attributes.append(OutgoingScheduleInfoMessageAttribute(scheduleTime: scheduleTime, repeatPeriod: nil))
                     }
                     return attributes
                 }

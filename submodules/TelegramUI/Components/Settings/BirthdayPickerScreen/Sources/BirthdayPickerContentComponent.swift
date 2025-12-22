@@ -139,7 +139,7 @@ public final class BirthdayPickerContentComponent: Component {
 
             let sideInset: CGFloat = 16.0
         
-            var contentHeight: CGFloat = 0.0
+            var contentHeight: CGFloat = 8.0
             
             let titleString = NSMutableAttributedString()
             let titleRawString: String

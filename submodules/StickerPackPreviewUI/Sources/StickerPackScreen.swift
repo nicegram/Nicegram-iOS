@@ -23,7 +23,7 @@ import MultiAnimationRenderer
 import Pasteboard
 import StickerPackEditTitleController
 import EntityKeyboard
-import CameraScreen
+//import CameraScreen
 import ComponentFlow
 import EmojiStatusComponent
 

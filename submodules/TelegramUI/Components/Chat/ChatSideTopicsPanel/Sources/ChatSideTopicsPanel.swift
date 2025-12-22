@@ -1743,54 +1743,32 @@ public final class ChatSideTopicsPanel: Component {
                         ], locations: [0.0, 1.0], direction: .vertical) {
                             image.draw(in: CGRect(origin: CGPoint(), size: CGSize(width: size.width, height: image.size.width)), blendMode: .destinationOut, alpha: 1.0)
                         }
-                        
-                        /*let innerSize = size
-                        let shadowInset: CGFloat = 32.0
-                        
-                        let addInnerShadow: (CGPoint, CGFloat, UIColor) -> Void = { position, blur, shadowColor in
-                            if let image = generateImage(CGSize(width: size.width + shadowInset * 2.0, height: size.height + shadowInset * 2.0), rotatedContext: { size, context in
-                                context.clear(CGRect(origin: CGPoint(), size: size))
-                                let spreadRect = CGRect(origin: CGPoint(x: shadowInset, y: shadowInset), size: innerSize).insetBy(dx: -0.25, dy: -0.25)
-                                let spreadPath = UIBezierPath(
-                                    roundedRect: spreadRect,
-                                    cornerRadius: min(spreadRect.width, spreadRect.height) * 0.5
-                                ).cgPath
-
-                                context.setShadow(offset: CGSize(width: position.x, height: position.y), blur: blur, color: shadowColor.cgColor)
-                                context.setFillColor(shadowColor.cgColor)
-                                let enclosingRect = spreadRect.insetBy(dx: -10000.0, dy: -10000.0)
-                                for _ in 0 ..< 3 {
-                                    context.addPath(UIBezierPath(rect: enclosingRect).cgPath)
-                                    context.addPath(spreadPath)
-                                    context.fillPath(using: .evenOdd)
-                                }
-                                
-                                /*let cleanRect = CGRect(origin: CGPoint(x: shadowInset, y: shadowInset), size: innerSize)
-                                let cleanPath = UIBezierPath(
-                                    roundedRect: cleanRect,
-                                    cornerRadius: min(cleanRect.width, cleanRect.height) * 0.5
-                                ).cgPath
-                                context.setBlendMode(.copy)
-                                context.setFillColor(UIColor.clear.cgColor)
-                                context.addPath(UIBezierPath(rect: enclosingRect).cgPath)
-                                context.addPath(cleanPath)
-                                context.fillPath(using: .evenOdd)
-                                context.setBlendMode(.normal)*/
-                            }) {
-                                image.draw(in: CGRect(origin: CGPoint(x: -shadowInset, y: -shadowInset), size: CGSize(width: image.size.width, height: image.size.height)), blendMode: .normal, alpha: 1.0)
-                            }
-                        }
-                        
-                        addInnerShadow(CGPoint(x: 0.0, y: -6.0), 10.0, .red)
-                        addInnerShadow(CGPoint(x: 0.0, y: 6.0), 10.0, .red)*/
-                        
-                        
                     })?.stretchableImage(withLeftCapWidth: Int(cornerRadius) + 1, topCapHeight: Int(cornerRadius) + 1)
                 case .top:
-                    self.scrollViewMask.image = generateGradientImage(size: CGSize(width: 8.0, height: 8.0), colors: [
-                        UIColor(white: 1.0, alpha: 0.0),
-                        UIColor(white: 1.0, alpha: 1.0)
-                    ], locations: [0.0, 1.0], direction: .horizontal)?.stretchableImage(withLeftCapWidth: 8, topCapHeight: 0)
+                    let cornerRadius: CGFloat = 20.0
+                    self.scrollViewMask.image = generateImage(CGSize(width: 8.0 + 1.0 + cornerRadius * 2.0, height: 1.0 + cornerRadius * 2.0), rotatedContext: { size, context in
+                        UIGraphicsPushContext(context)
+                        defer {
+                            UIGraphicsPopContext()
+                        }
+                        
+                        context.clear(CGRect(origin: CGPoint(), size: size))
+                        
+                        let spreadPath = UIBezierPath(
+                            roundedRect: CGRect(origin: CGPoint(x: -cornerRadius, y: 0.0), size: CGSize(width: size.width + cornerRadius, height: size.height)),
+                            cornerRadius: cornerRadius
+                        ).cgPath
+                        context.setFillColor(UIColor.black.cgColor)
+                        context.addPath(spreadPath)
+                        context.fillPath()
+                        
+                        if let image = generateGradientImage(size: CGSize(width: 8.0, height: 8.0), colors: [
+                            UIColor(white: 1.0, alpha: 1.0),
+                            UIColor(white: 1.0, alpha: 0.0)
+                        ], locations: [0.0, 1.0], direction: .horizontal) {
+                            image.draw(in: CGRect(origin: CGPoint(), size: CGSize(width: image.size.width, height: size.height)), blendMode: .destinationOut, alpha: 1.0)
+                        }
+                    })?.stretchableImage(withLeftCapWidth: Int(cornerRadius) + 1, topCapHeight: Int(cornerRadius) + 1)
                 }
             }
             let themeUpdated = self.component?.theme !== component.theme
@@ -1893,11 +1871,11 @@ public final class ChatSideTopicsPanel: Component {
                 let itemFrame: CGRect
                 switch component.location {
                 case .side:
-                    itemFrame = CGRect(origin: CGPoint(x: 8.0 + 4.0, y: directionContainerInset + 8.0), size: itemSize)
+                    itemFrame = CGRect(origin: CGPoint(x: 8.0 + 4.0, y: directionContainerInset + 6.0), size: itemSize)
                     directionContainerInset += itemSize.height
                 case .top:
-                    itemFrame = CGRect(origin: CGPoint(x: directionContainerInset, y: 0.0), size: itemSize)
-                    directionContainerInset += itemSize.width - 14.0
+                    itemFrame = CGRect(origin: CGPoint(x: 12.0, y: 6.0), size: itemSize)
+                    directionContainerInset += itemSize.width - 8.0
                 }
                 
                 itemTransition.setPosition(layer: itemView.layer, position: itemFrame.center)
@@ -1920,13 +1898,13 @@ public final class ChatSideTopicsPanel: Component {
                 scrollFrame = CGRect(origin: CGPoint(x: additionalInsets.left, y: directionContainerInset + environment.insets.top + additionalInsets.top), size: scrollSize)
                 listContentInsets = UIEdgeInsets(top: 8.0, left: 0.0, bottom: 8.0, right: 0.0)
             case .top:
-                scrollSize = CGSize(width: availableSize.width - directionContainerInset, height: availableSize.height)
-                scrollFrame = CGRect(origin: CGPoint(x: directionContainerInset, y: 0.0), size: scrollSize)
+                additionalInsets = UIEdgeInsets(top: 8.0, left: 8.0, bottom: 0.0, right: 8.0)
+                scrollSize = CGSize(width: availableSize.width - additionalInsets.left - additionalInsets.right - directionContainerInset, height: availableSize.height - additionalInsets.top)
+                scrollFrame = CGRect(origin: CGPoint(x: additionalInsets.left + directionContainerInset, y: additionalInsets.top), size: scrollSize)
                 listContentInsets = UIEdgeInsets(top: 0.0, left: 8.0, bottom: 0.0, right: 8.0)
-                additionalInsets = UIEdgeInsets()
             }
             
-            if case .side = component.location {
+            /*if case .side = component.location {
                 let background: ComponentView<Empty>
                 if let current = self.background {
                     background = current
@@ -1953,7 +1931,34 @@ public final class ChatSideTopicsPanel: Component {
                     }
                     transition.setFrame(view: backgroundView, frame: backgroundFrame)
                 }
-            }
+            } else {
+                let background: ComponentView<Empty>
+                if let current = self.background {
+                    background = current
+                } else {
+                    background = ComponentView()
+                    self.background = background
+                }
+                let backgroundFrame = CGRect(origin: CGPoint(x: additionalInsets.left, y: environment.insets.top + additionalInsets.top), size: CGSize(width: scrollFrame.width + directionContainerInset, height: scrollFrame.height))
+                let _ = background.update(
+                    transition: transition,
+                    component: AnyComponent(GlassBackgroundComponent(
+                        size: backgroundFrame.size,
+                        cornerRadius: 20.0,
+                        isDark: component.theme.overallDarkAppearance,
+                        tintColor: .init(kind: .panel, color: component.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                    )),
+                    environment: {},
+                    containerSize: backgroundFrame.size
+                )
+                
+                if let backgroundView = background.view {
+                    if backgroundView.superview == nil {
+                        self.insertSubview(backgroundView, at: 0)
+                    }
+                    transition.setFrame(view: backgroundView, frame: backgroundFrame)
+                }
+            }*/
             
             self.scrollContainerView.frame = scrollFrame
             

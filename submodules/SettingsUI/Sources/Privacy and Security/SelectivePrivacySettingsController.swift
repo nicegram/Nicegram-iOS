@@ -174,6 +174,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
     case disallowedGiftsUnlimited(PresentationTheme, String, Bool, Bool)
     case disallowedGiftsLimited(PresentationTheme, String, Bool, Bool)
     case disallowedGiftsUnique(PresentationTheme, String, Bool, Bool)
+    case disallowedGiftsChannel(PresentationTheme, String, Bool, Bool)
     case disallowedGiftsPremium(PresentationTheme, String, Bool, Bool)
     case disallowedGiftsInfo(PresentationTheme, String)
     case showGiftButton(PresentationTheme, String, Bool, Bool, Bool)
@@ -203,7 +204,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                 return SelectivePrivacySettingsSection.hideReadTime.rawValue
             case .subscribeToPremium, .subscribeToPremiumInfo:
                 return SelectivePrivacySettingsSection.premium.rawValue
-            case .disallowedGiftsHeader, .disallowedGiftsUnlimited, .disallowedGiftsLimited, .disallowedGiftsUnique, .disallowedGiftsPremium, .disallowedGiftsInfo:
+            case .disallowedGiftsHeader, .disallowedGiftsUnlimited, .disallowedGiftsLimited, .disallowedGiftsUnique, .disallowedGiftsChannel, .disallowedGiftsPremium, .disallowedGiftsInfo:
                 return SelectivePrivacySettingsSection.disallowedGifts.rawValue
             case .showGiftButton, .showGiftButtonInfo:
                 return SelectivePrivacySettingsSection.giftButton.rawValue
@@ -290,10 +291,12 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                 return 37
             case .disallowedGiftsUnique:
                 return 38
-            case .disallowedGiftsPremium:
+            case .disallowedGiftsChannel:
                 return 39
-            case .disallowedGiftsInfo:
+            case .disallowedGiftsPremium:
                 return 40
+            case .disallowedGiftsInfo:
+                return 41
         }
     }
     
@@ -521,6 +524,12 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             } else {
                 return false
             }
+        case let .disallowedGiftsChannel(lhsTheme, lhsText, lhsEnabled, lhsValue):
+            if case let .disallowedGiftsChannel(rhsTheme, rhsText, rhsEnabled, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsEnabled == rhsEnabled, lhsValue == rhsValue {
+                return true
+            } else {
+                return false
+            }
         case let .disallowedGiftsPremium(lhsTheme, lhsText, lhsEnabled, lhsValue):
             if case let .disallowedGiftsPremium(rhsTheme, rhsText, rhsEnabled, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsEnabled == rhsEnabled, lhsValue == rhsValue {
                 return true
@@ -558,7 +567,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .forwardsPreviewHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, multiline: true, sectionId: self.section)
             case let .forwardsPreview(theme, wallpaper, fontSize, chatBubbleCorners, strings, dateTimeFormat, nameDisplayOrder, peerName, linkEnabled, tooltipText):
-                return ForwardPrivacyChatPreviewItem(context: arguments.context, theme: theme, strings: strings, sectionId: self.section, fontSize: fontSize, chatBubbleCorners: chatBubbleCorners, wallpaper: wallpaper, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, peerName: peerName, linkEnabled: linkEnabled, tooltipText: tooltipText)
+                return ForwardPrivacyChatPreviewItem(context: arguments.context, theme: theme, strings: strings, systemStyle: .glass, sectionId: self.section, fontSize: fontSize, chatBubbleCorners: chatBubbleCorners, wallpaper: wallpaper, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, peerName: peerName, linkEnabled: linkEnabled, tooltipText: tooltipText)
             case let .birthdayHeader(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section, linkAction: { _ in
                     arguments.openProfileEdit()
@@ -566,14 +575,14 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .settingHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, multiline: true, sectionId: self.section)
             case let .everybody(_, text, value, isLocked, isEnabled):
-                return ItemListCheckboxItem(presentationData: presentationData, icon: !isLocked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: text, style: .left, checked: value && !isLocked, enabled: isEnabled, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: !isLocked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: text, style: .left, checked: value && !isLocked, enabled: isEnabled, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     if isLocked {
                     } else {
                         arguments.updateType(.everybody)
                     }
                 })
             case let .contacts(_, text, value, isLocked, isEnabled):
-                return ItemListCheckboxItem(presentationData: presentationData, icon: !isLocked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: text, style: .left, checked: value && !isLocked, enabled: isEnabled, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: !isLocked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: text, style: .left, checked: value && !isLocked, enabled: isEnabled, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     if isLocked {
                         arguments.displayLockedInfo()
                     } else {
@@ -581,7 +590,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                     }
                 })
             case let .nobody(_, text, value, isLocked, isEnabled):
-                return ItemListCheckboxItem(presentationData: presentationData, icon: !isLocked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: text, style: .left, checked: value && !isLocked, enabled: isEnabled, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, icon: !isLocked ? nil : generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: presentationData.theme.list.itemSecondaryTextColor), iconPlacement: .check, title: text, style: .left, checked: value && !isLocked, enabled: isEnabled, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     if isLocked {
                         arguments.displayLockedInfo()
                     } else {
@@ -595,11 +604,11 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .exceptionsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .disableFor(_, title, value, isEnabled):
-                return ItemListDisclosureItem(presentationData: presentationData, title: title, enabled: isEnabled, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, enabled: isEnabled, label: value, sectionId: self.section, style: .blocks, action: {
                         arguments.openSelective(.main, false)
                     })
             case let .enableFor(_, title, value, isEnabled):
-                return ItemListDisclosureItem(presentationData: presentationData, title: title, enabled: isEnabled, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, enabled: isEnabled, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openSelective(.main, true)
                 })
             case let .peersInfo(_, text):
@@ -607,31 +616,31 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .callsP2PHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .callsP2PAlways(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateCallP2PMode?(.everybody)
                 })
             case let .callsP2PContacts(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateCallP2PMode?(.contacts)
                 })
             case let .callsP2PNever(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updateCallP2PMode?(.nobody)
                 })
             case let .callsP2PInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .callsP2PDisableFor(_, title, value):
-                return ItemListDisclosureItem(presentationData: presentationData, title: title, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openSelective(.callP2P, false)
                 })
             case let .callsP2PEnableFor(_, title, value):
-                return ItemListDisclosureItem(presentationData: presentationData, title: title, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openSelective(.callP2P, true)
                 })
             case let .callsP2PPeersInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .callsIntegrationEnabled(_, text, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateCallIntegrationEnabled?(value)
                 })
             case let .callsIntegrationInfo(_, text):
@@ -639,11 +648,11 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .phoneDiscoveryHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .phoneDiscoveryEverybody(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updatePhoneDiscovery?(true)
                 })
             case let .phoneDiscoveryMyContacts(_, text, value):
-                return ItemListCheckboxItem(presentationData: presentationData, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
+                return ItemListCheckboxItem(presentationData: presentationData, systemStyle: .glass, title: text, style: .left, checked: value, zeroSeparatorInsets: false, sectionId: self.section, action: {
                     arguments.updatePhoneDiscovery?(false)
                 })
             case let .phoneDiscoveryInfo(_, text, link):
@@ -651,24 +660,24 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                     arguments.copyPhoneLink?(link)
                 })
             case let .setPublicPhoto(theme, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: PresentationResourcesItemList.addPhotoIcon(theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.addPhotoIcon(theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
                     arguments.setPublicPhoto?()
                 })
             case let .removePublicPhoto(_, text, peer, image, completeImage):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: completeImage, iconSignal: completeImage == nil ? peerAvatarCompleteImage(account: arguments.context.account, peer: peer, forceProvidedRepresentation: true, representation: image?.representationForDisplayAtSize(PixelDimensions(width: 28, height: 28)), size: CGSize(width: 28.0, height: 28.0)) : nil, title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: completeImage, iconSignal: completeImage == nil ? peerAvatarCompleteImage(account: arguments.context.account, peer: peer, forceProvidedRepresentation: true, representation: image?.representationForDisplayAtSize(PixelDimensions(width: 28, height: 28)), size: CGSize(width: 28.0, height: 28.0)) : nil, title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                     arguments.removePublicPhoto?()
                 })
             case let .publicPhotoInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section, linkAction: { _ in
                 })
             case let .hideReadTime(_, text, enabled, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateHideReadTime?(value)
                 })
             case let .hideReadTimeInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .subscribeToPremium(_, text):
-                return ItemListPeerActionItem(presentationData: presentationData, icon: nil, title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
+                return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
                     arguments.openPremiumIntro()
                 })
             case let .subscribeToPremiumInfo(_, text):
@@ -676,7 +685,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .disallowedGiftsHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .disallowedGiftsUnlimited(_, text, isLocked, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     if !isLocked {
                         arguments.updateDisallowedGifts?(.unlimited, !updatedValue)
                     } else {
@@ -686,7 +695,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                     arguments.displayLockedGiftsInfo()
                 })
             case let .disallowedGiftsLimited(_, text, isLocked, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     if !isLocked {
                         arguments.updateDisallowedGifts?(.limited, !updatedValue)
                     } else {
@@ -696,7 +705,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                     arguments.displayLockedGiftsInfo()
                 })
             case let .disallowedGiftsUnique(_, text, isLocked, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     if !isLocked {
                         arguments.updateDisallowedGifts?(.unique, !updatedValue)
                     } else {
@@ -705,8 +714,18 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                 }, activatedWhileDisabled: {
                     arguments.displayLockedGiftsInfo()
                 })
+            case let .disallowedGiftsChannel(_, text, isLocked, value):
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                    if !isLocked {
+                        arguments.updateDisallowedGifts?(.channel, !updatedValue)
+                    } else {
+                        arguments.displayLockedGiftsInfo()
+                    }
+                }, activatedWhileDisabled: {
+                    arguments.displayLockedGiftsInfo()
+                })
             case let .disallowedGiftsPremium(_, text, isLocked, value):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     if !isLocked {
                         arguments.updateDisallowedGifts?(.premium, !updatedValue)
                     } else {
@@ -718,7 +737,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .disallowedGiftsInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .showGiftButton(_, text, isLocked, value, available):
-                return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: available, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: available, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     if !isLocked {
                         arguments.updateShowGiftButton?(updatedValue)
                     } else if available {
@@ -993,6 +1012,11 @@ private func selectivePrivacySettingsControllerEntries(presentationData: Present
             settingInfoText = presentationData.strings.Privacy_Birthday_CustomHelp
             disableForText = presentationData.strings.PrivacyLastSeenSettings_NeverShareWith
             enableForText = presentationData.strings.PrivacyLastSeenSettings_AlwaysShareWith
+        case .savedMusic:
+            settingTitle = presentationData.strings.Privacy_SavedMusic_WhoCanSeeMyMusic
+            settingInfoText = presentationData.strings.Privacy_SavedMusic_CustomHelp
+            disableForText = presentationData.strings.PrivacyLastSeenSettings_NeverShareWith
+            enableForText = presentationData.strings.PrivacyLastSeenSettings_AlwaysShareWith
         case .giftsAutoSave:
             settingTitle = presentationData.strings.Privacy_Gifts_WhoCanSeeMyBio
             settingInfoText = presentationData.strings.Privacy_Gifts_CustomHelp
@@ -1152,6 +1176,7 @@ private func selectivePrivacySettingsControllerEntries(presentationData: Present
         entries.append(.disallowedGiftsUnlimited(presentationData.theme, presentationData.strings.Privacy_Gifts_AcceptedTypes_Unlimited, !isPremium, !(state.disallowedGifts?.contains(.unlimited) ?? false)))
         entries.append(.disallowedGiftsLimited(presentationData.theme, presentationData.strings.Privacy_Gifts_AcceptedTypes_Limited, !isPremium, !(state.disallowedGifts?.contains(.limited) ?? false)))
         entries.append(.disallowedGiftsUnique(presentationData.theme, presentationData.strings.Privacy_Gifts_AcceptedTypes_Unique, !isPremium, !(state.disallowedGifts?.contains(.unique) ?? false)))
+        entries.append(.disallowedGiftsChannel(presentationData.theme, presentationData.strings.Privacy_Gifts_AcceptedTypes_Channel, !isPremium, !(state.disallowedGifts?.contains(.channel) ?? false)))
         entries.append(.disallowedGiftsPremium(presentationData.theme, presentationData.strings.Privacy_Gifts_AcceptedTypes_Premium, !isPremium, !(state.disallowedGifts?.contains(.premium) ?? false)))
         entries.append(.disallowedGiftsInfo(presentationData.theme, presentationData.strings.Privacy_Gifts_AcceptedTypes_Info))
     }
@@ -1275,6 +1300,8 @@ public func selectivePrivacySettingsController(
                     title = strings.Privacy_Bio_AlwaysShareWith_Title
                 case .birthday:
                     title = strings.Privacy_Birthday_AlwaysShareWith_Title
+                case .savedMusic:
+                    title = strings.Privacy_SavedMusic_AlwaysShareWith_Title
                 case .giftsAutoSave:
                     title = strings.Privacy_Gifts_AlwaysAllow_Title
             }
@@ -1298,6 +1325,8 @@ public func selectivePrivacySettingsController(
                     title = strings.Privacy_Bio_NeverShareWith_Title
                 case .birthday:
                     title = strings.Privacy_Birthday_NeverShareWith_Title
+                case .savedMusic:
+                    title = strings.Privacy_SavedMusic_NeverShareWith_Title
                 case .giftsAutoSave:
                     title = strings.Privacy_Gifts_NeverAllow_Title
             }
@@ -1666,26 +1695,28 @@ public func selectivePrivacySettingsController(
         
         let title: String
         switch kind {
-            case .presence:
-                title = presentationData.strings.PrivacySettings_LastSeenTitle
-            case .groupInvitations:
-                title = presentationData.strings.Privacy_GroupsAndChannels
-            case .voiceCalls:
-                title = presentationData.strings.Settings_CallSettings
-            case .profilePhoto:
-                title = presentationData.strings.Privacy_ProfilePhoto
-            case .forwards:
-                title = presentationData.strings.Privacy_Forwards
-            case .phoneNumber:
-                title = presentationData.strings.Privacy_PhoneNumber
-            case .voiceMessages:
-                title = presentationData.strings.Privacy_VoiceMessages
-            case .bio:
-                title = presentationData.strings.Privacy_Bio
-            case .birthday:
-                title = presentationData.strings.Privacy_Birthday
-            case .giftsAutoSave:
-                title = presentationData.strings.Privacy_Gifts
+        case .presence:
+            title = presentationData.strings.PrivacySettings_LastSeenTitle
+        case .groupInvitations:
+            title = presentationData.strings.Privacy_GroupsAndChannels
+        case .voiceCalls:
+            title = presentationData.strings.Settings_CallSettings
+        case .profilePhoto:
+            title = presentationData.strings.Privacy_ProfilePhoto
+        case .forwards:
+            title = presentationData.strings.Privacy_Forwards
+        case .phoneNumber:
+            title = presentationData.strings.Privacy_PhoneNumber
+        case .voiceMessages:
+            title = presentationData.strings.Privacy_VoiceMessages
+        case .bio:
+            title = presentationData.strings.Privacy_Bio
+        case .birthday:
+            title = presentationData.strings.Privacy_Birthday
+        case .savedMusic:
+            title = presentationData.strings.Privacy_SavedMusic
+        case .giftsAutoSave:
+            title = presentationData.strings.Privacy_Gifts
         }
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: selectivePrivacySettingsControllerEntries(presentationData: presentationData, kind: kind, state: state, peerName: peerName ?? "", phoneNumber: phoneNumber, peer: peer, birthday: birthday, publicPhoto: publicPhoto.knownValue), style: .blocks, animateChanges: true)
@@ -1776,26 +1807,28 @@ public func selectivePrivacySettingsController(
             
             let type: UpdateSelectiveAccountPrivacySettingsType
             switch kind {
-                case .presence:
-                    type = .presence
-                case .groupInvitations:
-                    type = .groupInvitations
-                case .voiceCalls:
-                    type = .voiceCalls
-                case .profilePhoto:
-                    type = .profilePhoto
-                case .forwards:
-                    type = .forwards
-                case .phoneNumber:
-                    type = .phoneNumber
-                case .voiceMessages:
-                    type = .voiceMessages
-                case .bio:
-                    type = .bio
-                case .birthday:
-                    type = .birthday
-                case .giftsAutoSave:
-                    type = .giftsAutoSave
+            case .presence:
+                type = .presence
+            case .groupInvitations:
+                type = .groupInvitations
+            case .voiceCalls:
+                type = .voiceCalls
+            case .profilePhoto:
+                type = .profilePhoto
+            case .forwards:
+                type = .forwards
+            case .phoneNumber:
+                type = .phoneNumber
+            case .voiceMessages:
+                type = .voiceMessages
+            case .bio:
+                type = .bio
+            case .birthday:
+                type = .birthday
+            case .savedMusic:
+                type = .savedMusic
+            case .giftsAutoSave:
+                type = .giftsAutoSave
             }
             
             let updateSettingsSignal = context.engine.privacy.updateSelectiveAccountPrivacySettings(type: type, settings: settings)

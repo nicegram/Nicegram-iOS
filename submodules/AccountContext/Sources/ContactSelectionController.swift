@@ -9,7 +9,7 @@ public protocol ContactSelectionController: ViewController {
     var result: Signal<([ContactListPeer], ContactListAction, Bool, Int32?, NSAttributedString?, ChatSendMessageActionSheetController.SendParameters?)?, NoError> { get }
     var displayProgress: Bool { get set }
     var dismissed: (() -> Void)? { get set }
-    var presentScheduleTimePicker: (@escaping (Int32) -> Void) -> Void { get set }
+    var presentScheduleTimePicker: (@escaping (Int32, Int32?) -> Void) -> Void { get set }
     
     func dismissSearch()
 }
@@ -105,7 +105,13 @@ public final class ContactSelectionControllerParams {
         case always
     }
     
+    public enum Style {
+        case glass
+        case legacy
+    }
+    
     public let context: AccountContext
+    public let style: Style
     public let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
     public let mode: ContactSelectionControllerMode
     public let autoDismiss: Bool
@@ -123,6 +129,7 @@ public final class ContactSelectionControllerParams {
     
     public init(
         context: AccountContext,
+        style: Style = .legacy,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
         mode: ContactSelectionControllerMode = .generic,
         autoDismiss: Bool = true,
@@ -139,6 +146,7 @@ public final class ContactSelectionControllerParams {
         sendMessage: ((EnginePeer) -> Void)? = nil
     ) {
         self.context = context
+        self.style = style
         self.updatedPresentationData = updatedPresentationData
         self.mode = mode
         self.autoDismiss = autoDismiss

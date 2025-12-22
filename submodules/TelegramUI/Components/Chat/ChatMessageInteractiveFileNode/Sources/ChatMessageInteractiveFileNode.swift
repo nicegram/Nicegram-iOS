@@ -45,6 +45,7 @@ import TelegramStringFormatting
 import AnimatedCountLabelNode
 import AudioWaveform
 import DeviceProximity
+import ShimmeringLinkNode
 
 private struct FetchControls {
     let fetch: (Bool) -> Void
@@ -133,6 +134,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
     public let fetchingTextNode: ImmediateTextNode
     public let fetchingCompactTextNode: ImmediateTextNode
     private let countNode: ImmediateAnimatedCountLabelNode
+    private var shimmeringNodes: [ShimmeringLinkNode] = []
     
     public var waveformView: ComponentHostView<Empty>?
     
@@ -1022,23 +1024,28 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                 
                 var displayTrailingAnimatedDots = false
                 
+                var isTranslating = false
                 if let transcribedText = transcribedText, case .expanded = effectiveAudioTranscriptionState {
                     switch transcribedText {
                     case let .success(text, isPending):
                         textString = NSAttributedString(string: text, font: textFont, textColor: messageTheme.primaryTextColor)
-                        
-                        /*#if DEBUG
-                        var isPending = isPending
-                        if "".isEmpty {
-                            isPending = true
-                        }
-                        #endif*/
                         
                         if isPending {
                             let modifiedString = NSMutableAttributedString(attributedString: textString!)
                             modifiedString.append(NSAttributedString(string: "...", font: textFont, textColor: .clear))
                             displayTrailingAnimatedDots = true
                             textString = modifiedString
+                        } else {
+                            if let translateToLanguage = arguments.associatedData.translateToLanguage, !text.isEmpty && arguments.incoming {
+                                isTranslating = true
+                                for attribute in arguments.message.attributes {
+                                    if let attribute = attribute as? TranslationMessageAttribute, !attribute.text.isEmpty, attribute.toLang == translateToLanguage {
+                                        textString = NSAttributedString(string: attribute.text, font: textFont, textColor: messageTheme.primaryTextColor)
+                                        isTranslating = false
+                                        break
+                                    }
+                                }
+                            }
                         }
                     case let .error(error):
                         let errorTextFont = Font.regular(floor(arguments.presentationData.fontSize.baseDisplaySize * 15.0 / 17.0))
@@ -1751,10 +1758,45 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                             } else {
                                 strongSelf.dateAndStatusNode.pressed = nil
                             }
+                            
+                            strongSelf.updateIsTranslating(isTranslating)
                         }
                     })
                 })
             })
+        }
+    }
+    
+    private func updateIsTranslating(_ isTranslating: Bool) {
+        guard let arguments = self.arguments else {
+            return
+        }
+        var rects: [[CGRect]] = []
+        let titleRects = (self.textNode.rangeRects(in: NSRange(location: 0, length: self.textNode.cachedLayout?.attributedString?.length ?? 0))?.rects ?? []).map { self.textNode.view.convert($0, to: self.textClippingNode.view) }
+        rects.append(titleRects)
+        
+        if isTranslating, !rects.isEmpty {
+            if self.shimmeringNodes.isEmpty {
+                for rects in rects {
+                    let shimmeringNode = ShimmeringLinkNode(color: arguments.message.effectivelyIncoming(arguments.context.account.peerId) ? arguments.presentationData.theme.theme.chat.message.incoming.secondaryTextColor.withAlphaComponent(0.1) : arguments.presentationData.theme.theme.chat.message.outgoing.secondaryTextColor.withAlphaComponent(0.1))
+                    shimmeringNode.updateRects(rects)
+                    shimmeringNode.frame = self.bounds
+                    shimmeringNode.updateLayout(self.bounds.size)
+                    shimmeringNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
+                    self.shimmeringNodes.append(shimmeringNode)
+                    self.textClippingNode.insertSubnode(shimmeringNode, belowSubnode: self.textNode)
+                }
+            }
+        } else if !self.shimmeringNodes.isEmpty {
+            let shimmeringNodes = self.shimmeringNodes
+            self.shimmeringNodes = []
+            
+            for shimmeringNode in shimmeringNodes {
+                shimmeringNode.alpha = 0.0
+                shimmeringNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, completion: { [weak shimmeringNode] _ in
+                    shimmeringNode?.removeFromSupernode()
+                })
+            }
         }
     }
     

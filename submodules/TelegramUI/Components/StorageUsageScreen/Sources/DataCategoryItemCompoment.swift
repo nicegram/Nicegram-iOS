@@ -175,7 +175,7 @@ private final class SubItemComponent: Component {
                 containerSize: CGSize(width: availableWidth, height: 100.0)
             )
             
-            let height: CGFloat = 44.0
+            let height: CGFloat = 52.0
             
             let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((height - titleSize.height) / 2.0)), size: titleSize)
             let titleValueFrame = CGRect(origin: CGPoint(x: titleFrame.maxX + 4.0, y: floor((height - titleValueSize.height) / 2.0)), size: titleValueSize)
@@ -469,7 +469,7 @@ final class DataCategoryItemComponent: Component {
                 containerSize: CGSize(width: availableWidth, height: 100.0)
             )
             
-            var height: CGFloat = 44.0
+            var height: CGFloat = 52.0
             
             let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((height - titleSize.height) / 2.0)), size: titleSize)
             let titleValueFrame = CGRect(origin: CGPoint(x: titleFrame.maxX + 4.0, y: floor((height - titleValueSize.height) / 2.0)), size: titleValueSize)

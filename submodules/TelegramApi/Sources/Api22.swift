@@ -175,6 +175,46 @@ public extension Api {
     }
 }
 public extension Api {
+    enum RecentStory: TypeConstructorDescription {
+        case recentStory(flags: Int32, maxId: Int32?)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .recentStory(let flags, let maxId):
+                    if boxed {
+                        buffer.appendInt32(1897752877)
+                    }
+                    serializeInt32(flags, buffer: buffer, boxed: false)
+                    if Int(flags) & Int(1 << 1) != 0 {serializeInt32(maxId!, buffer: buffer, boxed: false)}
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .recentStory(let flags, let maxId):
+                return ("recentStory", [("flags", flags as Any), ("maxId", maxId as Any)])
+    }
+    }
+    
+        public static func parse_recentStory(_ reader: BufferReader) -> RecentStory? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int32?
+            if Int(_1!) & Int(1 << 1) != 0 {_2 = reader.readInt32() }
+            let _c1 = _1 != nil
+            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
+            if _c1 && _c2 {
+                return Api.RecentStory.recentStory(flags: _1!, maxId: _2)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
     enum ReplyMarkup: TypeConstructorDescription {
         case replyInlineMarkup(rows: [Api.KeyboardButtonRow])
         case replyKeyboardForceReply(flags: Int32, placeholder: String?)

@@ -38,18 +38,18 @@ public final class SharedCallAudioContext {
     private var proximityManagerIndex: Int?
 
     // Nicegram Calls, added 'public'
-    public static func get(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, reuseCurrent: Bool = false) -> SharedCallAudioContext {
+    public static func get(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, reuseCurrent: Bool = false, enableMicrophone: Bool = true) -> SharedCallAudioContext {
         if let current = self.current, reuseCurrent {
             return current
         }
-        let context = SharedCallAudioContext(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: defaultToSpeaker)
+        let context = SharedCallAudioContext(audioSession: audioSession, callKitIntegration: callKitIntegration, defaultToSpeaker: defaultToSpeaker, enableMicrophone: enableMicrophone)
         self.current = context
         return context
     }
     
-    private init(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false) {
+    private init(audioSession: ManagedAudioSession, callKitIntegration: CallKitIntegration?, defaultToSpeaker: Bool = false, enableMicrophone: Bool = true) {
         self.callKitIntegration = callKitIntegration
-        self.audioDevice = OngoingCallContext.AudioDevice.create(enableSystemMute: false)
+        self.audioDevice = OngoingCallContext.AudioDevice.create(enableSystemMute: false, enableMicrophone: enableMicrophone)
         
         var defaultToSpeaker = defaultToSpeaker
         if audioSession.getIsHeadsetPluggedIn() {
@@ -64,7 +64,7 @@ public final class SharedCallAudioContext {
         }
         
         var didReceiveAudioOutputs = false
-        self.audioSessionDisposable = audioSession.push(audioSessionType: .voiceCall, manualActivate: { [weak self] control in
+        self.audioSessionDisposable = audioSession.push(audioSessionType: enableMicrophone ? .voiceCall : .play(mixWithOthers: true), manualActivate: { [weak self] control in
             Queue.mainQueue().async {
                 guard let self else {
                     return

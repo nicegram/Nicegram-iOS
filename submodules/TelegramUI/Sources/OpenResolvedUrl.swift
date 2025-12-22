@@ -37,6 +37,7 @@ import TelegramStringFormatting
 import TextFormat
 import BrowserUI
 import MediaEditorScreen
+import GiftSetupScreen
 
 private func defaultNavigationForPeerId(_ peerId: PeerId?, navigation: ChatControllerInteractionNavigateToPeer) -> ChatControllerInteractionNavigateToPeer {
     if case .default = navigation {
@@ -827,6 +828,11 @@ func openResolvedUrlImpl(
                         navigationController.pushViewController(controller)
                     }
                 })
+            case .loginEmail:
+                if let navigationController {
+                    let controller = loginEmailSetupController(context: context, blocking: false, emailPattern: nil, navigationController: navigationController, completion: {}, dismiss: {})
+                    navigationController.pushViewController(controller)
+                }
             }
         case let .premiumOffer(reference):
             dismissInput()
@@ -844,7 +850,7 @@ func openResolvedUrlImpl(
             dismissInput()
             if let starsContext = context.starsContext {
                 let proceed = {
-                    let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: [], purpose: .topUp(requiredStars: amount, purpose: purpose), targetPeerId: nil, completion: { _ in })
+                    let controller = context.sharedContext.makeStarsPurchaseScreen(context: context, starsContext: starsContext, options: [], purpose: .topUp(requiredStars: amount, purpose: purpose), targetPeerId: nil, customTheme: nil, completion: { _ in })
                     if let navigationController = navigationController {
                         navigationController.pushViewController(controller, animated: true)
                     }
@@ -1488,6 +1494,55 @@ func openResolvedUrlImpl(
                 
                 if let storyProgressPauseContext = contentContext as? StoryProgressPauseContext {
                     storyProgressPauseContext.update(controller)
+                }
+            } else {
+                present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
+            }
+        case let .auction(auctionContext):
+            if let auctionContext, case let .generic(gift) = auctionContext.gift {
+                if !auctionContext.isFinished, let currentBidPeerId = auctionContext.currentBidPeerId {
+                    let controller = context.sharedContext.makeGiftAuctionBidScreen(
+                        context: context,
+                        toPeerId: currentBidPeerId,
+                        text: nil,
+                        entities: nil,
+                        hideName: false,
+                        auctionContext: auctionContext,
+                        acquiredGifts: nil
+                    )
+                    navigationController?.pushViewController(controller)
+                } else {
+                    let controller = context.sharedContext.makeGiftAuctionViewScreen(
+                        context: context,
+                        auctionContext: auctionContext,
+                        completion: { [weak navigationController] acquiredGifts, upgradeAttributes in
+                            if let upgradeAttributes {
+                                let controller = context.sharedContext.makeGiftAuctionWearPreviewScreen(context: context, auctionContext: auctionContext, acquiredGifts: acquiredGifts, attributes: upgradeAttributes, completion: {
+                                    let controller = context.sharedContext.makeGiftAuctionBidScreen(
+                                        context: context,
+                                        toPeerId: context.account.peerId,
+                                        text: "",
+                                        entities: [],
+                                        hideName: true,
+                                        auctionContext: auctionContext,
+                                        acquiredGifts: acquiredGifts
+                                    )
+                                    navigationController?.pushViewController(controller)
+                                })
+                                navigationController?.pushViewController(controller)
+                            } else {
+                                let controller = GiftSetupScreen(
+                                    context: context,
+                                    peerId: context.account.peerId,
+                                    subject: .starGift(gift, nil),
+                                    auctionAcquiredGifts: acquiredGifts,
+                                    completion: nil
+                                )
+                                navigationController?.pushViewController(controller)
+                            }
+                        }
+                    )
+                    navigationController?.pushViewController(controller)
                 }
             } else {
                 present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)

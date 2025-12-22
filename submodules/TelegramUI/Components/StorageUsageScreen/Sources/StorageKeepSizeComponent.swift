@@ -10,10 +10,8 @@ import TelegramPresentationData
 import AccountContext
 import TelegramCore
 import MultilineTextComponent
-import EmojiStatusComponent
-import CheckNode
-import SolidRoundedButtonComponent
 import LegacyComponents
+import SliderComponent
 
 private func stringForCacheSize(strings: PresentationStrings, size: Int32) -> String {
     if size > 100 {
@@ -83,18 +81,20 @@ final class StorageKeepSizeComponent: Component {
     
     class View: UIView {
         private let titles: [ComponentView<Empty>]
-        private var sliderView: TGPhotoEditorSliderView?
+        private let slider: ComponentView<Empty>
+        //private var sliderView: TGPhotoEditorSliderView?
         
         private var component: StorageKeepSizeComponent?
         private weak var state: EmptyComponentState?
         
         override init(frame: CGRect) {
             self.titles = (0 ..< 4).map { _ in ComponentView<Empty>() }
+            self.slider = ComponentView<Empty>()
             
             super.init(frame: frame)
             
             self.clipsToBounds = true
-            self.layer.cornerRadius = 10.0
+            self.layer.cornerRadius = 26.0
         }
         
         required init?(coder: NSCoder) {
@@ -111,7 +111,7 @@ final class StorageKeepSizeComponent: Component {
                 self.backgroundColor = component.theme.list.itemBlocksBackgroundColor
             }
             
-            let height: CGFloat = 88.0
+            let height: CGFloat = 96.0
             
             var titleSizes: [CGSize] = []
             for i in 0 ..< self.titles.count {
@@ -138,67 +138,39 @@ final class StorageKeepSizeComponent: Component {
                     } else if i > 0 {
                         position -= titleSize.width / 2.0
                     }
-                    transition.setFrame(view: titleView, frame: CGRect(origin: CGPoint(x: position, y: 15.0), size: titleSize))
+                    transition.setFrame(view: titleView, frame: CGRect(origin: CGPoint(x: position, y: 19.0), size: titleSize))
                 }
             }
             
-            var sliderFirstTime = false
-            let sliderView: TGPhotoEditorSliderView
-            if let current = self.sliderView {
-                sliderView = current
-            } else {
-                sliderFirstTime = true
-                sliderView = TGPhotoEditorSliderView()
-                sliderView.enablePanHandling = true
-                sliderView.trackCornerRadius = 2.0
-                sliderView.lineSize = 4.0
-                sliderView.dotSize = 5.0
-                sliderView.minimumValue = 0.0
-                sliderView.maximumValue = 3.0
-                sliderView.startValue = 0.0
-                sliderView.disablesInteractiveTransitionGestureRecognizer = true
-                sliderView.positionsCount = 4
-                sliderView.useLinesForPositions = true
-                sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
-                self.sliderView = sliderView
-                self.addSubview(sliderView)
+            let sliderSize = self.slider.update(
+                transition: transition,
+                component: AnyComponent(
+                    SliderComponent(
+                        content: .discrete(.init(
+                            valueCount: 4,
+                            value: maximumCacheSizeValues.firstIndex(where: { $0 == component.value }) ?? 0,
+                            markPositions: true,
+                            valueUpdated: { value in
+                                let sizeValue = maximumCacheSizeValues[value]
+                                component.updateValue(sizeValue)
+                            }
+                        )),
+                        useNative: true,
+                        trackBackgroundColor: component.theme.list.itemSwitchColors.frameColor,
+                        trackForegroundColor: component.theme.list.itemAccentColor
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - 15.0 * 2.0, height: 44.0)
+            )
+            if let sliderView = self.slider.view {
+                if sliderView.superview == nil {
+                    self.addSubview(sliderView)
+                }
+                transition.setFrame(view: sliderView, frame: CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - sliderSize.width) / 2.0), y: 41.0), size: sliderSize))
             }
-            
-            if sliderFirstTime || themeUpdated {
-                sliderView.backgroundColor = component.theme.list.itemBlocksBackgroundColor
-                sliderView.backColor = component.theme.list.itemSwitchColors.frameColor
-                sliderView.startColor = component.theme.list.itemSwitchColors.frameColor
-                sliderView.trackColor = component.theme.list.itemAccentColor
-                sliderView.knobImage = PresentationResourcesItemList.knobImage(component.theme)
-            }
-            
-            transition.setFrame(view: sliderView, frame: CGRect(origin: CGPoint(x: 15.0, y: 37.0), size: CGSize(width: availableSize.width - 15.0 * 2.0, height: 44.0)))
-            sliderView.hitTestEdgeInsets = UIEdgeInsets(top: -sliderView.frame.minX, left: 0.0, bottom: 0.0, right: -sliderView.frame.minX)
-            
-            self.updateSliderView()
-            
+                        
             return CGSize(width: availableSize.width, height: height)
-        }
-        
-        private func updateSliderView() {
-            guard let sliderView = self.sliderView, let component = self.component else {
-                return
-            }
-            sliderView.maximumValue = 3.0
-            sliderView.positionsCount = 4
-            
-            let value = maximumCacheSizeValues.firstIndex(where: { $0 == component.value }) ?? 0
-            sliderView.value = CGFloat(value)
-        }
-        
-        @objc private func sliderValueChanged() {
-            guard let component = self.component, let sliderView = self.sliderView else {
-                return
-            }
-            
-            let position = Int(sliderView.value)
-            let value = maximumCacheSizeValues[position]
-            component.updateValue(value)
         }
     }
     

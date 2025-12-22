@@ -282,11 +282,13 @@ public struct PeerStoryStats: Equatable {
     public var totalCount: Int
     public var unseenCount: Int
     public var hasUnseenCloseFriends: Bool
+    public var hasLiveItems: Bool
     
-    public init(totalCount: Int, unseenCount: Int, hasUnseenCloseFriends: Bool) {
+    public init(totalCount: Int, unseenCount: Int, hasUnseenCloseFriends: Bool, hasLiveItems: Bool) {
         self.totalCount = totalCount
         self.unseenCount = unseenCount
         self.hasUnseenCloseFriends = hasUnseenCloseFriends
+        self.hasLiveItems = hasLiveItems
     }
 }
 
@@ -305,9 +307,9 @@ func fetchPeerStoryStats(postbox: PostboxImpl, peerId: PeerId) -> PeerStoryStats
     
     if topItems.isExact {
         let stats = postbox.storyItemsTable.getStats(peerId: peerId, maxSeenId: maxSeenId)
-        return PeerStoryStats(totalCount: stats.total, unseenCount: stats.unseen, hasUnseenCloseFriends: stats.hasUnseenCloseFriends)
+        return PeerStoryStats(totalCount: stats.total, unseenCount: stats.unseen, hasUnseenCloseFriends: stats.hasUnseenCloseFriends, hasLiveItems: stats.hasLiveItems)
     } else {
-        return PeerStoryStats(totalCount: 1, unseenCount: topItems.id > maxSeenId ? 1 : 0, hasUnseenCloseFriends: false)
+        return PeerStoryStats(totalCount: 1, unseenCount: topItems.id > maxSeenId ? 1 : 0, hasUnseenCloseFriends: false, hasLiveItems: topItems.hasLiveItems)
     }
 }
 

@@ -169,6 +169,7 @@ private enum SaveIncomingMediaEntry: ItemListNodeEntry {
             return ItemListAvatarAndNameInfoItem(
                 itemContext: .accountContext(arguments.context),
                 presentationData: presentationData,
+                systemStyle: .glass,
                 dateTimeFormat: PresentationDateTimeFormat(),
                 mode: .generic,
                 peer: peer,
@@ -185,11 +186,11 @@ private enum SaveIncomingMediaEntry: ItemListNodeEntry {
         case let .typesHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .typePhotos(title, value):
-            return ItemListSwitchItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/DataPhotos"), title: title, value: value, sectionId: self.section, style: .blocks, updated: { _ in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/DataPhotos"), title: title, value: value, sectionId: self.section, style: .blocks, updated: { _ in
                 arguments.toggle(.photo)
             })
         case let .typeVideos(title, value):
-            return ItemListSwitchItem(presentationData: presentationData, icon: UIImage(bundleImageName: "Settings/Menu/DataVideo"), title: title, value: value, sectionId: self.section, style: .blocks, updated: { _ in
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/DataVideo"), title: title, value: value, sectionId: self.section, style: .blocks, updated: { _ in
                 arguments.toggle(.video)
             })
         case let .typesInfo(text):
@@ -197,7 +198,7 @@ private enum SaveIncomingMediaEntry: ItemListNodeEntry {
         case let .videoSizeHeader(title):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
         case let .videoSize(decimalSeparator, text, size):
-            return AutodownloadSizeLimitItem(theme: presentationData.theme, strings: presentationData.strings, decimalSeparator: decimalSeparator, text: text, value: size, range: nil/*2 * 1024 * 1024 ..< (4 * 1024 * 1024 * 1024)*/, sectionId: self.section, updated: { value in
+            return AutodownloadSizeLimitItem(theme: presentationData.theme, strings: presentationData.strings, systemStyle: .glass, decimalSeparator: decimalSeparator, text: text, value: size, range: nil/*2 * 1024 * 1024 ..< (4 * 1024 * 1024 * 1024)*/, sectionId: self.section, updated: { value in
                 arguments.updateMaximumVideoSize(value)
             })
         case let .videoInfo(text):
@@ -206,12 +207,13 @@ private enum SaveIncomingMediaEntry: ItemListNodeEntry {
             return ItemListSectionHeaderItem(presentationData: presentationData, text: title, sectionId: self.section)
         case let .addException(title):
             let icon: UIImage? = PresentationResourcesItemList.createGroupIcon(presentationData.theme)
-            return ItemListPeerActionItem(presentationData: presentationData, icon: icon, title: title, alwaysPlain: false, sectionId: self.section, height: .generic, editing: false, action: {
+            return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: icon, title: title, alwaysPlain: false, sectionId: self.section, height: .generic, editing: false, action: {
                 arguments.openAddException()
             })
         case let .exceptionItem(_, peer, label):
             return ItemListPeerItem(
                 presentationData: presentationData,
+                systemStyle: .glass,
                 dateTimeFormat: PresentationDateTimeFormat(),
                 nameDisplayOrder: .firstLast,
                 context: arguments.context,
@@ -244,7 +246,7 @@ private enum SaveIncomingMediaEntry: ItemListNodeEntry {
                 arguments.openPeerMenu(peer)
             }, tag: nil)*/
         case let .deleteAllExceptions(title):
-            return ItemListActionItem(presentationData: presentationData, title: title, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
+            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: title, kind: .destructive, alignment: .center, sectionId: self.section, style: .blocks, action: {
                 arguments.deleteAllExceptions()
             })
         }

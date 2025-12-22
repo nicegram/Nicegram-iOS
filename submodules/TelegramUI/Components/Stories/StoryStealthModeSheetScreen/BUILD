@@ -23,6 +23,7 @@ swift_library(
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/TelegramUI/Components/ToastComponent",
         "//submodules/TelegramUI/Components/LottieComponent",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
         "//submodules/Markdown",
         "//submodules/TelegramStringFormatting",
     ],

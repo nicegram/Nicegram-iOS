@@ -24,7 +24,7 @@ public enum ApiUserWrapped {
         public let langCode: String?
         public let emojiStatus: Api.EmojiStatus?
         public let usernames: [Api.Username]?
-        public let storiesMaxId: Int32?
+        public let storiesMaxId: Api.RecentStory?
         public let color: Api.PeerColor?
         public let profileColor: Api.PeerColor?
         public let botActiveUsers: Int32?

@@ -70,7 +70,7 @@ final class ChatRecordingPreviewViewForOverlayContent: UIView, ChatInputPanelVie
 }
 
 final class PlayButtonNode: ASDisplayNode {
-    let backgroundView: GlassBackgroundView
+    let backgroundView: UIImageView
     let playButton: HighlightableButtonNode
     fileprivate let playPauseIconNode: PlayPauseIconNode
     let durationLabel: MediaPlayerTimeTextNode
@@ -78,7 +78,9 @@ final class PlayButtonNode: ASDisplayNode {
     var pressed: () -> Void = {}
     
     init(theme: PresentationTheme) {
-        self.backgroundView = GlassBackgroundView(frame: CGRect())
+        self.backgroundView = UIImageView()
+        self.backgroundView.isUserInteractionEnabled = true
+        self.backgroundView.clipsToBounds = true
         
         self.playButton = HighlightableButtonNode()
         self.playButton.displaysAsynchronously = false
@@ -96,8 +98,8 @@ final class PlayButtonNode: ASDisplayNode {
         
         self.view.addSubview(self.backgroundView)
         self.addSubnode(self.playButton)
-        self.backgroundView.contentView.addSubview(self.playPauseIconNode.view)
-        self.backgroundView.contentView.addSubview(self.durationLabel.view)
+        self.backgroundView.addSubview(self.playPauseIconNode.view)
+        self.backgroundView.addSubview(self.durationLabel.view)
         
         self.playButton.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: .touchUpInside)
     }
@@ -118,7 +120,10 @@ final class PlayButtonNode: ASDisplayNode {
         
         let backgroundFrame = buttonSize.centered(in: CGRect(origin: .zero, size: size))
         transition.updateFrame(view: self.backgroundView, frame: backgroundFrame)
-        self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.4)), transition: ComponentTransition(transition))
+        if self.backgroundView.image?.size.height != backgroundFrame.height {
+            self.backgroundView.image = generateStretchableFilledCircleImage(diameter: backgroundFrame.height, color: .white)?.withRenderingMode(.alwaysTemplate)
+        }
+        self.backgroundView.tintColor = theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)
                 
         self.playPauseIconNode.frame = CGRect(origin: CGPoint(x: 3.0, y: 1.0 - UIScreenPixel), size: CGSize(width: 21.0, height: 21.0))
                                

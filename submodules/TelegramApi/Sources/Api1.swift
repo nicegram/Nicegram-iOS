@@ -387,6 +387,50 @@ public extension Api {
     }
 }
 public extension Api {
+    enum AuctionBidLevel: TypeConstructorDescription {
+        case auctionBidLevel(pos: Int32, amount: Int64, date: Int32)
+    
+    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+    switch self {
+                case .auctionBidLevel(let pos, let amount, let date):
+                    if boxed {
+                        buffer.appendInt32(822231244)
+                    }
+                    serializeInt32(pos, buffer: buffer, boxed: false)
+                    serializeInt64(amount, buffer: buffer, boxed: false)
+                    serializeInt32(date, buffer: buffer, boxed: false)
+                    break
+    }
+    }
+    
+    public func descriptionFields() -> (String, [(String, Any)]) {
+        switch self {
+                case .auctionBidLevel(let pos, let amount, let date):
+                return ("auctionBidLevel", [("pos", pos as Any), ("amount", amount as Any), ("date", date as Any)])
+    }
+    }
+    
+        public static func parse_auctionBidLevel(_ reader: BufferReader) -> AuctionBidLevel? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Int32?
+            _3 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            if _c1 && _c2 && _c3 {
+                return Api.AuctionBidLevel.auctionBidLevel(pos: _1!, amount: _2!, date: _3!)
+            }
+            else {
+                return nil
+            }
+        }
+    
+    }
+}
+public extension Api {
     enum Authorization: TypeConstructorDescription {
         case authorization(flags: Int32, hash: Int64, deviceModel: String, platform: String, systemVersion: String, apiId: Int32, appName: String, appVersion: String, dateCreated: Int32, dateActive: Int32, ip: String, country: String, region: String)
     
@@ -1160,64 +1204,6 @@ public extension Api {
             let _c6 = (Int(_1!) & Int(1 << 4) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.BotAppSettings.botAppSettings(flags: _1!, placeholderPath: _2, backgroundColor: _3, backgroundDarkColor: _4, headerColor: _5, headerDarkColor: _6)
-            }
-            else {
-                return nil
-            }
-        }
-    
-    }
-}
-public extension Api {
-    enum BotBusinessConnection: TypeConstructorDescription {
-        case botBusinessConnection(flags: Int32, connectionId: String, userId: Int64, dcId: Int32, date: Int32, rights: Api.BusinessBotRights?)
-    
-    public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-    switch self {
-                case .botBusinessConnection(let flags, let connectionId, let userId, let dcId, let date, let rights):
-                    if boxed {
-                        buffer.appendInt32(-1892371723)
-                    }
-                    serializeInt32(flags, buffer: buffer, boxed: false)
-                    serializeString(connectionId, buffer: buffer, boxed: false)
-                    serializeInt64(userId, buffer: buffer, boxed: false)
-                    serializeInt32(dcId, buffer: buffer, boxed: false)
-                    serializeInt32(date, buffer: buffer, boxed: false)
-                    if Int(flags) & Int(1 << 2) != 0 {rights!.serialize(buffer, true)}
-                    break
-    }
-    }
-    
-    public func descriptionFields() -> (String, [(String, Any)]) {
-        switch self {
-                case .botBusinessConnection(let flags, let connectionId, let userId, let dcId, let date, let rights):
-                return ("botBusinessConnection", [("flags", flags as Any), ("connectionId", connectionId as Any), ("userId", userId as Any), ("dcId", dcId as Any), ("date", date as Any), ("rights", rights as Any)])
-    }
-    }
-    
-        public static func parse_botBusinessConnection(_ reader: BufferReader) -> BotBusinessConnection? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: String?
-            _2 = parseString(reader)
-            var _3: Int64?
-            _3 = reader.readInt64()
-            var _4: Int32?
-            _4 = reader.readInt32()
-            var _5: Int32?
-            _5 = reader.readInt32()
-            var _6: Api.BusinessBotRights?
-            if Int(_1!) & Int(1 << 2) != 0 {if let signature = reader.readInt32() {
-                _6 = Api.parse(reader, signature: signature) as? Api.BusinessBotRights
-            } }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = _4 != nil
-            let _c5 = _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 2) == 0) || _6 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
-                return Api.BotBusinessConnection.botBusinessConnection(flags: _1!, connectionId: _2!, userId: _3!, dcId: _4!, date: _5!, rights: _6)
             }
             else {
                 return nil

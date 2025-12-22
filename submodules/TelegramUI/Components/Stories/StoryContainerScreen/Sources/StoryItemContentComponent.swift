@@ -1,3 +1,6 @@
+// Nicegram
+import NGCallRecorder
+//
 import Foundation
 import UIKit
 import Display
@@ -14,6 +17,7 @@ import HierarchyTrackingLayer
 import ButtonComponent
 import MultilineTextComponent
 import TelegramPresentationData
+import TelegramCallsUI
 
 final class StoryItemContentComponent: Component {
     typealias EnvironmentType = StoryContentItem.Environment
@@ -36,10 +40,14 @@ final class StoryItemContentComponent: Component {
     let baseRate: Double
     let isVideoBuffering: Bool
     let isCurrent: Bool
+    let isUIHidden: Bool
     let preferHighQuality: Bool
+    let isEmbeddedInCamera: Bool
+    let canManageLiveChatMessagesFromPeers: Set<EnginePeer.Id>
     let activateReaction: (UIView, MessageReaction.Reaction) -> Void
+    let controller: () -> ViewController?
     
-    init(context: AccountContext, strings: PresentationStrings, peer: EnginePeer, item: EngineStoryItem, availableReactions: StoryAvailableReactions?, entityFiles: [MediaId: TelegramMediaFile], audioMode: StoryContentItem.AudioMode, baseRate: Double, isVideoBuffering: Bool, isCurrent: Bool, preferHighQuality: Bool, activateReaction: @escaping (UIView, MessageReaction.Reaction) -> Void) {
+    init(context: AccountContext, strings: PresentationStrings, peer: EnginePeer, item: EngineStoryItem, availableReactions: StoryAvailableReactions?, entityFiles: [MediaId: TelegramMediaFile], audioMode: StoryContentItem.AudioMode, baseRate: Double, isVideoBuffering: Bool, isCurrent: Bool, isUIHidden: Bool, preferHighQuality: Bool, isEmbeddedInCamera: Bool, canManageLiveChatMessagesFromPeers: Set<EnginePeer.Id>, activateReaction: @escaping (UIView, MessageReaction.Reaction) -> Void, controller: @escaping () -> ViewController?) {
 		self.context = context
         self.strings = strings
         self.peer = peer
@@ -50,8 +58,12 @@ final class StoryItemContentComponent: Component {
         self.baseRate = baseRate
         self.isVideoBuffering = isVideoBuffering
         self.isCurrent = isCurrent
+        self.isUIHidden = isUIHidden
         self.preferHighQuality = preferHighQuality
+        self.isEmbeddedInCamera = isEmbeddedInCamera
+        self.canManageLiveChatMessagesFromPeers = canManageLiveChatMessagesFromPeers
         self.activateReaction = activateReaction
+        self.controller = controller
 	}
 
 	static func ==(lhs: StoryItemContentComponent, rhs: StoryItemContentComponent) -> Bool {
@@ -82,18 +94,102 @@ final class StoryItemContentComponent: Component {
         if lhs.isCurrent != rhs.isCurrent {
             return false
         }
+        if lhs.isUIHidden != rhs.isUIHidden {
+            return false
+        }
+        if lhs.isEmbeddedInCamera != rhs.isEmbeddedInCamera {
+            return false
+        }
+        if lhs.canManageLiveChatMessagesFromPeers != rhs.canManageLiveChatMessagesFromPeers {
+            return false
+        }
         if lhs.preferHighQuality != rhs.preferHighQuality {
             return false
         }
 		return true
 	}
+    
+    struct StarStats {
+        var myStars: Int64
+        var pendingMyStars: Int64
+        var totalStars: Int64
+        var topItems: [GroupCallMessagesContext.TopStarsItem]
+        
+        init(myStars: Int64, pendingMyStars: Int64, totalStars: Int64, topItems: [GroupCallMessagesContext.TopStarsItem]) {
+            self.myStars = myStars
+            self.pendingMyStars = pendingMyStars
+            self.totalStars = totalStars
+            self.topItems = topItems
+        }
+    }
+    
+    struct LiveChatState {
+        var isExpanded: Bool
+        var isEmpty: Bool
+        var hasUnseenMessages: Bool
+        var areMessagesEnabled: Bool
+        var minMessagePrice: Int64?
+        var starStats: StarStats?
+        var isAdmin: Bool
+        var defaultSendAs: EnginePeer.Id?
+        var isUnifiedStream: Bool
+        
+        init(isExpanded: Bool, isEmpty: Bool, hasUnseenMessages: Bool, areMessagesEnabled: Bool, minMessagePrice: Int64?, starStats: StarStats?, isAdmin: Bool, defaultSendAs: EnginePeer.Id?, isUnifiedStream: Bool) {
+            self.isExpanded = isExpanded
+            self.isEmpty = isEmpty
+            self.hasUnseenMessages = hasUnseenMessages
+            self.areMessagesEnabled = areMessagesEnabled
+            self.minMessagePrice = minMessagePrice
+            self.starStats = starStats
+            self.isAdmin = isAdmin
+            self.defaultSendAs = defaultSendAs
+            self.isUnifiedStream = isUnifiedStream
+        }
+    }
+    
+    private struct MediaStreamCallState: Equatable {
+        var areMessagesEnabled: Bool
+        var minMessagePrice: Int64?
+        var isAdmin: Bool
+        var defaultSendAs: EnginePeer.Id?
+        var isUnifiedStream: Bool
+        
+        init(areMessagesEnabled: Bool, minMessagePrice: Int64?, isAdmin: Bool, defaultSendAs: EnginePeer.Id?, isUnifiedStream: Bool) {
+            self.areMessagesEnabled = areMessagesEnabled
+            self.minMessagePrice = minMessagePrice
+            self.isAdmin = isAdmin
+            self.defaultSendAs = defaultSendAs
+            self.isUnifiedStream = isUnifiedStream
+        }
+    }
+    
+    private struct MediaStreamCallVideoState: Equatable {
+        var videoEndpointId: String?
+        
+        init(videoEndpointId: String?) {
+            self.videoEndpointId = videoEndpointId
+        }
+    }
 
     final class View: StoryContentItem.View {
         private let imageView: StoryItemImageView
         private let overlaysView: StoryItemOverlaysView
         private var videoNode: UniversalVideoNode?
+        private(set) var mediaStreamCall: PresentationGroupCallImpl?
+        private var mediaStreamCallState: MediaStreamCallState?
+        private var mediaStreamCallVideoState: MediaStreamCallVideoState?
+        private var liveCallStateDisposable: Disposable?
+        private var liveCallStatsDisposable: Disposable?
+        private var mediaStream: ComponentView<Empty>?
+        private let activatePictureInPictureAction = ActionSlot<Action<Void>>()
+        private let deactivatePictureInPictureAction = ActionSlot<Void>()
+        private var restorePictureInPicture: ((@escaping () -> Void) -> Void)?
+        private var dismissWhileInPictureInPicture: (() -> Void)?
         private var loadingEffectView: StoryItemLoadingEffectView?
         private var loadingEffectAppearanceTimer: SwiftSignalKit.Timer?
+        
+        private let liveChatExternal = StoryContentLiveChatComponent.External()
+        private var liveChat: ComponentView<Empty>?
         
         private var mediaAreasEffectView: StoryItemLoadingEffectView?
         
@@ -105,11 +201,12 @@ final class StoryItemContentComponent: Component {
         private var component: StoryItemContentComponent?
         private weak var state: EmptyComponentState?
         private var environment: StoryContentItem.Environment?
+        private var isUpdating: Bool = false
         
         private var unsupportedText: ComponentView<Empty>?
         private var unsupportedButton: ComponentView<Empty>?
         
-        private var progressMode: StoryContentItem.ProgressMode = .pause
+        private var progressMode: (mode: StoryContentItem.ProgressMode, isCentral: Bool) = (.pause, false)
         private var currentProgressTimer: SwiftSignalKit.Timer?
         private var currentProgressTimerValue: Double = 0.0
         private var videoProgressDisposable: Disposable?
@@ -123,11 +220,50 @@ final class StoryItemContentComponent: Component {
         override var videoPlaybackPosition: Double? {
             return self.videoPlaybackStatus?.timestamp
         }
+        
+        var customSubtitle: String?
 
         private let hierarchyTrackingLayer: HierarchyTrackingLayer
         
         private var fetchPriorityResourceId: String?
         private var currentFetchPriority: (isMain: Bool, disposable: Disposable)?
+        
+        public var liveChatState: LiveChatState? {
+            guard let liveChatView = self.liveChat?.view as? StoryContentLiveChatComponent.View else {
+                return nil
+            }
+            
+            let currentInfo = liveChatView.currentInfo
+            let mediaStreamCallState = self.mediaStreamCallState
+            
+            let starStats = currentInfo.starStats.flatMap { starStats in
+                return StarStats(
+                    myStars: starStats.myStars,
+                    pendingMyStars: starStats.pendingMyStars,
+                    totalStars: starStats.totalStars,
+                    topItems: starStats.topItems
+                )
+            }
+            
+            return LiveChatState(
+                isExpanded: currentInfo.isChatExpanded,
+                isEmpty: self.liveChatExternal.isEmpty,
+                hasUnseenMessages: self.liveChatExternal.hasUnseenMessages,
+                areMessagesEnabled: mediaStreamCallState?.areMessagesEnabled ?? false,
+                minMessagePrice: mediaStreamCallState?.minMessagePrice,
+                starStats: starStats,
+                isAdmin: mediaStreamCallState?.isAdmin ?? false,
+                defaultSendAs: mediaStreamCallState?.defaultSendAs,
+                isUnifiedStream: mediaStreamCallState?.isUnifiedStream ?? false
+            )
+        }
+        
+        public func toggleLiveChatExpanded() {
+            guard let liveChatView = self.liveChat?.view as? StoryContentLiveChatComponent.View else {
+                return
+            }
+            return liveChatView.toggleLiveChatExpanded()
+        }
         
 		override init(frame: CGRect) {
             self.hierarchyTrackingLayer = HierarchyTrackingLayer()
@@ -158,7 +294,7 @@ final class StoryItemContentComponent: Component {
                 guard let self else {
                     return
                 }
-                self.state?.updated(transition: .immediate)
+                self.state?.updated(transition: .immediate, isLocal: true)
             }
 		}
         
@@ -172,10 +308,15 @@ final class StoryItemContentComponent: Component {
             self.currentProgressTimer?.invalidate()
             self.videoProgressDisposable?.dispose()
             self.currentFetchPriority?.disposable.dispose()
+            self.liveCallStateDisposable?.dispose()
+            self.liveCallStatsDisposable?.dispose()
         }
         
         func allowsInstantPauseOnTouch(point: CGPoint) -> Bool {
             if let _ = self.overlaysView.hitTest(self.convert(self.convert(point, to: self.overlaysView), to: self.overlaysView), with: nil) {
+                return false
+            }
+            if self.liveChat != nil {
                 return false
             }
             return true
@@ -189,7 +330,7 @@ final class StoryItemContentComponent: Component {
             if self.videoNode != nil {
                 return
             }
-            if case .pause = self.progressMode {
+            if case .pause = self.progressMode.mode {
                 return
             }
             
@@ -244,7 +385,7 @@ final class StoryItemContentComponent: Component {
                         }
                         
                         var shouldLoop = false
-                        if self.progressMode == .blurred {
+                        if self.progressMode.mode == .blurred {
                             shouldLoop = true
                         } else if let component = self.component, component.item.isPending {
                             shouldLoop = true
@@ -276,8 +417,8 @@ final class StoryItemContentComponent: Component {
                         }
                     }
                     videoNode.canAttachContent = true
-                    if update {
-                        self.state?.updated(transition: .immediate)
+                    if update && !self.isUpdating {
+                        self.state?.updated(transition: .immediate, isLocal: true)
                     }
                 }
             }
@@ -297,11 +438,67 @@ final class StoryItemContentComponent: Component {
                     })
                 }
             }
+            
+            if case let .liveStream(liveStream) = currentMessageMedia {
+                let mediaStreamCall: PresentationGroupCallImpl
+                if let current = self.mediaStreamCall {
+                    mediaStreamCall = current
+                } else {
+                    let initialCall = EngineGroupCallDescription(
+                        id: liveStream.call.id,
+                        accessHash: liveStream.call.accessHash,
+                        title: nil,
+                        scheduleTimestamp: nil,
+                        subscribedToScheduled: false,
+                        isStream: true
+                    )
+                    let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
+                    mediaStreamCall = PresentationGroupCallImpl(
+                        callRecorder: CallRecorder(),
+                        accountContext: component.context,
+                        audioSession: component.context.sharedContext.mediaManager.audioSession,
+                        callKitIntegration: nil,
+                        getDeviceAccessData: {
+                            (
+                                presentationData: presentationData,
+                                present: { c, a in
+                                    
+                                },
+                                openSettings: {
+                                    
+                                }
+                            )
+                        },
+                        initialCall: (initialCall, .id(id: liveStream.call.id, accessHash: liveStream.call.accessHash)),
+                        internalId: CallSessionInternalId(),
+                        peerId: nil,
+                        isChannel: false,
+                        invite: nil,
+                        joinAsPeerId: nil,
+                        isStream: !(component.isEmbeddedInCamera && liveStream.kind == .rtc),
+                        streamPeerId: component.peer.id,
+                        keyPair: nil,
+                        conferenceSourceId: nil,
+                        isConference: false,
+                        beginWithVideo: false,
+                        sharedAudioContext: nil,
+                        unmuteByDefault: false
+                    )
+                    // Nicegram NCG-5828 call recording
+                    mediaStreamCall.callRecorder.updateCall(CallRecordable(mediaStreamCall))
+                    //
+                    self.mediaStreamCall = mediaStreamCall
+                    
+                    if update && !self.isUpdating {
+                        self.state?.updated(transition: .immediate, isLocal: true)
+                    }
+                }
+            }
         }
         
-        override func setProgressMode(_ progressMode: StoryContentItem.ProgressMode) {
-            if self.progressMode != progressMode {
-                self.progressMode = progressMode
+        override func setProgressMode(mode: StoryContentItem.ProgressMode, isCentral: Bool) {
+            if self.progressMode.mode != mode || self.progressMode.isCentral != isCentral {
+                self.progressMode = (mode, isCentral)
                 self.updateProgressMode(update: true)
                 
                 if let component = self.component, !self.overlaysView.bounds.isEmpty {
@@ -346,8 +543,10 @@ final class StoryItemContentComponent: Component {
         
         private func updateProgressMode(update: Bool) {
             if let videoNode = self.videoNode {
-                let canPlay = self.progressMode != .pause && self.contentLoaded && self.hierarchyTrackingLayer.isInHierarchy
-                
+                var canPlay = self.contentLoaded && self.hierarchyTrackingLayer.isInHierarchy
+                if case .pause = self.progressMode.mode {
+                    canPlay = false
+                }
                 if canPlay {
                     videoNode.play()
                 } else {
@@ -355,13 +554,32 @@ final class StoryItemContentComponent: Component {
                 }
             }
             
+            var shouldUpdate = false
+            if let mediaStreamCall = self.mediaStreamCall {
+                //print("call progressMode: \(self.progressMode)")
+                var canPlay = true
+                if case .pause = self.progressMode.mode, (!self.progressMode.isCentral || (!self.hierarchyTrackingLayer.isInHierarchy && self.restorePictureInPicture == nil)) {
+                    canPlay = false
+                }
+                if !canPlay {
+                    self.mediaStreamCall = nil
+                    shouldUpdate = true
+                    
+                    let _ = mediaStreamCall.leave(terminateIfPossible: false).startStandalone()
+                }
+            }
+            
             self.initializeVideoIfReady(update: update)
             self.updateVideoPlaybackProgress()
             self.updateProgressTimer()
+            
+            if shouldUpdate {
+                self.state?.updated(transition: .immediate, isLocal: true)
+            }
         }
         
         private func updateProgressTimer() {
-            var needsTimer = self.progressMode != .pause && self.contentLoaded && self.hierarchyTrackingLayer.isInHierarchy
+            var needsTimer = self.progressMode.mode != .pause && self.contentLoaded && self.hierarchyTrackingLayer.isInHierarchy
             if let component = self.component {
                 if component.item.isPending {
                     if case .file = self.currentMessageMedia {
@@ -377,11 +595,15 @@ final class StoryItemContentComponent: Component {
                         timeout: 1.0 / 60.0,
                         repeat: true,
                         completion: { [weak self] in
-                            guard let self, self.progressMode != .pause, self.contentLoaded, self.hierarchyTrackingLayer.isInHierarchy else {
+                            guard let self, self.progressMode.mode != .pause, self.contentLoaded, self.hierarchyTrackingLayer.isInHierarchy else {
                                 return
                             }
                             
                             if case .file = self.currentMessageMedia {
+                                if !self.isSeeking {
+                                    self.updateVideoPlaybackProgress()
+                                }
+                            } else if case .liveStream = self.currentMessageMedia {
                                 if !self.isSeeking {
                                     self.updateVideoPlaybackProgress()
                                 }
@@ -393,7 +615,7 @@ final class StoryItemContentComponent: Component {
                                     }
                                 }
                                 
-                                if self.progressMode != .play {
+                                if self.progressMode.mode != .play {
                                     return
                                 }
                                 
@@ -520,7 +742,7 @@ final class StoryItemContentComponent: Component {
                     
                     if !self.contentLoaded {
                         self.contentLoaded = true
-                        self.state?.updated(transition: .immediate)
+                        self.state?.updated(transition: .immediate, isLocal: true)
                     }
                 }
             }
@@ -537,6 +759,11 @@ final class StoryItemContentComponent: Component {
         }
         
         override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            if let liveChatView = self.liveChat?.view {
+                if let result = liveChatView.hitTest(self.convert(point, to: liveChatView), with: event) {
+                    return result
+                }
+            }
             if let unsupportedButtonView = self.unsupportedButton?.view {
                 if let result = unsupportedButtonView.hitTest(self.convert(point, to: unsupportedButtonView), with: event) {
                     return result
@@ -559,7 +786,7 @@ final class StoryItemContentComponent: Component {
                 size: size,
                 isCaptureProtected: component.item.isForwardingDisabled,
                 attemptSynchronous: synchronousLoad,
-                isActive: self.progressMode == .play,
+                isActive: self.progressMode.mode == .play,
                 transition: transition
             )
         }
@@ -579,8 +806,36 @@ final class StoryItemContentComponent: Component {
         func seekEnded() {
             self.isSeeking = false
         }
+        
+        func beginPictureInPicture(dismissController: @escaping () -> (restore: (@escaping () -> Void) -> Void, dismissWhilePictureInPicture: () -> Void)) {
+            self.activatePictureInPictureAction.invoke(Action { [weak self] in
+                guard let self else {
+                    return
+                }
+                var restorePictureInPictureImpl: ((restore: (@escaping () -> Void) -> Void, dismissWhilePictureInPicture: () -> Void))?
+                self.restorePictureInPicture = { f in
+                    restorePictureInPictureImpl?.restore(f)
+                }
+                self.dismissWhileInPictureInPicture = {
+                    restorePictureInPictureImpl?.dismissWhilePictureInPicture()
+                }
+                restorePictureInPictureImpl = dismissController()
+            })
+        }
+        
+        func scheduleScrollLiveChatToBottom() {
+            guard let liveChatView = self.liveChat?.view as? StoryContentLiveChatComponent.View else {
+                return
+            }
+            liveChatView.scheduleScrollLiveChatToBottom()
+        }
 
         func update(component: StoryItemContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<StoryContentItem.Environment>, transition: ComponentTransition) -> CGSize {
+            self.isUpdating = true
+            defer {
+                self.isUpdating = false
+            }
+            
             let previousItem = self.component?.item
             
             self.component = component
@@ -599,7 +854,14 @@ final class StoryItemContentComponent: Component {
             
             let selectedMedia: EngineMedia
             var messageMedia: EngineMedia?
-            if !component.preferHighQuality, !component.item.isMy, let alternativeMediaValue = component.item.alternativeMediaList.first {
+            if case .liveStream = component.item.media {
+                selectedMedia = component.item.media
+                messageMedia = selectedMedia
+                
+                if self.customSubtitle == nil {
+                    self.customSubtitle = component.strings.LiveStream_LoadingStatus
+                }
+            } else if !component.preferHighQuality, !component.item.isMy, let alternativeMediaValue = component.item.alternativeMediaList.first {
                 selectedMedia = alternativeMediaValue
                 
                 switch alternativeMediaValue {
@@ -628,7 +890,7 @@ final class StoryItemContentComponent: Component {
             }
             
             var reloadMedia = false
-            if self.currentMessageMedia?.id != messageMedia?.id {
+            if self.currentMessageMedia?.id != messageMedia?.id || (self.currentMessageMedia == nil) != (messageMedia == nil) {
                 self.currentMessageMedia = messageMedia
                 reloadMedia = true
                 
@@ -701,53 +963,216 @@ final class StoryItemContentComponent: Component {
                         }
                         if !self.contentLoaded {
                             self.contentLoaded = true
-                            self.state?.updated(transition: .immediate)
+                            self.state?.updated(transition: .immediate, isLocal: true)
                         }
                     })
                 }
             }
             
-            if let messageMedia {
-                var applyState = false
-                self.imageView.didLoadContents = { [weak self] in
-                    guard let self else {
-                        return
-                    }
-                    self.contentLoaded = true
-                    if applyState {
-                        self.state?.updated(transition: .immediate)
+            if let messageMedia, case .liveStream = messageMedia {
+                if component.isEmbeddedInCamera {
+                    self.imageView.isHidden = true
+                } else {
+                    self.imageView.update(
+                        context: component.context,
+                        strings: component.strings,
+                        peer: component.peer,
+                        storyId: component.item.id,
+                        media: messageMedia,
+                        size: availableSize,
+                        isCaptureProtected: component.item.isForwardingDisabled,
+                        attemptSynchronous: synchronousLoad,
+                        transition: transition
+                    )
+                    if !self.contentLoaded || component.isVideoBuffering {
+                        self.imageView.isHidden = false
+                    } else {
+                        self.imageView.isHidden = true
                     }
                 }
-                self.imageView.update(
-                    context: component.context,
-                    strings: component.strings,
-                    peer: component.peer,
-                    storyId: component.item.id,
-                    media: messageMedia,
-                    size: availableSize,
-                    isCaptureProtected: component.item.isForwardingDisabled,
-                    attemptSynchronous: synchronousLoad,
-                    transition: transition
-                )
-                self.updateOverlays(component: component, size: availableSize, synchronousLoad: synchronousLoad, transition: transition)
-                applyState = true
-                if self.imageView.isContentLoaded {
-                    self.contentLoaded = true
+            }
+            
+            if case let .liveStream(liveStream) = messageMedia, let mediaStreamCall = self.mediaStreamCall {
+                var mediaStreamTransition = transition
+                let mediaStream: ComponentView<Empty>
+                if let current = self.mediaStream {
+                    mediaStream = current
+                } else {
+                    mediaStreamTransition = mediaStreamTransition.withAnimation(.none)
+                    mediaStream = ComponentView()
+                    self.mediaStream = mediaStream
                 }
-                transition.setFrame(view: self.imageView, frame: CGRect(origin: CGPoint(), size: availableSize))
-                transition.setFrame(view: self.overlaysView, frame: CGRect(origin: CGPoint(), size: availableSize))
                 
-                var dimensions: CGSize?
-                switch messageMedia {
-                case let .image(image):
-                    dimensions = image.representations.last?.dimensions.cgSize
-                case let .file(file):
-                    dimensions = file.dimensions?.cgSize
-                default:
-                    break
+                let liveChat: ComponentView<Empty>
+                if let current = self.liveChat {
+                    liveChat = current
+                } else {
+                    liveChat = ComponentView()
+                    self.liveChat = liveChat
                 }
-                if dimensions == nil {
-                    switch component.item.media {
+                
+                var minPaidStars: Int?
+                if let mediaStreamCallState = self.mediaStreamCallState {
+                    minPaidStars = mediaStreamCallState.minMessagePrice.flatMap(Int.init)
+                }
+                
+                let _ = liveChat.update(
+                    transition: mediaStreamTransition,
+                    component: AnyComponent(StoryContentLiveChatComponent(
+                        external: self.liveChatExternal,
+                        context: component.context,
+                        strings: component.strings,
+                        theme: environment.theme,
+                        call: mediaStreamCall,
+                        storyPeerId: component.peer.id,
+                        canManageMessagesFromPeers: component.canManageLiveChatMessagesFromPeers,
+                        insets: environment.containerInsets,
+                        isEmbeddedInCamera: component.isEmbeddedInCamera,
+                        minPaidStars: minPaidStars,
+                        controller: { [weak self] in
+                            guard let self, let component = self.component else {
+                                return nil
+                            }
+                            return component.controller()
+                        }
+                    )),
+                    environment: {},
+                    containerSize: availableSize
+                )
+                let liveChatFrame = CGRect(origin: CGPoint(), size: availableSize)
+                if let liveChatView = liveChat.view {
+                    if liveChatView.superview == nil {
+                        liveChat.parentState = state
+                        liveChatView.layer.allowsGroupOpacity = true
+                        self.insertSubview(liveChatView, aboveSubview: self.imageView)
+                    }
+                    mediaStreamTransition.setFrame(view: liveChatView, frame: liveChatFrame)
+                    mediaStreamTransition.setAlpha(view: liveChatView, alpha: component.isUIHidden ? 0.0 : 1.0)
+                }
+                
+                if case .rtc = liveStream.kind, component.isEmbeddedInCamera {
+                } else if let mediaStreamCallState = self.mediaStreamCallState {
+                    var videoEndpointId: String?
+                    if mediaStreamCallState.isUnifiedStream {
+                        videoEndpointId = "unified"
+                    } else if let mediaStreamCallVideoState = self.mediaStreamCallVideoState {
+                        videoEndpointId = mediaStreamCallVideoState.videoEndpointId
+                    }
+                    
+                    if let videoEndpointId {
+                        let _ = mediaStream.update(
+                            transition: mediaStreamTransition,
+                            component: AnyComponent(MediaStreamVideoComponent(
+                                call: mediaStreamCall,
+                                videoEndpointId: videoEndpointId,
+                                isVisible: true,
+                                isAdmin: false,
+                                peerTitle: "",
+                                addInset: false,
+                                isFullscreen: false,
+                                videoLoading: false,
+                                callPeer: nil,
+                                enablePictureInPicture: true,
+                                activatePictureInPicture: self.activatePictureInPictureAction,
+                                deactivatePictureInPicture: self.deactivatePictureInPictureAction,
+                                bringBackControllerForPictureInPictureDeactivation: { [weak self] f in
+                                    guard let self else {
+                                        return
+                                    }
+                                    self.dismissWhileInPictureInPicture = nil
+                                    if let restorePictureInPicture = self.restorePictureInPicture {
+                                        self.restorePictureInPicture = nil
+                                        restorePictureInPicture(f)
+                                    } else {
+                                        f()
+                                    }
+                                },
+                                pictureInPictureClosed: { [weak self] in
+                                    guard let self else {
+                                        return
+                                    }
+                                    self.restorePictureInPicture = nil
+                                    if let dismissWhileInPictureInPicture = self.dismissWhileInPictureInPicture {
+                                        self.dismissWhileInPictureInPicture = nil
+                                        dismissWhileInPictureInPicture()
+                                    }
+                                },
+                                onVideoSizeRetrieved: { _ in
+                                },
+                                onVideoPlaybackLiveChange: { [weak self] isLive in
+                                    guard let self else {
+                                        return
+                                    }
+                                    self.videoPlaybackStatus = MediaPlayerStatus(
+                                        generationTimestamp: CACurrentMediaTime(),
+                                        duration: .infinity,
+                                        dimensions: CGSize(),
+                                        timestamp: 0.0,
+                                        baseRate: 1.0,
+                                        seekId: 0,
+                                        status: isLive ? .playing : .buffering(initial: false, whilePlaying: true, progress: 0.0, display: true),
+                                        soundEnabled: true
+                                    )
+                                    if !self.isSeeking {
+                                        self.updateVideoPlaybackProgress()
+                                    }
+                                }
+                            )),
+                            environment: {},
+                            containerSize: availableSize
+                        )
+                        let mediaStreamFrame = CGRect(origin: CGPoint(), size: availableSize)
+                        if let mediaStreamView = mediaStream.view {
+                            if mediaStreamView.superview == nil {
+                                self.insertSubview(mediaStreamView, aboveSubview: self.imageView)
+                            }
+                            mediaStreamTransition.setFrame(view: mediaStreamView, frame: mediaStreamFrame)
+                        }
+                    }
+                }
+            } else {
+                if let mediaStream = self.mediaStream {
+                    self.mediaStream = nil
+                    mediaStream.view?.removeFromSuperview()
+                }
+                
+                if let liveChat = self.liveChat {
+                    self.liveChat = nil
+                    liveChat.view?.removeFromSuperview()
+                }
+                
+                if let messageMedia {
+                    var applyState = false
+                    self.imageView.didLoadContents = { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        self.contentLoaded = true
+                        if applyState {
+                            self.state?.updated(transition: .immediate, isLocal: true)
+                        }
+                    }
+                    self.imageView.update(
+                        context: component.context,
+                        strings: component.strings,
+                        peer: component.peer,
+                        storyId: component.item.id,
+                        media: messageMedia,
+                        size: availableSize,
+                        isCaptureProtected: component.item.isForwardingDisabled,
+                        attemptSynchronous: synchronousLoad,
+                        transition: transition
+                    )
+                    self.updateOverlays(component: component, size: availableSize, synchronousLoad: synchronousLoad, transition: transition)
+                    applyState = true
+                    if self.imageView.isContentLoaded {
+                        self.contentLoaded = true
+                    }
+                    transition.setFrame(view: self.imageView, frame: CGRect(origin: CGPoint(), size: availableSize))
+                    transition.setFrame(view: self.overlaysView, frame: CGRect(origin: CGPoint(), size: availableSize))
+                    
+                    var dimensions: CGSize?
+                    switch messageMedia {
                     case let .image(image):
                         dimensions = image.representations.last?.dimensions.cgSize
                     case let .file(file):
@@ -755,28 +1180,124 @@ final class StoryItemContentComponent: Component {
                     default:
                         break
                     }
-                }
-                
-                if let dimensions {
-                    var imageSize = dimensions.aspectFilled(availableSize)
-                    if imageSize.width < availableSize.width && imageSize.width >= availableSize.width - 5.0 {
-                        imageSize.width = availableSize.width
+                    if dimensions == nil {
+                        switch component.item.media {
+                        case let .image(image):
+                            dimensions = image.representations.last?.dimensions.cgSize
+                        case let .file(file):
+                            dimensions = file.dimensions?.cgSize
+                        default:
+                            break
+                        }
                     }
-                    if imageSize.height < availableSize.height && imageSize.height >= availableSize.height - 5.0 {
-                        imageSize.height = availableSize.height
-                    }
-                    let _ = imageSize
                     
-                    if let videoNode = self.videoNode {
-                        let videoSize = dimensions.aspectFilled(availableSize)
-                        videoNode.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - videoSize.width) * 0.5), y: floor((availableSize.height - videoSize.height) * 0.5)), size: videoSize)
-                        videoNode.updateLayout(size: videoSize, transition: .immediate)
+                    if let dimensions {
+                        var imageSize = dimensions.aspectFilled(availableSize)
+                        if imageSize.width < availableSize.width && imageSize.width >= availableSize.width - 5.0 {
+                            imageSize.width = availableSize.width
+                        }
+                        if imageSize.height < availableSize.height && imageSize.height >= availableSize.height - 5.0 {
+                            imageSize.height = availableSize.height
+                        }
+                        let _ = imageSize
+                        
+                        if let videoNode = self.videoNode {
+                            let videoSize = dimensions.aspectFilled(availableSize)
+                            videoNode.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - videoSize.width) * 0.5), y: floor((availableSize.height - videoSize.height) * 0.5)), size: videoSize)
+                            videoNode.updateLayout(size: videoSize, transition: .immediate)
+                        }
                     }
                 }
             }
             
+            if let mediaStreamCall = self.mediaStreamCall {
+                if self.liveCallStateDisposable == nil {
+                    self.liveCallStateDisposable = (mediaStreamCall.state
+                    |> deliverOnMainQueue).startStrict(next: { [weak self] state in
+                        guard let self else {
+                            return
+                        }
+                        
+                        let mappedState = MediaStreamCallState(
+                            areMessagesEnabled: state.messagesAreEnabled,
+                            minMessagePrice: state.sendPaidMessageStars,
+                            isAdmin: state.canManageCall,
+                            defaultSendAs: state.defaultSendAs,
+                            isUnifiedStream: state.isUnifiedStream
+                        )
+                        if self.mediaStreamCallState != mappedState {
+                            self.mediaStreamCallState = mappedState
+                            if !self.isUpdating {
+                                self.state?.updated(transition: .spring(duration: 0.4))
+                            }
+                        }
+                    })
+                }
+                
+                if self.liveCallStatsDisposable == nil {
+                    self.liveCallStatsDisposable = (mediaStreamCall.members
+                    |> deliverOnMainQueue).startStandalone(next: { [weak self] members in
+                        guard let self, let component = self.component, let environment = self.environment else {
+                            return
+                        }
+                        let subtitle: String
+                        if let members {
+                            var totalCount = members.totalCount
+                            if component.isEmbeddedInCamera {
+                                totalCount -= 1
+                            }
+                            if totalCount == 0 && component.isEmbeddedInCamera {
+                                subtitle = component.strings.LiveStream_StoryViewerEmpty
+                            } else {
+                                subtitle = component.strings.LiveStream_StoryViewerCount(Int32(max(1, totalCount)))
+                            }
+                        } else {
+                            subtitle = component.strings.LiveStream_LoadingStatus
+                        }
+                        if self.customSubtitle != subtitle {
+                            self.customSubtitle = subtitle
+                            if !self.isUpdating {
+                                environment.customItemSubtitleUpdated()
+                            }
+                        }
+                        
+                        var video: PresentationGroupCallRequestedVideo?
+                        if let members {
+                            if let participant = members.participants.first(where: { $0.videoEndpointId != nil }), let videoValue = participant.requestedVideoChannel(minQuality: .full, maxQuality: .full) {
+                                video = videoValue
+                            }
+                        }
+                        let mediaStreamCallVideoState = MediaStreamCallVideoState(videoEndpointId: video?.endpointId)
+                        if self.mediaStreamCallVideoState != mediaStreamCallVideoState {
+                            self.mediaStreamCallVideoState = mediaStreamCallVideoState
+                            
+                            if let mediaStreamCall = self.mediaStreamCall {
+                                if let video {
+                                    mediaStreamCall.setRequestedVideoList(items: [video])
+                                } else {
+                                    mediaStreamCall.setRequestedVideoList(items: [])
+                                }
+                            }
+                            
+                            if !self.isUpdating {
+                                self.state?.updated(transition: .immediate)
+                            }
+                        }
+                    })
+                }
+            } else {
+                if let liveCallStateDisposable = self.liveCallStateDisposable {
+                    self.liveCallStateDisposable = nil
+                    liveCallStateDisposable.dispose()
+                }
+                if let liveCallStatsDisposable = self.liveCallStatsDisposable {
+                    self.liveCallStatsDisposable = nil
+                    liveCallStatsDisposable.dispose()
+                }
+            }
+            
             switch selectedMedia {
-            case .image, .file:
+            case .image, .file, .liveStream:
                 if let unsupportedText = self.unsupportedText {
                     self.unsupportedText = nil
                     unsupportedText.view?.removeFromSuperview()
@@ -785,8 +1306,10 @@ final class StoryItemContentComponent: Component {
                     self.unsupportedButton = nil
                     unsupportedButton.view?.removeFromSuperview()
                 }
-                
-                self.backgroundColor = .black
+                if component.isEmbeddedInCamera, case let .liveStream(liveStream) = messageMedia, case .rtc = liveStream.kind {
+                } else {
+                    self.backgroundColor = .black
+                }
             default:
                 var unsuportedTransition = transition
                 
@@ -876,7 +1399,8 @@ final class StoryItemContentComponent: Component {
                 #endif
             }
             
-            if !self.contentLoaded || component.isVideoBuffering {
+            if component.isEmbeddedInCamera, case let .liveStream(liveStream) = messageMedia, case .rtc = liveStream.kind {
+            } else if !self.contentLoaded || component.isVideoBuffering {
                 let loadingEffectView: StoryItemLoadingEffectView
                 if let current = self.loadingEffectView {
                     loadingEffectView = current

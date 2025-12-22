@@ -95,13 +95,16 @@ public final class ListItemSliderSelectorComponent: Component {
     
     public let theme: PresentationTheme
     public let content: Content
+    public let preferNative: Bool
     
     public init(
         theme: PresentationTheme,
-        content: Content
+        content: Content,
+        preferNative: Bool = false
     ) {
         self.theme = theme
         self.content = content
+        self.preferNative = preferNative
     }
     
     public static func ==(lhs: ListItemSliderSelectorComponent, rhs: ListItemSliderSelectorComponent) -> Bool {
@@ -109,6 +112,9 @@ public final class ListItemSliderSelectorComponent: Component {
             return false
         }
         if lhs.content != rhs.content {
+            return false
+        }
+        if lhs.preferNative != rhs.preferNative {
             return false
         }
         return true
@@ -124,6 +130,7 @@ public final class ListItemSliderSelectorComponent: Component {
         private weak var state: EmptyComponentState?
         
         public var customUpdateIsHighlighted: ((Bool) -> Void)?
+        public var enumerateSiblings: (((UIView) -> Void) -> Void)?
         public private(set) var separatorInset: CGFloat = 0.0
         
         override public init(frame: CGRect) {
@@ -347,6 +354,7 @@ public final class ListItemSliderSelectorComponent: Component {
                                 discrete.selectedIndexUpdated(value)
                             })
                         ),
+                        useNative: component.preferNative,
                         trackBackgroundColor: component.theme.list.controlSecondaryColor,
                         trackForegroundColor: component.theme.list.itemAccentColor,
                         minTrackForegroundColor: component.theme.list.itemAccentColor.mixedWith(component.theme.list.itemBlocksBackgroundColor, alpha: 0.6)
@@ -368,6 +376,7 @@ public final class ListItemSliderSelectorComponent: Component {
                                 continuous.valueUpdated(value)
                             })
                         ),
+                        useNative: component.preferNative,
                         trackBackgroundColor: component.theme.list.controlSecondaryColor,
                         trackForegroundColor: component.theme.list.itemAccentColor,
                         minTrackForegroundColor: component.theme.list.itemAccentColor.mixedWith(component.theme.list.itemBlocksBackgroundColor, alpha: 0.6)
