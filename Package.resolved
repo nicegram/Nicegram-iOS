@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "bc681051f4e9b68e096478455961efc4d629b4a3"
+        "revision" : "b7df2a4c2c93080c743580c9cb9b1d30cd68a178"
       }
     },
     {
@@ -267,7 +267,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "08f9d614e77ee788d0493a9ff0f24f0a57e459d6"
+        "revision" : "25407f4a868e94b2ab3b5cb13b2fa0ab4b917b25"
       }
     },
     {
@@ -365,8 +365,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "cdd0ef3755280949551dc26dee5de9ddeda89f54",
-        "version" : "1.6.2"
+        "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
+        "version" : "1.7.0"
       }
     },
     {

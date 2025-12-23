@@ -445,7 +445,7 @@
         "bzlTransitiveDigest": "heUeThnW3IYnUMDEyEYfayJGaEb5j4+dtcBgsEMyS3A=",
         "usagesDigest": "27tLs0DzuVE5Nm0zCoxzmmsuzR68pbLO/neYFVD8PRI=",
         "recordedFileInputs": {
-          "@@//Package.resolved": "6074e41d4960ee92ff126b3c342a791d7e4cf556ec97115a9e49dec85879f262"
+          "@@//Package.resolved": "54ae477d5e898ae6f08ace08498daf122bb991f89634ab8401894eacdc2f93de"
         },
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -476,7 +476,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_assistant_ios",
-              "commit": "bc681051f4e9b68e096478455961efc4d629b4a3",
+              "commit": "b7df2a4c2c93080c743580c9cb9b1d30cd68a178",
               "remote": "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
               "version": "",
               "env": {},
@@ -498,7 +498,7 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_nicegram_wallet_ios",
-              "commit": "08f9d614e77ee788d0493a9ff0f24f0a57e459d6",
+              "commit": "25407f4a868e94b2ab3b5cb13b2fa0ab4b917b25",
               "remote": "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
               "version": "",
               "env": {},
@@ -1334,9 +1334,9 @@
             "repoRuleId": "@@rules_swift_package_manager+//swiftpkg/internal:swift_package.bzl%swift_package",
             "attributes": {
               "bazel_package_name": "swiftpkg_swift_argument_parser",
-              "commit": "cdd0ef3755280949551dc26dee5de9ddeda89f54",
+              "commit": "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
               "remote": "https://github.com/apple/swift-argument-parser",
-              "version": "1.6.2",
+              "version": "1.7.0",
               "env": {},
               "env_inherit": [],
               "init_submodules": false,
