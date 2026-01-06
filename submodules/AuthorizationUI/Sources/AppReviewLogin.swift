@@ -3,16 +3,8 @@ import NGEnv
 import _NGRemoteConfig
 
 struct AppReviewLogin {
-    static var codeURL: String {
-        appReviewConfig().loginCodeUrl
-    }
     static var phone : String {
         appReviewConfig().loginPhone
-    }
-    
-    static var sendCodeDate: Date?
-    static var isActive: Bool {
-        sendCodeDate != nil
     }
 }
 
@@ -23,8 +15,7 @@ private func appReviewConfig() -> AppReviewConfig {
         .init(
             key: "appReviewConfig",
             defaultValue: AppReviewConfig(
-                loginPhone: "",
-                loginCodeUrl: ""
+                loginPhone: ""
             )
         )
     )
@@ -32,5 +23,4 @@ private func appReviewConfig() -> AppReviewConfig {
 
 private struct AppReviewConfig: Decodable {
     let loginPhone: String
-    let loginCodeUrl: String
 }

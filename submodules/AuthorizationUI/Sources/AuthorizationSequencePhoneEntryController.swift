@@ -1,17 +1,10 @@
-// Nicegram AccountBackup
-import FeatAccountBackup
-//
-// Nicegram PhoneEntryBanner
-import FeatPhoneEntryBanner
-//
-// Nicegram Auth
-import FeatAuth
-//
-// Nicegram DailyLoginLimit
+// Nicegram
 import class CoreSwiftUI.DailyLoginLimitPopupPresenter
-//
-// Nicegram Onboarding
+import FeatAccountBackup
+import FeatAppReview
+import FeatAuth
 import FeatOnboardingCore
+import FeatPhoneEntryBanner
 //
 import Foundation
 import UIKit
@@ -408,12 +401,6 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         }
         //
         
-        // Nicegram AppReviewLogin
-        if AppReviewLogin.isActive {
-            self.loginWithNumber?(AppReviewLogin.phone, self.controllerNode.syncContacts)
-        }
-        //
-        
         // Nicegram DailyLoginLimit
         if #available(iOS 15.0, *) {
             if self.otherAccountPhoneNumbers.1.count >= 3, !self.sawDailyLoginLimitPopup {
@@ -490,9 +477,9 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                     guard let self = self else { return }
 
                     let isAppReviewLogin = AppReviewLogin.phone.contains(logInNumber)
-                    AppReviewLogin.sendCodeDate = isAppReviewLogin ? Date() : nil
                     if isAppReviewLogin {
-                        Task { await AuthTgHelper.loginToTestAccount() }
+                        AppReviewFlow().start()
+                        return
                     }
 
                     let logInNumber: String
