@@ -357,6 +357,10 @@ public class ItemListSwitchItemNode: ListViewItemNode, ItemListItemNode {
                     }
                     strongSelf.activateArea.accessibilityTraits = accessibilityTraits
                     
+                    // Nicegram
+                    strongSelf.switchNode.accessibilityIdentifier = "toggle_\(item.title)"
+                    //
+                    
                     if let icon = item.icon {
                         var iconTransition = transition
                         if strongSelf.iconNode.supernode == nil {
