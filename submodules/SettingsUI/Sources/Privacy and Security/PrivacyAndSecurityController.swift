@@ -1519,6 +1519,9 @@ public func privacyAndSecurityController(
             displayPasskeys = true
         }
     }
+    // Nicegram HidePasskey
+    displayPasskeys = false
+    //
     
     let signal = combineLatest(
         queue: .mainQueue(),

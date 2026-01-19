@@ -115,7 +115,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         var index: Int32 = 0
         let title: String
         let enabled: Bool
-        var enableInteractiveChanges: Bool = true
+        var enableInteractiveChanges: Bool = false
         @IgnoreEquatable var setEnabled: (Bool) -> Void
     }
 
@@ -846,8 +846,12 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
             enabled ? settings : nil
         }
     
-    let pinnedChatsSignal = adsgramSettingsPublisher
-        .map { adsgramSettings in
+    let pinnedChatsSignal = PinnedChatsContainer.shared.getResolvedBannersUseCase()
+        .publisher()
+        .combineLatestThreadSafe(
+            adsgramSettingsPublisher
+        )
+        .map { banners, adsgramSettings in
             var entries = [NicegramSettingsControllerEntry.PinnedChat]()
             
             if let adsgramSettings {
@@ -856,7 +860,6 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
                         index: (entries.last?.index ?? 0) + 1,
                         title: "adsgram",
                         enabled: adsgramSettings.showPin,
-                        enableInteractiveChanges: false,
                         setEnabled: { value in
                             Task { @MainActor in
                                 let settingsViewModel = SettingsViewModel()
@@ -865,6 +868,25 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
                         }
                     )
                 )
+            }
+            
+            for banner in banners {
+                let entry = NicegramSettingsControllerEntry.PinnedChat(
+                    title: banner.banner.name,
+                    enabled: banner.isPinned,
+                    setEnabled: { isPinned in
+                        Task {
+                            let flow = BannerPinningFlow()
+                            let id = banner.banner.id
+                            if isPinned {
+                                await flow.pin(id)
+                            } else {
+                                try await flow.unpin(id)
+                            }
+                        }
+                    }
+                )
+                entries.append(entry)
             }
             
             for i in entries.startIndex..<entries.endIndex {
