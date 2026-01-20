@@ -6813,8 +6813,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     // Nicegram NCG-7581 Folder for keywords
     private var isShowTooltip = false
     private func showKeywordTooltip() {
-        let id = context.account.peerId.toInt64()
-        let showTooltip = getNicegramSettings().keywords.showTooltip[id] ?? true
+        let showTooltip = getNicegramSettings().keywords.showTooltip.allSatisfy { $0.value }
         guard showTooltip && !isShowTooltip else { return }
         
         isShowTooltip = true

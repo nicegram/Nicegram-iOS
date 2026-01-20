@@ -407,7 +407,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 self.sawDailyLoginLimitPopup = true
                 Task {
                     try? await Task.sleep(seconds: 0.5)
-                    DailyLoginLimitPopupPresenter().present()
+                    await DailyLoginLimitPopupPresenter().presentIfNeeded()
                 }
             }
         }
