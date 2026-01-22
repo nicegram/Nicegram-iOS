@@ -267,7 +267,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "e6fd1cc427460f315a58cca1e2ca6fa3343d5d11"
+        "revision" : "1f7ea9dd1b7e9a91a17e1b9a4a5eed6519f413c0"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/reown-com/reown-swift.git",
       "state" : {
-        "revision" : "004c8f3efa50375a46699f2c97681562eaf92cc4",
-        "version" : "2.1.0"
+        "revision" : "eb3e428165b8e807386dc535fb1d7da193599a5c",
+        "version" : "2.0.0"
       }
     },
     {
@@ -599,8 +599,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/reown-com/yttrium",
       "state" : {
-        "revision" : "b06eae210d266c71f947377d0662b6501c2f392a",
-        "version" : "0.10.16"
+        "revision" : "3c8222684e5164af98027494226071d720e6e1d1",
+        "version" : "0.9.75"
       }
     }
   ],
