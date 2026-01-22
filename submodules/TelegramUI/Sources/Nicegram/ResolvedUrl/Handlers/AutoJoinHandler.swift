@@ -67,7 +67,7 @@ private extension AutoJoinHandler {
                 peerId: peerId,
                 hash: nil
             )
-            .awaitForFirstValue()
+            .awaitForCompletion()
     }
 
     func startBot(
@@ -78,7 +78,7 @@ private extension AutoJoinHandler {
         
         try await context.engine.messages
             .requestStartBot(botPeerId: peer.id, payload: payload)
-            .awaitForFirstValue()
+            .awaitForCompletion()
     }
 
     func unblockIfNeeded(
@@ -99,6 +99,6 @@ private extension AutoJoinHandler {
                 peerId: peer.id,
                 isBlocked: false
             )
-            .awaitForFirstValue()
+            .awaitForCompletion()
     }
 }
