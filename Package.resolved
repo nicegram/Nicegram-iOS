@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "7844fac6a477a7fbca12c1d6214deb3984517f85",
-        "version" : "3.2.0"
+        "revision" : "ee2c6fee991c8b2d15c6e2db2b883065becf18e2",
+        "version" : "3.2.1"
       }
     },
     {
@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "fe5249bd770ec344c2fe84d7b29d009703409853"
+        "branch" : "build/619",
+        "revision" : "0c139c0b3089b23263dc34f83e473eb3097eb4e5"
       }
     },
     {
@@ -322,6 +322,15 @@
       "state" : {
         "revision" : "36e79ba485e9bb4d3cd4e3318908866dac5e7b51",
         "version" : "5.21.5"
+      }
+    },
+    {
+      "identity" : "sdwebimageswiftui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SDWebImage/SDWebImageSwiftUI.git",
+      "state" : {
+        "revision" : "0e331457ca9af2f0b08bcaa138a91ffb907b004f",
+        "version" : "3.1.4"
       }
     },
     {
@@ -563,8 +572,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "e469abf570d9f2feae5c151bdd299985070f1863",
-        "version" : "4.5.0"
+        "revision" : "3912b213f303a024730094dfadfda67b4b5d6e3c",
+        "version" : "4.6.0"
       }
     },
     {

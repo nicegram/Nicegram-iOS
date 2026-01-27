@@ -13,6 +13,7 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
     
     //  MARK: - Logic
     
+    private var localVideoCameraPosition: CameraPosition = .front
     private var localVideoCapturer: RTCCameraVideoCapturer?
     private var localVideoTrack: RTCVideoTrack?
     
@@ -88,6 +89,13 @@ extension WebRtcServiceImpl {
     
     func close() {
         peerConnection?.close()
+    }
+    
+    func setLocalVideo(cameraPosition: CameraPosition) {
+        stopCapture()
+        
+        self.localVideoCameraPosition = cameraPosition
+        startCapture()
     }
     
     func setLocalVideo(enabled: Bool) {
@@ -211,7 +219,9 @@ private extension WebRtcServiceImpl {
     func startCapture() {
         do {
             let capturer = try localVideoCapturer.unwrap()
-            let device = try RTCCameraVideoCapturer.captureDevices().first(where: { $0.position == .front }).unwrap()
+            
+            let position = AVCaptureDevice.Position(localVideoCameraPosition)
+            let device = try RTCCameraVideoCapturer.captureDevices().first(where: { $0.position == position }).unwrap()
             
             let format = try RTCCameraVideoCapturer.supportedFormats(for: device).last.unwrap()
             let fps = try format.videoSupportedFrameRateRanges.first.unwrap().maxFrameRate

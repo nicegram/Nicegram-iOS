@@ -9,7 +9,7 @@ import NGUtils
 import NGCore
 import NGLogging
 import Postbox
-import TelegramBridge
+import FeatKeywords
 
 public final class KeywordsContext {
     private let queue = Queue(name: "keywords_context")
