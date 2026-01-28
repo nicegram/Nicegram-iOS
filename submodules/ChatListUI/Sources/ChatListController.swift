@@ -504,8 +504,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         self.badgeDisposable = (combineLatest(renderedTotalUnreadCount(accountManager: context.sharedContext.accountManager, engine: context.engine), self.presentationDataValue.get()) |> deliverOnMainQueue).startStrict(next: { [weak self] count, presentationData in
             if let strongSelf = self {
-// Nicegram NCG-6652 Hide UI notifications, NGSettings.hideUnreadCounters
-                if count.0 == 0 || NGSettings.hideUnreadCounters {
+                if count.0 == 0 {
                     strongSelf.tabBarItem.badgeValue = ""
                 } else {
                     strongSelf.tabBarItem.badgeValue = compactNumericCountString(Int(count.0), decimalSeparator: presentationData.dateTimeFormat.decimalSeparator)
@@ -836,15 +835,8 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
                 if force {
                     strongSelf.tabContainerNode.cancelAnimations()
-                    // Nicegram FoldersAtBottom
-                    strongSelf.chatListDisplayNode.inlineTabContainerNode.cancelAnimations()
-                    //
                 }
                 strongSelf.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: tabContainerData.0, selectedFilter: filter, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing, canReorderAllChats: strongSelf.isPremium, filtersLimit: tabContainerData.2, transitionFraction: fraction, presentationData: strongSelf.presentationData, transition: transition)
-                // Nicegram FoldersAtBottom
-                strongSelf.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: tabContainerData.0, selectedFilter: filter, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: fraction, presentationData: strongSelf.presentationData, transition: transition)
-                //
-                
                 
                 // Nicegram Switch to filter id
                 var switchingToFilterId: Int32
@@ -1066,9 +1058,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         if let layout = self.validLayout {
             self.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.effectiveContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing, canReorderAllChats: self.isPremium, filtersLimit: self.tabContainerData?.2, transitionFraction: self.chatListDisplayNode.effectiveContainerNode.transitionFraction, presentationData: self.presentationData, transition: .immediate)
-            // Nicegram FoldersAtBottom
-            self.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: self.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .immediate)
-            //
         }
         
         if self.isNodeLoaded {
@@ -2196,20 +2185,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 strongSelf.context.sharedContext.mainWindow?.presentInGlobalOverlay(controller)
             })
         }
-        
-        // Nicegram FoldersAtBottom
-        self.chatListDisplayNode.inlineTabContainerNode.tabSelected = { [weak self] id in
-            self?.selectTab(id: id)
-        }
-        self.chatListDisplayNode.inlineTabContainerNode.tabRequestedDeletion = { [weak self] id in
-            if case let .filter(id) = id {
-                self?.askForFilterRemoval(id: id)
-            }
-        }
-        self.chatListDisplayNode.inlineTabContainerNode.contextGesture = { id, sourceNode, gesture, isDisabled in
-            tabContextGesture(id, sourceNode, gesture, true, isDisabled)
-        }
-        //
         
         self.tabContainerNode.contextGesture = { id, sourceNode, gesture, isDisabled in
             tabContextGesture(id, sourceNode, gesture, false, isDisabled)
@@ -3748,20 +3723,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         if !skipTabContainerUpdate {
             self.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing, canReorderAllChats: self.isPremium, filtersLimit: self.tabContainerData?.2, transitionFraction: self.chatListDisplayNode.effectiveContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         }
-        // Nicegram FoldersAtBottom
-        let showFoldersAtBottom: Bool
-        if let tabContainerData = self.tabContainerData {
-            // Nicegram NCG-7581 Folder for keywords
-            let id = self.context.account.peerId.toInt64()
-            let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
-            // Nicegram NCG-7581 Folder for keywords, count
-            showFoldersAtBottom = tabContainerData.1 && tabContainerData.0.count > count
-        } else {
-            showFoldersAtBottom = false
-        }
-        self.chatListDisplayNode.inlineTabContainerNode.isHidden = !showFoldersAtBottom
-        self.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: self.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
-        //
         self.chatListDisplayNode.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, visualNavigationHeight: navigationBarHeight, cleanNavigationBarHeight: navigationBarHeight, storiesInset: 0.0, transition: transition)
     }
     
@@ -3848,10 +3809,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
         
         var reorderedFilterIdsValue: [Int32]?
-        // Nicegram FoldersAtBottom, check first inlineTabContainerNode.reorderedFilterIds
-        if let reorderedFilterIds = self.chatListDisplayNode.inlineTabContainerNode.reorderedFilterIds, reorderedFilterIds != defaultFilterIds {
-            reorderedFilterIdsValue = reorderedFilterIds
-        } else if let reorderedFilterIds = self.tabContainerNode.reorderedFilterIds {
+        if let reorderedFilterIds = self.tabContainerNode.reorderedFilterIds, reorderedFilterIds != defaultFilterIds {
             reorderedFilterIdsValue = reorderedFilterIds
         }
         
@@ -4279,23 +4237,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
             let filtersLimit = isPremium == false ? limits.maxFoldersCount : nil
-// Nicegram NCG-6652 Hide UI notifications
-            resolvedItems = resolvedItems.map { filter -> ChatListFilterTabEntry in
-                switch filter {
-                case let .all(unreadCount):
-                    return .all(unreadCount: NGSettings.hideUnreadCounters ? 0 : unreadCount)
-                case let .filter(id, text, unread):
-                    return .filter(
-                        id: id,
-                        text: text,
-                        unread: .init(
-                            value: NGSettings.hideUnreadCounters ? 0 : unread.value,
-                            hasUnmuted: unread.hasUnmuted
-                        )
-                    )
-                }
-            }
-//
             // Nicegram (displayTabsAtBottom instead false)
             strongSelf.tabContainerData = (resolvedItems, displayTabsAtBottom, filtersLimit)
             var availableFilters: [ChatListContainerNodeFilter] = []
@@ -4350,9 +4291,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     (strongSelf.parent as? TabBarController)?.updateLayout(transition: transition)
                 } else {
                     strongSelf.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: resolvedItems, selectedFilter: selectedEntryId, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing, canReorderAllChats: strongSelf.isPremium, filtersLimit: filtersLimit, transitionFraction: strongSelf.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: strongSelf.presentationData, transition: .animated(duration: 0.4, curve: .spring))
-                    // Nicegram FoldersAtBottom
-                    strongSelf.chatListDisplayNode.inlineTabContainerNode.update(size: CGSize(width: layout.size.width, height: 40.0), sideInset: layout.safeInsets.left, filters: resolvedItems, selectedFilter: selectedEntryId, isReordering: strongSelf.chatListDisplayNode.isReorderingFilters || (strongSelf.chatListDisplayNode.mainContainerNode.currentItemNode.currentState.editing && !strongSelf.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: false, transitionFraction: strongSelf.chatListDisplayNode.mainContainerNode.transitionFraction, presentationData: strongSelf.presentationData, transition: .animated(duration: 0.4, curve: .spring))
-                    //
                 }
             }
             
@@ -6817,48 +6755,36 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         guard showTooltip && !isShowTooltip else { return }
         
         isShowTooltip = true
-        let experimentalUISettingsKey: ValueBoxKey = ApplicationSpecificSharedDataKeys.experimentalUISettings
-        let signal = self.context.sharedContext.accountManager.sharedData(keys: Set([experimentalUISettingsKey]))
-        |> map { sharedData -> Bool in
-            let settings: ExperimentalUISettings = sharedData.entries[experimentalUISettingsKey]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-            return settings.foldersTabAtBottom
-        }
+        
+        sendKeywordsAnalytics(with: .tooltipShow)
+        let view = self.tabContainerNode.keywordsButtonNode.view
+        let navigationBarView = self.chatListDisplayNode.navigationBarView.view?.frame ?? CGRect(x: 0, y: 0, width: 0, height: 155)
+        let absoluteFrame = view.convert(view.bounds, to: self.view)
+        let y = (absoluteFrame.maxY < 100 ? navigationBarView.height + absoluteFrame.height - 5.0 : absoluteFrame.maxY)
+        let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: y), size: CGSize())
+        
+        let tooltip = TooltipScreen(
+            account: context.account,
+            sharedContext: context.sharedContext,
+            text: .plain(text: l("NicegramKeywords.Tooltip")),
+            balancedTextLayout: true,
+            style: .default,
+            location: .point(location, .top),
+            displayDuration: .infinite,
+            backgroundColor: UIColor.black.withAlphaComponent(0.45),
+            shouldDismissOnTouch: { [weak self] _, _ in
+                guard let self else { return .dismiss(consume: false) }
                 
-        _ = (signal |> deliverOnMainQueue).startStandalone { [weak self] showFoldersAtBottom in
-            guard let self else { return }
-            
-            sendKeywordsAnalytics(with: .tooltipShow)
-            let view = showFoldersAtBottom ?
-                self.chatListDisplayNode.inlineTabContainerNode.keywordsButtonNode.view :
-                self.tabContainerNode.keywordsButtonNode.view
-            let navigationBarView = self.chatListDisplayNode.navigationBarView.view?.frame ?? CGRect(x: 0, y: 0, width: 0, height: 155)
-            let absoluteFrame = view.convert(view.bounds, to: self.view)
-            let y = showFoldersAtBottom ? absoluteFrame.minY : (absoluteFrame.maxY < 100 ? navigationBarView.height + absoluteFrame.height - 5.0 : absoluteFrame.maxY)
-            let location = CGRect(origin: CGPoint(x: absoluteFrame.midX, y: y), size: CGSize())
-
-            let tooltip = TooltipScreen(
-                account: context.account,
-                sharedContext: context.sharedContext,
-                text: .plain(text: l("NicegramKeywords.Tooltip")),
-                balancedTextLayout: true,
-                style: .default,
-                location: .point(location, showFoldersAtBottom ? .bottom : .top),
-                displayDuration: .infinite,
-                backgroundColor: UIColor.black.withAlphaComponent(0.45),
-                shouldDismissOnTouch: { [weak self] _, _ in
-                    guard let self else { return .dismiss(consume: false) }
-
-                    let id = self.context.account.peerId.toInt64()
-                    updateNicegramSettings {
-                        $0.keywords.showTooltip[id] = false
-                    }
-
-                    return .dismiss(consume: false)
+                let id = self.context.account.peerId.toInt64()
+                updateNicegramSettings {
+                    $0.keywords.showTooltip[id] = false
                 }
-            )
-
-            self.presentInGlobalOverlay(tooltip)
-        }
+                
+                return .dismiss(consume: false)
+            }
+        )
+        
+        self.presentInGlobalOverlay(tooltip)
     }
     
     public func openSettings() {

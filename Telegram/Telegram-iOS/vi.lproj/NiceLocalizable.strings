@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "THƯ MỤC";
 "NiceFeatures.Account.Header" = "Cài đặt quyền riêng tư";
-"NiceFeatures.Folders.TgFolders" = "Thư mục ở dưới cùng";
-"NiceFeatures.Folders.TgFolders.Notice" = "Danh sách thư mục kiểu iOS";
 
 "NiceFeatures.RoundVideos.Header" = "VIDEO TRÒN";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Bắt đầu với camera sau";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "Thoát ngay";
 "Common.Later" = "Sau";
-"Common.RestartRequired" = "Cần khởi động lại!";
-"NiceFeatures.Tabs.ShowNames" = "Hiển thị tên thẻ";
 "Chat.ForwardAsCopy" = "Chuyển tiếp dưới dạng sao chép";
 
 /*Folder*/
@@ -158,21 +154,10 @@
 "NicegramSettings.Other.showRegDate" = "Hiển thị Ngày Đăng ký";
 "NicegramSettings.Unblock.Header" = "Bỏ Chặn";
 "NicegramSettings.Unblock.Button" = "Hướng dẫn Bỏ Chặn";
-"NicegramSettings.Other.hideReactions" = "Ẩn Phản hồi";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Ẩn phản hồi tới tin nhắn của bạn";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Tải video xuống Thư viện";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Bỏ qua Ngôn ngữ";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Ứng dụng phát hiện ngôn ngữ của từng tin nhắn trên thiết bị của bạn. Đây là một tác vụ hiệu suất cao có thể ảnh hưởng đến tuổi thọ pin của bạn.";
 "Premium.rememberFolderOnExit" = "Ghi nhớ thư mục hiện tại khi thoát";
-"NicegramSettings.HideStories" = "Ẩn Câu chuyện";
-"NicegramSettings.HideBadgeCounters" = "Ẩn thông báo Phản hồi";
-"NicegramSettings.HideUnreadCounters" = "Ẩn thông báo Chưa đọc";
-"NicegramSettings.HideMentionNotification" = "Ẩn thông báo Nhắc đến";
-"NicegramSettings.EnableAnimationsInChatList" = "Hoạt hình trong danh sách chat";
-"NicegramSettings.EnableGrayscaleAll" = "Độ xám Toàn màn hình";
-"NicegramSettings.EnableGrayscaleInChatList" = "Độ xám trong danh sách chat";
-"NicegramSettings.EnableGrayscaleInChat" = "Độ xám trong chat";
-"NicegramSettings.EnableAppleSpeech2Text" = "Kích hoạt Apple Speech2Text";
 "NicegramSettings.ShowKeywords" = "Hiển thị Thư mục cho Từ khóa";
 
 /*Registration Date*/
@@ -201,10 +186,6 @@
 "RoundedVideos.ButtonTitle" = "Gửi dưới dạng Video Tròn";
 "RoundedVideos.MoreButtonTooltip" = "Chuyển đổi video vuông để gửi dưới dạng vòng tròn chỉ với một lần nhấn.";
 "RoundedVideos.SendButtonTooltip" = "Nhấn giữ để gửi video của bạn dưới dạng vòng tròn phong cách.";
-
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI Chuyển Giọng nói thành Văn bản";
-"SpeechToText.Toast" = "[Đăng ký Nicegram Premium]() cho công nghệ OpenAI Speech2Text nhanh hơn và tốt hơn!";
 
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Bạn có chắc chắn muốn thực hiện cuộc gọi không?";
@@ -235,7 +216,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Nói thành Văn bản";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Chọn ngôn ngữ của tin nhắn thoại của bạn để cải thiện độ chính xác hoặc [kích hoạt Whisper](https://my.nicegram.app/) để nhận diện tự động dễ dàng";
 "NicegramSpeechToText.Language.Choose" = "Chọn ngôn ngữ để nhận diện";
 "NicegramSpeechToText.SelectLanguage" = "Chọn Ngôn ngữ";
 "NicegramSpeechToText.NotAvailable" = "Nhận diện nói thành văn bản hiện không khả dụng";

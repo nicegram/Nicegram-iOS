@@ -1952,8 +1952,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        // Nicegram HideReactions, account added
-                        if canAddMessageReactions(message: item.message, account: item.context.account) {
+                        if canAddMessageReactions(message: item.message) {
                             item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                         } else {
                             item.controllerInteraction.openMessageContextMenu(openContextMenu.tapMessage, openContextMenu.selectAll, self, openContextMenu.subFrame, nil, nil)
@@ -1962,8 +1961,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                 } else if case .tap = gesture {
                     item.controllerInteraction.clickThroughMessage(self.view, location)
                 } else if case .doubleTap = gesture {
-                    // Nicegram HideReactions, account added
-                    if canAddMessageReactions(message: item.message, account: item.context.account) {
+                    if canAddMessageReactions(message: item.message) {
                         item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                     }
                 }

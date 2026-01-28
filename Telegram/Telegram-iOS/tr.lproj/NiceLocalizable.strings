@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "KLASÖRLER";
 "NiceFeatures.Account.Header" = "Gizlilik ayarları";
-"NiceFeatures.Folders.TgFolders" = "Alttaki Klasörler";
-"NiceFeatures.Folders.TgFolders.Notice" = "iOS tarzı klasör listesi";
 
 "NiceFeatures.RoundVideos.Header" = "YUVARLAK VİDEOLAR";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Arka kamerayla başlat";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "Şimdi Çık";
 "Common.Later" = "Sonra";
-"Common.RestartRequired" = "Yeniden Başlatma Gerekli!";
-"NiceFeatures.Tabs.ShowNames" = "Sekme İsimlerini Göster";
 "Chat.ForwardAsCopy" = "Kopya Olarak İlet";
 
 /*Folder*/
@@ -159,21 +155,10 @@
 "NicegramSettings.Other.showRegDate" = "Kayıt Tarihini Göster";
 "NicegramSettings.Unblock.Header" = "Engeli Kaldır";
 "NicegramSettings.Unblock.Button" = "Rehberin Engelini Kaldır";
-"NicegramSettings.Other.hideReactions" = "Tepkileri Gizle";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Mesajlarına gelen tepkileri gizle";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videoları galeriye indir";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Dilleri görmezden gel";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Uygulama, cihazınızdaki her mesajın dilini algılar. Bu, pil ömrünüzü etkileyebilecek yüksek öncelikli bir görevdir.";
 "Premium.rememberFolderOnExit" = "Çıkışta şu anki klasörü hatırla";
-"NicegramSettings.HideStories" = "Hikayeleri Gizle";
-"NicegramSettings.HideBadgeCounters" = "Tepki bildirimlerini gizle";
-"NicegramSettings.HideUnreadCounters" = "Okunmamış sayacını gizle";
-"NicegramSettings.HideMentionNotification" = "Bahsetme bildirimlerini gizle";
-"NicegramSettings.EnableAnimationsInChatList" = "Sohbet listesinde animasyonlar";
-"NicegramSettings.EnableGrayscaleAll" = "Tam Ekran Gri Tonlama";
-"NicegramSettings.EnableGrayscaleInChatList" = "Sohbet listesinde gri tonlama";
-"NicegramSettings.EnableGrayscaleInChat" = "Sohbette gri tonlama";
-"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text'i Etkinleştir";
 "NicegramSettings.ShowKeywords" = "Anahtar kelimeler için klasörü göster";
 
 /*Registration Date*/
@@ -202,10 +187,6 @@
 "RoundedVideos.ButtonTitle" = "Yuvarlak Video Olarak Gönder";
 "RoundedVideos.MoreButtonTooltip" = "Kare videoları tek dokunuşla daire olarak göndermek için dönüştürün.";
 "RoundedVideos.SendButtonTooltip" = "Videonuzu şık bir daire olarak göndermek için uzun basın.";
-
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI Konuşma'dan Metne";
-"SpeechToText.Toast" = "OpenAI Konuşma'dan Metne teknolojileri için daha hızlı ve daha iyi [Nicegram Premium'a abone olun]()!";
 
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Bir arama yapmak istediğinizden emin misiniz?";
@@ -236,7 +217,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Sesli mesajınızın dilini seçerek doğruluğu artırın, veya [Whisper'ı etkinleştirin](https://my.nicegram.app/) zahmetsiz otomatik tanıma için";
 "NicegramSpeechToText.Language.Choose" = "Tanıma için bir dil seçin";
 "NicegramSpeechToText.SelectLanguage" = "Dil Seç";
 "NicegramSpeechToText.NotAvailable" = "Konuşma metni tanıma şu anda kullanılamıyor";

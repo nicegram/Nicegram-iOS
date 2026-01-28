@@ -449,11 +449,6 @@ public struct ChatListFilterTabEntryUnreadCount: Equatable {
         self.value = value
         self.hasUnmuted = hasUnmuted
     }
-    
-    public init(entry: ChatListFilterTabEntryUnreadCount, hideUnreadCounters: Bool) {
-        self.value = hideUnreadCounters ? 0 : entry.value
-        self.hasUnmuted = entry.hasUnmuted
-    }
 }
 
 public enum ChatListFilterTabEntry: Equatable {
@@ -553,6 +548,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         self.keywordsButtonNode.displaysAsynchronously = false
         self.keywordsButtonNode.titleNode.maximumNumberOfLines = 1
         self.keywordsButtonNode.titleNode.truncationMode = .byTruncatingTail
+        self.keywordsButtonNode.accessibilityIdentifier = "folder_Keywords"
         //
         super.init()
         // Nicegram NCG-7581 Folder for keywords
@@ -801,6 +797,11 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
                         strongSelf.contextGesture?(nil, sourceNode, gesture, isDisabled)
                     }
                 })
+                
+                // Nicegram, accessibility ids added
+                itemNode.accessibilityIdentifier = "folder_\(filter.shortTitle(strings: presentationData.strings).text)"
+                //
+                
                 self.itemNodes[filter.id] = itemNode
             }
             let unreadCount: Int

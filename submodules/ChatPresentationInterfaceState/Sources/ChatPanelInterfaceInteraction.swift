@@ -75,7 +75,6 @@ public final class ChatPanelInterfaceInteraction {
     public let cloudMessages: ([Message]?) -> Void
     public let copyForwardMessages:  ([Message]?) -> Void
     public let copySelectedMessages: () -> Void
-    public let openGifs: () -> Void
     public let replyPrivately: (Message) -> Void
     //
     
@@ -211,7 +210,6 @@ public final class ChatPanelInterfaceInteraction {
         cloudMessages: @escaping ([Message]?) -> Void,
         copyForwardMessages: @escaping ([Message]?) -> Void,
         copySelectedMessages: @escaping () -> Void,
-        openGifs: @escaping () -> Void = {},
         replyPrivately: @escaping (Message) -> Void = { _ in },
         //
         setupReplyMessage: @escaping (MessageId?, Int32?, @escaping (ContainedViewLayoutTransition, @escaping () -> Void) -> Void) -> Void,
@@ -345,7 +343,6 @@ public final class ChatPanelInterfaceInteraction {
         self.cloudMessages = cloudMessages
         self.copyForwardMessages = copyForwardMessages
         self.copySelectedMessages = copySelectedMessages
-        self.openGifs = openGifs
         self.replyPrivately = replyPrivately
         //
         self.setupReplyMessage = setupReplyMessage

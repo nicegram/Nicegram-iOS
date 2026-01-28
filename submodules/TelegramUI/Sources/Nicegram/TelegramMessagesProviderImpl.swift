@@ -1,23 +1,10 @@
 import Combine
-import FeatKeywords
 import MemberwiseInit
-import NGKeywords
 import NGUtils
+import TelegramBridge
+import NGKeywords
 
-@MemberwiseInit
-class KeywordsBridgeImpl {
-    @Init(.internal) private let contextProvider: ContextProvider
-}
-
-extension KeywordsBridgeImpl: KeywordsBridge {
-    func telegramMessagesProvider() -> TelegramMessagesProvider {
-        TelegramMessagesProviderImpl(contextProvider: contextProvider)
-    }
-}
-
-//  MARK: - TelegramMessagesProviderImpl
-
-private final class TelegramMessagesProviderImpl {
+final class TelegramMessagesProviderImpl {
     private let keywordsContext: KeywordsContext
     
     init(contextProvider: ContextProvider) {

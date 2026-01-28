@@ -59,10 +59,6 @@ public struct NGSettings {
     
     @NGStorage(key: "rememberFolderOnExit", defaultValue: false)
     public static var rememberFolderOnExit: Bool
-    
-    @available(*, deprecated, message: "Deprecation version 1.9.6(441). Use GetSpeech2TextSettingsUseCase or getNicegramSettings()")
-    @NGStorage(key: "useOpenAI", defaultValue: false)
-    public static var useOpenAI: Bool
 
     @NGStorage(key: "lastFolder", defaultValue: -1)
     public static var lastFolder: Int32
@@ -89,9 +85,6 @@ public struct NGSettings {
     @NGStorage(key: "fixNotifications", defaultValue: false)
     public static var fixNotifications: Bool
     
-    @NGStorage(key: "showTabNames", defaultValue: true)
-    public static var showTabNames: Bool
-    
     @NGStorage(key: "showGmodIcon", defaultValue: true)
     public static var showGmodIcon: Bool
     
@@ -107,26 +100,8 @@ public struct NGSettings {
     @NGStorage(key: "shareChannelsInfo", defaultValue: false)
     public static var shareChannelsInfo: Bool
     
-    @NGStorage(key: "hideStories", defaultValue: false)
-    public static var hideStories: Bool
-    
     @NGStorage(key: "recordAllCalls", defaultValue: false)
     public static var recordAllCalls: Bool
-    
-    @NGStorage(key: "showFeedTab", defaultValue: false)
-    public static var showFeedTab: Bool
-    
-    @NGStorage(key: "feedPeer", defaultValue: [:])
-    public static var feedPeer: [Int64: PeerId]
-    
-    @NGStorage(key: "hideBadgeCounters", defaultValue: false)
-    public static var hideBadgeCounters: Bool
-    
-    @NGStorage(key: "hideUnreadCounters", defaultValue: false)
-    public static var hideUnreadCounters: Bool
-
-    @NGStorage(key: "hideMentionNotification", defaultValue: false)
-    public static var hideMentionNotification: Bool
     
     @NGStorage(key: "appleSpeechToTextLocale", defaultValue: [:])
     public static var appleSpeechToTextLocale: [Int64: Locale]
@@ -196,15 +171,6 @@ public class SystemNGSettings {
         }
     }
     
-    public var hideReactions: Bool {
-        get {
-            return UD.bool(forKey: "hideReactions")
-        }
-        set {
-            UD.set(newValue, forKey: "hideReactions")
-        }
-    }
-    
     public var isDoubleBottomOn: Bool {
         get {
             return UD.bool(forKey: "isDoubleBottomOn")
@@ -220,15 +186,6 @@ public class SystemNGSettings {
         }
         set {
             UD.set(newValue, forKey: "inDoubleBottom")
-        }
-    }
-    
-    public var hideReactionsToYourMessages: Bool {
-        get {
-            return UD.bool(forKey: "hideReactionsToYourMessages")
-        }
-        set {
-            UD.set(newValue, forKey: "hideReactionsToYourMessages")
         }
     }
 }

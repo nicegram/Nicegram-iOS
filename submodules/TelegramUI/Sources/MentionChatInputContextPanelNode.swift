@@ -1,7 +1,3 @@
-// Nicegram Imports
-import FeatPremiumUI
-import NGData
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -24,11 +20,11 @@ import GlassBackgroundComponent
 
 private struct MentionChatInputContextPanelEntry: Comparable, Identifiable {
     let index: Int
-    let peer: EnginePeer?
+    let peer: EnginePeer
     let revealed: Bool
     
-    var stableId: Int64? {
-        return self.peer?.id.toInt64()
+    var stableId: Int64 {
+        return self.peer.id.toInt64()
     }
     
     static func ==(lhs: MentionChatInputContextPanelEntry, rhs: MentionChatInputContextPanelEntry) -> Bool {
@@ -39,8 +35,8 @@ private struct MentionChatInputContextPanelEntry: Comparable, Identifiable {
         return lhs.index < rhs.index
     }
     
-    func item(context: AccountContext, presentationData: PresentationData, inverted: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer?) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> ListViewItem {
-        return MentionChatInputPanelItem(context: context, presentationData: ItemListPresentationData(presentationData), inverted: inverted, peer: self.peer?._asPeer(), revealed: self.revealed, setPeerIdRevealed: setPeerIdRevealed, peerSelected: peerSelected, removeRequested: removeRequested)
+    func item(context: AccountContext, presentationData: PresentationData, inverted: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> ListViewItem {
+        return MentionChatInputPanelItem(context: context, presentationData: ItemListPresentationData(presentationData), inverted: inverted, peer: self.peer._asPeer(), revealed: self.revealed, setPeerIdRevealed: setPeerIdRevealed, peerSelected: peerSelected, removeRequested: removeRequested)
     }
 }
 
@@ -50,7 +46,7 @@ private struct CommandChatInputContextPanelTransition {
     let updates: [ListViewUpdateItem]
 }
 
-private func preparedTransition(from fromEntries: [MentionChatInputContextPanelEntry], to toEntries: [MentionChatInputContextPanelEntry], context: AccountContext, presentationData: PresentationData, inverted: Bool, forceUpdate: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer?) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> CommandChatInputContextPanelTransition {
+private func preparedTransition(from fromEntries: [MentionChatInputContextPanelEntry], to toEntries: [MentionChatInputContextPanelEntry], context: AccountContext, presentationData: PresentationData, inverted: Bool, forceUpdate: Bool, setPeerIdRevealed: @escaping (EnginePeer.Id?) -> Void, peerSelected: @escaping (EnginePeer) -> Void, removeRequested: @escaping (EnginePeer.Id) -> Void) -> CommandChatInputContextPanelTransition {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries, allUpdated: forceUpdate)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
@@ -130,35 +126,6 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
         var entries: [MentionChatInputContextPanelEntry] = []
         var index = 0
         var peerIdSet = Set<Int64>()
-        
-        // Nicegram changes
-        let telegramUsers = results.compactMap { peer -> TelegramUser? in
-            switch peer {
-            case .user(let user):
-                if user.botInfo == nil {
-                    return user
-                } else {
-                    return nil
-                }
-            default:
-                return nil
-            }
-        }
-        // Nicegram MentionAll
-        let currentModeSupportsMentionAll: Bool
-        switch mode {
-        case .input:
-            currentModeSupportsMentionAll = true
-        case .search:
-            currentModeSupportsMentionAll = false
-        }
-        if currentModeSupportsMentionAll, telegramUsers.count > 1 {
-            index += 1
-            entries.append(MentionChatInputContextPanelEntry(index: index, peer: nil, revealed: false))
-            print("User count is \(telegramUsers.count)")
-        }
-        //
-    
         for peer in results {
             let peerId = peer.id.toInt64()
             if peerIdSet.contains(peerId) {
@@ -194,52 +161,7 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                             
                             if let range = mentionQueryRange {
                                 let inputText = NSMutableAttributedString(attributedString: textInputState.inputText)
-                                // Nicegram changes
-                                guard let peer = peer else {
-                                    let entries = entries
-                                        .map { entry in
-                                            let isBot: Bool
-                                            if case let .user(user) = entry.peer {
-                                                isBot = (user.botInfo != nil)
-                                            } else {
-                                                isBot = false
-                                            }
-                                            
-                                            let orderValue = isBot ? 1 : 0
-                                            
-                                            return (entry, orderValue)
-                                        }
-                                        .sorted { $0.1 < $1.1 }
-                                        .map(\.0)
-                                    
-                                    guard isPremium() else {
-                                        PremiumUITgHelper.routeToPremium(
-                                            source: .mentionAll
-                                        )
-                                        return (textInputState, inputMode)
-                                    }
-                                    let addressNames = NSMutableAttributedString()
-                                    for entry in entries {
-                                        switch entry.peer {
-                                        case .user(let userInfo):
-                                            if let addressName = userInfo.addressName, !addressName.isEmpty {
-                                                addressNames.append(NSAttributedString(string: "@\(addressName) "))
-                                            } else if let peer = entry.peer, !peer.compactDisplayTitle.isEmpty {
-                                                let appendText = NSMutableAttributedString()
-                                                appendText.append(NSAttributedString(string: peer.compactDisplayTitle, attributes: [ChatTextInputAttributes.textMention: ChatTextInputTextMentionAttribute(peerId: peer.id)]))
-                                                appendText.append(NSAttributedString(string: " "))
-                                                
-                                                addressNames.append(appendText)
-                                            }
-                                        default:
-                                            break
-                                        }
-                                    }
-                                    let updatedRange = NSRange(location: range.location - 1, length: range.length + 1)
-                                    inputText.replaceCharacters(in: updatedRange, with: addressNames)
-                                    let selectionPosition = range.lowerBound + addressNames.length
-                                    return (ChatTextInputState(inputText: inputText, selectionRange: selectionPosition ..< selectionPosition), inputMode)
-                                }
+                                
                                 if let addressName = peer.addressName, !addressName.isEmpty {
                                     let replacementText = addressName + " "
                                     
@@ -264,11 +186,8 @@ final class MentionChatInputContextPanelNode: ChatInputContextPanelNode {
                             }
                             return (textInputState, inputMode)
                         }
-                    // Nicegram changes
-                case .search:
-                    if let peer = peer {
+                    case .search:
                         interfaceInteraction.beginMessageSearch(.member(peer._asPeer()), "")
-                    } 
                 }
             }
         }, removeRequested: { [weak self] peerId in

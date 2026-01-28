@@ -371,7 +371,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: arguments.context.currentAppConfiguration.with { $0 })
         
         let transcriptionText = self.forcedAudioTranscriptionText ?? transcribedText(message: message)
-// Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
+        // Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
         if transcriptionText == nil && !arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost && false {
             if premiumConfiguration.audioTransciptionTrialCount > 0 {
                 if !arguments.associatedData.isPremium {
@@ -485,7 +485,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         strongSelf.transcribeDisposable?.dispose()
                         strongSelf.transcribeDisposable = nil
                     })
-// Nicegram NCG-6326 Apple Speech2Text
+                // Nicegram NCG-6326 Apple Speech2Text
                 } else if !isLongMedia() && arguments.associatedData.isPremium {
                     self.transcribeDisposable = (context.engine.messages.transcribeAudio(messageId: message.id)
                     |> deliverOnMainQueue).startStrict(next: { [weak self] result in
@@ -501,11 +501,26 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                             })
                         }
                     })
-// Nicegram NCG-6326 Apple Speech2Text
+                // Nicegram NCG-6326 Apple Speech2Text
                 } else {
-                    internalConvertSpeechToText()
+                    Task { @MainActor in
+                        updateStateAndLayout {
+                            self.audioTranscriptionState = .inProgress
+                        }
+                        defer {
+                            updateStateAndLayout {
+                                self.audioTranscriptionState = .expanded
+                            }
+                        }
+                        
+                        try await ngConvertSpeechToText(
+                            context: context,
+                            navigationController: arguments.controllerInteraction.navigationController(),
+                            message: message
+                        )
+                    }
                 }
-//
+                //
             }
         }
         
@@ -524,191 +539,6 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
             }
         }
     }
-//    private func transcribe() {
-//        guard let arguments = self.arguments, let context = self.context, let message = self.message else {
-//            return
-//        }
-//// Nicegram NCG-6326 Apple Speech2Text, remove premium check !context.isPremium
-//        if case .inProgress = self.audioTranscriptionState {
-//            return
-//        }
-//        
-//        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-//        let premiumConfiguration = PremiumConfiguration.with(appConfiguration: arguments.context.currentAppConfiguration.with { $0 })
-//        
-//        let transcriptionText = self.forcedAudioTranscriptionText ?? transcribedText(message: message)
-//// Nicegram NCG-6326 Apple Speech2Text, added false to skip this condition
-//        if transcriptionText == nil && !arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost && false {
-//            if premiumConfiguration.audioTransciptionTrialCount > 0 {
-//                if !arguments.associatedData.isPremium {
-//                    if self.presentAudioTranscriptionTooltip(finished: false) {
-//                        return
-//                    }
-//                }
-//            } else {
-//                if self.hapticFeedback == nil {
-//                    self.hapticFeedback = HapticFeedback()
-//                }
-//                self.hapticFeedback?.impact(.medium)
-//                
-//                let tipController = UndoOverlayController(presentationData: presentationData, content: .universal(animation: "anim_voiceToText", scale: 0.065, colors: [:], title: nil, text: presentationData.strings.Message_AudioTranscription_SubscribeToPremium, customUndoText: presentationData.strings.Message_AudioTranscription_SubscribeToPremiumAction, timeout: nil), elevatedLayout: false, position: .top, animateInAsReplacement: false, action: { action in
-//                    if case .undo = action {
-//                        var replaceImpl: ((ViewController) -> Void)?
-//                        let controller = context.sharedContext.makePremiumDemoController(context: context, subject: .voiceToText, forceDark: false, action: {
-//                            let controller = context.sharedContext.makePremiumIntroController(context: context, source: .settings, forceDark: false, dismissed: nil)
-//                            replaceImpl?(controller)
-//                        }, dismissed: nil)
-//                        replaceImpl = { [weak controller] c in
-//                            controller?.replace(with: c)
-//                        }
-//                        arguments.controllerInteraction.navigationController()?.pushViewController(controller, animated: true)
-//                        
-//                        let _ = ApplicationSpecificNotice.incrementAudioTranscriptionSuggestion(accountManager: context.sharedContext.accountManager).startStandalone()
-//                    }
-//                    return false })
-//                arguments.controllerInteraction.presentControllerInCurrent(tipController, nil)
-//                return
-//            }
-//        }
-//        
-//        var shouldBeginTranscription = false
-//        var shouldExpandNow = false
-//        
-//        if case .expanded = self.audioTranscriptionState {
-//            shouldExpandNow = true
-//        } else {
-//            if let result = transcribedText(message: message) {
-//                shouldExpandNow = true
-//                
-//                if case let .success(_, isPending) = result {
-//                    shouldBeginTranscription = isPending
-//                } else {
-//                    shouldBeginTranscription = true
-//                }
-//            } else {
-//                shouldBeginTranscription = true
-//            }
-//        }
-//        
-//        if shouldBeginTranscription {
-//            if self.transcribeDisposable == nil {
-//                self.audioTranscriptionState = .inProgress
-//                self.requestUpdateLayout(true)
-//                
-//                // Nicegram Speech2Text
-//                let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared
-//                    .getSpeech2TextSettingsUseCase()
-//                let useNicegram = getSpeech2TextSettingsUseCase()
-//
-//                if useNicegram ||
-//                   NGSettings.useOpenAI ||
-//                   isLongMedia() {
-//                    internalConvertSpeechToText()
-//                }
-//                //
-//                else if context.sharedContext.immediateExperimentalUISettings.localTranscription {
-//                    let appLocale = presentationData.strings.baseLanguageCode
-//                    
-//                    let signal: Signal<LocallyTranscribedAudio?, NoError> = context.engine.data.get(TelegramEngine.EngineData.Item.Messages.Message(id: message.id))
-//                    |> mapToSignal { message -> Signal<String?, NoError> in
-//                        guard let message = message else {
-//                            return .single(nil)
-//                        }
-//                        guard let file = message.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile else {
-//                            return .single(nil)
-//                        }
-//                        return context.account.postbox.mediaBox.resourceData(id: file.resource.id)
-//                        |> take(1)
-//                        |> mapToSignal { data -> Signal<String?, NoError> in
-//                            if !data.complete {
-//                                return .single(nil)
-//                            }
-//                            return .single(data.path)
-//                        }
-//                    }
-//                    |> mapToSignal { result -> Signal<String?, NoError> in
-//                        guard let result = result else {
-//                            return .single(nil)
-//                        }
-//                        return convertOpusToAAC(sourcePath: result, allocateTempFile: {
-//                            return TempBox.shared.tempFile(fileName: "audio.m4a").path
-//                        })
-//                    }
-//                    |> mapToSignal { result -> Signal<LocallyTranscribedAudio?, NoError> in
-//                        guard let result = result else {
-//                            return .single(nil)
-//                        }
-//                        return transcribeAudio(path: result, appLocale: appLocale)
-//                    }
-//                    
-//                    self.transcribeDisposable = (signal
-//                    |> deliverOnMainQueue).startStrict(next: { [weak self] result in
-//                        guard let strongSelf = self, let arguments = strongSelf.arguments else {
-//                            return
-//                        }
-//                        
-//                        if let result = result {
-//                            let _ = arguments.context.engine.messages.storeLocallyTranscribedAudio(messageId: arguments.message.id, text: result.text, isFinal: result.isFinal, error: nil).startStandalone()
-//                            // Nicegram Speech2Text
-//                            strongSelf.audioTranscriptionState = .expanded
-//                            //
-//                        } else {
-//                            strongSelf.audioTranscriptionState = .collapsed
-//                            strongSelf.requestUpdateLayout(true)
-//                        }
-//                    }, completed: { [weak self] in
-//                        guard let strongSelf = self else {
-//                            return
-//                        }
-//                        strongSelf.transcribeDisposable?.dispose()
-//                        strongSelf.transcribeDisposable = nil
-//                    })
-//                // Nicegram NCG-6326 Apple Speech2Text, add if context.isPremium
-//                } else if context.isPremium {
-//                    self.transcribeDisposable = (context.engine.messages.transcribeAudio(messageId: message.id)
-//                    |> deliverOnMainQueue).startStrict(next: { [weak self] result in
-//                        guard let strongSelf = self else {
-//                            return
-//                        }
-//                        strongSelf.transcribeDisposable?.dispose()
-//                        strongSelf.transcribeDisposable = nil
-//                        
-//                        if let arguments = strongSelf.arguments, !arguments.associatedData.isPremium && !arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
-//                            Queue.mainQueue().after(0.1, {
-//                                let _ = strongSelf.presentAudioTranscriptionTooltip(finished: true)
-//                            })
-//                        }
-//                    })
-//                }
-//                // Nicegram NCG-6326 Apple Speech2Text
-//                else {
-//                    Queue.mainQueue().async { [weak self] in
-//                        self?.audioTranscriptionState = .collapsed
-//                        self?.requestUpdateLayout(true)
-//                    }
-//                    PremiumUITgHelper.routeToPremium(
-//                        source: .speechToText
-//                    )
-//                }
-//                //
-//            }
-//        }
-//        
-//        if shouldExpandNow {
-//            switch self.audioTranscriptionState {
-//            case .expanded:
-//                self.audioTranscriptionState = .collapsed
-//                self.isWaitingForCollapse = true
-//                self.requestUpdateLayout(true)
-//                self.updateTranscriptionExpanded?(self.audioTranscriptionState)
-//            case .collapsed:
-//                self.audioTranscriptionState = .inProgress
-//                self.requestUpdateLayout(true)
-//            default:
-//                break
-//            }
-//        }
-//    }
     
     private func presentAudioTranscriptionTooltip(finished: Bool) -> Bool {
         guard let arguments = self.arguments, !arguments.associatedData.isPremium else {
@@ -2358,42 +2188,22 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
         }
     }
     
-// Nicegram NCG-6326 Apple Speech2Text
-    private func internalConvertSpeechToText(
-        with languageStyle: RecognitionLanguagesControllerStyle = .normal
-    ) {
-        guard let arguments = self.arguments,
-              let context = self.context,
-              let message = self.message,
-              let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }) else {
-            return
-        }
-        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let controllerInteraction = arguments.controllerInteraction
-        
-        convertSpeechToText(
-            languageStyle: languageStyle,
-            context: context,
-            mediaFile: mediaFile,
-            message: message,
-            presentationData: presentationData,
-            controllerInteraction: controllerInteraction
-        ) { [weak self] in
-            self?.audioTranscriptionState = .expanded
-        } closeWithoutSelect: { [weak self] in
-            Queue.mainQueue().async {
-                self?.audioTranscriptionState = .collapsed
-                self?.requestUpdateLayout(true)
-            }
-        }
-    }
-    
+    // Nicegram NCG-6326 Apple Speech2Text
     private func isLongMedia(_ limit: Double = 2 * 60) -> Bool {
         let duration = message?.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice })?.duration ?? 0
         
         return duration >= limit
     }
-//
+    
+    @MainActor
+    private func updateStateAndLayout(
+        animated: Bool = true,
+        updater: () -> Void
+    ){
+        updater()
+        requestUpdateLayout(true)
+    }
+    //
 }
 
 

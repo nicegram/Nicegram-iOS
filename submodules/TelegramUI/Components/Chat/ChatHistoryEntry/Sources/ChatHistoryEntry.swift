@@ -1,6 +1,3 @@
-// Nicegram ATT
-import FeatAttentionEconomy
-//
 // Nicegram Wallet
 import NicegramWallet
 //
@@ -66,30 +63,8 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
     case ReplyCountEntry(MessageIndex, Bool, Int, ChatPresentationData)
     case ChatInfoEntry(ChatInfoData, ChatPresentationData)
     case SearchEntry(PresentationTheme, PresentationStrings)
-    // Nicegram ATT
-    case NicegramAdEntry(String, AttAd, ChatPresentationData)
-    //
     
-    // Nicegram ATT
-    public enum StableId: Hashable, Comparable {
-        case uint64(UInt64)
-        case nicegramAd(String)
-        
-        public var uint64Value: UInt64 {
-            switch self {
-            case let .uint64(uint64): uint64
-            case .nicegramAd: 0
-            }
-        }
-        
-        public static func <(lhs: StableId, rhs: StableId) -> Bool {
-            lhs.uint64Value < rhs.uint64Value
-        }
-    }
-    //
-    
-    // Nicegram ATT, changed UInt64 to StableId
-    public var stableId: StableId {
+    public var stableId: UInt64 {
         switch self {
             case let .MessageEntry(message, _, _, _, _, attributes):
                 let type: UInt64
@@ -101,27 +76,17 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                     case .animatedEmoji:
                         type = 4
                 }
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(message.stableId) | ((type << 40)))
+                return UInt64(message.stableId) | ((type << 40))
             case let .MessageGroupEntry(groupInfo, _, _):
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(bitPattern: groupInfo) | ((UInt64(2) << 40)))
+                return UInt64(bitPattern: groupInfo) | ((UInt64(2) << 40))
             case .UnreadEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(4) << 40)
+                return UInt64(4) << 40
             case .ReplyCountEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(5) << 40)
+                return UInt64(5) << 40
             case .ChatInfoEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(6) << 40)
+                return UInt64(6) << 40
             case .SearchEntry:
-                // Nicegram ATT, wrap in .uint64()
-                return .uint64(UInt64(7) << 40)
-            // Nicegram ATT
-            case let .NicegramAdEntry(id, _, _):
-                return .nicegramAd(id)
-            //
+                return UInt64(7) << 40
         }
     }
     
@@ -144,10 +109,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 }
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
-            // Nicegram ATT
-            case .NicegramAdEntry:
-                return MessageIndex.absoluteLowerBound()
-            //
         }
     }
     
@@ -170,10 +131,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 }
             case .SearchEntry:
                 return MessageIndex.absoluteLowerBound()
-            // Nicegram ATT
-            case .NicegramAdEntry:
-                return MessageIndex.absoluteLowerBound()
-            //
         }
     }
     
@@ -352,17 +309,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 } else {
                     return false
                 }
-            // Nicegram ATT
-            case let .NicegramAdEntry(lhsId, lhsAd, lhsPresentationData):
-                if case let .NicegramAdEntry(rhsId, rhsAd, rhsPresentationData) = rhs,
-                   lhsId == rhsId,
-                   lhsAd == rhsAd,
-                   lhsPresentationData === rhsPresentationData {
-                    return true
-                } else {
-                    return false
-                }
-            //
         }
     }
     

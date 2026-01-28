@@ -1117,10 +1117,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         }
                     }
                     
-                    // Nicegram ColorAlign
-                    titleTopicIconComponent = titleTopicIconComponent?.applyingChatListDisplaySettings()
-                    //
-                    
                     var titleTopicAvatarNode: AvatarNode?
                     if let _ = threadPeer {
                         if let current = currentNode?.titleTopicAvatarNode {
@@ -1864,24 +1860,19 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             enablePreview = false
         }
         
-        // Nicegram HideStories, check hideStories flag before setStoryStats
-        if !NGSettings.hideStories {
-            self.avatarNode.setStoryStats(storyStats: storyState.flatMap { storyState in
-                return AvatarNode.StoryStats(
-                    totalCount: storyState.stats.totalCount,
-                    unseenCount: storyState.stats.unseenCount,
-                    hasUnseenCloseFriendsItems: storyState.hasUnseenCloseFriends,
-                    hasLiveItems: storyState.stats.hasLiveItems
-                )
-            }, presentationParams: AvatarNode.StoryPresentationParams(
-                colors: AvatarNode.Colors(theme: item.presentationData.theme),
-                lineWidth: 2.33,
-                inactiveLineWidth: 1.33
-            ), transition: .immediate)
-            self.avatarNode.isUserInteractionEnabled = storyState != nil
-        } else {
-            self.avatarNode.isUserInteractionEnabled = false
-        }
+        self.avatarNode.setStoryStats(storyStats: storyState.flatMap { storyState in
+            return AvatarNode.StoryStats(
+                totalCount: storyState.stats.totalCount,
+                unseenCount: storyState.stats.unseenCount,
+                hasUnseenCloseFriendsItems: storyState.hasUnseenCloseFriends,
+                hasLiveItems: storyState.stats.hasLiveItems
+            )
+        }, presentationParams: AvatarNode.StoryPresentationParams(
+            colors: AvatarNode.Colors(theme: item.presentationData.theme),
+            lineWidth: 2.33,
+            inactiveLineWidth: 1.33
+        ), transition: .immediate)
+        self.avatarNode.isUserInteractionEnabled = storyState != nil
         
         if let stats = storyState?.stats, stats.hasLiveItems {
             if self.avatarLiveBadge == nil {
@@ -2245,10 +2236,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
     }
     
     func asyncLayout() -> (_ item: ChatListItem, _ params: ListViewItemLayoutParams, _ first: Bool, _ last: Bool, _ firstWithHeader: Bool, _ nextIsPinned: Bool) -> (ListViewItemNodeLayout, (Bool, Bool) -> Void) {
-        // Nicegram ColorAlign
-        self.textNode.disableAnimations = getNicegramSettings().disableAnimationsInChatList
-        //
-        
         let dateLayout = TextNode.asyncLayout(self.dateNode)
         let textLayout = TextNodeWithEntities.asyncLayout(self.textNode)
         let makeTrailingTextBadgeLayout = TextNode.asyncLayout(self.trailingTextBadgeNode)
@@ -3346,8 +3333,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                 }
             }
-            // Nicegram NCG-6652 Hide UI notifications, !NGSettings.hideBadgeCounters
-            if unreadCount.unread, !NGSettings.hideUnreadCounters {
+            if unreadCount.unread {
                 if !isPeerGroup, let message = messages.last, message.tags.contains(.unseenPersonalMessage), unreadCount.count == 1 {
                 } else {
                     let badgeTextColor: UIColor
@@ -3390,8 +3376,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             }
 
             if !isPeerGroup {
-// Nicegram NCG-6652 Hide UI notifications, !NGSettings.hideMentionNotification
-                if hasUnseenMentions, !NGSettings.hideMentionNotification {
+                if hasUnseenMentions {
                     if case .chatList(.archive) = item.chatListLocation {
                         currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactiveMention(item.presentationData.theme, diameter: badgeDiameter)
                     } else {
@@ -3399,8 +3384,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                     mentionBadgeContent = .mention
                 }
-                // Nicegram HideReactions, !VarSystemNGSettings.hideReactions added, !NGSettings.hideBadgeCounters
-                else if hasUnseenReactions, !VarSystemNGSettings.hideReactions, !NGSettings.hideBadgeCounters {
+                else if hasUnseenReactions {
                     if isRemovedFromTotalUnreadCount {
                         currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactiveReactions(item.presentationData.theme, diameter: badgeDiameter)
                     } else {
@@ -4231,8 +4215,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             content: avatarIconContent,
                             isVisibleForAnimations: strongSelf.visibilityStatus && item.context.sharedContext.energyUsageSettings.loopEmoji,
                             action: nil
-                            // Nicegram ColorAlign, added .applyingChatListDisplaySettings()
-                        ).applyingChatListDisplaySettings()
+                        )
                         strongSelf.avatarIconComponent = avatarIconComponent
                         
                         let iconSize = avatarIconView.update(
@@ -5069,8 +5052,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             content: currentCredibilityIconContent,
                             isVisibleForAnimations: strongSelf.visibilityStatus && item.context.sharedContext.energyUsageSettings.loopEmoji,
                             action: nil
-                            // Nicegram ColorAlign, added .applyingChatListDisplaySettings()
-                        ).applyingChatListDisplaySettings()
+                        )
                         strongSelf.credibilityIconComponent = credibilityIconComponent
                         
                         let iconOrigin: CGFloat = nextTitleIconOrigin
@@ -5110,8 +5092,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             content: currentVerifiedIconContent,
                             isVisibleForAnimations: strongSelf.visibilityStatus && item.context.sharedContext.energyUsageSettings.loopEmoji,
                             action: nil
-                            // Nicegram ColorAlign, added .applyingChatListDisplaySettings()
-                        ).applyingChatListDisplaySettings()
+                        )
                         strongSelf.verifiedIconComponent = verifiedIconComponent
                         
                         let iconOrigin: CGFloat
@@ -5687,16 +5668,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
         }
     }
 }
-
-// Nicegram ColorAlign
-private extension EmojiStatusComponent {
-    func applyingChatListDisplaySettings() -> EmojiStatusComponent {
-        var result = self
-        result.ngDisableAnimations = getNicegramSettings().disableAnimationsInChatList
-        return result
-    }
-}
-//
 
 // Nicegram PinnedChats
 private extension ChatListItem {

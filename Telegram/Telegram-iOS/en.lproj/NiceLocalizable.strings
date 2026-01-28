@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "FOLDERS";
 "NiceFeatures.Account.Header" = "Privacy settings";
-"NiceFeatures.Folders.TgFolders" = "Folders at bottom";
-"NiceFeatures.Folders.TgFolders.Notice" = "iOS-styled folder list";
 
 "NiceFeatures.RoundVideos.Header" = "ROUND VIDEOS";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Start with rear camera";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "Exit Now";
 "Common.Later" = "Later";
-"Common.RestartRequired" = "Restart Required!";
-"NiceFeatures.Tabs.ShowNames" = "Show Tab Names";
 "Chat.ForwardAsCopy" = "Forward As Copy";
 
 /*Folder*/
@@ -158,21 +154,10 @@
 "NicegramSettings.Other.showRegDate" = "Show Registration Date";
 "NicegramSettings.Unblock.Header" = "Unblock";
 "NicegramSettings.Unblock.Button" = "Unblock Guide";
-"NicegramSettings.Other.hideReactions" = "Hide Reactions";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Hide reactions to your messages";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Download videos to Gallery";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignore Languages";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App detects language of each message on your device. It's a high-performance task which can affect your battery life.";
 "Premium.rememberFolderOnExit" = "Remember current folder on exit";
-"NicegramSettings.HideStories" = "Hide Stories";
-"NicegramSettings.HideBadgeCounters" = "Hide Reaction notifications";
-"NicegramSettings.HideUnreadCounters" = "Hide Unread counters";
-"NicegramSettings.HideMentionNotification" = "Hide Mention notifications";
-"NicegramSettings.EnableAnimationsInChatList" = "Animations in chat list";
-"NicegramSettings.EnableGrayscaleAll" = "Full-Screen Grayscale";
-"NicegramSettings.EnableGrayscaleInChatList" = "Grayscale in chat list";
-"NicegramSettings.EnableGrayscaleInChat" = "Grayscale in chat";
-"NicegramSettings.EnableAppleSpeech2Text" = "Enable Apple Speech2Text";
 "NicegramSettings.ShowKeywords" = "Show Folder for Keywords";
 
 /*Registration Date*/
@@ -201,10 +186,6 @@
 "RoundedVideos.ButtonTitle" = "Send as Rounded Video";
 "RoundedVideos.MoreButtonTooltip" = "Convert square videos to send as circles with one tap.";
 "RoundedVideos.SendButtonTooltip" = "Long-press to send your video as a stylish circle.";
-
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI Speech2Text";
-"SpeechToText.Toast" = "[Subscribe to Nicegram Premium]() for faster and better OpenAI Speech2Text technologies!";
 
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Are you sure you want to make a call?";
@@ -235,7 +216,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Select the language of your voice message to enhance accuracy, or [activate Whisper](https://my.nicegram.app/) for effortless automatic recognition";
 "NicegramSpeechToText.Language.Choose" = "Choose a language for recognition";
 "NicegramSpeechToText.SelectLanguage" = "Select Language";
 "NicegramSpeechToText.NotAvailable" = "Speech-to-text recognition is currently unavailable";

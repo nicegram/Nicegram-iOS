@@ -357,6 +357,12 @@ public final class TabSelectorComponent: Component {
             self.containerNode.isGestureEnabled = item.contextAction != nil && !isReordering
             self.tapGesture?.isEnabled = !isReordering
             
+            // Nicegram, add accessibility ids
+            if case .text(let text) = self.item?.content {
+                self.accessibilityIdentifier = "item_\(text)"
+            }
+            //
+            
             transition.setFrame(view: self.containerButton, frame: CGRect(origin: CGPoint(), size: size))
             
             self.extractedContainerNode.frame = CGRect(origin: CGPoint(), size: size)

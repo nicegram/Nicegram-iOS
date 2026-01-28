@@ -10,7 +10,6 @@ NGDEPS = [
     "//submodules/SaveToCameraRoll:SaveToCameraRoll",
     "//submodules/AccountUtils:AccountUtils",
     "@swiftpkg_nicegram_assistant_ios//:FeatAssistant",
-    "@swiftpkg_nicegram_assistant_ios//:FeatChatExport",
     "@swiftpkg_nicegram_assistant_ios//:FeatChatListWidget",
     "@swiftpkg_nicegram_assistant_ios//:FeatHiddenChats",
     "@swiftpkg_nicegram_assistant_ios//:FeatPinnedChats",

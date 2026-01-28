@@ -632,10 +632,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             self.chatDisplayNode.showListEmptyResults = self.showListEmptyResults
         }
     }
-// Nicegram NCG-6373 Feed tab
-    let isFeed: Bool
-//
-// Nicegram NCG-6373 Feed tab, isFeed
     
     var layoutActionOnViewTransitionAction: (() -> Void)?
     
@@ -656,12 +652,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         chatListFilter: Int32? = nil,
         chatNavigationStack: [ChatNavigationStackItem] = [],
         customChatNavigationStack: [EnginePeer.Id]? = nil,
-        params: ChatControllerParams? = nil,
-        isFeed: Bool = false
+        params: ChatControllerParams? = nil
     ) {
-// Nicegram NCG-6373 Feed tab
-        self.isFeed = isFeed
-//
         self.initTimestamp = CFAbsoluteTimeGetCurrent()
          
         let _ = ChatControllerCount.modify { value in
@@ -1913,8 +1905,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                         }
                         
                         if removedReaction == nil {
-                            // Nicegram HideReactions, account added
-                            if !canAddMessageReactions(message: message, account: context.account) {
+                            if !canAddMessageReactions(message: message) {
                                 itemNode.openMessageContextMenu()
                                 return
                             }

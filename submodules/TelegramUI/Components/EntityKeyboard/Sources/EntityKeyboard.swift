@@ -11,14 +11,6 @@ import AudioToolbox
 import SwiftSignalKit
 import LocalizedPeerData
 
-// Nicegram OpenGifsShortcut
-public enum EntityKeyboardInputTab: String {
-    case gif
-    case stickers
-    case emoji
-}
-//
-
 public final class EntityKeyboardChildEnvironment: Equatable {
     public let theme: PresentationTheme
     public let strings: PresentationStrings
@@ -100,10 +92,6 @@ public final class EntityKeyboardComponent: Component {
         }
     }
     
-    // Nicegram OpenGifsShortcut
-    public let defaultTab: EntityKeyboardInputTab?
-    //
-    
     public let theme: PresentationTheme
     public let strings: PresentationStrings
     public let isContentInFocus: Bool
@@ -140,9 +128,6 @@ public final class EntityKeyboardComponent: Component {
     public let customTintColor: UIColor?
     
     public init(
-        // Nicegram OpenGifsShortcut
-        defaultTab: EntityKeyboardInputTab? = nil,
-        //
         theme: PresentationTheme,
         strings: PresentationStrings,
         isContentInFocus: Bool,
@@ -178,9 +163,6 @@ public final class EntityKeyboardComponent: Component {
         hidePanels: Bool = false,
         customTintColor: UIColor? = nil
     ) {
-        // Nicegram OpenGifsShortcut
-        self.defaultTab = defaultTab
-        //
         self.theme = theme
         self.strings = strings
         self.isContentInFocus = isContentInFocus
@@ -734,9 +716,7 @@ public final class EntityKeyboardComponent: Component {
                     contentIcons: contentIcons,
                     contentAccessoryLeftButtons: contentAccessoryLeftButtons,
                     contentAccessoryRightButtons: contentAccessoryRightButtons,
-                    // Nicegram OpenGifsShortcut, first check component.defaultTab value
-                    defaultId: component.defaultTab?.rawValue ?? (component.defaultToEmojiTab ? "emoji" : "stickers"),
-                    //
+                    defaultId: component.defaultToEmojiTab ? "emoji" : "stickers",
                     contentBackground: nil,
                     topPanel: AnyComponent(EntityKeyboardTopContainerPanelComponent(
                         theme: component.theme,

@@ -105,15 +105,6 @@ public final class TabBarSearchView: UIView {
     }
 }
 
-// Nicegram ShowTabNames
-private let showTabNames = NGSettings.showTabNames
-private func adjustTabBarSize(_ size: inout CGSize) {
-    if !showTabNames {
-        size.height -= 15
-    }
-}
-//
-
 public final class TabBarComponent: Component {
     public final class Item: Equatable {
         public let item: UITabBarItem
@@ -380,12 +371,7 @@ public final class TabBarComponent: Component {
             
             self.overrideUserInterfaceStyle = component.theme.overallDarkAppearance ? .dark : .light
 
-            // Nicegram ShowTabNames, change to 'var'
-            var itemSize = CGSize(width: floor((availableSize.width - innerInset * 2.0) / CGFloat(component.items.count)), height: 56.0)
-            
-            // Nicegram ShowTabNames
-            adjustTabBarSize(&itemSize)
-            //
+            let itemSize = CGSize(width: floor((availableSize.width - innerInset * 2.0) / CGFloat(component.items.count)), height: 56.0)
             
             let contentWidth: CGFloat = innerInset * 2.0 + CGFloat(component.items.count) * itemSize.width
             let size = CGSize(width: min(availableSize.width, contentWidth), height: itemSize.height + innerInset * 2.0)
@@ -709,18 +695,12 @@ private final class ItemComponent: Component {
                 containerSize: CGSize(width: availableSize.width, height: 100.0)
             )
             let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: availableSize.height - 8.0 - titleSize.height), size: titleSize)
-            // Nicegram ShowTabNames, showTabNames added
-            if showTabNames, let titleView = self.title.view {
+            if let titleView = self.title.view {
                 if titleView.superview == nil {
                     self.contextContainerView.contentView.addSubview(titleView)
                 }
                 titleView.frame = titleFrame
             }
-            // Nicegram ShowTabNames
-            if !showTabNames {
-                self.title.view?.removeFromSuperview()
-            }
-            //
             
             if let badgeText = component.item.item.badgeValue, !badgeText.isEmpty {
                 let badge: ComponentView<Empty>

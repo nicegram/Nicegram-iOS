@@ -327,6 +327,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.godsEyeButtonNode = ASButtonNode()
         self.godsEyeButtonNode.displaysAsynchronously = false
         self.godsEyeButtonNode.isHidden = true
+        self.godsEyeButtonNode.accessibilityIdentifier = "button_gods_eye"
         //
         super.init()
                 
@@ -2816,6 +2817,8 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             godsEyeButtonSize = CGSize(width: titleRect.width + (36 + 14), height: 48)
             godsEyeYInset = isMyProfile ? 62 : 138
         }
+        
+        godsEyeYInset += bottomInset
         
         let godsEyeBackgroundImage = generateFilledRoundedRectImage(
             size: godsEyeButtonSize,

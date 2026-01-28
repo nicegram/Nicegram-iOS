@@ -92,9 +92,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     // Nicegram Assistant
     public var assistantController: ViewController?
     //
-// Nicegram NCG-6373 Feed tab
-    private var feedController: FeedController?
-//
+    
     private let context: AccountContext
     
     public var rootTabController: TabBarController?
@@ -345,17 +343,6 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
 
         controllers.append(chatListController)
         
-// Nicegram NCG-6373 Feed tab
-        let feedController = FeedController(
-            context: self.context
-        )
-        if NGSettings.showFeedTab &&
-           NGSettings.feedPeer[context.account.id.int64] != nil {
-            controllers.append(feedController)
-        }
-        self.feedController = feedController
-//
-        
         // Nicegram Assistant
         if #available(iOS 15.0, *) {
             let assistantController = NativeControllerWrapper(
@@ -490,12 +477,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
             controllers.append(self.callListController!)
         }
         controllers.append(self.chatListController!)
-// Nicegram NCG-6373 Feed tab
-        if NGSettings.showFeedTab &&
-           NGSettings.feedPeer[context.account.id.int64] != nil {
-            controllers.append(self.feedController!)
-        }
-//
+
         // Nicegram Assistant
         if let assistantController {
             controllers.append(assistantController)

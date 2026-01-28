@@ -510,14 +510,6 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
                         let button = AccessoryItemIconButton(item: item, theme: currentState.theme, strings: currentState.strings)
                         button.addTarget(self, action: #selector(self.accessoryItemButtonPressed(_:)), for: .touchUpInside)
                         
-                        // Nicegram OpenGifsShortcut
-                        let contextGesture = ContextGesture()
-                        contextGesture.activated = { [weak self] _, _ in
-                            self?.accessoryItemButtonLongTap(item)
-                        }
-                        button.addGestureRecognizer(contextGesture)
-                        //
-                        
                         itemAndButton = (item, button)
                     }
                     updatedButtons.append(itemAndButton!)
@@ -2221,14 +2213,6 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
                 if itemAndButton == nil {
                     let button = AccessoryItemIconButton(item: item, theme: interfaceState.theme, strings: interfaceState.strings)
                     button.addTarget(self, action: #selector(self.accessoryItemButtonPressed(_:)), for: .touchUpInside)
-                    
-                    // Nicegram OpenGifsShortcut
-                    let contextGesture = ContextGesture()
-                    contextGesture.activated = { [weak self] _, _ in
-                        self?.accessoryItemButtonLongTap(item)
-                    }
-                    button.addGestureRecognizer(contextGesture)
-                    //
                     
                     itemAndButton = (item, button)
                 }
@@ -5406,26 +5390,6 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             }
         }
     }
-    
-    // Nicegram OpenGifsShortcut
-    private func accessoryItemButtonLongTap(_ item: ChatTextInputAccessoryItem) {
-        switch item {
-        case let .input(isEnabled, inputMode), let .botInput(isEnabled, inputMode):
-            switch inputMode {
-            case .stickers, .emoji:
-                if isEnabled {
-                    self.interfaceInteraction?.openGifs()
-                } else {
-                    self.interfaceInteraction?.displayRestrictedInfo(.stickers, .tooltip)
-                }
-            default:
-                break
-            }
-        default:
-            break
-        }
-    }
-    //
     
     override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         if let audioRecordingCancelIndicator = self.audioRecordingCancelIndicator {

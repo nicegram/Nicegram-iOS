@@ -159,10 +159,7 @@ extension ChatControllerImpl {
             customChatNavigationStack: self.customChatNavigationStack,
             presentationData: self.presentationData,
             historyNode: historyNode,
-            inviteRequestsContext: self.contentData?.inviteRequestsContext,
-            // Nicegram NCG-6373 Feed tab
-            isFeed: self.isFeed
-            //
+            inviteRequestsContext: self.contentData?.inviteRequestsContext
         )
         self.pendingContentData = (contentData, historyNode)
         self.contentDataDisposable = (contentData.isReady.get()
@@ -681,8 +678,7 @@ extension ChatControllerImpl {
             }
         }
         
-        // Nicegram, isFeed added
-        self.displayNode = ChatControllerNode(context: self.context, chatLocation: self.chatLocation, chatLocationContextHolder: self.chatLocationContextHolder, subject: self.subject, controllerInteraction: self.controllerInteraction!, chatPresentationInterfaceState: self.presentationInterfaceState, automaticMediaDownloadSettings: self.automaticMediaDownloadSettings, navigationBar: self.navigationBar, statusBar: self.statusBar, backgroundNode: self.chatBackgroundNode, controller: self, isFeed: self.isFeed)
+        self.displayNode = ChatControllerNode(context: self.context, chatLocation: self.chatLocation, chatLocationContextHolder: self.chatLocationContextHolder, subject: self.subject, controllerInteraction: self.controllerInteraction!, chatPresentationInterfaceState: self.presentationInterfaceState, automaticMediaDownloadSettings: self.automaticMediaDownloadSettings, navigationBar: self.navigationBar, statusBar: self.statusBar, backgroundNode: self.chatBackgroundNode, controller: self)
         
         if let currentItem = self.tempVoicePlaylistCurrentItem {
             self.chatDisplayNode.historyNode.voicePlaylistItemChanged(nil, currentItem)
@@ -1653,12 +1649,6 @@ extension ChatControllerImpl {
                     })
                 }
             })
-        }, openGifs: { [weak self] in
-            // Nicegram OpenGifsShortcut
-            guard let self = self else { return }
-            self.chatDisplayNode.openStickers(defaultTab: .gif, beginWithEmoji: false)
-            self.mediaRecordingModeTooltipController?.dismissImmediately()
-            //
         }, replyPrivately: { [weak self] message in
             // Nicegram ReplyPrivately
             self?.replyPrivately(message: message)

@@ -10,9 +10,7 @@ import AccountContext
 import SearchUI
 import ChatListUI
 import CounterControllerTitleView
-// Nicegram NCG-6652 Hide UI notifications
-import NGData
-//
+
 public final class PeerSelectionControllerImpl: ViewController, PeerSelectionController {
     private let context: AccountContext
     
@@ -491,23 +489,8 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
                 }
             }
             
-// Nicegram NCG-6652 Hide UI notifications
-            let resolvedItems = filterItems.map { filter -> ChatListFilterTabEntry in
-                switch filter {
-                case let .all(unreadCount):
-                    return .all(unreadCount: NGSettings.hideUnreadCounters ? 0 : unreadCount)
-                case let .filter(id, text, unread):
-                    return .filter(
-                        id: id,
-                        text: text,
-                        unread: .init(
-                            entry: unread,
-                            hideUnreadCounters: NGSettings.hideUnreadCounters
-                        )
-                    )
-                }
-            }
-//
+            let resolvedItems = filterItems
+            
             var wasEmpty = false
             if let tabContainerData = strongSelf.tabContainerData {
                 wasEmpty = tabContainerData.0.count <= 1 || tabContainerData.1
@@ -630,9 +613,7 @@ public final class PeerSelectionControllerImpl: ViewController, PeerSelectionCon
             if strongSelf.peerSelectionNode.mainContainerNode?.currentItemNode.chatListFilter?.id == updatedFilter?.id {
                 strongSelf.scrollToTop?()
             } else {
-                strongSelf.peerSelectionNode.mainContainerNode?.switchToFilter(
-                    id: updatedFilter.flatMap { .filter($0.id) } ?? .all
-                )
+                strongSelf.peerSelectionNode.mainContainerNode?.switchToFilter(id: updatedFilter.flatMap { .filter($0.id) } ?? .all)
             }
         })
     }

@@ -88,15 +88,6 @@ private enum EasyToggleType {
     case sendWithEnter
     case showProfileId
     case showRegDate
-    case hideReactions
-    case hideStories
-    case hideBadgeCounters
-    case hideUnreadCounters
-    case hideMentionNotification
-    case enableAnimationsInChatList
-    case enableGrayscaleAll
-    case enableGrayscaleInChatList
-    case enableGrayscaleInChat
 }
 
 
@@ -106,8 +97,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case TabsHeader(String)
     case showContactsTab(String, Bool)
     case showCallsTab(String, Bool)
-    case showTabNames(String, Bool)
-    case showFeedTab(String, Bool)
     
     case pinnedChatsHeader
     case pinnedChat(PinnedChat)
@@ -121,8 +110,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     case FoldersHeader(String)
     case foldersKeywords(String, Int64, Bool)
-    case foldersAtBottom(String, Bool)
-    case foldersAtBottomNotice(String)
 
     case RoundVideosHeader(String)
     case startWithRearCam(String, Bool)
@@ -145,7 +132,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case quickReplies(String)
     
-    case enableAppleSpeech2Text(String, Int64, Bool)
     case onetaptr(String, Bool)
     
     case shareBotsData(String, Bool)
@@ -164,9 +150,9 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var section: ItemListSectionId {
         switch self {
-        case .TabsHeader, .showContactsTab, .showCallsTab, .showTabNames, .showFeedTab:
+        case .TabsHeader, .showContactsTab, .showCallsTab:
             return NicegramSettingsControllerSection.Tabs.rawValue
-        case .FoldersHeader, .foldersAtBottom, .foldersAtBottomNotice, .foldersKeywords:
+        case .FoldersHeader, .foldersKeywords:
             return NicegramSettingsControllerSection.Folders.rawValue
         case .RoundVideosHeader, .startWithRearCam, .shouldDownloadVideo:
             return NicegramSettingsControllerSection.RoundVideos.rawValue
@@ -184,7 +170,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.ShareData.rawValue
         case .pinnedChatsHeader, .pinnedChat:
             return NicegramSettingsControllerSection.PinnedChats.rawValue
-        case .enableAppleSpeech2Text, .onetaptr:
+        case .onetaptr:
             return NicegramSettingsControllerSection.Tools.rawValue
         case .accountsBackupHeader, .icloudBackupEnabled, .importFromBackup, .importFromFile, .exportToFile, .deleteSessions:
             return NicegramSettingsControllerSection.AccountsBackup.rawValue
@@ -210,23 +196,11 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
         case .showCallsTab:
             return 1500
             
-        case .showTabNames:
-            return 1600
-            
-        case .showFeedTab:
-            return 1650
-            
         case .FoldersHeader:
             return 1700
             
         case .foldersKeywords:
             return 1750
-            
-        case .foldersAtBottom:
-            return 1800
-            
-        case .foldersAtBottomNotice:
-            return 1900
             
         case .pinnedChatsHeader:
             return 1910
@@ -284,8 +258,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .onetaptr:
             return 5900
-        case .enableAppleSpeech2Text:
-            return 5950
             
         case .shareBotsData:
             return 6000
@@ -331,35 +303,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 }
             })
             
-        case let .showTabNames(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                ngLog("[showTabNames] invoked with \(value)", LOGTAG)
-                NGSettings.showTabNames = value
-                
-                showRestartRequiredAlert(with: arguments, presentationData: presentationData)
-            })
-            
-        case let .showFeedTab(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                ngLog("[showFeedTab] invoked with \(value)", LOGTAG)
-                NGSettings.showFeedTab = value
-                arguments.updateTabs()
-            })
-            
         case let .FoldersHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
-            
-        case let .foldersAtBottom(text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                ngLog("[foldersAtBottom] invoked with \(value)", LOGTAG)
-                let _ = arguments.context.sharedContext.accountManager.transaction ({ transaction in
-                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
-                        var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-                        settings.foldersTabAtBottom = value
-                        return PreferencesEntry(settings)
-                    })
-                }).start()
-            })
             
         case let .foldersKeywords(text, id, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
@@ -370,9 +315,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     $0.keywords.show[id] = value
                 }
             })
-            
-        case let .foldersAtBottomNotice(text):
-            return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
             
         case let .RoundVideosHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
@@ -416,41 +358,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     NGSettings.showProfileId = value
                 case .showRegDate:
                     NGSettings.showRegDate = value
-                case .hideReactions:
-                    VarSystemNGSettings.hideReactions = value
-                    if value {
-                        sendUserSettingsAnalytics(with: .hideReactionsOn)
-                    }
-                case .hideStories:
-                    NGSettings.hideStories = value
-                    if value {
-                        sendUserSettingsAnalytics(with: .hideStoriesOn)
-                    }
-                case .hideBadgeCounters:
-                    NGSettings.hideBadgeCounters = value
-                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
-                case .hideUnreadCounters:
-                    NGSettings.hideUnreadCounters = value
-                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
-                case .hideMentionNotification:
-                    NGSettings.hideMentionNotification = value
-                    showRestartRequiredAlert(with: arguments, presentationData: presentationData)
-                case .enableAnimationsInChatList:
-                    updateNicegramSettings {
-                        $0.disableAnimationsInChatList = !value
-                    }
-                case .enableGrayscaleAll:
-                    updateNicegramSettings {
-                        $0.grayscaleAll = value
-                    }
-                case .enableGrayscaleInChatList:
-                    updateNicegramSettings {
-                        $0.grayscaleInChatList = value
-                    }
-                case .enableGrayscaleInChat:
-                    updateNicegramSettings {
-                        $0.grayscaleInChat = value
-                    }
                 }
             })
         case let .unblockHeader(text):
@@ -538,12 +445,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                 style: .blocks,
                 updated: chat.setEnabled
             )
-        case let .enableAppleSpeech2Text(text, id, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
-                updateNicegramSettings {
-                    $0.speechToText.appleRecognizerState[id] = value
-                }
-            })
         case let .onetaptr(text, value):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: section, style: .blocks, updated: { value in
                 NGSettings.oneTapTr = value
@@ -628,14 +529,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NiceFeatures.Tabs.ShowCalls"),
         showCalls
     ))
-    entries.append(.showTabNames(
-        l("NiceFeatures.Tabs.ShowNames"),
-        NGSettings.showTabNames
-    ))
-    entries.append(.showFeedTab(
-        l("Show Feed Tab"),
-        NGSettings.showFeedTab
-    ))
 
     entries.append(.FoldersHeader(l("NiceFeatures.Folders.Header")))
     let peerId = context.account.peerId.toInt64()
@@ -643,13 +536,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
         l("NicegramSettings.ShowKeywords"),
         peerId,
         nicegramSettings.keywords.show[peerId] ?? true
-    ))
-    entries.append(.foldersAtBottom(
-        l("NiceFeatures.Folders.TgFolders"),
-        experimentalSettings.foldersTabAtBottom
-    ))
-    entries.append(.foldersAtBottomNotice(
-        l("NiceFeatures.Folders.TgFolders.Notice")
     ))
     
     if !pinnedChats.isEmpty {
@@ -721,62 +607,7 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     entries.append(.easyToggle(toggleIndex, .showRegDate, l("NicegramSettings.Other.showRegDate"), NGSettings.showRegDate))
     toggleIndex += 1
     
-    entries.append(.easyToggle(toggleIndex, .hideReactions, l("NicegramSettings.Other.hideReactions"), VarSystemNGSettings.hideReactions))
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .hideStories, l("NicegramSettings.HideStories"), NGSettings.hideStories))
-    toggleIndex += 1
-
-    entries.append(
-        .easyToggle(
-            toggleIndex,
-            .hideBadgeCounters,
-            l("NicegramSettings.HideBadgeCounters"),
-            NGSettings.hideBadgeCounters
-        )
-    )
-    toggleIndex += 1
-
-    entries.append(
-        .easyToggle(
-            toggleIndex,
-            .hideUnreadCounters,
-            l("NicegramSettings.HideUnreadCounters"),
-            NGSettings.hideUnreadCounters
-        )
-    )
-    toggleIndex += 1
-
-    entries.append(
-        .easyToggle(
-            toggleIndex,
-            .hideMentionNotification,
-            l("NicegramSettings.HideMentionNotification"),
-            NGSettings.hideMentionNotification
-        )
-    )
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .enableAnimationsInChatList, l("NicegramSettings.EnableAnimationsInChatList"), !nicegramSettings.disableAnimationsInChatList))
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .enableGrayscaleAll, l("NicegramSettings.EnableGrayscaleAll"), nicegramSettings.grayscaleAll))
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChatList, l("NicegramSettings.EnableGrayscaleInChatList"), nicegramSettings.grayscaleInChatList))
-    toggleIndex += 1
-    
-    entries.append(.easyToggle(toggleIndex, .enableGrayscaleInChat, l("NicegramSettings.EnableGrayscaleInChat"), nicegramSettings.grayscaleInChat))
-    toggleIndex += 1
-    
     entries.append(.onetaptr(l("Premium.OnetapTranslate"), NGSettings.oneTapTr))
-    let id = context.account.peerId.id._internalGetInt64Value()
-    entries.append(
-        .enableAppleSpeech2Text(l("NicegramSettings.EnableAppleSpeech2Text"),
-                                id,
-                                (nicegramSettings.speechToText.appleRecognizerState[id] ?? false) ?? false
-                               )
-    )
 
     entries.append(
         .shareBotsData(
@@ -964,24 +795,6 @@ public func updateTabs(with context: AccountContext) {
             ngLog("Tabs refreshed", LOGTAG)
         })
     })
-}
-
-private func showRestartRequiredAlert(
-    with arguments: NicegramSettingsControllerArguments,
-    presentationData: ItemListPresentationData
-) {
-    let controller = standardTextAlertController(
-        theme: AlertControllerTheme(
-            presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }
-        ),
-        title: nil,
-        text: l("Common.RestartRequired"),
-        actions: [
-            TextAlertAction(type: .genericAction, title: strings.nicegramAlertOk(), action: {})
-        ]
-    )
-
-    arguments.presentController(controller, nil)
 }
 
 @propertyWrapper

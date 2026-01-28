@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "build/619",
-        "revision" : "0c139c0b3089b23263dc34f83e473eb3097eb4e5"
+        "branch" : "build/620",
+        "revision" : "b02bf5e6eabfa7ac6e7623cf7eee222cd3264129"
       }
     },
     {
@@ -266,8 +266,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "1f7ea9dd1b7e9a91a17e1b9a4a5eed6519f413c0"
+        "branch" : "feat/cleanup-features/main",
+        "revision" : "41ad484b442b566876444d1806956a0fa3bbe335"
       }
     },
     {
@@ -311,8 +311,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "40fb81bc71de8902d45364a0709ee1bde37c10d7",
-        "version" : "6.15.0"
+        "revision" : "388cebf85b8fc2258b93f86dd3e26a30fb070fd0",
+        "version" : "6.15.1"
       }
     },
     {

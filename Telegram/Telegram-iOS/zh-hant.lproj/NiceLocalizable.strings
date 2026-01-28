@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "資料夾";
 "NiceFeatures.Account.Header" = "隱私設定";
-"NiceFeatures.Folders.TgFolders" = "底部資料夾";
-"NiceFeatures.Folders.TgFolders.Notice" = "iOS 風格資料夾列表";
 
 "NiceFeatures.RoundVideos.Header" = "圓形影片";
 "NiceFeatures.RoundVideos.UseRearCamera" = "開啟後置鏡頭";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "立即結束";
 "Common.Later" = "稍後";
-"Common.RestartRequired" = "必須重新啟動";
-"NiceFeatures.Tabs.ShowNames" = "顯示篩選標籤名稱";
 "Chat.ForwardAsCopy" = "複製後轉傳";
 
 /*Folder*/
@@ -158,21 +154,10 @@
 "NicegramSettings.Other.showRegDate" = "顯示用戶註冊日期";
 "NicegramSettings.Unblock.Header" = "解鎖";
 "NicegramSettings.Unblock.Button" = "解鎖指南";
-"NicegramSettings.Other.hideReactions" = "隱藏心情回應";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "隱藏對您消息的反應";
 "NicegramSettings.RoundVideos.DownloadVideos" = "將影片下載至圖片庫";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略語言";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "App 會檢測您設備上每則訊息的語言。這是一項高耗電的功能，會影響您的電池壽命。";
 "Premium.rememberFolderOnExit" = "記下應用程式關閉時所在的資料夾";
-"NicegramSettings.HideStories" = "隱藏故事";
-"NicegramSettings.HideBadgeCounters" = "隱藏反應通知";
-"NicegramSettings.HideUnreadCounters" = "隱藏未讀計數器";
-"NicegramSettings.HideMentionNotification" = "隱藏提及通知";
-"NicegramSettings.EnableAnimationsInChatList" = "聊天列表中的動畫";
-"NicegramSettings.EnableGrayscaleAll" = "全螢幕灰階";
-"NicegramSettings.EnableGrayscaleInChatList" = "聊天列表中的灰階";
-"NicegramSettings.EnableGrayscaleInChat" = "灰階在聊天中";
-"NicegramSettings.EnableAppleSpeech2Text" = "啟用Apple Speech2Text";
 "NicegramSettings.ShowKeywords" = "顯示關鍵詞資料夾";
 
 /*Registration Date*/
@@ -201,10 +186,6 @@
 "RoundedVideos.ButtonTitle" = "以圓形影片發送";
 "RoundedVideos.MoreButtonTooltip" = "一鍵將方形影片轉換為圓形發送。";
 "RoundedVideos.SendButtonTooltip" = "長按以將您的影片以時尚圓形發送。";
-
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI 語音轉文字";
-"SpeechToText.Toast" = "[訂閱 Nicegram Premium]() 以獲得更快更好的 OpenAI 語音轉文字技術！";
 
 /*Confirm Call*/
 "ConfirmCall.Desc" = "您確定要撥打電話嗎？";
@@ -235,7 +216,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ 選擇您語音消息的語言以提高準確性，或[啟動 Whisper](https://my.nicegram.app/) 以輕鬆自動識別";
 "NicegramSpeechToText.Language.Choose" = "選擇識別語言";
 "NicegramSpeechToText.SelectLanguage" = "選擇語言";
 "NicegramSpeechToText.NotAvailable" = "語音轉文字識別目前不可用";

@@ -269,16 +269,7 @@ public final class AccountContextImpl: AccountContext {
     public private(set) var isFrozen: Bool
     
     public let imageCache: AnyObject?
-// Nicegram NCG-6373 Feed tab
-    private let _updateFeed = Promise<Void>()
-    public var updateFeed: Signal<Void, NoError> {
-        _updateFeed.get()
-    }
     
-    public func needUpdateFeed() {
-        _updateFeed.set(.single(()))
-    }
-//
     public init(sharedContext: SharedAccountContextImpl, account: Account, limitsConfiguration: LimitsConfiguration, contentSettings: ContentSettings, appConfiguration: AppConfiguration, availableReplyColors: EngineAvailableColorOptions, availableProfileColors: EngineAvailableColorOptions, temp: Bool = false)
     {
         self.sharedContextImpl = sharedContext

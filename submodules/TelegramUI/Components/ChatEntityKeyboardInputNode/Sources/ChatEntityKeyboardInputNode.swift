@@ -357,10 +357,6 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
     private let stateContext: StateContext?
     private let entityKeyboardView: ComponentHostView<Empty>
     
-    // Nicegram OpenGifsShortcut
-    private let defaultTab: EntityKeyboardInputTab?
-    //
-    
     private let defaultToEmojiTab: Bool
     private var stableReorderableGroupOrder: [EntityKeyboardComponent.ReorderCategory: [ItemCollectionId]] = [:]
     private var currentInputData: InputData
@@ -482,11 +478,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         |> distinctUntilChanged
     }
     
-    // Nicegram OpenGifsShortcut, defaultTab param added
-    public init(defaultTab: EntityKeyboardInputTab? = nil, context: AccountContext, currentInputData: InputData, updatedInputData: Signal<InputData, NoError>, defaultToEmojiTab: Bool, opaqueTopPanelBackground: Bool = false, useOpaqueTheme: Bool = false, interaction: ChatEntityKeyboardInputNode.Interaction?, chatPeerId: PeerId?, stateContext: StateContext?, forceHasPremium: Bool = false) {
-        // Nicegram OpenGifsShortcut
-        self.defaultTab = defaultTab
-        //
+    public init(context: AccountContext, currentInputData: InputData, updatedInputData: Signal<InputData, NoError>, defaultToEmojiTab: Bool, opaqueTopPanelBackground: Bool = false, useOpaqueTheme: Bool = false, interaction: ChatEntityKeyboardInputNode.Interaction?, chatPeerId: PeerId?, stateContext: StateContext?, forceHasPremium: Bool = false) {
         self.context = context
         self.currentInputData = currentInputData
         self.defaultToEmojiTab = defaultToEmojiTab
@@ -1909,9 +1901,6 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
         let entityKeyboardSize = self.entityKeyboardView.update(
             transition: mappedTransition,
             component: AnyComponent(EntityKeyboardComponent(
-                // Nicegram OpenGifsShortcut
-                defaultTab: self.defaultTab,
-                //
                 theme: interfaceState.theme,
                 strings: interfaceState.strings,
                 isContentInFocus: isVisible,

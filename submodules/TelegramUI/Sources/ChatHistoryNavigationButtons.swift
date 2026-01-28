@@ -1,6 +1,3 @@
-// Nicegram HideReactions
-import NGData
-//
 import Foundation
 import Foundation
 import UIKit
@@ -239,8 +236,7 @@ final class ChatHistoryNavigationButtons: ASDisplayNode {
             transition.updateTransformScale(node: self.mentionsButton, scale: 0.2)
         }
         
-        // Nicegram HideReactions, !VarSystemNGSettings.hideReactions added
-        if self.reactionsCount != 0, !VarSystemNGSettings.hideReactions {
+        if self.reactionsCount != 0 {
             self.reactionsButton.isHidden = false
             transition.updateAlpha(node: self.reactionsButton, alpha: 1.0)
             transition.updateTransformScale(node: self.reactionsButton, scale: 1.0)

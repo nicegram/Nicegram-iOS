@@ -217,10 +217,7 @@ extension ChatControllerImpl {
             customChatNavigationStack: [EnginePeer.Id]?,
             presentationData: PresentationData,
             historyNode: ChatHistoryListNodeImpl,
-            inviteRequestsContext: PeerInvitationImportersContext?,
-            // Nicegram NCG-6373 Feed tab
-            isFeed: Bool
-            //
+            inviteRequestsContext: PeerInvitationImportersContext?
         ) {
             self.chatLocation = chatLocation
             self.presentationData = presentationData
@@ -1009,8 +1006,7 @@ extension ChatControllerImpl {
                     strongSelf.state.renderedPeer = renderedPeer
                     strongSelf.state.adMessage = adMessage
 
-                    // Nicegram NCG-6373 Feed tab, !isFeed
-                    if case .standard(.default) = mode, let channel = renderedPeer?.chatMainPeer as? TelegramChannel, case .broadcast = channel.info, !isFeed {
+                    if case .standard(.default) = mode, let channel = renderedPeer?.chatMainPeer as? TelegramChannel, case .broadcast = channel.info {
                         var isRegularChat = false
                         if let subject = initialSubject {
                             if case .message = subject {

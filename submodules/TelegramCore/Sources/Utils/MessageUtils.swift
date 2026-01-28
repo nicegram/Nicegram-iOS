@@ -335,52 +335,6 @@ func locallyRenderedMessage(message: StoreMessage, peers: AccumulatedPeers, asso
     return Message(stableId: stableId, stableVersion: 0, id: id, globallyUniqueId: nil, groupingKey: nil, groupInfo: nil, threadId: message.threadId, timestamp: message.timestamp, flags: MessageFlags(message.flags), tags: message.tags, globalTags: message.globalTags, localTags: message.localTags, customTags: [], forwardInfo: forwardInfo, author: author, text: message.text, attributes: message.attributes, media: message.media, peers: messagePeers, associatedMessages: SimpleDictionary(), associatedMessageIds: [], associatedMedia: [:], associatedThreadInfo: associatedThreadInfo, associatedStories: [:])
 }
 
-// Nicegram, make 'public'
-public extension [Message] {
-    init(
-        apiMessages: Api.messages.Messages,
-        accountPeerId: PeerId
-    ) {
-        let messages: [Api.Message]
-        let chats: [Api.Chat]
-        let users: [Api.User]
-        switch apiMessages {
-            case let .channelMessages(_, _, _, _, apiMessages, _, apiChats, apiUsers):
-                messages = apiMessages
-                chats = apiChats
-                users = apiUsers
-            case let .messages(apiMessages, _, apiChats, apiUsers):
-                messages = apiMessages
-                chats = apiChats
-                users = apiUsers
-            case let .messagesSlice(_, _, _, _, _, apiMessages, _, apiChats, apiUsers):
-                messages = apiMessages
-                chats = apiChats
-                users = apiUsers
-            case .messagesNotModified:
-                messages = []
-                chats = []
-                users = []
-        }
-        
-        let peers = AccumulatedPeers(chats: chats, users: users)
-        
-        self = messages.compactMap { message in
-            let peer = message.peerId.flatMap { peers.get($0) }
-            
-            let storeMessage = StoreMessage(
-                apiMessage: message,
-                accountPeerId: accountPeerId,
-                peerIsForum: peer?.isForumOrMonoForum ?? false
-            )
-            guard let storeMessage else { return nil }
-            
-            return locallyRenderedMessage(message: storeMessage, peers: peers)
-        }
-    }
-}
-//
-
 public extension Message {
     func effectivelyIncoming(_ accountPeerId: PeerId) -> Bool {
         if self.id.peerId == accountPeerId {
@@ -502,17 +456,6 @@ public extension Message {
 }
 
 public extension Message {
-    // Nicegram, make 'public'
-    var replyMessageAttribute: ReplyMessageAttribute? {
-        for attribute in self.attributes {
-            if let attribute = attribute as? ReplyMessageAttribute {
-                return attribute
-            }
-        }
-        return nil
-    }
-    //
-
     var adAttribute: AdMessageAttribute? {
         for attribute in self.attributes {
             if let attribute = attribute as? AdMessageAttribute {

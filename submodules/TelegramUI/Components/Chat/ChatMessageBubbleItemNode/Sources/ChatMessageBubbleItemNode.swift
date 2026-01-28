@@ -273,7 +273,7 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                 } else if case .starGiftPurchaseOffer = action.action {
                     result.append((message, ChatMessageGiftOfferBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 } else {
-                    if !canAddMessageReactions(message: message, account: item.context.account) {
+                    if !canAddMessageReactions(message: message) {
                         needReactions = false
                     }
                     result.append((message, ChatMessageActionBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
@@ -5356,8 +5356,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     case let .optionalAction(f):
                         f()
                     case let .openContextMenu(openContextMenu):
-                        // Nicegram HideReactions, account added
-                        if canAddMessageReactions(message: openContextMenu.tapMessage, account: item.context.account) {
+                        if canAddMessageReactions(message: openContextMenu.tapMessage) {
                             item.controllerInteraction.updateMessageReaction(openContextMenu.tapMessage, .default, false, nil)
                         } else {
                             item.controllerInteraction.openMessageContextMenu(openContextMenu.tapMessage, openContextMenu.selectAll, self, openContextMenu.subFrame, nil, nil)
@@ -5366,8 +5365,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 } else if case .tap = gesture {
                     item.controllerInteraction.clickThroughMessage(self.view, location)
                 } else if case .doubleTap = gesture {
-                    // Nicegram HideReactions, account added
-                    if canAddMessageReactions(message: item.message, account: item.context.account) {
+                    if canAddMessageReactions(message: item.message) {
                         item.controllerInteraction.updateMessageReaction(item.message, .default, false, nil)
                     }
                 }

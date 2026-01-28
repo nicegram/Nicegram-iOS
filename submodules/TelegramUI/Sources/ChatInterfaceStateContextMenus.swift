@@ -59,9 +59,6 @@ import AdsReportScreen
 private func isServiceMessage(_ message: Message) -> Bool {
     return message.media.contains(where: { $0 is TelegramMediaAction })
 }
-// Nicegram NCG-6326 Apple Speech2Text
-let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
-//
 
 private struct MessageContextMenuData {
     let starStatus: Bool?
@@ -958,9 +955,6 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
     return dataSignal
     |> deliverOnMainQueue
     |> map { data, updatingMessageMedia, infoSummaryData, appConfig, isMessageRead, messageViewsPrivacyTips, availableReactions, translationSettings, loggingSettings, notificationSoundList, accountPeer -> ContextController.Items in
-// Nicegram NCG-6326 Apple Speech2Text
-        let nicegramPremium = isPremium()
-//
         let isPremium = accountPeer?.isPremium ?? false
         
         var actions: [ContextMenuItem] = []
@@ -1055,32 +1049,29 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 break
             }
         }
-// Nicegram NCG-6326 Apple Speech2Text
-        let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: context.account.peerId.id._internalGetInt64Value())
-        if let mediaFile = message.media.compactMap({ $0 as? TelegramMediaFile }).first(where: { $0.isVoice }),
-           !(nicegramPremium && useOpenAI) {
-            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        // Nicegram NCG-6326 Apple Speech2Text
+        let voiceFile = message.media
+            .compactMap { $0 as? TelegramMediaFile }
+            .first { $0.isVoice }
+        if voiceFile != nil {
             didRateAudioTranscription = true
             actions.append(.action(ContextMenuActionItem(
                 text: l("NicegramSpeechToText.SelectLanguage"),
-                icon: { theme in
-                    nil
-                }, action: { _, f in
-                    convertSpeechToText(
-                        from: .chat,
-                        languageStyle: .whisper,
-                        context: context,
-                        mediaFile: mediaFile,
-                        message: message,
-                        presentationData: presentationData,
-                        controllerInteraction: controllerInteraction
-                    )
+                icon: { _ in nil },
+                action: { _, f in
+                    Task { @MainActor in
+                        _ = await ngShowSpeechToTextLocaleSelection(
+                            context: context,
+                            navigationController: controllerInteraction.navigationController(),
+                            message: message
+                        )
+                    }
                     f(.dismissWithoutContent)
                 }
             )))
             actions.append(.separator)
         }
-//
+        //
         var hasRateTranscription = false
         if hasExpandedAudioTranscription, let audioTranscription = audioTranscription, !didRateAudioTranscription {
             hasRateTranscription = true

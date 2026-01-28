@@ -28,8 +28,6 @@
 
 "NiceFeatures.Folders.Header" = "ORDNER";
 "NiceFeatures.Account.Header" = "Datenschutzeinstellungen";
-"NiceFeatures.Folders.TgFolders" = "Ordner - unten";
-"NiceFeatures.Folders.TgFolders.Notice" = "Ordnerliste im iOS-Stil";
 
 "NiceFeatures.RoundVideos.Header" = "RUNDE VIDEOS";
 "NiceFeatures.RoundVideos.UseRearCamera" = "Starte mit umgedrehter Kamera";
@@ -50,8 +48,6 @@
 /*Common*/
 "Common.ExitNow" = "Jetzt verlassen";
 "Common.Later" = "Später";
-"Common.RestartRequired" = "Neustart erforderlich!";
-"NiceFeatures.Tabs.ShowNames" = "Tabnamen anzeigen";
 "Chat.ForwardAsCopy" = "Als Kopie weiterleiten";
 
 /*Folder*/
@@ -158,21 +154,10 @@
 "NicegramSettings.Other.showRegDate" = "Registrierungsdatum anzeigen";
 "NicegramSettings.Unblock.Header" = "Blockierung aufheben";
 "NicegramSettings.Unblock.Button" = "Anleitung zum Aufheben einer Blockierung";
-"NicegramSettings.Other.hideReactions" = "Reaktionen verbergen";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "Reaktionen auf Ihre Nachrichten verbergen";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videos in die Galerie herunterladen";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Sprachen ignorieren";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Die App erkennt die Sprache jeder Nachricht auf deinem Gerät. Das ist eine Aufgabe mit hoher Priorität, die sich auf die Akkulaufzeit auswirken kann.";
 "Premium.rememberFolderOnExit" = "Aktuellen Ordner beim Beenden merken";
-"NicegramSettings.HideStories" = "Stories verbergen";
-"NicegramSettings.HideBadgeCounters" = "Reaktionsbenachrichtigungen ausblenden";
-"NicegramSettings.HideUnreadCounters" = "Ungelesene Zähler verbergen";
-"NicegramSettings.HideMentionNotification" = "Erwähnungsbenachrichtigungen verbergen";
-"NicegramSettings.EnableAnimationsInChatList" = "Animationen in der Chatliste";
-"NicegramSettings.EnableGrayscaleAll" = "Vollbild-Graustufen";
-"NicegramSettings.EnableGrayscaleInChatList" = "Graustufen in der Chatliste";
-"NicegramSettings.EnableGrayscaleInChat" = "Graustufen im Chat";
-"NicegramSettings.EnableAppleSpeech2Text" = "Apple Speech2Text aktivieren";
 "NicegramSettings.ShowKeywords" = "Ordner für Stichwörter anzeigen";
 
 /*Registration Date*/
@@ -201,10 +186,6 @@
 "RoundedVideos.ButtonTitle" = "Als rundes Video senden";
 "RoundedVideos.MoreButtonTooltip" = "Quadratische Videos mit einem Tippen in Kreise umwandeln und senden.";
 "RoundedVideos.SendButtonTooltip" = "Lange drücken, um Ihr Video als stilvollen Kreis zu senden.";
-
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "OpenAI Sprache zu Text";
-"SpeechToText.Toast" = "[Abonnieren Sie Nicegram Premium]() für schnellere und bessere OpenAI Sprache zu Text-Technologien!";
 
 /*Confirm Call*/
 "ConfirmCall.Desc" = "Sind Sie sicher, dass Sie einen Anruf tätigen möchten?";
@@ -235,7 +216,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ Wählen Sie die Sprache Ihrer Sprachnachricht, um die Genauigkeit zu erhöhen, oder [aktivieren Sie Whisper](https://my.nicegram.app/) für eine mühelose automatische Erkennung";
 "NicegramSpeechToText.Language.Choose" = "Wählen Sie eine Sprache zur Erkennung";
 "NicegramSpeechToText.SelectLanguage" = "Sprache auswählen";
 "NicegramSpeechToText.NotAvailable" = "Sprach-zu-Text-Erkennung ist derzeit nicht verfügbar";

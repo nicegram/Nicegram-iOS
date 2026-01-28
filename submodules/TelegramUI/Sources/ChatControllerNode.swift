@@ -11,7 +11,9 @@ import NGAppCache
 import NGData
 import NGRemoteConfig
 import NGStrings
+import NGUI
 import NGUtils
+import NGWebUtils
 import NicegramWallet
 import UndoUI
 //
@@ -76,13 +78,6 @@ final class VideoNavigationControllerDropContentItem: NavigationControllerDropCo
         self.itemNode = itemNode
     }
 }
-
-// Nicegram imports
-import NGWebUtils
-import NGStrings
-import NGData
-import NGUI
-//
 
 private final class ChatControllerNodeView: UITracingLayerView, WindowInputAccessoryHeightProvider {
     weak var node: ChatControllerNode?
@@ -210,12 +205,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var isLoadingValue: Bool = false
     private var isLoadingEarlier: Bool = false
     private(set) var loadingPlaceholderNode: ChatLoadingPlaceholderNode?
-    
-    // Nicegram ColorAlign
-    private let grayscaleLayer = GrayscaleLayer(
-        enablePublisher: NicegramSettingsModule.shared.getGrayscaleSettingsUseCase().grayscaleInChatPublisher()
-    )
-    //
     
     var alwaysShowSearchResultsAsList: Bool = false
     var includeSavedPeersInSearchResults: Bool = false
@@ -503,22 +492,13 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     private var lastSendTimestamp = 0.0
     
-    // Nicegram OpenGifsShortcut
-    private var defaultEntityKeyboardInputTab: EntityKeyboardInputTab?
-    //
-    
     private var openStickersBeginWithEmoji: Bool = false
     private var openStickersDisposable: Disposable?
     private var displayVideoUnmuteTipDisposable: Disposable?
     
     private var onLayoutCompletions: [(ContainedViewLayoutTransition) -> Void] = []
-// Nicegram NCG-6373 Feed tab
-    private let isFeed: Bool
-    // Nicegram NCG-6373 Feed tab, isFeed
-    init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?, isFeed: Bool) {
-// Nicegram NCG-6373 Feed tab
-        self.isFeed = isFeed
-//
+    
+    init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
         self.context = context
         self.chatLocation = chatLocation
         self.chatLocationContextHolder = chatLocationContextHolder
@@ -935,11 +915,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         self.wrappingNode.contentNode.addSubnode(self.inputContextPanelContainer)
-// Nicegram NCG-6373 Feed tab
-        if !isFeed {
-            self.wrappingNode.contentNode.addSubnode(self.inputPanelContainerNode)
-        }
-//
+        self.wrappingNode.contentNode.addSubnode(self.inputPanelContainerNode)
         self.wrappingNode.contentNode.addSubnode(self.inputContextOverTextPanelContainer)
         
         self.inputPanelContainerNode.addSubnode(self.inputPanelClippingNode)
@@ -1122,10 +1098,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             )
         }
         self.ngBannerNode.isHidden = true
-        //
-        
-        // Nicegram ColorAlign
-        self.layer.addSublayer(self.grayscaleLayer)
         //
         
         self.wrappingNode.contentNode.addSubnode(self.messageTransitionNode)
@@ -2538,12 +2510,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
         }
         
-        // Nicegram NCG-6373 Feed tab
-        if isFeed {
-            inputPanelsHeight = 0.0
-        }
-        //
-        
         var inputBackgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - insets.bottom - bottomOverflowOffset - inputPanelsHeight - inputPanelsInset), size: CGSize(width: layout.size.width, height: inputPanelsHeight))
         if self.dismissedAsOverlay {
             inputBackgroundFrame.origin.y = layout.size.height
@@ -3792,22 +3758,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
 
         self.derivedLayoutState = ChatControllerNodeDerivedLayoutState(inputContextPanelsFrame: inputContextPanelsFrame, inputContextPanelsOverMainPanelFrame: inputContextPanelsOverMainPanelFrame, inputNodeHeight: inputNodeHeightAndOverflow?.0, inputNodeAdditionalHeight: inputNodeHeightAndOverflow?.1, upperInputPositionBound: inputNodeHeightAndOverflow?.0 != nil ? self.upperInputPositionBound : nil)
         
-        // Nicegram ColorAlign
-        let grayscaleFrame = CGRect(origin: .zero, size: layout.size)
-            .inset(
-                by: UIEdgeInsets(
-                    top: navigationBarHeight,
-                    left: 0,
-                    bottom: 0,
-                    right: 0
-                )
-            )
-        transition.updateFrame(
-            layer: self.grayscaleLayer,
-            frame: grayscaleFrame
-        )
-        //
-        
         //self.notifyTransitionCompletionListeners(transition: transition)
     }
     
@@ -4267,9 +4217,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         let inputNode = ChatEntityKeyboardInputNode(
-            // Nicegram OpenGifsShortcut
-            defaultTab: self.defaultEntityKeyboardInputTab,
-            //
             context: self.context,
             currentInputData: inputMediaNodeData,
             updatedInputData: self.inputMediaNodeDataPromise.get(),
@@ -4278,9 +4225,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             chatPeerId: peerId,
             stateContext: self.inputMediaNodeStateContext
         )
-        // Nicegram OpenGifsShortcut
-        self.defaultEntityKeyboardInputTab = nil
-        //
         self.openStickersBeginWithEmoji = false
         
         return inputNode
@@ -4790,11 +4734,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    // Nicegram OpenGifsShortcut, defaultTab param added
-    func openStickers(defaultTab: EntityKeyboardInputTab? = nil, beginWithEmoji: Bool) {
-        // Nicegram OpenGifsShortcut
-        self.defaultEntityKeyboardInputTab = defaultTab
-        //
+    func openStickers(beginWithEmoji: Bool) {
         self.openStickersBeginWithEmoji = beginWithEmoji
         
         if self.openStickersDisposable == nil {

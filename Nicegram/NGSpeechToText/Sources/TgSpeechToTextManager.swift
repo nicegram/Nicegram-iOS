@@ -10,7 +10,7 @@ import AccountContext
 @available(iOS 13.0, *)
 public class TgSpeechToTextManager {
     public enum Source {
-        case apple(Locale), openAI
+        case apple(Locale)
     }
     
     //  MARK: - Dependencies
@@ -57,9 +57,6 @@ public extension TgSpeechToTextManager {
                                 
                 Task {
                     switch source {
-                    case .openAI:
-                        let result = await self.convertSpeechToTextUseCase.openAISpeechToText(url: url)
-                        continuation.resume(returning: result)
                     case let .apple(locale):
                         let result = await self.convertSpeechToTextUseCase.appleSpeechToText(url: url, locale: locale)
                         continuation.resume(returning: result)

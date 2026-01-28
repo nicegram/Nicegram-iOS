@@ -29,8 +29,6 @@
 
 "NiceFeatures.Folders.Header" = "المجلدات";
 "NiceFeatures.Account.Header" = "إعدادات الخصوصية";
-"NiceFeatures.Folders.TgFolders" = "المجلدات في الأسفل";
-"NiceFeatures.Folders.TgFolders.Notice" = "قائمة مجلدات بأسلوب iOS";
 
 "NiceFeatures.RoundVideos.Header" = "فيديوهات دائرية";
 "NiceFeatures.RoundVideos.UseRearCamera" = "البدء بالكاميرا الخلفية";
@@ -52,8 +50,6 @@
 /*Common*/
 "Common.ExitNow" = "خروج الآن";
 "Common.Later" = "لاحقًا";
-"Common.RestartRequired" = "يجب إعادة التشغيل!";
-"NiceFeatures.Tabs.ShowNames" = "إظهار أسماء التبويبات";
 "Chat.ForwardAsCopy" = "إعادة توجيه كنسخة";
 
 /*Folder*/
@@ -160,21 +156,10 @@
 "NicegramSettings.Other.showRegDate" = "إظهار تاريخ التسجيل";
 "NicegramSettings.Unblock.Header" = "فتح";
 "NicegramSettings.Unblock.Button" = "دليل الفتح";
-"NicegramSettings.Other.hideReactions" = "إخفاء ردود الفعل";
-"NicegramSettings.Other.hideReactionsToYourMessages" = "إخفاء ردود الفعل على رسائلك";
 "NicegramSettings.RoundVideos.DownloadVideos" = "نزّل الفيديوهات إلى المعرض";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "تجاهل اللغات";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "التطبيق يحدد لغات كل رسالة في جهازك. ويتطلب اداء عالي من الجهاز و بالتالي إستهلاك البطارية.";
 "Premium.rememberFolderOnExit" = "تذكر المجلد الحالي عند الخروج";
-"NicegramSettings.HideStories" = "إخفاء الستوري";
-"NicegramSettings.HideBadgeCounters" = "إخفاء إشعارات ردود الفعل";
-"NicegramSettings.HideUnreadCounters" = "إخفاء عدادات الغير مقروءة";
-"NicegramSettings.HideMentionNotification" = "إخفاء إشعارات الإشارة";
-"NicegramSettings.EnableAnimationsInChatList" = "الرسوم المتحركة في قائمة الدردشة";
-"NicegramSettings.EnableGrayscaleAll" = "الشاشة كاملة بالأبيض والأسود";
-"NicegramSettings.EnableGrayscaleInChatList" = "الرمادي في قائمة الدردشة";
-"NicegramSettings.EnableGrayscaleInChat" = "الرمادي في الدردشة";
-"NicegramSettings.EnableAppleSpeech2Text" = "تفعيل Apple Speech2Text";
 "NicegramSettings.ShowKeywords" = "عرض مجلد الكلمات المفتاحية";
 
 /*Registration Date*/
@@ -203,10 +188,6 @@
 "RoundedVideos.ButtonTitle" = "أرسل كفيديو دائري";
 "RoundedVideos.MoreButtonTooltip" = "حول الفيديوهات المربعة لترسل كدوائر بنقرة واحدة.";
 "RoundedVideos.SendButtonTooltip" = "اضغط مطولاً لإرسال فيديوك على شكل دائرة أنيقة.";
-
-/*Speech to text*/
-"SpeechToText.UseOpenAi" = "تقنية التحويل من الكلام إلى النص من OpenAI";
-"SpeechToText.Toast" = "[اشترك في Nicegram Premium])() للحصول على تقنيات أسرع وأفضل لتحويل الكلام إلى نص من OpenAI!";
 
 /*Confirm Call*/
 "ConfirmCall.Desc" = "هل أنت متأكد من أنك تريد إجراء مكالمة؟";
@@ -237,7 +218,6 @@
 
 /*SpeechToText*/
 "NicegramSpeechToText.Language.Title" = "Speеch-2-Text";
-"NicegramSpeechToText.Language.Whisper" = "⚠️ حدد لغة رسالتك الصوتية لتحسين الدقة، أو [فعّل Whisper](https://my.nicegram.app/) للتعرف التلقائي بدون جهد";
 "NicegramSpeechToText.Language.Choose" = "اختر لغة للتعرف عليها";
 "NicegramSpeechToText.SelectLanguage" = "حدد اللغة";
 "NicegramSpeechToText.NotAvailable" = "التعرف على الكلام غير متاح حاليًا";

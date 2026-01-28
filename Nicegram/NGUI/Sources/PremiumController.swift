@@ -21,8 +21,6 @@ import NGData
 import NGStrings
 import NGUtils
 
-private let getSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.getSpeech2TextSettingsUseCase()
-
 private struct SelectionState: Equatable {
 }
 
@@ -49,7 +47,6 @@ private enum premiumControllerSection: Int32 {
     case notifyMissed
     case manageFilters
     case other
-    case speechToText
     case calls
     case test
 }
@@ -62,7 +59,6 @@ private enum PremiumSettingsToggle {
     case syncPins
     case oneTapTr
     case rememberFilterOnExit
-    case useOpenAI
 }
 
 private enum PremiumControllerEntry: ItemListNodeEntry {
@@ -85,7 +81,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
     case testButton(PresentationTheme, String)
     case ignoretr(PresentationTheme, String)
     
-    case useOpenAI(PresentationTheme, String, Bool)
     case recordAllCalls(String, Bool)
 
     var section: ItemListSectionId {
@@ -102,8 +97,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return premiumControllerSection.other.rawValue
         case .testButton:
             return premiumControllerSection.test.rawValue
-        case .useOpenAI:
-            return premiumControllerSection.speechToText.rawValue
         case .recordAllCalls:
             return premiumControllerSection.calls.rawValue
         }
@@ -135,8 +128,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return 10000
         case .ignoretr:
             return 12000
-        case .useOpenAI:
-            return 13000
         case .recordAllCalls:
             return 14000
         case .testButton:
@@ -225,12 +216,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             } else {
                 return false
             }
-        case let .useOpenAI(_, lhsValue, _):
-            if case let .useOpenAI(_, rhsValue, _) = rhs, lhsValue == rhsValue {
-                return true
-            } else {
-                return false
-            }
         case let .recordAllCalls(lhsText, lhsBool):
             if case let .recordAllCalls(rhsText, rhsBool) = rhs, lhsText == rhsText, lhsText == rhsText {
                 return true
@@ -285,10 +270,6 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleSetting(value, .rememberFilterOnExit)
             })
-        case let .useOpenAI(_, text, value):
-            return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
-                arguments.toggleSetting(value, .useOpenAI)
-            })
         case let .recordAllCalls(title, value):
             return ItemListSwitchItem(presentationData: presentationData, title: title, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 NGSettings.recordAllCalls = value
@@ -312,8 +293,6 @@ private func premiumControllerEntries(
     entries.append(.rememberFolderOnExit(theme, l("Premium.rememberFolderOnExit"), NGSettings.rememberFolderOnExit))
     entries.append(.ignoretr(theme, l("Premium.IgnoreTranslate.Title")))
     
-    let useOpenAI = getSpeech2TextSettingsUseCase.useOpenAI(with: context.account.peerId.id._internalGetInt64Value())
-    entries.append(.useOpenAI(theme, l("SpeechToText.UseOpenAi"), useOpenAI))
     entries.append(.recordAllCalls(l("Premium.RecordAllCalls"), NGSettings.recordAllCalls))
 
     #if DEBUG
@@ -360,10 +339,6 @@ public func premiumController(context: AccountContext) -> ViewController {
             NGSettings.oneTapTr = value
         case .rememberFilterOnExit:
             NGSettings.rememberFolderOnExit = value
-        case .useOpenAI:
-            updateNicegramSettings {
-                $0.speechToText.useOpenAI[context.account.peerId.id._internalGetInt64Value()] = value
-            }
         default:
             break
         }

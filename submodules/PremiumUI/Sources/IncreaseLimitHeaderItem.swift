@@ -15,9 +15,6 @@ public class IncreaseLimitHeaderItem: ListViewItem, ItemListItem {
         case link
     }
     
-    // Nicegram JoinGroupLimit
-    let nicegramNotice: String?
-    //
     let theme: PresentationTheme
     let strings: PresentationStrings
     let icon: Icon
@@ -28,11 +25,7 @@ public class IncreaseLimitHeaderItem: ListViewItem, ItemListItem {
     let isPremiumDisabled: Bool
     public let sectionId: ItemListSectionId
     
-    // Nicegram JoinGroupLimit, nicegramNotice added
-    public init(nicegramNotice: String? = nil, theme: PresentationTheme, strings: PresentationStrings, icon: Icon, count: Int32, limit: Int32, premiumCount: Int32, text: String, isPremiumDisabled: Bool, sectionId: ItemListSectionId) {
-        // Nicegram JoinGroupLimit
-        self.nicegramNotice = nicegramNotice
-        //
+    public init(theme: PresentationTheme, strings: PresentationStrings, icon: Icon, count: Int32, limit: Int32, premiumCount: Int32, text: String, isPremiumDisabled: Bool, sectionId: ItemListSectionId) {
         self.theme = theme
         self.strings = strings
         self.icon = icon
@@ -86,13 +79,6 @@ private let textFont = Font.regular(15.0)
 private let boldTextFont = Font.semibold(15.0)
 
 class IncreaseLimitHeaderItemNode: ListViewItemNode {
-    // Nicegram JoinGroupLimit
-    private let ngNoticeNode: TextNode
-    private let ngNoticeBackgroundNode: ASDisplayNode
-    
-    private var ngNoticeSize: CGSize?
-    //
-    
     private var hostView: ComponentHostView<Empty>?
     
     private var params: (AnyComponent<Empty>, CGSize, ListViewItemNodeLayout, CGSize)?
@@ -102,17 +88,7 @@ class IncreaseLimitHeaderItemNode: ListViewItemNode {
     
     private var item: IncreaseLimitHeaderItem?
     
-    init() {
-        // Nicegram JoinGroupLimit
-        self.ngNoticeNode = TextNode()
-        self.ngNoticeNode.isUserInteractionEnabled = false
-        self.ngNoticeNode.contentMode = .left
-        self.ngNoticeNode.contentsScale = UIScreen.main.scale
-        
-        self.ngNoticeBackgroundNode = ASDisplayNode()
-        self.ngNoticeBackgroundNode.layer.cornerRadius = 10
-        //
-        
+    init() { 
         self.titleNode = TextNode()
         self.titleNode.isUserInteractionEnabled = false
         self.titleNode.contentMode = .left
@@ -127,10 +103,6 @@ class IncreaseLimitHeaderItemNode: ListViewItemNode {
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.textNode)
-        // Nicegram JoinGroupLimit
-        self.addSubnode(ngNoticeBackgroundNode)
-        self.addSubnode(ngNoticeNode)
-        //
     }
     
     override func didLoad() {
@@ -155,36 +127,11 @@ class IncreaseLimitHeaderItemNode: ListViewItemNode {
             
             let textSpacing: CGFloat = -6.0
             self.textNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - textSize.width) / 2.0), y: size.height + textSpacing), size: textSize)
-            
-            // Nicegram JoinGroupLimit
-            let ngNoticeSize = self.ngNoticeSize ?? .zero
-            
-            self.ngNoticeNode.frame = CGRect(
-                origin: CGPoint(
-                    x: floorToScreenPixels((layout.size.width - ngNoticeSize.width) / 2.0),
-                    y: self.textNode.frame.maxY + 30
-                ),
-                size: ngNoticeSize
-            )
-            
-            self.ngNoticeBackgroundNode.frame = self.ngNoticeNode.frame.insetBy(
-                dx: -15,
-                dy: -15
-            )
-            self.ngNoticeBackgroundNode.backgroundColor = item?.theme.list.itemDestructiveColor.withMultipliedAlpha(1)
-            
-            let hideNgNotice = (item?.nicegramNotice == nil)
-            self.ngNoticeNode.isHidden = hideNgNotice
-            self.ngNoticeBackgroundNode.isHidden = hideNgNotice
-            //
         }
     }
     
     func asyncLayout() -> (_ item: IncreaseLimitHeaderItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
         let makeTextLayout = TextNode.asyncLayout(self.textNode)
-        // Nicegram JoinGroupLimit
-        let makeNgNoticeLayout = TextNode.asyncLayout(self.ngNoticeNode)
-        //
         
         return { item, params, neighbors in
             let topInset: CGFloat = 2.0
@@ -200,23 +147,10 @@ class IncreaseLimitHeaderItemNode: ListViewItemNode {
             
             let (textLayout, textApply) = makeTextLayout(TextNodeLayoutArguments(attributedString: attributedText, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - 20.0, height: CGFloat.greatestFiniteMagnitude), alignment: .center, lineSpacing: 0.1, cutout: nil, insets: UIEdgeInsets()))
             
-            // Nicegram JoinGroupLimit
-            let ngNoticeAttributedText = parseMarkdownIntoAttributedString(item.nicegramNotice ?? "", attributes: MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: .white), bold: MarkdownAttributeSet(font: boldTextFont, textColor: textColor), link: MarkdownAttributeSet(font: titleFont, textColor: textColor), linkAttribute: { _ in
-                return nil
-            }))
-            let (ngNoticeLayout, ngNoticeApply) = makeNgNoticeLayout(TextNodeLayoutArguments(attributedString: ngNoticeAttributedText, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: CGSize(width: params.width - params.leftInset - params.rightInset - 20.0, height: CGFloat.greatestFiniteMagnitude), alignment: .center, lineSpacing: 0.1, cutout: nil, insets: UIEdgeInsets()))
-            //
-            
             var contentSize = CGSize(width: params.width, height: topInset + badgeHeight + textSpacing + textLayout.size.height + bottomInset)
             if item.isPremiumDisabled {
                 contentSize.height -= 54.0
             }
-            
-            // Nicegram JoinGroupLimit
-            if let _ = item.nicegramNotice {
-                contentSize.height += (ngNoticeLayout.size.height + 30)
-            }
-            //
             
             let insets = itemListNeighborsGroupedInsets(neighbors, params)
             
@@ -268,9 +202,6 @@ class IncreaseLimitHeaderItemNode: ListViewItemNode {
                     let containerSize = CGSize(width: layout.size.width - params.leftInset - params.rightInset, height: 200.0)
                     
                     let _ = textApply()
-                    // Nicegram JoinGroupLimit
-                    let _ = ngNoticeApply()
-                    //
                     
                     if let hostView = strongSelf.hostView {
                         var size = hostView.update(
@@ -284,31 +215,8 @@ class IncreaseLimitHeaderItemNode: ListViewItemNode {
                         }
                         hostView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - size.width) / 2.0), y: -30.0), size: size)
                         strongSelf.textNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - textLayout.size.width) / 2.0), y: size.height + textSpacing), size: textLayout.size)
-                        
-                        // Nicegram JoinGroupLimit
-                        strongSelf.ngNoticeNode.frame = CGRect(
-                            origin: CGPoint(
-                                x: floorToScreenPixels((layout.size.width - ngNoticeLayout.size.width) / 2.0),
-                                y: strongSelf.textNode.frame.maxY + 30
-                            ),
-                            size: ngNoticeLayout.size
-                        )
-                        
-                        strongSelf.ngNoticeBackgroundNode.frame = strongSelf.ngNoticeNode.frame.insetBy(
-                            dx: -15,
-                            dy: -15
-                        )
-                        strongSelf.ngNoticeBackgroundNode.backgroundColor = item.theme.list.itemDestructiveColor.withMultipliedAlpha(1)
-                        
-                        let hideNgNotice = (item.nicegramNotice == nil)
-                        strongSelf.ngNoticeNode.isHidden = hideNgNotice
-                        strongSelf.ngNoticeBackgroundNode.isHidden = hideNgNotice
-                        //
                     }
                     
-                    // Nicegram JoinGroupLimit
-                    strongSelf.ngNoticeSize = ngNoticeLayout.size
-                    //
                     strongSelf.params = (component, containerSize, layout, textLayout.size)
                 }
             })
