@@ -444,6 +444,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 termsUrl: URL(string: "https://nicegram.app/terms-of-use")!,
                 webSocketUrl: NGENV.websocket_url
             ),
+            accountBackupBridge: {
+                AccountBackupBridgeImpl(sharedContextProvider: sharedContextProvider)
+            },
             callKitIntegrationImpl: {
                 nicegramCallKitIntegration
             },
@@ -533,23 +536,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                     WalletVerificationInterceptorImpl(sharedContextProvider: sharedContextProvider)
                 }
             )
-        )
-        AccountBackupInitializer().initialize(
-            accountsImporter: {
-                AccountsImporterImpl(
-                    sharedContextProvider: sharedContextProvider
-                )
-            },
-            accountsRemover: {
-                AccountsRemoverImpl(
-                    sharedContextProvider: sharedContextProvider
-                )
-            },
-            activeAccountsProvider: {
-                ActiveAccountsProviderImpl(
-                    sharedContextProvider: sharedContextProvider
-                )
-            }
         )
         accountManagerCallbacks = AccountManagerCallbacks(
             onRemoteLogout: { id in

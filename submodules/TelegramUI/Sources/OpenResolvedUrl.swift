@@ -82,6 +82,32 @@ func openResolvedUrlImpl(
     }
     let presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
     switch resolvedUrl {
+        // Nicegram, handle Nicegram url
+        case let .nicegram(nicegram):
+            Task {
+                let params = OpenResolvedUrlParams(
+                    resolvedUrl: resolvedUrl,
+                    context: context,
+                    urlContext: urlContext,
+                    navigationController: navigationController,
+                    forceExternal: forceExternal,
+                    forceUpdate: forceUpdate,
+                    openPeer: openPeer,
+                    sendFile: sendFile,
+                    sendSticker: sendSticker,
+                    sendEmoji: sendEmoji,
+                    requestMessageActionUrlAuth: requestMessageActionUrlAuth,
+                    joinVoiceChat: joinVoiceChat,
+                    present: present,
+                    dismissInput: dismissInput,
+                    contentContext: contentContext,
+                    progress: progress,
+                    completion: completion
+                )
+                await NicegramResolvedUrlHandler(params).handle(nicegram)
+            }
+            return
+        //
         case let .externalUrl(url):
             context.sharedContext.openExternalUrl(context: context, urlContext: urlContext, url: url, forceExternal: forceExternal, presentationData: context.sharedContext.currentPresentationData.with { $0 }, navigationController: navigationController, dismissInput: dismissInput)
         case let .urlAuth(url):

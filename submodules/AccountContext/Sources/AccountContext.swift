@@ -294,6 +294,21 @@ public enum ResolvedBotStartPeerType {
 }
 
 public enum ResolvedUrl {
+    // Nicegram
+    case nicegram(Nicegram)
+    public indirect enum Nicegram {
+        case autoJoin(AutoJoin)
+        
+        public struct AutoJoin {
+            public let underlyingUrl: ResolvedUrl
+            
+            public init(underlyingUrl: ResolvedUrl) {
+                self.underlyingUrl = underlyingUrl
+            }
+        }
+    }
+    //
+    
     case externalUrl(String)
     case urlAuth(String)
     case peer(Peer?, ChatControllerInteractionNavigateToPeer)

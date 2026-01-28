@@ -1456,6 +1456,25 @@ public func resolveUrlImpl(context: AccountContext, peerId: PeerId?, url: String
             return .single(.result(.externalUrl(url)))
         }
     }
+    // Nicegram, parse Nicegram url
+    |> map { result in
+        guard case let .result(resolvedUrl) = result else {
+            return result
+        }
+        
+        let url = URL(string: url)
+        
+        let autoJoin = url?.queryItems["autoJoin"] == "true"
+        if autoJoin {
+            let nicegramUrl = ResolvedUrl.Nicegram.AutoJoin(
+                underlyingUrl: resolvedUrl
+            )
+            return .result(.nicegram(.autoJoin(nicegramUrl)))
+        }
+        
+        return result
+    }
+    //
 }
 
 public func resolveInstantViewUrl(account: Account, url: String) -> Signal<ResolveUrlResult, NoError> {

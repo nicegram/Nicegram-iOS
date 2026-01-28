@@ -87,3 +87,4 @@ Telegram.LSP.json
 **/.build/**
 spm-files
 .bsp/**
+MODULE.bazel.lock
