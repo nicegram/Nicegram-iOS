@@ -294,7 +294,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         }
         
         self.tabsNode = SparseNode()
-        
         self.tabContainerNode = ChatListFilterTabContainerNode(context: context)
         self.tabsNode.addSubnode(self.tabContainerNode)
                 
@@ -312,7 +311,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         self.tabContainerNode.openKeywords = { [weak self] in
             if #available(iOS 15.0, *) {
                 let presentationData = (context.sharedContext.currentPresentationData.with { $0 })
-                let locale = localeWithStrings(presentationData.strings)                
+                let locale = localeWithStrings(presentationData.strings)
                 let primaryColor = presentationData.theme.rootController.navigationBar.blurredBackgroundColor
                 let secondaryColor = presentationData.theme.list.plainBackgroundColor
                 let tertiaryColor = presentationData.theme.rootController.navigationSearchBar.inputFillColor
@@ -2185,7 +2184,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 strongSelf.context.sharedContext.mainWindow?.presentInGlobalOverlay(controller)
             })
         }
-        
         self.tabContainerNode.contextGesture = { id, sourceNode, gesture, isDisabled in
             tabContextGesture(id, sourceNode, gesture, false, isDisabled)
         }
@@ -2480,10 +2478,10 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     }
     
     public static var sharedPreviousPowerSavingEnabled: Bool?
-
+    
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-
+                
         if self.powerSavingMonitoringDisposable == nil {
             self.powerSavingMonitoringDisposable = (self.context.sharedContext.automaticMediaDownloadSettings
             |> mapToSignal { settings -> Signal<Bool, NoError> in
@@ -3723,6 +3721,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         if !skipTabContainerUpdate {
             self.tabContainerNode.update(size: CGSize(width: layout.size.width, height: 46.0), sideInset: layout.safeInsets.left, filters: self.tabContainerData?.0 ?? [], selectedFilter: self.chatListDisplayNode.mainContainerNode.currentItemFilter, isReordering: self.chatListDisplayNode.isReorderingFilters || (self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing && !self.chatListDisplayNode.didBeginSelectingChatsWhileEditing), isEditing: self.chatListDisplayNode.effectiveContainerNode.currentItemNode.currentState.editing, canReorderAllChats: self.isPremium, filtersLimit: self.tabContainerData?.2, transitionFraction: self.chatListDisplayNode.effectiveContainerNode.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
         }
+        
         self.chatListDisplayNode.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, visualNavigationHeight: navigationBarHeight, cleanNavigationBarHeight: navigationBarHeight, storiesInset: 0.0, transition: transition)
     }
     
@@ -4139,32 +4138,14 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     
     private var initializedFilters = false
     private func reloadFilters(firstUpdate: (() -> Void)? = nil) {
-        // Nicegram
-        let preferencesKey: PostboxViewKey = .preferences(keys: Set([
-            ApplicationSpecificPreferencesKeys.chatListFilterSettings
-        ]))
-        let experimentalUISettingsKey: ValueBoxKey = ApplicationSpecificSharedDataKeys.experimentalUISettings
-        let displayTabsAtBottom = self.context.sharedContext.accountManager.sharedData(keys: Set([experimentalUISettingsKey]))
-        |> map { sharedData -> Bool in
-            let settings: ExperimentalUISettings = sharedData.entries[experimentalUISettingsKey]?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-            return settings.foldersTabAtBottom
-        }
-        |> distinctUntilChanged
-        //
-        
         let filterItems = chatListFilterItems(context: self.context)
         var notifiedFirstUpdate = false
         self.filterDisposable.set((combineLatest(queue: .mainQueue(),
-            // Nicegram
-            context.account.postbox.combinedView(keys: [preferencesKey]),
-            displayTabsAtBottom,
-            //
             filterItems,
             self.context.account.postbox.peerView(id: self.context.account.peerId),
             self.context.engine.data.get(TelegramEngine.EngineData.Item.Configuration.UserLimits(isPremium: false))
         )
-        // Nicegram (_, displayTabsAtBottom)
-        |> deliverOnMainQueue).startStrict(next: { [weak self] _, displayTabsAtBottom, countAndFilterItems, peerView, limits in
+        |> deliverOnMainQueue).startStrict(next: { [weak self] countAndFilterItems, peerView, limits in
             guard let strongSelf = self else {
                 return
             }
@@ -4237,8 +4218,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                 }
             }
             let filtersLimit = isPremium == false ? limits.maxFoldersCount : nil
-            // Nicegram (displayTabsAtBottom instead false)
-            strongSelf.tabContainerData = (resolvedItems, displayTabsAtBottom, filtersLimit)
+            strongSelf.tabContainerData = (resolvedItems, false, filtersLimit)
             var availableFilters: [ChatListContainerNodeFilter] = []
             var hasAllChats = false
             for item in items {
@@ -4278,7 +4258,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             let id = self?.context.account.peerId.toInt64() ?? 0
             let count = (getNicegramSettings().keywords.show[id] ?? true) ? 0 : 1
             // Nicegram (|| displayTabsAtBottom), count
-            let isEmpty = resolvedItems.count <= count || displayTabsAtBottom
+            let isEmpty = resolvedItems.count <= count
             
             let animated = strongSelf.didSetupTabs
             strongSelf.didSetupTabs = true
@@ -6914,7 +6894,7 @@ private final class ChatListHeaderBarContextExtractedContentSource: ContextExtra
     }
 }
 
-private final class ChatListContextLocationContentSource: ContextLocationContentSource {    
+private final class ChatListContextLocationContentSource: ContextLocationContentSource {
     private let controller: ViewController
     private let location: CGPoint
     
@@ -7113,7 +7093,7 @@ private final class ChatListLocationContext {
                 self.didSetReady = true
                 self.ready.set(.single(true))
             }
-        case let .forum(peerId):     
+        case let .forum(peerId):
             let peerView = Promise<PeerView>()
             peerView.set(context.account.viewTracker.peerView(peerId))
             

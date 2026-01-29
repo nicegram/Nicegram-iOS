@@ -1,5 +1,6 @@
 // Nicegram
 import FeatAiChatAnalysis
+import FeatChatExport
 import FeatHiddenChats
 import NGCoreUI
 import NGData
@@ -66,6 +67,27 @@ enum ChatContextMenuSource {
 func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: ChatListNodeEntryPromoInfo?, source: ChatContextMenuSource, chatListController: ChatListControllerImpl?, joined: Bool) -> Signal<[ContextMenuItem], NoError> {
     let presentationData = context.sharedContext.currentPresentationData.with({ $0 })
     let strings = presentationData.strings
+    
+    // Nicegram
+    func appendBackItem(items: inout [ContextMenuItem]) {
+        let backItem = ContextMenuActionItem(
+            text: strings.ChatList_Context_Back,
+            icon: { theme in
+                generateTintedImage(
+                    image: UIImage(bundleImageName: "Chat/Context Menu/Back"),
+                    color: theme.contextMenu.primaryColor
+                )
+            },
+            iconPosition: .left,
+            action: { c, _ in
+                c?.setItems(chatContextMenuItems(context: context, peerId: peerId, promoInfo: promoInfo, source: source, chatListController: chatListController, joined: joined) |> map { ContextController.Items(content: .list($0)) }, minHeight: nil, animated: true)
+            }
+        )
+        
+        items.append(.action(backItem))
+        items.append(.separator)
+    }
+    //
 
     return combineLatest(
         context.engine.data.get(TelegramEngine.EngineData.Item.Messages.ChatListGroup(id: peerId)),
@@ -377,6 +399,55 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                     f(.default)
                                 }
                             )))
+                            
+                            // Nicegram ChatExport
+                            items.append(.action(ContextMenuActionItem(
+                                text: FeatChatExport.strings.exportChatBtn(),
+                                icon: { theme in
+                                    generateTintedImage(
+                                        image: UIImage(bundleImageName: "Chat/Context Menu/Forward"),
+                                        color: theme.contextMenu.primaryColor
+                                    )
+                                },
+                                action: { controller, _ in
+                                    let exportChatViewModel = ExportChatViewModel(
+                                        peer: peer._asPeer().toTelegramBridgePeer()
+                                    )
+                                    
+                                    var subItems: [ContextMenuItem] = []
+                                    
+                                    appendBackItem(items: &subItems)
+                                    
+                                    let options = exportChatViewModel.getOptions()
+                                    for option in options {
+                                        let item = ContextMenuActionItem(
+                                            text: option.title,
+                                            icon: { _ in nil },
+                                            action: { _, f in
+                                                Task { @MainActor in
+                                                    try await exportChatViewModel.export(using: option)
+                                                    
+                                                    let toastController = UndoOverlayController(
+                                                        presentationData: presentationData,
+                                                        content: .forward(
+                                                            savedMessages: true,
+                                                            text: FeatChatExport.strings.chatExportedToastTitle()
+                                                        ),
+                                                        action: { _ in true }
+                                                    )
+                                                    chatListController?.present(toastController, in: .current)
+                                                }
+                                                
+                                                f(.dismissWithoutContent)
+                                            }
+                                        )
+                                        subItems.append(.action(item))
+                                    }
+                                    
+                                    controller?.setItems(.single(.init(content: .list(subItems))), minHeight: nil, animated: true)
+                                }
+                            )))
+                            //
                             
                             func copySourceMessages(_ count: Int) {
                                 Task {

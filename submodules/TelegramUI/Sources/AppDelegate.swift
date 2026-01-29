@@ -459,8 +459,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             idleTimerManager: {
                 IdleTimerManagerImpl(contextProvider: contextProvider)
             },
+            keywordsBridge: {
+                KeywordsBridgeImpl(contextProvider: contextProvider)
+            },
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
+            },
+            telegramChatHistoryProvider: {
+                TelegramChatHistoryProviderImpl(contextProvider: contextProvider)
             },
             telegramChatInviteChecker: {
                 TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
@@ -479,9 +485,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
-            },
-            telegramMessagesProvider: {
-                TelegramMessagesProviderImpl(contextProvider: contextProvider)
             },
             telegramNavigator: {
                 TelegramNavigatorImpl(contextProvider: contextProvider)
