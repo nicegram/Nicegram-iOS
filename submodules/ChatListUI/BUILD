@@ -2,6 +2,7 @@ load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
     "//Nicegram/NGData:NGData",
+    "//Nicegram/NGKeywords",
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGEnv:NGEnv",
@@ -50,7 +51,6 @@ swift_library(
         "//submodules/ActivityIndicator:ActivityIndicator",
         "//submodules/SearchBarNode:SearchBarNode",
         "//submodules/ChatListSearchRecentPeersNode:ChatListSearchRecentPeersNode",
-        "//submodules/ChatListSearchItemNode:ChatListSearchItemNode",
         "//submodules/ChatListSearchItemHeader:ChatListSearchItemHeader",
         "//submodules/TemporaryCachedPeerDataManager:TemporaryCachedPeerDataManager",
         "//submodules/PeerPresenceStatusManager:PeerPresenceStatusManager",
@@ -139,6 +139,14 @@ swift_library(
         "//submodules/TelegramUI/Components/ButtonComponent",
         "//submodules/TelegramUI/Components/AnimatedTextComponent",
         "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/ChatList/ChatListFilterTabContainerNode",
+        "//submodules/TelegramUI/Components/HeaderPanelContainerComponent",
+        "//submodules/TelegramUI/Components/HorizontalTabsComponent",
+        "//submodules/TelegramUI/Components/GlobalControlPanelsContext",
+        "//submodules/TelegramUI/Components/MediaPlaybackHeaderPanelComponent",
+        "//submodules/TelegramUI/Components/LiveLocationHeaderPanelComponent",
+        "//submodules/TelegramUI/Components/ChatList/ChatListSearchFiltersContainerNode",
+        "//submodules/TelegramUI/Components/ChatList/ChatListHeaderNoticeComponent",
     ],
     visibility = [
         "//visibility:public",

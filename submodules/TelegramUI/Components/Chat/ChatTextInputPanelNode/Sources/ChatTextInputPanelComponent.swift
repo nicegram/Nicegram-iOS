@@ -399,14 +399,6 @@ public final class ChatTextInputPanelComponent: Component {
                 }
                 
                 self.interfaceInteraction = ChatPanelInterfaceInteraction(
-                    // Nicegram
-                    cloudMessages: { _ in
-                    },
-                    copyForwardMessages: { _ in
-                    },
-                    copySelectedMessages: {
-                    },
-                    //
                     setupReplyMessage: { _, _, _  in
                     },
                     setupEditMessage: { _, _ in
@@ -499,7 +491,6 @@ public final class ChatTextInputPanelComponent: Component {
                             pendingUnpinnedAllMessages: false,
                             activeGroupCallInfo: nil,
                             hasActiveGroupCall: false,
-                            importState: nil,
                             threadData: nil,
                             isGeneralThreadClosed: false,
                             replyMessage: nil,
@@ -801,7 +792,6 @@ public final class ChatTextInputPanelComponent: Component {
                 pendingUnpinnedAllMessages: false,
                 activeGroupCallInfo: nil,
                 hasActiveGroupCall: false,
-                importState: nil,
                 threadData: nil,
                 isGeneralThreadClosed: false,
                 replyMessage: nil,

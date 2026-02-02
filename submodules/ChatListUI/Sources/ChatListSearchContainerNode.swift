@@ -1,3 +1,10 @@
+// Nicegram
+import SaveToCameraRoll
+import NGStrings
+import FeatKeywords
+import NGData
+import NGUtils
+//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -36,13 +43,11 @@ import MultiAnimationRenderer
 import PremiumUI
 import AvatarNode
 import StoryContainerScreen
-// Nicegram imports
-import SaveToCameraRoll
-import NGStrings
-import FeatKeywords
-import NGData
-import NGUtils
-//
+import ChatListSearchFiltersContainerNode
+import EdgeEffect
+import ComponentFlow
+import ComponentDisplayAdapters
+
 private enum ChatListTokenId: Int32 {
     case archive
     case forum
@@ -98,7 +103,7 @@ private struct ChatListSearchContainerNodeSearchState: Equatable {
         return ChatListSearchContainerNodeSearchState(selectedMessageIds: selectedMessageIds)
     }
 }
-// Nicegram NCG-7581 Folder for keywords
+// Nicegram FolderForKeywords
 let searchMessagesUseCase = KeywordsModule.shared.searchMessagesUseCase()
 //
 public final class ChatListSearchContainerNode: SearchDisplayControllerContentNode {
@@ -115,8 +120,9 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     var dismissSearch: (() -> Void)?
     var openAdInfo: ((ASDisplayNode, AdPeer) -> Void)?
     
-    private let dimNode: ASDisplayNode
-    let filterContainerNode: ChatListSearchFiltersContainerNode
+    private let edgeEffectView: EdgeEffectView
+    
+    private let filterContainerNode: ChatListSearchFiltersContainerNode
     private let paneContainerNode: ChatListSearchPaneContainerNode
     private var selectionPanelNode: ChatListSearchMessageSelectionPanelNode?
     
@@ -168,7 +174,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     private var recentAppsDisposable: Disposable?
     private var refreshedGlobalPostSearchStateDisposable: Disposable?
     
-    // Nicegram NCG-7581 Folder for keywords
+    // Nicegram FolderForKeywords
     private let addKeywordButtonNode: KeywordButtonNode
     private let addKeywordButtonTransition = ContainedViewLayoutTransition.animated(duration: 0.3, curve: .linear)
     private var keyboardHeight: CGFloat = 0.0
@@ -197,14 +203,13 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         self.openMessage = originalOpenMessage
         self.present = present
         self.presentInGlobalOverlay = presentInGlobalOverlay
-    
-        self.dimNode = ASDisplayNode()
-        self.dimNode.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        
+        self.edgeEffectView = EdgeEffectView()
         
         self.filterContainerNode = ChatListSearchFiltersContainerNode()
         self.paneContainerNode = ChatListSearchPaneContainerNode(context: context, animationCache: animationCache, animationRenderer: animationRenderer, updatedPresentationData: updatedPresentationData, peersFilter: self.peersFilter, requestPeerType: self.requestPeerType, location: location, searchQuery: self.searchQuery.get(), searchOptions: self.searchOptions.get(), navigationController: navigationController, parentController: parentController())
         self.paneContainerNode.clipsToBounds = true
-        // Nicegram NCG-7581 Folder for keywords
+        // Nicegram FolderForKeywords
         self.addKeywordButtonNode = KeywordButtonNode()
         self.addKeywordButtonNode.displaysAsynchronously = false
         self.addKeywordButtonNode.titleNode.maximumNumberOfLines = 1
@@ -213,9 +218,8 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         super.init()        
         self.backgroundColor = filter.contains(.excludeRecent) ? nil : self.presentationData.theme.chatList.backgroundColor
         
-//        self.addSubnode(self.dimNode)
         self.addSubnode(self.paneContainerNode)
-        // Nicegram NCG-7581 Folder for keywords
+        // Nicegram FolderForKeywords
         self.addSubnode(addKeywordButtonNode)
         self.addKeywordButtonNode.addTarget(self, action: #selector(self.addKeywordPressed), forControlEvents: .touchUpInside)
         //
@@ -349,6 +353,9 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             parentController()?.view.endEditing(true)
         }
         
+        self.view.addSubview(self.edgeEffectView)
+        
+        self.addSubnode(self.filterContainerNode)
         self.filterContainerNode.filterPressed = { [weak self] filter in
             guard let strongSelf = self else {
                 return
@@ -578,9 +585,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     public override func didLoad() {
         super.didLoad()
         
-        
-        self.dimNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
-        // Nicegram NCG-7581 Folder for keywords
+        // Nicegram FolderForKeywords
         self.addKeywordButtonNode.frame = CGRect(origin: CGPoint(x: frame.midX, y: frame.height), size: .zero)
         //
     }
@@ -695,7 +700,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         self.searchQueryValue = searchQuery
         
         self.suggestedDates.set(.single(suggestDates(for: text, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat)))
-        // Nicegram NCG-7581 Folder for keywords
+        // Nicegram FolderForKeywords
         let isEnabledState = if let keywordLastQuery {
             keywordLastQuery == searchQuery
         } else {
@@ -740,18 +745,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         self.transitionFraction = transitionFraction
         
         if let (layout, _) = self.validLayout {
-            let filters: [ChatListSearchFilter]
-            if let suggestedFilters = self.suggestedFilters, !suggestedFilters.isEmpty {
-                filters = suggestedFilters
-            } else {
-                var isForum = false
-                if case .forum = self.location {
-                    isForum = true
-                }
-                
-                filters = defaultAvailableSearchPanes(isForum: isForum, hasDownloads: !isForum && self.hasDownloads, hasPublicPosts: self.showPublicPostsTab).map(\.filter)
-            }
-            self.filterContainerNode.update(size: CGSize(width: layout.size.width - 40.0, height: 38.0), sideInset: layout.safeInsets.left - 20.0, filters: filters.map { .filter($0) }, displayGlobalPostsNewBadge: self.displayGlobalPostsNewBadge, selectedFilter: self.selectedFilter?.id, transitionFraction: self.transitionFraction, presentationData: self.presentationData, transition: transition)
+            self.updateFilterContainerNode(layout: layout, transition: transition)
         }
     }
     
@@ -797,18 +791,8 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             self.cancel?()
         }
     }
-
-    override public func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
-        super.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: transition)
-        
-        let isFirstTime = self.validLayout == nil
-        self.validLayout = (layout, navigationBarHeight)
-        
-        let topInset = navigationBarHeight
-        
-        transition.updateFrame(node: self.dimNode, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset), size: CGSize(width: layout.size.width, height: layout.size.height - topInset)))
-        transition.updateFrame(node: self.filterContainerNode, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight + 6.0), size: CGSize(width: layout.size.width, height: 38.0)))
-        
+    
+    private func updateFilterContainerNode(layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         var isForum = false
         if case .forum = self.location {
             isForum = true
@@ -821,8 +805,46 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             filters = defaultAvailableSearchPanes(isForum: isForum, hasDownloads: self.hasDownloads, hasPublicPosts: self.showPublicPostsTab).map(\.filter)
         }
         
-        let overflowInset: CGFloat = 20.0
-        self.filterContainerNode.update(size: CGSize(width: layout.size.width - overflowInset * 2.0, height: 38.0), sideInset: layout.safeInsets.left - overflowInset, filters: filters.map { .filter($0) }, displayGlobalPostsNewBadge: self.displayGlobalPostsNewBadge, selectedFilter: self.selectedFilter?.id, transitionFraction: self.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
+        var filtersInsets = UIEdgeInsets(top: 0.0, left: 12.0, bottom: layout.insets(options: [.input]).bottom + 34.0, right: 12.0)
+        if layout.insets(options: [.input]).bottom <= 30.0 {
+            filtersInsets = ContainerViewLayout.concentricInsets(bottomInset: layout.insets(options: [.input]).bottom, innerDiameter: 40.0, sideInset: 32.0)
+        } else if layout.insets(options: [.input]).bottom <= 84.0 {
+            filtersInsets.left = 20.0
+            filtersInsets.right = filtersInsets.left
+        }
+        
+        self.filterContainerNode.update(size: CGSize(width: layout.size.width - (layout.safeInsets.left + filtersInsets.left) * 2.0, height: 40.0), sideInset: 0.0, filters: filters.map { .filter($0) }, displayGlobalPostsNewBadge: self.displayGlobalPostsNewBadge, selectedFilter: self.selectedFilter?.id, transitionFraction: self.transitionFraction, presentationData: self.presentationData, transition: .animated(duration: 0.4, curve: .spring))
+    }
+
+    override public func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
+        super.containerLayoutUpdated(layout, navigationBarHeight: navigationBarHeight, transition: transition)
+        
+        let isFirstTime = self.validLayout == nil
+        self.validLayout = (layout, navigationBarHeight)
+        
+        let topInset = navigationBarHeight
+        
+        var filtersInsets = UIEdgeInsets(top: 0.0, left: 12.0, bottom: layout.insets(options: [.input]).bottom, right: 12.0)
+        if filtersInsets.bottom == 84.0 {
+            filtersInsets.bottom -= 6.0
+        }
+        if layout.insets(options: [.input]).bottom <= 30.0 {
+            filtersInsets = ContainerViewLayout.concentricInsets(bottomInset: layout.insets(options: [.input]).bottom, innerDiameter: 40.0, sideInset: 32.0)
+        } else if layout.insets(options: [.input]).bottom <= 84.0 {
+            filtersInsets.left = 20.0
+            filtersInsets.right = filtersInsets.left
+        } else {
+            if let inputHeight = layout.inputHeight, filtersInsets.bottom == inputHeight {
+                filtersInsets.bottom += 8.0
+            }
+            filtersInsets.bottom = max(8.0, filtersInsets.bottom)
+        }
+        if self.stateValue.selectedMessageIds != nil {
+            filtersInsets.bottom += 48.0
+        }
+        
+        transition.updateFrame(node: self.filterContainerNode, frame: CGRect(origin: CGPoint(x: layout.safeInsets.left + filtersInsets.left, y: layout.size.height - filtersInsets.bottom - 40.0), size: CGSize(width: layout.size.width - (layout.safeInsets.left + filtersInsets.left) * 2.0, height: 40.0)))
+        self.updateFilterContainerNode(layout: layout, transition: transition)
         
         if isFirstTime {
             self.filterContainerNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
@@ -830,13 +852,13 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
         }
         
         var bottomIntrinsicInset = layout.intrinsicInsets.bottom
-        if case .chatList(.root) = self.location {
-            if layout.safeInsets.left > overflowInset {
+        /*if case .chatList(.root) = self.location {
+            if layout.safeInsets.left > 20.0 {
                 bottomIntrinsicInset -= 34.0
             } else {
                 bottomIntrinsicInset -= 49.0
             }
-        }
+        }*/
         
         if let selectedMessageIds = self.stateValue.selectedMessageIds {
             var wasAdded = false
@@ -962,7 +984,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                     return strongSelf.context.sharedContext.chatAvailableMessageActions(engine: strongSelf.context.engine, accountPeerId: strongSelf.context.account.peerId, messageIds: messageIds, messages: messages, peers: peers)
                 }
                 self.selectionPanelNode = selectionPanelNode
-                self.addSubnode(selectionPanelNode)
+                self.insertSubnode(selectionPanelNode, aboveSubnode: self.filterContainerNode)
             }
             selectionPanelNode.selectedMessages = selectedMessageIds
             
@@ -983,30 +1005,41 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             })
         }
         
-        transition.updateFrame(node: self.paneContainerNode, frame: CGRect(x: 0.0, y: topInset, width: layout.size.width, height: layout.size.height - topInset))
+        transition.updateFrame(node: self.paneContainerNode, frame: CGRect(x: 0.0, y: 0.0, width: layout.size.width, height: layout.size.height))
         
         var bottomInset = layout.intrinsicInsets.bottom
         if let inputHeight = layout.inputHeight {
             bottomInset = inputHeight
         } else if let _ = self.selectionPanelNode {
             bottomInset = bottomIntrinsicInset
-        } else if case .chatList(.root) = self.location {
-            bottomInset -= bottomIntrinsicInset
         }
+        bottomInset += 10.0
         
         let availablePanes: [ChatListSearchPaneKey]
+        var isForum = false
+        if case .forum = self.location {
+            isForum = true
+        }
         if self.displaySearchFilters {
             availablePanes = defaultAvailableSearchPanes(isForum: isForum, hasDownloads: self.hasDownloads, hasPublicPosts: self.hasPublicPostsTab)
         } else {
             availablePanes = isForum ? [.topics] : [.chats]
         }
-
-        self.paneContainerNode.update(size: CGSize(width: layout.size.width, height: layout.size.height - topInset), sideInset: layout.safeInsets.left, bottomInset: bottomInset, visibleHeight: layout.size.height - topInset, presentationData: self.presentationData, availablePanes: availablePanes, transition: transition)
         
-        // Nicegram NCG-7581 Folder for keywords
+        bottomInset += 44.0
+        
+        let edgeEffectHeight: CGFloat = bottomInset + 8.0
+        let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - edgeEffectHeight), size: CGSize(width: layout.size.width, height: edgeEffectHeight))
+        transition.updateFrame(view: self.edgeEffectView, frame: edgeEffectFrame)
+        self.edgeEffectView.update(content: self.presentationData.theme.list.plainBackgroundColor, rect: edgeEffectFrame, edge: .bottom, edgeSize: min(edgeEffectHeight, 50.0), transition: ComponentTransition(transition))
+        transition.updateAlpha(layer: self.edgeEffectView.layer, alpha: edgeEffectHeight > 21.0 ? 1.0 : 0.0)
+
+        self.paneContainerNode.update(size: CGSize(width: layout.size.width, height: layout.size.height), sideInset: layout.safeInsets.left, topInset: topInset, bottomInset: bottomInset, visibleHeight: layout.size.height, presentationData: self.presentationData, availablePanes: availablePanes, transition: transition)
+        
+        // Nicegram FolderForKeywords
         if layout.inputHeight == nil {
             let frame = addKeywordButtonNode.frame
-            let rect = CGRect(origin: CGPoint(x: frame.origin.x, y: layout.size.height - frame.size.height - 30), size: frame.size)
+            let rect = CGRect(origin: CGPoint(x: frame.origin.x, y: layout.size.height - frame.size.height - 80), size: frame.size)
             transition.updateFrame(
                 node: addKeywordButtonNode,
                 frame: rect
@@ -1401,7 +1434,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
                     title = strongSelf.presentationData.strings.DownloadList_RemoveFileAlertTitle(Int32(messages.count))
                     text = strongSelf.presentationData.strings.DownloadList_RemoveFileAlertText(Int32(messages.count))
                     
-                    strongSelf.present?(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: title, text: text, actions: [
+                    strongSelf.present?(textAlertController(context: strongSelf.context, title: title, text: text, actions: [
                         TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
                         }),
                         TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.DownloadList_RemoveFileAlertRemove, action: {
@@ -1729,7 +1762,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     private func dismissInput() {
         self.view.window?.endEditing(true)
     }
-    // Nicegram NCG-7581 Folder for keywords
+    // Nicegram FolderForKeywords
     private func updateAddKeywordButton(isEnabledState: Bool = false) {
         if let keywordQuery {
             let font = UIFont.mainFont(ofSize: 12, weight: .medium)
@@ -1766,7 +1799,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
             let buttonFrame = CGRect(
                 origin: CGPoint(
                     x: self.frame.width / 2 - buttonSize.width / 2,
-                    y: self.frame.height - keyboardHeight - buttonSize.height - 12
+                    y: self.frame.height - keyboardHeight - buttonSize.height - 55
                 ),
                 size: CGSize(
                     width: buttonSize.width ,
@@ -1811,7 +1844,7 @@ public final class ChatListSearchContainerNode: SearchDisplayControllerContentNo
     }
     //
 }
-// Nicegram NCG-7581 Folder for keywords
+// Nicegram FolderForKeywords
 private final class KeywordButtonNode: ASButtonNode {
     private let expandedTapArea: CGFloat = 20
     

@@ -182,7 +182,6 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     weak var parentController: ViewController?
     
     private let listNode: ListView
-    private let coveringView: UIView
     private var state: SpyOnFriendsState?
     private var currentEntries: [SpyOnFriendsListEntry] = []
     private var enqueuedTransactions: [SpyOnFriendsListTransaction] = []
@@ -224,14 +223,10 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
             presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
         
-        self.listNode.backgroundColor = presentationData.theme.list.blocksBackgroundColor
-        self.coveringView = UIView()
-        
         super.init()
         
         self.listNode.preloadPages = true
         self.addSubnode(self.listNode)
-        self.view.addSubview(self.coveringView)
         
         self.disposable = (spyOnFriendsContext.state
         |> deliverOnMainQueue).startStrict(next: { [weak self] state in
@@ -292,8 +287,6 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
     ) {
         let isFirstLayout = self.currentParams == nil
         self.currentParams = (size, isScrollingLockedAtTop, presentationData)
-        self.coveringView.backgroundColor = presentationData.theme.list.itemBlocksBackgroundColor
-        transition.updateFrame(view: self.coveringView, frame: CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: size.width, height: topInset + 1.0)))
         
         transition.updateFrame(node: self.listNode, frame: CGRect(origin: CGPoint(), size: size))
         let (duration, curve) = listViewAnimationDurationAndCurve(transition: transition)

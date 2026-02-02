@@ -40,7 +40,7 @@ public final class PasscodeSetupController: ViewController {
         self.isChangeModeAllowed = isChangeModeAllowed
         self.presentationData = context.currentPresentationData.with { $0 }
         
-        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, hideBackground: isOpaqueNavigationBar, hideBadge: false))
+        super.init(navigationBarPresentationData: NavigationBarPresentationData(presentationData: self.presentationData, hideBackground: isOpaqueNavigationBar, hideBadge: false, style: .glass))
         
         self.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style

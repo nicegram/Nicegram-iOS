@@ -72,7 +72,7 @@ class SpyOnFriendsEmptyDataNode: ListViewItemNode {
             emptyDataView
         }
 
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false)
+        super.init(layerBacked: false, rotated: false)
         
         self.addSubnode(emptyDataNode)
     }

@@ -120,7 +120,6 @@ swift_library(
         "//submodules/TelegramUI/Components/LottieComponent",
         "//submodules/TelegramUI/Components/Stories/PeerListItemComponent",
         "//submodules/TelegramUI/Components/BackButtonComponent",
-        "//submodules/TelegramUI/Components/AlertComponent",
         "//submodules/Components/BlurredBackgroundComponent",
         "//submodules/DirectMediaImageCache",
         "//submodules/FastBlur",
@@ -136,6 +135,8 @@ swift_library(
         "//submodules/TelegramUI/Components/EdgeEffect",
         "//submodules/PremiumUI",
         "//submodules/TelegramUI/Components/Calls/VideoChatMicButtonComponent",
+        "//submodules/TelegramUI/Components/AlertComponent",
+        "//submodules/TelegramUI/Components/AlertComponent/AlertInputFieldComponent",
     ],
     visibility = [
         "//visibility:public",

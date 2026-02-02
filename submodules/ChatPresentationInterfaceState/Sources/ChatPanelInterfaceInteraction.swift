@@ -207,9 +207,9 @@ public final class ChatPanelInterfaceInteraction {
     
     public init(
         // Nicegram
-        cloudMessages: @escaping ([Message]?) -> Void,
-        copyForwardMessages: @escaping ([Message]?) -> Void,
-        copySelectedMessages: @escaping () -> Void,
+        cloudMessages: @escaping ([Message]?) -> Void = { _ in },
+        copyForwardMessages: @escaping ([Message]?) -> Void = { _ in },
+        copySelectedMessages: @escaping () -> Void = {},
         replyPrivately: @escaping (Message) -> Void = { _ in },
         //
         setupReplyMessage: @escaping (MessageId?, Int32?, @escaping (ContainedViewLayoutTransition, @escaping () -> Void) -> Void) -> Void,
@@ -479,11 +479,7 @@ public final class ChatPanelInterfaceInteraction {
         updateInputModeAndDismissedButtonKeyboardMessageId: @escaping ((ChatPresentationInterfaceState) -> (ChatInputMode, MessageId?)) -> Void,
         openLinkEditing: @escaping () -> Void
     ) {
-        // Nicegram (cloudMessages + copyForwardMessages + copySelectedMessages)
-        self.init(cloudMessages: { _ in
-        }, copyForwardMessages: { _ in
-        }, copySelectedMessages: {
-        }, setupReplyMessage: { _, _, _ in
+        self.init(setupReplyMessage: { _, _, _ in
         }, setupEditMessage: { _, _ in
         }, beginMessageSelection: { _, _ in
         }, cancelMessageSelection: { _ in

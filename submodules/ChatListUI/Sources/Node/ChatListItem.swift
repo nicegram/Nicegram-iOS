@@ -22,7 +22,6 @@ import PeerOnlineMarkerNode
 import LocalizedPeerData
 import PeerPresenceStatusManager
 import PhotoResources
-import ChatListSearchItemNode
 import ContextUI
 import ChatInterfaceState
 import TextFormat
@@ -226,6 +225,7 @@ public enum ChatListItemContent {
         public var message: EngineMessage?
         public var unreadCount: Int
         public var hiddenByDefault: Bool
+        public var appearsPinned: Bool
         public var storyState: StoryState?
         
         public init(
@@ -234,6 +234,7 @@ public enum ChatListItemContent {
             message: EngineMessage?,
             unreadCount: Int,
             hiddenByDefault: Bool,
+            appearsPinned: Bool,
             storyState: StoryState?
         ) {
             self.groupId = groupId
@@ -241,6 +242,7 @@ public enum ChatListItemContent {
             self.message = message
             self.unreadCount = unreadCount
             self.hiddenByDefault = hiddenByDefault
+            self.appearsPinned = appearsPinned
             self.storyState = storyState
         }
     }
@@ -461,7 +463,7 @@ private final class ChatListItemTagListComponent: Component {
     }
 }
 
-public class ChatListItem: ListViewItem, ChatListSearchItemNeighbour {
+public class ChatListItem: ListViewItem {
     public enum EnabledContextActions {
         public struct Actions: OptionSet {
             public var rawValue: Int32
@@ -1515,7 +1517,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         } else {
                             result += item.presentationData.strings.VoiceOver_ChatList_OutgoingMessage
                         }
-                        let (_, initialHideAuthor, messageText, _, _) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: messages, chatPeer: peer, accountPeerId: item.context.account.peerId, isPeerGroup: false)
+                        let (_, initialHideAuthor, messageText, _, _, _) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: messages, chatPeer: peer, accountPeerId: item.context.account.peerId, isPeerGroup: false)
                         if message.flags.contains(.Incoming), !initialHideAuthor, let author = message.author, case .user = author {
                             result += "\n\(item.presentationData.strings.VoiceOver_ChatList_MessageFrom(author.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)).string)"
                         }
@@ -1549,7 +1551,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         } else {
                             result += item.presentationData.strings.VoiceOver_ChatList_OutgoingMessage
                         }
-                        let (_, initialHideAuthor, messageText, _, _) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: peerData.messages, chatPeer: peerData.peer, accountPeerId: item.context.account.peerId, isPeerGroup: false)
+                        let (_, initialHideAuthor, messageText, _, _, _) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: peerData.messages, chatPeer: peerData.peer, accountPeerId: item.context.account.peerId, isPeerGroup: false)
                         if message.flags.contains(.Incoming), !initialHideAuthor, let author = message.author, case .user = author {
                             result += "\n\(item.presentationData.strings.VoiceOver_ChatList_MessageFrom(author.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)).string)"
                         }
@@ -1721,7 +1723,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
         self.separatorNode = ASDisplayNode()
         self.separatorNode.isLayerBacked = true
         
-        super.init(layerBacked: false, dynamicBounce: false, rotated: false, seeThrough: false)
+        super.init(layerBacked: false, rotated: false, seeThrough: false)
         
         self.isAccessibilityElement = true
         
@@ -2547,7 +2549,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             let leftInset: CGFloat = params.leftInset + avatarLeftInset
             
             enum ContentData {
-                case chat(itemPeer: EngineRenderedPeer, threadInfo: ChatListItemContent.ThreadInfo?, peer: EnginePeer?, hideAuthor: Bool, messageText: String, spoilers: [NSRange]?, customEmojiRanges: [(NSRange, ChatTextInputTextCustomEmojiAttribute)]?)
+                case chat(itemPeer: EngineRenderedPeer, threadInfo: ChatListItemContent.ThreadInfo?, peer: EnginePeer?, hideAuthor: Bool, messageText: String, messageEntities: [MessageTextEntity], spoilers: [NSRange]?, customEmojiRanges: [(NSRange, ChatTextInputTextCustomEmojiAttribute)]?)
                 case group(peers: [EngineChatList.GroupItem.Item])
             }
             
@@ -2556,7 +2558,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             var hideAuthor = false
             switch contentPeer {
                 case let .chat(itemPeer):
-                    var (peer, initialHideAuthor, messageText, spoilers, customEmojiRanges) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: messages, chatPeer: itemPeer, accountPeerId: item.context.account.peerId, enableMediaEmoji: !enableChatListPhotos, isPeerGroup: isPeerGroup)
+                    var (peer, initialHideAuthor, messageText, messageEntities, spoilers, customEmojiRanges) = chatListItemStrings(strings: item.presentationData.strings, nameDisplayOrder: item.presentationData.nameDisplayOrder, dateTimeFormat: item.presentationData.dateTimeFormat, contentSettings: item.context.currentContentSettings.with { $0 }, messages: messages, chatPeer: itemPeer, accountPeerId: item.context.account.peerId, enableMediaEmoji: !enableChatListPhotos, isPeerGroup: isPeerGroup)
                     
                     if case let .psa(_, maybePsaText) = promoInfo, let psaText = maybePsaText {
                         initialHideAuthor = true
@@ -2584,7 +2586,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         break
                     }
                     
-                    contentData = .chat(itemPeer: itemPeer, threadInfo: threadInfo, peer: peer, hideAuthor: hideAuthor, messageText: messageText, spoilers: spoilers, customEmojiRanges: customEmojiRanges)
+                    contentData = .chat(itemPeer: itemPeer, threadInfo: threadInfo, peer: peer, hideAuthor: hideAuthor, messageText: messageText, messageEntities: messageEntities, spoilers: spoilers, customEmojiRanges: customEmojiRanges)
                     hideAuthor = initialHideAuthor
                 case let .group(groupPeers):
                     contentData = .group(peers: groupPeers)
@@ -2603,7 +2605,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 forumTopicData = nil
                 topForumTopicItems = []
                 
-                if case let .chat(itemPeer, _, _, _, _, _, _) = contentData {
+                if case let .chat(itemPeer, _, _, _, _, _, _, _) = contentData {
                     if let messagePeer = itemPeer.chatMainPeer {
                         switch messagePeer {
                         case let .channel(channel):
@@ -2651,7 +2653,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             var ignoreForwardedIcon = false
             
             switch contentData {
-                case let .chat(itemPeer, _, _, _, text, spoilers, customEmojiRanges):
+                case let .chat(itemPeer, _, _, _, text, entities, spoilers, customEmojiRanges):
                     // Nicegram PinnedChats
                     if let nicegramItem = item.nicegramItem {
                         titleAttributedString = NSAttributedString(
@@ -2667,7 +2669,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         break
                     }
                     //
-                
                     var isUser = false
                     if case .user = itemPeer.chatMainPeer {
                         isUser = true
@@ -2750,7 +2751,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         }
                         chatListText = (text, messageText)
                     }
-                    
+                
                     if inlineAuthorPrefix == nil, let mediaDraftContentType {
                         hasDraft = true
                         authorAttributedString = NSAttributedString(string: item.presentationData.strings.DialogList_Draft, font: textFont, textColor: theme.messageDraftTextColor)
@@ -2782,8 +2783,8 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         if let peerText = peerText {
                             authorAttributedString = NSAttributedString(string: peerText, font: textFont, textColor: theme.authorNameColor)
                         }
-                        
-                        var entities = (message._asMessage().textEntitiesAttribute?.entities ?? []).filter { entity in
+                                       
+                        var entities = entities.filter { entity in
                             switch entity.type {
                             case .Spoiler, .CustomEmoji:
                                 return true
@@ -2801,14 +2802,14 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             } else {
                                 regex = loginCodeRegex
                             }
-                            if let cached = currentCustomTextEntities, cached.matches(text: message.text) {
+                            if let cached = currentCustomTextEntities, cached.matches(text: messageText) {
                                 customTextEntities = cached
-                            } else if let matches = regex?.matches(in: message.text, options: [], range: NSMakeRange(0, (message.text as NSString).length)) {
+                            } else if let matches = regex?.matches(in: messageText, options: [], range: NSMakeRange(0, (messageText as NSString).length)) {
                                 var entities: [MessageTextEntity] = []
                                 if let first = matches.first {
                                     entities.append(MessageTextEntity(range: first.range.location ..< first.range.location + first.range.length, type: .Spoiler))
                                 }
-                                customTextEntities = CachedCustomTextEntities(text: message.text, textEntities: entities)
+                                customTextEntities = CachedCustomTextEntities(text: messageText, textEntities: entities)
                             }
                         }
                         
@@ -2817,14 +2818,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         }
                         
                         let messageString: NSAttributedString
-                        if !message.text.isEmpty && entities.count > 0 {
-                            var messageText = message.text
-                            var entities = entities
-                            if !"".isEmpty, let translation = message.attributes.first(where: { $0 is TranslationMessageAttribute }) as? TranslationMessageAttribute, !translation.text.isEmpty {
-                                messageText = translation.text
-                                entities = translation.entities
-                            }
-                            
+                        if !messageText.isEmpty && entities.count > 0 {
                             messageString = foldLineBreaks(stringWithAppliedEntities(messageText, entities: entities, baseColor: theme.messageTextColor, linkColor: theme.messageTextColor, baseFont: textFont, linkFont: textFont, boldFont: textFont, italicFont: italicTextFont, boldItalicFont: textFont, fixedFont: textFont, blockQuoteFont: textFont, underlineLinks: false, message: message._asMessage()))
                         } else if spoilers != nil || customEmojiRanges != nil {
                             let mutableString = NSMutableAttributedString(string: messageText, font: textFont, textColor: theme.messageTextColor)
@@ -3211,7 +3205,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             }
             
             switch contentData {
-                case let .chat(itemPeer, threadInfo, _, _, _, _, _):
+                case let .chat(itemPeer, threadInfo, _, _, _, _, _, _):
                     if case let .peer(peerData) = item.content, let customMessageListData = peerData.customMessageListData {
                         if customMessageListData.commandPrefix != nil {
                             titleAttributedString = nil
@@ -3985,6 +3979,9 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     } else {
                         transition = .immediate
                     }
+                    
+                    transition.updateAlpha(node: strongSelf, alpha: item.hiddenOffset ? 0.0 : 1.0)
+                    ComponentTransition(transition).setBlur(layer: strongSelf.layer, radius: item.hiddenOffset ? 8.0 : 0.0)
                     
                     let contextContainerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.contentSize.width, height: itemHeight))
 //                    strongSelf.contextContainer.position = contextContainerFrame.center
@@ -5184,7 +5181,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     if case let .groupReference(groupReferenceData) = item.content, groupReferenceData.hiddenByDefault {
                         separatorInset = 0.0
                     } else if (!nextIsPinned && isPinned) || last {
-                            separatorInset = 0.0
+                        separatorInset = 0.0
                     } else {
                         separatorInset = editingOffset + leftInset + rawContentRect.origin.x
                     }
@@ -5210,8 +5207,8 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         highlightedBackgroundColor = theme.itemHighlightedBackgroundColor
                     } else if isPinned {
                         if case let .groupReference(groupReferenceData) = item.content, groupReferenceData.hiddenByDefault {
-                            backgroundColor = theme.itemBackgroundColor
-                            highlightedBackgroundColor = theme.itemHighlightedBackgroundColor
+                            backgroundColor = groupReferenceData.appearsPinned ? theme.pinnedItemBackgroundColor : theme.itemBackgroundColor
+                            highlightedBackgroundColor = groupReferenceData.appearsPinned ? theme.pinnedItemHighlightedBackgroundColor : theme.itemHighlightedBackgroundColor
                         } else {
                             backgroundColor = theme.pinnedItemBackgroundColor
                             highlightedBackgroundColor = theme.pinnedItemHighlightedBackgroundColor

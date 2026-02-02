@@ -619,9 +619,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                             }
                         }
                         if isToken {
-                            context.sharedContext.presentGlobalController(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.AuthSessions_AddDevice_UrlLoginHint, actions: [
-                                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {
-                                }),
+                            context.sharedContext.presentGlobalController(textAlertController(context: context, title: nil, text: presentationData.strings.AuthSessions_AddDevice_UrlLoginHint, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {}),
                             ], parseMarkdown: true), nil)
                             return
                         }
@@ -828,6 +826,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                         var startApp: String?
                         var text: String?
                         var profile: Bool = false
+                        var direct: Bool = false
                         var referrer: String?
                         var albumId: Int64?
                         var collectionId: Int64?
@@ -881,6 +880,8 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                                     startChannel = ""
                                 } else if queryItem.name == "profile" {
                                     profile = true
+                                } else if queryItem.name == "direct" {
+                                    direct = true
                                 } else if queryItem.name == "startapp" {
                                     startApp = ""
                                 }
@@ -974,6 +975,13 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                                 convertedUrl = current + "&profile"
                             } else {
                                 convertedUrl = current + "?profile"
+                            }
+                        }
+                        if direct, let current = convertedUrl {
+                            if current.contains("?") {
+                                convertedUrl = current + "&direct"
+                            } else {
+                                convertedUrl = current + "?direct"
                             }
                         }
                     }
