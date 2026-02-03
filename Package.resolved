@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/adsgram-s2s",
-        "revision" : "91019fbc32a895ec1ad6b9cf3d72fd4f25b13371"
+        "revision" : "9336aa5dad82c016fc32a8d7338a3e25815b4a47"
       }
     },
     {
