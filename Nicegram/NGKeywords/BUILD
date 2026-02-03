@@ -14,6 +14,7 @@ swift_library(
         "//Nicegram/NGLogging",
         "//Nicegram/NGUI",
         "//Nicegram/NGUtils",
+        "@swiftpkg_nicegram_assistant_ios//:FeatKeywords",
     ],
     visibility = [
         "//visibility:public",
