@@ -281,10 +281,7 @@ private final class ContactSyncNode: ASDisplayNode {
         self.switchNode.frameColor = theme.list.itemSwitchColors.frameColor
         self.switchNode.contentColor = theme.list.itemSwitchColors.contentColor
         self.switchNode.handleColor = theme.list.itemSwitchColors.handleColor
-        
-        // Nicegram, set initial value to false
-        self.switchNode.isOn = false
-        //
+        self.switchNode.isOn = true
         
         super.init()
         
