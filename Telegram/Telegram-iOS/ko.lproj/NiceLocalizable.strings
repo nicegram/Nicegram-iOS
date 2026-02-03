@@ -248,3 +248,10 @@
 "AccountsBackup.ImportFromFile" = "파일에서 가져오기";
 "AccountsBackup.ExportAsFile" = "파일로 내보내기";
 "AccountsBackup.DeleteSessions" = "세션 삭제";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "계정 개인정보 업데이트";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "추천 개인정보 설정을 적용하시겠습니까?";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "계정에 추천된 개인정보 및 보안 설정을 적용하세요. 나중에 설정 → 개인정보 보호 및 보안에서 변경할 수 있습니다";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "적용";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "Cancel";

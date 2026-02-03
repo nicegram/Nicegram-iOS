@@ -246,3 +246,10 @@
 "AccountsBackup.ImportFromFile" = "Importar de Arquivo";
 "AccountsBackup.ExportAsFile" = "Exportar como Arquivo";
 "AccountsBackup.DeleteSessions" = "Excluir Sessões";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "Atualizar Privacidade da Conta";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "Aplicar Configurações de Privacidade Recomendadas?";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "Aplique as configurações recomendadas de privacidade e segurança à sua conta. Você pode alterá-las mais tarde em Configurações → Privacidade e Segurança";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "Aplicar";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "Cancelar";

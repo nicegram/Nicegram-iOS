@@ -247,3 +247,10 @@ Il browser selezionato deve essere installato.";
 "AccountsBackup.ImportFromFile" = "Importa da file";
 "AccountsBackup.ExportAsFile" = "Esporta come file";
 "AccountsBackup.DeleteSessions" = "Elimina sessioni";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "Aggiorna la Privacy dell'Account";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "Applica le Impostazioni di Privacy Consigliate?";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "Applica le impostazioni di privacy e sicurezza consigliate al tuo account. Puoi modificarle in seguito in Impostazioni → Privacy e Sicurezza";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "Applica";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "Cancella";

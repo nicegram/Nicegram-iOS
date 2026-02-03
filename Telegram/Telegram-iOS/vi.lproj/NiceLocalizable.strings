@@ -246,3 +246,10 @@
 "AccountsBackup.ImportFromFile" = "Nhập từ tệp";
 "AccountsBackup.ExportAsFile" = "Xuất dưới dạng tệp";
 "AccountsBackup.DeleteSessions" = "Xóa các phiên";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "Cập Nhật Quyền Riêng Tư Tài Khoản";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "Áp Dụng Cài Đặt Quyền Riêng Tư Được Khuyến Nghị?";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "Áp dụng cài đặt quyền riêng tư và bảo mật được khuyến nghị cho tài khoản của bạn. Bạn có thể thay đổi chúng sau tại Cài Đặt → Quyền Riêng Tư & Bảo Mật";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "Áp Dụng";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "Hủy";

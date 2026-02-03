@@ -247,3 +247,10 @@
 "AccountsBackup.ImportFromFile" = "Dosyadan İçe Aktar";
 "AccountsBackup.ExportAsFile" = "Dosya Olarak Dışa Aktar";
 "AccountsBackup.DeleteSessions" = "Oturumları Sil";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "Hesap Gizliliğini Güncelle";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "Önerilen Gizlilik Ayarlarını Uygula?";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "Hesabınıza önerilen gizlilik ve güvenlik ayarlarını uygulayın. Daha sonra Ayarlar → Gizlilik ve Güvenlik üzerinden değiştirebilirsiniz";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "Uygula";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "İptal";
