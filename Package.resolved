@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/scam-warning-popup",
-        "revision" : "8d12d32cb56f1ebcb9a93cb34eccee25f0259b8a"
+        "branch" : "feat/user-ads-segmentation",
+        "revision" : "2b9eeb1e4c08ea54614992745b48a44080008485"
       }
     },
     {
