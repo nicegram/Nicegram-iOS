@@ -234,6 +234,11 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     public var tabBarSearchStateUpdated: ((ContainedViewLayoutTransition) -> Void)?
     public var currentTabBarSearchNode: (() -> ASDisplayNode?)?
     
+    // Nicegram, NCG-11054: assistant tab search handling
+    public var onTabBarSearchActivated: (() -> Void)?
+    public var onTabBarSearchDeactivated: (() -> Void)?
+    //
+    
     private weak var activeInputViewCandidate: UIResponder?
     private weak var activeInputView: UIResponder?
     
@@ -784,9 +789,15 @@ public protocol CustomViewControllerNavigationDataSummary: AnyObject {
     }
 
     open func tabBarActivateSearch() {
+        // Nicegram, NCG-11054: assistant tab search handling
+        onTabBarSearchActivated?()
+        //
     }
 
     open func tabBarDeactivateSearch() {
+        // Nicegram, NCG-11054: assistant tab search handling
+        onTabBarSearchDeactivated?()
+        //
     }
     
     open func tabBarItemSwipeAction(direction: TabBarItemSwipeDirection) {

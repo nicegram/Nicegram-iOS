@@ -283,6 +283,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     private let authContext = Promise<UnauthorizedApplicationContext?>()
     private let authContextDisposable = MetaDisposable()
     
+    private let loginDisposable = MetaDisposable()
     private let logoutDisposable = MetaDisposable()
     
     private let openNotificationSettingsWhenReadyDisposable = MetaDisposable()
@@ -1681,8 +1682,51 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         //
+        
+        // Nicegram, new account privacy settings
+        let loginDataSignal: Signal<[any AccountContext], NoError> =
+            self.sharedContextPromise.get()
+            |> take(1)
+            |> mapToSignal { sharedContext in
+                var baseline: Set<AccountRecordId>? = nil
+                
+                return sharedContext.sharedContext.activeAccountContexts
+                |> map { _, accounts, _ in
+                    accounts.map { ($0.0, $0.1 as any AccountContext) }
+                }
+                |> reduceLeft(value: [(AccountRecordId, any AccountContext)]()) { current, updated, emit in
+                    let updatedIds = Set(updated.map { $0.0 })
+                    
+                    if baseline == nil {
+                        baseline = updatedIds
+                    } else {
+                        let currentIds = baseline!
+                        let newIds = updatedIds.subtracting(currentIds)
 
-
+                        if !newIds.isEmpty {
+                            emit(updated.filter { newIds.contains($0.0) })
+                            baseline = updatedIds
+                        }
+                    }
+                    
+                    return updated
+                }
+                |> map { contextsWithIds in
+                    contextsWithIds.map { $0.1 }
+                }
+            }
+        
+        loginDisposable.set(
+            loginDataSignal.start(next: { newAccountContexts in
+                for context in newAccountContexts {
+                    Task {
+                        try await NGDefaultPrivacySettingsApplyer.applyDefaultPrivacySettings(for: context)
+                    }
+                }
+            })
+        )
+        //
+        
         let logoutDataSignal: Signal<(AccountManager, Set<PeerId>), NoError> = self.sharedContextPromise.get()
         |> take(1)
         |> mapToSignal { sharedContext -> Signal<(AccountManager<TelegramAccountManagerTypes>, Set<PeerId>), NoError> in

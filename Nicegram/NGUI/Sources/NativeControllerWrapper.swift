@@ -19,11 +19,11 @@ public class NativeControllerWrapper: ViewController {
 
     public init(
         controller: UIViewController,
-        accountContext: AccountContext,
+        accountContext: AccountContext
     ) {
         self.controller = controller
         self.accountContext = accountContext
-
+        
         super.init(navigationBarPresentationData: nil)
         
         _ = accountContext.sharedContext.presentationData.start { [weak self] presentationData in

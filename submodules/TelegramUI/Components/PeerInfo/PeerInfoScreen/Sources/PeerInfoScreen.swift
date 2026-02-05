@@ -7044,6 +7044,10 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
     }
     
     override public func tabBarDeactivateSearch() {
+        // Nicegram, NCG-11054: assistant tab search handling
+        super.tabBarDeactivateSearch()
+        //
+        
         self.controllerNode.deactivateSearch()
     }
     

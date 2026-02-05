@@ -92,6 +92,10 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     public var assistantController: ViewController?
     //
     
+    // Nicegram, NCG-11054: assistant tab search handling
+    private var isSearchActivatedFromAssistantTab: Bool = false
+    //
+    
     private let context: AccountContext
     
     public var rootTabController: TabBarController?
@@ -348,10 +352,32 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 controller: AssistantTgHelper.assistantTab(),
                 accountContext: self.context
             )
+            
+            assistantController.onTabBarSearchActivated = { [weak self] in
+                guard let rootTabController = self?.rootTabController,
+                      let index = rootTabController.controllers.firstIndex(where: { $0 is PeerInfoScreenImpl }) else {
+                    return
+                }
+                
+                rootTabController.selectedIndex = index
+                let settingsController = rootTabController.controllers[index]
+                
+                (settingsController.ready.get()
+                 |> filter { $0 }
+                 |> take(1)
+                 |> ignoreValues)
+                .start(completed: {
+                    settingsController.tabBarActivateSearch()
+                    self?.isSearchActivatedFromAssistantTab = true
+                })
+            }
+            
             assistantController.tabBarItem = tabBarItem(
                 title: "Nicegram",
                 image: NGCoreUI.images.logoNicegram()
             )
+            
+            assistantController.updateTabBarSearchState(ViewController.TabBarSearchState(isActive: false), transition: .immediate)
             
             self.assistantController = assistantController
             
@@ -421,6 +447,21 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
         accountSettingsController.parentController = self
         controllers.append(accountSettingsController)
+        
+        // Nicegram, NCG-11054: assistant tab search handling
+        accountSettingsController.onTabBarSearchDeactivated = { [weak self] in
+            guard let self else {
+                return
+            }
+            
+            if self.isSearchActivatedFromAssistantTab {
+                isSearchActivatedFromAssistantTab = false
+                if let index = self.rootTabController?.controllers.firstIndex(where: { $0 === self.assistantController }) {
+                    self.rootTabController?.selectedIndex = index
+                }
+            }
+        }
+        //
                 
         // Nicegram Assistant
         // calculate chatListControllerIndex (instead of (controllers.count - 2))

@@ -125,6 +125,8 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     case doubleBottom(String)
     case nicegramCalls
     
+    case recomendedPrivacySettings(String)
+    
     case unblockHeader(String)
     case unblock(String, URL)
     
@@ -164,7 +166,7 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.QuickReplies.rawValue
         case .unblockHeader, .unblock:
             return NicegramSettingsControllerSection.Unblock.rawValue
-        case .Account, .doubleBottom, .nicegramCalls:
+        case .Account, .recomendedPrivacySettings, .doubleBottom, .nicegramCalls:
             return NicegramSettingsControllerSection.Account.rawValue
         case .shareBotsData, .shareChannelsData, .shareStickersData, .shareDataNote:
             return NicegramSettingsControllerSection.ShareData.rawValue
@@ -181,6 +183,16 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
 
     var stableId: Int32 {
         switch self {
+        case .Account:
+            return 700
+            
+        case .recomendedPrivacySettings:
+            return 701
+        case .doubleBottom:
+            return 702
+        case .nicegramCalls:
+            return 703
+            
         case .unblockHeader:
             return 800
             
@@ -231,14 +243,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             
         case .quickReplies:
             return 2450
-            
-        case .Account:
-            return 2500
-            
-        case .doubleBottom:
-            return 2700
-        case .nicegramCalls:
-            return 2800
             
         case .accountsBackupHeader:
             return 3000
@@ -360,6 +364,14 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     NGSettings.showRegDate = value
                 }
             })
+        case let .recomendedPrivacySettings(text):
+            return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
+                showPrivacySettingsApplyingAlert(with: arguments) {
+                    Task {
+                        try await NGDefaultPrivacySettingsApplyer.applyDefaultPrivacySettings(for: arguments.context)
+                    }
+                }
+            }
         case let .unblockHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
         case let .unblock(text, url):
@@ -515,6 +527,17 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     var entries: [NicegramSettingsControllerEntry] = []
     
+    entries.append(.Account(l("NiceFeatures.Account.Header").localizedUppercase))
+    entries.append(.recomendedPrivacySettings(l("NicegramSettings.AccountPrivacy.Button")))
+    
+    if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
+        entries.append(.doubleBottom(l("DoubleBottom.Title")))
+    }
+    if #available(iOS 15.0, *),
+       isNicegramCallsEnabled() {
+        entries.append(.nicegramCalls)
+    }
+    
     if !hideUnblock {
         entries.append(.unblockHeader(l("NicegramSettings.Unblock.Header").uppercased()))
         entries.append(.unblock(l("NicegramSettings.Unblock.Button"), nicegramUnblockUrl))
@@ -569,16 +592,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     
     if #available(iOS 10.0, *) {
         entries.append(.quickReplies(l("NiceFeatures.QuickReplies")))
-    }
-
-    
-    entries.append(.Account(l("NiceFeatures.Account.Header").localizedUppercase))
-    if !context.account.isHidden || !VarSystemNGSettings.inDoubleBottom {
-        entries.append(.doubleBottom(l("DoubleBottom.Title")))
-    }
-    if #available(iOS 15.0, *),
-       isNicegramCallsEnabled() {
-        entries.append(.nicegramCalls)
     }
     
     if #available(iOS 15.0, *) {
@@ -795,6 +808,33 @@ public func updateTabs(with context: AccountContext) {
             ngLog("Tabs refreshed", LOGTAG)
         })
     })
+}
+
+private func showPrivacySettingsApplyingAlert(
+    with arguments: NicegramSettingsControllerArguments,
+    onSettingsApply: @escaping () -> Void
+) {
+    let controller = standardTextAlertController(
+        theme: AlertControllerTheme(
+            presentationData: arguments.context.sharedContext.currentPresentationData.with { $0 }
+        ),
+        title: l("NicegramSettings.AccountPrivacy.Alert.Title"),
+        text: l("NicegramSettings.AccountPrivacy.Alert.Body"),
+        actions: [
+            TextAlertAction(
+                type: .defaultAction,
+                title: l("NicegramSettings.AccountPrivacy.Alert.Apply"),
+                action: onSettingsApply
+            ),
+            TextAlertAction(
+                type: .genericAction,
+                title: l("NicegramSettings.AccountPrivacy.Alert.Cancel"),
+                action: {}
+            )
+        ]
+    )
+
+    arguments.presentController(controller, nil)
 }
 
 @propertyWrapper

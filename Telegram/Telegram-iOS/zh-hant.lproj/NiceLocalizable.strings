@@ -246,3 +246,10 @@
 "AccountsBackup.ImportFromFile" = "從文件導入";
 "AccountsBackup.ExportAsFile" = "導出為文件";
 "AccountsBackup.DeleteSessions" = "刪除會話";
+
+/*Privacy Settings Recommendation*/
+"NicegramSettings.AccountPrivacy.Button" = "更新帳戶隱私";
+"NicegramSettings.AccountPrivacy.Alert.Title" = "套用推薦的隱私設定？";
+"NicegramSettings.AccountPrivacy.Alert.Body" = "將推薦的隱私和安全設定套用到您的帳戶。您可以稍後在 設定 → 隱私與安全 的選項中更改";
+"NicegramSettings.AccountPrivacy.Alert.Apply" = "應用";
+"NicegramSettings.AccountPrivacy.Alert.Cancel" = "取消";
