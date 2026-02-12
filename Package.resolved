@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "fix/calls-pending-room",
-        "revision" : "fa74b61a4d956faa365eb0d0997dfaf38caae1aa"
+        "revision" : "d112ae769dec707b7849c0a052c62ad374e4124c"
       }
     },
     {
