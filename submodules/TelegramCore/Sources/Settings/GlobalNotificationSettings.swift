@@ -6,7 +6,8 @@ import TelegramApi
 extension MessageNotificationSettings {
     init(apiSettings: Api.PeerNotifySettings) {
         switch apiSettings {
-        case let .peerNotifySettings(_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound):
+        case let .peerNotifySettings(peerNotifySettingsData):
+            let (showPreviews, muteUntil, iosSound, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, storiesDesktopSound) = (peerNotifySettingsData.showPreviews, peerNotifySettingsData.muteUntil, peerNotifySettingsData.iosSound, peerNotifySettingsData.otherSound, peerNotifySettingsData.storiesMuted, peerNotifySettingsData.storiesHideSender, peerNotifySettingsData.storiesIosSound, peerNotifySettingsData.storiesOtherSound)
             let sound: Api.NotificationSound?
             let storiesSound: Api.NotificationSound?
             #if os(iOS)

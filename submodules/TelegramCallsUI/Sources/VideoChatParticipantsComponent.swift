@@ -1112,7 +1112,7 @@ final class VideoChatParticipantsComponent: Component {
                             }
                             self.isPinchToZoomActive = true
                             self.state?.updated(transition: .immediate, isLocal: true)
-                            let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+                            let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                                 return UIScreen.main.bounds
                             })
                             component.call.accountContext.sharedContext.mainWindow?.presentInGlobalOverlay(pinchController)

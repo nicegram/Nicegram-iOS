@@ -19,8 +19,10 @@ import PremiumUI
 import LottieComponent
 import AnimatedTextComponent
 import ProfileLevelRatingBarComponent
+import ResizableSheetComponent
+import GlassBarButtonComponent
 
-private final class ProfileLevelInfoScreenComponent: Component {
+private final class SheetContent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let context: AccountContext
@@ -40,7 +42,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
         self.pendingStarRating = pendingStarRating
     }
     
-    static func ==(lhs: ProfileLevelInfoScreenComponent, rhs: ProfileLevelInfoScreenComponent) -> Bool {
+    static func ==(lhs: SheetContent, rhs: SheetContent) -> Bool {
         return true
     }
     
@@ -51,39 +53,8 @@ private final class ProfileLevelInfoScreenComponent: Component {
             self.isChangingPreview = isChangingPreview
         }
     }
-    
-    private final class ScrollView: UIScrollView {
-        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-            return super.hitTest(point, with: event)
-        }
-    }
-    
-    private struct ItemLayout: Equatable {
-        var containerSize: CGSize
-        var containerInset: CGFloat
-        var bottomInset: CGFloat
-        var topInset: CGFloat
-        
-        init(containerSize: CGSize, containerInset: CGFloat, bottomInset: CGFloat, topInset: CGFloat) {
-            self.containerSize = containerSize
-            self.containerInset = containerInset
-            self.bottomInset = bottomInset
-            self.topInset = topInset
-        }
-    }
-    
+            
     final class View: UIView, UIScrollViewDelegate {
-        private let dimView: UIView
-        private let backgroundLayer: SimpleLayer
-        private let navigationBarContainer: SparseContainerView
-        private let navigationBackgroundView: BlurredBackgroundView
-        private let navigationBarSeparator: SimpleLayer
-        private let scrollView: ScrollView
-        private let scrollContentClippingView: SparseContainerView
-        private let scrollContentView: UIView
-        
-        private let closeButton = ComponentView<Empty>()
-        
         private let peerAvatar = ComponentView<Empty>()
     
         private let title = ComponentView<Empty>()
@@ -92,78 +63,17 @@ private final class ProfileLevelInfoScreenComponent: Component {
         private let descriptionText = ComponentView<Empty>()
         
         private var items: [ComponentView<Empty>] = []
-        
-        private let bottomPanelContainer: UIView
-        private let actionButton = ComponentView<Empty>()
-                
-        private var isFirstTimeApplyingModalFactor: Bool = true
-        private var ignoreScrolling: Bool = false
-        
-        private var component: ProfileLevelInfoScreenComponent?
+                        
+        private var component: SheetContent?
         private weak var state: EmptyComponentState?
         private var environment: ViewControllerComponentContainer.Environment?
         private var isUpdating: Bool = false
         private var isPreviewingPendingRating: Bool = false
-        
-        private var itemLayout: ItemLayout?
-        private var topOffsetDistance: CGFloat?
-        
+                
         private var cachedChevronImage: UIImage?
-        private var cachedCloseImage: UIImage?
         
-        override init(frame: CGRect) {            
-            self.dimView = UIView()
-            
-            self.backgroundLayer = SimpleLayer()
-            self.backgroundLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-            self.backgroundLayer.cornerRadius = 10.0
-            
-            self.navigationBarContainer = SparseContainerView()
-            
-            self.navigationBackgroundView = BlurredBackgroundView(color: .clear, enableBlur: true)
-            self.navigationBarSeparator = SimpleLayer()
-            
-            self.scrollView = ScrollView()
-            
-            self.scrollContentClippingView = SparseContainerView()
-            self.scrollContentClippingView.clipsToBounds = true
-            
-            self.scrollContentView = UIView()
-            
-            self.bottomPanelContainer = UIView()
-            
+        override init(frame: CGRect) {
             super.init(frame: frame)
-            
-            self.addSubview(self.dimView)
-            self.layer.addSublayer(self.backgroundLayer)
-            
-            self.scrollView.delaysContentTouches = false
-            self.scrollView.canCancelContentTouches = true
-            self.scrollView.clipsToBounds = false
-            self.scrollView.contentInsetAdjustmentBehavior = .never
-            if #available(iOS 13.0, *) {
-                self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
-            }
-            self.scrollView.showsVerticalScrollIndicator = false
-            self.scrollView.showsHorizontalScrollIndicator = false
-            self.scrollView.alwaysBounceHorizontal = false
-            self.scrollView.alwaysBounceVertical = true
-            self.scrollView.scrollsToTop = false
-            self.scrollView.delegate = self
-            self.scrollView.clipsToBounds = true
-            
-            self.addSubview(self.scrollContentClippingView)
-            self.scrollContentClippingView.addSubview(self.scrollView)
-            
-            self.scrollView.addSubview(self.scrollContentView)
-            
-            self.addSubview(self.navigationBarContainer)
-            self.addSubview(self.bottomPanelContainer)
-            
-            self.navigationBarContainer.addSubview(self.navigationBackgroundView)
-            self.navigationBarContainer.layer.addSublayer(self.navigationBarSeparator)
-            
-            self.dimView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
         }
         
         required init?(coder: NSCoder) {
@@ -173,106 +83,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
         deinit {
         }
         
-        func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            if !self.ignoreScrolling {
-                self.updateScrolling(transition: .immediate)
-            }
-        }
-        
-        func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        }
-        
-        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-            if !self.bounds.contains(point) {
-                return nil
-            }
-            if !self.backgroundLayer.frame.contains(point) {
-                return self.dimView
-            }
-            
-            if let result = self.navigationBarContainer.hitTest(self.convert(point, to: self.navigationBarContainer), with: event) {
-                return result
-            }
-            
-            let result = super.hitTest(point, with: event)
-            return result
-        }
-        
-        @objc private func dimTapGesture(_ recognizer: UITapGestureRecognizer) {
-            if case .ended = recognizer.state {
-                guard let environment = self.environment, let controller = environment.controller() else {
-                    return
-                }
-                controller.dismiss()
-            }
-        }
-        
-        private func updateScrolling(transition: ComponentTransition) {
-            guard let environment = self.environment, let controller = environment.controller(), let itemLayout = self.itemLayout else {
-                return
-            }
-            var topOffset = -self.scrollView.bounds.minY + itemLayout.topInset
-            
-            let titleTransformFraction: CGFloat = max(0.0, min(1.0, -topOffset / 20.0))
-            
-            let navigationAlpha: CGFloat = titleTransformFraction
-            transition.setAlpha(view: self.navigationBackgroundView, alpha: navigationAlpha)
-            transition.setAlpha(layer: self.navigationBarSeparator, alpha: navigationAlpha)
-            
-            topOffset = max(0.0, topOffset)
-            transition.setTransform(layer: self.backgroundLayer, transform: CATransform3DMakeTranslation(0.0, topOffset + itemLayout.containerInset, 0.0))
-            
-            transition.setPosition(view: self.navigationBarContainer, position: CGPoint(x: 0.0, y: topOffset + itemLayout.containerInset))
-            
-            let topOffsetDistance: CGFloat = 80.0
-            self.topOffsetDistance = topOffsetDistance
-            var topOffsetFraction = topOffset / topOffsetDistance
-            topOffsetFraction = max(0.0, min(1.0, topOffsetFraction))
-            
-            let transitionFactor: CGFloat = 1.0 - topOffsetFraction
-            var modalOverlayTransition = transition
-            if self.isFirstTimeApplyingModalFactor {
-                self.isFirstTimeApplyingModalFactor = false
-                modalOverlayTransition = .spring(duration: 0.5)
-            }
-            if self.isUpdating {
-                DispatchQueue.main.async { [weak controller] in
-                    guard let controller else {
-                        return
-                    }
-                    controller.updateModalStyleOverlayTransitionFactor(transitionFactor, transition: modalOverlayTransition.containedViewLayoutTransition)
-                }
-            } else {
-                controller.updateModalStyleOverlayTransitionFactor(transitionFactor, transition: modalOverlayTransition.containedViewLayoutTransition)
-            }
-        }
-        
-        func animateIn() {
-            self.dimView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
-            let animateOffset: CGFloat = self.bounds.height - self.backgroundLayer.frame.minY
-            self.scrollContentClippingView.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-            self.backgroundLayer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-            self.navigationBarContainer.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-            self.bottomPanelContainer.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-        }
-        
-        func animateOut(completion: @escaping () -> Void) {
-            let animateOffset: CGFloat = self.bounds.height - self.backgroundLayer.frame.minY
-            
-            self.dimView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false)
-            self.scrollContentClippingView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true, completion: { _ in
-                completion()
-            })
-            self.backgroundLayer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
-            self.navigationBarContainer.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
-            self.bottomPanelContainer.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: 0.3, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
-            
-            if let environment = self.environment, let controller = environment.controller() {
-                controller.updateModalStyleOverlayTransitionFactor(0.0, transition: .animated(duration: 0.3, curve: .easeInOut))
-            }
-        }
-        
-        func update(component: ProfileLevelInfoScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
+        func update(component: SheetContent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
             self.isUpdating = true
             defer {
                 self.isUpdating = false
@@ -283,62 +94,15 @@ private final class ProfileLevelInfoScreenComponent: Component {
             let alphaTransition: ComponentTransition = transition.animation.isImmediate ? .immediate : .easeInOut(duration: 0.16)
             
             let environment = environment[ViewControllerComponentContainer.Environment.self].value
-            let themeUpdated = self.environment?.theme !== environment.theme
-            
-            let resetScrolling = self.scrollView.bounds.width != availableSize.width
-            
+                        
             let sideInset: CGFloat = 16.0 + environment.safeInsets.left
             
             self.component = component
             self.state = state
             self.environment = environment
-            
-            if themeUpdated {
-                self.dimView.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
-                self.backgroundLayer.backgroundColor = environment.theme.actionSheet.opaqueItemBackgroundColor.cgColor
-                
-                self.navigationBackgroundView.updateColor(color: environment.theme.rootController.navigationBar.blurredBackgroundColor, transition: .immediate)
-                self.navigationBarSeparator.backgroundColor = environment.theme.rootController.navigationBar.separatorColor.cgColor
-            }
-            
-            transition.setFrame(view: self.dimView, frame: CGRect(origin: CGPoint(), size: availableSize))
-            
+                                    
             var contentHeight: CGFloat = 0.0
-            
-            let closeImage: UIImage
-            if let image = self.cachedCloseImage, !themeUpdated {
-                closeImage = image
-            } else {
-                closeImage = generateCloseButtonImage(backgroundColor: environment.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.05), foregroundColor: environment.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.4))!
-                self.cachedCloseImage = closeImage
-            }
-            
-            let closeButtonSize = self.closeButton.update(
-                transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Image(image: closeImage, size: closeImage.size)),
-                    action: { [weak self] in
-                        guard let self, let controller = self.environment?.controller() else {
-                            return
-                        }
-                        controller.dismiss()
-                    }
-                ).minSize(CGSize(width: 62.0, height: 56.0))),
-                environment: {},
-                containerSize: CGSize(width: 100.0, height: 100.0)
-            )
-            let closeButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - environment.safeInsets.right - closeButtonSize.width, y: 0.0), size: closeButtonSize)
-            if let closeButtonView = self.closeButton.view {
-                if closeButtonView.superview == nil {
-                    self.navigationBarContainer.addSubview(closeButtonView)
-                }
-                transition.setFrame(view: closeButtonView, frame: closeButtonFrame)
-            }
-            
-            let containerInset: CGFloat = environment.statusBarHeight + 10.0
-            
-            let clippingY: CGFloat
-
+                      
             let titleString: String = environment.strings.ProfileLevelInfo_Title
             let descriptionTextString: String
             var secondaryDescriptionTextString: String?
@@ -429,20 +193,15 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100.0)
             )
-            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: floor((56.0 - titleSize.height) * 0.5)), size: titleSize)
+            let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - titleSize.width) * 0.5), y: floorToScreenPixels((72.0 - titleSize.height) * 0.5)), size: titleSize)
             if let titleView = self.title.view {
                 if titleView.superview == nil {
-                    self.navigationBarContainer.addSubview(titleView)
+                    self.addSubview(titleView)
                 }
                 transition.setFrame(view: titleView, frame: titleFrame)
             }
-            contentHeight += 56.0
-            
-            let navigationBackgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: availableSize.width, height: 54.0))
-            transition.setFrame(view: self.navigationBackgroundView, frame: navigationBackgroundFrame)
-            self.navigationBackgroundView.update(size: navigationBackgroundFrame.size, cornerRadius: 10.0, maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner], transition: transition.containedViewLayoutTransition)
-            transition.setFrame(layer: self.navigationBarSeparator, frame: CGRect(origin: CGPoint(x: 0.0, y: 54.0), size: CGSize(width: availableSize.width, height: UIScreenPixel)))
-                        
+            contentHeight += 72.0
+                                    
             var levelFraction: CGFloat
             
             let badgeText: String
@@ -497,7 +256,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
             )
             if let levelInfoView = self.levelInfo.view {
                 if levelInfoView.superview == nil {
-                    self.scrollContentView.addSubview(levelInfoView)
+                    self.addSubview(levelInfoView)
                 }
                 levelInfoView.frame = CGRect(origin: CGPoint(x: floor((availableSize.width - levelInfoSize.width) * 0.5), y: contentHeight - 6.0), size: levelInfoSize)
             }
@@ -568,6 +327,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
                         maximumNumberOfLines: 0,
                         lineSpacing: 0.2,
                         highlightColor: environment.theme.list.itemAccentColor.withMultipliedAlpha(0.1),
+                        highlightInset: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: -8.0),
                         highlightAction: { attributes in
                             if let _ = attributes[NSAttributedString.Key(rawValue: "URL")] {
                                 return NSAttributedString.Key(rawValue: "URL")
@@ -591,7 +351,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 let secondaryDescriptionTextFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - secondaryDescriptionTextSize.width) * 0.5), y: contentHeight), size: secondaryDescriptionTextSize)
                 if let secondaryDescriptionTextView = secondaryDescriptionText.view {
                     if secondaryDescriptionTextView.superview == nil {
-                        self.scrollContentView.addSubview(secondaryDescriptionTextView)
+                        self.addSubview(secondaryDescriptionTextView)
                         if isChangingPreview {
                             transition.animatePosition(view: secondaryDescriptionTextView, from: CGPoint(x: -changingPreviewAnimationOffset, y: 0.0), to: CGPoint(), additive: true)
                             alphaTransition.animateAlpha(view: secondaryDescriptionTextView, from: 0.0, to: 1.0)
@@ -639,7 +399,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
             let descriptionTextFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - descriptionTextSize.width) * 0.5), y: contentHeight), size: descriptionTextSize)
             if let descriptionTextView = self.descriptionText.view {
                 if descriptionTextView.superview == nil {
-                    self.scrollContentView.addSubview(descriptionTextView)
+                    self.addSubview(descriptionTextView)
                 }
                 transition.setPosition(view: descriptionTextView, position: descriptionTextFrame.center)
                 descriptionTextView.bounds = CGRect(origin: CGPoint(), size: descriptionTextFrame.size)
@@ -711,7 +471,7 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 let itemFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: itemSize)
                 if let itemComponentView = itemView.view {
                     if itemComponentView.superview == nil {
-                        self.scrollContentView.addSubview(itemComponentView)
+                        self.addSubview(itemComponentView)
                     }
                     itemComponentView.frame = itemFrame
                 }
@@ -721,10 +481,78 @@ private final class ProfileLevelInfoScreenComponent: Component {
             
             contentHeight += 31.0
             
+            contentHeight += 82.0
+                        
+            return CGSize(width: availableSize.width, height: contentHeight)
+        }
+    }
+    
+    func makeView() -> View {
+        return View(frame: CGRect())
+    }
+    
+    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
+        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
+    }
+}
+
+
+
+
+private final class ProfileLevelInfoSheetComponent: CombinedComponent {
+    typealias EnvironmentType = ViewControllerComponentContainer.Environment
+    
+    private let context: AccountContext
+    private let peer: EnginePeer
+    private let starRating: TelegramStarRating
+    private let pendingStarRating: TelegramStarPendingRating?
+    
+    init(
+        context: AccountContext,
+        peer: EnginePeer,
+        starRating: TelegramStarRating,
+        pendingStarRating: TelegramStarPendingRating?
+    ) {
+        self.context = context
+        self.peer = peer
+        self.starRating = starRating
+        self.pendingStarRating = pendingStarRating
+    }
+    
+    static func ==(lhs: ProfileLevelInfoSheetComponent, rhs: ProfileLevelInfoSheetComponent) -> Bool {
+        return true
+    }
+        
+    static var body: Body {
+        let sheet = Child(ResizableSheetComponent<(EnvironmentType)>.self)
+        let animateOut = StoredActionSlot(Action<Void>.self)
+        
+        let playButtonAnimation = ActionSlot<Void>()
+        
+        return { context in
+            let environment = context.environment[EnvironmentType.self]
+            
+            let controller = environment.controller
+            
+            let dismiss: (Bool) -> Void = { animated in
+                if animated {
+                    animateOut.invoke(Action { _ in
+                        if let controller = controller() {
+                            controller.dismiss(completion: nil)
+                        }
+                    })
+                } else {
+                    if let controller = controller() {
+                        controller.dismiss(completion: nil)
+                    }
+                }
+            }
+            
+            let theme = environment.theme.withModalBlocksBackground()
+            
             let actionButtonTitle: String = environment.strings.ProfileLevelInfo_CloseButton
             
             var buttonTitle: [AnyComponentWithIdentity<Empty>] = []
-            let playButtonAnimation = ActionSlot<Void>()
             buttonTitle.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(LottieComponent(
                 content: LottieComponent.AppBundleContent(name: "anim_ok"),
                 color: environment.theme.list.itemCheckColors.foregroundColor,
@@ -740,101 +568,85 @@ private final class ProfileLevelInfoScreenComponent: Component {
                 badgeForeground: environment.theme.list.itemCheckColors.fillColor
             ))))
             
-            let actionButtonSize = self.actionButton.update(
-                transition: transition,
-                component: AnyComponent(ButtonComponent(
-                    background: ButtonComponent.Background(
-                        color: environment.theme.list.itemCheckColors.fillColor,
-                        foreground: environment.theme.list.itemCheckColors.foregroundColor,
-                        pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+            let sheet = sheet.update(
+                component: ResizableSheetComponent<EnvironmentType>(
+                    content: AnyComponent<EnvironmentType>(SheetContent(
+                        context: context.component.context,
+                        peer: context.component.peer,
+                        starRating: context.component.starRating,
+                        pendingStarRating: context.component.pendingStarRating
+                    )),
+                    titleItem: nil,
+                    leftItem: AnyComponent(
+                        GlassBarButtonComponent(
+                            size: CGSize(width: 44.0, height: 44.0),
+                            backgroundColor: nil,
+                            isDark: theme.overallDarkAppearance,
+                            state: .glass,
+                            component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                                BundleIconComponent(
+                                    name: "Navigation/Close",
+                                    tintColor: theme.chat.inputPanel.panelControlColor
+                                )
+                            )),
+                            action: { _ in
+                                dismiss(true)
+                            }
+                        )
                     ),
-                    content: AnyComponentWithIdentity(
-                        id: AnyHashable(0),
-                        component: AnyComponent(HStack(buttonTitle, spacing: 2.0))
+                    hasTopEdgeEffect: false,
+                    bottomItem: AnyComponent(
+                        ButtonComponent(
+                            background: ButtonComponent.Background(
+                                style: .glass,
+                                color: environment.theme.list.itemCheckColors.fillColor,
+                                foreground: environment.theme.list.itemCheckColors.foregroundColor,
+                                pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
+                            ),
+                            content: AnyComponentWithIdentity(
+                                id: AnyHashable(0),
+                                component: AnyComponent(HStack(buttonTitle, spacing: 2.0))
+                            ),
+                            action: {
+                                dismiss(true)
+                            }
+                        )
                     ),
-                    isEnabled: true,
-                    displaysProgress: false,
-                    action: { [weak self] in
-                        guard let self else {
-                            return
+                    backgroundColor: .color(theme.actionSheet.opaqueItemBackgroundColor),
+                    animateOut: animateOut
+                ),
+                environment: {
+                    environment
+                    ResizableSheetComponentEnvironment(
+                        theme: theme,
+                        statusBarHeight: environment.statusBarHeight,
+                        safeInsets: environment.safeInsets,
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
+                        isDisplaying: environment.value.isVisible,
+                        isCentered: environment.metrics.widthClass == .regular,
+                        screenSize: context.availableSize,
+                        regularMetricsSize: CGSize(width: 430.0, height: 900.0),
+                        dismiss: { animated in
+                            dismiss(animated)
                         }
-                        self.environment?.controller()?.dismiss()
-                    }
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                    )
+                },
+                availableSize: context.availableSize,
+                transition: context.transition
             )
             
-            let bottomPanelHeight = 10.0 + environment.safeInsets.bottom + actionButtonSize.height
+            context.add(sheet
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: context.availableSize.height / 2.0))
+            )
             
-            let bottomPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - bottomPanelHeight), size: CGSize(width: availableSize.width, height: bottomPanelHeight))
-            transition.setFrame(view: self.bottomPanelContainer, frame: bottomPanelFrame)
-            
-            let actionButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: 0.0), size: actionButtonSize)
-            if let actionButtonView = self.actionButton.view {
-                if actionButtonView.superview == nil {
-                    self.bottomPanelContainer.addSubview(actionButtonView)
-                    playButtonAnimation.invoke(Void())
-                }
-                transition.setFrame(view: actionButtonView, frame: actionButtonFrame)
-            }
-            
-            contentHeight += bottomPanelHeight
-            
-            clippingY = bottomPanelFrame.minY - 8.0
-            
-            let topInset: CGFloat = max(0.0, availableSize.height - containerInset - contentHeight)
-            
-            let scrollContentHeight = max(topInset + contentHeight + containerInset, availableSize.height - containerInset)
-            
-            self.itemLayout = ItemLayout(containerSize: availableSize, containerInset: containerInset, bottomInset: environment.safeInsets.bottom, topInset: topInset)
-            
-            transition.setFrame(view: self.scrollContentView, frame: CGRect(origin: CGPoint(x: 0.0, y: topInset + containerInset), size: CGSize(width: availableSize.width, height: contentHeight)))
-            
-            transition.setPosition(layer: self.backgroundLayer, position: CGPoint(x: availableSize.width / 2.0, y: availableSize.height / 2.0))
-            transition.setBounds(layer: self.backgroundLayer, bounds: CGRect(origin: CGPoint(), size: availableSize))
-            
-            let scrollClippingFrame = CGRect(origin: CGPoint(x: sideInset, y: containerInset), size: CGSize(width: availableSize.width - sideInset * 2.0, height: clippingY - containerInset))
-            transition.setPosition(view: self.scrollContentClippingView, position: scrollClippingFrame.center)
-            transition.setBounds(view: self.scrollContentClippingView, bounds: CGRect(origin: CGPoint(x: scrollClippingFrame.minX, y: scrollClippingFrame.minY), size: scrollClippingFrame.size))
-            
-            self.ignoreScrolling = true
-            let previousBounds = self.scrollView.bounds
-            transition.setFrame(view: self.scrollView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: availableSize.height)))
-            let contentSize = CGSize(width: availableSize.width, height: scrollContentHeight)
-            if contentSize != self.scrollView.contentSize {
-                self.scrollView.contentSize = contentSize
-            }
-            if resetScrolling {
-                self.scrollView.bounds = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: availableSize)
-            } else {
-                if !previousBounds.isEmpty, !transition.animation.isImmediate {
-                    let bounds = self.scrollView.bounds
-                    if bounds.maxY != previousBounds.maxY {
-                        let offsetY = previousBounds.maxY - bounds.maxY
-                        transition.animateBoundsOrigin(view: self.scrollView, from: CGPoint(x: 0.0, y: offsetY), to: CGPoint(), additive: true)
-                    }
-                }
-            }
-            self.ignoreScrolling = false
-            self.updateScrolling(transition: transition)
-            
-            return availableSize
+            return context.availableSize
         }
-    }
-    
-    func makeView() -> View {
-        return View(frame: CGRect())
-    }
-    
-    func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
-        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }
 
-public class ProfileLevelInfoScreen: ViewControllerComponentContainer {
+public final class ProfileLevelInfoScreen: ViewControllerComponentContainer {
     private let context: AccountContext
-    private var isDismissed: Bool = false
     
     public init(
         context: AccountContext,
@@ -851,69 +663,33 @@ public class ProfileLevelInfoScreen: ViewControllerComponentContainer {
         } else {
             theme = .default
         }
-        super.init(context: context, component: ProfileLevelInfoScreenComponent(
+        super.init(
             context: context,
-            peer: peer,
-            starRating: starRating,
-            pendingStarRating: pendingStarRating
-        ), navigationBarAppearance: .none, theme: theme)
+            component: ProfileLevelInfoSheetComponent(
+                context: context,
+                peer: peer,
+                starRating: starRating,
+                pendingStarRating: pendingStarRating
+            ),
+            navigationBarAppearance: .none,
+            statusBarStyle: .ignore,
+            theme: theme
+        )
         
         self.statusBar.statusBarStyle = .Ignore
         self.navigationPresentation = .flatModal
         self.blocksBackgroundWhenInOverlay = true
     }
-    
+        
     required public init(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    deinit {
-    }
-    
-    override public func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
         
-        self.view.disablesInteractiveModalDismiss = true
-        
-        if let componentView = self.node.hostView.componentView as? ProfileLevelInfoScreenComponent.View {
-            componentView.animateIn()
+    public func dismissAnimated() {
+        if let view = self.node.hostView.findTaggedView(tag: ResizableSheetComponent<ViewControllerComponentContainer.Environment>.View.Tag()) as? ResizableSheetComponent<ViewControllerComponentContainer.Environment>.View {
+            view.dismissAnimated()
         }
     }
-    
-    override public func dismiss(completion: (() -> Void)? = nil) {
-        if !self.isDismissed {
-            self.isDismissed = true
-            
-            if let componentView = self.node.hostView.componentView as? ProfileLevelInfoScreenComponent.View {
-                componentView.animateOut(completion: { [weak self] in
-                    completion?()
-                    self?.dismiss(animated: false)
-                })
-            } else {
-                self.dismiss(animated: false)
-            }
-        }
-    }
-}
-
-private func generateCloseButtonImage(backgroundColor: UIColor, foregroundColor: UIColor) -> UIImage? {
-    return generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
-        context.clear(CGRect(origin: CGPoint(), size: size))
-        
-        context.setFillColor(backgroundColor.cgColor)
-        context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
-        
-        context.setLineWidth(2.0)
-        context.setLineCap(.round)
-        context.setStrokeColor(foregroundColor.cgColor)
-        
-        context.beginPath()
-        context.move(to: CGPoint(x: 10.0, y: 10.0))
-        context.addLine(to: CGPoint(x: 20.0, y: 20.0))
-        context.move(to: CGPoint(x: 20.0, y: 10.0))
-        context.addLine(to: CGPoint(x: 10.0, y: 20.0))
-        context.strokePath()
-    })
 }
 
 private final class ItemComponent: Component {
@@ -1026,7 +802,7 @@ private final class ItemComponent: Component {
                 component: AnyComponent(FilledRoundedRectangleComponent(
                     color: component.isBadgeAccent ? component.theme.chatList.unreadBadgeActiveBackgroundColor : component.theme.chatList.unreadBadgeInactiveBackgroundColor,
                     cornerRadius: .value(6.0),
-                    smoothCorners: true
+                    smoothCorners: false
                 )),
                 environment: {},
                 containerSize: badgeSize

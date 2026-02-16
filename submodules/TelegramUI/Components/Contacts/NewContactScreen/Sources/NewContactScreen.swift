@@ -886,12 +886,12 @@ final class NewContactScreenComponent: Component {
                 transition.setFrame(view: titleView, frame: titleFrame)
             }
             
-            let barButtonSize = CGSize(width: 40.0, height: 40.0)
+            let barButtonSize = CGSize(width: 44.0, height: 44.0)
             let cancelButtonSize = self.cancelButton.update(
                 transition: transition,
                 component: AnyComponent(GlassBarButtonComponent(
                     size: barButtonSize,
-                    backgroundColor: environment.theme.rootController.navigationBar.opaqueBackgroundColor,
+                    backgroundColor: nil,
                     isDark: environment.theme.overallDarkAppearance,
                     state: .glass,
                     component: AnyComponentWithIdentity(id: "close", component: AnyComponent(

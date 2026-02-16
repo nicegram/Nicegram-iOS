@@ -171,7 +171,7 @@ final class EntityKeyboardBottomPanelButton: Component {
                 self.iconView.frame = iconFrame
             }
             
-            let tintColor: GlassBackgroundView.TintColor = .init(kind: .panel, color: component.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+            let tintColor: GlassBackgroundView.TintColor = .init(kind: .panel)
             transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: size))
             self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: tintColor, isInteractive: true, transition: transition)
             

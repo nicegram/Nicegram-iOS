@@ -43,6 +43,7 @@ private enum ApplicationSpecificSharedDataKeyValues: Int32 {
     case drawingSettings = 19
     case mediaDisplaySettings = 20
     case updateSettings = 21
+    case chatSettings = 22
 }
 
 public struct ApplicationSpecificSharedDataKeys {
@@ -68,6 +69,7 @@ public struct ApplicationSpecificSharedDataKeys {
     public static let drawingSettings = applicationSpecificPreferencesKey(ApplicationSpecificSharedDataKeyValues.drawingSettings.rawValue)
     public static let mediaDisplaySettings = applicationSpecificPreferencesKey(ApplicationSpecificSharedDataKeyValues.mediaDisplaySettings.rawValue)
     public static let updateSettings = applicationSpecificPreferencesKey(ApplicationSpecificSharedDataKeyValues.updateSettings.rawValue)
+    public static let chatSettings = applicationSpecificPreferencesKey(ApplicationSpecificSharedDataKeyValues.chatSettings.rawValue)
 }
 
 private enum ApplicationSpecificItemCacheCollectionIdValues: Int8 {
@@ -104,12 +106,12 @@ public struct ApplicationSpecificItemCacheCollectionId {
 private enum ApplicationSpecificOrderedItemListCollectionIdValues: Int32 {
     case webSearchRecentQueries = 0
     case wallpaperSearchRecentQueries = 1
-    case settingsSearchRecentItems = 2
     case localThemes = 3
     case storyDrafts = 4
     case storySources = 5
     case hashtagSearchRecentQueries = 6
     case browserRecentlyVisited = 7
+    case settingsSearchRecentItems = 8
 }
 
 public struct ApplicationSpecificOrderedItemListCollectionId {

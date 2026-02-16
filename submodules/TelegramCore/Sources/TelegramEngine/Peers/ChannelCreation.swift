@@ -37,7 +37,7 @@ private func createChannel(postbox: Postbox, network: Network, stateManager: Acc
         var address: String?
         if let location = location {
             flags |= (1 << 2)
-            geoPoint = .inputGeoPoint(flags: 0, lat: location.latitude, long: location.longitude, accuracyRadius: nil)
+            geoPoint = .inputGeoPoint(.init(flags: 0, lat: location.latitude, long: location.longitude, accuracyRadius: nil))
             address = location.address
         }
         

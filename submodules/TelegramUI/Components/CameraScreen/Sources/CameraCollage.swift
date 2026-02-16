@@ -1227,7 +1227,7 @@ final class CameraCollageView: UIView, UIGestureRecognizerDelegate {
         }
         
         let items = ContextController.Items(content: .list(itemList), tip: .collageReordering)
-        let controller = ContextController(
+        let controller = makeContextController(
             presentationData: presentationData.withUpdated(theme: defaultDarkColorPresentationTheme),
             source: .extracted(CollageContextExtractedContentSource(contentView: sourceView)),
             items: .single(items),

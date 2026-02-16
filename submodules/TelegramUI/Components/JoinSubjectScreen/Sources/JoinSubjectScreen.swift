@@ -926,6 +926,7 @@ private final class JoinSubjectScreenComponent: Component {
                 }
             }
             
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let actionButtonTitle: String
             switch component.mode {
             case .group:
@@ -937,6 +938,7 @@ private final class JoinSubjectScreenComponent: Component {
                 transition: transition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: environment.theme.list.itemCheckColors.fillColor,
                         foreground: environment.theme.list.itemCheckColors.foregroundColor,
                         pressedColor: environment.theme.list.itemCheckColors.fillColor.withMultipliedAlpha(0.9)
@@ -961,7 +963,7 @@ private final class JoinSubjectScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
             
             let bottomPanelHeight = 10.0 + environment.safeInsets.bottom + actionButtonSize.height
@@ -969,7 +971,7 @@ private final class JoinSubjectScreenComponent: Component {
             let bottomPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: availableSize.height - bottomPanelHeight), size: CGSize(width: availableSize.width, height: bottomPanelHeight))
             transition.setFrame(view: self.bottomPanelContainer, frame: bottomPanelFrame)
             
-            let actionButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: 0.0), size: actionButtonSize)
+            let actionButtonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: 0.0), size: actionButtonSize)
             if let actionButtonView = self.actionButton.view {
                 if actionButtonView.superview == nil {
                     self.bottomPanelContainer.addSubview(actionButtonView)

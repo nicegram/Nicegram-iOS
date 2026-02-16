@@ -575,7 +575,7 @@ public class ContactsController: ViewController {
         }
     }
     
-    @objc private func sortPressed() {
+    @objc public func sortPressed() {
         self.sortButton.contextAction?(self.sortButton.containerNode, nil)
     }
     
@@ -626,17 +626,23 @@ public class ContactsController: ViewController {
             }
             
             var items: [ContextMenuItem] = []
-            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Contacts_Sort_ByLastSeen, icon: { theme in return currentSettings.sortOrder == .presence ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil }, action: { _, f in
+            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Contacts_Sort_ByLastSeen, icon: { theme in return currentSettings.sortOrder == .presence ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage() }, action: { _, f in
                 f(.default)
                 updateSortOrder(.presence)
             })))
-            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Contacts_Sort_ByName, icon: { theme in return currentSettings.sortOrder == .natural ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil }, action: { _, f in
+            items.append(.action(ContextMenuActionItem(text: presentationData.strings.Contacts_Sort_ByName, icon: { theme in return currentSettings.sortOrder == .natural ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : UIImage() }, action: { _, f in
                 f(.default)
                 updateSortOrder(.natural)
             })))
             return items
         }
-        let contextController = ContextController(presentationData: self.presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: items |> map { ContextController.Items(content: .list($0)) }, gesture: gesture)
+        
+        var sourceView = sourceView
+        if let navigationBarComponentView = self.contactsNode.navigationBarView.view as? ChatListNavigationBar.View, let headerContentView = navigationBarComponentView.headerContent.view as? ChatListHeaderComponent.View, let value = headerContentView.navigationButtonContextContainer(sourceView: sourceView) {
+            sourceView = value
+        }
+        
+        let contextController = makeContextController(presentationData: self.presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: items |> map { ContextController.Items(content: .list($0)) }, gesture: gesture)
         self.presentInGlobalOverlay(contextController)
     }
     
@@ -800,7 +806,7 @@ public class ContactsController: ViewController {
             })
         })))
         
-        let controller = ContextController(presentationData: self.presentationData, source: .reference(ContactsTabBarContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
+        let controller = makeContextController(presentationData: self.presentationData, source: .reference(ContactsTabBarContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
         self.context.sharedContext.mainWindow?.presentInGlobalOverlay(controller)
     }
     

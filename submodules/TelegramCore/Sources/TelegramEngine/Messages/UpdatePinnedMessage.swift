@@ -73,7 +73,8 @@ func _internal_requestUpdatePinnedMessage(account: Account, peerId: PeerId, upda
             account.stateManager.addUpdates(updates)
             return account.postbox.transaction { transaction in
                 switch updates {
-                case let .updates(updates, _, _, _, _):
+                case let .updates(updatesData):
+                    let updates = updatesData.updates
                     if updates.isEmpty {
                         if peerId.namespace == Namespaces.Peer.CloudChannel {
                             let messageId: MessageId
@@ -173,7 +174,8 @@ func _internal_requestUnpinAllMessages(account: Account, peerId: PeerId, threadI
         }
         |> mapToSignal { result -> Signal<Bool, InternalError> in
             switch result {
-            case let .affectedHistory(_, _, count):
+            case let .affectedHistory(affectedHistoryData):
+                let count = affectedHistoryData.offset
                 if count != 0 {
                     return .fail(.restart)
                 }

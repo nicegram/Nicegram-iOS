@@ -197,7 +197,8 @@ private final class MultipartCdnHashSource {
                 var parsedPartHashes: [Int64: Data] = [:]
                 for part in partHashes {
                     switch part {
-                        case let .fileHash(offset, limit, bytes):
+                        case let .fileHash(fileHashData):
+                            let (offset, limit, bytes) = (fileHashData.offset, fileHashData.limit, fileHashData.hash)
                             assert(limit == 128 * 1024)
                             parsedPartHashes[offset] = bytes.makeData()
                     }
@@ -361,17 +362,20 @@ private enum MultipartFetchSource {
                                 }
                                 |> mapToSignal { result, info -> Signal<(Data, NetworkResponseInfo), MultipartFetchDownloadError> in
                                     switch result {
-                                        case let .file(_, _, bytes):
+                                        case let .file(fileData):
+                                            let bytes = fileData.bytes
                                             var resultData = bytes.makeData()
                                             if resultData.count > Int(limit) {
                                                 resultData.count = Int(limit)
                                             }
                                             return .single((resultData, info))
-                                        case let .fileCdnRedirect(dcId, fileToken, encryptionKey, encryptionIv, partHashes):
+                                        case let .fileCdnRedirect(fileCdnRedirectData):
+                                            let (dcId, fileToken, encryptionKey, encryptionIv, partHashes) = (fileCdnRedirectData.dcId, fileCdnRedirectData.fileToken, fileCdnRedirectData.encryptionKey, fileCdnRedirectData.encryptionIv, fileCdnRedirectData.fileHashes)
                                             var parsedPartHashes: [Int64: Data] = [:]
                                             for part in partHashes {
                                                 switch part {
-                                                    case let .fileHash(offset, limit, bytes):
+                                                    case let .fileHash(fileHashData):
+                                                        let (offset, limit, bytes) = (fileHashData.offset, fileHashData.limit, fileHashData.hash)
                                                         assert(limit == 128 * 1024)
                                                         parsedPartHashes[offset] = bytes.makeData()
                                                 }
@@ -395,7 +399,8 @@ private enum MultipartFetchSource {
                         }
                         |> mapToSignal { result, info -> Signal<(Data, NetworkResponseInfo), MultipartFetchDownloadError> in
                             switch result {
-                                case let .webFile(_, _, _, _, bytes):
+                                case let .webFile(webFileData):
+                                    let bytes = webFileData.bytes
                                     var resultData = bytes.makeData()
                                     if resultData.count > Int(limit) {
                                         resultData.count = Int(limit)
@@ -418,9 +423,11 @@ private enum MultipartFetchSource {
                 }
                 |> mapToSignal { result, info -> Signal<(Data, NetworkResponseInfo), MultipartFetchDownloadError> in
                     switch result {
-                        case let .cdnFileReuploadNeeded(token):
+                        case let .cdnFileReuploadNeeded(cdnFileReuploadNeededData):
+                            let token = cdnFileReuploadNeededData.requestToken
                             return .fail(.reuploadToCdn(masterDatacenterId: masterDatacenterId, token: token.makeData()))
-                        case let .cdnFile(bytes):
+                        case let .cdnFile(cdnFileData):
+                            let bytes = cdnFileData.bytes
                             if bytes.size == 0 {
                                 return .single((bytes.makeData(), info))
                             } else {

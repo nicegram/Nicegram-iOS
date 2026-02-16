@@ -467,12 +467,12 @@ final class ContactsControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         let items = contactContextMenuItems(context: self.context, peerId: peer.id, contactsController: contactsController, isStories: isStories) |> map { ContextController.Items(content: .list($0)) }
         
         if isStories, let node = node?.subnodes?.first(where: { $0 is ContextExtractedContentContainingNode }) as? ContextExtractedContentContainingNode {
-            let controller = ContextController(presentationData: self.presentationData, source: .extracted(ContactContextExtractedContentSource(sourceNode: node, shouldBeDismissed: .single(false))), items: items, recognizer: nil, gesture: gesture)
+            let controller = makeContextController(presentationData: self.presentationData, source: .extracted(ContactContextExtractedContentSource(sourceNode: node, shouldBeDismissed: .single(false))), items: items, recognizer: nil, gesture: gesture)
             contactsController.presentInGlobalOverlay(controller)
         } else {
             let chatController = self.context.sharedContext.makeChatController(context: self.context, chatLocation: .peer(id: peer.id), subject: nil, botStart: nil, mode: .standard(.previewing), params: nil)
             chatController.canReadHistory.set(false)
-            let contextController = ContextController(presentationData: self.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: items, gesture: gesture)
+            let contextController = makeContextController(presentationData: self.presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: items, gesture: gesture)
             contactsController.presentInGlobalOverlay(contextController)
         }
     }
@@ -551,7 +551,7 @@ private final class ContactContextExtractedContentSource: ContextExtractedConten
     }
 }
 
-private func presentContactAccessPicker(context: AccountContext) {
+public func presentContactAccessPicker(context: AccountContext) {
     if #available(iOS 18.0, *), let rootViewController = context.sharedContext.mainWindow?.viewController?.view.window?.rootViewController {
         var dismissImpl: (() -> Void)?
         let pickerView = ContactAccessPickerHostingView(completionHandler: { [weak rootViewController] ids in

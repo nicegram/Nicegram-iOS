@@ -4,6 +4,13 @@ import SwiftSignalKit
 import AsyncDisplayKit
 import Display
 
+public protocol PeekControllerNodeProtocol: AnyObject {
+    func applyDraggingOffset(_ offset: CGPoint)
+    func activateMenu(immediately: Bool)
+    func endDragging(_ location: CGPoint)
+    func updateContent(content: PeekControllerContent)
+}
+
 private func traceDeceleratingScrollView(_ view: UIView, at point: CGPoint) -> Bool {
     if view.bounds.contains(point), let view = view as? UIScrollView, view.isDecelerating {
         return true
@@ -108,7 +115,7 @@ public final class PeekControllerGestureRecognizer: UIPanGestureRecognizer {
         if let _ = self.tapLocation, let menuActivation = self.menuActivation, case .press = menuActivation {
             if let presentedController = self.presentedController {
                 if presentedController.isNodeLoaded {
-                    (presentedController.displayNode as? PeekControllerNode)?.activateMenu()
+                    (presentedController.displayNode as? PeekControllerNodeProtocol)?.activateMenu(immediately: false)
                 }
                 self.menuActivation = nil
 //                self.presentedController = nil
@@ -148,7 +155,7 @@ public final class PeekControllerGestureRecognizer: UIPanGestureRecognizer {
             self.state = .ended
         } else {
             if let presentedController = self.presentedController, presentedController.isNodeLoaded, let location = touches.first?.location(in: presentedController.view) {
-                (presentedController.displayNode as? PeekControllerNode)?.endDragging(location)
+                (presentedController.displayNode as? PeekControllerNodeProtocol)?.endDragging(location)
                 self.presentedController = nil
                 self.menuActivation = nil
             }
@@ -184,7 +191,7 @@ public final class PeekControllerGestureRecognizer: UIPanGestureRecognizer {
             if let presentedController = self.presentedController, self.menuActivation == nil {
                 if presentedController.isNodeLoaded {
                     let touchLocation = touch.location(in: presentedController.view)
-                    (presentedController.displayNode as? PeekControllerNode)?.applyDraggingOffset(touchLocation)
+                    (presentedController.displayNode as? PeekControllerNodeProtocol)?.applyDraggingOffset(touchLocation)
                 }
             } else if let menuActivation = self.menuActivation, let presentedController = self.presentedController {
                 switch menuActivation {
@@ -201,7 +208,7 @@ public final class PeekControllerGestureRecognizer: UIPanGestureRecognizer {
                         if #available(iOSApplicationExtension 9.0, iOS 9.0, *) {
                             if touch.force >= 2.5 {
                                 if presentedController.isNodeLoaded {
-                                    (presentedController.displayNode as? PeekControllerNode)?.activateMenu()
+                                    (presentedController.displayNode as? PeekControllerNodeProtocol)?.activateMenu(immediately: false)
                                     self.menuActivation = nil
                                     self.presentedController = nil
                                     self.candidateContent = nil
@@ -268,7 +275,7 @@ public final class PeekControllerGestureRecognizer: UIPanGestureRecognizer {
                                         presentedController.sourceView = {
                                             return (sourceView, sourceRect)
                                         }
-                                        (presentedController.displayNode as? PeekControllerNode)?.updateContent(content: content)
+                                        (presentedController.displayNode as? PeekControllerNodeProtocol)?.updateContent(content: content)
                                     }
                                 }
                             } else {
@@ -277,7 +284,7 @@ public final class PeekControllerGestureRecognizer: UIPanGestureRecognizer {
                                         if forceActivate {
                                             strongSelf.candidateContent = nil
                                             if case .press = content.menuActivation() {
-                                                (presentedController.displayNode as? PeekControllerNode)?.activateMenu()
+                                                (presentedController.displayNode as? PeekControllerNodeProtocol)?.activateMenu(immediately: false)
                                             }
                                         } else {
                                             strongSelf.candidateContent = (sourceView, sourceRect, content)

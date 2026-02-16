@@ -167,9 +167,11 @@ public enum ChatTheme: PostboxCoding, Codable, Equatable {
 extension ChatTheme {
     init?(apiChatTheme: Api.ChatTheme) {
         switch apiChatTheme {
-        case let .chatTheme(emoticon):
+        case let .chatTheme(chatThemeData):
+            let emoticon = chatThemeData.emoticon
             self = .emoticon(emoticon)
-        case let .chatThemeUniqueGift(gift, themeSettings):
+        case let .chatThemeUniqueGift(chatThemeUniqueGiftData):
+            let (gift, themeSettings) = (chatThemeUniqueGiftData.gift, chatThemeUniqueGiftData.themeSettings)
             guard let gift = StarGift(apiStarGift: gift) else {
                 return nil
             }
@@ -180,11 +182,11 @@ extension ChatTheme {
     var apiChatTheme: Api.InputChatTheme {
         switch self {
         case let .emoticon(emoticon):
-            return .inputChatTheme(emoticon: emoticon)
+            return .inputChatTheme(.init(emoticon: emoticon))
         case let .gift(gift, _):
             switch gift {
             case let .unique(uniqueGift):
-                return .inputChatThemeUniqueGift(slug: uniqueGift.slug)
+                return .inputChatThemeUniqueGift(.init(slug: uniqueGift.slug))
             default:
                 fatalError()
             }
@@ -201,7 +203,8 @@ func _internal_getChatThemes(accountManager: AccountManager<TelegramAccountManag
                 return .complete()
             }
             switch result {
-                case let .themes(hash, apiThemes):
+                case let .themes(themesData):
+                    let (hash, apiThemes) = (themesData.hash, themesData.themes)
                     let result = apiThemes.compactMap { TelegramTheme(apiTheme: $0) }
                     if result == current {
                         return .complete()
@@ -563,7 +566,8 @@ public final class UniqueGiftChatThemesContext {
             }
             return postbox.transaction { transaction -> ([ChatTheme], String?) in
                 switch result {
-                case let .chatThemes(_, _, themes, chats, users, nextOffset):
+                case let .chatThemes(chatThemesData):
+                    let (themes, chats, users, nextOffset) = (chatThemesData.themes, chatThemesData.chats, chatThemesData.users, chatThemesData.nextOffset)
                     let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                     return (themes.compactMap { ChatTheme(apiChatTheme: $0) }, nextOffset)

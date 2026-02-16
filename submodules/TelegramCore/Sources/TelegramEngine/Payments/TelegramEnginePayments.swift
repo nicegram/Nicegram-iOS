@@ -149,7 +149,7 @@ public extension TelegramEngine {
             return _internal_checkCanSendStarGift(account: self.account, giftId: giftId)
         }
         
-        public func getUniqueStarGift(slug: String) -> Signal<StarGift.UniqueGift?, NoError> {
+        public func getUniqueStarGift(slug: String) -> Signal<StarGift.UniqueGift, GetUniqueStarGiftError> {
             return _internal_getUniqueStarGift(account: self.account, slug: slug)
         }
         

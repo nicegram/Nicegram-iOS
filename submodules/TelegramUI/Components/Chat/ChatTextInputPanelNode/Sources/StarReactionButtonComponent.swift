@@ -78,9 +78,9 @@ final class StarReactionButtonBadgeComponent: Component {
             
             let backgroundTintColor: GlassBackgroundView.TintColor
             if component.isFilled {
-                backgroundTintColor = .init(kind: .custom, color: UIColor(rgb: 0xFFB10D))
+                backgroundTintColor = .init(kind: .custom(style: .default, color: UIColor(rgb: 0xFFB10D)))
             } else {
-                backgroundTintColor = .init(kind: .panel, color: component.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                backgroundTintColor = .init(kind: .panel)
             }
             
             self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: backgroundTintColor, isInteractive: true, transition: transition)
@@ -336,9 +336,9 @@ final class StarReactionButtonComponent: Component {
             
             let backgroundTintColor: GlassBackgroundView.TintColor
             if component.isFilled {
-                backgroundTintColor = .init(kind: .custom, color: UIColor(rgb: 0xFFB10D))
+                backgroundTintColor = .init(kind: .custom(style: .default, color: UIColor(rgb: 0xFFB10D)))
             } else {
-                backgroundTintColor = .init(kind: .panel, color: component.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                backgroundTintColor = .init(kind: .panel)
             }
             
             self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: backgroundTintColor, isInteractive: false, transition: transition)

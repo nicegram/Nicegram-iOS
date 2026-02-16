@@ -20,17 +20,17 @@ extension PeerReference {
     var inputPeer: Api.InputPeer {
         switch self {
         case let .user(id, accessHash):
-            return .inputPeerUser(userId: id, accessHash: accessHash)
+            return .inputPeerUser(.init(userId: id, accessHash: accessHash))
         case let .group(id):
-            return .inputPeerChat(chatId: id)
+            return .inputPeerChat(.init(chatId: id))
         case let .channel(id, accessHash):
-            return .inputPeerChannel(channelId: id, accessHash: accessHash)
+            return .inputPeerChannel(.init(channelId: id, accessHash: accessHash))
         }
     }
     
     var inputUser: Api.InputUser? {
         if case let .user(id, accessHash) = self {
-            return .inputUser(userId: id, accessHash: accessHash)
+            return .inputUser(.init(userId: id, accessHash: accessHash))
         } else {
             return nil
         }
@@ -38,7 +38,7 @@ extension PeerReference {
     
     var inputChannel: Api.InputChannel? {
         if case let .channel(id, accessHash) = self {
-            return .inputChannel(channelId: id, accessHash: accessHash)
+            return .inputChannel(.init(channelId: id, accessHash: accessHash))
         } else {
             return nil
         }
@@ -48,12 +48,12 @@ extension PeerReference {
 func forceApiInputPeer(_ peer: Peer) -> Api.InputPeer? {
     switch peer {
     case let user as TelegramUser:
-        return Api.InputPeer.inputPeerUser(userId: user.id.id._internalGetInt64Value(), accessHash: user.accessHash?.value ?? 0)
+        return Api.InputPeer.inputPeerUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: user.accessHash?.value ?? 0))
     case let group as TelegramGroup:
-        return Api.InputPeer.inputPeerChat(chatId: group.id.id._internalGetInt64Value())
+        return Api.InputPeer.inputPeerChat(.init(chatId: group.id.id._internalGetInt64Value()))
     case let channel as TelegramChannel:
         if let accessHash = channel.accessHash {
-            return Api.InputPeer.inputPeerChannel(channelId: channel.id.id._internalGetInt64Value(), accessHash: accessHash.value)
+            return Api.InputPeer.inputPeerChannel(.init(channelId: channel.id.id._internalGetInt64Value(), accessHash: accessHash.value))
         } else {
             return nil
         }
@@ -66,12 +66,12 @@ func forceApiInputPeer(_ peer: Peer) -> Api.InputPeer? {
 public func apiInputPeer(_ peer: Peer) -> Api.InputPeer? {
     switch peer {
     case let user as TelegramUser where user.accessHash != nil:
-        return Api.InputPeer.inputPeerUser(userId: user.id.id._internalGetInt64Value(), accessHash: user.accessHash!.value)
+        return Api.InputPeer.inputPeerUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: user.accessHash!.value))
     case let group as TelegramGroup:
-        return Api.InputPeer.inputPeerChat(chatId: group.id.id._internalGetInt64Value())
+        return Api.InputPeer.inputPeerChat(.init(chatId: group.id.id._internalGetInt64Value()))
     case let channel as TelegramChannel:
         if let accessHash = channel.accessHash {
-            return Api.InputPeer.inputPeerChannel(channelId: channel.id.id._internalGetInt64Value(), accessHash: accessHash.value)
+            return Api.InputPeer.inputPeerChannel(.init(channelId: channel.id.id._internalGetInt64Value(), accessHash: accessHash.value))
         } else {
             return nil
         }
@@ -89,7 +89,7 @@ func apiInputPeerOrSelf(_ peer: Peer, accountPeerId: PeerId) -> Api.InputPeer? {
 
 func apiInputChannel(_ peer: Peer) -> Api.InputChannel? {
     if let channel = peer as? TelegramChannel, let accessHash = channel.accessHash {
-        return Api.InputChannel.inputChannel(channelId: channel.id.id._internalGetInt64Value(), accessHash: accessHash.value)
+        return Api.InputChannel.inputChannel(.init(channelId: channel.id.id._internalGetInt64Value(), accessHash: accessHash.value))
     } else {
         return nil
     }
@@ -97,7 +97,7 @@ func apiInputChannel(_ peer: Peer) -> Api.InputChannel? {
 
 func apiInputUser(_ peer: Peer) -> Api.InputUser? {
     if let user = peer as? TelegramUser, let accessHash = user.accessHash {
-        return Api.InputUser.inputUser(userId: user.id.id._internalGetInt64Value(), accessHash: accessHash.value)
+        return Api.InputUser.inputUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: accessHash.value))
     } else {
         return nil
     }
@@ -105,7 +105,7 @@ func apiInputUser(_ peer: Peer) -> Api.InputUser? {
 
 func apiInputSecretChat(_ peer: Peer) -> Api.InputEncryptedChat? {
     if let chat = peer as? TelegramSecretChat {
-        return Api.InputEncryptedChat.inputEncryptedChat(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: chat.accessHash)
+        return Api.InputEncryptedChat.inputEncryptedChat(.init(chatId: Int32(peer.id.id._internalGetInt64Value()), accessHash: chat.accessHash))
     } else {
         return nil
     }

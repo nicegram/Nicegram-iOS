@@ -1831,7 +1831,7 @@ private final class GiftAuctionBidScreenComponent: Component {
                 self?.share()
             })))
 
-            let contextController = ContextController(presentationData: presentationData, source: .reference(GiftViewContextReferenceContentSource(controller: controller, sourceView: view)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(GiftViewContextReferenceContentSource(controller: controller, sourceView: view)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
             controller.presentInGlobalOverlay(contextController)
         }
         
@@ -2682,10 +2682,10 @@ private final class GiftAuctionBidScreenComponent: Component {
             let closeButtonSize = self.closeButton.update(
                 transition: .immediate,
                 component: AnyComponent(GlassBarButtonComponent(
-                    size: CGSize(width: 40.0, height: 40.0),
-                    backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
                     isDark: environment.theme.overallDarkAppearance,
-                    state: .generic,
+                    state: .glass,
                     component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
                         BundleIconComponent(
                             name: "Navigation/Close",
@@ -2700,7 +2700,7 @@ private final class GiftAuctionBidScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: 40.0, height: 40.0)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             let closeButtonFrame = CGRect(origin: CGPoint(x: rawSideInset + 16.0, y: 16.0), size: closeButtonSize)
             if let closeButtonView = self.closeButton.view {
@@ -2713,10 +2713,10 @@ private final class GiftAuctionBidScreenComponent: Component {
             let moreButtonSize = self.moreButton.update(
                 transition: .immediate,
                 component: AnyComponent(GlassBarButtonComponent(
-                    size: CGSize(width: 40.0, height: 40.0),
-                    backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
                     isDark: environment.theme.overallDarkAppearance,
-                    state: .generic,
+                    state: .glass,
                     component: AnyComponentWithIdentity(id: "info", component: AnyComponent(
                         LottieComponent(
                             content: LottieComponent.AppBundleContent(
@@ -2736,7 +2736,7 @@ private final class GiftAuctionBidScreenComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: 40.0, height: 40.0)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             let infoButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - rawSideInset - 16.0 - moreButtonSize.width, y: 16.0), size: moreButtonSize)
             if let infoButtonView = self.moreButton.view {
@@ -2784,7 +2784,7 @@ private final class GiftAuctionBidScreenComponent: Component {
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100.0)
             )
             
-            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: isUpcoming ? 27.0 : 19.0), size: titleSize)
+            let titleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: isUpcoming ? 29.0 : 21.0), size: titleSize)
             if let titleView = self.title.view {
                 if titleView.superview == nil {
                     self.navigationBarContainer.addSubview(titleView)
@@ -2792,7 +2792,7 @@ private final class GiftAuctionBidScreenComponent: Component {
                 transition.setFrame(view: titleView, frame: titleFrame)
             }
             
-            let subtitleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - subtitleSize.width) * 0.5), y: 40.0), size: subtitleSize)
+            let subtitleFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - subtitleSize.width) * 0.5), y: 42.0), size: subtitleSize)
             if let subtitleView = self.subtitle.view {
                 if subtitleView.superview == nil {
                     self.navigationBarContainer.addSubview(subtitleView)

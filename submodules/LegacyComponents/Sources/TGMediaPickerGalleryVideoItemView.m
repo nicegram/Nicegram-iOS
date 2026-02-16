@@ -428,9 +428,9 @@
     if (itemChanged) {
         [self _playerCleanup];
      
-        if (!item.asFile) {
-            [_facesDisposable setDisposable:[[TGPaintFaceDetector detectFacesInItem:item.editableMediaItem editingContext:item.editingContext] startStrictWithNext:nil file:__FILE_NAME__ line:__LINE__]];
-        }
+//        if (!item.asFile) {
+//            [_facesDisposable setDisposable:[[TGPaintFaceDetector detectFacesInItem:item.editableMediaItem editingContext:item.editingContext] startStrictWithNext:nil file:__FILE_NAME__ line:__LINE__]];
+//        }
     }
     
     _scrubberView.allowsTrimming = false;

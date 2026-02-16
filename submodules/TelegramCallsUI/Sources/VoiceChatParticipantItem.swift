@@ -462,7 +462,7 @@ class VoiceChatParticipantItemNode: ItemListRevealOptionsItemNode {
                                     return
                                 }
                                 strongSelf.avatarListNode?.controlsContainerNode.alpha = 0.0
-                                let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+                                let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                                     return UIScreen.main.bounds
                                 })
                                 item.context.sharedContext.mainWindow?.presentInGlobalOverlay(pinchController)

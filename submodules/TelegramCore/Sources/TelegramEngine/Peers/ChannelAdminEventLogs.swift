@@ -160,7 +160,7 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
             var eventsFilter: Api.ChannelAdminLogEventsFilter? = nil
             if let filter = filter {
                 flags += Int32(1 << 0)
-                eventsFilter = Api.ChannelAdminLogEventsFilter.channelAdminLogEventsFilter(flags: Int32(filter.rawValue))
+                eventsFilter = Api.ChannelAdminLogEventsFilter.channelAdminLogEventsFilter(Api.ChannelAdminLogEventsFilter.Cons_channelAdminLogEventsFilter(flags: Int32(filter.rawValue)))
             }
             if let _ = inputAdmins {
                 flags += Int32(1 << 1)
@@ -168,7 +168,8 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
             return network.request(Api.functions.channels.getAdminLog(flags: flags, channel: inputChannel, q: query ?? "", eventsFilter: eventsFilter, admins: inputAdmins, maxId: maxId, minId: minId, limit: limit))
             |> mapToSignal { result in
                 switch result {
-                case let .adminLogResults(apiEvents, apiChats, apiUsers):
+                case let .adminLogResults(adminLogResultsData):
+                    let (apiEvents, apiChats, apiUsers) = (adminLogResultsData.events, adminLogResultsData.chats, adminLogResultsData.users)
                     return postbox.transaction { transaction -> AdminLogEventsResult in
                         var peers: [PeerId: Peer] = [:]
                         for apiChat in apiChats {
@@ -194,9 +195,11 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                 var foundDeletedReplyMessage = false
                                 for event in apiEvents {
                                     switch event {
-                                    case let .channelAdminLogEvent(_, _, _, apiAction):
+                                    case let .channelAdminLogEvent(channelAdminLogEventData):
+                                        let apiAction = channelAdminLogEventData.action
                                         switch apiAction {
-                                        case let .channelAdminLogEventActionDeleteMessage(apiMessage):
+                                        case let .channelAdminLogEventActionDeleteMessage(channelAdminLogEventActionDeleteMessageData):
+                                            let apiMessage = channelAdminLogEventActionDeleteMessageData.message
                                             if let messageId = apiMessage.id(namespace: Namespaces.Message.Cloud), messageId == replyAttribute.messageId, let message = StoreMessage(apiMessage: apiMessage, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let replyMessage = locallyRenderedMessage(message: message, peers: peers, associatedThreadInfo: associatedThreadInfo) {
                                                 associatedMessages[replyMessage.id] = replyMessage
                                                 foundDeletedReplyMessage = true
@@ -215,163 +218,191 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                         
                         for event in apiEvents {
                             switch event {
-                            case let .channelAdminLogEvent(id, date, userId, apiAction):
+                            case let .channelAdminLogEvent(channelAdminLogEventData):
+                                let (id, date, userId, apiAction) = (channelAdminLogEventData.id, channelAdminLogEventData.date, channelAdminLogEventData.userId, channelAdminLogEventData.action)
                                 var action: AdminLogEventAction?
                                 switch apiAction {
-                                case let .channelAdminLogEventActionChangeTitle(prev, new):
+                                case let .channelAdminLogEventActionChangeTitle(channelAdminLogEventActionChangeTitleData):
+                                    let (prev, new) = (channelAdminLogEventActionChangeTitleData.prevValue, channelAdminLogEventActionChangeTitleData.newValue)
                                     action = .changeTitle(prev: prev, new: new)
-                                case let .channelAdminLogEventActionChangeAbout(prev, new):
+                                case let .channelAdminLogEventActionChangeAbout(channelAdminLogEventActionChangeAboutData):
+                                    let (prev, new) = (channelAdminLogEventActionChangeAboutData.prevValue, channelAdminLogEventActionChangeAboutData.newValue)
                                     action = .changeAbout(prev: prev, new: new)
-                                case let .channelAdminLogEventActionChangeUsername(prev, new):
+                                case let .channelAdminLogEventActionChangeUsername(channelAdminLogEventActionChangeUsernameData):
+                                    let (prev, new) = (channelAdminLogEventActionChangeUsernameData.prevValue, channelAdminLogEventActionChangeUsernameData.newValue)
                                     action = .changeUsername(prev: prev, new: new)
-                                case let .channelAdminLogEventActionChangePhoto(prev, new):
+                                case let .channelAdminLogEventActionChangePhoto(channelAdminLogEventActionChangePhotoData):
+                                    let (prev, new) = (channelAdminLogEventActionChangePhotoData.prevPhoto, channelAdminLogEventActionChangePhotoData.newPhoto)
                                     let previousImage = telegramMediaImageFromApiPhoto(prev)
                                     let newImage = telegramMediaImageFromApiPhoto(new)
                                     action = .changePhoto(prev: (previousImage?.representations ?? [], previousImage?.videoRepresentations ?? []) , new: (newImage?.representations ?? [], newImage?.videoRepresentations ?? []))
-                                case let .channelAdminLogEventActionToggleInvites(new):
-                                    action = .toggleInvites(boolFromApiValue(new))
-                                case let .channelAdminLogEventActionToggleSignatures(new):
-                                    action = .toggleSignatures(boolFromApiValue(new))
-                                case let .channelAdminLogEventActionUpdatePinned(new):
-                                    switch new {
+                                case let .channelAdminLogEventActionToggleInvites(channelAdminLogEventActionToggleInvitesData):
+                                    action = .toggleInvites(boolFromApiValue(channelAdminLogEventActionToggleInvitesData.newValue))
+                                case let .channelAdminLogEventActionToggleSignatures(channelAdminLogEventActionToggleSignaturesData):
+                                    action = .toggleSignatures(boolFromApiValue(channelAdminLogEventActionToggleSignaturesData.newValue))
+                                case let .channelAdminLogEventActionUpdatePinned(channelAdminLogEventActionUpdatePinnedData):
+                                    switch channelAdminLogEventActionUpdatePinnedData.message {
                                     case .messageEmpty:
                                         action = .updatePinned(nil)
                                     default:
-                                        if let message = StoreMessage(apiMessage: new, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
+                                        if let message = StoreMessage(apiMessage: channelAdminLogEventActionUpdatePinnedData.message, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
                                             action = .updatePinned(rendered)
                                         }
                                     }
-                                case let .channelAdminLogEventActionEditMessage(prev, new):
+                                case let .channelAdminLogEventActionEditMessage(channelAdminLogEventActionEditMessageData):
+                                    let (prev, new) = (channelAdminLogEventActionEditMessageData.prevMessage, channelAdminLogEventActionEditMessageData.newMessage)
                                     if let prev = StoreMessage(apiMessage: prev, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let prevRendered = renderedMessage(message: prev), let new = StoreMessage(apiMessage: new, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let newRendered = renderedMessage(message: new) {
                                         action = .editMessage(prev: prevRendered, new: newRendered)
                                     }
-                                case let .channelAdminLogEventActionDeleteMessage(message):
-                                    if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
+                                case let .channelAdminLogEventActionDeleteMessage(channelAdminLogEventActionDeleteMessageData):
+                                    if let message = StoreMessage(apiMessage: channelAdminLogEventActionDeleteMessageData.message, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
                                         action = .deleteMessage(rendered)
                                     }
                                 case .channelAdminLogEventActionParticipantJoin:
                                     action = .participantJoin
                                 case .channelAdminLogEventActionParticipantLeave:
                                     action = .participantLeave
-                                case let .channelAdminLogEventActionParticipantInvite(participant):
-                                    let participant = ChannelParticipant(apiParticipant: participant)
+                                case let .channelAdminLogEventActionParticipantInvite(channelAdminLogEventActionParticipantInviteData):
+                                    let participant = ChannelParticipant(apiParticipant: channelAdminLogEventActionParticipantInviteData.participant)
                                     
                                     if let peer = peers[participant.peerId] {
                                         action = .participantInvite(RenderedChannelParticipant(participant: participant, peer: peer))
                                     }
-                                case let .channelAdminLogEventActionParticipantToggleBan(prev, new):
+                                case let .channelAdminLogEventActionParticipantToggleBan(channelAdminLogEventActionParticipantToggleBanData):
+                                    let (prev, new) = (channelAdminLogEventActionParticipantToggleBanData.prevParticipant, channelAdminLogEventActionParticipantToggleBanData.newParticipant)
                                     let prevParticipant = ChannelParticipant(apiParticipant: prev)
                                     let newParticipant = ChannelParticipant(apiParticipant: new)
                                     
                                     if let prevPeer = peers[prevParticipant.peerId], let newPeer = peers[newParticipant.peerId] {
                                         action = .participantToggleBan(prev: RenderedChannelParticipant(participant: prevParticipant, peer: prevPeer), new: RenderedChannelParticipant(participant: newParticipant, peer: newPeer))
                                     }
-                                case let .channelAdminLogEventActionParticipantToggleAdmin(prev, new):
+                                case let .channelAdminLogEventActionParticipantToggleAdmin(channelAdminLogEventActionParticipantToggleAdminData):
+                                    let (prev, new) = (channelAdminLogEventActionParticipantToggleAdminData.prevParticipant, channelAdminLogEventActionParticipantToggleAdminData.newParticipant)
                                     let prevParticipant = ChannelParticipant(apiParticipant: prev)
                                     let newParticipant = ChannelParticipant(apiParticipant: new)
                                     
                                     if let prevPeer = peers[prevParticipant.peerId], let newPeer = peers[newParticipant.peerId] {
                                         action = .participantToggleAdmin(prev: RenderedChannelParticipant(participant: prevParticipant, peer: prevPeer), new: RenderedChannelParticipant(participant: newParticipant, peer: newPeer))
                                     }
-                                case let .channelAdminLogEventActionChangeStickerSet(prevStickerset, newStickerset):
+                                case let .channelAdminLogEventActionChangeStickerSet(channelAdminLogEventActionChangeStickerSetData):
+                                    let (prevStickerset, newStickerset) = (channelAdminLogEventActionChangeStickerSetData.prevStickerset, channelAdminLogEventActionChangeStickerSetData.newStickerset)
                                     action = .changeStickerPack(prev: StickerPackReference(apiInputSet: prevStickerset), new: StickerPackReference(apiInputSet: newStickerset))
-                                case let .channelAdminLogEventActionTogglePreHistoryHidden(value):
-                                    action = .togglePreHistoryHidden(value == .boolTrue)
-                                case let .channelAdminLogEventActionDefaultBannedRights(prevBannedRights, newBannedRights):
+                                case let .channelAdminLogEventActionTogglePreHistoryHidden(channelAdminLogEventActionTogglePreHistoryHiddenData):
+                                    action = .togglePreHistoryHidden(channelAdminLogEventActionTogglePreHistoryHiddenData.newValue == .boolTrue)
+                                case let .channelAdminLogEventActionDefaultBannedRights(channelAdminLogEventActionDefaultBannedRightsData):
+                                    let (prevBannedRights, newBannedRights) = (channelAdminLogEventActionDefaultBannedRightsData.prevBannedRights, channelAdminLogEventActionDefaultBannedRightsData.newBannedRights)
                                     action = .updateDefaultBannedRights(prev: TelegramChatBannedRights(apiBannedRights: prevBannedRights), new: TelegramChatBannedRights(apiBannedRights: newBannedRights))
-                                case let .channelAdminLogEventActionStopPoll(message):
-                                    if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
+                                case let .channelAdminLogEventActionStopPoll(channelAdminLogEventActionStopPollData):
+                                    if let message = StoreMessage(apiMessage: channelAdminLogEventActionStopPollData.message, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
                                         action = .pollStopped(rendered)
                                     }
-                                case let .channelAdminLogEventActionChangeLinkedChat(prevValue, newValue):
+                                case let .channelAdminLogEventActionChangeLinkedChat(channelAdminLogEventActionChangeLinkedChatData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangeLinkedChatData.prevValue, channelAdminLogEventActionChangeLinkedChatData.newValue)
                                     action = .linkedPeerUpdated(previous: prevValue == 0 ? nil : peers[PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(prevValue))], updated: newValue == 0 ? nil : peers[PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(newValue))])
-                                case let .channelAdminLogEventActionChangeLocation(prevValue, newValue):
+                                case let .channelAdminLogEventActionChangeLocation(channelAdminLogEventActionChangeLocationData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangeLocationData.prevValue, channelAdminLogEventActionChangeLocationData.newValue)
                                     action = .changeGeoLocation(previous: PeerGeoLocation(apiLocation: prevValue), updated: PeerGeoLocation(apiLocation: newValue))
-                                case let .channelAdminLogEventActionToggleSlowMode(prevValue, newValue):
+                                case let .channelAdminLogEventActionToggleSlowMode(channelAdminLogEventActionToggleSlowModeData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionToggleSlowModeData.prevValue, channelAdminLogEventActionToggleSlowModeData.newValue)
                                     action = .updateSlowmode(previous: prevValue == 0 ? nil : prevValue, updated: newValue == 0 ? nil : newValue)
                                 case .channelAdminLogEventActionStartGroupCall:
                                     action = .startGroupCall
                                 case .channelAdminLogEventActionDiscardGroupCall:
                                     action = .endGroupCall
-                                case let .channelAdminLogEventActionParticipantMute(participant):
-                                    let parsedParticipant = GroupCallParticipantsContext.Update.StateUpdate.ParticipantUpdate(participant)
+                                case let .channelAdminLogEventActionParticipantMute(channelAdminLogEventActionParticipantMuteData):
+                                    let parsedParticipant = GroupCallParticipantsContext.Update.StateUpdate.ParticipantUpdate(channelAdminLogEventActionParticipantMuteData.participant)
                                     action = .groupCallUpdateParticipantMuteStatus(peerId: parsedParticipant.peerId, isMuted: true)
-                                case let .channelAdminLogEventActionParticipantUnmute(participant):
-                                    let parsedParticipant = GroupCallParticipantsContext.Update.StateUpdate.ParticipantUpdate(participant)
+                                case let .channelAdminLogEventActionParticipantUnmute(channelAdminLogEventActionParticipantUnmuteData):
+                                    let parsedParticipant = GroupCallParticipantsContext.Update.StateUpdate.ParticipantUpdate(channelAdminLogEventActionParticipantUnmuteData.participant)
                                     action = .groupCallUpdateParticipantMuteStatus(peerId: parsedParticipant.peerId, isMuted: false)
-                                case let .channelAdminLogEventActionToggleGroupCallSetting(joinMuted):
-                                    action = .updateGroupCallSettings(joinMuted: joinMuted == .boolTrue)
-                                case let .channelAdminLogEventActionExportedInviteDelete(invite):
-                                    action = .deleteExportedInvitation(ExportedInvitation(apiExportedInvite: invite))
-                                case let .channelAdminLogEventActionExportedInviteRevoke(invite):
-                                    action = .revokeExportedInvitation(ExportedInvitation(apiExportedInvite: invite))
-                                case let .channelAdminLogEventActionExportedInviteEdit(prevInvite, newInvite):
+                                case let .channelAdminLogEventActionToggleGroupCallSetting(channelAdminLogEventActionToggleGroupCallSettingData):
+                                    action = .updateGroupCallSettings(joinMuted: channelAdminLogEventActionToggleGroupCallSettingData.joinMuted == .boolTrue)
+                                case let .channelAdminLogEventActionExportedInviteDelete(channelAdminLogEventActionExportedInviteDeleteData):
+                                    action = .deleteExportedInvitation(ExportedInvitation(apiExportedInvite: channelAdminLogEventActionExportedInviteDeleteData.invite))
+                                case let .channelAdminLogEventActionExportedInviteRevoke(channelAdminLogEventActionExportedInviteRevokeData):
+                                    action = .revokeExportedInvitation(ExportedInvitation(apiExportedInvite: channelAdminLogEventActionExportedInviteRevokeData.invite))
+                                case let .channelAdminLogEventActionExportedInviteEdit(channelAdminLogEventActionExportedInviteEditData):
+                                    let (prevInvite, newInvite) = (channelAdminLogEventActionExportedInviteEditData.prevInvite, channelAdminLogEventActionExportedInviteEditData.newInvite)
                                     action = .editExportedInvitation(previous: ExportedInvitation(apiExportedInvite: prevInvite), updated: ExportedInvitation(apiExportedInvite: newInvite))
-                                case let .channelAdminLogEventActionParticipantJoinByInvite(flags, invite):
+                                case let .channelAdminLogEventActionParticipantJoinByInvite(channelAdminLogEventActionParticipantJoinByInviteData):
+                                    let (flags, invite) = (channelAdminLogEventActionParticipantJoinByInviteData.flags, channelAdminLogEventActionParticipantJoinByInviteData.invite)
                                     action = .participantJoinedViaInvite(invitation: ExportedInvitation(apiExportedInvite: invite), joinedViaFolderLink: (flags & (1 << 0)) != 0)
-                                case let .channelAdminLogEventActionParticipantVolume(participant):
-                                    let parsedParticipant = GroupCallParticipantsContext.Update.StateUpdate.ParticipantUpdate(participant)
+                                case let .channelAdminLogEventActionParticipantVolume(channelAdminLogEventActionParticipantVolumeData):
+                                    let parsedParticipant = GroupCallParticipantsContext.Update.StateUpdate.ParticipantUpdate(channelAdminLogEventActionParticipantVolumeData.participant)
                                     action = .groupCallUpdateParticipantVolume(peerId: parsedParticipant.peerId, volume: parsedParticipant.volume ?? 10000)
-                                case let .channelAdminLogEventActionChangeHistoryTTL(prevValue, newValue):
+                                case let .channelAdminLogEventActionChangeHistoryTTL(channelAdminLogEventActionChangeHistoryTTLData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangeHistoryTTLData.prevValue, channelAdminLogEventActionChangeHistoryTTLData.newValue)
                                     action = .changeHistoryTTL(previousValue: prevValue, updatedValue: newValue)
-                                case let .channelAdminLogEventActionParticipantJoinByRequest(invite, approvedBy):
+                                case let .channelAdminLogEventActionParticipantJoinByRequest(channelAdminLogEventActionParticipantJoinByRequestData):
+                                    let (invite, approvedBy) = (channelAdminLogEventActionParticipantJoinByRequestData.invite, channelAdminLogEventActionParticipantJoinByRequestData.approvedBy)
                                     action = .participantJoinByRequest(invitation: ExportedInvitation(apiExportedInvite: invite), approvedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(approvedBy)))
-                                case let .channelAdminLogEventActionToggleNoForwards(new):
-                                    action = .toggleCopyProtection(boolFromApiValue(new))
-                                case let .channelAdminLogEventActionSendMessage(message):
-                                    if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
+                                case let .channelAdminLogEventActionToggleNoForwards(channelAdminLogEventActionToggleNoForwardsData):
+                                    action = .toggleCopyProtection(boolFromApiValue(channelAdminLogEventActionToggleNoForwardsData.newValue))
+                                case let .channelAdminLogEventActionSendMessage(channelAdminLogEventActionSendMessageData):
+                                    if let message = StoreMessage(apiMessage: channelAdminLogEventActionSendMessageData.message, accountPeerId: accountPeerId, peerIsForum: peer.isForum), let rendered = renderedMessage(message: message) {
                                         action = .sendMessage(rendered)
                                     }
-                                case let .channelAdminLogEventActionChangeAvailableReactions(prevValue, newValue):
+                                case let .channelAdminLogEventActionChangeAvailableReactions(channelAdminLogEventActionChangeAvailableReactionsData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangeAvailableReactionsData.prevValue, channelAdminLogEventActionChangeAvailableReactionsData.newValue)
                                     action = .changeAvailableReactions(previousValue: PeerAllowedReactions(apiReactions: prevValue), updatedValue: PeerAllowedReactions(apiReactions: newValue))
-                                case let .channelAdminLogEventActionChangeUsernames(prevValue, newValue):
+                                case let .channelAdminLogEventActionChangeUsernames(channelAdminLogEventActionChangeUsernamesData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangeUsernamesData.prevValue, channelAdminLogEventActionChangeUsernamesData.newValue)
                                     action = .changeUsernames(prev: prevValue, new: newValue)
-                                case let .channelAdminLogEventActionCreateTopic(topic):
-                                    switch topic {
-                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                case let .channelAdminLogEventActionCreateTopic(channelAdminLogEventActionCreateTopicData):
+                                    switch channelAdminLogEventActionCreateTopicData.topic {
+                                    case let .forumTopic(forumTopicData):
+                                        let (title, iconColor, iconEmojiId) = (forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId)
                                         action = .createTopic(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor))
                                     case .forumTopicDeleted:
                                         action = .createTopic(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0))
                                     }
-                                case let .channelAdminLogEventActionDeleteTopic(topic):
+                                case let .channelAdminLogEventActionDeleteTopic(channelAdminLogEventActionDeleteTopicData):
+                                    let topic = channelAdminLogEventActionDeleteTopicData.topic
                                     switch topic {
-                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(forumTopicData):
+                                        let (title, iconColor, iconEmojiId) = (forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId)
                                         action = .deleteTopic(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor))
                                     case .forumTopicDeleted:
                                         action = .deleteTopic(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0))
                                     }
-                                case let .channelAdminLogEventActionEditTopic(prevTopic, newTopic):
+                                case let .channelAdminLogEventActionEditTopic(channelAdminLogEventActionEditTopicData):
+                                    let (prevTopic, newTopic) = (channelAdminLogEventActionEditTopicData.prevTopic, channelAdminLogEventActionEditTopicData.newTopic)
                                     let prevInfo: AdminLogEventAction.ForumTopicInfo
                                     switch prevTopic {
-                                    case let .forumTopic(flags, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(forumTopicData):
+                                        let (flags, title, iconColor, iconEmojiId) = (forumTopicData.flags, forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId)
                                         prevInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor), isClosed: (flags & (1 << 2)) != 0, isHidden: (flags & (1 << 6)) != 0)
                                     case .forumTopicDeleted:
                                         prevInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0), isClosed: false, isHidden: false)
                                     }
-                                    
+
                                     let newInfo: AdminLogEventAction.ForumTopicInfo
                                     switch newTopic {
-                                    case let .forumTopic(flags, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(forumTopicData):
+                                        let (flags, title, iconColor, iconEmojiId) = (forumTopicData.flags, forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId)
                                         newInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor), isClosed: (flags & (1 << 2)) != 0, isHidden: (flags & (1 << 6)) != 0)
                                     case .forumTopicDeleted:
                                         newInfo = AdminLogEventAction.ForumTopicInfo(info: EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0), isClosed: false, isHidden: false)
                                     }
                                     
                                     action = .editTopic(prevInfo: prevInfo, newInfo: newInfo)
-                                case let .channelAdminLogEventActionPinTopic(_, prevTopic, newTopic):
+                                case let .channelAdminLogEventActionPinTopic(channelAdminLogEventActionPinTopicData):
+                                    let (prevTopic, newTopic) = (channelAdminLogEventActionPinTopicData.prevTopic, channelAdminLogEventActionPinTopicData.newTopic)
                                     let prevInfo: EngineMessageHistoryThread.Info?
                                     switch prevTopic {
-                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(forumTopicData):
+                                        let (title, iconColor, iconEmojiId) = (forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId)
                                         prevInfo = EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor)
                                     case .forumTopicDeleted:
                                         prevInfo = EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0)
                                     case .none:
                                         prevInfo = nil
                                     }
-                                    
+
                                     let newInfo: EngineMessageHistoryThread.Info?
                                     switch newTopic {
-                                    case let .forumTopic(_, _, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                                    case let .forumTopic(forumTopicData):
+                                        let (title, iconColor, iconEmojiId) = (forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId)
                                         newInfo = EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor)
                                     case .forumTopicDeleted:
                                         newInfo = EngineMessageHistoryThread.Info(title: "", icon: nil, iconColor: 0)
@@ -379,32 +410,39 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                         newInfo = nil
                                     }
                                     action = .pinTopic(prevInfo: prevInfo, newInfo: newInfo)
-                                case let .channelAdminLogEventActionToggleForum(newValue):
-                                    action = .toggleForum(isForum: newValue == .boolTrue)
-                                case let .channelAdminLogEventActionToggleAntiSpam(newValue):
-                                    action = .toggleAntiSpam(isEnabled: newValue == .boolTrue)
-                                case let .channelAdminLogEventActionChangePeerColor(prevValue, newValue):
-                                    guard case let .peerColor(_, prevColor, prevBackgroundEmojiIdValue) = prevValue, case let .peerColor(_, newColor, newBackgroundEmojiIdValue) = newValue else {
+                                case let .channelAdminLogEventActionToggleForum(channelAdminLogEventActionToggleForumData):
+                                    action = .toggleForum(isForum: channelAdminLogEventActionToggleForumData.newValue == .boolTrue)
+                                case let .channelAdminLogEventActionToggleAntiSpam(channelAdminLogEventActionToggleAntiSpamData):
+                                    action = .toggleAntiSpam(isEnabled: channelAdminLogEventActionToggleAntiSpamData.newValue == .boolTrue)
+                                case let .channelAdminLogEventActionChangePeerColor(channelAdminLogEventActionChangePeerColorData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangePeerColorData.prevValue, channelAdminLogEventActionChangePeerColorData.newValue)
+                                    guard case let .peerColor(prevPeerColorData) = prevValue, case let .peerColor(newPeerColorData) = newValue else {
                                         continue
                                     }
+                                    let (prevColor, prevBackgroundEmojiId) = (prevPeerColorData.color, prevPeerColorData.backgroundEmojiId)
+                                    let (newColor, newBackgroundEmojiId) = (newPeerColorData.color, newPeerColorData.backgroundEmojiId)
                                     let prevColorIndex = prevColor ?? 0
-                                    let prevEmojiId = prevBackgroundEmojiIdValue
-                                    
+                                    let prevEmojiId = prevBackgroundEmojiId
+
                                     let newColorIndex = newColor ?? 0
-                                    let newEmojiId = newBackgroundEmojiIdValue
-                                    
+                                    let newEmojiId = newBackgroundEmojiId
+
                                     action = .changeNameColor(prevColor: PeerNameColor(rawValue: prevColorIndex), prevIcon: prevEmojiId, newColor: PeerNameColor(rawValue: newColorIndex), newIcon: newEmojiId)
-                                case let .channelAdminLogEventActionChangeProfilePeerColor(prevValue, newValue):
-                                    guard case let .peerColor(_, prevColorIndex, prevEmojiId) = prevValue, case let .peerColor(_, newColorIndex, newEmojiId) = newValue else {
+                                case let .channelAdminLogEventActionChangeProfilePeerColor(channelAdminLogEventActionChangeProfilePeerColorData):
+                                    guard case let .peerColor(prevPeerColorData) = channelAdminLogEventActionChangeProfilePeerColorData.prevValue, case let .peerColor(newPeerColorData) = channelAdminLogEventActionChangeProfilePeerColorData.newValue else {
                                         continue
                                     }
-                                    action = .changeProfileColor(prevColor: prevColorIndex.flatMap(PeerNameColor.init(rawValue:)), prevIcon: prevEmojiId, newColor: newColorIndex.flatMap(PeerNameColor.init(rawValue:)), newIcon: newEmojiId)
-                                case let .channelAdminLogEventActionChangeWallpaper(prevValue, newValue):
+                                    let (prevColor, prevBackgroundEmojiId) = (prevPeerColorData.color, prevPeerColorData.backgroundEmojiId)
+                                    let (newColor, newBackgroundEmojiId) = (newPeerColorData.color, newPeerColorData.backgroundEmojiId)
+                                    action = .changeProfileColor(prevColor: prevColor.flatMap(PeerNameColor.init(rawValue:)), prevIcon: prevBackgroundEmojiId, newColor: newColor.flatMap(PeerNameColor.init(rawValue:)), newIcon: newBackgroundEmojiId)
+                                case let .channelAdminLogEventActionChangeWallpaper(channelAdminLogEventActionChangeWallpaperData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangeWallpaperData.prevValue, channelAdminLogEventActionChangeWallpaperData.newValue)
                                     let prev: TelegramWallpaper?
-                                    if case let .wallPaperNoFile(_, _, settings) = prevValue {
+                                    if case let .wallPaperNoFile(wallPaperNoFileData) = prevValue {
+                                        let (_, _, settings) = (wallPaperNoFileData.id, wallPaperNoFileData.flags, wallPaperNoFileData.settings)
                                         if settings == nil {
                                             prev = nil
-                                        } else if case let .wallPaperSettings(flags, _, _, _, _, _, _, _) = settings, flags == 0 {
+                                        } else if case let .wallPaperSettings(wallPaperSettingsData) = settings, wallPaperSettingsData.flags == 0 {
                                             prev = nil
                                         } else {
                                             prev = TelegramWallpaper(apiWallpaper: prevValue)
@@ -413,10 +451,11 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                         prev = TelegramWallpaper(apiWallpaper: prevValue)
                                     }
                                     let new: TelegramWallpaper?
-                                    if case let .wallPaperNoFile(_, _, settings) = newValue {
+                                    if case let .wallPaperNoFile(wallPaperNoFileData) = newValue {
+                                        let (_, _, settings) = (wallPaperNoFileData.id, wallPaperNoFileData.flags, wallPaperNoFileData.settings)
                                         if settings == nil {
                                             new = nil
-                                        } else if case let .wallPaperSettings(flags, _, _, _, _, _, _, _) = settings, flags == 0 {
+                                        } else if case let .wallPaperSettings(wallPaperSettingsData) = settings, wallPaperSettingsData.flags == 0 {
                                             new = nil
                                         } else {
                                             new = TelegramWallpaper(apiWallpaper: newValue)
@@ -425,20 +464,24 @@ func channelAdminLogEvents(accountPeerId: PeerId, postbox: Postbox, network: Net
                                         new = TelegramWallpaper(apiWallpaper: newValue)
                                     }
                                     action = .changeWallpaper(prev: prev, new: new)
-                                case let .channelAdminLogEventActionChangeEmojiStatus(prevValue, newValue):
+                                case let .channelAdminLogEventActionChangeEmojiStatus(channelAdminLogEventActionChangeEmojiStatusData):
+                                    let (prevValue, newValue) = (channelAdminLogEventActionChangeEmojiStatusData.prevValue, channelAdminLogEventActionChangeEmojiStatusData.newValue)
                                     action = .changeStatus(prev: PeerEmojiStatus(apiStatus: prevValue), new: PeerEmojiStatus(apiStatus: newValue))
-                                case let .channelAdminLogEventActionChangeEmojiStickerSet(prevStickerset, newStickerset):
+                                case let .channelAdminLogEventActionChangeEmojiStickerSet(channelAdminLogEventActionChangeEmojiStickerSetData):
+                                    let (prevStickerset, newStickerset) = (channelAdminLogEventActionChangeEmojiStickerSetData.prevStickerset, channelAdminLogEventActionChangeEmojiStickerSetData.newStickerset)
                                     action = .changeEmojiPack(prev: StickerPackReference(apiInputSet: prevStickerset), new: StickerPackReference(apiInputSet: newStickerset))
-                                case let .channelAdminLogEventActionToggleSignatureProfiles(newValue):
-                                    action = .toggleSignatureProfiles(boolFromApiValue(newValue))
-                                case let .channelAdminLogEventActionParticipantSubExtend(prev, new):
+                                case let .channelAdminLogEventActionToggleSignatureProfiles(channelAdminLogEventActionToggleSignatureProfilesData):
+                                    action = .toggleSignatureProfiles(boolFromApiValue(channelAdminLogEventActionToggleSignatureProfilesData.newValue))
+                                case let .channelAdminLogEventActionParticipantSubExtend(channelAdminLogEventActionParticipantSubExtendData):
+                                    let (prev, new) = (channelAdminLogEventActionParticipantSubExtendData.prevParticipant, channelAdminLogEventActionParticipantSubExtendData.newParticipant)
                                     let prevParticipant = ChannelParticipant(apiParticipant: prev)
                                     let newParticipant = ChannelParticipant(apiParticipant: new)
                                     
                                     if let prevPeer = peers[prevParticipant.peerId], let newPeer = peers[newParticipant.peerId] {
                                         action = .participantSubscriptionExtended(prev: RenderedChannelParticipant(participant: prevParticipant, peer: prevPeer), new: RenderedChannelParticipant(participant: newParticipant, peer: newPeer))
                                     }
-                                case let .channelAdminLogEventActionToggleAutotranslation(newValue):
+                                case let .channelAdminLogEventActionToggleAutotranslation(channelAdminLogEventActionToggleAutotranslationData):
+                                    let newValue = channelAdminLogEventActionToggleAutotranslationData.newValue
                                     action = .toggleAutoTranslation(boolFromApiValue(newValue))
                                 }
                                 let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))

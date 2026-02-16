@@ -402,7 +402,8 @@ public final class StorySubscriptionsContext {
                 let _ = (self.postbox.transaction { transaction -> Void in
                     var updatedStealthMode: Api.StoriesStealthMode?
                     switch result {
-                    case let .allStoriesNotModified(_, state, stealthMode):
+                    case let .allStoriesNotModified(allStoriesNotModifiedData):
+                        let (state, stealthMode) = (allStoriesNotModifiedData.state, allStoriesNotModifiedData.stealthMode)
                         self.loadedStateMark = .value(state)
                         let (currentStateValue, _) = transaction.getAllStorySubscriptions(key: subscriptionsKey)
                         let currentState = currentStateValue.flatMap { $0.get(Stories.SubscriptionsState.self) }
@@ -421,7 +422,8 @@ public final class StorySubscriptionsContext {
                         if isRefresh && !isHidden {
                             updatedStealthMode = stealthMode
                         }
-                    case let .allStories(flags, _, state, peerStories, chats, users, stealthMode):
+                    case let .allStories(allStoriesData):
+                        let (flags, state, peerStories, chats, users, stealthMode) = (allStoriesData.flags, allStoriesData.state, allStoriesData.peerStories, allStoriesData.chats, allStoriesData.users, allStoriesData.stealthMode)
                         let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                         
                         let hasMore: Bool = (flags & (1 << 0)) != 0
@@ -431,11 +433,12 @@ public final class StorySubscriptionsContext {
                         
                         for peerStorySet in peerStories {
                             switch peerStorySet {
-                            case let .peerStories(_, peerIdValue, maxReadId, stories):
+                            case let .peerStories(peerStoriesData):
+                                let (_, peerIdValue, maxReadId, stories) = (peerStoriesData.flags, peerStoriesData.peer, peerStoriesData.maxReadId, peerStoriesData.stories)
                                 let peerId = peerIdValue.peerId
-                                
+
                                 let previousPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
-                                
+
                                 var updatedPeerEntries: [StoryItemsTableEntry] = []
                                 for story in stories {
                                     if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peerId, transaction: transaction) {
@@ -889,10 +892,12 @@ public final class PeerStoryListContext: StoryListContext {
                         
                         if let updatedFolders {
                             switch updatedFolders {
-                            case let .albums(_, albums):
+                            case let .albums(albumsData):
+                                let albums = albumsData.albums
                                 for album in albums {
                                     switch album {
-                                    case let .storyAlbum(_, albumId, title, iconPhoto, iconVideo):
+                                    case let .storyAlbum(storyAlbumData):
+                                        let (albumId, title, iconPhoto, iconVideo) = (storyAlbumData.albumId, storyAlbumData.title, storyAlbumData.iconPhoto, storyAlbumData.iconVideo)
                                         let _ = iconPhoto
                                         let _ = iconVideo
                                         folderItems.append(State.Folder(
@@ -915,7 +920,8 @@ public final class PeerStoryListContext: StoryListContext {
                         }
                         
                         switch result {
-                        case let .stories(_, count, stories, pinnedStories, chats, users):
+                        case let .stories(storiesData):
+                            let (count, stories, pinnedStories, chats, users) = (storiesData.count, storiesData.stories, storiesData.pinnedToTop, storiesData.chats, storiesData.users)
                             totalCount = Int(count)
                             hasMore = stories.count >= limit
                             
@@ -1410,7 +1416,8 @@ public final class PeerStoryListContext: StoryListContext {
                 }
                 if let result {
                     switch result {
-                    case let .storyAlbum(_, albumId, _, _, _):
+                    case let .storyAlbum(storyAlbumData):
+                        let albumId = storyAlbumData.albumId
                         var state = self.stateValue
                         state.availableFolders.append(StoryListContextState.Folder(id: Int64(albumId), title: title))
                         self.stateValue = state
@@ -1914,7 +1921,8 @@ public final class PeerStoryListContext: StoryListContext {
         }).start(next: { result in
             if let result {
                 switch result {
-                case let .storyAlbum(_, albumId, _, _, _):
+                case let .storyAlbum(storyAlbumData):
+                    let albumId = storyAlbumData.albumId
                     let _ = (account.postbox.transaction { transaction -> Void in
                         let key = ValueBoxKey(length: 8 + 1)
                         key.setInt64(0, value: peerId.toInt64())
@@ -2146,7 +2154,8 @@ public final class SearchStoryListContext: StoryListContext {
                     var nextOffsetValue: String?
                     
                     switch result {
-                    case let .foundStories(_, count, stories, nextOffset, chats, users):
+                    case let .foundStories(foundStoriesData):
+                        let (count, stories, nextOffset, chats, users) = (foundStoriesData.count, foundStoriesData.stories, foundStoriesData.nextOffset, foundStoriesData.chats, foundStoriesData.users)
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(transaction: transaction, chats: chats, users: users))
                         
                         totalCount = Int(count)
@@ -2154,7 +2163,8 @@ public final class SearchStoryListContext: StoryListContext {
                         
                         for story in stories {
                             switch story {
-                            case let .foundStory(peer, story):
+                            case let .foundStory(foundStoryData):
+                                let (peer, story) = (foundStoryData.peer, foundStoryData.story)
                                 if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peer.peerId, transaction: transaction) {
                                     if case let .item(item) = storedItem, let media = item.media {
                                         let mappedItem = EngineStoryItem(
@@ -2593,15 +2603,17 @@ public final class PeerExpiringStoryListContext {
                         var updatedPeerEntries: [StoryItemsTableEntry] = []
                         updatedPeerEntries.removeAll()
                         
-                        if let result = result, case let .peerStories(stories, chats, users) = result {
+                        if let result = result, case let .peerStories(peerStoriesData) = result {
+                            let (stories, chats, users) = (peerStoriesData.stories, peerStoriesData.chats, peerStoriesData.users)
                             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-                            
+
                             switch stories {
-                            case let .peerStories(_, peerIdValue, maxReadId, stories):
+                            case let .peerStories(peerStoriesData):
+                                let (_, peerIdValue, maxReadId, stories) = (peerStoriesData.flags, peerStoriesData.peer, peerStoriesData.maxReadId, peerStoriesData.stories)
                                 let peerId = peerIdValue.peerId
-                                
+
                                 let previousPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
-                                
+
                                 for story in stories {
                                     if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peerId, transaction: transaction) {
                                         if case .placeholder = storedItem, let previousEntry = previousPeerEntries.first(where: { $0.id == storedItem.id }) {
@@ -2613,15 +2625,15 @@ public final class PeerExpiringStoryListContext {
                                         }
                                     }
                                 }
-                                
+
                                 transaction.setPeerStoryState(peerId: peerId, state: Stories.PeerState(
                                     maxReadId: maxReadId ?? 0
                                 ).postboxRepresentation)
                             }
-                            
+
                             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                         }
-                        
+
                         transaction.setStoryItems(peerId: peerId, items: updatedPeerEntries)
                     }
                     |> ignoreValues
@@ -2774,15 +2786,17 @@ public func _internal_pollPeerStories(postbox: Postbox, network: Network, accoun
                 var updatedPeerEntries: [StoryItemsTableEntry] = []
                 updatedPeerEntries.removeAll()
                 
-                if let result = result, case let .peerStories(stories, chats, users) = result {
+                if let result = result, case let .peerStories(peerStoriesData) = result {
+                    let (stories, chats, users) = (peerStoriesData.stories, peerStoriesData.chats, peerStoriesData.users)
                     let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-                    
+
                     switch stories {
-                    case let .peerStories(_, peerIdValue, maxReadId, stories):
+                    case let .peerStories(peerStoriesData):
+                        let (_, peerIdValue, maxReadId, stories) = (peerStoriesData.flags, peerStoriesData.peer, peerStoriesData.maxReadId, peerStoriesData.stories)
                         let peerId = peerIdValue.peerId
-                        
+
                         let previousPeerEntries: [StoryItemsTableEntry] = transaction.getStoryItems(peerId: peerId)
-                        
+
                         for story in stories {
                             if let storedItem = Stories.StoredItem(apiStoryItem: story, peerId: peerId, transaction: transaction) {
                                 if case .placeholder = storedItem, let previousEntry = previousPeerEntries.first(where: { $0.id == storedItem.id }) {
@@ -2794,17 +2808,17 @@ public func _internal_pollPeerStories(postbox: Postbox, network: Network, accoun
                                 }
                             }
                         }
-                        
+
                         transaction.setPeerStoryState(peerId: peerId, state: Stories.PeerState(
                             maxReadId: maxReadId ?? 0
                         ).postboxRepresentation)
                     }
-                    
+
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                 }
-                
+
                 transaction.setStoryItems(peerId: peerId, items: updatedPeerEntries)
-                
+
                 var isContactOrMember = false
                 if transaction.isPeerContact(peerId: peerId) {
                     isContactOrMember = true
@@ -3373,10 +3387,10 @@ public final class BotPreviewStoryListContext: StoryListContext {
                 var inputMedia: [Api.InputMedia] = []
                 for item in media {
                     if let image = item as? TelegramMediaImage, let resource = image.representations.last?.resource as? CloudPhotoSizeMediaResource {
-                        inputMedia.append(.inputMediaPhoto(flags: 0, id: .inputPhoto(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), ttlSeconds: nil))
-                        inputMedia.append(Api.InputMedia.inputMediaPhoto(flags: 0, id: Api.InputPhoto.inputPhoto(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), ttlSeconds: nil))
+                        inputMedia.append(.inputMediaPhoto(.init(flags: 0, id: .inputPhoto(.init(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), ttlSeconds: nil)))
+                        inputMedia.append(Api.InputMedia.inputMediaPhoto(.init(flags: 0, id: Api.InputPhoto.inputPhoto(.init(id: resource.photoId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), ttlSeconds: nil)))
                     } else if let file = item as? TelegramMediaFile, let resource = file.resource as? CloudDocumentMediaResource {
-                        inputMedia.append(.inputMediaDocument(flags: 0, id: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())), videoCover: nil, videoTimestamp: nil, ttlSeconds: nil, query: nil))
+                        inputMedia.append(.inputMediaDocument(.init(flags: 0, id: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data()))), videoCover: nil, videoTimestamp: nil, ttlSeconds: nil, query: nil)))
                     }
                 }
                 

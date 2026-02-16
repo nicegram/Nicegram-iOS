@@ -152,8 +152,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Deine Nummer wird nur in der Benutzeroberfläche versteckt. Um sie vor anderen zu verbergen, verwende bitte die Privatsphäre-Einstellungen.";
 "NicegramSettings.Other.showProfileId" = "Profil-ID anzeigen";
 "NicegramSettings.Other.showRegDate" = "Registrierungsdatum anzeigen";
-"NicegramSettings.Unblock.Header" = "Blockierung aufheben";
-"NicegramSettings.Unblock.Button" = "Anleitung zum Aufheben einer Blockierung";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videos in die Galerie herunterladen";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Sprachen ignorieren";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Die App erkennt die Sprache jeder Nachricht auf deinem Gerät. Das ist eine Aufgabe mit hoher Priorität, die sich auf die Akkulaufzeit auswirken kann.";

@@ -443,6 +443,10 @@ public final class ChatListHeaderComponent: Component {
             alphaTransition.setAlpha(view: self.rightButtonsContainer, alpha: pow(fraction, 2.0))
         }
         
+        func openEmojiStatusSetup() {
+            self.chatListTitleView?.openEmojiStatusSetup()
+        }
+        
         func update(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, content: Content, displayBackButton: Bool, sideInset: CGFloat, sideContentWidth: CGFloat, sideContentFraction: CGFloat, size: CGSize, transition: ComponentTransition) {
             let alphaTransition: ComponentTransition = transition.animation.isImmediate ? .immediate : .easeInOut(duration: 0.3)
 
@@ -725,8 +729,8 @@ public final class ChatListHeaderComponent: Component {
 
         private let leftButtonsContainer: UIView
         private let rightButtonsContainer: UIView
-        private var leftButtonsBackgroundContainer: GlassBackgroundView?
-        private var rightButtonsBackgroundContainer: GlassBackgroundView?
+        private var leftButtonsBackgroundContainer: GlassContextExtractableContainer?
+        private var rightButtonsBackgroundContainer: GlassContextExtractableContainer?
         
         private let storyPeerListExternalState = StoryPeerListComponent.ExternalState()
         private var storyPeerList: ComponentView<Empty>?
@@ -774,6 +778,16 @@ public final class ChatListHeaderComponent: Component {
             return self.storyPeerList?.view as? StoryPeerListComponent.View
         }
         
+        public func navigationButtonContextContainer(sourceView: UIView) -> ContextExtractableContainer? {
+            if let leftButtonsBackgroundContainer = self.leftButtonsBackgroundContainer, sourceView.isDescendant(of: leftButtonsBackgroundContainer) {
+                return leftButtonsBackgroundContainer
+            }
+            if let rightButtonsBackgroundContainer = self.rightButtonsBackgroundContainer, sourceView.isDescendant(of: rightButtonsBackgroundContainer) {
+                return rightButtonsBackgroundContainer
+            }
+            return nil
+        }
+        
         override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             if let storyPeerListView = self.storyPeerList?.view {
                 if let result = storyPeerListView.hitTest(self.convert(point, to: storyPeerListView), with: event) {
@@ -803,6 +817,14 @@ public final class ChatListHeaderComponent: Component {
         }
         
         private func updateContentStoryOffsets(transition: ComponentTransition) {
+        }
+        
+        func openEmojiStatusSetup() {
+            if let storyPeerListView = self.storyPeerList?.view as? StoryPeerListComponent.View {
+                storyPeerListView.openEmojiStatusSetup()
+            } else {
+                self.primaryContentView?.openEmojiStatusSetup()
+            }
         }
         
         func update(component: ChatListHeaderComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
@@ -1094,20 +1116,20 @@ public final class ChatListHeaderComponent: Component {
             }
 
             if leftButtonsEffectiveWidth != 0.0 {
-                let leftButtonsBackgroundContainer: GlassBackgroundView
+                let leftButtonsBackgroundContainer: GlassContextExtractableContainer
                 var leftButtonsBackgroundContainerTransition = transition
                 if let current = self.leftButtonsBackgroundContainer {
                     leftButtonsBackgroundContainer = current
                 } else {
                     leftButtonsBackgroundContainerTransition = leftButtonsBackgroundContainerTransition.withAnimation(.none)
-                    leftButtonsBackgroundContainer = GlassBackgroundView()
+                    leftButtonsBackgroundContainer = GlassContextExtractableContainer()
                     self.leftButtonsBackgroundContainer = leftButtonsBackgroundContainer
                     self.addSubview(leftButtonsBackgroundContainer)
                     leftButtonsBackgroundContainer.contentView.addSubview(self.leftButtonsContainer)
                 }
                 let leftButtonsContainerFrame = CGRect(origin: CGPoint(x: component.sideInset, y: 0.0), size: CGSize(width: max(44.0, leftButtonsEffectiveWidth), height: 44.0))
                 leftButtonsBackgroundContainerTransition.setFrame(view: leftButtonsBackgroundContainer, frame: leftButtonsContainerFrame)
-                leftButtonsBackgroundContainer.update(size: leftButtonsContainerFrame.size, cornerRadius: leftButtonsContainerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: leftButtonsBackgroundContainerTransition)
+                leftButtonsBackgroundContainer.update(size: leftButtonsContainerFrame.size, cornerRadius: leftButtonsContainerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: leftButtonsBackgroundContainerTransition)
                 leftButtonsBackgroundContainerTransition.setFrame(view: self.leftButtonsContainer, frame: CGRect(origin: CGPoint(), size: leftButtonsContainerFrame.size)) 
             } else {
                 if let leftButtonsBackgroundContainer = self.leftButtonsBackgroundContainer {
@@ -1119,7 +1141,7 @@ public final class ChatListHeaderComponent: Component {
             }
 
             if rightButtonsEffectiveWidth != 0.0 {
-                let rightButtonsBackgroundContainer: GlassBackgroundView
+                let rightButtonsBackgroundContainer: GlassContextExtractableContainer
                 var rightButtonsBackgroundContainerTransition = transition
                 
                 let rightButtonsContainerFrame = CGRect(origin: CGPoint(x: availableSize.width - component.sideInset - max(44.0, rightButtonsEffectiveWidth), y: 0.0), size: CGSize(width: max(44.0, rightButtonsEffectiveWidth), height: 44.0))
@@ -1128,21 +1150,21 @@ public final class ChatListHeaderComponent: Component {
                     rightButtonsBackgroundContainer = current
                 } else {
                     rightButtonsBackgroundContainerTransition = rightButtonsBackgroundContainerTransition.withAnimation(.none)
-                    rightButtonsBackgroundContainer = GlassBackgroundView()
+                    rightButtonsBackgroundContainer = GlassContextExtractableContainer()
                     self.rightButtonsBackgroundContainer = rightButtonsBackgroundContainer
                     self.addSubview(rightButtonsBackgroundContainer)
                     rightButtonsBackgroundContainer.contentView.addSubview(self.rightButtonsContainer)
                     
-                    rightButtonsBackgroundContainer.update(size: rightButtonsContainerFrame.size, cornerRadius: rightButtonsContainerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, isVisible: false, transition: .immediate)
+                    rightButtonsBackgroundContainer.update(size: rightButtonsContainerFrame.size, cornerRadius: rightButtonsContainerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, isVisible: false, transition: .immediate)
                 }
                 rightButtonsBackgroundContainerTransition.setFrame(view: rightButtonsBackgroundContainer, frame: rightButtonsContainerFrame)
-                rightButtonsBackgroundContainer.update(size: rightButtonsContainerFrame.size, cornerRadius: rightButtonsContainerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: transition)
+                rightButtonsBackgroundContainer.update(size: rightButtonsContainerFrame.size, cornerRadius: rightButtonsContainerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
                 rightButtonsBackgroundContainerTransition.setFrame(view: self.rightButtonsContainer, frame: CGRect(origin: CGPoint(), size: rightButtonsContainerFrame.size))
             } else {
                 if let rightButtonsBackgroundContainer = self.rightButtonsBackgroundContainer {
                     self.rightButtonsBackgroundContainer = nil
                     
-                    rightButtonsBackgroundContainer.update(size: rightButtonsBackgroundContainer.bounds.size, cornerRadius: rightButtonsBackgroundContainer.bounds.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, isVisible: false, transition: transition)
+                    rightButtonsBackgroundContainer.update(size: rightButtonsBackgroundContainer.bounds.size, cornerRadius: rightButtonsBackgroundContainer.bounds.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, isVisible: false, transition: transition)
                     transition.attachAnimation(view: rightButtonsBackgroundContainer, id: "remove", completion: { [weak rightButtonsBackgroundContainer] _ in
                         rightButtonsBackgroundContainer?.removeFromSuperview()
                     })

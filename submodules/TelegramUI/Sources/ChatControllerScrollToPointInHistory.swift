@@ -137,4 +137,36 @@ extension ChatControllerImpl {
             }
         }
     }
+    
+    func openMediaMessageContext(message: EngineMessage) async {
+        guard let peer = await self.context.engine.data.get(
+            TelegramEngine.EngineData.Item.Peer.Peer(id: message.id.peerId)
+        ).get() else {
+            return
+        }
+        
+        var kind: PeerInfoControllerMode.PeerInfoMediaKind?
+        if message.tags.contains(MessageTags.photoOrVideo) {
+            kind = .photoVideo
+        } else if message.tags.contains(MessageTags.file) {
+            kind = .file
+        }
+        
+        guard let kind else {
+            return
+        }
+        
+        let peerInfoController = self.context.sharedContext.makePeerInfoController(
+            context: self.context,
+            updatedPresentationData: self.updatedPresentationData,
+            peer: peer._asPeer(),
+            mode: .media(kind: kind, messageIndex: message.index),
+            avatarInitiallyExpanded: false,
+            fromChat: true,
+            requestsContext: nil
+        )
+        if let peerInfoController {
+            self.push(peerInfoController)
+        }
+    }
 }

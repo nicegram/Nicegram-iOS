@@ -655,7 +655,7 @@ public final class MediaStreamComponent: CombinedComponent {
                             }
                         }
                         
-                        let contextController = ContextController(presentationData: presentationData.withUpdated(theme: defaultDarkPresentationTheme), source: .reference(ReferenceContentSource(sourceView: anchorView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+                        let contextController = makeContextController(presentationData: presentationData.withUpdated(theme: defaultDarkPresentationTheme), source: .reference(ReferenceContentSource(sourceView: anchorView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
                         controller.presentInGlobalOverlay(contextController)
                     }
                 ).minSize(CGSize(width: 44.0, height: 44.0)).tagged(moreButtonTag))

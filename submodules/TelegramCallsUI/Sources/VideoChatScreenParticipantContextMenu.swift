@@ -336,7 +336,7 @@ extension VideoChatScreenComponent.View {
         }
         
         let presentationData = currentCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
-        let contextController = ContextController(
+        let contextController = makeContextController(
             presentationData: presentationData,
             source: .extracted(ParticipantExtractedContentSource(contentView: sourceView)),
             items: items |> map { items in
@@ -394,7 +394,7 @@ extension VideoChatScreenComponent.View {
         let items = itemsForEntry()
         
         let presentationData = currentCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: environment.theme)
-        let contextController = ContextController(
+        let contextController = makeContextController(
             presentationData: presentationData,
             source: .extracted(ParticipantExtractedContentSource(contentView: sourceView)),
             items: .single(ContextController.Items(content: .list(items))),

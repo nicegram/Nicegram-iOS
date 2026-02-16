@@ -153,8 +153,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Numaranız sadece arayüzde gizlenecek. Diğerlerinden gizlemek için, lütfen Gizlilik ayarlarını kullanın.";
 "NicegramSettings.Other.showProfileId" = "Profil ID'sini Göster";
 "NicegramSettings.Other.showRegDate" = "Kayıt Tarihini Göster";
-"NicegramSettings.Unblock.Header" = "Engeli Kaldır";
-"NicegramSettings.Unblock.Button" = "Rehberin Engelini Kaldır";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Videoları galeriye indir";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Dilleri görmezden gel";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Uygulama, cihazınızdaki her mesajın dilini algılar. Bu, pil ömrünüzü etkileyebilecek yüksek öncelikli bir görevdir.";

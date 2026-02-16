@@ -87,9 +87,9 @@ func _internal_updateNameColorAndEmoji(account: Account, nameColor: UpdateNameCo
             if let _ = backgroundEmojiId {
                 flags |= (1 << 1)
             }
-            inputRepliesColor = .peerColor(flags: flags, color: color.rawValue, backgroundEmojiId: backgroundEmojiId)
+            inputRepliesColor = .peerColor(.init(flags: flags, color: color.rawValue, backgroundEmojiId: backgroundEmojiId))
         case let .collectible(collectibleColor):
-            inputRepliesColor = .inputPeerColorCollectible(collectibleId: collectibleColor.collectibleId)
+            inputRepliesColor = .inputPeerColorCollectible(.init(collectibleId: collectibleColor.collectibleId))
         }
         
         var flagsProfile: Int32 = 0
@@ -102,7 +102,7 @@ func _internal_updateNameColorAndEmoji(account: Account, nameColor: UpdateNameCo
         
         return combineLatest(
             account.network.request(Api.functions.account.updateColor(flags: (1 << 2), color: inputRepliesColor)),
-            account.network.request(Api.functions.account.updateColor(flags: (1 << 1) | (1 << 2), color: .peerColor(flags: flagsProfile, color: profileColor?.rawValue ?? 0, backgroundEmojiId: profileBackgroundEmojiId)))
+            account.network.request(Api.functions.account.updateColor(flags: (1 << 1) | (1 << 2), color: .peerColor(.init(flags: flagsProfile, color: profileColor?.rawValue ?? 0, backgroundEmojiId: profileBackgroundEmojiId))))
         )
         |> mapError { _ -> UpdateNameColorAndEmojiError in
             return .generic

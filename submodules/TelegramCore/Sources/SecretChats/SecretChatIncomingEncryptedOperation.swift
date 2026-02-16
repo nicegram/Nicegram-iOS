@@ -15,9 +15,11 @@ private func keyFingerprintFromBytes(_ bytes: Buffer) -> Int64 {
 extension SecretChatIncomingEncryptedOperation {
     convenience init(message: Api.EncryptedMessage) {
         switch message {
-            case let .encryptedMessage(randomId, chatId, date, bytes, file):
+            case let .encryptedMessage(encryptedMessageData):
+                let (randomId, chatId, date, bytes, file) = (encryptedMessageData.randomId, encryptedMessageData.chatId, encryptedMessageData.date, encryptedMessageData.bytes, encryptedMessageData.file)
                 self.init(peerId: PeerId(namespace: Namespaces.Peer.SecretChat, id: PeerId.Id._internalFromInt64Value(Int64(chatId))), globallyUniqueId: randomId, timestamp: date, type: .message, keyFingerprint: keyFingerprintFromBytes(bytes), contents: MemoryBuffer(bytes), mediaFileReference: SecretChatFileReference(file))
-            case let .encryptedMessageService(randomId, chatId, date, bytes):
+            case let .encryptedMessageService(encryptedMessageServiceData):
+                let (randomId, chatId, date, bytes) = (encryptedMessageServiceData.randomId, encryptedMessageServiceData.chatId, encryptedMessageServiceData.date, encryptedMessageServiceData.bytes)
                 self.init(peerId: PeerId(namespace: Namespaces.Peer.SecretChat, id: PeerId.Id._internalFromInt64Value(Int64(chatId))), globallyUniqueId: randomId, timestamp: date, type: .service, keyFingerprint: keyFingerprintFromBytes(bytes), contents: MemoryBuffer(bytes), mediaFileReference: nil)
         }
     }

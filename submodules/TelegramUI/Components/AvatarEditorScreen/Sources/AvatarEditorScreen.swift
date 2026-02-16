@@ -28,6 +28,8 @@ import AvatarBackground
 import LottieComponent
 import UndoUI
 import PremiumAlertController
+import GlassBarButtonComponent
+import BundleIconComponent
 
 public struct AvatarKeyboardInputData: Equatable {
     var emoji: EmojiPagerContentComponent
@@ -837,50 +839,63 @@ final class AvatarEditorScreenComponent: Component {
                 }
             }
             
-            let backgroundIsBright = UIColor(rgb: state.selectedBackground.colors.first ?? 0).lightness > 0.8
+            //let backgroundIsBright = UIColor(rgb: state.selectedBackground.colors.first ?? 0).lightness > 0.8
             
+            //state.expanded && !backgroundIsBright ? .white : environment.theme.rootController.navigationBar.accentTextColor
             let navigationCancelButtonSize = self.navigationCancelButton.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: environment.strings.Common_Cancel, font: Font.regular(17.0), color: state.expanded && !backgroundIsBright ? .white : environment.theme.rootController.navigationBar.accentTextColor)),
-                    action: { [weak self] in
-                        guard let self else {
-                            return
+                component: AnyComponent(
+                    GlassBarButtonComponent(
+                        size: CGSize(width: 44.0, height: 44.0),
+                        backgroundColor: nil,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .glass,
+                        component: AnyComponentWithIdentity(id: "close", component: AnyComponent(BundleIconComponent(name: "Navigation/Close", tintColor: environment.theme.chat.inputPanel.panelControlColor))),
+                        action: { [weak self] _ in
+                            guard let self else {
+                                return
+                            }
+                            self.controller?()?.dismiss()
                         }
-                        self.controller?()?.dismiss()
-                    }
-                ).minSize(CGSize(width: 16.0, height: environment.navigationHeight - environment.statusBarHeight))),
+                    )
+                ),
                 environment: {},
-                containerSize: CGSize(width: 150.0, height: environment.navigationHeight - environment.statusBarHeight)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             if let navigationCancelButtonView = self.navigationCancelButton.view {
                 if navigationCancelButtonView.superview == nil {
                     self.addSubview(navigationCancelButtonView)
                 }
-                transition.setFrame(view: navigationCancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: environment.statusBarHeight), size: navigationCancelButtonSize))
+                transition.setFrame(view: navigationCancelButtonView, frame: CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: 16.0), size: navigationCancelButtonSize))
                 transition.setAlpha(view: navigationCancelButtonView, alpha: !state.editingColor ? 1.0 : 0.0)
             }
             
             let navigationDoneButtonSize = self.navigationDoneButton.update(
                 transition: transition,
-                component: AnyComponent(Button(
-                    content: AnyComponent(Text(text: component.peerType == .suggest ? strings.AvatarEditor_Suggest : strings.AvatarEditor_Set, font: Font.semibold(17.0), color: state.expanded && !backgroundIsBright ? .white : environment.theme.rootController.navigationBar.accentTextColor)),
-                    action: { [weak self] in
-                        guard let self else {
-                            return
+                component: AnyComponent(
+                    GlassBarButtonComponent(
+                        size: CGSize(width: 44.0, height: 44.0),
+                        backgroundColor: environment.theme.list.itemCheckColors.fillColor,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .tintedGlass,
+                        component: AnyComponentWithIdentity(id: "done", component: AnyComponent(BundleIconComponent(name: "Navigation/Done", tintColor: environment.theme.list.itemCheckColors.foregroundColor))),
+                        action: { [weak self] _ in
+                            guard let self else {
+                                return
+                            }
+                            self.complete()
                         }
-                        self.complete()
-                    }
-                ).minSize(CGSize(width: 16.0, height: environment.navigationHeight - environment.statusBarHeight))),
+                    )
+                ),
                 environment: {},
-                containerSize: CGSize(width: 150.0, height: environment.navigationHeight - environment.statusBarHeight)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             if let navigationDoneButtonView = self.navigationDoneButton.view {
                 if navigationDoneButtonView.superview == nil {
                     self.addSubview(navigationDoneButtonView)
                 }
                 
-                transition.setFrame(view: navigationDoneButtonView, frame: CGRect(origin: CGPoint(x: availableSize.width - 16.0 - environment.safeInsets.right - navigationDoneButtonSize.width, y: environment.statusBarHeight), size: navigationDoneButtonSize))
+                transition.setFrame(view: navigationDoneButtonView, frame: CGRect(origin: CGPoint(x: availableSize.width - 16.0 - environment.safeInsets.right - navigationDoneButtonSize.width, y: 16.0), size: navigationDoneButtonSize))
                 transition.setAlpha(view: navigationDoneButtonView, alpha: (state.expanded || environment.inputHeight > 0.0) && !state.editingColor ? 1.0 : 0.0)
             }
                         
@@ -1190,9 +1205,10 @@ final class AvatarEditorScreenComponent: Component {
             contentHeight += keyboardTitleSize.height
             contentHeight += 8.0
             
-            var bottomInset: CGFloat = environment.safeInsets.bottom > 0.0 ? environment.safeInsets.bottom : 16.0
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
+            var bottomInset: CGFloat = buttonInsets.bottom
             if !effectiveIsExpanded {
-                bottomInset += 50.0 + 16.0
+                bottomInset += 52.0 + buttonInsets.bottom - 14.0
             }
             
             let keyboardContainerFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: availableSize.height - contentHeight - bottomInset))
@@ -1318,7 +1334,6 @@ final class AvatarEditorScreenComponent: Component {
                 ))))
             }
             
-            let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
             let buttonSize = self.buttonView.update(
                 transition: transition,
                 component: AnyComponent(
@@ -1340,13 +1355,13 @@ final class AvatarEditorScreenComponent: Component {
                     )
                 ),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - bottomInsets.left - bottomInsets.right, height: 52.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
             if let buttonView = self.buttonView.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
                 }
-                transition.setFrame(view: buttonView, frame: CGRect(origin: CGPoint(x: bottomInsets.left, y: contentHeight), size: buttonSize))
+                transition.setFrame(view: buttonView, frame: CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize))
             }
             
             let bottomPanelFrame = CGRect(origin: CGPoint(x: 0.0, y: contentHeight - 4.0), size: CGSize(width: availableSize.width, height: availableSize.height - contentHeight + 4.0))

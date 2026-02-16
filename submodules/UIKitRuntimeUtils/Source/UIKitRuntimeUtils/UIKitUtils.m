@@ -266,6 +266,10 @@ NSObject * _Nullable makeBlurFilter() {
     return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"gaussianBlur"];
 }
 
+NSObject * _Nullable makeVariableBlurFilter() {
+    return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"variableBlur"];
+}
+
 NSObject * _Nullable makeLuminanceToAlphaFilter() {
     return [(id<GraphicsFilterProtocol>)NSClassFromString(@"CAFilter") filterWithName:@"luminanceToAlpha"];
 }

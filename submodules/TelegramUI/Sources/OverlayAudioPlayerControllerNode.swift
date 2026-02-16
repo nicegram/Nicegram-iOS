@@ -1264,7 +1264,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
                 return
             }
             
-            let contextController = ContextController(presentationData: presentationData, source: source, items: .single(ContextController.Items(content: .list(items))), recognizer: recognizer, gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: source, items: .single(ContextController.Items(content: .list(items))), recognizer: recognizer, gesture: gesture)
             self.getParentController()?.presentInGlobalOverlay(contextController)
         })
     }

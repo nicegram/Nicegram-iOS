@@ -40,7 +40,8 @@ public struct BankCardInfo {
 extension BankCardUrl {
     init(apiBankCardOpenUrl: Api.BankCardOpenUrl) {
         switch apiBankCardOpenUrl {
-            case let .bankCardOpenUrl(url, name):
+            case let .bankCardOpenUrl(bankCardOpenUrlData):
+                let (url, name) = (bankCardOpenUrlData.url, bankCardOpenUrlData.name)
                 self.title = name
                 self.url = url
         }
@@ -50,7 +51,8 @@ extension BankCardUrl {
 extension BankCardInfo {
     init(apiBankCardData: Api.payments.BankCardData) {
         switch apiBankCardData {
-            case let .bankCardData(title, urls):
+            case let .bankCardData(bankCardDataData):
+                let (title, urls) = (bankCardDataData.title, bankCardDataData.openUrls)
                 self.title = title
                 self.urls = urls.map { BankCardUrl(apiBankCardOpenUrl: $0) }
         }

@@ -517,7 +517,7 @@ final class StoryContentLiveChatComponent: Component {
                     })))
                 }
                 
-                let contextController = ContextController(
+                let contextController = makeContextController(
                     presentationData: presentationData,
                     source: .extracted(ItemExtractedContentSource(
                         sourceNode: sourceNode,

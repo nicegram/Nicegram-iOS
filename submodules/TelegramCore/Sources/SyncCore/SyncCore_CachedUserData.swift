@@ -559,9 +559,11 @@ public struct PeerEmojiStatus: Equatable, Codable {
 extension PeerEmojiStatus {
     init?(apiStatus: Api.EmojiStatus) {
         switch apiStatus {
-        case let .emojiStatus(_, documentId, until):
+        case let .emojiStatus(emojiStatusData):
+            let (documentId, until) = (emojiStatusData.documentId, emojiStatusData.until)
             self.init(content: .emoji(fileId: documentId), expirationDate: until)
-        case let .emojiStatusCollectible(_, collectibleId, documentId, title, slug, patternDocumentId, centerColor, edgeColor, patternColor, textColor, until):
+        case let .emojiStatusCollectible(emojiStatusCollectibleData):
+            let (collectibleId, documentId, title, slug, patternDocumentId, centerColor, edgeColor, patternColor, textColor, until) = (emojiStatusCollectibleData.collectibleId, emojiStatusCollectibleData.documentId, emojiStatusCollectibleData.title, emojiStatusCollectibleData.slug, emojiStatusCollectibleData.patternDocumentId, emojiStatusCollectibleData.centerColor, emojiStatusCollectibleData.edgeColor, emojiStatusCollectibleData.patternColor, emojiStatusCollectibleData.textColor, emojiStatusCollectibleData.until)
             self.init(content: .starGift(id: collectibleId, fileId: documentId, title: title, slug: slug, patternFileId: patternDocumentId, innerColor: centerColor, outerColor: edgeColor, patternColor: patternColor, textColor: textColor), expirationDate: until)
         case .emojiStatusEmpty, .inputEmojiStatusCollectible:
             return nil
@@ -826,33 +828,36 @@ public final class TelegramBusinessLocation: Equatable, Codable {
 extension TelegramBusinessHours.WorkingTimeInterval {
     init(apiInterval: Api.BusinessWeeklyOpen) {
         switch apiInterval {
-        case let .businessWeeklyOpen(startMinute, endMinute):
+        case let .businessWeeklyOpen(businessWeeklyOpenData):
+            let (startMinute, endMinute) = (businessWeeklyOpenData.startMinute, businessWeeklyOpenData.endMinute)
             self.init(startMinute: Int(startMinute), endMinute: Int(endMinute))
         }
     }
     
     var apiInterval: Api.BusinessWeeklyOpen {
-        return .businessWeeklyOpen(startMinute: Int32(clamping: self.startMinute), endMinute: Int32(clamping: self.endMinute))
+        return .businessWeeklyOpen(Api.BusinessWeeklyOpen.Cons_businessWeeklyOpen(startMinute: Int32(clamping: self.startMinute), endMinute: Int32(clamping: self.endMinute)))
     }
 }
 
 extension TelegramBusinessHours {
     convenience init(apiWorkingHours: Api.BusinessWorkHours) {
         switch apiWorkingHours {
-        case let .businessWorkHours(_, timezoneId, weeklyOpen):
+        case let .businessWorkHours(businessWorkHoursData):
+            let (_, timezoneId, weeklyOpen) = (businessWorkHoursData.flags, businessWorkHoursData.timezoneId, businessWorkHoursData.weeklyOpen)
             self.init(timezoneId: timezoneId, weeklyTimeIntervals: weeklyOpen.map(TelegramBusinessHours.WorkingTimeInterval.init(apiInterval:)))
         }
     }
     
     var apiBusinessHours: Api.BusinessWorkHours {
-        return .businessWorkHours(flags: 0, timezoneId: self.timezoneId, weeklyOpen: self.weeklyTimeIntervals.map(\.apiInterval))
+        return .businessWorkHours(Api.BusinessWorkHours.Cons_businessWorkHours(flags: 0, timezoneId: self.timezoneId, weeklyOpen: self.weeklyTimeIntervals.map(\.apiInterval)))
     }
 }
 
 extension TelegramBusinessLocation.Coordinates {
     init?(apiGeoPoint: Api.GeoPoint) {
         switch apiGeoPoint {
-        case let .geoPoint(_, long, lat, _, _):
+        case let .geoPoint(geoPointData):
+            let (_, long, lat, _, _) = (geoPointData.flags, geoPointData.long, geoPointData.lat, geoPointData.accessHash, geoPointData.accuracyRadius)
             self.init(latitude: lat, longitude: long)
         case .geoPointEmpty:
             return nil
@@ -860,14 +865,15 @@ extension TelegramBusinessLocation.Coordinates {
     }
     
     var apiInputGeoPoint: Api.InputGeoPoint {
-        return .inputGeoPoint(flags: 0, lat: self.latitude, long: self.longitude, accuracyRadius: nil)
+        return .inputGeoPoint(.init(flags: 0, lat: self.latitude, long: self.longitude, accuracyRadius: nil))
     }
 }
 
 extension TelegramBusinessLocation {
     convenience init(apiLocation: Api.BusinessLocation) {
         switch apiLocation {
-        case let .businessLocation(_, geoPoint, address):
+        case let .businessLocation(businessLocationData):
+            let (_, geoPoint, address) = (businessLocationData.flags, businessLocationData.geoPoint, businessLocationData.address)
             self.init(address: address, coordinates: geoPoint.flatMap { Coordinates(apiGeoPoint: $0) })
         }
     }
@@ -932,7 +938,8 @@ public final class TelegramBusinessChatLinks: Codable, Equatable {
 extension TelegramBusinessChatLinks.Link {
     convenience init(apiLink: Api.BusinessChatLink) {
         switch apiLink {
-        case let .businessChatLink(_, link, message, entities, title, views):
+        case let .businessChatLink(businessChatLinkData):
+            let (_, link, message, entities, title, views) = (businessChatLinkData.flags, businessChatLinkData.link, businessChatLinkData.message, businessChatLinkData.entities, businessChatLinkData.title, businessChatLinkData.views)
             self.init(url: link, message: message, entities: messageTextEntitiesFromApiEntities(entities ?? []), title: title, viewCount: views)
         }
     }
@@ -941,7 +948,8 @@ extension TelegramBusinessChatLinks.Link {
 extension TelegramBusinessChatLinks {
     static func fromApiLinks(apiLinks: Api.account.BusinessChatLinks) -> (result: TelegramBusinessChatLinks, users: [Api.User], chats: [Api.Chat]) {
         switch apiLinks {
-        case let .businessChatLinks(links, chats, users):
+        case let .businessChatLinks(businessChatLinksData):
+            let (links, chats, users) = (businessChatLinksData.links, businessChatLinksData.chats, businessChatLinksData.users)
             return (
                 TelegramBusinessChatLinks(links: links.map(Link.init(apiLink:))),
                 users,
@@ -989,7 +997,8 @@ public final class TelegramStarRefProgram: Codable, Equatable {
 extension TelegramStarRefProgram {
     convenience init(apiStarRefProgram: Api.StarRefProgram) {
         switch apiStarRefProgram {
-        case let .starRefProgram(_, botId, commissionPermille, durationMonths, endDate, dailyRevenuePerUser):
+        case let .starRefProgram(starRefProgramData):
+            let (botId, commissionPermille, durationMonths, endDate, dailyRevenuePerUser) = (starRefProgramData.botId, starRefProgramData.commissionPermille, starRefProgramData.durationMonths, starRefProgramData.endDate, starRefProgramData.dailyRevenuePerUser)
             self.init(botId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)), commissionPermille: commissionPermille, durationMonths: durationMonths, endDate: endDate, dailyRevenuePerUser: dailyRevenuePerUser.flatMap(StarsAmount.init(apiAmount:)))
         }
     }
@@ -1103,7 +1112,8 @@ extension TelegramProfileTab {
 extension TelegramStarRating {
     convenience init(apiRating: Api.StarsRating) {
         switch apiRating {
-        case let .starsRating(_, level, currentLevelStars, stars, nextLevelStars):
+        case let .starsRating(starsRatingData):
+            let (level, currentLevelStars, stars, nextLevelStars) = (starsRatingData.level, starsRatingData.currentLevelStars, starsRatingData.stars, starsRatingData.nextLevelStars)
             self.init(
                 level: level,
                 currentLevelStars: currentLevelStars,
@@ -1922,7 +1932,7 @@ func _internal_createBusinessChatLink(account: Account, message: String, entitie
         flags |= 1 << 1
     }
     
-    return account.network.request(Api.functions.account.createBusinessChatLink(link: .inputBusinessChatLink(flags: flags, message: message, entities: apiEntities, title: title)))
+    return account.network.request(Api.functions.account.createBusinessChatLink(link: .inputBusinessChatLink(.init(flags: flags, message: message, entities: apiEntities, title: title))))
     |> mapError { error -> AddBusinessChatLinkError in
         if error.errorDescription == "CHATLINKS_TOO_MUCH" {
             return .tooManyLinks
@@ -1962,7 +1972,7 @@ func _internal_editBusinessChatLink(account: Account, url: String, message: Stri
         flags |= 1 << 1
     }
     
-    return account.network.request(Api.functions.account.editBusinessChatLink(slug: url, link: .inputBusinessChatLink(flags: flags, message: message, entities: apiEntities, title: title)))
+    return account.network.request(Api.functions.account.editBusinessChatLink(slug: url, link: .inputBusinessChatLink(.init(flags: flags, message: message, entities: apiEntities, title: title))))
     |> mapError { _ -> AddBusinessChatLinkError in
         return .generic
     }

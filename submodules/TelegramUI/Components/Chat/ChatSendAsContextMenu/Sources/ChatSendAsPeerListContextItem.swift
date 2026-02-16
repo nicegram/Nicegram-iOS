@@ -12,6 +12,7 @@ import TelegramStringFormatting
 import AvatarNode
 import AccountContext
 import UndoUI
+import ContextControllerImpl
 
 public final class ChatSendAsPeerListContextItem: ContextMenuCustomItem {
     let context: AccountContext

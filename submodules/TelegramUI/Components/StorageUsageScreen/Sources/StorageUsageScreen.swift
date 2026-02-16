@@ -90,6 +90,13 @@ private final class SignpostContextImpl: SignpostContext {
 
 #endif
 
+public enum StorageUsageEntryTag {
+    case edit
+    case autoRemove
+    case clearCache
+    case maxCache
+}
+
 private extension StorageUsageScreenComponent.Category {
     init(_ category: StorageUsageStats.CategoryKey) {
         switch category {
@@ -1209,7 +1216,7 @@ final class StorageUsageScreenComponent: Component {
             }
             
             let navigationRightButtonsBackgroundSize = CGSize(width: max(44.0, rightButtonsWidth), height: 44.0)
-            self.navigationRightButtonsBackground.update(size: navigationRightButtonsBackgroundSize, cornerRadius: 44.0 * 0.5, isDark: environment.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: environment.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: transition)
+            self.navigationRightButtonsBackground.update(size: navigationRightButtonsBackgroundSize, cornerRadius: 44.0 * 0.5, isDark: environment.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
             let navigationRightButtonsBackgroundFrame = CGRect(origin: CGPoint(x: availableSize.width - environment.safeInsets.right - 16.0 - navigationRightButtonsBackgroundSize.width, y: environment.statusBarHeight + 2.0 + floor((environment.navigationHeight - environment.statusBarHeight - 44.0) * 0.5)), size: navigationRightButtonsBackgroundSize)
             transition.setFrame(view: self.navigationRightButtonsBackground, frame: navigationRightButtonsBackgroundFrame)
             
@@ -2089,7 +2096,7 @@ final class StorageUsageScreenComponent: Component {
                             ))
                             let items = ContextController.Items(content: .list(itemList))
                             
-                            let controller = ContextController(
+                            let controller = makeContextController(
                                 presentationData: presentationData,
                                 source: .extracted(StorageUsageListContextExtractedContentSource(contentView: sourceView)), items: .single(items), recognizer: nil, gesture: gesture)
                             
@@ -2621,7 +2628,7 @@ final class StorageUsageScreenComponent: Component {
                 switch previewData {
                 case let .gallery(gallery):
                     gallery.setHintWillBePresentedInPreviewingContext(true)
-                    let contextController = ContextController(
+                    let contextController = makeContextController(
                         presentationData: presentationData,
                         source: .controller(StorageUsageListContextGalleryContentSourceImpl(
                             controller: gallery,
@@ -2724,7 +2731,7 @@ final class StorageUsageScreenComponent: Component {
             ))
             let items = ContextController.Items(content: .list(itemList))
             
-            let controller = ContextController(
+            let controller = makeContextController(
                 presentationData: presentationData,
                 source: .extracted(StorageUsageListContextExtractedContentSource(contentView: sourceView)), items: .single(items), recognizer: nil, gesture: gesture)
             
@@ -3281,7 +3288,7 @@ final class StorageUsageScreenComponent: Component {
                     let items: Signal<ContextController.Items, NoError> = .single(ContextController.Items(content: .list(subItems)))
                     let source: ContextContentSource = .reference(StorageUsageContextReferenceContentSource(sourceView: sourceLabelView))
                     
-                    let contextController = ContextController(
+                    let contextController = makeContextController(
                         presentationData: presentationData,
                         source: source,
                         items: items,
@@ -3318,7 +3325,7 @@ public final class StorageUsageScreen: ViewControllerComponentContainer {
     
     fileprivate var childCompleted: ((@escaping () -> Void) -> Void)?
     
-    public init(context: AccountContext, makeStorageUsageExceptionsScreen: @escaping (CacheStorageSettings.PeerStorageCategory) -> ViewController?, peer: EnginePeer? = nil) {
+    public init(context: AccountContext, makeStorageUsageExceptionsScreen: @escaping (CacheStorageSettings.PeerStorageCategory) -> ViewController?, peer: EnginePeer? = nil, focusOnItemTag: StorageUsageEntryTag? = nil) {
         self.context = context
         
         self.overNavigationContainer = SparseContainerView()

@@ -1232,7 +1232,7 @@ public func createGroupControllerImpl(context: AccountContext, peerIds: [PeerId]
                 let items: Signal<ContextController.Items, NoError> = .single(ContextController.Items(content: .list(subItems)))
                 let source: ContextContentSource = .reference(CreateGroupContextReferenceContentSource(sourceView: sourceNode.labelNode.view))
                 
-                let contextController = ContextController(
+                let contextController = makeContextController(
                     presentationData: presentationData,
                     source: source,
                     items: items,

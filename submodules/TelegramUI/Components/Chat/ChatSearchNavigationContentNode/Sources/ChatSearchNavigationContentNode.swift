@@ -19,6 +19,7 @@ private let searchBarFont = Font.regular(17.0)
 public final class ChatSearchNavigationContentNode: NavigationBarContentNode {
     private let context: AccountContext
     private var theme: PresentationTheme
+    private var preferClearGlass: Bool
     private let strings: PresentationStrings
     private let chatLocation: ChatLocation
     
@@ -39,6 +40,7 @@ public final class ChatSearchNavigationContentNode: NavigationBarContentNode {
     public init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, chatLocation: ChatLocation, interaction: ChatPanelInterfaceInteraction, presentationInterfaceState: ChatPresentationInterfaceState) {
         self.context = context
         self.theme = theme
+        self.preferClearGlass = presentationInterfaceState.preferredGlassType == .clear
         self.strings = strings
         self.chatLocation = chatLocation
         self.interaction = interaction
@@ -65,6 +67,7 @@ public final class ChatSearchNavigationContentNode: NavigationBarContentNode {
                 keyboard: theme.rootController.keyboardColor
             ),
             presentationTheme: theme,
+            preferClearGlass: presentationInterfaceState.preferredGlassType == .clear,
             strings: strings,
             fieldStyle: .inlineNavigation,
             forceSeparator: false,
@@ -159,7 +162,7 @@ public final class ChatSearchNavigationContentNode: NavigationBarContentNode {
         self.backgroundContainer.update(size: size, isDark: self.theme.overallDarkAppearance, transition: transition)
         
         transition.setFrame(view: self.backgroundView, frame: backgroundFrame)
-        self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: transition)
+        self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: self.preferClearGlass ? .clear : .panel), isInteractive: true, transition: transition)
 
         if self.iconView.image == nil {
             self.iconView.image = UIImage(bundleImageName: "Navigation/Search")?.withRenderingMode(.alwaysTemplate)
@@ -222,7 +225,7 @@ public final class ChatSearchNavigationContentNode: NavigationBarContentNode {
         self.close.icon.tintColor = self.theme.chat.inputPanel.panelControlColor
         
         transition.setFrame(view: self.close.background, frame: closeFrame)
-        self.close.background.update(size: closeFrame.size, cornerRadius: closeFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: transition)
+        self.close.background.update(size: closeFrame.size, cornerRadius: closeFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: self.preferClearGlass ? .clear : .panel), isInteractive: true, transition: transition)
         
         return size
     }
@@ -250,6 +253,7 @@ public final class ChatSearchNavigationContentNode: NavigationBarContentNode {
                     keyboard: presentationInterfaceState.theme.rootController.keyboardColor
                 ),
                 presentationTheme: presentationInterfaceState.theme,
+                preferClearGlass: presentationInterfaceState.preferredGlassType == .clear,
                 strings: presentationInterfaceState.strings
             )
             
@@ -289,8 +293,9 @@ public final class ChatSearchNavigationContentNode: NavigationBarContentNode {
             }
         }
         
-        if presentationInterfaceState.theme != self.theme {
+        if presentationInterfaceState.theme != self.theme || (presentationInterfaceState.preferredGlassType == .clear) != self.preferClearGlass {
             self.theme = presentationInterfaceState.theme
+            self.preferClearGlass = presentationInterfaceState.preferredGlassType == .clear
             if let params = self.params {
                 let _ = self.updateLayout(size: params.size, leftInset: params.leftInset, rightInset: params.rightInset, transition: .immediate)
             }

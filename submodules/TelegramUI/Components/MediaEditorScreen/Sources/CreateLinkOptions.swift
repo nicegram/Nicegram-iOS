@@ -25,7 +25,7 @@ func presentLinkOptionsController(context: AccountContext, selfController: Creat
         return
     }
         
-    let contextController = ContextController(
+    let contextController = makeContextController(
         presentationData: context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkColorPresentationTheme),
         configuration: ContextController.Configuration(
             sources: sources,

@@ -42,8 +42,9 @@ public class ItemListCheckboxItem: ListViewItem, ItemListItem {
     public let sectionId: ItemListSectionId
     let action: () -> Void
     let deleteAction: (() -> Void)?
+    public let tag: Any?
     
-    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage? = nil, iconSize: CGSize? = nil, iconPlacement: IconPlacement = .default, title: String, subtitle: String? = nil, style: ItemListCheckboxItemStyle, color: ItemListCheckboxItemColor = .accent, textColor: TextColor = .primary, checked: Bool, enabled: Bool = true, zeroSeparatorInsets: Bool, sectionId: ItemListSectionId, action: @escaping () -> Void, deleteAction: (() -> Void)? = nil) {
+    public init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage? = nil, iconSize: CGSize? = nil, iconPlacement: IconPlacement = .default, title: String, subtitle: String? = nil, style: ItemListCheckboxItemStyle, color: ItemListCheckboxItemColor = .accent, textColor: TextColor = .primary, checked: Bool, enabled: Bool = true, zeroSeparatorInsets: Bool, sectionId: ItemListSectionId, action: @escaping () -> Void, deleteAction: (() -> Void)? = nil, tag: Any? = nil) {
         self.presentationData = presentationData
         self.systemStyle = systemStyle
         self.icon = icon
@@ -60,6 +61,7 @@ public class ItemListCheckboxItem: ListViewItem, ItemListItem {
         self.sectionId = sectionId
         self.action = action
         self.deleteAction = deleteAction
+        self.tag = tag
     }
     
     public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -125,6 +127,10 @@ public class ItemListCheckboxItemNode: ItemListRevealOptionsItemNode {
     
     override public var controlsContainer: ASDisplayNode {
         return self.contentParentNode
+    }
+    
+    public var tag: ItemListItemTag? {
+        return self.item?.tag as? ItemListItemTag
     }
     
     public init() {

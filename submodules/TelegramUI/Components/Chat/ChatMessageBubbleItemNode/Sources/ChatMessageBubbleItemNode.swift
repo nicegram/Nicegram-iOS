@@ -29,7 +29,6 @@ import NGData
 import NGTranslate
 import NGStrings
 import NGUI
-import NGWebUtils
 import TelegramCore
 import NaturalLanguage
 //
@@ -152,13 +151,9 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
     outer: for (message, itemAttributes) in item.content {
         for attribute in message.attributes {
             if let attribute = attribute as? RestrictedContentMessageAttribute, attribute.platformText(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }) != nil {
-                // Nicegram
-                if isAllowedMessage(restrictionReason: attribute.platformText(platform: "ios", contentSettings: item.context.currentContentSettings.with { $0 }, extractReason: true), contentSettings: item.context.currentContentSettings.with { $0 }) {
-                } else {
-                    result.append((message, ChatMessageRestrictedBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
-                    needReactions = false
-                    break outer
-                }
+                result.append((message, ChatMessageRestrictedBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
+                needReactions = false
+                break outer
             } else if let _ = attribute as? PaidStarsMessageAttribute, !addedPriceInfo, message.id.peerId.namespace == Namespaces.Peer.CloudUser {
                 result.append((message, ChatMessageActionBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 addedPriceInfo = true
@@ -2932,7 +2927,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 ReplyMarkupMessageAttribute(
                     rows: [
                         ReplyMarkupRow(
-                            buttons: [ReplyMarkupButton(title: item.presentationData.strings.Channel_AdminLog_ShowMoreMessages(Int32(messages.count - 1)), titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: MemoryBuffer(data: Data())))]
+                            buttons: [ReplyMarkupButton(title: item.presentationData.strings.Channel_AdminLog_ShowMoreMessages(Int32(messages.count - 1)), titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: MemoryBuffer(data: Data())), style: nil)]
                         )
                     ],
                     flags: [],
@@ -2971,8 +2966,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     ReplyMarkupMessageAttribute(
                         rows: [
                             ReplyMarkupRow(buttons: [
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_GiftPurchaseOffer_Reject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline)),
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_GiftPurchaseOffer_Accept, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove))
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_GiftPurchaseOffer_Reject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline), style: nil),
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_GiftPurchaseOffer_Accept, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove), style: nil)
                             ])
                         ],
                         flags: [],
@@ -3020,11 +3015,11 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 ReplyMarkupMessageAttribute(
                     rows: [
                         ReplyMarkupRow(buttons: [
-                            ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionReject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline)),
-                            ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionApprove, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove))
+                            ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionReject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline), style: nil),
+                            ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionApprove, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove), style: nil)
                         ]),
                         ReplyMarkupRow(buttons: [
-                            ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionSuggestChanges, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonSuggestChanges))
+                            ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionSuggestChanges, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonSuggestChanges), style: nil)
                         ])
                     ],
                     flags: [],
@@ -3058,7 +3053,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 ReplyMarkupMessageAttribute(
                     rows: [
                         ReplyMarkupRow(buttons: [
-                            ReplyMarkupButton(title: item.presentationData.strings.Chat_MessageContinueLastThread, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: button))
+                            ReplyMarkupButton(title: item.presentationData.strings.Chat_MessageContinueLastThread, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: button), style: nil)
                         ])
                     ],
                     flags: [],
@@ -5641,7 +5636,6 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         }
                     }
                 }
-                // NG_TODO: Fix code/pre copy
                 if let forwardInfoNode = self.forwardInfoNode, forwardInfoNode.frame.contains(location) {
                     if let item = self.item, let forwardInfo = item.message.forwardInfo {
                         let performAction: () -> Void = { [weak forwardInfoNode] in

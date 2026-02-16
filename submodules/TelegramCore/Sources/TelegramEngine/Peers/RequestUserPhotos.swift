@@ -40,10 +40,12 @@ func _internal_requestPeerPhotos(accountPeerId: PeerId, postbox: Postbox, networ
                     let totalCount:Int
                     let photos: [Api.Photo]
                     switch result {
-                        case let .photos(photosValue, _):
+                        case let .photos(photosData):
+                            let (photosValue, _) = (photosData.photos, photosData.users)
                             photos = photosValue
                             totalCount = photos.count
-                        case let .photosSlice(count, photosValue, _):
+                        case let .photosSlice(photosSliceData):
+                            let (count, photosValue, _) = (photosSliceData.count, photosSliceData.photos, photosSliceData.users)
                             photos = photosValue
                             totalCount = Int(count)
                     }
@@ -53,7 +55,8 @@ func _internal_requestPeerPhotos(accountPeerId: PeerId, postbox: Postbox, networ
                         if let image = telegramMediaImageFromApiPhoto(photos[i]), let reference = image.reference {
                             var date: Int32 = 0
                             switch photos[i] {
-                                case let .photo(_, _, _, _, apiDate, _, _, _):
+                                case let .photo(photoData):
+                                    let apiDate = photoData.date
                                     date = apiDate
                                 case .photoEmpty:
                                     break
@@ -79,15 +82,18 @@ func _internal_requestPeerPhotos(accountPeerId: PeerId, postbox: Postbox, networ
                     let chats: [Api.Chat]
                     let users: [Api.User]
                     switch result {
-                        case let .channelMessages(_, _, _, _, apiMessages, _, apiChats, apiUsers):
+                        case let .channelMessages(channelMessagesData):
+                            let (apiMessages, apiChats, apiUsers) = (channelMessagesData.messages, channelMessagesData.chats, channelMessagesData.users)
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messages(apiMessages, _, apiChats, apiUsers):
+                        case let .messages(messagesData):
+                            let (apiMessages, apiChats, apiUsers) = (messagesData.messages, messagesData.chats, messagesData.users)
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messagesSlice(_, _, _, _, _, apiMessages, _, apiChats, apiUsers):
+                        case let .messagesSlice(messagesSliceData):
+                            let (apiMessages, apiChats, apiUsers) = (messagesSliceData.messages, messagesSliceData.chats, messagesSliceData.users)
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers

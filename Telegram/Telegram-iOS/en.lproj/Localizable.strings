@@ -15669,3 +15669,103 @@ Error: %8$@";
 
 "Conversation.Summary.Limit.Title" = "AI Summary";
 "Conversation.Summary.Limit.Text" = "Summarize large messages with AI – unlimited with Telegram Premium.";
+
+"Appearance.SendWithCmdEnter" = "Send Messages with ⌘+Enter";
+
+"Notification.StarsGift.Crafted" = "You crafted a new gift";
+
+"Gift.Craft.Title" = "Craft Gift";
+"Gift.Craft.Description" = "Add up to **4 gifts** to craft new\n**$ %@**.\n\nIf crafting fails, all used gifts\nwill be lost.";
+"Gift.Craft.ViewVariants" = "View all craftable models";
+"Gift.Craft.BackdropTooltip" = "**%1$@%** chance the crafted gift will have **%2$@** backdrop.";
+"Gift.Craft.SymbolTooltip" = "**%1$@%** chance the crafted gift will have **%2$@** symbol.";
+"Gift.Craft.Craft" = "Craft %@";
+"Gift.Craft.Crafting.Title" = "Crafting";
+"Gift.Craft.Crafting.Description" = "If crafting fails, all used gifts\nwill be lost.";
+"Gift.Craft.Crafting.SuccessChance" = "%@% Success Chance";
+"Gift.Craft.CraftingFailed.Title" = "Crafting Failed";
+"Gift.Craft.CraftingFailed.Text_1" = "This crafting attempt was unsuccessful.\n**%@ gift** was lost.";
+"Gift.Craft.CraftingFailed.Text_any" = "This crafting attempt was unsuccessful.\n**%@ gifts** were lost.";
+"Gift.Craft.CraftingFailed.CraftAnotherGift" = "Craft Another Gift";
+"Gift.Craft.Info.Title" = "Gift Crafting";
+"Gift.Craft.Info.Description" = "Turn your gifts intro rare, epic,\nuncommon and legendary versions.";
+"Gift.Craft.Info.Paragraph1.Title" = "Get Rare Models";
+"Gift.Craft.Info.Paragraph1.Text" = "Select up to 4 gifts to craft a new exclusive model.";
+"Gift.Craft.Info.Paragraph2.Title" = "Maximize Chances";
+"Gift.Craft.Info.Paragraph2.Text" = "Combine more gifts to increase your odds of success.";
+"Gift.Craft.Info.Paragraph3.Title" = "Affect the Result";
+"Gift.Craft.Info.Paragraph3.Text" = "Use gifts with the same attribute to boost it's chance.";
+"Gift.Craft.Info.Understood" = "Understood";
+"Gift.Craft.Unavailable.Title" = "Crafting Unavailable";
+"Gift.Craft.Unavailable.Text" = "This gift will become available for crafting on **%@**.";
+"Gift.Craft.Error.NotAvailable" = "One of the gifts is not available for crafting.";
+
+"Gift.Craft.Select.Title" = "Select Gifts";
+"Gift.Craft.Select.YourGifts" = "Your Gifts";
+"Gift.Craft.Select.SaleGiftsCount_1" = "%@ Suitable Gift On Sale";
+"Gift.Craft.Select.SaleGiftsCount_any" = "%@ Suitable Gifts On Sale";
+"Gift.Craft.Select.NoGiftsFromCollection" = "You don't have other gifts\nfrom this collection";
+
+"Gift.Attribute.Rare" = "rare";
+"Gift.Attribute.Legendary" = "legendary";
+"Gift.Attribute.Epic" = "epic";
+"Gift.Attribute.Uncommon" = "uncommon";
+
+"SocksProxySetup.CheckStatus" = "Check Status";
+"SocksProxySetup.Warning.Title" = "Warning";
+"SocksProxySetup.Warning.Text" = "This action will expose your IP address to the admin of the proxy server.";
+"SocksProxySetup.Warning.Proceed" = "Proceed";
+
+"Gift.Variants.CollectionInfo.CraftableModel_1" = "**%@** craftable model";
+"Gift.Variants.CollectionInfo.CraftableModel_any" = "**%@** craftable models";
+"Gift.Variants.ViewCraftableModels" = "View Craftable Models";
+"Gift.Variants.ViewPrimaryModels" = "View Primary Models";
+
+"Gift.View.OnSale" = "On sale for %@";
+
+"Gift.Store.Balance.MyStars" = "My Stars";
+"Gift.Store.Balance.MyTon" = "My TON";
+
+"Resolve.GiftErrorNotFound" = "Sorry, this gift doesn't seem to exist.";
+"Resolve.GiftErrorBurned" = "Sorry, this gift has already been burned.";
+
+"Notification.StarGift.Burned" = "burned";
+
+"AuthConfirmation.Title" = "Log in to **%@**";
+"AuthConfirmation.Description" = "This site will receive your **name**,\n**username** and **profile photo**.";
+"AuthConfirmation.Device" = "Device";
+"AuthConfirmation.IpAddress" ="IP Address";
+"AuthConfirmation.Info" ="This login attempt came from the device above.";
+"AuthConfirmation.AllowMessages" = "Allow Messages";
+"AuthConfirmation.AllowMessagesInfo" = "This will allow %@ to message you.";
+"AuthConfirmation.Cancel" = "Cancel";
+"AuthConfirmation.LogIn" = "Log In";
+
+"AuthConfirmation.PhoneNumberConfirmation.Title" = "Phone Number";
+"AuthConfirmation.PhoneNumberConfirmation.Text" = "**%1$@** wants to access your phone number **%2$@**.\n\nAllow access?";
+"AuthConfirmation.PhoneNumberConfirmation.Deny" = "Deny";
+"AuthConfirmation.PhoneNumberConfirmation.Allow" = "Allow";
+
+"AuthConfirmation.LoginSuccess.Title" = "Login Successful";
+"AuthConfirmation.LoginSuccess.Text" = "You are now logged in to [%@]().";
+"AuthConfirmation.LoginSuccess.TextNoNumber" = "You are logged in to [%@](), but you didn't grant access to your phone number.";
+
+"AuthConfirmation.LoginFail.Title" = "Login Failed";
+"AuthConfirmation.LoginFail.Text" = "Please try logging in to [%@]() again.";
+
+"Notification.GroupCreatorChangePending" = "%2$@ will become the new main admin in 7 days if %1$@ does not return.";
+"Notification.GroupCreatorChangeApplied" = "%1$@ has transferred ownership of the group to %2$@.";
+
+"Notification.StarGift.Crafted.Title" = "Crafted Gift";
+"Notification.StarGift.Upgraded.Title" = "Upgraded Gift";
+"Notification.StarGift.Purchased.Title" = "Purchased Gift";
+
+"LeaveGroup.Title" = "Leave %@";
+"LeaveGroup.Text" = "If you leave, **%1$@** will become the owner of **%2$@** in **1 week**.";
+"LeaveGroup.AppointAnotherOwner" = "Appoint Another Owner";
+"LeaveGroup.Proceed" = "Leave Group";
+"AppointAnotherOwner.Title" = "Choose New Owner";
+
+"Gift.View.Context.Craft" = "Craft";
+
+"Group.OwnershipTransfer.DescriptionShortInfo" = "This will transfer the full **owner rights** for **%1$@** to **%2$@**.";

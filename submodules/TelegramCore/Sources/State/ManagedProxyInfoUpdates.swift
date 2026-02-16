@@ -166,7 +166,8 @@ public final class ServerSuggestionInfo: Codable, Equatable {
 extension ServerSuggestionInfo.Item.Text {
     convenience init(_ apiText: Api.TextWithEntities) {
         switch apiText {
-        case let .textWithEntities(text, entities):
+        case let .textWithEntities(textWithEntitiesData):
+            let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
             self.init(string: text, entities: messageTextEntitiesFromApiEntities(entities))
         }
     }
@@ -175,7 +176,8 @@ extension ServerSuggestionInfo.Item.Text {
 extension ServerSuggestionInfo.Item {
     convenience init(_ apiItem: Api.PendingSuggestion) {
         switch apiItem {
-        case let .pendingSuggestion(suggestion, title, description, url):
+        case let .pendingSuggestion(pendingSuggestionData):
+            let (suggestion, title, description, url) = (pendingSuggestionData.suggestion, pendingSuggestionData.title, pendingSuggestionData.description, pendingSuggestionData.url)
             self.init(
                 id: suggestion,
                 title: ServerSuggestionInfo.Item.Text(title),
@@ -189,12 +191,12 @@ extension ServerSuggestionInfo.Item {
 func _internal_fetchPromoInfo(accountPeerId: EnginePeer.Id, postbox: Postbox, network: Network) -> Signal<Void, NoError> {
     return network.request(Api.functions.help.getPromoData())
     |> `catch` { _ -> Signal<Api.help.PromoData, NoError> in
-        return .single(.promoDataEmpty(expires: 10 * 60))
+        return .single(.promoDataEmpty(.init(expires: 10 * 60)))
     }
     |> mapToSignal { data -> Signal<Void, NoError> in
         return postbox.transaction { transaction -> Void in
             switch data {
-            case .promoDataEmpty:
+            case .promoDataEmpty(_):
                 transaction.replaceAdditionalChatListItems([])
                 
                 let suggestionInfo = ServerSuggestionInfo(
@@ -206,7 +208,8 @@ func _internal_fetchPromoInfo(accountPeerId: EnginePeer.Id, postbox: Postbox, ne
                 transaction.updatePreferencesEntry(key: PreferencesKeys.serverSuggestionInfo(), { _ in
                     return PreferencesEntry(suggestionInfo)
                 })
-            case let .promoData(flags, expires, peer, psaType, psaMessage, pendingSuggestions, dismissedSuggestions, customPendingSuggestion, chats, users):
+            case let .promoData(promoDataData):
+                let (flags, expires, peer, psaType, psaMessage, pendingSuggestions, dismissedSuggestions, customPendingSuggestion, chats, users) = (promoDataData.flags, promoDataData.expires, promoDataData.peer, promoDataData.psaType, promoDataData.psaMessage, promoDataData.pendingSuggestions, promoDataData.dismissedSuggestions, promoDataData.customPendingSuggestion, promoDataData.chats, promoDataData.users)
                 let _ = expires
                 
                 let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)

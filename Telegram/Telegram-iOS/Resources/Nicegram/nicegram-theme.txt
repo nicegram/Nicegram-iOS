@@ -360,13 +360,17 @@ chat:
     panelSeparator: 262626
     panelControlAccent: cfab73
     panelControl: 7e7e7e
+    panelControl_v2: 7e7e7e
     panelControlDisabled: 454545
     panelControlDestructive: e96058
     inputBg: 2b2b2b
     inputStroke: 2b2b2b
     inputPlaceholder: 7e7e7e
+    inputPlaceholder_v2: 7e7e7e
     inputText: ffffff
+    inputText_v2: ffffff
     inputControl: 7e7e7e
+    inputControl_v2: 7e7e7e
     actionControlBg: cfab73
     actionControlFg: ffffff
     primaryText: ffffff

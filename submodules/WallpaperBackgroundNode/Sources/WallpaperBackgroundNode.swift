@@ -51,6 +51,44 @@ private func calculateWallpaperBrightness(from colors: [UInt32]) -> CGFloat {
     return UIColor.average(of: colors.map(UIColor.init(rgb:))).hsb.b
 }
 
+private func calculateWallpaperSaturation(from colors: [UInt32]) -> CGFloat {
+    guard !colors.isEmpty else {
+        return 0.0
+    }
+
+    var hsbValues: [(h: CGFloat, s: CGFloat, b: CGFloat)] = []
+    for color in colors {
+        hsbValues.append(UIColor(rgb: color).hsb)
+    }
+
+    // Check if any two colors have different hues (>60° apart)
+    var colorsAreDiverse = false
+    outer: for i in 0 ..< hsbValues.count {
+        for j in (i + 1) ..< hsbValues.count {
+            let hueDiff = abs(hsbValues[i].h - hsbValues[j].h)
+            let angularDiff = min(hueDiff, 1.0 - hueDiff)
+            if angularDiff > 0.167 {
+                colorsAreDiverse = true
+                break outer
+            }
+        }
+    }
+
+    var maxSaturation: CGFloat = 0.0
+    for hsb in hsbValues {
+        let saturation: CGFloat
+        if colorsAreDiverse {
+            // Diverse colors: only penalize darkness, not brightness
+            saturation = hsb.s * min(hsb.b * 2.0, 1.0)
+        } else {
+            // Similar colors: original formula
+            saturation = hsb.s * min(hsb.b, 1.0 - hsb.b) * 2.0
+        }
+        maxSaturation = max(maxSaturation, saturation)
+    }
+    return maxSaturation
+}
+
 private func calculateWallpaperBrightness(from image: UIImage) -> CGFloat {
     guard let cgImage = image.cgImage else {
         return 1.0
@@ -100,6 +138,51 @@ private func calculateWallpaperBrightness(from image: UIImage) -> CGFloat {
     }
 
     return totalLuminance / CGFloat(pixelCount)
+}
+
+private func calculateWallpaperSaturation(from image: UIImage) -> CGFloat {
+    guard let cgImage = image.cgImage else {
+        return 0.0
+    }
+
+    let targetSize = CGSize(width: 10.0, height: 10.0)
+    let width = Int(targetSize.width)
+    let height = Int(targetSize.height)
+    let bytesPerPixel = 4
+    let bytesPerRow = bytesPerPixel * width
+    let bitsPerComponent = 8
+
+    var pixelData = [UInt8](repeating: 0, count: width * height * bytesPerPixel)
+
+    guard let context = CGContext(
+        data: &pixelData,
+        width: width,
+        height: height,
+        bitsPerComponent: bitsPerComponent,
+        bytesPerRow: bytesPerRow,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ) else {
+        return 0.0
+    }
+
+    context.draw(cgImage, in: CGRect(origin: .zero, size: targetSize))
+
+    var totalWeightedSaturation: CGFloat = 0.0
+    let pixelCount = width * height
+
+    for i in 0 ..< pixelCount {
+        let offset = i * bytesPerPixel
+        let r = CGFloat(pixelData[offset]) / 255.0
+        let g = CGFloat(pixelData[offset + 1]) / 255.0
+        let b = CGFloat(pixelData[offset + 2]) / 255.0
+
+        let hsb = UIColor(red: r, green: g, blue: b, alpha: 1.0).hsb
+        let weightedSaturation = hsb.s * min(hsb.b, 1.0 - hsb.b) * 2.0
+        totalWeightedSaturation += weightedSaturation
+    }
+
+    return totalWeightedSaturation / CGFloat(pixelCount)
 }
 
 public enum WallpaperBubbleType {
@@ -156,14 +239,24 @@ public struct WallpaperEdgeEffectEdge: Equatable {
 }
 
 public protocol WallpaperEdgeEffectNode: ASDisplayNode {
-    func update(rect: CGRect, edge: WallpaperEdgeEffectEdge, blur: Bool, containerSize: CGSize, transition: ContainedViewLayoutTransition)
+    func update(rect: CGRect, edge: WallpaperEdgeEffectEdge, alpha: CGFloat, blur: Bool, containerSize: CGSize, transition: ContainedViewLayoutTransition)
+}
+
+public struct WallpaperContentStats: Equatable {
+    public let isDark: Bool
+    public let isSaturated: Bool
+    
+    public init(isDark: Bool, isSaturated: Bool) {
+        self.isDark = isDark
+        self.isSaturated = isSaturated
+    }
 }
 
 public protocol WallpaperBackgroundNode: ASDisplayNode {
     var isReady: Signal<Bool, NoError> { get }
     var rotation: CGFloat { get set }
-    var isDark: Bool? { get }
-    var isDarkUpdated: (() -> Void)? { get set }
+    var contentStats: WallpaperContentStats? { get }
+    var contentStatsUpdated: (() -> Void)? { get set }
 
     func update(wallpaper: TelegramWallpaper, animated: Bool)
     func update(wallpaper: TelegramWallpaper, starGift: StarGift?, animated: Bool)
@@ -1041,13 +1134,13 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
     }
     private static var cachedSharedPattern: (PatternKey, UIImage)?
     
-    public private(set) var isDark: Bool?
-    public var isDarkUpdated: (() -> Void)?
+    public private(set) var contentStats: WallpaperContentStats?
+    public var contentStatsUpdated: (() -> Void)?
 
-    private func updateIsDark(_ isDark: Bool?) {
-        if self.isDark != isDark {
-            self.isDark = isDark
-            self.isDarkUpdated?()
+    private func updateContentStats(_ contentStats: WallpaperContentStats?) {
+        if self.contentStats != contentStats {
+            self.contentStats = contentStats
+            self.contentStatsUpdated?()
         }
     }
 
@@ -1205,9 +1298,9 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             self.wallpaperDisposable.set(nil)
             
             if case let .file(file) = wallpaper, file.isPattern {
-                self.updateIsDark(nil)
+                self.updateContentStats(nil)
             } else {
-                self.updateIsDark(calculateWallpaperBrightness(from: gradientColors) <= 0.3)
+                self.updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: gradientColors) <= 0.34, isSaturated: calculateWallpaperSaturation(from: gradientColors) > 0.35))
             }
         } else {
             if let gradientBackgroundNode = self.gradientBackgroundNode {
@@ -1237,20 +1330,20 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                 self.contentNode.contents = image?.cgImage
                 self.blurredBackgroundContents = image
                 self.wallpaperDisposable.set(nil)
-                self.updateIsDark(calculateWallpaperBrightness(from: gradientColors) <= 0.3)
+                updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: gradientColors) <= 0.3, isSaturated: calculateWallpaperSaturation(from: gradientColors) > 0.35))
             } else if gradientColors.count >= 1 {
                 self.contentNode.backgroundColor = UIColor(rgb: gradientColors[0])
                 self.contentNode.contents = nil
                 self.blurredBackgroundContents = nil
                 self.wallpaperDisposable.set(nil)
-                self.updateIsDark(calculateWallpaperBrightness(from: gradientColors) <= 0.3)
+                updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: gradientColors) <= 0.3, isSaturated: calculateWallpaperSaturation(from: gradientColors) > 0.35))
             } else {
                 self.contentNode.backgroundColor = .white
                 if let image = chatControllerBackgroundImage(theme: nil, wallpaper: wallpaper, mediaBox: self.context.sharedContext.accountManager.mediaBox, knockoutMode: false) {
                     self.contentNode.contents = image.cgImage
                     self.blurredBackgroundContents = generateBlurredContents(image: image, dimColor: wallpaperDimColor)
                     self.wallpaperDisposable.set(nil)
-                    self.updateIsDark(calculateWallpaperBrightness(from: image) <= 0.55)
+                    updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: image) <= 0.55, isSaturated: calculateWallpaperSaturation(from: image) > 0.35))
                     Queue.mainQueue().justDispatch {
                         self._isReady.set(true)
                     }
@@ -1258,7 +1351,7 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                     self.contentNode.contents = image.cgImage
                     self.blurredBackgroundContents = generateBlurredContents(image: image, dimColor: wallpaperDimColor)
                     self.wallpaperDisposable.set(nil)
-                    self.updateIsDark(calculateWallpaperBrightness(from: image) <= 0.55)
+                    self.updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: image) <= 0.55, isSaturated: calculateWallpaperSaturation(from: image) > 0.35))
                     Queue.mainQueue().justDispatch {
                         self._isReady.set(true)
                     }
@@ -1271,7 +1364,7 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
                         strongSelf.contentNode.contents = image?.0?.cgImage
                         if let image = image?.0 {
                             strongSelf.blurredBackgroundContents = generateBlurredContents(image: image, dimColor: wallpaperDimColor)
-                            strongSelf.updateIsDark(calculateWallpaperBrightness(from: image) <= 0.55)
+                            strongSelf.updateContentStats(WallpaperContentStats(isDark: calculateWallpaperBrightness(from: image) <= 0.55, isSaturated: calculateWallpaperSaturation(from: image) > 0.35))
                         } else {
                             strongSelf.blurredBackgroundContents = nil
                         }
@@ -1507,7 +1600,6 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
             
             if self.validPatternGeneratedImage != updatedGeneratedImage {
                 self.validPatternGeneratedImage = updatedGeneratedImage
-
                 if let cachedValidPatternImage = WallpaperBackgroundNodeImpl.cachedValidPatternImage, cachedValidPatternImage.generated == updatedGeneratedImage {
                     self.patternImageLayer.suspendCompositionUpdates = true
                     self.updatePatternPresentation()
@@ -1570,7 +1662,7 @@ public final class WallpaperBackgroundNodeImpl: ASDisplayNode, WallpaperBackgrou
         if let validPatternImage = self.validPatternImage, !validPatternImage.rects.isEmpty, let starGift = validPatternImage.starGift {
             if case let .unique(uniqueGift) = starGift {
                 for attribute in uniqueGift.attributes {
-                    if case let .model(_, file, _) = attribute {
+                    if case let .model(_, file, _, _) = attribute {
                         modelFile = file
                     }
                 }

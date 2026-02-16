@@ -309,7 +309,7 @@ func _internal_updateStarsReactionPrivacy(account: Account, messageId: MessageId
             guard let inputPrivacyPeer else {
                 return .complete()
             }
-            mappedPrivacy = .paidReactionPrivacyPeer(peer: inputPrivacyPeer)
+            mappedPrivacy = .paidReactionPrivacyPeer(.init(peer: inputPrivacyPeer))
         }
         
         return account.network.request(Api.functions.messages.togglePaidReactionPrivacy(peer: inputPeer, msgId: messageId.id, private: mappedPrivacy))
@@ -431,7 +431,7 @@ private func requestSendStarsReaction(postbox: Postbox, network: Network, stateM
                     guard let inputPrivacyPeer = transaction.getPeer(peerId).flatMap(apiInputPeer) else {
                         return nil
                     }
-                    mappedPrivacy = .paidReactionPrivacyPeer(peer: inputPrivacyPeer)
+                    mappedPrivacy = .paidReactionPrivacyPeer(.init(peer: inputPrivacyPeer))
                 }
                 privacy = mappedPrivacy
                 break
@@ -907,7 +907,8 @@ public final class EngineMessageReactionListContext {
                 |> mapToSignal { result -> Signal<InternalState, NoError> in
                     return account.postbox.transaction { transaction -> InternalState in
                         switch result {
-                        case let .messageReactionsList(_, count, reactions, chats, users, nextOffset):
+                        case let .messageReactionsList(messageReactionsListData):
+                            let (count, reactions, chats, users, nextOffset) = (messageReactionsListData.count, messageReactionsListData.reactions, messageReactionsListData.chats, messageReactionsListData.users, messageReactionsListData.nextOffset)
                             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                             
                             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
@@ -915,7 +916,8 @@ public final class EngineMessageReactionListContext {
                             var items: [EngineMessageReactionListContext.Item] = []
                             for reaction in reactions {
                                 switch reaction {
-                                case let .messagePeerReaction(_, peer, date, reaction):
+                                case let .messagePeerReaction(messagePeerReactionData):
+                                    let (peer, date, reaction) = (messagePeerReactionData.peerId, messagePeerReactionData.date, messagePeerReactionData.reaction)
                                     if let peer = transaction.getPeer(peer.peerId), let reaction = MessageReaction.Reaction(apiReaction: reaction) {
                                         items.append(EngineMessageReactionListContext.Item(peer: EnginePeer(peer), reaction: reaction, timestamp: date, timestampIsReaction: true))
                                     }
@@ -1022,9 +1024,9 @@ func _internal_updatePeerReactionSettings(account: Account, peerId: PeerId, reac
         let mappedReactions: Api.ChatReactions
         switch reactionSettings.allowedReactions {
         case .all:
-            mappedReactions = .chatReactionsAll(flags: 0)
+            mappedReactions = .chatReactionsAll(.init(flags: 0))
         case let .limited(array):
-            mappedReactions = .chatReactionsSome(reactions: array.map(\.apiReaction))
+            mappedReactions = .chatReactionsSome(.init(reactions: array.map(\.apiReaction)))
         case .empty:
             mappedReactions = .chatReactionsNone
         }

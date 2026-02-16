@@ -32,10 +32,10 @@ func _internal_updatePeersNearbyVisibility(account: Account, update: PeerNearbyV
     switch update {
         case let .visible(latitude, longitude):
             flags |= (1 << 0)
-            geoPoint = .inputGeoPoint(flags: 0, lat: latitude, long: longitude, accuracyRadius: nil)
+            geoPoint = .inputGeoPoint(.init(flags: 0, lat: latitude, long: longitude, accuracyRadius: nil))
             selfExpires = 10800
         case let .location(latitude, longitude):
-            geoPoint = .inputGeoPoint(flags: 0, lat: latitude, long: longitude, accuracyRadius: nil)
+            geoPoint = .inputGeoPoint(.init(flags: 0, lat: latitude, long: longitude, accuracyRadius: nil))
         case .invisible:
             flags |= (1 << 0)
             geoPoint = .inputGeoPointEmpty
@@ -95,7 +95,7 @@ public final class PeersNearbyContext {
     public init(network: Network, stateManager: AccountStateManager, coordinate: (latitude: Double, longitude: Double)) {
         let expiryExtension: Double = 10.0
         
-        let poll = network.request(Api.functions.contacts.getLocated(flags: 0, geoPoint: .inputGeoPoint(flags: 0, lat: coordinate.latitude, long: coordinate.longitude, accuracyRadius: nil), selfExpires: nil))
+        let poll = network.request(Api.functions.contacts.getLocated(flags: 0, geoPoint: .inputGeoPoint(.init(flags: 0, lat: coordinate.latitude, long: coordinate.longitude, accuracyRadius: nil)), selfExpires: nil))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.Updates?, NoError> in
             return .single(nil)
@@ -105,14 +105,18 @@ public final class PeersNearbyContext {
             var peersNearby: [PeerNearby] = []
             if let updates = updates {
                 switch updates {
-                case let .updates(updates, _, _, _, _):
+                case let .updates(updatesData):
+                    let updates = updatesData.updates
                     for update in updates {
-                        if case let .updatePeerLocated(peers) = update {
+                        if case let .updatePeerLocated(updatePeerLocatedData) = update {
+                            let peers = updatePeerLocatedData.peers
                             for peer in peers {
                                 switch peer {
-                                    case let .peerLocated(peer, expires, distance):
+                                    case let .peerLocated(peerLocatedData):
+                                        let (peer, expires, distance) = (peerLocatedData.peer, peerLocatedData.expires, peerLocatedData.distance)
                                         peersNearby.append(.peer(id: peer.peerId, expires: expires, distance: distance))
-                                    case let .peerSelfLocated(expires):
+                                    case let .peerSelfLocated(peerSelfLocatedData):
+                                        let expires = peerSelfLocatedData.expires
                                         peersNearby.append(.selfPeer(expires: expires))
                                 }
                             }
@@ -241,7 +245,7 @@ public func updateChannelGeoLocation(postbox: Postbox, network: Network, channel
         
         let geoPoint: Api.InputGeoPoint
         if let (latitude, longitude) = coordinate, let _ = address {
-            geoPoint = .inputGeoPoint(flags: 0, lat: latitude, long: longitude, accuracyRadius: nil)
+            geoPoint = .inputGeoPoint(.init(flags: 0, lat: latitude, long: longitude, accuracyRadius: nil))
         } else {
             geoPoint = .inputGeoPointEmpty
         }

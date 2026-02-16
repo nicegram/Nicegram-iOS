@@ -40,13 +40,22 @@ func faqSearchableItems(context: AccountContext, resolvedUrl: Signal<ResolvedUrl
                                     for item in items {
                                         if case let .text(itemText, _) = item, case let .url(text, url, _) = itemText {
                                             let (_, anchor) = extractAnchor(string: url)
+                                            guard let anchor else {
+                                                continue
+                                            }
                                             var index = nextIndex
-                                            if suggestAccountDeletion && (anchor?.contains("delete-my-account") ?? false) {
+                                            if suggestAccountDeletion && anchor.contains("delete-my-account") {
                                                 index = 1
                                             } else {
                                                 nextIndex += 1
                                             }
-                                            let item = SettingsSearchableItem(id: .faq(index), title: text.plainText, alternate: [], icon: .faq, breadcrumbs: [strings.SettingsSearch_FAQ, currentSection], present: { context, _, present in          
+                                            let item = SettingsSearchableItem(
+                                                id: "faq/\(anchor)",
+                                                title: text.plainText,
+                                                alternate: [],
+                                                icon: .faq,
+                                                breadcrumbs: [strings.SettingsSearch_FAQ, currentSection],
+                                                present: { context, _, present in          
                                                 let controller = context.sharedContext.makeInstantPageController(context: context, webPage: webPage, anchor: anchor, sourceLocation: InstantPageSourceLocation(userLocation: .other, peerType: .channel))
                                                 present(.push, controller)
                                             })

@@ -3826,7 +3826,7 @@ public final class StoryItemSetContainerComponent: Component {
                                     
                                     let items = ContextController.Items(content: .list(itemList))
                                     
-                                    let controller = ContextController(
+                                    let controller = makeContextController(
                                         presentationData: presentationData,
                                         source: .extracted(ListContextExtractedContentSource(contentView: sourceView)),
                                         items: .single(items),
@@ -6761,7 +6761,7 @@ public final class StoryItemSetContainerComponent: Component {
                 return .single(ContextController.Items(id: 0, content: .list(items), tip: tip, tipSignal: tipSignal))
             }
             
-            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: contextItems, gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: contextItems, gesture: gesture)
             contextController.dismissed = { [weak self] in
                 guard let self else {
                     return
@@ -7095,7 +7095,7 @@ public final class StoryItemSetContainerComponent: Component {
                 return .single(ContextController.Items(id: 0, content: .list(items), tip: tip, tipSignal: tipSignal))
             }
             
-            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: contextItems, gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: contextItems, gesture: gesture)
             contextController.dismissed = { [weak self] in
                 guard let self else {
                     return
@@ -7526,7 +7526,7 @@ public final class StoryItemSetContainerComponent: Component {
                 
                 let contextItems = ContextController.Items(id: 0, content: .list(items), tip: tip, tipSignal: tipSignal)
                                 
-                let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: .single(contextItems), gesture: gesture)
+                let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .bottom)), items: .single(contextItems), gesture: gesture)
                 contextController.dismissed = { [weak self] in
                     guard let self else {
                         return

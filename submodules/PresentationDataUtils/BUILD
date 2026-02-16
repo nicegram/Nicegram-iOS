@@ -20,6 +20,7 @@ swift_library(
         "//submodules/OverlayStatusController:OverlayStatusController",
         "//submodules/UrlWhitelist:UrlWhitelist",
         "//submodules/TelegramUI/Components/AlertComponent",
+        "//submodules/UrlHandling",
     ],
     visibility = [
         "//visibility:public",

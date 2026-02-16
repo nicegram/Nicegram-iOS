@@ -161,6 +161,8 @@ public final class LottieComponent: Component {
         
         private var currentTemplateFrameImage: UIImage?
         
+        public var onFrameUpdate: (Int) -> Void = { _ in }
+        
         public var externalShouldPlay: Bool? {
             didSet {
                 if self.externalShouldPlay != oldValue {
@@ -407,6 +409,7 @@ public final class LottieComponent: Component {
             
             var effectiveFrameIndex = self.currentFrame
             effectiveFrameIndex = max(animationFrameRange.lowerBound, min(animationFrameRange.upperBound, effectiveFrameIndex))
+            self.onFrameUpdate(effectiveFrameIndex)
             
             animationInstance.renderFrame(with: Int32(effectiveFrameIndex), into: context.bytes.assumingMemoryBound(to: UInt8.self), width: Int32(currentDisplaySize.width), height: Int32(currentDisplaySize.height), bytesPerRow: Int32(context.bytesPerRow))
             

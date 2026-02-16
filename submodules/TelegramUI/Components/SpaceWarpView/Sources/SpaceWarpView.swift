@@ -566,8 +566,8 @@ open class SpaceWarpNodeImpl: ASDisplayNode, SpaceWarpNode {
         }
         #endif
         
-        let resolutionX = max(2, Int(size.width / 40.0))
-        let resolutionY = max(2, Int(size.height / 40.0))
+        let resolutionX = max(2, Int(size.width / 50.0))
+        let resolutionY = max(2, Int(size.height / 50.0))
         self.updateGrid(resolutionX: resolutionX, resolutionY: resolutionY)
         guard let resolution = self.resolution, let meshView = self.meshView else {
             return

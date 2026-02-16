@@ -29,6 +29,8 @@ private final class ChatSendAsPeerTitleContextItemNode: ASDisplayNode, ContextMe
     private let backgroundNode: ASDisplayNode
     private let textNode: ImmediateTextNode
     
+    let needsPadding: Bool = false
+    
     init(presentationData: PresentationData, item: ChatSendAsPeerTitleContextItem, getController: @escaping () -> ContextControllerProtocol?, actionSelected: @escaping (ContextMenuActionResult) -> Void) {
         self.item = item
         self.presentationData = presentationData
@@ -55,10 +57,10 @@ private final class ChatSendAsPeerTitleContextItemNode: ASDisplayNode, ContextMe
     }
 
     func updateLayout(constrainedWidth: CGFloat, constrainedHeight: CGFloat) -> (CGSize, (CGSize, ContainedViewLayoutTransition) -> Void) {
-        let sideInset: CGFloat = 16.0
+        let sideInset: CGFloat = 18.0
 
         let textSize = self.textNode.updateLayout(CGSize(width: constrainedWidth - sideInset - sideInset, height: .greatestFiniteMagnitude))
-        let height: CGFloat = 28.0
+        let height: CGFloat = 28.0 + 10.0
         
         return (CGSize(width: textSize.width + sideInset + sideInset, height: height), { size, transition in
             let verticalOrigin = floor((size.height - textSize.height) / 2.0)

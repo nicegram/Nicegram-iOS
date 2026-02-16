@@ -2868,7 +2868,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
         self.tempContextContentItemNode = tempSourceNode
         self.addSubnode(tempSourceNode)
         
-        let contextController = ContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: parentController, sourceNode: tempSourceNode.contextSourceNode, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = makeContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: parentController, sourceNode: tempSourceNode.contextSourceNode, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         parentController.presentInGlobalOverlay(contextController)
     }
 
@@ -3988,7 +3988,7 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                             }
                             
                             let presentationData = self.presentationData
-                            let contextController = ContextController(
+                            let contextController = makeContextController(
                                 presentationData: presentationData,
                                 source: .extracted(ItemExtractedContentSource(
                                     sourceNode: sourceNode,

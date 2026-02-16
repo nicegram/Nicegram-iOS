@@ -8,6 +8,7 @@ import TelegramCore
 import AccountContext
 import TelegramPresentationData
 import ContextUI
+import ContextControllerImpl
 
 final class GiftAttributeListContextItem: ContextMenuCustomItem {
     let context: AccountContext
@@ -50,7 +51,7 @@ private func actionForAttribute(attribute: StarGift.UniqueGift.Attribute, presen
     let searchComponents = searchQuery.lowercased().components(separatedBy: .whitespaces).filter { !$0.isEmpty }
         
     switch attribute {
-    case let .model(name, file, _), let .pattern(name, file, _):
+    case let .model(name, file, _, _), let .pattern(name, file, _):
         let attributeId: ResaleGiftsContext.Attribute
         if case .model = attribute {
             attributeId = .model(file.fileId.id)
@@ -82,7 +83,6 @@ private func actionForAttribute(attribute: StarGift.UniqueGift.Attribute, presen
             )
             title += count
         }
-      
         
         let words = title.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
         var wordStartIndices: [String.Index] = []
@@ -117,7 +117,9 @@ private func actionForAttribute(attribute: StarGift.UniqueGift.Attribute, presen
             }
         }
              
-        return ContextMenuActionItem(text: title, entities: entities, entityFiles: entityFiles, enableEntityAnimations: false, parseMarkdown: true, icon: { theme in
+        return ContextMenuActionItem(text: title, entities: entities, entityFiles: entityFiles, enableEntityAnimations: false, customTextInsets: UIEdgeInsets(top: 0.0, left: 18.0 + 5.0, bottom: 0.0, right: 0.0), parseMarkdown: true, icon: { _ in
+            return nil
+        }, additionalLeftIcon: { theme in
             return isSelected ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
         }, action: { _, f in
             getController()?.dismiss(result: .dismissWithoutContent, completion: nil)
@@ -133,7 +135,7 @@ private func actionForAttribute(attribute: StarGift.UniqueGift.Attribute, presen
         let isSelected = selectedAttributes.isEmpty || selectedAttributes.contains(attributeId)
         
         var entities: [MessageTextEntity] = []
-        var title = "   \(name)"
+        var title = "\(name)"
         var count = ""
         if let counter = item.attributeCount[attributeId] {
             count = "  \(presentationStringsFormattedNumber(counter, presentationData.dateTimeFormat.groupingSeparator))"
@@ -176,10 +178,10 @@ private func actionForAttribute(attribute: StarGift.UniqueGift.Attribute, presen
             }
         }
         
-        return ContextMenuActionItem(text: title, entities: entities, icon: { theme in
-            return isSelected ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
-        }, additionalLeftIcon: { _ in
+        return ContextMenuActionItem(text: title, entities: entities, icon: { _ in
             return generateGradientFilledCircleImage(diameter: 24.0, colors: [UIColor(rgb: UInt32(bitPattern: innerColor)).cgColor, UIColor(rgb: UInt32(bitPattern: outerColor)).cgColor])
+        }, additionalLeftIcon: { theme in
+            return isSelected ? generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor) : nil
         }, action: { _, f in
             getController()?.dismiss(result: .dismissWithoutContent, completion: nil)
             
@@ -210,6 +212,8 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
     private var itemHeights: [AnyHashable: CGFloat] = [:]
     private var totalContentHeight: CGFloat = 0
     private var itemFrames: [AnyHashable: CGRect] = [:]
+    
+    let needsPadding: Bool = false
     
     init(presentationData: PresentationData, item: GiftAttributeListContextItem, getController: @escaping () -> ContextControllerProtocol?, actionSelected: @escaping (ContextMenuActionResult) -> Void) {
         self.item = item
@@ -285,19 +289,12 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
             yOffset += UIScreenPixel
         }
         
-        for (index, attribute) in effectiveAttributes.enumerated() {
+        for (_, attribute) in effectiveAttributes.enumerated() {
             let attributeId = self.getAttributeId(from: attribute)
             let height = self.itemHeights[attributeId] ?? defaultHeight
             let frame = CGRect(x: 0, y: yOffset, width: constrainedWidth, height: height)
             items.append((attributeId, .attribute(attribute), frame))
             yOffset += height
-            
-            if index < effectiveAttributes.count - 1 {
-                let separatorId = AnyHashable("separator_\(attributeId)")
-                let separatorFrame = CGRect(x: 0, y: yOffset, width: constrainedWidth, height: UIScreenPixel)
-                items.append((separatorId, .separator, separatorFrame))
-                yOffset += UIScreenPixel
-            }
         }
         
         if !self.searchQuery.isEmpty && effectiveAttributes.isEmpty {
@@ -320,7 +317,7 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
     
     private func getAttributeId(from attribute: StarGift.UniqueGift.Attribute) -> AnyHashable {
         switch attribute {
-        case let .model(_, file, _):
+        case let .model(_, file, _, _):
             return AnyHashable("model_\(file.fileId.id)")
         case let .pattern(_, file, _):
             return AnyHashable("pattern_\(file.fileId.id)")
@@ -466,7 +463,7 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
     }
 
     func updateLayout(constrainedWidth: CGFloat, constrainedHeight: CGFloat) -> (CGSize, (CGSize, ContainedViewLayoutTransition) -> Void) {
-        let minActionsWidth: CGFloat = 250.0
+        let minActionsWidth: CGFloat = 270.0
         let maxActionsWidth: CGFloat = 300.0
         let constrainedWidth = min(constrainedWidth, maxActionsWidth)
         let maxWidth = max(constrainedWidth, minActionsWidth)
@@ -502,7 +499,7 @@ private final class GiftAttributeListContextItemNode: ASDisplayNode, ContextMenu
     }
     
     func canBeHighlighted() -> Bool {
-        return self.isActionEnabled
+        return false
     }
     
     func updateIsHighlighted(isHighlighted: Bool) {
@@ -582,7 +579,7 @@ private func filteredAttributes(attributes: [StarGift.UniqueGift.Attribute], que
     for attribute in attributes {
         let string: String
         switch attribute {
-        case let .model(name, _, _):
+        case let .model(name, _, _, _):
             string = name
         case let .pattern(name, _, _):
             string = name

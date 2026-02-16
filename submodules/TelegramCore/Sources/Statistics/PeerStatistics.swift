@@ -836,7 +836,8 @@ private func requestGroupStats(accountPeerId: PeerId, postbox: Postbox, network:
         return signal
         |> mapToSignal { result -> Signal<GroupStats?, MTRpcError> in
             return postbox.transaction { transaction -> GroupStats? in
-                if case let .megagroupStats(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, users) = result {
+                if case let .megagroupStats(megagroupStatsData) = result {
+                    let users = megagroupStatsData.users
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(users: users))
                 }
                 return GroupStats(apiMegagroupStats: result)
@@ -1114,32 +1115,40 @@ public final class GroupStatsContext {
 extension StatsGraph {
     init(apiStatsGraph: Api.StatsGraph) {
         switch apiStatsGraph {
-            case let .statsGraph(_, json, zoomToken):
-                if case let .dataJSON(string) = json, let data = string.data(using: .utf8) {
-                    do {
-                        let decodedData = try JSONSerialization.jsonObject(with: data, options: [])
-                        guard let item = decodedData as? [String: Any] else {
-                            self = .Failed(error: "")
-                            return
-                        }
-                        if let columns = item["columns"] as? [[Any]] {
-                            if columns.isEmpty {
-                                self = .Empty
-                            } else {
-                                self = .Loaded(token: zoomToken, data: string)
+            case let .statsGraph(statsGraphData):
+                let (_, json, zoomToken) = (statsGraphData.flags, statsGraphData.json, statsGraphData.zoomToken)
+                if case let .dataJSON(dataJSONData) = json {
+                    let string = dataJSONData.data
+                    if let data = string.data(using: .utf8) {
+                        do {
+                            let decodedData = try JSONSerialization.jsonObject(with: data, options: [])
+                            guard let item = decodedData as? [String: Any] else {
+                                self = .Failed(error: "")
+                                return
                             }
-                        } else {
-                            self = .Empty
+                            if let columns = item["columns"] as? [[Any]] {
+                                if columns.isEmpty {
+                                    self = .Empty
+                                } else {
+                                    self = .Loaded(token: zoomToken, data: string)
+                                }
+                            } else {
+                                self = .Empty
+                            }
+                        } catch {
+                            self = .Failed(error: "")
                         }
-                    } catch {
+                    } else {
                         self = .Failed(error: "")
                     }
                 } else {
                     self = .Failed(error: "")
                 }
-            case let .statsGraphError(error):
+            case let .statsGraphError(statsGraphErrorData):
+                let error = statsGraphErrorData.error
                 self = .Failed(error: error)
-            case let .statsGraphAsync(token):
+            case let .statsGraphAsync(statsGraphAsyncData):
+                let token = statsGraphAsyncData.token
                 if !token.isEmpty {
                     self = .OnDemand(token: token)
                 } else {
@@ -1152,7 +1161,8 @@ extension StatsGraph {
 extension StatsDateRange {
     init(apiStatsDateRangeDays: Api.StatsDateRangeDays) {
         switch apiStatsDateRangeDays {
-            case let .statsDateRangeDays(minDate, maxDate):
+            case let .statsDateRangeDays(statsDateRangeDaysData):
+                let (minDate, maxDate) = (statsDateRangeDaysData.minDate, statsDateRangeDaysData.maxDate)
                 self = StatsDateRange(minDate: minDate, maxDate: maxDate)
         }
     }
@@ -1161,7 +1171,8 @@ extension StatsDateRange {
 extension StatsValue {
     init(apiStatsAbsValueAndPrev: Api.StatsAbsValueAndPrev) {
         switch apiStatsAbsValueAndPrev {
-            case let .statsAbsValueAndPrev(current, previous):
+            case let .statsAbsValueAndPrev(statsAbsValueAndPrevData):
+                let (current, previous) = (statsAbsValueAndPrevData.current, statsAbsValueAndPrevData.previous)
                 self = StatsValue(current: current, previous: previous)
         }
     }
@@ -1170,7 +1181,8 @@ extension StatsValue {
 extension StatsPercentValue {
     init(apiPercentValue: Api.StatsPercentValue) {
         switch apiPercentValue {
-            case let .statsPercentValue(part, total):
+            case let .statsPercentValue(statsPercentValueData):
+                let (part, total) = (statsPercentValueData.part, statsPercentValueData.total)
                 self = StatsPercentValue(value: part, total: total)
         }
     }
@@ -1179,9 +1191,11 @@ extension StatsPercentValue {
 extension ChannelStatsPostInteractions {
     init(apiPostInteractionCounters: Api.PostInteractionCounters, peerId: PeerId) {
         switch apiPostInteractionCounters {
-        case let .postInteractionCountersMessage(msgId, views, forwards, reactions):
+        case let .postInteractionCountersMessage(postInteractionCountersMessageData):
+            let (msgId, views, forwards, reactions) = (postInteractionCountersMessageData.msgId, postInteractionCountersMessageData.views, postInteractionCountersMessageData.forwards, postInteractionCountersMessageData.reactions)
             self = ChannelStatsPostInteractions(postId: .message(id: EngineMessage.Id(peerId: peerId, namespace: Namespaces.Message.Cloud, id: msgId)), views: views, forwards: forwards, reactions: reactions)
-        case let .postInteractionCountersStory(storyId, views, forwards, reactions):
+        case let .postInteractionCountersStory(postInteractionCountersStoryData):
+            let (storyId, views, forwards, reactions) = (postInteractionCountersStoryData.storyId, postInteractionCountersStoryData.views, postInteractionCountersStoryData.forwards, postInteractionCountersStoryData.reactions)
             self = ChannelStatsPostInteractions(postId: .story(peerId: peerId, id: storyId), views: views, forwards: forwards, reactions: reactions)
         }
     }
@@ -1190,7 +1204,8 @@ extension ChannelStatsPostInteractions {
 extension ChannelStats {
     init(apiBroadcastStats: Api.stats.BroadcastStats, peerId: PeerId) {
         switch apiBroadcastStats {
-        case let .broadcastStats(period, followers, viewsPerPost, sharesPerPost, reactionsPerPost, viewsPerStory, sharesPerStory, reactionsPerStory, enabledNotifications, apiGrowthGraph, apiFollowersGraph, apiMuteGraph, apiTopHoursGraph, apiInteractionsGraph, apiInstantViewInteractionsGraph, apiViewsBySourceGraph, apiNewFollowersBySourceGraph, apiLanguagesGraph, apiReactionsByEmotionGraph, apiStoryInteractionsGraph, apiStoryReactionsByEmotionGraph, recentPostInteractions):
+        case let .broadcastStats(broadcastStatsData):
+            let (period, followers, viewsPerPost, sharesPerPost, reactionsPerPost, viewsPerStory, sharesPerStory, reactionsPerStory, enabledNotifications, apiGrowthGraph, apiFollowersGraph, apiMuteGraph, apiTopHoursGraph, apiInteractionsGraph, apiInstantViewInteractionsGraph, apiViewsBySourceGraph, apiNewFollowersBySourceGraph, apiLanguagesGraph, apiReactionsByEmotionGraph, apiStoryInteractionsGraph, apiStoryReactionsByEmotionGraph, recentPostInteractions) = (broadcastStatsData.period, broadcastStatsData.followers, broadcastStatsData.viewsPerPost, broadcastStatsData.sharesPerPost, broadcastStatsData.reactionsPerPost, broadcastStatsData.viewsPerStory, broadcastStatsData.sharesPerStory, broadcastStatsData.reactionsPerStory, broadcastStatsData.enabledNotifications, broadcastStatsData.growthGraph, broadcastStatsData.followersGraph, broadcastStatsData.muteGraph, broadcastStatsData.topHoursGraph, broadcastStatsData.interactionsGraph, broadcastStatsData.ivInteractionsGraph, broadcastStatsData.viewsBySourceGraph, broadcastStatsData.newFollowersBySourceGraph, broadcastStatsData.languagesGraph, broadcastStatsData.reactionsByEmotionGraph, broadcastStatsData.storyInteractionsGraph, broadcastStatsData.storyReactionsByEmotionGraph, broadcastStatsData.recentPostsInteractions)
             let growthGraph = StatsGraph(apiStatsGraph: apiGrowthGraph)
             let isEmpty = growthGraph.isEmpty
         
@@ -1224,7 +1239,8 @@ extension ChannelStats {
 extension GroupStatsTopPoster {
     init(apiStatsGroupTopPoster: Api.StatsGroupTopPoster) {
         switch apiStatsGroupTopPoster {
-            case let .statsGroupTopPoster(userId, messages, avgChars):
+            case let .statsGroupTopPoster(statsGroupTopPosterData):
+                let (userId, messages, avgChars) = (statsGroupTopPosterData.userId, statsGroupTopPosterData.messages, statsGroupTopPosterData.avgChars)
                 self = GroupStatsTopPoster(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), messageCount: messages, averageChars: avgChars)
         }
     }
@@ -1233,7 +1249,8 @@ extension GroupStatsTopPoster {
 extension GroupStatsTopAdmin {
     init(apiStatsGroupTopAdmin: Api.StatsGroupTopAdmin) {
         switch apiStatsGroupTopAdmin {
-            case let .statsGroupTopAdmin(userId, deleted, kicked, banned):
+            case let .statsGroupTopAdmin(statsGroupTopAdminData):
+                let (userId, deleted, kicked, banned) = (statsGroupTopAdminData.userId, statsGroupTopAdminData.deleted, statsGroupTopAdminData.kicked, statsGroupTopAdminData.banned)
                 self = GroupStatsTopAdmin(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), deletedCount: deleted, kickedCount: kicked, bannedCount: banned)
         }
     }
@@ -1242,7 +1259,8 @@ extension GroupStatsTopAdmin {
 extension GroupStatsTopInviter {
     init(apiStatsGroupTopInviter: Api.StatsGroupTopInviter) {
         switch apiStatsGroupTopInviter {
-            case let .statsGroupTopInviter(userId, invitations):
+            case let .statsGroupTopInviter(statsGroupTopInviterData):
+                let (userId, invitations) = (statsGroupTopInviterData.userId, statsGroupTopInviterData.invitations)
                 self = GroupStatsTopInviter(peerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), inviteCount: invitations)
         }
     }
@@ -1251,9 +1269,10 @@ extension GroupStatsTopInviter {
 extension GroupStats {
     init(apiMegagroupStats: Api.stats.MegagroupStats) {
         switch apiMegagroupStats {
-            case let .megagroupStats(period, members, messages, viewers, posters, apiGrowthGraph, apiMembersGraph, apiNewMembersBySourceGraph, apiLanguagesGraph, apiMessagesGraph, apiActionsGraph, apiTopHoursGraph, apiTopWeekdaysGraph, topPosters, topAdmins, topInviters, _):
+            case let .megagroupStats(megagroupStatsData):
+                let (period, members, messages, viewers, posters, apiGrowthGraph, apiMembersGraph, apiNewMembersBySourceGraph, apiLanguagesGraph, apiMessagesGraph, apiActionsGraph, apiTopHoursGraph, apiTopWeekdaysGraph, topPosters, topAdmins, topInviters) = (megagroupStatsData.period, megagroupStatsData.members, megagroupStatsData.messages, megagroupStatsData.viewers, megagroupStatsData.posters, megagroupStatsData.growthGraph, megagroupStatsData.membersGraph, megagroupStatsData.newMembersBySourceGraph, megagroupStatsData.languagesGraph, megagroupStatsData.messagesGraph, megagroupStatsData.actionsGraph, megagroupStatsData.topHoursGraph, megagroupStatsData.weekdaysGraph, megagroupStatsData.topPosters, megagroupStatsData.topAdmins, megagroupStatsData.topInviters)
                 let growthGraph = StatsGraph(apiStatsGraph: apiGrowthGraph)
-                
+
                 self.init(period: StatsDateRange(apiStatsDateRangeDays: period), members: StatsValue(apiStatsAbsValueAndPrev: members), messages: StatsValue(apiStatsAbsValueAndPrev: messages), viewers: StatsValue(apiStatsAbsValueAndPrev: viewers), posters: StatsValue(apiStatsAbsValueAndPrev: posters), growthGraph: growthGraph, membersGraph: StatsGraph(apiStatsGraph: apiMembersGraph), newMembersBySourceGraph: StatsGraph(apiStatsGraph: apiNewMembersBySourceGraph), languagesGraph: StatsGraph(apiStatsGraph: apiLanguagesGraph), messagesGraph: StatsGraph(apiStatsGraph: apiMessagesGraph), actionsGraph: StatsGraph(apiStatsGraph: apiActionsGraph), topHoursGraph: StatsGraph(apiStatsGraph: apiTopHoursGraph), topWeekdaysGraph: StatsGraph(apiStatsGraph: apiTopWeekdaysGraph), topPosters: topPosters.map { GroupStatsTopPoster(apiStatsGroupTopPoster: $0) }, topAdmins: topAdmins.map { GroupStatsTopAdmin(apiStatsGroupTopAdmin: $0) }, topInviters: topInviters.map { GroupStatsTopInviter(apiStatsGroupTopInviter: $0) })
         }
     }

@@ -16,6 +16,18 @@ import WallpaperBackgroundNode
 import AnimationCache
 import MultiAnimationRenderer
 
+public enum TextSizeSelectionEntryTag: ItemListItemTag, Equatable {
+    case useSystem
+
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? TextSizeSelectionEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private func generateMaskImage(color: UIColor) -> UIImage? {
     return generateImage(CGSize(width: 1.0, height: 80.0), opaque: false, rotatedContext: { size, context in
         let bounds = CGRect(origin: CGPoint(), size: size)
@@ -33,6 +45,8 @@ private func generateMaskImage(color: UIColor) -> UIImage? {
 
 private final class TextSizeSelectionControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private let context: AccountContext
+    private let focusOnItemTag: TextSizeSelectionEntryTag?
+    
     private var presentationThemeSettings: PresentationThemeSettings
     private var presentationData: PresentationData
     
@@ -57,8 +71,9 @@ private final class TextSizeSelectionControllerNode: ASDisplayNode, ASScrollView
     
     private var validLayout: (ContainerViewLayout, CGFloat)?
     
-    init(context: AccountContext, presentationThemeSettings: PresentationThemeSettings, dismiss: @escaping () -> Void, apply: @escaping (Bool, PresentationFontSize, PresentationFontSize) -> Void) {
+    init(context: AccountContext, presentationThemeSettings: PresentationThemeSettings, focusOnItemTag: TextSizeSelectionEntryTag?, dismiss: @escaping () -> Void, apply: @escaping (Bool, PresentationFontSize, PresentationFontSize) -> Void) {
         self.context = context
+        self.focusOnItemTag = focusOnItemTag
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationThemeSettings = presentationThemeSettings
@@ -92,7 +107,7 @@ private final class TextSizeSelectionControllerNode: ASDisplayNode, ASScrollView
         self.chatBackgroundNode.update(wallpaper: self.presentationData.chatWallpaper, animated: false)
         self.chatBackgroundNode.updateBubbleTheme(bubbleTheme: self.presentationData.theme, bubbleCorners: self.presentationData.chatBubbleCorners)
                         
-        self.toolbarNode = TextSelectionToolbarNode(presentationThemeSettings: self.presentationThemeSettings, presentationData: self.presentationData)
+        self.toolbarNode = TextSelectionToolbarNode(presentationThemeSettings: self.presentationThemeSettings, presentationData: self.presentationData, focusOnItemTag: focusOnItemTag)
                 
         self.maskNode = ASImageNode()
         self.maskNode.displaysAsynchronously = false
@@ -602,6 +617,7 @@ private final class TextSizeSelectionControllerNode: ASDisplayNode, ASScrollView
 
 final class TextSizeSelectionController: ViewController {
     private let context: AccountContext
+    private let focusOnItemTag: TextSizeSelectionEntryTag?
     
     private var controllerNode: TextSizeSelectionControllerNode {
         return self.displayNode as! TextSizeSelectionControllerNode
@@ -618,8 +634,9 @@ final class TextSizeSelectionController: ViewController {
     private var disposable: Disposable?
     private var applyDisposable = MetaDisposable()
 
-    public init(context: AccountContext, presentationThemeSettings: PresentationThemeSettings) {
+    public init(context: AccountContext, presentationThemeSettings: PresentationThemeSettings, focusOnItemTag: TextSizeSelectionEntryTag? = nil) {
         self.context = context
+        self.focusOnItemTag = focusOnItemTag
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationThemeSettings = presentationThemeSettings
@@ -670,7 +687,7 @@ final class TextSizeSelectionController: ViewController {
     override public func loadDisplayNode() {
         super.loadDisplayNode()
         
-        self.displayNode = TextSizeSelectionControllerNode(context: self.context, presentationThemeSettings: self.presentationThemeSettings, dismiss: { [weak self] in
+        self.displayNode = TextSizeSelectionControllerNode(context: self.context, presentationThemeSettings: self.presentationThemeSettings, focusOnItemTag: self.focusOnItemTag, dismiss: { [weak self] in
             if let strongSelf = self {
                 strongSelf.dismiss()
             }
@@ -727,7 +744,7 @@ private final class TextSelectionToolbarNode: ASDisplayNode {
     var updateUseSystemFont: ((Bool) -> Void)?
     var updateCustomFontSize: ((PresentationFontSize) -> Void)?
     
-    init(presentationThemeSettings: PresentationThemeSettings, presentationData: PresentationData) {
+    init(presentationThemeSettings: PresentationThemeSettings, presentationData: PresentationData, focusOnItemTag: TextSizeSelectionEntryTag?) {
         self.presentationThemeSettings = presentationThemeSettings
         self.presentationData = presentationData
         
@@ -774,6 +791,10 @@ private final class TextSelectionToolbarNode: ASDisplayNode {
         
         self.cancelButton.addTarget(self, action: #selector(self.cancelPressed), forControlEvents: .touchUpInside)
         self.doneButton.addTarget(self, action: #selector(self.donePressed), forControlEvents: .touchUpInside)
+        
+        if focusOnItemTag == .useSystem {
+            self.switchItemNode.displayHighlight()
+        }
     }
     
     func setDoneEnabled(_ enabled: Bool) {

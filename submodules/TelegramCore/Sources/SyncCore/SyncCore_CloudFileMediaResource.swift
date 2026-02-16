@@ -714,7 +714,7 @@ public final class WebFileReferenceMediaResource: TelegramMediaResource, MediaRe
     }
     
     var apiInputLocation: Api.InputWebFileLocation {
-        return .inputWebFileLocation(url: self.url, accessHash: self.accessHash)
+        return .inputWebFileLocation(.init(url: self.url, accessHash: self.accessHash))
     }
 }
 
@@ -762,7 +762,7 @@ final class AlbumCoverResource: TelegramMediaResource, MediaResourceWithWebFileR
         var flags: Int32 = 0
         var document: Api.InputDocument?
         if let file = self.file, let resource = file.media.resource as? CloudDocumentMediaResource {
-            document = .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data()))
+            document = .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference ?? Data())))
             flags |= 1 << 0
         }
         var requestTitle: String?
@@ -775,12 +775,12 @@ final class AlbumCoverResource: TelegramMediaResource, MediaResourceWithWebFileR
         if self.isThumbnail {
             flags |= 1 << 2
         }
-        return .inputWebFileAudioAlbumThumbLocation(
+        return .inputWebFileAudioAlbumThumbLocation(.init(
             flags: flags,
             document: document,
             title: requestTitle,
             performer: requestPerformer
-        )
+        ))
     }
 }
 

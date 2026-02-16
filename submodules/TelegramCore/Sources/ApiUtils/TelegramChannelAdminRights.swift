@@ -6,7 +6,8 @@ import TelegramApi
 extension TelegramChatAdminRights {
     init?(apiAdminRights: Api.ChatAdminRights) {
         switch apiAdminRights {
-            case let .chatAdminRights(flags):
+            case let .chatAdminRights(chatAdminRightsData):
+                let flags = chatAdminRightsData.flags
                 if flags == 0 {
                     return nil
                 }
@@ -18,6 +19,6 @@ extension TelegramChatAdminRights {
     var apiAdminRights: Api.ChatAdminRights {
         var filteredFlags = self.rights.rawValue
         filteredFlags |= 1 << 12
-        return .chatAdminRights(flags: filteredFlags)
+        return .chatAdminRights(Api.ChatAdminRights.Cons_chatAdminRights(flags: filteredFlags))
     }
 }

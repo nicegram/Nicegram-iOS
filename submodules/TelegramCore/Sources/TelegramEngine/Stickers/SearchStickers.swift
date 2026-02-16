@@ -300,18 +300,19 @@ func _internal_searchStickers(account: Account, query: String?, emoticon: [Strin
             let flags: Int32 = 0
             remote = account.network.request(Api.functions.messages.searchStickers(flags: flags, q: query, emoticon: emoticon.joined(separator: ""), langCode: [inputLanguageCode], offset: 0, limit: 128, hash: cached?.hash ?? 0))
             |> `catch` { _ -> Signal<Api.messages.FoundStickers, NoError> in
-                return .single(.foundStickersNotModified(flags: 0, nextOffset: nil))
+                return .single(.foundStickersNotModified(.init(flags: 0, nextOffset: nil)))
             }
             |> mapToSignal { result -> Signal<(items: [FoundStickerItem], isFinalResult: Bool), NoError> in
                 return account.postbox.transaction { transaction -> (items: [FoundStickerItem], isFinalResult: Bool) in
                     switch result {
-                    case let .foundStickers(_, _, hash, stickers):
+                    case let .foundStickers(foundStickersData):
+                        let (_, _, hash, stickers) = (foundStickersData.flags, foundStickersData.nextOffset, foundStickersData.hash, foundStickersData.stickers)
                         var result: [FoundStickerItem] = []
                         let currentItemIds = Set<MediaId>(localItems.map { $0.file.fileId })
-                        
+
                         var premiumItems: [FoundStickerItem] = []
                         var otherItems: [FoundStickerItem] = []
-                        
+
                         for item in localItems {
                             if item.file.isPremiumSticker {
                                 premiumItems.append(item)
@@ -319,11 +320,11 @@ func _internal_searchStickers(account: Account, query: String?, emoticon: [Strin
                                 otherItems.append(item)
                             }
                         }
-                    
+
                         var foundItems: [FoundStickerItem] = []
                         var foundAnimatedItems: [FoundStickerItem] = []
                         var foundPremiumItems: [FoundStickerItem] = []
-                    
+
                         var files: [TelegramMediaFile] = []
                         for sticker in stickers {
                             if let file = telegramMediaFileFromApiDocument(sticker, altDocuments: []), let id = file.id {
@@ -339,10 +340,10 @@ func _internal_searchStickers(account: Account, query: String?, emoticon: [Strin
                                 }
                             }
                         }
-                    
+
                         let allPremiumItems = premiumItems + foundPremiumItems
                         let allOtherItems = otherItems + foundAnimatedItems + foundItems
-                        
+
                         if isPremium {
                             let batchCount = Int(searchStickersConfiguration.normalStickersPerPremiumCount)
                             if batchCount == 0 {
@@ -373,12 +374,12 @@ func _internal_searchStickers(account: Account, query: String?, emoticon: [Strin
                             result.append(contentsOf: allOtherItems)
                             result.append(contentsOf: allPremiumItems.prefix(max(0, Int(searchStickersConfiguration.premiumStickersCount))))
                         }
-                    
+
                         let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
                         if hash != 0, let entry = CodableEntry(CachedStickerQueryResult(items: files, hash: hash, timestamp: currentTime)) {
                             transaction.putItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedStickerQueryResults, key: CachedStickerQueryResult.cacheKey(cacheKey)), entry: entry)
                         }
-                    
+
                         return (result, true)
                     case .foundStickersNotModified:
                         break
@@ -394,7 +395,8 @@ func _internal_searchStickers(account: Account, query: String?, emoticon: [Strin
             |> mapToSignal { result -> Signal<(items: [FoundStickerItem], isFinalResult: Bool), NoError> in
                 return account.postbox.transaction { transaction -> (items: [FoundStickerItem], isFinalResult: Bool) in
                     switch result {
-                        case let .stickers(hash, stickers):
+                        case let .stickers(stickersData):
+                            let (hash, stickers) = (stickersData.hash, stickersData.stickers)
                             var result: [FoundStickerItem] = []
                             let currentItemIds = Set<MediaId>(localItems.map { $0.file.fileId })
                             
@@ -784,13 +786,14 @@ func _internal_searchStickers(account: Account, category: EmojiSearchCategories.
         |> mapToSignal { result -> Signal<(items: [FoundStickerItem], isFinalResult: Bool), NoError> in
             return account.postbox.transaction { transaction -> (items: [FoundStickerItem], isFinalResult: Bool) in
                 switch result {
-                    case let .stickers(hash, stickers):
+                    case let .stickers(stickersData):
+                        let (hash, stickers) = (stickersData.hash, stickersData.stickers)
                         var result: [FoundStickerItem] = []
                         let currentItemIds = Set<MediaId>(localItems.map { $0.file.fileId })
-                        
+
                         var premiumItems: [FoundStickerItem] = []
                         var otherItems: [FoundStickerItem] = []
-                        
+
                         for item in localItems {
                             if item.file.isPremiumSticker {
                                 premiumItems.append(item)
@@ -798,11 +801,11 @@ func _internal_searchStickers(account: Account, category: EmojiSearchCategories.
                                 otherItems.append(item)
                             }
                         }
-                    
+
                         var foundItems: [FoundStickerItem] = []
                         var foundAnimatedItems: [FoundStickerItem] = []
                         var foundPremiumItems: [FoundStickerItem] = []
-                    
+
                         var files: [TelegramMediaFile] = []
                         for sticker in stickers {
                             if let file = telegramMediaFileFromApiDocument(sticker, altDocuments: []), let id = file.id {
@@ -818,10 +821,10 @@ func _internal_searchStickers(account: Account, category: EmojiSearchCategories.
                                 }
                             }
                         }
-                    
+
                         let allPremiumItems = premiumItems + foundPremiumItems
                         let allOtherItems = otherItems + foundAnimatedItems + foundItems
-                        
+
                         if isPremium {
                             let batchCount = Int(searchStickersConfiguration.normalStickersPerPremiumCount)
                             if batchCount == 0 {
@@ -852,12 +855,12 @@ func _internal_searchStickers(account: Account, category: EmojiSearchCategories.
                             result.append(contentsOf: allOtherItems)
                             result.append(contentsOf: allPremiumItems.prefix(max(0, Int(searchStickersConfiguration.premiumStickersCount))))
                         }
-                    
+
                         let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
                         if let entry = CodableEntry(CachedStickerQueryResult(items: files, hash: hash, timestamp: currentTime)) {
                             transaction.putItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedStickerQueryResults, key: CachedStickerQueryResult.cacheKey(query.joined(separator: ""))), entry: entry)
                         }
-                    
+
                         return (result, true)
                     case .stickersNotModified:
                         break
@@ -953,12 +956,13 @@ func _internal_searchEmoji(account: Account, query: String?, emoticon: [String],
             let flags: Int32 = 1 << 0
             remote = account.network.request(Api.functions.messages.searchStickers(flags: flags, q: query, emoticon: emoticon.joined(separator: ""), langCode: [inputLanguageCode], offset: 0, limit: 128, hash: cached?.hash ?? 0))
             |> `catch` { _ -> Signal<Api.messages.FoundStickers, NoError> in
-                return .single(.foundStickersNotModified(flags: 0, nextOffset: nil))
+                return .single(.foundStickersNotModified(.init(flags: 0, nextOffset: nil)))
             }
             |> mapToSignal { result -> Signal<(items: [FoundStickerItem], isFinalResult: Bool), NoError> in
                 return account.postbox.transaction { transaction -> (items: [FoundStickerItem], isFinalResult: Bool) in
                     switch result {
-                    case let .foundStickers(_, _, hash, stickers):
+                    case let .foundStickers(foundStickersData):
+                        let (_, _, hash, stickers) = (foundStickersData.flags, foundStickersData.nextOffset, foundStickersData.hash, foundStickersData.stickers)
                         var result: [FoundStickerItem] = localItems
                         var currentItemIds = Set<MediaId>(localItems.map { $0.file.fileId })
 
@@ -973,12 +977,12 @@ func _internal_searchEmoji(account: Account, query: String?, emoticon: [String],
                                 result.append(FoundStickerItem(file: file, stringRepresentations: []))
                             }
                         }
-                    
+
                         let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
                         if let entry = CodableEntry(CachedStickerQueryResult(items: files, hash: hash, timestamp: currentTime)) {
                             transaction.putItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedEmojiQueryResults, key: CachedStickerQueryResult.cacheKey(cacheKey)), entry: entry)
                         }
-                    
+
                         return (result, true)
                     case .foundStickersNotModified:
                         break
@@ -995,7 +999,8 @@ func _internal_searchEmoji(account: Account, query: String?, emoticon: [String],
                 switch result {
                 case .emojiListNotModified:
                     return .single(nil)
-                case let .emojiList(hash, documentIds):
+                case let .emojiList(emojiListData):
+                    let (hash, documentIds) = (emojiListData.hash, emojiListData.documentId)
                     return TelegramEngine(account: account).stickers.resolveInlineStickers(fileIds: documentIds)
                     |> map { fileMap -> (files: [TelegramMediaFile], hash: Int64)? in
                         var files: [TelegramMediaFile] = []
@@ -1068,7 +1073,8 @@ func _internal_searchStickerSetsRemotely(network: Network, query: String) -> Sig
         |> mapToSignal { value in
             var index: Int32 = 1000
             switch value {
-            case let .foundStickerSets(_, sets: sets):
+            case let .foundStickerSets(foundStickerSetsData):
+                let (_, sets) = (foundStickerSetsData.hash, foundStickerSetsData.sets)
                 var result = FoundStickerSets()
                 for set in sets {
                     let parsed = parsePreviewStickerSet(set, namespace: Namespaces.ItemCollection.CloudStickerPacks)
@@ -1080,7 +1086,7 @@ func _internal_searchStickerSetsRemotely(network: Network, query: String) -> Sig
             default:
                 break
             }
-            
+
             return .complete()
         }
         |> `catch` { _ -> Signal<FoundStickerSets, NoError> in
@@ -1094,7 +1100,8 @@ func _internal_searchEmojiSetsRemotely(postbox: Postbox, network: Network, query
     |> mapToSignal { value in
         var index: Int32 = 1000
         switch value {
-        case let .foundStickerSets(_, sets: sets):
+        case let .foundStickerSets(foundStickerSetsData):
+            let (_, sets) = (foundStickerSetsData.hash, foundStickerSetsData.sets)
             var result = FoundStickerSets()
             for set in sets {
                 let parsed = parsePreviewStickerSet(set, namespace: Namespaces.ItemCollection.CloudEmojiPacks)
@@ -1106,7 +1113,7 @@ func _internal_searchEmojiSetsRemotely(postbox: Postbox, network: Network, query
         default:
             break
         }
-        
+
         return .complete()
     }
     |> `catch` { _ -> Signal<FoundStickerSets, NoError> in

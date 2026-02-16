@@ -439,7 +439,11 @@ private final class MediaPlayerContext {
             self.audioRenderer = nil
             
             var timebase: CMTimebase?
+            #if os(macOS)
+            CMTimebaseCreateWithMasterClock(allocator: nil, masterClock: CMClockGetHostTimeClock(), timebaseOut: &timebase)
+            #else
             CMTimebaseCreateWithSourceClock(allocator: nil, sourceClock: CMClockGetHostTimeClock(), timebaseOut: &timebase)
+            #endif
             controlTimebase = MediaPlayerControlTimebase(timebase: timebase!, isAudio: false)
             CMTimebaseSetTime(timebase!, time: seekResult.timestamp)
         }

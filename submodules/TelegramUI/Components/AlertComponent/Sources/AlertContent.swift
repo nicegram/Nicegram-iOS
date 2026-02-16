@@ -65,6 +65,8 @@ public final class AlertTitleComponent: Component {
             
             let environment = environment[AlertComponentEnvironment.self]
             
+            let inset: CGFloat = -6.0
+            let titleConstrainedSize = CGSize(width: availableSize.width - inset * 2.0, height: availableSize.height)
             let titleSize = self.title.update(
                 transition: transition,
                 component: AnyComponent(MultilineTextComponent(
@@ -77,13 +79,13 @@ public final class AlertTitleComponent: Component {
                     maximumNumberOfLines: 0
                 )),
                 environment: {},
-                containerSize: availableSize
+                containerSize: titleConstrainedSize
             )
             
             let titleOriginX: CGFloat
             switch component.alignment {
             case .default:
-                titleOriginX = 0.0
+                titleOriginX = inset
             case .center:
                 titleOriginX = floorToScreenPixels((availableSize.width - titleSize.width) / 2.0)
             }
@@ -280,7 +282,8 @@ public final class AlertTextComponent: Component {
                 break
             }
             
-            let textConstrainedSize = CGSize(width: availableSize.width, height: availableSize.height)
+            let inset: CGFloat = -6.0
+            let textConstrainedSize = CGSize(width: availableSize.width - inset * 2.0, height: availableSize.height)
                         
             let textSize = self.text.update(
                 transition: transition,
@@ -314,7 +317,7 @@ public final class AlertTextComponent: Component {
                 containerSize: textConstrainedSize
             )
             
-            var textOffset = CGPoint()
+            var textOffset = CGPoint(x: inset, y: 0.0)
             if hasCenterAlignment {
                 textOffset.x = floorToScreenPixels((availableSize.width - textSize.width) / 2.0)
             }

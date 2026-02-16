@@ -945,7 +945,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                             buttons.append(button)
                                         } else if case let .switchInline(samePeer, query, peerTypes) = button.action, sourceSentViaBot {
                                             let samePeer = samePeer && peerId == sourceMessage.id.peerId
-                                            let updatedButton = ReplyMarkupButton(title: button.titleWhenForwarded ?? button.title, titleWhenForwarded: button.titleWhenForwarded,  action: .switchInline(samePeer: samePeer, query: query, peerTypes: peerTypes))
+                                            let updatedButton = ReplyMarkupButton(title: button.titleWhenForwarded ?? button.title, titleWhenForwarded: button.titleWhenForwarded,  action: .switchInline(samePeer: samePeer, query: query, peerTypes: peerTypes), style: button.style)
                                             buttons.append(updatedButton)
                                         } else {
                                             rows.removeAll()

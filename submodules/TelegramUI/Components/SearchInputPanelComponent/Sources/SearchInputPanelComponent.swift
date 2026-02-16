@@ -208,7 +208,7 @@ public final class SearchInputPanelComponent: Component {
             let fieldFrame = CGRect(origin: CGPoint(x: edgeInsets.left, y: edgeInsets.top), size: CGSize(width: availableSize.width - edgeInsets.left - edgeInsets.right - fieldHeight - buttonSpacing, height: fieldHeight))
             let cancelButtonFrame = CGRect(origin: CGPoint(x: edgeInsets.left + fieldFrame.width + buttonSpacing, y: edgeInsets.top), size: CGSize(width: fieldHeight, height: fieldHeight))
             
-            self.backgroundView.update(size: fieldFrame.size, cornerRadius: fieldFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: backgroundColor), isInteractive: true, transition: transition)
+            self.backgroundView.update(size: fieldFrame.size, cornerRadius: fieldFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
             transition.setFrame(view: self.backgroundView, frame: fieldFrame)
         
             let fieldSideInset: CGFloat = 41.0

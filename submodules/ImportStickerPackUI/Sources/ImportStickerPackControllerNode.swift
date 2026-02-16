@@ -265,7 +265,7 @@ final class ImportStickerPackControllerNode: ViewControllerTracingNode, ASScroll
             return nil
         }, present: { [weak self] content, sourceView, sourceRect in
             if let strongSelf = self {
-                let controller = PeekController(presentationData: strongSelf.presentationData, content: content, sourceView: {
+                let controller = makePeekController(presentationData: strongSelf.presentationData, content: content, sourceView: {
                     return (sourceView, sourceRect)
                 })
                 controller.visibilityUpdated = { [weak self] visible in

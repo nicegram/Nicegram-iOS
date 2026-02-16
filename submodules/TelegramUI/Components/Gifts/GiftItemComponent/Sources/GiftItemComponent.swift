@@ -30,7 +30,7 @@ public final class GiftItemComponent: Component {
         case starGift(gift: StarGift.Gift, price: String)
         case uniqueGift(gift: StarGift.UniqueGift, price: String?)
         case auction(gift: StarGift.Gift, endTime: Int32)
-        case preview(attributes: [StarGift.UniqueGift.Attribute], rarity: Int32)
+        case preview(attributes: [StarGift.UniqueGift.Attribute], rarity: StarGift.UniqueGift.Attribute.Rarity?)
     }
     
     public struct Ribbon: Equatable {
@@ -159,6 +159,7 @@ public final class GiftItemComponent: Component {
     let label: String?
     let ribbon: Ribbon?
     let outline: Outline?
+    let badge: String?
     let resellPrice: Int64?
     let isLoading: Bool
     let isHidden: Bool
@@ -170,6 +171,8 @@ public final class GiftItemComponent: Component {
     let isPlaceholder: Bool
     let animateChanges: Bool
     let mode: Mode
+    let cornerRadius: CGFloat?
+    let allowAnimations: Bool
     let action: (() -> Void)?
     let contextAction: ((UIView, ContextGesture) -> Void)?
     
@@ -185,6 +188,7 @@ public final class GiftItemComponent: Component {
         label: String? = nil,
         ribbon: Ribbon? = nil,
         outline: Outline? = nil,
+        badge: String? = nil,
         resellPrice: Int64? = nil,
         isLoading: Bool = false,
         isHidden: Bool = false,
@@ -196,6 +200,8 @@ public final class GiftItemComponent: Component {
         isPlaceholder: Bool = false,
         animateChanges: Bool = false,
         mode: Mode = .generic,
+        cornerRadius: CGFloat? = nil,
+        allowAnimations: Bool = true,
         action: (() -> Void)? = nil,
         contextAction: ((UIView, ContextGesture) -> Void)? = nil
     ) {
@@ -210,6 +216,7 @@ public final class GiftItemComponent: Component {
         self.label = label
         self.ribbon = ribbon
         self.outline = outline
+        self.badge = badge
         self.resellPrice = resellPrice
         self.isLoading = isLoading
         self.isHidden = isHidden
@@ -221,6 +228,8 @@ public final class GiftItemComponent: Component {
         self.isPlaceholder = isPlaceholder
         self.animateChanges = animateChanges
         self.mode = mode
+        self.cornerRadius = cornerRadius
+        self.allowAnimations = allowAnimations
         self.action = action
         self.contextAction = contextAction
     }
@@ -259,6 +268,9 @@ public final class GiftItemComponent: Component {
         if lhs.outline != rhs.outline {
             return false
         }
+        if lhs.badge != rhs.badge {
+            return false
+        }
         if lhs.resellPrice != rhs.resellPrice {
             return false
         }
@@ -292,6 +304,12 @@ public final class GiftItemComponent: Component {
         if lhs.mode != rhs.mode {
             return false
         }
+        if lhs.cornerRadius != rhs.cornerRadius {
+            return false
+        }
+        if lhs.allowAnimations != rhs.allowAnimations {
+            return false
+        }
         if (lhs.contextAction == nil) != (rhs.contextAction == nil) {
             return false
         }
@@ -304,7 +322,7 @@ public final class GiftItemComponent: Component {
         
         private let containerButton = HighlightTrackingButton()
         
-        private let backgroundLayer = SimpleLayer()
+        public let backgroundLayer = SimpleLayer()
         private var loadingBackground: ComponentView<Empty>?
         
         private let patternView = ComponentView<Empty>()
@@ -342,6 +360,13 @@ public final class GiftItemComponent: Component {
         private let reselLabel = ComponentView<Empty>()
         
         private var giftAuctionTimer: SwiftSignalKit.Timer?
+        
+        public var pattern: UIView? {
+            if let view = self.patternView.view {
+                return view
+            }
+            return nil
+        }
         
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -392,7 +417,7 @@ public final class GiftItemComponent: Component {
             
             var size: CGSize
             let iconSize: CGSize
-            let cornerRadius: CGFloat
+            var cornerRadius: CGFloat
             switch component.mode {
             case .generic:
                 size = CGSize(width: availableSize.width, height: component.title != nil ? 178.0 : 154.0)
@@ -410,7 +435,12 @@ public final class GiftItemComponent: Component {
                 size = availableSize
                 let side = floor(88.0 * availableSize.height / 116.0)
                 iconSize = CGSize(width: side, height: side)
-                cornerRadius = 10.0
+                switch component.style {
+                case .glass:
+                    cornerRadius = 16.0
+                case .legacy:
+                    cornerRadius = 10.0
+                }
             case .thumbnail:
                 size = CGSize(width: availableSize.width, height: availableSize.width)
                 iconSize = CGSize(width: floor(size.width * 0.7), height: floor(size.width * 0.7))
@@ -418,7 +448,12 @@ public final class GiftItemComponent: Component {
             case .grid:
                 size = CGSize(width: availableSize.width, height: availableSize.width)
                 iconSize = CGSize(width: floor(size.width * 0.7), height: floor(size.width * 0.7))
-                cornerRadius = 10.0
+                switch component.style {
+                case .glass:
+                    cornerRadius = 16.0
+                case .legacy:
+                    cornerRadius = 10.0
+                }
             case .preview:
                 size = availableSize
                 iconSize = CGSize(width: floor(size.width * 0.6), height: floor(size.width * 0.6))
@@ -445,8 +480,12 @@ public final class GiftItemComponent: Component {
                 cornerRadius = 16.0
             }
             var backgroundSize = size
-            if case .grid = component.mode {
+            if case .grid = component.mode, component.cornerRadius == nil {
                 backgroundSize = CGSize(width: backgroundSize.width - 4.0, height: backgroundSize.height - 4.0)
+            }
+            
+            if let forcedCornerRadius = component.cornerRadius {
+                cornerRadius = forcedCornerRadius
             }
             
             self.backgroundLayer.cornerRadius = cornerRadius
@@ -515,7 +554,7 @@ public final class GiftItemComponent: Component {
                 animationOffset = 16.0
                 for attribute in gift.attributes {
                     switch attribute {
-                    case let .model(_, file, _):
+                    case let .model(_, file, _, _):
                         animationFile = file
                         if !self.fetchedFiles.contains(file.fileId.id) {
                             self.disposables.add(freeMediaFileResourceInteractiveFetched(account: component.context.account, userLocation: .other, fileReference: .standalone(media: file), resource: file.resource).start())
@@ -606,7 +645,7 @@ public final class GiftItemComponent: Component {
                 }
                 for attribute in attributes {
                     switch attribute {
-                    case let .model(_, file, _):
+                    case let .model(_, file, _, _):
                         animationFile = file
                         if !self.fetchedFiles.contains(file.fileId.id) {
                             self.disposables.add(freeMediaFileResourceInteractiveFetched(account: component.context.account, userLocation: .other, fileReference: .standalone(media: file), resource: file.resource).start())
@@ -680,7 +719,7 @@ public final class GiftItemComponent: Component {
                     pointSize: CGSize(width: iconSize.width * 2.0, height: iconSize.height * 2.0),
                     loopCount: 1
                 )
-                animationLayer.isVisibleForAnimations = true
+                animationLayer.isVisibleForAnimations = component.allowAnimations
                 self.animationLayer = animationLayer
                 
                 if let patternView = self.patternView.view {
@@ -732,8 +771,8 @@ public final class GiftItemComponent: Component {
                     backgroundView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - backgroundSize.width) / 2.0), y: floorToScreenPixels((size.height - backgroundSize.height) / 2.0)), size: backgroundSize)
                 }
             }
-            
-            if case .upgradePreview = component.mode, case let .preview(attributes, rarity) = component.subject {
+                        
+            if case .upgradePreview = component.mode, case let .preview(attributes, rarity) = component.subject, let rarity {
                 let isColored = attributes.count > 1
                 if let title = component.title {
                     let titleSize = self.title.update(
@@ -759,12 +798,44 @@ public final class GiftItemComponent: Component {
                 func formatPercentage(_ value: Float) -> String {
                     return String(format: "%0.1f", value).replacingOccurrences(of: ".0", with: "").replacingOccurrences(of: ",0", with: "") + "%"
                 }
-                let percentage = Float(rarity) * 0.1
+                               
+                let badgeString: String
+                var badgeColor: UIColor?
+                switch rarity {
+                case let .permille(value):
+                    if value == 0 {
+                        badgeString = "<\(formatPercentage(0.1))"
+                    } else {
+                        badgeString = formatPercentage(Float(value) * 0.1)
+                    }
+                case .epic:
+                    badgeString = component.strings.Gift_Attribute_Epic
+                    badgeColor = UIColor(rgb: 0xaf52de)
+                case .legendary:
+                    badgeString = component.strings.Gift_Attribute_Legendary
+                    badgeColor = UIColor(rgb: 0xd57e32)
+                case .rare:
+                    badgeString = component.strings.Gift_Attribute_Rare
+                    badgeColor = UIColor(rgb: 0x25a3b9)
+                case .uncommon:
+                    badgeString = component.strings.Gift_Attribute_Uncommon
+                    badgeColor = UIColor(rgb: 0x22b447)
+                }
                 
+                var badgeTextColor = isColored ? .white : component.theme.list.itemSecondaryTextColor
+                var badgeBackgroundColor = isColored ? UIColor(white: 0.0, alpha: 0.2) : component.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.06)
+                if let badgeColor {
+                    badgeTextColor = badgeColor
+                    if let backgroundColor {
+                        badgeBackgroundColor = badgeColor.mixedWith(backgroundColor, alpha: 0.9)
+                    } else {
+                        badgeBackgroundColor =  badgeColor.withMultipliedAlpha(0.1)
+                    }
+                }
                 let badgeTextSize = self.badgeText.update(
                     transition: .spring(duration: 0.2),
                     component: AnyComponent(
-                        MultilineTextComponent(text: .plain(NSAttributedString(string: formatPercentage(percentage), font: Font.with(size: 11.0, weight: .medium, traits: .monospacedNumbers), textColor: isColored ? .white : component.theme.list.itemSecondaryTextColor)))
+                        MultilineTextComponent(text: .plain(NSAttributedString(string: badgeString, font: Font.with(size: 11.0, weight: .medium, traits: .monospacedNumbers), textColor: badgeTextColor)))
                     ),
                     environment: {},
                     containerSize: availableSize
@@ -774,7 +845,7 @@ public final class GiftItemComponent: Component {
                 let _ = self.badgeBackground.update(
                     transition: .spring(duration: 0.2),
                     component: AnyComponent(
-                        RoundedRectangle(color: isColored ? UIColor(white: 0.0, alpha: 0.2) : component.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.06), cornerRadius: 9.0)
+                        RoundedRectangle(color: badgeBackgroundColor, cornerRadius: 9.0)
                     ),
                     environment: {},
                     containerSize: badgeBackgroundSize
@@ -1032,6 +1103,43 @@ public final class GiftItemComponent: Component {
                     }
                 } else if let tonView = self.ton.view, tonView.superview != nil {
                     tonView.removeFromSuperview()
+                }
+            }
+            
+            if let badgeString = component.badge {
+                var badgeBackgroundColor = UIColor(white: 0.0, alpha: 0.2)
+                if let ribbon = component.ribbon, case let .custom(bottomValue, topValue) = ribbon.color {
+                    let topColor = UIColor(rgb: UInt32(bitPattern: topValue)).withMultiplied(hue: 1.01, saturation: 1.22, brightness: 1.04)
+                    let bottomColor = UIColor(rgb: UInt32(bitPattern: bottomValue)).withMultiplied(hue: 0.97, saturation: 1.45, brightness: 0.89)
+                    badgeBackgroundColor = topColor.mixedWith(bottomColor, alpha: 0.8)
+                }
+                
+                let badgeTextSize = self.badgeText.update(
+                    transition: .spring(duration: 0.2),
+                    component: AnyComponent(
+                        MultilineTextComponent(text: .plain(NSAttributedString(string: badgeString, font: Font.with(size: 11.0, weight: .medium, traits: .monospacedNumbers), textColor: .white)))
+                    ),
+                    environment: {},
+                    containerSize: availableSize
+                )
+                
+                let badgeBackgroundSize = CGSize(width: badgeTextSize.width + 11.0, height: 18.0)
+                let _ = self.badgeBackground.update(
+                    transition: .spring(duration: 0.2),
+                    component: AnyComponent(
+                        RoundedRectangle(color: badgeBackgroundColor, cornerRadius: 9.0)
+                    ),
+                    environment: {},
+                    containerSize: badgeBackgroundSize
+                )
+                
+                if let badgeBackgroundView = self.badgeBackground.view, let badgeTextView = self.badgeText.view {
+                    if badgeBackgroundView.superview == nil {
+                        self.addSubview(badgeBackgroundView)
+                        self.addSubview(badgeTextView)
+                    }
+                    badgeTextView.frame = CGRect(origin: CGPoint(x: 15.0, y: 12.0), size: badgeTextSize)
+                    badgeBackgroundView.frame = CGRect(origin: CGPoint(x: floorToScreenPixels(badgeTextView.frame.center.x - badgeBackgroundSize.width / 2.0), y: floorToScreenPixels(badgeTextView.frame.center.y - badgeBackgroundSize.height / 2.0)), size: badgeBackgroundSize)
                 }
             }
             
@@ -1345,7 +1453,13 @@ public final class GiftItemComponent: Component {
                 let lineWidth: CGFloat = 2.0
                 let selectionFrame = backgroundFrame.insetBy(dx: 2.0, dy: 2.0)
                 
-                var cornerRadius: CGFloat = 6.0
+                var cornerRadius: CGFloat
+                switch component.style {
+                case .glass:
+                    cornerRadius = 14.0
+                case .legacy:
+                    cornerRadius = 6.0
+                }
                 if case .upgradePreview = component.mode {
                     cornerRadius = 13.0
                 }

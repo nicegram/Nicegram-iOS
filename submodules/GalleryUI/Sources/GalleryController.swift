@@ -143,11 +143,11 @@ public func internalDocumentItemSupportsMimeType(_ type: String, fileName: Strin
     return false
 }
 
-private let textFont = Font.regular(16.0)
-private let boldFont = Font.bold(16.0)
-private let italicFont = Font.italic(16.0)
-private let boldItalicFont = Font.semiboldItalic(16.0)
-private let fixedFont = UIFont(name: "Menlo-Regular", size: 15.0) ?? textFont
+private let textFont = Font.regular(17.0)
+private let boldFont = Font.bold(17.0)
+private let italicFont = Font.italic(17.0)
+private let boldItalicFont = Font.semiboldItalic(17.0)
+private let fixedFont = UIFont(name: "Menlo-Regular", size: 17.0) ?? textFont
 
 public func galleryCaptionStringWithAppliedEntities(context: AccountContext, text: String, entities: [MessageTextEntity], message: Message?, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil) -> NSAttributedString {
     var baseQuoteSecondaryTintColor: UIColor?
@@ -582,8 +582,7 @@ private func galleryEntriesForMessageHistoryEntries(_ entries: [MessageHistoryEn
 }
 
 public class GalleryController: ViewController, StandalonePresentableController, KeyShortcutResponder, GalleryControllerProtocol {
-    public static let darkNavigationTheme = NavigationBarTheme(overallDarkAppearance: true, buttonColor: .white, disabledButtonColor: UIColor(rgb: 0x525252), primaryTextColor: .white, backgroundColor: UIColor(white: 0.0, alpha: 0.6), enableBackgroundBlur: false, separatorColor: UIColor(white: 0.0, alpha: 0.8), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear)
-    public static let lightNavigationTheme = NavigationBarTheme(overallDarkAppearance: false, buttonColor: UIColor(rgb: 0x0088ff), disabledButtonColor: UIColor(rgb: 0xd0d0d0), primaryTextColor: .black, backgroundColor: UIColor(red: 0.968626451, green: 0.968626451, blue: 0.968626451, alpha: 1.0), enableBackgroundBlur: false, separatorColor: UIColor(red: 0.6953125, green: 0.6953125, blue: 0.6953125, alpha: 1.0), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear)
+    public static let darkNavigationTheme = NavigationBarTheme(overallDarkAppearance: true, buttonColor: .white, disabledButtonColor: UIColor(rgb: 0x525252), primaryTextColor: .white, backgroundColor: UIColor(white: 0.0, alpha: 0.6), enableBackgroundBlur: false, separatorColor: UIColor(white: 0.0, alpha: 0.8), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear, edgeEffectColor: .clear, style: .glass)
     
     private var galleryNode: GalleryControllerNode {
         return self.displayNode as! GalleryControllerNode
@@ -593,6 +592,8 @@ public class GalleryController: ViewController, StandalonePresentableController,
     private var presentationData: PresentationData
     private let source: GalleryControllerItemSource
     private let invertItemOrder: Bool
+    
+    private let titleView: GalleryTitleView
     
     private let streamVideos: Bool
     
@@ -624,7 +625,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
     private var configuration: GalleryConfiguration?
     
     private let centralItemTitle = Promise<String>()
-    private let centralItemTitleView = Promise<UIView?>()
+    private let centralItemTitleContent = Promise<GalleryTitleView.Content?>()
     private let centralItemRightBarButtonItem = Promise<UIBarButtonItem?>()
     private let centralItemRightBarButtonItems = Promise<[UIBarButtonItem]?>(nil)
     private let centralItemNavigationStyle = Promise<GalleryItemNodeNavigationStyle>()
@@ -651,6 +652,8 @@ public class GalleryController: ViewController, StandalonePresentableController,
     public var centralItemUpdated: ((MessageId) -> Void)?
     public var onDidAppear: (() -> Void)?
     public var useSimpleAnimation: Bool = false
+    
+    public var navigateToMessageContext: ((EngineMessage) -> Void)?
     
     private var initialOrientation: UIInterfaceOrientation?
     
@@ -686,6 +689,8 @@ public class GalleryController: ViewController, StandalonePresentableController,
         self.openActionOptions = { action, message in
             openActionOptionsImpl?(action, message)
         }
+        
+        self.titleView = GalleryTitleView(context: context, presentationData: self.presentationData)
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: GalleryController.darkNavigationTheme, strings: NavigationBarStrings(presentationStrings: self.presentationData.strings)))
         
@@ -922,8 +927,8 @@ public class GalleryController: ViewController, StandalonePresentableController,
             self?.navigationItem.title = title
         }))
         
-        self.centralItemAttributesDisposable.add(self.centralItemTitleView.get().start(next: { [weak self] titleView in
-            self?.navigationItem.titleView = titleView
+        self.centralItemAttributesDisposable.add(self.centralItemTitleContent.get().start(next: { [weak self] titleContent in
+            self?.titleView.setContent(content: titleContent)
         }))
         
         self.centralItemAttributesDisposable.add(combineLatest(self.centralItemRightBarButtonItem.get(), self.centralItemRightBarButtonItems.get()).start(next: { [weak self] rightBarButtonItem, rightBarButtonItems in
@@ -940,7 +945,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
         self.centralItemAttributesDisposable.add(self.centralItemFooterContentNode.get().start(next: { [weak self] footerContentNode, overlayContentNode in
             self?.galleryNode.updatePresentationState({
                 $0.withUpdatedFooterContentNode(footerContentNode).withUpdatedOverlayContentNode(overlayContentNode)
-            }, transition: .immediate)
+            }, transition: .animated(duration: 0.4, curve: .spring))
         }))
         
         self.centralItemAttributesDisposable.add(self.centralItemNavigationStyle.get().start(next: { [weak self] style in
@@ -1304,6 +1309,10 @@ public class GalleryController: ViewController, StandalonePresentableController,
         var animatedOutNode = true
         var animatedOutInterface = false
         
+        if forceAway {
+            self._hiddenMedia.set(.single(nil))
+        }
+        
         let completion = { [weak self] in
             if animatedOutNode && animatedOutInterface {
                 self?.actionInteraction?.updateCanReadHistory(true)
@@ -1377,10 +1386,12 @@ public class GalleryController: ViewController, StandalonePresentableController,
             }
         }, controller: { [weak self] in
             return self
+        }, currentItemNode: { [weak self] in
+            return self?.galleryNode.pager.centralItemNode()
         })
         
         let disableTapNavigation = !(self.context.sharedContext.currentMediaDisplaySettings.with { $0 }.showNextMediaOnTap)
-        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, disableTapNavigation: disableTapNavigation)
+        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, titleView: titleView, disableTapNavigation: disableTapNavigation)
         self.displayNodeDidLoad()
         
         self.galleryNode.statusBar = self.statusBar
@@ -1534,7 +1545,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
                     
                     if let node = strongSelf.galleryNode.pager.centralItemNode() {
                         strongSelf.centralItemTitle.set(node.title())
-                        strongSelf.centralItemTitleView.set(node.titleView())
+                        strongSelf.centralItemTitleContent.set(node.titleContent())
                         strongSelf.centralItemRightBarButtonItem.set(node.rightBarButtonItem())
                         strongSelf.centralItemRightBarButtonItems.set(node.rightBarButtonItems())
                         strongSelf.centralItemNavigationStyle.set(node.navigationStyle())
@@ -1720,7 +1731,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
             let entry = self.entries[centralItemNode.index]
             
             self.centralItemTitle.set(centralItemNode.title())
-            self.centralItemTitleView.set(centralItemNode.titleView())
+            self.centralItemTitleContent.set(centralItemNode.titleContent())
             self.centralItemRightBarButtonItem.set(centralItemNode.rightBarButtonItem())
             self.centralItemRightBarButtonItems.set(centralItemNode.rightBarButtonItems())
             self.centralItemNavigationStyle.set(centralItemNode.navigationStyle())
@@ -1773,7 +1784,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
         if let centralItemNode = self.galleryNode.pager.centralItemNode() {
             let message = self.entries[centralItemNode.index].entry.message
             self.centralItemTitle.set(centralItemNode.title())
-            self.centralItemTitleView.set(centralItemNode.titleView())
+            self.centralItemTitleContent.set(centralItemNode.titleContent())
             self.centralItemRightBarButtonItem.set(centralItemNode.rightBarButtonItem())
             self.centralItemRightBarButtonItems.set(centralItemNode.rightBarButtonItems())
             self.centralItemNavigationStyle.set(centralItemNode.navigationStyle())
@@ -1917,5 +1928,12 @@ public class GalleryController: ViewController, StandalonePresentableController,
         currentPictureInPictureNode.expandPIP()
         
         return true
+    }
+    
+    func dismissAndNavigateToMessageContext(message: Message) {
+        if let navigateToMessageContext = self.navigateToMessageContext {
+            navigateToMessageContext(EngineMessage(message))
+        }
+        self.dismiss(forceAway: true)
     }
 }

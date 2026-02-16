@@ -16,7 +16,8 @@ func _internal_updateGlobalPrivacySettings(account: Account) -> Signal<Never, No
             }
             let globalSettings: GlobalPrivacySettings
             switch result {
-            case let .globalPrivacySettings(flags, nonContactPeersPaidStars, disallowedStarGifts):
+            case let .globalPrivacySettings(globalPrivacySettingsData):
+                let (flags, nonContactPeersPaidStars, disallowedStarGifts) = (globalPrivacySettingsData.flags, globalPrivacySettingsData.noncontactPeersPaidStars, globalPrivacySettingsData.disallowedGifts)
                 let automaticallyArchiveAndMuteNonContacts = (flags & (1 << 0)) != 0
                 let keepArchivedUnmuted = (flags & (1 << 1)) != 0
                 let keepArchivedFolders = (flags & (1 << 2)) != 0
@@ -80,13 +81,14 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
     |> mapToSignal { lastSeenPrivacy, groupPrivacy, voiceCallPrivacy, voiceCallP2P, profilePhotoPrivacy, forwardPrivacy, phoneNumberPrivacy, phoneDiscoveryPrivacy, voiceMessagesPrivacy, bioPrivacy, birthdayPrivacy, giftsAutoSavePrivacy, noPaidMessagesPrivacy, savedMusicPrivacy, autoremoveTimeout, globalPrivacySettings, messageAutoremoveTimeout -> Signal<AccountPrivacySettings, NoError> in
         let accountTimeoutSeconds: Int32
         switch autoremoveTimeout {
-            case let .accountDaysTTL(days):
-                accountTimeoutSeconds = days * 24 * 60 * 60
+        case let .accountDaysTTL(accountDaysTTL):
+            accountTimeoutSeconds = accountDaysTTL.days * 24 * 60 * 60
         }
         
         let messageAutoremoveSeconds: Int32?
         switch messageAutoremoveTimeout {
-        case let .defaultHistoryTTL(period):
+        case let .defaultHistoryTTL(defaultHistoryTTLData):
+            let period = defaultHistoryTTLData.period
             if period != 0 {
                 messageAutoremoveSeconds = period
             } else {
@@ -111,49 +113,56 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
         var apiChats: [Api.Chat] = []
         
         switch lastSeenPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 lastSeenRules = rules
         }
         
         switch groupPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 groupRules = rules
         }
         
         switch voiceCallPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 voiceRules = rules
         }
         
         switch voiceCallP2P {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 voiceP2PRules = rules
         }
         
         switch profilePhotoPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 profilePhotoRules = rules
         }
         
         switch forwardPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 forwardRules = rules
         }
         
         switch phoneNumberPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 phoneNumberRules = rules
@@ -161,7 +170,8 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
         
         var phoneDiscoveryValue = false
         switch phoneDiscoveryPrivacy {
-            case let .privacyRules(rules, _, _):
+            case let .privacyRules(privacyRulesData):
+                let rules = privacyRulesData.rules
                 for rule in rules {
                     switch rule {
                     case .privacyValueAllowAll:
@@ -173,40 +183,46 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
         }
         
         switch voiceMessagesPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 voiceMessagesRules = rules
         }
         
         switch bioPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 bioRules = rules
         }
         
         switch birthdayPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 birthdayRules = rules
         }
         
         switch giftsAutoSavePrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 giftsAutoSaveRules = rules
         }
         switch noPaidMessagesPrivacy {
-            case let .privacyRules(rules, chats, users):
+            case let .privacyRules(privacyRulesData):
+                let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
                 apiUsers.append(contentsOf: users)
                 apiChats.append(contentsOf: chats)
                 noPaidMessagesRules = rules
         }
         switch savedMusicPrivacy {
-        case let .privacyRules(rules, chats, users):
+        case let .privacyRules(privacyRulesData):
+            let (rules, chats, users) = (privacyRulesData.rules, privacyRulesData.chats, privacyRulesData.users)
             apiUsers.append(contentsOf: users)
             apiChats.append(contentsOf: chats)
             savedMusicRules = rules
@@ -220,7 +236,8 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
             if let peer = parseTelegramGroupOrChannel(chat: chat) {
                 var participantCount: Int32? = nil
                 switch chat {
-                    case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCountValue, _, _, _, _, _, _, _, _, _, _):
+                    case let .channel(channelData):
+                        let participantsCountValue = channelData.participantsCount
                         participantCount = participantsCountValue
                     default:
                         break
@@ -235,7 +252,8 @@ func _internal_requestAccountPrivacySettings(account: Account) -> Signal<Account
         
         let globalSettings: GlobalPrivacySettings
         switch globalPrivacySettings {
-        case let .globalPrivacySettings(flags, nonContactPeersPaidStars, disallowedStarGifts):
+        case let .globalPrivacySettings(globalPrivacySettingsData):
+            let (flags, nonContactPeersPaidStars, disallowedStarGifts) = (globalPrivacySettingsData.flags, globalPrivacySettingsData.noncontactPeersPaidStars, globalPrivacySettingsData.disallowedGifts)
             let automaticallyArchiveAndMuteNonContacts = (flags & (1 << 0)) != 0
             let keepArchivedUnmuted = (flags & (1 << 1)) != 0
             let keepArchivedFolders = (flags & (1 << 2)) != 0
@@ -403,16 +421,16 @@ func _internal_updateGlobalPrivacySettings(account: Account, settings: GlobalPri
     }
     flags |= 1 << 6
     
-    let disallowedStargifts: Api.DisallowedGiftsSettings = .disallowedGiftsSettings(flags: giftFlags)
+    let disallowedStargifts: Api.DisallowedGiftsSettings = .disallowedGiftsSettings(.init(flags: giftFlags))
     return account.network.request(Api.functions.account.setGlobalPrivacySettings(
-        settings: .globalPrivacySettings(flags: flags, noncontactPeersPaidStars: noncontactPeersPaidStars, disallowedGifts: disallowedStargifts)
+        settings: .globalPrivacySettings(.init(flags: flags, noncontactPeersPaidStars: noncontactPeersPaidStars, disallowedGifts: disallowedStargifts))
     ))
     |> retryRequest
     |> ignoreValues
 }
 
 func _internal_updateAccountRemovalTimeout(account: Account, timeout: Int32) -> Signal<Void, NoError> {
-    return account.network.request(Api.functions.account.setAccountTTL(ttl: .accountDaysTTL(days: timeout / (24 * 60 * 60))))
+    return account.network.request(Api.functions.account.setAccountTTL(ttl: .accountDaysTTL(Api.AccountDaysTTL.Cons_accountDaysTTL(days: timeout / (24 * 60 * 60)))))
         |> retryRequest
         |> mapToSignal { _ -> Signal<Void, NoError> in
             return .complete()
@@ -529,10 +547,10 @@ func _internal_updateSelectiveAccountPrivacySettings(account: Account, type: Upd
                 let enablePeers = apiUserAndGroupIds(peerIds: enableFor)
                 
                 if !enablePeers.users.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowUsers(users: apiInputUsers(transaction: transaction, peerIds: enablePeers.users)))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowUsers(.init(users: apiInputUsers(transaction: transaction, peerIds: enablePeers.users))))
                 }
                 if !enablePeers.groups.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowChatParticipants(chats: enablePeers.groups.map({ $0.id._internalGetInt64Value() })))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowChatParticipants(.init(chats: enablePeers.groups.map({ $0.id._internalGetInt64Value() }))))
                 }
                 
                 rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowAll)
@@ -550,17 +568,17 @@ func _internal_updateSelectiveAccountPrivacySettings(account: Account, type: Upd
                 let disablePeers = apiUserAndGroupIds(peerIds: disableFor)
                 
                 if !enablePeers.users.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowUsers(users: apiInputUsers(transaction: transaction, peerIds: enablePeers.users)))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowUsers(.init(users: apiInputUsers(transaction: transaction, peerIds: enablePeers.users))))
                 }
                 if !enablePeers.groups.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowChatParticipants(chats: enablePeers.groups.map({ $0.id._internalGetInt64Value() })))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowChatParticipants(.init(chats: enablePeers.groups.map({ $0.id._internalGetInt64Value() }))))
                 }
                 
                 if !disablePeers.users.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowUsers(users: apiInputUsers(transaction: transaction, peerIds: disablePeers.users)))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowUsers(.init(users: apiInputUsers(transaction: transaction, peerIds: disablePeers.users))))
                 }
                 if !disablePeers.groups.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowChatParticipants(chats: disablePeers.groups.map({ $0.id._internalGetInt64Value() })))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowChatParticipants(.init(chats: disablePeers.groups.map({ $0.id._internalGetInt64Value() }))))
                 }
             
                 rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowContacts)
@@ -574,10 +592,10 @@ func _internal_updateSelectiveAccountPrivacySettings(account: Account, type: Upd
                 let disablePeers = apiUserAndGroupIds(peerIds: disableFor)
                 
                 if !disablePeers.users.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowUsers(users: apiInputUsers(transaction: transaction, peerIds: disablePeers.users)))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowUsers(.init(users: apiInputUsers(transaction: transaction, peerIds: disablePeers.users))))
                 }
                 if !disablePeers.groups.isEmpty {
-                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowChatParticipants(chats: disablePeers.groups.map({ $0.id._internalGetInt64Value() })))
+                    rules.append(Api.InputPrivacyRule.inputPrivacyValueDisallowChatParticipants(.init(chats: disablePeers.groups.map({ $0.id._internalGetInt64Value() }))))
                 }
 
                 rules.append(Api.InputPrivacyRule.inputPrivacyValueAllowAll)
@@ -625,10 +643,10 @@ public func restoreCachedPhoneCallsPrivacyState(account: Account) {
     var apiUsers: [Api.User] = []
     var apiChats: [Api.Chat] = []
     switch rules {
-        case let .privacyRules(rules, chats, users):
-            apiUsers.append(contentsOf: users)
-            apiChats.append(contentsOf: chats)
-            voiceRules = rules
+        case let .privacyRules(privacyRules):
+            apiUsers.append(contentsOf: privacyRules.users)
+            apiChats.append(contentsOf: privacyRules.chats)
+            voiceRules = privacyRules.rules
     }
     
     var peers: [SelectivePrivacyPeer] = []
@@ -639,8 +657,8 @@ public func restoreCachedPhoneCallsPrivacyState(account: Account) {
         if let peer = parseTelegramGroupOrChannel(chat: chat) {
             var participantCount: Int32? = nil
             switch chat {
-            case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, channelParticipantsCount, _, _, _, _, _, _, _, _, _, _):
-                    participantCount = channelParticipantsCount
+            case let .channel(channel):
+                    participantCount = channel.participantsCount
                 default:
                     break
             }

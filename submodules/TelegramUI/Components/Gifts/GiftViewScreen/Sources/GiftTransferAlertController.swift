@@ -68,23 +68,23 @@ public func giftTransferAlertController(
             let tag: AnyObject?
             
             switch attribute {
-            case let .model(name, _, rarity):
+            case let .model(name, _, rarity, _):
                 id = "model"
                 title = strings.Gift_Unique_Model
                 value = NSAttributedString(string: name, font: tableFont, textColor: tableTextColor)
-                percentage = Float(rarity) * 0.1
+                percentage = Float(rarity.permilleValue) * 0.1
                 tag = modelButtonTag
             case let .backdrop(name, _, _, _, _, _, rarity):
                 id = "backdrop"
                 title = strings.Gift_Unique_Backdrop
                 value = NSAttributedString(string: name, font: tableFont, textColor: tableTextColor)
-                percentage = Float(rarity) * 0.1
+                percentage = Float(rarity.permilleValue) * 0.1
                 tag = backdropButtonTag
             case let .pattern(name, _, rarity):
                 id = "pattern"
                 title = strings.Gift_Unique_Symbol
                 value = NSAttributedString(string: name, font: tableFont, textColor: tableTextColor)
-                percentage = Float(rarity) * 0.1
+                percentage = Float(rarity.permilleValue) * 0.1
                 tag = symbolButtonTag
             case .originalInfo:
                 continue

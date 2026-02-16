@@ -703,7 +703,7 @@ public final class ChatListFilterTabContainerNode: ASDisplayNode {
         self.backgroundContainerView.update(size: backgroundSize, isDark: presentationData.theme.overallDarkAppearance, transition: ComponentTransition(transition))
         
         transition.updateFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: backgroundSize))
-        self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundSize.height * 0.5, isDark: presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: presentationData.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: ComponentTransition(transition))
+        self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundSize.height * 0.5, isDark: presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: ComponentTransition(transition))
         
         var isEditing = isEditing
         if isReordering {

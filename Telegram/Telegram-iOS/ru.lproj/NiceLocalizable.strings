@@ -152,8 +152,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Ваш номер будет скрыт только в интерфейсе. Чтобы скрыть его от других, пожалуйста, используйте настройки конфиденциальности.";
 "NicegramSettings.Other.showProfileId" = "Показывать ID профилей";
 "NicegramSettings.Other.showRegDate" = "Показывать дату регистрации";
-"NicegramSettings.Unblock.Header" = "Разблокировать";
-"NicegramSettings.Unblock.Button" = "Руководство по разблокировке";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Скачивать видео в галерею";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Игнорировать языки";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Приложение определяет язык для каждого сообщения на Вашем устройстве. Поскольку это высокопроизводительная задача, время работы аккумулятора может уменьшиться.";

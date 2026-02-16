@@ -358,6 +358,10 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                         return nil
                     })
                     
+                    gallery.navigateToMessageContext = { message in
+                        params.navigateToMessageContext?(message)
+                    }
+                    
                     params.present(gallery, arguments, presentInCurrent ? .current : .window(.root))
                 })
                 return true

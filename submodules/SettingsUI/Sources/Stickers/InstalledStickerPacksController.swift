@@ -67,7 +67,10 @@ private enum InstalledStickerPacksSection: Int32 {
 }
 
 public enum InstalledStickerPacksEntryTag: ItemListItemTag {
+    case edit
     case suggestOptions
+    case largeEmoji
+    case dynamicOrder
     
     public func isEqual(to other: ItemListItemTag) -> Bool {
         if let other = other as? InstalledStickerPacksEntryTag, self == other {
@@ -397,7 +400,7 @@ private indirect enum InstalledStickerPacksEntry: ItemListNodeEntry {
             case let .largeEmoji(_, text, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleLargeEmoji(value)
-                })
+                }, tag: InstalledStickerPacksEntryTag.largeEmoji)
             case let .trending(theme, text, count):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Trending")?.precomposed(), title: text, label: count == 0 ? "" : "\(count)", labelStyle: .badge(theme.list.itemAccentColor), sectionId: self.section, style: .blocks, action: {
                     arguments.openFeatured()
@@ -421,7 +424,7 @@ private indirect enum InstalledStickerPacksEntry: ItemListNodeEntry {
             case let .packOrder(_, text, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleDynamicPackOrder(value)
-                })
+                }, tag: InstalledStickerPacksEntryTag.dynamicOrder)
             case let .packOrderInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .suggestAnimatedEmoji(text, value):
@@ -649,6 +652,12 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
     let stateValue = Atomic(value: initialState)
     let updateState: ((InstalledStickerPacksControllerState) -> InstalledStickerPacksControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
+    }
+    
+    if focusOnItemTag == InstalledStickerPacksEntryTag.edit {
+        updateState {
+            $0.withUpdatedEditing(true)
+        }
     }
     
     var presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -1297,6 +1306,20 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
     }
     dismissImpl = { [weak controller] in
         controller?.dismiss()
+    }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
     }
     
     return controller

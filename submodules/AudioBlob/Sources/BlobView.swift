@@ -461,7 +461,7 @@ final class BlobNode: ASDisplayNode {
         
         if let backgroundView = self.backgroundView, let color = self.color {
             let halfWidth = floor(self.bounds.width * self.minScale)
-            backgroundView.update(size: CGSize(width: halfWidth, height: halfWidth), cornerRadius: halfWidth * 0.5, isDark: false, tintColor: .init(kind: .custom, color: color), transition: .immediate)
+            backgroundView.update(size: CGSize(width: halfWidth, height: halfWidth), cornerRadius: halfWidth * 0.5, isDark: false, tintColor: .init(kind: .custom(style: .default, color: color)), transition: .immediate)
             backgroundView.frame = CGRect(origin: CGPoint(x: (self.bounds.width - halfWidth) * 0.5, y: (self.bounds.height - halfWidth) * 0.5), size: CGSize(width: halfWidth, height: halfWidth))
         }
     }

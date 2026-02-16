@@ -17,7 +17,8 @@ func updateSecretChat(encryptionProvider: EncryptionProvider, accountPeerId: Pee
     let settings = transaction.getPreferencesEntry(key: PreferencesKeys.secretChatSettings)?.get(SecretChatSettings.self) ?? SecretChatSettings.defaultSettings
     assert((currentPeer == nil) == (currentState == nil))
     switch chat {
-        case let .encryptedChat(_, _, _, adminId, _, gAOrB, _):
+        case let .encryptedChat(encryptedChatData):
+            let (adminId, gAOrB) = (encryptedChatData.adminId, encryptedChatData.gAOrB)
             if let currentPeer = currentPeer, let currentState = currentState, adminId == accountPeerId.id._internalGetInt64Value() {
                 if case let .handshake(handshakeState) = currentState.embeddedState, case let .requested(_, p, a) = handshakeState {
                     let pData = p.makeData()
@@ -67,7 +68,8 @@ func updateSecretChat(encryptionProvider: EncryptionProvider, accountPeerId: Pee
             } else {
                 Logger.shared.log("State", "got encryptedChat, but peer or state don't exist or account is not creator")
             }
-        case let .encryptedChatDiscarded(flags, _):
+        case let .encryptedChatDiscarded(encryptedChatDiscardedData):
+            let flags = encryptedChatDiscardedData.flags
             if let currentPeer = currentPeer, let currentState = currentState {
                 let isRemoved = (flags & (1 << 0)) != 0
                 
@@ -86,9 +88,10 @@ func updateSecretChat(encryptionProvider: EncryptionProvider, accountPeerId: Pee
             } else {
                 Logger.shared.log("State", "got encryptedChatDiscarded, but peer doesn't exist")
             }
-        case .encryptedChatEmpty(_):
+        case .encryptedChatEmpty:
             break
-        case let .encryptedChatRequested(_, folderId, _, accessHash, date, adminId, participantId, gA):
+        case let .encryptedChatRequested(encryptedChatRequestedData):
+            let (folderId, accessHash, date, adminId, participantId, gA) = (encryptedChatRequestedData.folderId, encryptedChatRequestedData.accessHash, encryptedChatRequestedData.date, encryptedChatRequestedData.adminId, encryptedChatRequestedData.participantId, encryptedChatRequestedData.gA)
             if currentPeer == nil && participantId == accountPeerId.id._internalGetInt64Value() {
                 if settings.acceptOnThisDevice {
                     let state = SecretChatState(role: .participant, embeddedState: .handshake(.accepting), keychain: SecretChatKeychain(keys: []), keyFingerprint: nil, messageAutoremoveTimeout: nil)
@@ -122,7 +125,8 @@ func updateSecretChat(encryptionProvider: EncryptionProvider, accountPeerId: Pee
             } else {
                 Logger.shared.log("State", "got encryptedChatRequested, but peer already exists or this account is creator")
             }
-        case let .encryptedChatWaiting(_, accessHash, date, adminId, participantId):
+        case let .encryptedChatWaiting(encryptedChatWaitingData):
+            let (accessHash, date, adminId, participantId) = (encryptedChatWaitingData.accessHash, encryptedChatWaitingData.date, encryptedChatWaitingData.adminId, encryptedChatWaitingData.participantId)
             if let requestData = requestData, currentPeer == nil && adminId == accountPeerId.id._internalGetInt64Value() {
                 let state = SecretChatState(role: .creator, embeddedState: .handshake(.requested(g: requestData.g, p: requestData.p, a: requestData.a)), keychain: SecretChatKeychain(keys: []), keyFingerprint: nil, messageAutoremoveTimeout: nil)
                 let peer = TelegramSecretChat(id: chat.peerId, creationDate: date, regularPeerId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(participantId)), accessHash: accessHash, role: state.role, embeddedState: state.embeddedState.peerState, messageAutoremoveTimeout: nil)

@@ -87,7 +87,7 @@ final class SecretChatHandshakeStatusInputPanelNode: ChatInputPanelNode {
         let backgroundFrame = CGRect(origin: CGPoint(x: leftInset + floor((width - leftInset - rightInset - backgroundSize.width) * 0.5), y: floor((panelHeight - backgroundSize.height) / 2.0)), size: backgroundSize)
         transition.updateFrame(node: self.button, frame: backgroundFrame)
         transition.updateFrame(view: self.titleBackground, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
-        self.titleBackground.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: .immediate)
+        self.titleBackground.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: .immediate)
         let titleFrame = CGRect(origin: CGPoint(x: floor((backgroundFrame.width - titleSize.width) * 0.5), y: floor((backgroundFrame.height - titleSize.height) * 0.5)), size: titleSize)
         if let titleView = self.title.view {
             if titleView.superview == nil {

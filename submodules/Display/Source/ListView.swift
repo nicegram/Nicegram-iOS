@@ -346,7 +346,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
     
     public private(set) final var opaqueTransactionState: Any?
     
-    public final var visibleContentOffsetChanged: (ListViewVisibleContentOffset) -> Void = { _ in }
+    public final var visibleContentOffsetChanged: (ListViewVisibleContentOffset, ContainedViewLayoutTransition) -> Void = { _, _ in }
     public final var visibleBottomContentOffsetChanged: (ListViewVisibleContentOffset) -> Void = { _ in }
     public final var beganInteractiveDragging: (CGPoint) -> Void = { _ in }
     public final var endedInteractiveDragging: (CGPoint) -> Void = { _ in }
@@ -1053,13 +1053,13 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
         }
         
         if !self.snapToBounds(snapTopItem: false, stackFromBottom: self.stackFromBottom, insetDeltaOffsetFix: 0.0).offset.isZero {
-            self.updateVisibleContentOffset()
+            self.updateVisibleContentOffset(transition: .immediate)
         }
         self.updateScroller(transition: .immediate)
         
         self.updateItemHeaders(leftInset: self.insets.left, rightInset: self.insets.right, synchronousLoad: false)
         
-        self.updateVisibleContentOffset()
+        self.updateVisibleContentOffset(transition: .immediate)
         self.updateVisibleItemRange()
         self.updateItemNodesVisibilities(onlyPositive: false)
         self.onContentsUpdated?(.immediate)
@@ -1380,8 +1380,8 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
         return offset
     }
     
-    private func updateVisibleContentOffset() {
-        self.visibleContentOffsetChanged(self.visibleContentOffset())
+    private func updateVisibleContentOffset(transition: ContainedViewLayoutTransition) {
+        self.visibleContentOffsetChanged(self.visibleContentOffset(), transition)
         self.visibleBottomContentOffsetChanged(self.visibleBottomContentOffset())
     }
     
@@ -3117,6 +3117,11 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
         
         var headerNodesTransition: (ContainedViewLayoutTransition, Bool, CGFloat) = (.immediate, false, 0.0)
         
+        var offsetTransition: ContainedViewLayoutTransition = .immediate
+        if let scrollToItem = scrollToItem, scrollToItem.animated {
+            offsetTransition = .animated(duration: 0.3, curve: .easeInOut)
+        }
+        
         var deferredUpdateVisible = false
         
         if let updateSizeAndInsets = updateSizeAndInsets {
@@ -3171,7 +3176,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                 var completeOffset = offsetFix
                 
                 if !snapToBoundsOffset.isZero {
-                    self.updateVisibleContentOffset()
+                    self.updateVisibleContentOffset(transition: offsetTransition)
                 }
                 
                 sizeAndInsetsOffset = offsetFix
@@ -3252,7 +3257,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
                 self.visibleSize = updateSizeAndInsets.size
                 
                 if !self.snapToBounds(snapTopItem: scrollToItem != nil && scrollToItem?.directionHint != .Down, stackFromBottom: self.stackFromBottom, insetDeltaOffsetFix: 0.0).offset.isZero {
-                    self.updateVisibleContentOffset()
+                    self.updateVisibleContentOffset(transition: .immediate)
                 }
             }
             
@@ -3327,7 +3332,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
             }
 
             if !snapToBoundsOffset.isZero {
-                self.updateVisibleContentOffset()
+                self.updateVisibleContentOffset(transition: offsetTransition)
             }
 
             if let snapshotView = snapshotView {
@@ -3693,7 +3698,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
             
             self.setNeedsAnimations()
             
-            self.updateVisibleContentOffset()
+            self.updateVisibleContentOffset(transition: offsetTransition)
             
             if self.debugInfo {
                 //let delta = CACurrentMediaTime() - timestamp
@@ -3719,7 +3724,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
             }
             
             if !self.useMainQueueTransactions {
-                self.updateVisibleContentOffset()
+                self.updateVisibleContentOffset(transition: offsetTransition)
             }
             
             if self.debugInfo {
@@ -3730,7 +3735,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
             completion()
             
             if self.useMainQueueTransactions {
-                self.updateVisibleContentOffset()
+                self.updateVisibleContentOffset(transition: offsetTransition)
             }
         }
     }
@@ -4774,7 +4779,7 @@ open class ListView: ASDisplayNode, ASScrollViewDelegate, ASGestureRecognizerDel
             }
             
             if !self.snapToBounds(snapTopItem: false, stackFromBottom: self.stackFromBottom, insetDeltaOffsetFix: 0.0).offset.isZero {
-                self.updateVisibleContentOffset()
+                self.updateVisibleContentOffset(transition: .immediate)
             }
         }
         

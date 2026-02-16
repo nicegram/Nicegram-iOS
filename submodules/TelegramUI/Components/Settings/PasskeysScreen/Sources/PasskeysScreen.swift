@@ -21,6 +21,7 @@ final class PasskeysScreenComponent: Component {
     let context: AccountContext
     let displaySkip: Bool
     let initialPasskeysData: [TelegramPasskey]?
+    let forceCreate: Bool
     let passkeysDataUpdated: ([TelegramPasskey]) -> Void
     let completion: () -> Void
     let cancel: () -> Void
@@ -29,6 +30,7 @@ final class PasskeysScreenComponent: Component {
         context: AccountContext,
         displaySkip: Bool,
         initialPasskeysData: [TelegramPasskey]?,
+        forceCreate: Bool,
         passkeysDataUpdated: @escaping ([TelegramPasskey]) -> Void,
         completion: @escaping () -> Void,
         cancel: @escaping () -> Void
@@ -36,6 +38,7 @@ final class PasskeysScreenComponent: Component {
         self.context = context
         self.displaySkip = displaySkip
         self.initialPasskeysData = initialPasskeysData
+        self.forceCreate = forceCreate
         self.passkeysDataUpdated = passkeysDataUpdated
         self.completion = completion
         self.cancel = cancel
@@ -248,6 +251,12 @@ final class PasskeysScreenComponent: Component {
                         self.state?.updated(transition: .easeInOut(duration: 0.25))
                     })
                 }
+                
+                if component.forceCreate {
+                    Queue.mainQueue().justDispatch {
+                        self.createPasskey()
+                    }
+                }
             }
 
             self.component = component
@@ -401,10 +410,18 @@ final class PasskeysScreenComponent: Component {
 public final class PasskeysScreen: ViewControllerComponentContainer {
     private let context: AccountContext
     
-    public init(context: AccountContext, displaySkip: Bool, initialPasskeysData: [TelegramPasskey]?, passkeysDataUpdated: @escaping ([TelegramPasskey]) -> Void, completion: @escaping () -> Void, cancel: @escaping () -> Void) {
+    public init(
+        context: AccountContext,
+        displaySkip: Bool,
+        initialPasskeysData: [TelegramPasskey]?,
+        forceCreate: Bool = false,
+        passkeysDataUpdated: @escaping ([TelegramPasskey]) -> Void,
+        completion: @escaping () -> Void,
+        cancel: @escaping () -> Void
+    ) {
         self.context = context
         
-        super.init(context: context, component: PasskeysScreenComponent(context: context, displaySkip: displaySkip, initialPasskeysData: initialPasskeysData, passkeysDataUpdated: passkeysDataUpdated, completion: completion, cancel: cancel), navigationBarAppearance: .transparent)
+        super.init(context: context, component: PasskeysScreenComponent(context: context, displaySkip: displaySkip, initialPasskeysData: initialPasskeysData, forceCreate: forceCreate, passkeysDataUpdated: passkeysDataUpdated, completion: completion, cancel: cancel), navigationBarAppearance: .transparent)
     }
     
     required public init(coder aDecoder: NSCoder) {

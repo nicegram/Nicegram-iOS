@@ -121,6 +121,7 @@ public final class GalleryPagerNode: ASDisplayNode, ASScrollViewDelegate, ASGest
     public var completeCustomDismiss: (Bool) -> Void = { _ in }
     public var baseNavigationController: () -> NavigationController? = { return nil }
     public var galleryController: () -> ViewController? = { return nil }
+    public var isInteractingUpdated: ((Bool) -> Void)?
     
     private var pagingEnabled = true
     public var pagingEnabledPromise = Promise<Bool>(true)
@@ -771,15 +772,18 @@ public final class GalleryPagerNode: ASDisplayNode, ASScrollViewDelegate, ASGest
     public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         if !decelerate {
             self.ensureItemsLoaded(force: false)
+            self.isInteractingUpdated?(false)
         }
     }
     
     public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         self.ensureItemsLoaded(force: true)
+        self.isInteractingUpdated?(true)
     }
     
     public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         self.ensureItemsLoaded(force: true)
+        self.isInteractingUpdated?(false)
     }
     
     private func shouldLoadItems(force: Bool) -> Bool {

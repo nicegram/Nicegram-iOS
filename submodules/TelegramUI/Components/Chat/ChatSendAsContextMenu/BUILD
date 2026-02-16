@@ -22,6 +22,7 @@ swift_library(
         "//submodules/AvatarNode",
         "//submodules/AccountContext",
         "//submodules/UndoUI",
+        "//submodules/TelegramUI/Components/ContextControllerImpl",
     ],
     visibility = [
         "//visibility:public",

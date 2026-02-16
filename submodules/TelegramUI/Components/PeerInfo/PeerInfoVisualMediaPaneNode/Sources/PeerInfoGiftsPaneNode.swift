@@ -24,6 +24,7 @@ import PeerInfoPaneNode
 import GiftItemComponent
 import PlainButtonComponent
 import GiftViewScreen
+import GiftUnpinScreen
 import ButtonComponent
 import UndoUI
 import CheckComponent
@@ -566,7 +567,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
             })))
         }
         
-        let contextController = ContextController(
+        let contextController = makeContextController(
             presentationData: params.presentationData,
             source: .extracted(GiftsExtractedContentSource(sourceNode: sourceNode)),
             items: .single(ContextController.Items(content: .list(items))),
@@ -1054,7 +1055,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             case let .unique(uniqueGift):
                                 giftTitle = uniqueGift.title + " #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: currentParams.presentationData.dateTimeFormat))"
                                 for attribute in uniqueGift.attributes {
-                                    if case let .model(_, file, _) = attribute {
+                                    if case let .model(_, file, _, _) = attribute {
                                         giftFile = file
                                     }
                                 }
@@ -1289,7 +1290,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                             animationFile = gift.file
                         case let .unique(gift):
                             for attribute in gift.attributes {
-                                if case let .model(_, file, _) = attribute {
+                                if case let .model(_, file, _, _) = attribute {
                                     animationFile = file
                                     break
                                 }
@@ -1393,7 +1394,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
                 case let .unique(uniqueGift):
                     giftTitle = uniqueGift.title + " #\(formatCollectibleNumber(uniqueGift.number, dateTimeFormat: currentParams.presentationData.dateTimeFormat))"
                     for attribute in uniqueGift.attributes {
-                        if case let .model(_, file, _) = attribute {
+                        if case let .model(_, file, _, _) = attribute {
                             giftFile = file
                         }
                     }
@@ -1423,7 +1424,7 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
         }
         
         let previewController = GiftContextPreviewController(context: self.context, gift: gift)
-        let contextController = ContextController(
+        let contextController = makeContextController(
             context: self.context,
             presentationData: currentParams.presentationData,
             source: .controller(ContextControllerContentSourceImpl(controller: previewController, sourceView: view)),

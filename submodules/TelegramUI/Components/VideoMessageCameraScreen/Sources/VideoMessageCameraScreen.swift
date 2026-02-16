@@ -602,7 +602,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                         size: CGSize(width: 40.0, height: 40.0),
                         cornerRadius: 40.0 * 0.5,
                         isDark: environment.theme.overallDarkAppearance,
-                        tintColor: .init(kind: .panel, color: environment.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                        tintColor: .init(kind: .panel)
                     ),
                     availableSize: CGSize(width: 40.0, height: 40.0),
                     transition: .immediate
@@ -705,7 +705,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                             size: CGSize(width: 40.0, height: 40.0),
                             cornerRadius: 40.0 * 0.5,
                             isDark: environment.theme.overallDarkAppearance,
-                            tintColor: .init(kind: .panel, color: environment.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                            tintColor: .init(kind: .panel)
                         ),
                         availableSize: CGSize(width: 40.0, height: 40.0),
                         transition: .immediate
@@ -737,7 +737,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                                             size: CGSize(width: 40.0, height: 40.0),
                                             cornerRadius: 40.0 * 0.5,
                                             isDark: environment.theme.overallDarkAppearance,
-                                            tintColor: .init(kind: .panel, color: environment.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                                            tintColor: .init(kind: .panel)
                                         )
                                     )
                                 ),
@@ -782,7 +782,7 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                                         size: CGSize(width: 40.0, height: 40.0),
                                         cornerRadius: 40.0 * 0.5,
                                         isDark: environment.theme.overallDarkAppearance,
-                                        tintColor: .init(kind: .panel, color: environment.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                                        tintColor: .init(kind: .panel)
                                     ))
                                 ),
                                 AnyComponentWithIdentity(

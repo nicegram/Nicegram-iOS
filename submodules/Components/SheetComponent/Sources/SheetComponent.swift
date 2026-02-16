@@ -7,13 +7,17 @@ import SwiftSignalKit
 import DynamicCornerRadiusView
 
 public final class SheetComponentEnvironment: Equatable {
+    public let metrics: LayoutMetrics
+    public let deviceMetrics: DeviceMetrics
     public let isDisplaying: Bool
     public let isCentered: Bool
     public let hasInputHeight: Bool
     public let regularMetricsSize: CGSize?
     public let dismiss: (Bool) -> Void
     
-    public init(isDisplaying: Bool, isCentered: Bool, hasInputHeight: Bool, regularMetricsSize: CGSize?, dismiss: @escaping (Bool) -> Void) {
+    public init(metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isDisplaying: Bool, isCentered: Bool, hasInputHeight: Bool, regularMetricsSize: CGSize?, dismiss: @escaping (Bool) -> Void) {
+        self.metrics = metrics
+        self.deviceMetrics = deviceMetrics
         self.isDisplaying = isDisplaying
         self.isCentered = isCentered
         self.hasInputHeight = hasInputHeight
@@ -22,6 +26,12 @@ public final class SheetComponentEnvironment: Equatable {
     }
     
     public static func ==(lhs: SheetComponentEnvironment, rhs: SheetComponentEnvironment) -> Bool {
+        if lhs.metrics != rhs.metrics {
+            return false
+        }
+        if lhs.deviceMetrics != rhs.deviceMetrics {
+            return false
+        }
         if lhs.isDisplaying != rhs.isDisplaying {
             return false
         }
@@ -191,9 +201,7 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
             
             self.scrollView = ScrollView()
             self.scrollView.delaysContentTouches = false
-            if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
-                self.scrollView.contentInsetAdjustmentBehavior = .never
-            }
+            self.scrollView.contentInsetAdjustmentBehavior = .never
             self.scrollView.showsVerticalScrollIndicator = false
             self.scrollView.showsHorizontalScrollIndicator = false
             self.scrollView.alwaysBounceVertical = true
@@ -351,6 +359,9 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
                 })
             } else {
                 var targetOffset: CGFloat = self.scrollView.contentSize.height + abs(contentView.frame.minY) + 6.0
+                if self.currentHasInputHeight {
+                    targetOffset += 330.0
+                }
                 if self.isCentered {
                     targetOffset = self.frame.height + self.scrollView.frame.height * 0.5
                 }
@@ -389,10 +400,10 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
             switch component.style {
             case .glass:
                 topCornerRadius = 38.0
-                bottomCornerRadius = 56.0
                 if availableSize.width < availableSize.height {
                     glassInset = 6.0
                 }
+                bottomCornerRadius = sheetEnvironment.deviceMetrics.screenCornerRadius - glassInset
             case .legacy:
                 topCornerRadius = 12.0
                 bottomCornerRadius = 12.0

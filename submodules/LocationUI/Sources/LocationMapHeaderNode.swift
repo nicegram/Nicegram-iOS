@@ -255,7 +255,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         if let placesBackgroundView = self.placesBackgroundView {
             let backgroundViewFrame = CGRect(origin: .zero, size: placesButtonFrame.size).insetBy(dx: 5.0, dy: 6.0)
             transition.updateFrame(view: placesBackgroundView, frame: backgroundViewFrame)
-            placesBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: self.presentationData.theme.rootController.navigationBar.glassBarButtonBackgroundColor), transition: .immediate)
+            placesBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: .immediate)
         }
         
         transition.updateFrame(node: self.placesButtonNode, frame: CGRect(origin: CGPoint(), size: placesButtonSize))
@@ -324,7 +324,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
             if let optionsBackgroundView = self.optionsBackgroundView {
                 let backgroundViewFrame = backgroundFrame.insetBy(dx: 4.0, dy: 4.0)
                 transition.updateFrame(view: optionsBackgroundView, frame: backgroundViewFrame)
-                optionsBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.width * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: self.presentationData.theme.rootController.navigationBar.blurredBackgroundColor), transition: .immediate)
+                optionsBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.width * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: .immediate)
             }
             
             let alphaTransition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .easeInOut)
@@ -569,7 +569,7 @@ public final class LocationOptionsComponent: Component {
             let collapsedFrame = CGRect(origin: CGPoint(x: expandedSize.width - normalSize.width, y: expandedSize.height - normalSize.height), size: normalSize)
             
             let effectiveBackgroundFrame = component.showMapModes ? expandedFrame : collapsedFrame
-            self.backgroundView.update(size: effectiveBackgroundFrame.size, cornerRadius: cornerRadius, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: component.theme.rootController.navigationBar.glassBarButtonBackgroundColor), isInteractive: true, transition: transition)
+            self.backgroundView.update(size: effectiveBackgroundFrame.size, cornerRadius: cornerRadius, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
             transition.setFrame(view: self.backgroundView, frame: effectiveBackgroundFrame)
             
             transition.setFrame(view: self.clippingView, frame: effectiveBackgroundFrame)

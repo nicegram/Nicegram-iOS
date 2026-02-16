@@ -1012,13 +1012,15 @@ public class SearchBarNode: ASDisplayNode, UITextFieldDelegate {
     private let forceSeparator: Bool
     private var theme: SearchBarNodeTheme?
     private var presentationTheme: PresentationTheme
+    private var preferClearGlass: Bool
     private var strings: PresentationStrings?
     private let cancelText: String?
     
     private var isAnimatingOut: Bool = false
     
-    public init(theme: SearchBarNodeTheme, presentationTheme: PresentationTheme, strings: PresentationStrings, fieldStyle: SearchBarStyle = .legacy, icon: Icon = .loupe, forceSeparator: Bool = false, displayBackground: Bool = true, cancelText: String? = nil) {
+    public init(theme: SearchBarNodeTheme, presentationTheme: PresentationTheme, preferClearGlass: Bool = false, strings: PresentationStrings, fieldStyle: SearchBarStyle = .legacy, icon: Icon = .loupe, forceSeparator: Bool = false, displayBackground: Bool = true, cancelText: String? = nil) {
         self.presentationTheme = presentationTheme
+        self.preferClearGlass = preferClearGlass
         
         self.fieldStyle = fieldStyle
         self.forceSeparator = forceSeparator
@@ -1110,7 +1112,7 @@ public class SearchBarNode: ASDisplayNode, UITextFieldDelegate {
         self.updateIsEmpty(animated: false)
     }
         
-    public func updateThemeAndStrings(theme: SearchBarNodeTheme, presentationTheme: PresentationTheme, strings: PresentationStrings) {
+    public func updateThemeAndStrings(theme: SearchBarNodeTheme, presentationTheme: PresentationTheme, preferClearGlass: Bool = false, strings: PresentationStrings) {
         if self.theme != theme || self.strings !== strings {
             self.clearButton.accessibilityLabel = strings.WebSearch_RecentSectionClear
             self.cancelButton.accessibilityLabel = self.cancelText ?? strings.Common_Cancel
@@ -1144,6 +1146,7 @@ public class SearchBarNode: ASDisplayNode, UITextFieldDelegate {
         
         self.theme = theme
         self.presentationTheme = presentationTheme
+        self.preferClearGlass = preferClearGlass
         self.strings = strings
         if let (boundingSize, leftInset, rightInset) = self.validLayout {
             self.updateLayout(boundingSize: boundingSize, leftInset: leftInset, rightInset: rightInset, transition: .immediate)
@@ -1224,6 +1227,7 @@ public class SearchBarNode: ASDisplayNode, UITextFieldDelegate {
                     foregroundColor: self.presentationTheme.chat.inputPanel.panelControlColor,
                     backgroundColor: self.presentationTheme.rootController.navigationBar.opaqueBackgroundColor,
                     controlColor: self.presentationTheme.chat.inputPanel.panelControlColor,
+                    preferClearGlass: self.preferClearGlass,
                     transition: transition
                 )
                 if self.inlineSearchPlaceholderContentsView == nil {

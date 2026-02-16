@@ -40,8 +40,9 @@ final class AutodownloadDataUsagePickerItem: ListViewItem, ItemListItem {
     let enabled: Bool
     let sectionId: ItemListSectionId
     let updated: (AutomaticDownloadDataUsage) -> Void
+    let tag: ItemListItemTag?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, value: AutomaticDownloadDataUsage, customPosition: Int?, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (AutomaticDownloadDataUsage) -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, value: AutomaticDownloadDataUsage, customPosition: Int?, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (AutomaticDownloadDataUsage) -> Void, tag: ItemListItemTag? = nil) {
         self.theme = theme
         self.strings = strings
         self.systemStyle = systemStyle
@@ -50,6 +51,7 @@ final class AutodownloadDataUsagePickerItem: ListViewItem, ItemListItem {
         self.enabled = enabled
         self.sectionId = sectionId
         self.updated = updated
+        self.tag = tag
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -86,7 +88,7 @@ final class AutodownloadDataUsagePickerItem: ListViewItem, ItemListItem {
     }
 }
 
-private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
+private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
@@ -102,6 +104,10 @@ private final class AutodownloadDataUsagePickerItemNode: ListViewItemNode {
     
     private var item: AutodownloadDataUsagePickerItem?
     private var layoutParams: ListViewItemLayoutParams?
+    
+    public var tag: ItemListItemTag? {
+        return self.item?.tag
+    }
     
     init() {
         self.backgroundNode = ASDisplayNode()

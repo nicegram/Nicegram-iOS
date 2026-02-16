@@ -62,7 +62,7 @@ private func presentChatInputOptions(selfController: ChatControllerImpl, sourceV
 
     selfController.canReadHistory.set(false)
     
-    let contextController = ContextController(
+    let contextController = makeContextController(
         presentationData: selfController.presentationData,
         configuration: ContextController.Configuration(
             sources: sources,

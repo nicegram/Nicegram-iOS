@@ -53,6 +53,22 @@ private enum ReactionNotificationSettingsSection: Int32 {
     case options
 }
 
+public enum ReactionNotificationSettingsEntryTag: ItemListItemTag {
+    case messages
+    case stories
+    case showSender
+    case sound
+    
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? ReactionNotificationSettingsEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
+
 private enum ReactionNotificationSettingsEntry: ItemListNodeEntry {
     enum StableId: Hashable {
         case categoriesHeader
@@ -169,23 +185,23 @@ private enum ReactionNotificationSettingsEntry: ItemListNodeEntry {
                 arguments.toggleMessages(value)
             }, action: {
                 arguments.openMessages()
-            })
+            }, tag: ReactionNotificationSettingsEntryTag.messages)
         case let .stories(title, text, value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, text: text, textColor: .accent, value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.toggleStories(value)
             }, action: {
                 arguments.openStories()
-            })
+            }, tag: ReactionNotificationSettingsEntryTag.stories)
         case let .optionsHeader(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
         case let .previews(text, value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updatePreviews(value)
-            })
+            }, tag: ReactionNotificationSettingsEntryTag.showSender)
         case let .sound(text, value, sound):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                 arguments.openSound(sound)
-            }, tag: self.tag)
+            }, tag: ReactionNotificationSettingsEntryTag.sound)
         }
     }
 }
@@ -255,7 +271,8 @@ private struct ReactionNotificationSettingsState: Equatable {
 }
 
 public func reactionNotificationSettingsController(
-    context: AccountContext
+    context: AccountContext,
+    focusOnItemTag: ReactionNotificationSettingsEntryTag? = nil
 ) -> ViewController {
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
     var pushControllerImpl: ((ViewController) -> Void)?
@@ -399,7 +416,7 @@ public func reactionNotificationSettingsController(
         let title: String = presentationData.strings.Notifications_Reactions_Title
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(title), leftNavigationButton: leftNavigationButton, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag)
         
         return (controllerState, (listState, arguments))
     }
@@ -411,5 +428,20 @@ public func reactionNotificationSettingsController(
     pushControllerImpl = { [weak controller] c in
         (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
+    }
+    
     return controller
 }

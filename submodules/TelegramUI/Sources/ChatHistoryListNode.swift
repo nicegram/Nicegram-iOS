@@ -1,6 +1,5 @@
 // Nicegram
 import ChatMessageNicegramWalletTxNode
-import FeatChatBanner
 import NGAiChatUI
 import NGData
 //
@@ -509,10 +508,6 @@ private var nextClientId: Int32 = 1
 
 public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHistoryListNode {
     static let fixedAdMessageStableId: UInt32 = UInt32.max - 5000
-    
-    // Nicegram ChatBanner
-    var showNgBanner = false
-    //
     
     public let context: AccountContext
     private let systemStyle: ItemListSystemStyle
@@ -1100,7 +1095,7 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         
         self.beginPresentationDataManagement(updated: updatedPresentationData.signal)
         
-        self.visibleContentOffsetChanged = { [weak self] offset in
+        self.visibleContentOffsetChanged = { [weak self] offset, _ in
             if let strongSelf = self {
                 strongSelf.contentPositionChanged(offset)
                 
@@ -4398,9 +4393,6 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
         var additionalBotInset: CGFloat = 0
         if #available(iOS 15.0, *), NGSettings.showNicegramButtonInChat {
             additionalBotInset = max(additionalBotInset, 44)
-        }
-        if showNgBanner {
-            additionalBotInset = max(additionalBotInset, ChatBannerTgHelper.bannerHeight)
         }
         insets.top += additionalBotInset
         let updateSizeAndInsets = updateSizeAndInsets.with(insets: insets)

@@ -58,8 +58,9 @@ final class AutodownloadSizeLimitItem: ListViewItem, ItemListItem {
     let range: Range<Int64>?
     let sectionId: ItemListSectionId
     let updated: (Int64) -> Void
+    let tag: ItemListItemTag?
     
-    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, decimalSeparator: String, text: String, value: Int64, range: Range<Int64>?, sectionId: ItemListSectionId, updated: @escaping (Int64) -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, decimalSeparator: String, text: String, value: Int64, range: Range<Int64>?, sectionId: ItemListSectionId, updated: @escaping (Int64) -> Void, tag: ItemListItemTag? = nil) {
         self.theme = theme
         self.strings = strings
         self.systemStyle = systemStyle
@@ -69,6 +70,7 @@ final class AutodownloadSizeLimitItem: ListViewItem, ItemListItem {
         self.range = range
         self.sectionId = sectionId
         self.updated = updated
+        self.tag = tag
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -105,7 +107,7 @@ final class AutodownloadSizeLimitItem: ListViewItem, ItemListItem {
     }
 }
 
-private final class AutodownloadSizeLimitItemNode: ListViewItemNode {
+private final class AutodownloadSizeLimitItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
@@ -118,6 +120,10 @@ private final class AutodownloadSizeLimitItemNode: ListViewItemNode {
     
     private var item: AutodownloadSizeLimitItem?
     private var layoutParams: ListViewItemLayoutParams?
+    
+    public var tag: ItemListItemTag? {
+        return self.item?.tag
+    }
     
     init() {
         self.backgroundNode = ASDisplayNode()

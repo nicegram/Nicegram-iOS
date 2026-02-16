@@ -443,7 +443,7 @@ final class BrowserAddressListComponent: Component {
                                         }
                                         
                                         let items = ContextController.Items(content: .list(itemList))
-                                        let controller = ContextController(
+                                        let controller = makeContextController(
                                             presentationData: presentationData,
                                             source: .extracted(BrowserAddressListContextExtractedContentSource(contentView: sourceView)),
                                             items: .single(items),

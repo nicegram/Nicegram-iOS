@@ -263,7 +263,7 @@ extension ChatControllerImpl {
                 messageContentSource?.snapshotView?.removeFromSuperview()
             }
             
-            let contextController = ContextController(
+            let contextController = makeContextController(
                 presentationData: self.presentationData,
                 configuration: ContextController.Configuration(
                     sources: sources,

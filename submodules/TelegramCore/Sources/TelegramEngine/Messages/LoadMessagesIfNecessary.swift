@@ -61,20 +61,23 @@ func _internal_getMessagesLoadIfNecessary(_ messageIds: [MessageId], postbox: Po
                 if let peer = supportPeers[peerId] {
                     var signal: Signal<Api.messages.Messages, MTRpcError>?
                     if peerId.namespace == Namespaces.Peer.CloudUser || peerId.namespace == Namespaces.Peer.CloudGroup {
-                        signal = network.request(Api.functions.messages.getMessages(id: messageIds.map({ Api.InputMessage.inputMessageID(id: $0.id) })))
+                        signal = network.request(Api.functions.messages.getMessages(id: messageIds.map({ Api.InputMessage.inputMessageID(.init(id: $0.id)) })))
                     } else if peerId.namespace == Namespaces.Peer.CloudChannel {
                         if let inputChannel = apiInputChannel(peer) {
-                            signal = network.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.map({ Api.InputMessage.inputMessageID(id: $0.id) })))
+                            signal = network.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.map({ Api.InputMessage.inputMessageID(.init(id: $0.id)) })))
                         }
                     }
                     if let signal = signal {
                         signals.append(signal |> map { result in
                             switch result {
-                                case let .messages(messages, _, chats, users):
+                                case let .messages(messagesData):
+                                    let (messages, _, chats, users) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
                                     return (peer, messages, chats, users)
-                                case let .messagesSlice(_, _, _, _, _, messages, _, chats, users):
+                                case let .messagesSlice(messagesSliceData):
+                                    let (_, _, _, _, _, messages, _, chats, users) = (messagesSliceData.flags, messagesSliceData.count, messagesSliceData.nextRate, messagesSliceData.offsetIdOffset, messagesSliceData.searchFlood, messagesSliceData.messages, messagesSliceData.topics, messagesSliceData.chats, messagesSliceData.users)
                                     return (peer, messages, chats, users)
-                                case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
+                                case let .channelMessages(channelMessagesData):
+                                    let (_, _, _, _, messages, apiTopics, chats, users) = (channelMessagesData.flags, channelMessagesData.pts, channelMessagesData.count, channelMessagesData.offsetIdOffset, channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
                                     let _ = apiTopics
                                     return (peer, messages, chats, users)
                                 case .messagesNotModified:

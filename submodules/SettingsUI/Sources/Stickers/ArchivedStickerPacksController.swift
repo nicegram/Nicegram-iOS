@@ -249,11 +249,17 @@ private func archivedStickerPacksControllerEntries(context: AccountContext, mode
     return entries
 }
 
-public func archivedStickerPacksController(context: AccountContext, mode: ArchivedStickerPacksControllerMode, archived: [ArchivedStickerPackItem]?, forceTheme: PresentationTheme? = nil, updatedPacks: @escaping ([ArchivedStickerPackItem]?) -> Void) -> ViewController {
+public func archivedStickerPacksController(context: AccountContext, mode: ArchivedStickerPacksControllerMode, archived: [ArchivedStickerPackItem]?, forceTheme: PresentationTheme? = nil, updatedPacks: @escaping ([ArchivedStickerPackItem]?) -> Void, forceEdit: Bool = false) -> ViewController {
     let statePromise = ValuePromise(ArchivedStickerPacksControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: ArchivedStickerPacksControllerState())
     let updateState: ((ArchivedStickerPacksControllerState) -> ArchivedStickerPacksControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
+    }
+    
+    if forceEdit {
+        updateState {
+            $0.withUpdatedEditing(true)
+        }
     }
     
     var presentControllerImpl: ((ViewController, ViewControllerPresentationArguments?) -> Void)?

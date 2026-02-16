@@ -35,8 +35,9 @@ public class ItemListPeerActionItem: ListViewItem, ItemListItem {
     let noInsets: Bool
     public let sectionId: ItemListSectionId
     public let action: (() -> Void)?
+    public let tag: Any?
     
-    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .blocks, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage?, iconSignal: Signal<UIImage?, NoError>? = nil, title: String, additionalBadgeIcon: UIImage? = nil, alwaysPlain: Bool = false, hasSeparator: Bool = true, sectionId: ItemListSectionId, height: ItemListPeerActionItemHeight = .peerList, color: ItemListPeerActionItemColor = .accent, noInsets: Bool = false, editing: Bool = false, action: (() -> Void)?) {
+    public init(presentationData: ItemListPresentationData, style: ItemListStyle = .blocks, systemStyle: ItemListSystemStyle = .legacy, icon: UIImage?, iconSignal: Signal<UIImage?, NoError>? = nil, title: String, additionalBadgeIcon: UIImage? = nil, alwaysPlain: Bool = false, hasSeparator: Bool = true, sectionId: ItemListSectionId, height: ItemListPeerActionItemHeight = .peerList, color: ItemListPeerActionItemColor = .accent, noInsets: Bool = false, editing: Bool = false, action: (() -> Void)?, tag: Any? = nil) {
         self.presentationData = presentationData
         self.style = style
         self.systemStyle = systemStyle
@@ -52,6 +53,7 @@ public class ItemListPeerActionItem: ListViewItem, ItemListItem {
         self.color = color
         self.sectionId = sectionId
         self.action = action
+        self.tag = tag
     }
     
     public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -132,6 +134,10 @@ public final class ItemListPeerActionItemNode: ListViewItemNode {
     private var item: ItemListPeerActionItem?
     
     private let iconDisposable = MetaDisposable()
+    
+    public var tag: ItemListItemTag? {
+        return self.item?.tag as? ItemListItemTag
+    }
     
     public init() {
         self.backgroundNode = ASDisplayNode()

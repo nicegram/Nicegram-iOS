@@ -74,21 +74,21 @@ public final class KeywordsContext {
                                 if let self {
                                     let convertedMessages = messages.compactMap {
                                         switch $0 {
-                                        case let .message(_, _, id, _, _, peerId, _, _, _, _, _, date, message, _, _, _, _, _, _, _, postAuthor, _, _, _, _, _, _, _, _, _, _, _, _):
+                                        case let .message(message):
                                             
-                                            let peerId: Int64 = switch peerId {
-                                            case let .peerChannel(channelId): channelId
-                                            case let .peerChat(chatId): chatId
-                                            case let .peerUser(userId): userId
-                                            }                            
+                                            let peerId: Int64 = switch message.peerId {
+                                            case let .peerChannel(peerChannel): peerChannel.channelId
+                                            case let .peerChat(peerChat): peerChat.chatId
+                                            case let .peerUser(peerUser): peerUser.userId
+                                            }
                                             
                                             if peerId != accountContext.account.peerId.toInt64() {
                                                 return TelegramMessage(
                                                     peerId: peerId,
-                                                    messageId: id,
-                                                    timestamp: date,
-                                                    author: postAuthor,
-                                                    text: message,
+                                                    messageId: message.id,
+                                                    timestamp: message.date,
+                                                    author: message.postAuthor,
+                                                    text: message.message,
                                                     keywordId: ""
                                                 )
                                             } else {
@@ -265,29 +265,29 @@ private class UpdateMessageService: NSObject, MTMessageService {
     
     func addUpdates(_ updates: Api.Updates) {
         switch updates {
-        case let .updates(updates, _, _, _, _):
-            let messages = updates.compactMap { update in
+        case let .updates(updates):
+            let messages = updates.updates.compactMap { update in
                 switch update {
-                case let .updateNewChannelMessage(message, _, _):
-                    return message
+                case let .updateNewChannelMessage(updateNewChannelMessage):
+                    return updateNewChannelMessage.message
                 default: return nil
                 }
             }
             if messages.count > 0 {
                 pipe.putNext(messages)
             }
-        case let .updateShort(update, _):
-            switch update {
-            case let .updateNewChannelMessage(message, _, _):
-                pipe.putNext([message])
+        case let .updateShort(update):
+            switch update.update {
+            case let .updateNewChannelMessage(updateNewChannelMessage):
+                pipe.putNext([updateNewChannelMessage.message])
             default: break
             }
 
-        case let .updatesCombined(updates, _, _, _, _, _):
-            let messages = updates.compactMap { update in
+        case let .updatesCombined(updatesCombined):
+            let messages = updatesCombined.updates.compactMap { update in
                 switch update {
-                case let .updateNewChannelMessage(message, _, _):
-                    return message
+                case let .updateNewChannelMessage(updateNewChannelMessage):
+                    return updateNewChannelMessage.message
                 default: return nil
                 }
             }

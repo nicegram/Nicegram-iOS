@@ -369,7 +369,7 @@ final class GiftOptionsScreenComponent: Component {
                         return
                     }
                     
-                    if gift.flags.contains(.isAuction) && !((gift.availability?.resale ?? 0) > 0 && component.peerId != component.context.account.peerId) {
+                    if gift.flags.contains(.isAuction) && !((gift.availability?.resale ?? 0) > 0) {
                         guard let giftAuctionsManager = component.context.giftAuctionsManager else {
                             return
                         }

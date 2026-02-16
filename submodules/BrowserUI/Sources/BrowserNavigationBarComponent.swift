@@ -281,7 +281,7 @@ final class BrowserNavigationBarComponent: Component {
             if let leftItemsBackground {
                 let leftItemsFrame = CGRect(origin: CGPoint(x: sideInset - (leftItemsWidth / 2.0 * 0.35 * component.collapseFraction), y: component.topInset + contentHeight / 2.0 + verticalOffset - panelHeight / 2.0), size: CGSize(width: leftItemsWidth, height: panelHeight))
                 leftItemsBackgroundTransition.setFrame(view: leftItemsBackground, frame: leftItemsFrame)
-                leftItemsBackground.update(size: leftItemsFrame.size, shape: .roundedRect(cornerRadius: leftItemsFrame.height * 0.5), isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: leftItemsBackgroundTransition)
+                leftItemsBackground.update(size: leftItemsFrame.size, cornerRadius: leftItemsFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: leftItemsBackgroundTransition)
                 
                 leftItemsBackgroundTransition.setScale(view: leftItemsBackground, scale: 1.0 - 0.999 * component.collapseFraction)
                 leftItemsBackgroundTransition.setAlpha(view: leftItemsBackground.contentView, alpha: 1.0 - component.collapseFraction)
@@ -293,7 +293,7 @@ final class BrowserNavigationBarComponent: Component {
             if let rightItemsBackground {
                 let rightItemsFrame = CGRect(origin: CGPoint(x: availableSize.width - sideInset - rightItemsWidth * (1.0 - component.collapseFraction) + (rightItemsWidth / 2.0 * 0.35 * component.collapseFraction), y: component.topInset + contentHeight / 2.0 + verticalOffset - panelHeight / 2.0), size: CGSize(width: rightItemsWidth, height: panelHeight))
                 rightItemsBackgroundTransition.setFrame(view: rightItemsBackground, frame: rightItemsFrame)
-                rightItemsBackground.update(size: rightItemsFrame.size, shape: .roundedRect(cornerRadius: rightItemsFrame.height * 0.5), isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: rightItemsBackgroundTransition)
+                rightItemsBackground.update(size: rightItemsFrame.size, cornerRadius: rightItemsFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: rightItemsBackgroundTransition)
                 
                 rightItemsBackgroundTransition.setScale(view: rightItemsBackground, scale: 1.0 - 0.999 * component.collapseFraction)
                 rightItemsBackgroundTransition.setAlpha(view: rightItemsBackground.contentView, alpha: 1.0 - component.collapseFraction)

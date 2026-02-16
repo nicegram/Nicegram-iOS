@@ -755,6 +755,7 @@ private final class GiftSetupScreenComponent: Component {
                 let presentationInterfaceState = ChatPresentationInterfaceState(
                     chatWallpaper: .builtin(WallpaperSettings()),
                     theme: presentationData.theme,
+                    preferredGlassType: .default,
                     strings: presentationData.strings,
                     dateTimeFormat: presentationData.dateTimeFormat,
                     nameDisplayOrder: presentationData.nameDisplayOrder,
@@ -1604,7 +1605,7 @@ private final class GiftSetupScreenComponent: Component {
                                         guard let self, let component = self.component, let controller = self.environment?.controller(), let upgradePreview else {
                                             return
                                         }
-                                        let previewController = component.context.sharedContext.makeGiftUpgradePreviewScreen(context: component.context, attributes: upgradePreview.attributes, peerName: peerName)
+                                        let previewController = component.context.sharedContext.makeGiftUpgradePreviewScreen(context: component.context, gift: gift, attributes: upgradePreview.attributes, peerName: peerName)
                                         controller.push(previewController)
                                     })
                                 }

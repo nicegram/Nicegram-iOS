@@ -393,7 +393,7 @@ final class AddressBarContentComponent: Component {
             if isActiveWithText && !isTablet {
                 backgroundSize.width -= cancelSize.width + cancelButtonSpacing + 4.0
             }
-            self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundSize.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: transition)
+            self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundSize.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
 
             
             var backgroundFrame = CGRect(origin: CGPoint(x: floor((size.width - backgroundSize.width) / 2.0), y: topInset), size: backgroundSize)

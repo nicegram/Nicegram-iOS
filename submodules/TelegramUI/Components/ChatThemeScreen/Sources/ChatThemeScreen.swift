@@ -1045,7 +1045,7 @@ private class ChatThemeScreenNode: ViewControllerTracingNode, ASScrollViewDelega
                 var peer: EnginePeer?
                 if case let .unique(uniqueGift) = gift {
                     for attribute in uniqueGift.attributes {
-                        if case let .model(_, file, _) = attribute {
+                        if case let .model(_, file, _, _) = attribute {
                             emojiFile = file
                         }
                     }

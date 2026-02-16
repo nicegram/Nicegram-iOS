@@ -89,6 +89,20 @@ private struct SortIndex: Comparable {
     }
 }
 
+public enum RecentSessionsEntryTag: ItemListItemTag, Equatable {
+    case edit
+    case terminateOtherSessions
+    case autoTerminate
+    
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? RecentSessionsEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private enum RecentSessionsEntry: ItemListNodeEntry {
     case header(SortIndex, String)
     case currentSessionHeader(SortIndex, String)
@@ -341,7 +355,7 @@ private enum RecentSessionsEntry: ItemListNodeEntry {
         case let .terminateOtherSessions(_, text):
             return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.blockDestructiveIcon(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                 arguments.terminateOtherSessions()
-            })
+            }, tag: RecentSessionsEntryTag.terminateOtherSessions)
         case let .terminateAllWebSessions(_, text):
             return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.blockDestructiveIcon(presentationData.theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                 arguments.terminateAllWebSessions()
@@ -403,7 +417,7 @@ private enum RecentSessionsEntry: ItemListNodeEntry {
         case let .ttlTimeout(_, text, value):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                 arguments.setupAuthorizationTTL()
-            }, tag: PrivacyAndSecurityEntryTag.accountTimeout)
+            }, tag: RecentSessionsEntryTag.autoTerminate)
         }
     }
 }
@@ -560,11 +574,17 @@ private func recentSessionsControllerEntries(presentationData: PresentationData,
 private final class RecentSessionsControllerImpl: ItemListController, RecentSessionsController {
 }
 
-public func recentSessionsController(context: AccountContext, activeSessionsContext: ActiveSessionsContext, webSessionsContext: WebSessionsContext, websitesOnly: Bool) -> ViewController & RecentSessionsController {
+public func recentSessionsController(context: AccountContext, activeSessionsContext: ActiveSessionsContext, webSessionsContext: WebSessionsContext, websitesOnly: Bool, focusOnItemTag: RecentSessionsEntryTag? = nil) -> ViewController & RecentSessionsController {
     let statePromise = ValuePromise(RecentSessionsControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: RecentSessionsControllerState())
     let updateState: ((RecentSessionsControllerState) -> RecentSessionsControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
+    }
+    
+    if focusOnItemTag == .edit {
+        updateState {
+            $0.withUpdatedEditing(true)
+        }
     }
     
     activeSessionsContext.loadMore()
@@ -603,15 +623,12 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
     
     let removeSessionImpl: (Int64, @escaping () -> Void) -> Void = { sessionId, completion in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let controller = ActionSheetController(presentationData: presentationData)
-        let dismissAction: () -> Void = { [weak controller] in
-            controller?.dismissAnimated()
-        }
-        controller.setItemGroups([
-            ActionSheetItemGroup(items: [
-                ActionSheetTextItem(title: presentationData.strings.AuthSessions_TerminateSessionText),
-                ActionSheetButtonItem(title: presentationData.strings.AuthSessions_TerminateSession, color: .destructive, action: {
-                    dismissAction()
+        let controller = textAlertController(
+            context: context,
+            title: nil,
+            text: presentationData.strings.AuthSessions_TerminateSessionText,
+            actions: [
+                TextAlertAction(type: .defaultDestructiveAction, title: presentationData.strings.AuthSessions_TerminateSession, action: {
                     completion()
                     
                     updateState {
@@ -629,11 +646,12 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
                         }
                         context.sharedContext.updateNotificationTokensRegistration()
                     }))
-                })
-            ]),
-            ActionSheetItemGroup(items: [ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { dismissAction() })])
-        ])
-        presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                }),
+                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {})
+            ],
+            actionLayout: .vertical
+        )
+        presentControllerImpl?(controller, nil)
     }
     
     let removeWebSessionImpl: (Int64) -> Void = { sessionId in
@@ -670,16 +688,12 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
         removeSessionImpl(sessionId, {})
     }, terminateOtherSessions: {
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        let controller = ActionSheetController(presentationData: presentationData)
-        let dismissAction: () -> Void = { [weak controller] in
-            controller?.dismissAnimated()
-        }
-        controller.setItemGroups([
-            ActionSheetItemGroup(items: [
-                ActionSheetTextItem(title: presentationData.strings.AuthSessions_TerminateOtherSessionsText),
-                ActionSheetButtonItem(title: presentationData.strings.AuthSessions_TerminateOtherSessions, color: .destructive, action: {
-                    dismissAction()
-                    
+        let controller = textAlertController(
+            context: context,
+            title: nil,
+            text: presentationData.strings.AuthSessions_TerminateOtherSessionsText,
+            actions: [
+                TextAlertAction(type: .defaultDestructiveAction, title: presentationData.strings.AuthSessions_TerminateOtherSessions, action: {
                     updateState {
                         return $0.withUpdatedTerminatingOtherSessions(true)
                     }
@@ -695,11 +709,12 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
                         }
                         context.sharedContext.updateNotificationTokensRegistration()
                     }))
-                })
-            ]),
-            ActionSheetItemGroup(items: [ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, action: { dismissAction() })])
-            ])
-        presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                }),
+                TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {})
+            ],
+            actionLayout: .vertical
+        )
+        presentControllerImpl?(controller, nil)
     }, openSession: { session in
         let controller = RecentSessionScreen(context: context, subject: .session(session), updateAcceptSecretChats: { value in
             updateSessionDisposable.set(activeSessionsContext.updateSessionAcceptsSecretChats(session, accepts: value).start())
@@ -865,7 +880,7 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
         }
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: title, leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: crossfadeState, animateChanges: animateChanges, scrollEnabled: emptyStateItem == nil)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: emptyStateItem, crossfadeState: crossfadeState, animateChanges: animateChanges, scrollEnabled: emptyStateItem == nil)
         
         return (controllerState, (listState, arguments))
     } |> afterDisposed {
@@ -889,6 +904,20 @@ public func recentSessionsController(context: AccountContext, activeSessionsCont
     }
     dismissImpl = { [weak controller] in
         controller?.dismiss()
+    }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
     }
     
     return controller

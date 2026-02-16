@@ -76,7 +76,7 @@ public final class ChatListSearchFiltersContainerNode: ASDisplayNode {
         componentTransition.setFrame(view: self.backgroundContainer, frame: CGRect(origin: CGPoint(), size: size))
         self.backgroundContainer.update(size: size, isDark: presentationData.theme.overallDarkAppearance, transition: componentTransition)
         componentTransition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: size))
-        self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: presentationData.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: componentTransition)
+        self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: componentTransition)
         self.scrollNode.view.layer.cornerRadius = size.height * 0.5
         
         var focusOnSelectedFilter = self.currentParams?.selectedFilter != selectedFilter

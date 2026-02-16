@@ -1489,7 +1489,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
         }
     }
     
-    public func chatInputTextNodeShouldReturn() -> Bool {
+    public func chatInputTextNodeShouldReturn(modifierFlags: UIKeyModifierFlags) -> Bool {
         if self.actionButtons.sendButton.supernode != nil && !self.actionButtons.sendButton.isHidden && !self.actionButtons.sendButton.alpha.isZero {
             self.sendButtonPressed()
         }
@@ -1497,7 +1497,7 @@ public class AttachmentTextInputPanelNode: ASDisplayNode, TGCaptionPanelView, AS
     }
     
     @objc public func editableTextNodeShouldReturn(_ editableTextNode: ASEditableTextNode) -> Bool {
-        return self.chatInputTextNodeShouldReturn()
+        return self.chatInputTextNodeShouldReturn(modifierFlags: [])
     }
     
     private func applyUpdateSendButtonIcon() {

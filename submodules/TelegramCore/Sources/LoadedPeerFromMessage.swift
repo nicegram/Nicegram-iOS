@@ -14,13 +14,13 @@ public func loadedPeerFromMessage(account: Account, peerId: PeerId, messageId: M
                 } else {
                     let messageSignal: Signal<Api.messages.Messages?, NoError>?
                     if messageId.peerId.namespace == Namespaces.Peer.CloudUser || messageId.peerId.namespace == Namespaces.Peer.CloudGroup {
-                        messageSignal = account.network.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(id: messageId.id)]))
+                        messageSignal = account.network.request(Api.functions.messages.getMessages(id: [Api.InputMessage.inputMessageID(.init(id: messageId.id))]))
                             |> map(Optional.init)
                             |> `catch` { _ -> Signal<Api.messages.Messages?, NoError> in
                                 return .single(nil)
                             }
                     } else if messageId.peerId.namespace == Namespaces.Peer.CloudChannel, let channelPeer = transaction.getPeer(messageId.peerId), let inputChannel = apiInputChannel(channelPeer) {
-                        messageSignal = account.network.request(Api.functions.channels.getMessages(channel: inputChannel, id: [Api.InputMessage.inputMessageID(id: messageId.id)]))
+                        messageSignal = account.network.request(Api.functions.channels.getMessages(channel: inputChannel, id: [Api.InputMessage.inputMessageID(.init(id: messageId.id))]))
                             |> map(Optional.init)
                             |> `catch` { _ -> Signal<Api.messages.Messages?, NoError> in
                                 return .single(nil)
@@ -35,11 +35,14 @@ public func loadedPeerFromMessage(account: Account, peerId: PeerId, messageId: M
                                 if let result = result {
                                     let apiUsers: [Api.User]
                                     switch result {
-                                    case let .messages(_, _, _, users):
+                                    case let .messages(messagesData):
+                                        let users = messagesData.users
                                         apiUsers = users
-                                    case let .messagesSlice(_, _, _, _, _, _, _, _, users):
+                                    case let .messagesSlice(messagesSliceData):
+                                        let users = messagesSliceData.users
                                         apiUsers = users
-                                    case let .channelMessages(_, _, _, _, _, _, _, users):
+                                    case let .channelMessages(channelMessagesData):
+                                        let users = channelMessagesData.users
                                         apiUsers = users
                                     case .messagesNotModified:
                                         apiUsers = []

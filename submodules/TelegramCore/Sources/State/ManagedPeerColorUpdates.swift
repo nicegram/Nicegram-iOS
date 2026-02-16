@@ -244,14 +244,16 @@ private extension EngineAvailableColorOptions.ColorOption {
         let stories: EngineAvailableColorOptions.MultiColorPack?
         
         switch apiColors {
-        case let .peerColorSet(colors):
+        case let .peerColorSet(peerColorSetData):
+            let colors = peerColorSetData.colors
             if colors.isEmpty {
                 return nil
             }
             palette = EngineAvailableColorOptions.MultiColorPack(colors: colors.map(UInt32.init(bitPattern:)))
             background = palette
             stories = nil
-        case let .peerColorProfileSet(palleteColors, bgColors, storyColors):
+        case let .peerColorProfileSet(peerColorProfileSetData):
+            let (palleteColors, bgColors, storyColors) = (peerColorProfileSetData.paletteColors, peerColorProfileSetData.bgColors, peerColorProfileSetData.storyColors)
             if palleteColors.isEmpty {
                 return nil
             }
@@ -278,7 +280,8 @@ private extension EngineAvailableColorOptions {
         var mappedOptions: [Option] = []
         for apiColor in apiColors {
             switch apiColor {
-            case let .peerColorOption(flags, colorId, colors, darkColors, requiredChannelMinBoostLevel, requiredGroupMinBoostLevel):
+            case let .peerColorOption(peerColorOptionData):
+                let (flags, colorId, colors, darkColors, requiredChannelMinBoostLevel, requiredGroupMinBoostLevel) = (peerColorOptionData.flags, peerColorOptionData.colorId, peerColorOptionData.colors, peerColorOptionData.darkColors, peerColorOptionData.channelMinLevel, peerColorOptionData.groupMinLevel)
                 let isHidden = (flags & (1 << 0)) != 0
                 
                 let mappedColors = colors.flatMap(EngineAvailableColorOptions.ColorOption.init(apiColors:))
@@ -348,7 +351,8 @@ private func _internal_fetchPeerColors(postbox: Postbox, network: Network, scope
             switch result {
             case .peerColorsNotModified:
                 return .complete()
-            case let .peerColors(hash, colors):
+            case let .peerColors(peerColorsData):
+                let (hash, colors) = (peerColorsData.hash, peerColorsData.colors)
                 return postbox.transaction { transaction -> Void in
                     let value = EngineAvailableColorOptions(hash: hash, apiColors: colors)
                     _internal_setCachedAvailableColorOptions(transaction: transaction, scope: scope, value: value)

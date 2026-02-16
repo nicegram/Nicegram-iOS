@@ -253,8 +253,10 @@ public final class SecretMediaPreviewController: ViewController {
         }, editMedia: { _ in
         }, controller: { [weak self] in
             return self
+        }, currentItemNode: { [weak self] in
+            return self?.controllerNode.pager.centralItemNode()
         })
-        self.displayNode = SecretMediaPreviewControllerNode(context: self.context, controllerInteraction: controllerInteraction)
+        self.displayNode = SecretMediaPreviewControllerNode(context: self.context, controllerInteraction: controllerInteraction, titleView: nil)
         self.displayNodeDidLoad()
         
         self.controllerNode.statusPressed = { [weak self] _ in

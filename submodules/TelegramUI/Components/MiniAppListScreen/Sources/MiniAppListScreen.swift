@@ -511,6 +511,8 @@ final class MiniAppListScreenComponent: Component {
                             timingFunction = kCAMediaTimingFunctionSpring
                         case .custom:
                             timingFunction = kCAMediaTimingFunctionSpring
+                        case .bounce:
+                            timingFunction = kCAMediaTimingFunctionSpring
                         }
                         
                         searchBarNode.animateIn(from: placeholderNode, duration: duration, timingFunction: timingFunction)
@@ -531,7 +533,7 @@ final class MiniAppListScreenComponent: Component {
                 contentListNode = ContentListNode(parentView: self, context: component.context)
                 self.contentListNode = contentListNode
                 
-                contentListNode.visibleContentOffsetChanged = { [weak self] offset in
+                contentListNode.visibleContentOffsetChanged = { [weak self] offset, _ in
                     guard let self else {
                         return
                     }

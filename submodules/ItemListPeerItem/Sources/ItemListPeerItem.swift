@@ -477,6 +477,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
     let header: ListViewItemHeader?
     let shimmering: ItemListPeerItemShimmering?
     let displayDecorations: Bool
+    let displayBackground: Bool
     let disableInteractiveTransitionIfNecessary: Bool
     let storyStats: PeerStoryStats?
     let openStories: ((UIView) -> Void)?
@@ -520,6 +521,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         header: ListViewItemHeader? = nil,
         shimmering: ItemListPeerItemShimmering? = nil,
         displayDecorations: Bool = true,
+        displayBackground: Bool = true,
         disableInteractiveTransitionIfNecessary: Bool = false,
         storyStats: PeerStoryStats? = nil,
         openStories: ((UIView) -> Void)? = nil
@@ -562,6 +564,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         self.header = header
         self.shimmering = shimmering
         self.displayDecorations = displayDecorations
+        self.displayBackground = displayBackground
         self.disableInteractiveTransitionIfNecessary = disableInteractiveTransitionIfNecessary
         self.storyStats = storyStats
         self.openStories = openStories
@@ -606,6 +609,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         header: ListViewItemHeader? = nil,
         shimmering: ItemListPeerItemShimmering? = nil,
         displayDecorations: Bool = true,
+        displayBackground: Bool = true,
         disableInteractiveTransitionIfNecessary: Bool = false,
         storyStats: PeerStoryStats? = nil,
         openStories: ((UIView) -> Void)? = nil
@@ -648,6 +652,7 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
         self.header = header
         self.shimmering = shimmering
         self.displayDecorations = displayDecorations
+        self.displayBackground = displayBackground
         self.disableInteractiveTransitionIfNecessary = disableInteractiveTransitionIfNecessary
         self.storyStats = storyStats
         self.openStories = openStories
@@ -1336,6 +1341,8 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                     strongSelf.bottomStripeNode.backgroundColor = itemSeparatorColor
                     strongSelf.backgroundNode.backgroundColor = itemBackgroundColor
                     strongSelf.highlightedBackgroundNode.backgroundColor = item.presentationData.theme.list.itemHighlightedBackgroundColor
+                    
+                    strongSelf.backgroundNode.isHidden = !item.displayBackground
                     
                     let revealOffset = strongSelf.revealOffset
                     

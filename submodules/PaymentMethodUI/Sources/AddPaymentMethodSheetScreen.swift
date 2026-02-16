@@ -202,6 +202,8 @@ private final class AddPaymentMethodSheetComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: false,
                         hasInputHeight: !environment.inputHeight.isZero,

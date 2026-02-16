@@ -182,7 +182,7 @@ func textInputAccessoryPanel(
                         
                         let alertController = AlertScreen(
                             context: context,
-                            configuration: AlertScreen.Configuration(actionAlignment: .vertical),
+                            configuration: AlertScreen.Configuration(actionAlignment: .vertical, allowInputInset: true),
                             content: content,
                             actions: [
                                 .init(title: strings.Conversation_ForwardOptions_ShowOptions, action: {

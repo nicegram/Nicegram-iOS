@@ -126,13 +126,16 @@ private func synchronizeMarkAllUnseen(transaction: Transaction, postbox: Postbox
         return network.request(Api.functions.messages.getUnreadMentions(flags: 0, peer: inputPeer, topMsgId: nil, offsetId: maxId, addOffset: maxId == 0 ? 0 : -1, limit: limit, maxId: maxId == 0 ? 0 : (maxId + 1), minId: 1))
         |> mapToSignal { result -> Signal<[MessageId], MTRpcError> in
             switch result {
-                case let .messages(messages, _, _, _):
+                case let .messages(messagesData):
+                    let messages = messagesData.messages
                     return .single(messages.compactMap({ $0.id() }))
-                case let .channelMessages(_, _, _, _, messages, _, _, _):
+                case let .channelMessages(channelMessagesData):
+                    let messages = channelMessagesData.messages
                     return .single(messages.compactMap({ $0.id() }))
                 case .messagesNotModified:
                     return .single([])
-                case let .messagesSlice(_, _, _, _, _, messages, _, _, _):
+                case let .messagesSlice(messagesSliceData):
+                    let messages = messagesSliceData.messages
                     return .single(messages.compactMap({ $0.id() }))
             }
         }
@@ -157,7 +160,8 @@ private func synchronizeMarkAllUnseen(transaction: Transaction, postbox: Postbox
                 return network.request(Api.functions.messages.readMessageContents(id: filteredIds.map { $0.id }))
                 |> map { result -> Int32? in
                     switch result {
-                        case let .affectedMessages(pts, ptsCount):
+                        case let .affectedMessages(affectedMessagesData):
+                            let (pts, ptsCount) = (affectedMessagesData.pts, affectedMessagesData.ptsCount)
                             stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                     }
                     if ids.count < limit {
@@ -310,7 +314,8 @@ private func synchronizeMarkAllUnseenReactions(transaction: Transaction, postbox
     |> mapToSignal { result -> Signal<Void, Bool> in
         if let result = result {
             switch result {
-            case let .affectedHistory(pts, ptsCount, offset):
+            case let .affectedHistory(affectedHistoryData):
+                let (pts, ptsCount, offset) = (affectedHistoryData.pts, affectedHistoryData.ptsCount, affectedHistoryData.offset)
                 stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                 if offset == 0 {
                     return .fail(true)

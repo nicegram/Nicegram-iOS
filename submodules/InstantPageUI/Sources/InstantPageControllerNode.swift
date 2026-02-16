@@ -628,7 +628,7 @@ final class InstantPageControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         guard let strongSelf = self, let controller = strongSelf.controller else {
                             return
                         }
-                        let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+                        let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                             guard let strongSelf = self else {
                                 return CGRect()
                             }

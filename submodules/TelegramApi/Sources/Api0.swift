@@ -538,25 +538,26 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[736157604] = { return Api.JSONValue.parse_jsonNumber($0) }
     dict[-1715350371] = { return Api.JSONValue.parse_jsonObject($0) }
     dict[-1222740358] = { return Api.JSONValue.parse_jsonString($0) }
-    dict[-916050683] = { return Api.KeyboardButton.parse_inputKeyboardButtonRequestPeer($0) }
-    dict[-802258988] = { return Api.KeyboardButton.parse_inputKeyboardButtonUrlAuth($0) }
-    dict[-376962181] = { return Api.KeyboardButton.parse_inputKeyboardButtonUserProfile($0) }
-    dict[-1560655744] = { return Api.KeyboardButton.parse_keyboardButton($0) }
-    dict[-1344716869] = { return Api.KeyboardButton.parse_keyboardButtonBuy($0) }
-    dict[901503851] = { return Api.KeyboardButton.parse_keyboardButtonCallback($0) }
-    dict[1976723854] = { return Api.KeyboardButton.parse_keyboardButtonCopy($0) }
-    dict[1358175439] = { return Api.KeyboardButton.parse_keyboardButtonGame($0) }
-    dict[-59151553] = { return Api.KeyboardButton.parse_keyboardButtonRequestGeoLocation($0) }
-    dict[1406648280] = { return Api.KeyboardButton.parse_keyboardButtonRequestPeer($0) }
-    dict[-1318425559] = { return Api.KeyboardButton.parse_keyboardButtonRequestPhone($0) }
-    dict[-1144565411] = { return Api.KeyboardButton.parse_keyboardButtonRequestPoll($0) }
-    dict[-1598009252] = { return Api.KeyboardButton.parse_keyboardButtonSimpleWebView($0) }
-    dict[-1816527947] = { return Api.KeyboardButton.parse_keyboardButtonSwitchInline($0) }
-    dict[629866245] = { return Api.KeyboardButton.parse_keyboardButtonUrl($0) }
-    dict[280464681] = { return Api.KeyboardButton.parse_keyboardButtonUrlAuth($0) }
-    dict[814112961] = { return Api.KeyboardButton.parse_keyboardButtonUserProfile($0) }
-    dict[326529584] = { return Api.KeyboardButton.parse_keyboardButtonWebView($0) }
+    dict[45580630] = { return Api.KeyboardButton.parse_inputKeyboardButtonRequestPeer($0) }
+    dict[1744911986] = { return Api.KeyboardButton.parse_inputKeyboardButtonUrlAuth($0) }
+    dict[2103314375] = { return Api.KeyboardButton.parse_inputKeyboardButtonUserProfile($0) }
+    dict[2098662655] = { return Api.KeyboardButton.parse_keyboardButton($0) }
+    dict[1067792645] = { return Api.KeyboardButton.parse_keyboardButtonBuy($0) }
+    dict[-433338016] = { return Api.KeyboardButton.parse_keyboardButtonCallback($0) }
+    dict[-1127960816] = { return Api.KeyboardButton.parse_keyboardButtonCopy($0) }
+    dict[-1983540999] = { return Api.KeyboardButton.parse_keyboardButtonGame($0) }
+    dict[-1438582451] = { return Api.KeyboardButton.parse_keyboardButtonRequestGeoLocation($0) }
+    dict[1527715317] = { return Api.KeyboardButton.parse_keyboardButtonRequestPeer($0) }
+    dict[1098841487] = { return Api.KeyboardButton.parse_keyboardButtonRequestPhone($0) }
+    dict[2047989634] = { return Api.KeyboardButton.parse_keyboardButtonRequestPoll($0) }
+    dict[-514047120] = { return Api.KeyboardButton.parse_keyboardButtonSimpleWebView($0) }
+    dict[-1726768644] = { return Api.KeyboardButton.parse_keyboardButtonSwitchInline($0) }
+    dict[-670292500] = { return Api.KeyboardButton.parse_keyboardButtonUrl($0) }
+    dict[-183499015] = { return Api.KeyboardButton.parse_keyboardButtonUrlAuth($0) }
+    dict[-1057137399] = { return Api.KeyboardButton.parse_keyboardButtonUserProfile($0) }
+    dict[-398020192] = { return Api.KeyboardButton.parse_keyboardButtonWebView($0) }
     dict[2002815875] = { return Api.KeyboardButtonRow.parse_keyboardButtonRow($0) }
+    dict[1339896880] = { return Api.KeyboardButtonStyle.parse_keyboardButtonStyle($0) }
     dict[-886477832] = { return Api.LabeledPrice.parse_labeledPrice($0) }
     dict[-209337866] = { return Api.LangPackDifference.parse_langPackDifference($0) }
     dict[-288727837] = { return Api.LangPackLanguage.parse_langPackLanguage($0) }
@@ -579,6 +580,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[2055212554] = { return Api.Message.parse_messageService($0) }
     dict[-872240531] = { return Api.MessageAction.parse_messageActionBoostApply($0) }
     dict[-988359047] = { return Api.MessageAction.parse_messageActionBotAllowed($0) }
+    dict[-511160261] = { return Api.MessageAction.parse_messageActionChangeCreator($0) }
     dict[-1781355374] = { return Api.MessageAction.parse_messageActionChannelCreate($0) }
     dict[-365344535] = { return Api.MessageAction.parse_messageActionChannelMigrateFrom($0) }
     dict[365886720] = { return Api.MessageAction.parse_messageActionChatAddUser($0) }
@@ -606,6 +608,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[-1281329567] = { return Api.MessageAction.parse_messageActionGroupCallScheduled($0) }
     dict[-1615153660] = { return Api.MessageAction.parse_messageActionHistoryClear($0) }
     dict[1345295095] = { return Api.MessageAction.parse_messageActionInviteToGroupCall($0) }
+    dict[-1333866363] = { return Api.MessageAction.parse_messageActionNewCreatorPending($0) }
     dict[-2068281992] = { return Api.MessageAction.parse_messageActionPaidMessagesPrice($0) }
     dict[-1407246387] = { return Api.MessageAction.parse_messageActionPaidMessagesRefunded($0) }
     dict[1102307842] = { return Api.MessageAction.parse_messageActionPaymentRefunded($0) }
@@ -625,7 +628,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[-366202413] = { return Api.MessageAction.parse_messageActionStarGift($0) }
     dict[2000845012] = { return Api.MessageAction.parse_messageActionStarGiftPurchaseOffer($0) }
     dict[1940760427] = { return Api.MessageAction.parse_messageActionStarGiftPurchaseOfferDeclined($0) }
-    dict[-1787656893] = { return Api.MessageAction.parse_messageActionStarGiftUnique($0) }
+    dict[-423422686] = { return Api.MessageAction.parse_messageActionStarGiftUnique($0) }
     dict[747579941] = { return Api.MessageAction.parse_messageActionSuggestBirthday($0) }
     dict[1474192222] = { return Api.MessageAction.parse_messageActionSuggestProfilePhoto($0) }
     dict[-293988970] = { return Api.MessageAction.parse_messageActionSuggestedPostApproval($0) }
@@ -917,7 +920,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1681948327] = { return Api.SavedDialog.parse_monoForumDialog($0) }
     dict[-1115174036] = { return Api.SavedDialog.parse_savedDialog($0) }
     dict[-881854424] = { return Api.SavedReactionTag.parse_savedReactionTag($0) }
-    dict[-355041186] = { return Api.SavedStarGift.parse_savedStarGift($0) }
+    dict[1105150972] = { return Api.SavedStarGift.parse_savedStarGift($0) }
     dict[1040931690] = { return Api.SearchPostsFlood.parse_searchPostsFlood($0) }
     dict[-911191137] = { return Api.SearchResultsCalendarPeriod.parse_searchResultsCalendarPeriod($0) }
     dict[2137295719] = { return Api.SearchResultsPosition.parse_searchResultPosition($0) }
@@ -983,16 +986,21 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1124938064] = { return Api.SponsoredMessageReportOption.parse_sponsoredMessageReportOption($0) }
     dict[-963180333] = { return Api.SponsoredPeer.parse_sponsoredPeer($0) }
     dict[825922887] = { return Api.StarGift.parse_starGift($0) }
-    dict[1453155529] = { return Api.StarGift.parse_starGiftUnique($0) }
+    dict[-2047825459] = { return Api.StarGift.parse_starGiftUnique($0) }
     dict[-753154979] = { return Api.StarGiftActiveAuctionState.parse_starGiftActiveAuctionState($0) }
-    dict[-650279524] = { return Api.StarGiftAttribute.parse_starGiftAttributeBackdrop($0) }
-    dict[970559507] = { return Api.StarGiftAttribute.parse_starGiftAttributeModel($0) }
+    dict[-1624963868] = { return Api.StarGiftAttribute.parse_starGiftAttributeBackdrop($0) }
+    dict[1448235490] = { return Api.StarGiftAttribute.parse_starGiftAttributeModel($0) }
     dict[-524291476] = { return Api.StarGiftAttribute.parse_starGiftAttributeOriginalDetails($0) }
-    dict[330104601] = { return Api.StarGiftAttribute.parse_starGiftAttributePattern($0) }
+    dict[1315997162] = { return Api.StarGiftAttribute.parse_starGiftAttributePattern($0) }
     dict[783398488] = { return Api.StarGiftAttributeCounter.parse_starGiftAttributeCounter($0) }
     dict[520210263] = { return Api.StarGiftAttributeId.parse_starGiftAttributeIdBackdrop($0) }
     dict[1219145276] = { return Api.StarGiftAttributeId.parse_starGiftAttributeIdModel($0) }
     dict[1242965043] = { return Api.StarGiftAttributeId.parse_starGiftAttributeIdPattern($0) }
+    dict[910391095] = { return Api.StarGiftAttributeRarity.parse_starGiftAttributeRarity($0) }
+    dict[2029777832] = { return Api.StarGiftAttributeRarity.parse_starGiftAttributeRarityEpic($0) }
+    dict[-822614104] = { return Api.StarGiftAttributeRarity.parse_starGiftAttributeRarityLegendary($0) }
+    dict[-259174037] = { return Api.StarGiftAttributeRarity.parse_starGiftAttributeRarityRare($0) }
+    dict[-607231095] = { return Api.StarGiftAttributeRarity.parse_starGiftAttributeRarityUncommon($0) }
     dict[1118831432] = { return Api.StarGiftAuctionAcquiredGift.parse_starGiftAuctionAcquiredGift($0) }
     dict[984483112] = { return Api.StarGiftAuctionRound.parse_starGiftAuctionRound($0) }
     dict[178266597] = { return Api.StarGiftAuctionRound.parse_starGiftAuctionRoundExtendable($0) }
@@ -1206,6 +1214,7 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[-245208620] = { return Api.Update.parse_updateSmsJob($0) }
     dict[1222788802] = { return Api.Update.parse_updateStarGiftAuctionState($0) }
     dict[-598150370] = { return Api.Update.parse_updateStarGiftAuctionUserState($0) }
+    dict[-1408818108] = { return Api.Update.parse_updateStarGiftCraftFail($0) }
     dict[1317053305] = { return Api.Update.parse_updateStarsBalance($0) }
     dict[-1518030823] = { return Api.Update.parse_updateStarsRevenueStatus($0) }
     dict[834816008] = { return Api.Update.parse_updateStickerSets($0) }
@@ -1230,9 +1239,9 @@ fileprivate let parsers: [Int32 : (BufferReader) -> Any?] = {
     dict[1957577280] = { return Api.Updates.parse_updates($0) }
     dict[1918567619] = { return Api.Updates.parse_updatesCombined($0) }
     dict[-484987010] = { return Api.Updates.parse_updatesTooLong($0) }
-    dict[-1886646706] = { return Api.UrlAuthResult.parse_urlAuthResultAccepted($0) }
+    dict[1648005024] = { return Api.UrlAuthResult.parse_urlAuthResultAccepted($0) }
     dict[-1445536993] = { return Api.UrlAuthResult.parse_urlAuthResultDefault($0) }
-    dict[-1831650802] = { return Api.UrlAuthResult.parse_urlAuthResultRequest($0) }
+    dict[855293722] = { return Api.UrlAuthResult.parse_urlAuthResultRequest($0) }
     dict[829899656] = { return Api.User.parse_user($0) }
     dict[-742634630] = { return Api.User.parse_userEmpty($0) }
     dict[-1607745218] = { return Api.UserFull.parse_userFull($0) }
@@ -1593,18 +1602,17 @@ public extension Api {
         }
         return nil
     }
-    
-        static func parse(_ reader: BufferReader, signature: Int32) -> Any? {
-            if let parser = parsers[signature] {
-                return parser(reader)
-            }
-            else {
-                telegramApiLog("Type constructor \(String(UInt32(bitPattern: signature), radix: 16, uppercase: false)) not found")
-                return nil
-            }
+
+    static func parse(_ reader: BufferReader, signature: Int32) -> Any? {
+        if let parser = parsers[signature] {
+            return parser(reader)
+        } else {
+            telegramApiLog("Type constructor \(String(UInt32(bitPattern: signature), radix: 16, uppercase: false)) not found")
+            return nil
         }
-        
-        static func parseVector<T>(_ reader: BufferReader, elementSignature: Int32, elementType: T.Type) -> [T]? {
+    }
+
+    static func parseVector<T>(_ reader: BufferReader, elementSignature: Int32, elementType: T.Type) -> [T]? {
         if let count = reader.readInt32() {
             var array = [T]()
             var i: Int32 = 0
@@ -1613,8 +1621,7 @@ public extension Api {
                 if elementSignature == 0 {
                     if let unboxedSignature = reader.readInt32() {
                         signature = unboxedSignature
-                    }
-                    else {
+                    } else {
                         return nil
                     }
                 }
@@ -1625,12 +1632,11 @@ public extension Api {
                         return nil
                     }
                 } else {
-                if let item = Api.parse(reader, signature: signature) as? T {
-                    array.append(item)
-                }
-                else {
-                    return nil
-                }
+                    if let item = Api.parse(reader, signature: signature) as? T {
+                        array.append(item)
+                    } else {
+                        return nil
+                    }
                 }
                 i += 1
             }
@@ -1638,1170 +1644,1173 @@ public extension Api {
         }
         return nil
     }
-    
+
     static func serializeObject(_ object: Any, buffer: Buffer, boxed: Swift.Bool) {
         switch object {
-            case let _1 as Api.AccountDaysTTL:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AttachMenuBot:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AttachMenuBotIcon:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AttachMenuBotIconColor:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AttachMenuBots:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AttachMenuBotsBot:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AttachMenuPeerType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AuctionBidLevel:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Authorization:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AutoDownloadSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AutoSaveException:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AutoSaveSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AvailableEffect:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.AvailableReaction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BankCardOpenUrl:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BaseTheme:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Birthday:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Bool:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Boost:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotApp:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotAppSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotBusinessConnection:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotCommand:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotCommandScope:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotInlineMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotInlineResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotMenuButton:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotPreviewMedia:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotVerification:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BotVerifierSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessAwayMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessAwayMessageSchedule:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessBotRecipients:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessBotRights:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessChatLink:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessGreetingMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessIntro:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessLocation:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessRecipients:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessWeeklyOpen:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.BusinessWorkHours:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.CdnConfig:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.CdnPublicKey:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChannelAdminLogEvent:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChannelAdminLogEventAction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChannelAdminLogEventsFilter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChannelLocation:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChannelMessagesFilter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChannelParticipant:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChannelParticipantsFilter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Chat:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatAdminRights:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatAdminWithInvites:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatBannedRights:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatFull:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatInvite:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatInviteImporter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatOnlines:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatParticipant:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatParticipants:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatPhoto:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatReactions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ChatTheme:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.CodeSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Config:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ConnectedBot:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ConnectedBotStarRef:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Contact:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ContactBirthday:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ContactStatus:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DataJSON:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DcOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DefaultHistoryTTL:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Dialog:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DialogFilter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DialogFilterSuggested:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DialogPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DisallowedGiftsSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Document:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DocumentAttribute:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.DraftMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmailVerification:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmailVerifyPurpose:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmojiGroup:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmojiKeyword:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmojiKeywordsDifference:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmojiLanguage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmojiList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmojiStatus:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EmojiURL:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EncryptedChat:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EncryptedFile:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.EncryptedMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ExportedChatInvite:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ExportedChatlistInvite:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ExportedContactToken:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ExportedMessageLink:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ExportedStoryLink:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.FactCheck:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.FileHash:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Folder:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.FolderPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ForumTopic:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.FoundStory:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Game:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GeoPoint:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GeoPointAddress:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GlobalPrivacySettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GroupCall:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GroupCallDonor:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GroupCallMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GroupCallParticipant:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GroupCallParticipantVideo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GroupCallParticipantVideoSourceGroup:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.GroupCallStreamChannel:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.HighScore:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ImportedContact:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InlineBotSwitchPM:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InlineBotWebView:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InlineQueryPeerType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputAppEvent:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBotApp:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBotInlineMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBotInlineMessageID:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBotInlineResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBusinessAwayMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBusinessBotRecipients:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBusinessChatLink:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBusinessGreetingMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBusinessIntro:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputBusinessRecipients:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputChannel:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputChatPhoto:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputChatTheme:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputChatlist:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputCheckPasswordSRP:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputClientProxy:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputCollectible:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputContact:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputDialogPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputDocument:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputEncryptedChat:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputEncryptedFile:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputFile:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputFileLocation:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputFolderPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputGame:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputGeoPoint:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputGroupCall:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputInvoice:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputMedia:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputNotifyPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPasskeyCredential:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPasskeyResponse:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPaymentCredentials:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPeerNotifySettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPhoneCall:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPhoto:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPrivacyKey:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputPrivacyRule:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputQuickReplyShortcut:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputReplyTo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputSavedStarGift:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputSecureFile:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputSecureValue:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputSingleMedia:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputStarGiftAuction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputStarsTransaction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputStickerSet:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputStickerSetItem:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputStickeredMedia:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputStorePaymentPurpose:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputTheme:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputThemeSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputUser:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputWallPaper:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputWebDocument:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.InputWebFileLocation:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Invoice:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.JSONObjectValue:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.JSONValue:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.KeyboardButton:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.KeyboardButtonRow:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.LabeledPrice:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.LangPackDifference:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.LangPackLanguage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.LangPackString:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MaskCoords:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MediaArea:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MediaAreaCoordinates:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Message:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageAction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageEntity:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageExtendedMedia:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageFwdHeader:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageMedia:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessagePeerReaction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessagePeerVote:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageRange:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageReactions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageReactor:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageReplies:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageReplyHeader:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageReportOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessageViews:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MessagesFilter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MissingInvitee:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.MyBoost:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.NearestDc:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.NotificationSound:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.NotifyPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.OutboxReadDate:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Page:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PageBlock:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PageCaption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PageListItem:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PageListOrderedItem:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PageRelatedArticle:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PageTableCell:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PageTableRow:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PaidReactionPrivacy:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Passkey:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PasswordKdfAlgo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PaymentCharge:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PaymentFormMethod:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PaymentRequestedInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PaymentSavedCredentials:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Peer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PeerBlocked:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PeerColor:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PeerLocated:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PeerNotifySettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PeerSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PeerStories:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PendingSuggestion:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PhoneCall:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PhoneCallDiscardReason:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PhoneCallProtocol:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PhoneConnection:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Photo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PhotoSize:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Poll:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PollAnswer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PollAnswerVoters:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PollResults:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PopularContact:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PostAddress:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PostInteractionCounters:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PremiumGiftCodeOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PremiumSubscriptionOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PrepaidGiveaway:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PrivacyKey:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PrivacyRule:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ProfileTab:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.PublicForward:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.QuickReply:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Reaction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReactionCount:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReactionNotificationsFrom:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReactionsNotifySettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReadParticipantDate:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReceivedNotifyMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.RecentMeUrl:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.RecentStory:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReplyMarkup:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReportReason:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ReportResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.RequestPeerType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.RequestedPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.RequirementToContact:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.RestrictionReason:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.RichText:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SavedContact:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SavedDialog:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SavedReactionTag:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SavedStarGift:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SearchPostsFlood:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SearchResultsCalendarPeriod:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SearchResultsPosition:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureCredentialsEncrypted:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureData:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureFile:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecurePasswordKdfAlgo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecurePlainData:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureRequiredType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureSecretSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureValue:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureValueError:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureValueHash:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SecureValueType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SendAsPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SendMessageAction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ShippingOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SmsJob:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SponsoredMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SponsoredMessageReportOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SponsoredPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGift:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftActiveAuctionState:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftAttribute:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftAttributeCounter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftAttributeId:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftAuctionAcquiredGift:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftAuctionRound:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftAuctionState:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftAuctionUserState:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftBackground:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftCollection:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarGiftUpgradePrice:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarRefProgram:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsAmount:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsGiftOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsGiveawayOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsGiveawayWinnersOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsRating:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsRevenueStatus:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsSubscription:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsSubscriptionPricing:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsTopupOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsTransaction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StarsTransactionPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsAbsValueAndPrev:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsDateRangeDays:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsGraph:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsGroupTopAdmin:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsGroupTopInviter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsGroupTopPoster:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsPercentValue:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StatsURL:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StickerKeyword:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StickerPack:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StickerSet:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StickerSetCovered:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StoriesStealthMode:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StoryAlbum:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StoryFwdHeader:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StoryItem:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StoryReaction:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StoryView:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.StoryViews:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.SuggestedPost:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.TextWithEntities:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Theme:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.ThemeSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Timezone:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.TodoCompletion:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.TodoItem:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.TodoList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.TopPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.TopPeerCategory:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.TopPeerCategoryPeers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Update:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Updates:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.UrlAuthResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.User:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.UserFull:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.UserProfilePhoto:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.UserStatus:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.Username:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.VideoSize:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WallPaper:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WallPaperSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WebAuthorization:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WebDocument:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WebPage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WebPageAttribute:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WebViewMessageSent:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.WebViewResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.AuthorizationForm:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.Authorizations:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.AutoDownloadSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.AutoSaveSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.BusinessChatLinks:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.ChatThemes:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.ConnectedBots:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.ContentSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.EmailVerified:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.EmojiStatuses:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.PaidMessagesRevenue:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.PasskeyRegistrationOptions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.Passkeys:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.Password:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.PasswordInputSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.PasswordSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.PrivacyRules:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.ResetPasswordResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.ResolvedBusinessChatLinks:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.SavedMusicIds:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.SavedRingtone:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.SavedRingtones:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.SentEmailCode:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.Takeout:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.Themes:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.TmpPassword:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.WallPapers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.account.WebAuthorizations:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.Authorization:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.CodeType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.ExportedAuthorization:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.LoggedOut:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.LoginToken:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.PasskeyLoginOptions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.PasswordRecovery:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.SentCode:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.auth.SentCodeType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.bots.BotInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.bots.PopularAppBots:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.bots.PreviewInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.channels.AdminLogResults:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.channels.ChannelParticipant:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.channels.ChannelParticipants:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.channels.SendAsPeers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.channels.SponsoredMessageReportResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.chatlists.ChatlistInvite:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.chatlists.ChatlistUpdates:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.chatlists.ExportedChatlistInvite:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.chatlists.ExportedInvites:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.Blocked:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.ContactBirthdays:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.Contacts:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.Found:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.ImportedContacts:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.ResolvedPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.SponsoredPeers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.contacts.TopPeers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.fragment.CollectibleInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.AppConfig:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.AppUpdate:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.CountriesList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.Country:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.CountryCode:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.DeepLinkInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.InviteText:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.PassportConfig:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.PeerColorOption:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.PeerColorSet:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.PeerColors:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.PremiumPromo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.PromoData:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.RecentMeUrls:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.Support:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.SupportName:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.TermsOfService:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.TermsOfServiceUpdate:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.TimezonesList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.help.UserInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.AffectedFoundMessages:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.AffectedHistory:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.AffectedMessages:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.AllStickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.ArchivedStickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.AvailableEffects:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.AvailableReactions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.BotApp:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.BotCallbackAnswer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.BotPreparedInlineMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.BotResults:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.ChatAdminsWithInvites:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.ChatFull:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.ChatInviteImporters:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.Chats:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.CheckedHistoryImportPeer:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.DhConfig:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.DialogFilters:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.Dialogs:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.DiscussionMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.EmojiGameInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.EmojiGameOutcome:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.EmojiGroups:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.ExportedChatInvite:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.ExportedChatInvites:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.FavedStickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.FeaturedStickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.ForumTopics:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.FoundStickerSets:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.FoundStickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.HighScores:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.HistoryImport:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.HistoryImportParsed:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.InactiveChats:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.InvitedUsers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.MessageEditData:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.MessageReactionsList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.MessageViews:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.Messages:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.MyStickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.PeerDialogs:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.PeerSettings:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.PreparedInlineMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.QuickReplies:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.Reactions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.RecentStickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SavedDialogs:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SavedGifs:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SavedReactionTags:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SearchCounter:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SearchResultsCalendar:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SearchResultsPositions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SentEncryptedMessage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.SponsoredMessages:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.StickerSet:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.StickerSetInstallResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.Stickers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.TranscribedAudio:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.TranslatedText:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.VotesList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.WebPage:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.messages.WebPagePreview:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.BankCardData:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.CheckCanSendGiftResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.CheckedGiftCode:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.ConnectedStarRefBots:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.ExportedInvoice:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.GiveawayInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.PaymentForm:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.PaymentReceipt:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.PaymentResult:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.ResaleStarGifts:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.SavedInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.SavedStarGifts:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGiftActiveAuctions:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGiftAuctionAcquiredGifts:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGiftAuctionState:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGiftCollections:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGiftUpgradeAttributes:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGiftUpgradePreview:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGiftWithdrawalUrl:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarGifts:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarsRevenueAdsAccountUrl:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarsRevenueStats:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarsRevenueWithdrawalUrl:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.StarsStatus:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.SuggestedStarRefBots:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.UniqueStarGift:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.UniqueStarGiftValueInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.payments.ValidatedRequestedInfo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.ExportedGroupCallInvite:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.GroupCall:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.GroupCallStars:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.GroupCallStreamChannels:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.GroupCallStreamRtmpUrl:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.GroupParticipants:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.JoinAsPeers:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.phone.PhoneCall:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.photos.Photo:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.photos.Photos:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.premium.BoostsList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.premium.BoostsStatus:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.premium.MyBoosts:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.smsjobs.EligibilityToJoin:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.smsjobs.Status:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stats.BroadcastStats:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stats.MegagroupStats:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stats.MessageStats:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stats.PublicForwards:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stats.StoryStats:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stickers.SuggestedShortName:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.storage.FileType:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.Albums:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.AllStories:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.CanSendStoryCount:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.FoundStories:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.PeerStories:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.Stories:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.StoryReactionsList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.StoryViews:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.stories.StoryViewsList:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.updates.ChannelDifference:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.updates.Difference:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.updates.State:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.upload.CdnFile:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.upload.File:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.upload.WebFile:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.users.SavedMusic:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.users.UserFull:
-                _1.serialize(buffer, boxed)
-            case let _1 as Api.users.Users:
-                _1.serialize(buffer, boxed)
-            default:
-                break
+        case let _1 as Api.AccountDaysTTL:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AttachMenuBot:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AttachMenuBotIcon:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AttachMenuBotIconColor:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AttachMenuBots:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AttachMenuBotsBot:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AttachMenuPeerType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AuctionBidLevel:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Authorization:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AutoDownloadSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AutoSaveException:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AutoSaveSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AvailableEffect:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.AvailableReaction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BankCardOpenUrl:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BaseTheme:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Birthday:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Bool:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Boost:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotApp:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotAppSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotBusinessConnection:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotCommand:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotCommandScope:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotInlineMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotInlineResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotMenuButton:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotPreviewMedia:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotVerification:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BotVerifierSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessAwayMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessAwayMessageSchedule:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessBotRecipients:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessBotRights:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessChatLink:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessGreetingMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessIntro:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessLocation:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessRecipients:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessWeeklyOpen:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.BusinessWorkHours:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.CdnConfig:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.CdnPublicKey:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChannelAdminLogEvent:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChannelAdminLogEventAction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChannelAdminLogEventsFilter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChannelLocation:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChannelMessagesFilter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChannelParticipant:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChannelParticipantsFilter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Chat:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatAdminRights:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatAdminWithInvites:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatBannedRights:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatFull:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatInvite:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatInviteImporter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatOnlines:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatParticipant:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatParticipants:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatPhoto:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatReactions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ChatTheme:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.CodeSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Config:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ConnectedBot:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ConnectedBotStarRef:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Contact:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ContactBirthday:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ContactStatus:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DataJSON:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DcOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DefaultHistoryTTL:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Dialog:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DialogFilter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DialogFilterSuggested:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DialogPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DisallowedGiftsSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Document:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DocumentAttribute:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.DraftMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmailVerification:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmailVerifyPurpose:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmojiGroup:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmojiKeyword:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmojiKeywordsDifference:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmojiLanguage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmojiList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmojiStatus:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EmojiURL:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EncryptedChat:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EncryptedFile:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.EncryptedMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ExportedChatInvite:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ExportedChatlistInvite:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ExportedContactToken:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ExportedMessageLink:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ExportedStoryLink:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.FactCheck:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.FileHash:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Folder:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.FolderPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ForumTopic:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.FoundStory:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Game:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GeoPoint:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GeoPointAddress:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GlobalPrivacySettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GroupCall:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GroupCallDonor:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GroupCallMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GroupCallParticipant:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GroupCallParticipantVideo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GroupCallParticipantVideoSourceGroup:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.GroupCallStreamChannel:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.HighScore:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ImportedContact:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InlineBotSwitchPM:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InlineBotWebView:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InlineQueryPeerType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputAppEvent:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBotApp:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBotInlineMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBotInlineMessageID:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBotInlineResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBusinessAwayMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBusinessBotRecipients:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBusinessChatLink:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBusinessGreetingMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBusinessIntro:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputBusinessRecipients:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputChannel:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputChatPhoto:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputChatTheme:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputChatlist:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputCheckPasswordSRP:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputClientProxy:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputCollectible:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputContact:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputDialogPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputDocument:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputEncryptedChat:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputEncryptedFile:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputFile:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputFileLocation:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputFolderPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputGame:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputGeoPoint:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputGroupCall:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputInvoice:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputMedia:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputNotifyPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPasskeyCredential:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPasskeyResponse:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPaymentCredentials:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPeerNotifySettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPhoneCall:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPhoto:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPrivacyKey:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputPrivacyRule:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputQuickReplyShortcut:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputReplyTo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputSavedStarGift:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputSecureFile:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputSecureValue:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputSingleMedia:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputStarGiftAuction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputStarsTransaction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputStickerSet:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputStickerSetItem:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputStickeredMedia:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputStorePaymentPurpose:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputTheme:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputThemeSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputUser:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputWallPaper:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputWebDocument:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.InputWebFileLocation:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Invoice:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.JSONObjectValue:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.JSONValue:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.KeyboardButton:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.KeyboardButtonRow:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.KeyboardButtonStyle:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.LabeledPrice:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.LangPackDifference:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.LangPackLanguage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.LangPackString:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MaskCoords:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MediaArea:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MediaAreaCoordinates:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Message:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageAction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageEntity:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageExtendedMedia:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageFwdHeader:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageMedia:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessagePeerReaction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessagePeerVote:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageRange:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageReactions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageReactor:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageReplies:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageReplyHeader:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageReportOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessageViews:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MessagesFilter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MissingInvitee:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.MyBoost:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.NearestDc:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.NotificationSound:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.NotifyPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.OutboxReadDate:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Page:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PageBlock:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PageCaption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PageListItem:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PageListOrderedItem:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PageRelatedArticle:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PageTableCell:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PageTableRow:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PaidReactionPrivacy:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Passkey:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PasswordKdfAlgo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PaymentCharge:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PaymentFormMethod:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PaymentRequestedInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PaymentSavedCredentials:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Peer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PeerBlocked:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PeerColor:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PeerLocated:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PeerNotifySettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PeerSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PeerStories:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PendingSuggestion:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PhoneCall:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PhoneCallDiscardReason:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PhoneCallProtocol:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PhoneConnection:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Photo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PhotoSize:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Poll:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PollAnswer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PollAnswerVoters:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PollResults:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PopularContact:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PostAddress:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PostInteractionCounters:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PremiumGiftCodeOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PremiumSubscriptionOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PrepaidGiveaway:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PrivacyKey:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PrivacyRule:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ProfileTab:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.PublicForward:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.QuickReply:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Reaction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReactionCount:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReactionNotificationsFrom:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReactionsNotifySettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReadParticipantDate:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReceivedNotifyMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.RecentMeUrl:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.RecentStory:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReplyMarkup:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReportReason:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ReportResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.RequestPeerType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.RequestedPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.RequirementToContact:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.RestrictionReason:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.RichText:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SavedContact:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SavedDialog:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SavedReactionTag:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SavedStarGift:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SearchPostsFlood:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SearchResultsCalendarPeriod:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SearchResultsPosition:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureCredentialsEncrypted:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureData:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureFile:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecurePasswordKdfAlgo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecurePlainData:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureRequiredType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureSecretSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureValue:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureValueError:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureValueHash:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SecureValueType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SendAsPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SendMessageAction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ShippingOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SmsJob:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SponsoredMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SponsoredMessageReportOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SponsoredPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGift:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftActiveAuctionState:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAttribute:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAttributeCounter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAttributeId:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAttributeRarity:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAuctionAcquiredGift:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAuctionRound:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAuctionState:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftAuctionUserState:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftBackground:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftCollection:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarGiftUpgradePrice:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarRefProgram:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsAmount:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsGiftOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsGiveawayOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsGiveawayWinnersOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsRating:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsRevenueStatus:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsSubscription:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsSubscriptionPricing:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsTopupOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsTransaction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StarsTransactionPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsAbsValueAndPrev:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsDateRangeDays:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsGraph:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsGroupTopAdmin:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsGroupTopInviter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsGroupTopPoster:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsPercentValue:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StatsURL:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StickerKeyword:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StickerPack:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StickerSet:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StickerSetCovered:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StoriesStealthMode:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StoryAlbum:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StoryFwdHeader:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StoryItem:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StoryReaction:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StoryView:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.StoryViews:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.SuggestedPost:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.TextWithEntities:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Theme:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.ThemeSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Timezone:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.TodoCompletion:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.TodoItem:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.TodoList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.TopPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.TopPeerCategory:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.TopPeerCategoryPeers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Update:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Updates:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.UrlAuthResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.User:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.UserFull:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.UserProfilePhoto:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.UserStatus:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.Username:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.VideoSize:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WallPaper:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WallPaperSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WebAuthorization:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WebDocument:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WebPage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WebPageAttribute:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WebViewMessageSent:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.WebViewResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.AuthorizationForm:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.Authorizations:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.AutoDownloadSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.AutoSaveSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.BusinessChatLinks:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.ChatThemes:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.ConnectedBots:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.ContentSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.EmailVerified:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.EmojiStatuses:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.PaidMessagesRevenue:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.PasskeyRegistrationOptions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.Passkeys:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.Password:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.PasswordInputSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.PasswordSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.PrivacyRules:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.ResetPasswordResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.ResolvedBusinessChatLinks:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.SavedMusicIds:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.SavedRingtone:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.SavedRingtones:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.SentEmailCode:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.Takeout:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.Themes:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.TmpPassword:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.WallPapers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.account.WebAuthorizations:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.Authorization:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.CodeType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.ExportedAuthorization:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.LoggedOut:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.LoginToken:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.PasskeyLoginOptions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.PasswordRecovery:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.SentCode:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.auth.SentCodeType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.bots.BotInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.bots.PopularAppBots:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.bots.PreviewInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.channels.AdminLogResults:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.channels.ChannelParticipant:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.channels.ChannelParticipants:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.channels.SendAsPeers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.channels.SponsoredMessageReportResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.chatlists.ChatlistInvite:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.chatlists.ChatlistUpdates:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.chatlists.ExportedChatlistInvite:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.chatlists.ExportedInvites:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.Blocked:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.ContactBirthdays:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.Contacts:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.Found:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.ImportedContacts:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.ResolvedPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.SponsoredPeers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.contacts.TopPeers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.fragment.CollectibleInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.AppConfig:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.AppUpdate:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.CountriesList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.Country:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.CountryCode:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.DeepLinkInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.InviteText:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.PassportConfig:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.PeerColorOption:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.PeerColorSet:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.PeerColors:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.PremiumPromo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.PromoData:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.RecentMeUrls:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.Support:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.SupportName:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.TermsOfService:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.TermsOfServiceUpdate:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.TimezonesList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.help.UserInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.AffectedFoundMessages:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.AffectedHistory:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.AffectedMessages:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.AllStickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.ArchivedStickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.AvailableEffects:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.AvailableReactions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.BotApp:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.BotCallbackAnswer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.BotPreparedInlineMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.BotResults:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.ChatAdminsWithInvites:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.ChatFull:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.ChatInviteImporters:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.Chats:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.CheckedHistoryImportPeer:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.DhConfig:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.DialogFilters:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.Dialogs:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.DiscussionMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.EmojiGameInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.EmojiGameOutcome:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.EmojiGroups:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.ExportedChatInvite:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.ExportedChatInvites:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.FavedStickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.FeaturedStickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.ForumTopics:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.FoundStickerSets:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.FoundStickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.HighScores:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.HistoryImport:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.HistoryImportParsed:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.InactiveChats:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.InvitedUsers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.MessageEditData:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.MessageReactionsList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.MessageViews:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.Messages:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.MyStickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.PeerDialogs:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.PeerSettings:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.PreparedInlineMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.QuickReplies:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.Reactions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.RecentStickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SavedDialogs:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SavedGifs:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SavedReactionTags:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SearchCounter:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SearchResultsCalendar:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SearchResultsPositions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SentEncryptedMessage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.SponsoredMessages:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.StickerSet:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.StickerSetInstallResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.Stickers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.TranscribedAudio:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.TranslatedText:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.VotesList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.WebPage:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.messages.WebPagePreview:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.BankCardData:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.CheckCanSendGiftResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.CheckedGiftCode:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.ConnectedStarRefBots:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.ExportedInvoice:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.GiveawayInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.PaymentForm:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.PaymentReceipt:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.PaymentResult:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.ResaleStarGifts:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.SavedInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.SavedStarGifts:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGiftActiveAuctions:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGiftAuctionAcquiredGifts:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGiftAuctionState:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGiftCollections:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGiftUpgradeAttributes:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGiftUpgradePreview:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGiftWithdrawalUrl:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarGifts:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarsRevenueAdsAccountUrl:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarsRevenueStats:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarsRevenueWithdrawalUrl:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.StarsStatus:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.SuggestedStarRefBots:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.UniqueStarGift:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.UniqueStarGiftValueInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.payments.ValidatedRequestedInfo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.ExportedGroupCallInvite:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.GroupCall:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.GroupCallStars:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.GroupCallStreamChannels:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.GroupCallStreamRtmpUrl:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.GroupParticipants:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.JoinAsPeers:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.phone.PhoneCall:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.photos.Photo:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.photos.Photos:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.premium.BoostsList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.premium.BoostsStatus:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.premium.MyBoosts:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.smsjobs.EligibilityToJoin:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.smsjobs.Status:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stats.BroadcastStats:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stats.MegagroupStats:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stats.MessageStats:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stats.PublicForwards:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stats.StoryStats:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stickers.SuggestedShortName:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.storage.FileType:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.Albums:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.AllStories:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.CanSendStoryCount:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.FoundStories:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.PeerStories:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.Stories:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.StoryReactionsList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.StoryViews:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.stories.StoryViewsList:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.updates.ChannelDifference:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.updates.Difference:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.updates.State:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.upload.CdnFile:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.upload.File:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.upload.WebFile:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.users.SavedMusic:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.users.UserFull:
+            _1.serialize(buffer, boxed)
+        case let _1 as Api.users.Users:
+            _1.serialize(buffer, boxed)
+        default:
+            break
         }
     }
-
 }

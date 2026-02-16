@@ -1410,11 +1410,11 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     ReplyMarkupMessageAttribute(
                         rows: [
                             ReplyMarkupRow(buttons: [
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionReject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline)),
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionApprove, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove))
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionReject, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonDecline), style: ReplyMarkupButton.Style(color: .danger, iconFileId: nil)),
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionApprove, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonApprove), style: ReplyMarkupButton.Style(color: .success, iconFileId: nil))
                             ]),
                             ReplyMarkupRow(buttons: [
-                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionSuggestChanges, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonSuggestChanges))
+                                ReplyMarkupButton(title: item.presentationData.strings.Chat_PostApproval_Message_ActionSuggestChanges, titleWhenForwarded: nil, action: .callback(requiresPassword: false, data: buttonSuggestChanges), style: nil)
                             ])
                         ],
                         flags: [],

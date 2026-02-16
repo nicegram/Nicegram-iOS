@@ -13,6 +13,7 @@ import BalancedTextComponent
 import TelegramPresentationData
 import TelegramStringFormatting
 import Markdown
+import GlassControls
 
 private final class ScheduleVideoChatSheetContentComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -33,8 +34,8 @@ private final class ScheduleVideoChatSheetContentComponent: Component {
     }
     
     final class View: UIView {
-        private let button = ComponentView<Empty>()
-        private let cancelButton = ComponentView<Empty>()
+        private let buttons = ComponentView<Empty>()
+        private let actionButton = ComponentView<Empty>()
         
         private let title = ComponentView<Empty>()
         private let mainText = ComponentView<Empty>()
@@ -110,6 +111,43 @@ private final class ScheduleVideoChatSheetContentComponent: Component {
             var contentHeight: CGFloat = 0.0
             contentHeight += 16.0
             
+            let buttonsSize = self.buttons.update(
+                transition: transition,
+                component: AnyComponent(
+                    GlassControlPanelComponent(
+                        theme: environment.theme,
+                        leftItem: GlassControlPanelComponent.Item(
+                            items: [
+                                GlassControlGroupComponent.Item(
+                                    id: AnyHashable("close"),
+                                    content: .icon("Navigation/Close"),
+                                    action: { [weak self] in
+                                        guard let component = self?.component else {
+                                            return
+                                        }
+                                        component.dismiss()
+                                    }
+                                )
+                            ],
+                            background: .panel
+                        ),
+                        centralItem: nil,
+                        rightItem: nil,
+                        centerAlignmentIfPossible: true,
+                        isDark: true
+                    )
+                ),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - 16.0 * 2.0, height: 44.0)
+            )
+            if let buttonsView = self.buttons.view {
+                if buttonsView.superview == nil {
+                    self.addSubview(buttonsView)
+                }
+                transition.setFrame(view: buttonsView, frame: CGRect(origin: CGPoint(x: floor((availableSize.width - buttonsSize.width) * 0.5), y: contentHeight), size: buttonsSize))
+            }
+            contentHeight += buttonsSize.height
+            
             let titleString = NSMutableAttributedString()
             titleString.append(NSAttributedString(string: environment.strings.VideoChat_ScheduleButtonTitle, font: Font.semibold(17.0), textColor: environment.theme.list.itemPrimaryTextColor))
             
@@ -126,9 +164,8 @@ private final class ScheduleVideoChatSheetContentComponent: Component {
                 if titleView.superview == nil {
                     self.addSubview(titleView)
                 }
-                transition.setFrame(view: titleView, frame: CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: contentHeight), size: titleSize))
+                transition.setFrame(view: titleView, frame: CGRect(origin: CGPoint(x: floor((availableSize.width - titleSize.width) * 0.5), y: contentHeight - buttonsSize.height * 0.5 - titleSize.height * 0.5), size: titleSize))
             }
-            contentHeight += titleSize.height
             contentHeight += 16.0
             
             let pickerView: UIDatePicker
@@ -221,17 +258,20 @@ private final class ScheduleVideoChatSheetContentComponent: Component {
                 transition.setFrame(view: mainTextView, frame: CGRect(origin: CGPoint(x: floor((availableSize.width - mainTextSize.width) * 0.5), y: contentHeight), size: mainTextSize))
             }
             contentHeight += mainTextSize.height
-            contentHeight += 10.0
+            contentHeight += 32.0
             
             var buttonContents: [AnyComponentWithIdentity<Empty>] = []
             buttonContents.append(AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
                 Text(text: buttonTitle, font: Font.semibold(17.0), color: environment.theme.list.itemCheckColors.foregroundColor)
             )))
             let buttonTransition = transition
-            let buttonSize = self.button.update(
+            
+            let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
+            let buttonSize = self.actionButton.update(
                 transition: buttonTransition,
                 component: AnyComponent(ButtonComponent(
                     background: ButtonComponent.Background(
+                        style: .glass,
                         color: UIColor(rgb: 0x3252EF),
                         foreground: .white,
                         pressedColor: UIColor(rgb: 0x3252EF).withMultipliedAlpha(0.8)
@@ -250,56 +290,17 @@ private final class ScheduleVideoChatSheetContentComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
+                containerSize: CGSize(width: availableSize.width - buttonInsets.left - buttonInsets.right, height: 52.0)
             )
-            let buttonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: buttonSize)
-            if let buttonView = self.button.view {
+            let buttonFrame = CGRect(origin: CGPoint(x: buttonInsets.left, y: contentHeight), size: buttonSize)
+            if let buttonView = self.actionButton.view {
                 if buttonView.superview == nil {
                     self.addSubview(buttonView)
                 }
                 transition.setFrame(view: buttonView, frame: buttonFrame)
             }
             contentHeight += buttonSize.height
-            contentHeight += 10.0
-            
-            let cancelButtonSize = self.cancelButton.update(
-                transition: buttonTransition,
-                component: AnyComponent(ButtonComponent(
-                    background: ButtonComponent.Background(
-                        color: UIColor(rgb: 0x2B2B2F),
-                        foreground: .white,
-                        pressedColor: UIColor(rgb: 0x2B2B2F).withMultipliedAlpha(0.8)
-                    ),
-                    content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
-                        Text(text: environment.strings.Common_Cancel, font: Font.semibold(17.0), color: environment.theme.list.itemPrimaryTextColor)
-                    )),
-                    isEnabled: true,
-                    tintWhenDisabled: false,
-                    displaysProgress: false,
-                    action: { [weak self] in
-                        guard let self, let component = self.component else {
-                            return
-                        }
-                        component.dismiss()
-                    }
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 50.0)
-            )
-            let cancelButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: cancelButtonSize)
-            if let cancelButtonView = self.cancelButton.view {
-                if cancelButtonView.superview == nil {
-                    self.addSubview(cancelButtonView)
-                }
-                transition.setFrame(view: cancelButtonView, frame: cancelButtonFrame)
-            }
-            contentHeight += cancelButtonSize.height
-            
-            if environment.safeInsets.bottom.isZero {
-                contentHeight += 16.0
-            } else {
-                contentHeight += environment.safeInsets.bottom + 14.0
-            }
+            contentHeight += buttonInsets.bottom
             
             return CGSize(width: availableSize.width, height: contentHeight)
         }
@@ -357,6 +358,8 @@ private final class ScheduleVideoChatSheetScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -405,7 +408,8 @@ private final class ScheduleVideoChatSheetScreenComponent: Component {
                             })
                         }
                     )),
-                    backgroundColor: .color(UIColor(rgb: 0x1C1C1E)),
+                    style: .glass,
+                    backgroundColor: .color(UIColor(rgb: 0x1c1c1e)),
                     animateOut: self.sheetAnimateOut
                 )),
                 environment: {

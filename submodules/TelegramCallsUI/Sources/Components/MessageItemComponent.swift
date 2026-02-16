@@ -150,8 +150,8 @@ final class MessageItemComponent: Component {
             let additionalOffset = hasRTL ? globalFrame.size.width - initialSize.width : 0.0
             transition.setPosition(view: textSnapshotView, position: CGPoint(x: textSnapshotView.center.x + 71.0 * direction - additionalOffset, y: textSnapshotView.center.y))
             
-            self.background.update(size: globalFrame.size, cornerRadius: cornerRadius, isDark: true, tintColor: .init(kind: .custom, color: glassColor), transition: .immediate)
-            self.background.update(size: initialSize, cornerRadius: 18.0, isDark: true, tintColor: .init(kind: .custom, color: glassColor), transition: transition)
+            self.background.update(size: globalFrame.size, cornerRadius: cornerRadius, isDark: true, tintColor: .init(kind: .custom(style: .default, color: glassColor)), transition: .immediate)
+            self.background.update(size: initialSize, cornerRadius: 18.0, isDark: true, tintColor: .init(kind: .custom(style: .default, color: glassColor)), transition: transition)
             
             let deltaX = (globalFrame.width - self.container.frame.width) / 2.0
             let deltaY = (globalFrame.height - self.container.frame.height) / 2.0
@@ -436,7 +436,7 @@ final class MessageItemComponent: Component {
             transition.setFrame(view: self.container, frame: CGRect(origin: CGPoint(), size: size))
 
             self.background.isHidden = !hasBackground
-            self.background.update(size: size, cornerRadius: cornerRadius, isDark: true, tintColor: .init(kind: .custom, color: glassColor), transition: transition)
+            self.background.update(size: size, cornerRadius: cornerRadius, isDark: true, tintColor: .init(kind: .custom(style: .default, color: glassColor)), transition: transition)
             transition.setFrame(view: self.background, frame: CGRect(origin: CGPoint(), size: size))
             
             if isFirstTime, let availableReactions = component.availableReactions, let textView = self.text.view {

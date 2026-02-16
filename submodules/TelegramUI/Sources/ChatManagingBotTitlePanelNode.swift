@@ -380,7 +380,7 @@ final class ChatManagingBotTitlePanelNode: ChatTitleAccessoryPanelNode {
         }
         
         let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
-        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: chatController, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: chatController, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
         interfaceInteraction.presentController(contextController, nil)
     }
     

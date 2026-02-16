@@ -68,7 +68,8 @@ private func requestStoryStats(accountPeerId: PeerId, postbox: Postbox, network:
         
         return signal
         |> mapToSignal { result -> Signal<StoryStats?, MTRpcError> in
-            if case let .storyStats(apiInteractionsGraph, apiReactionsGraph) = result {
+            if case let .storyStats(storyStatsData) = result {
+                let (apiInteractionsGraph, apiReactionsGraph) = (storyStatsData.viewsGraph, storyStatsData.reactionsByEmotionGraph)
                 let interactionsGraph = StatsGraph(apiStatsGraph: apiInteractionsGraph)
                 var interactionsGraphDelta: Int64 = 86400
                 if case let .Loaded(_, data) = interactionsGraph {
@@ -294,7 +295,8 @@ private final class StoryStatsPublicForwardsContextImpl {
                             return ([], 0, nil)
                         }
                         switch result {
-                        case let .publicForwards(_, count, forwards, nextOffset, chats, users):
+                        case let .publicForwards(publicForwardsData):
+                            let (count, forwards, nextOffset, chats, users) = (publicForwardsData.count, publicForwardsData.forwards, publicForwardsData.nextOffset, publicForwardsData.chats, publicForwardsData.users)
                             var peers: [PeerId: Peer] = [:]
                             for user in users {
                                 if let user = TelegramUser.merge(transaction.getPeer(user.peerId) as? TelegramUser, rhs: user) {
@@ -310,11 +312,13 @@ private final class StoryStatsPublicForwardsContextImpl {
                             var resultForwards: [StoryStatsPublicForwardsContext.State.Forward] = []
                             for forward in forwards {
                                 switch forward {
-                                case let .publicForwardMessage(apiMessage):
+                                case let .publicForwardMessage(publicForwardMessageData):
+                                    let apiMessage = publicForwardMessageData.message
                                     if let message = StoreMessage(apiMessage: apiMessage, accountPeerId: accountPeerId, peerIsForum: false), let renderedMessage = locallyRenderedMessage(message: message, peers: peers) {
                                         resultForwards.append(.message(EngineMessage(renderedMessage)))
                                     }
-                                case let .publicForwardStory(apiPeer, apiStory):
+                                case let .publicForwardStory(publicForwardStoryData):
+                                    let (apiPeer, apiStory) = (publicForwardStoryData.peer, publicForwardStoryData.story)
                                     if let storedItem = Stories.StoredItem(apiStoryItem: apiStory, peerId: apiPeer.peerId, transaction: transaction), case let .item(item) = storedItem, let media = item.media, let peer = peers[apiPeer.peerId] {
                                         let mappedItem = EngineStoryItem(
                                             id: item.id,

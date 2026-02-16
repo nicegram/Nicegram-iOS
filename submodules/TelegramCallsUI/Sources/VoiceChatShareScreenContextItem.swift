@@ -37,7 +37,6 @@ private final class VoiceChatShareScreenContextItemNode: ASDisplayNode, ContextM
     private let actionSelected: (ContextMenuActionResult) -> Void
     
     private let backgroundNode: ASDisplayNode
-    private let highlightedBackgroundNode: ASDisplayNode
     private let textNode: ImmediateTextNode
     private let iconNode: ASImageNode
     
@@ -59,10 +58,6 @@ private final class VoiceChatShareScreenContextItemNode: ASDisplayNode, ContextM
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isAccessibilityElement = false
         self.backgroundNode.backgroundColor = presentationData.theme.contextMenu.itemBackgroundColor
-        self.highlightedBackgroundNode = ASDisplayNode()
-        self.highlightedBackgroundNode.isAccessibilityElement = false
-        self.highlightedBackgroundNode.backgroundColor = presentationData.theme.contextMenu.itemHighlightedBackgroundColor
-        self.highlightedBackgroundNode.alpha = 0.0
         
         self.textNode = ImmediateTextNode()
         self.textNode.isAccessibilityElement = false
@@ -89,7 +84,6 @@ private final class VoiceChatShareScreenContextItemNode: ASDisplayNode, ContextM
         super.init()
         
         self.addSubnode(self.backgroundNode)
-        self.addSubnode(self.highlightedBackgroundNode)
         if let broadcastPickerView = self.broadcastPickerView {
             self.view.addSubview(broadcastPickerView)
         }
@@ -118,9 +112,9 @@ private final class VoiceChatShareScreenContextItemNode: ASDisplayNode, ContextM
     
     private var validLayout: CGSize?
     func updateLayout(constrainedWidth: CGFloat, constrainedHeight: CGFloat) -> (CGSize, (CGSize, ContainedViewLayoutTransition) -> Void) {
-        let sideInset: CGFloat = 16.0
-        let iconSideInset: CGFloat = 12.0
-        let verticalInset: CGFloat = 12.0
+        let sideInset: CGFloat = 18.0
+        let iconSideInset: CGFloat = 20.0
+        let verticalInset: CGFloat = 11.0
         
         let iconSize = self.iconNode.image.flatMap({ $0.size }) ?? CGSize()
         
@@ -139,15 +133,14 @@ private final class VoiceChatShareScreenContextItemNode: ASDisplayNode, ContextM
             self.validLayout = size
             
             let verticalOrigin = floor((size.height - combinedTextHeight) / 2.0)
-            let textFrame = CGRect(origin: CGPoint(x: sideInset, y: verticalOrigin), size: textSize)
+            let textFrame = CGRect(origin: CGPoint(x: iconSideInset + 40.0, y: verticalOrigin), size: textSize)
             transition.updateFrameAdditive(node: self.textNode, frame: textFrame)
 
             if !iconSize.width.isZero {
-                transition.updateFrameAdditive(node: self.iconNode, frame: CGRect(origin: CGPoint(x: size.width - standardIconWidth - iconSideInset + floor((standardIconWidth - iconSize.width) / 2.0), y: floor((size.height - iconSize.height) / 2.0)), size: iconSize))
+                transition.updateFrameAdditive(node: self.iconNode, frame: CGRect(origin: CGPoint(x: iconSideInset + floor((standardIconWidth - iconSize.width) / 2.0), y: floor((size.height - iconSize.height) / 2.0)), size: iconSize))
             }
             
             transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))
-            transition.updateFrame(node: self.highlightedBackgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))
             
             if let broadcastPickerView = self.broadcastPickerView {
                 broadcastPickerView.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height))
@@ -157,7 +150,6 @@ private final class VoiceChatShareScreenContextItemNode: ASDisplayNode, ContextM
     
     func updateTheme(presentationData: PresentationData) {
         self.backgroundNode.backgroundColor = presentationData.theme.contextMenu.itemBackgroundColor
-        self.highlightedBackgroundNode.backgroundColor = presentationData.theme.contextMenu.itemHighlightedBackgroundColor
         
         let textFont = Font.regular(presentationData.listsFontSize.baseDisplaySize)
         
@@ -186,10 +178,5 @@ private final class VoiceChatShareScreenContextItemNode: ASDisplayNode, ContextM
     }
     
     func setIsHighlighted(_ value: Bool) {
-        if value {
-            self.highlightedBackgroundNode.alpha = 1.0
-        } else {
-            self.highlightedBackgroundNode.alpha = 0.0
-        }
     }
 }

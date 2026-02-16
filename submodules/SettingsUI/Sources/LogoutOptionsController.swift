@@ -224,7 +224,7 @@ public func logoutOptionsController(context: AccountContext, navigationControlle
                 
                 context.sharedContext.openResolvedUrl(resolvedUrl, context: context, urlContext: .generic, navigationController: navigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigation in
                 }, sendFile: nil, sendSticker: nil, sendEmoji: nil, requestMessageActionUrlAuth: nil, joinVoiceChat: nil, present: { controller, arguments in
-                    pushControllerImpl?(controller)
+                    presentControllerImpl?(controller, nil)
                 }, dismissInput: {}, contentContext: nil, progress: nil, completion: nil)
             })
         }

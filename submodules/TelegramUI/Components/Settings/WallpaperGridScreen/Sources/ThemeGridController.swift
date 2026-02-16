@@ -40,6 +40,7 @@ public final class ThemeGridController: ViewController {
     
     private let context: AccountContext
     private let mode: Mode
+    private let forceEdit: Bool
     
     private var presentationData: PresentationData
     private let presentationDataPromise = Promise<PresentationData>()
@@ -58,9 +59,10 @@ public final class ThemeGridController: ViewController {
     
     public var completion: (WallpaperSelectionResult) -> Void = { _ in }
     
-    public init(context: AccountContext, mode: Mode = .generic) {
+    public init(context: AccountContext, mode: Mode = .generic, forceEdit: Bool = false) {
         self.context = context
         self.mode = mode
+        self.forceEdit = forceEdit
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         self.presentationDataPromise.set(.single(self.presentationData))
@@ -419,6 +421,10 @@ public final class ThemeGridController: ViewController {
         self.navigationBar?.updateBackgroundAlpha(0.0, transition: .immediate)
         
         self.displayNodeDidLoad()
+        
+        if self.forceEdit {
+            self.editPressed()
+        }
     }
     
     private func shareWallpapers(_ wallpapers: [TelegramWallpaper]) {

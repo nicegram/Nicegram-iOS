@@ -176,6 +176,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
             previousItemNode.listNode.updatePeerGrouping = nil
             previousItemNode.listNode.contentOffsetChanged = nil
             previousItemNode.listNode.contentScrollingEnded = nil
+            previousItemNode.listNode.pinnedHeaderDisplayFractionUpdated = nil
             previousItemNode.listNode.didBeginInteractiveDragging = nil
             previousItemNode.listNode.endedInteractiveDragging = { _ in }
             previousItemNode.listNode.shouldStopScrolling = nil
@@ -338,11 +339,12 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
             }
             
             return self.contentScrollingEnded?(listView) ?? false
-            //DispatchQueue.main.async { [weak self] in
-            //    let _ = self?.contentScrollingEnded?(listView)
-            //}
-            
-            //return false
+        }
+        itemNode.listNode.pinnedHeaderDisplayFractionUpdated = { [weak self] transition in
+            guard let self else {
+                return
+            }
+            self.pinnedHeaderDisplayFractionUpdated?(transition)
         }
         itemNode.listNode.activateChatPreview = { [weak self] item, threadId, sourceNode, gesture, location in
             self?.activateChatPreview?(item, threadId, sourceNode, gesture, location)
@@ -438,6 +440,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
     var contentOffset: ListViewVisibleContentOffset?
     public var contentOffsetChanged: ((ListViewVisibleContentOffset, ListView) -> Void)?
     public var contentScrollingEnded: ((ListView) -> Bool)?
+    public var pinnedHeaderDisplayFractionUpdated: ((ContainedViewLayoutTransition) -> Void)?
     var didBeginInteractiveDragging: ((ListView) -> Void)?
     var endedInteractiveDragging: ((ListView) -> Void)?
     var shouldStopScrolling: ((ListView, CGFloat) -> Bool)?
@@ -453,6 +456,34 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
     var didBeginSelectingChats: (() -> Void)?
     var canExpandHiddenItems: (() -> Bool)?
     public var displayFilterLimit: (() -> Void)?
+    
+    public var pinnedHeaderDisplayFraction: CGFloat {
+        guard let currentItemNodeValue = self.currentItemNodeValue else {
+            return 0.0
+        }
+        if self.transitionFraction != 0.0 {
+            var nextItemNode: ChatListContainerItemNode?
+            if let selectedIndex = self.availableFilters.firstIndex(where: { $0.id == self.selectedId }) {
+                if self.transitionFraction < 0.0 {
+                    if selectedIndex + 1 < self.availableFilters.count {
+                        nextItemNode = self.itemNodes[self.availableFilters[selectedIndex + 1].id]
+                    }
+                } else {
+                    if selectedIndex > 0 {
+                        nextItemNode = self.itemNodes[self.availableFilters[selectedIndex - 1].id]
+                    }
+                }
+            }
+            
+            if let nextItemNode {
+                let absTransitionFraction = abs(self.transitionFraction)
+                return (1.0 - absTransitionFraction) * currentItemNodeValue.listNode.pinnedScrollFraction + absTransitionFraction * nextItemNode.listNode.pinnedScrollFraction
+            } else {
+                return currentItemNodeValue.listNode.pinnedScrollFraction
+            }
+        }
+        return currentItemNodeValue.listNode.pinnedScrollFraction
+    }
     
     public init(
         context: AccountContext,
@@ -603,6 +634,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                         self.update(layout: layout, navigationBarHeight: navigationBarHeight, visualNavigationHeight: visualNavigationHeight, originalNavigationHeight: originalNavigationHeight, cleanNavigationBarHeight: cleanNavigationBarHeight, insets: insets, isReorderingFilters: isReorderingFilters, isEditing: isEditing, inlineNavigationLocation: inlineNavigationLocation, inlineNavigationTransitionFraction: inlineNavigationTransitionFraction, storiesInset: storiesInset, transition: .immediate)
                         self.isSwitchingCurrentItemFilterByDragging = true
                         self.currentItemFilterUpdated?(self.currentItemFilter, self.transitionFraction, .immediate, true)
+                        self.pinnedHeaderDisplayFractionUpdated?(.immediate)
                     }
                 }
             }
@@ -680,6 +712,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                 self.update(layout: layout, navigationBarHeight: navigationBarHeight, visualNavigationHeight: visualNavigationHeight, originalNavigationHeight: originalNavigationHeight, cleanNavigationBarHeight: cleanNavigationBarHeight, insets: insets, isReorderingFilters: isReorderingFilters, isEditing: isEditing, inlineNavigationLocation: inlineNavigationLocation, inlineNavigationTransitionFraction: inlineNavigationTransitionFraction, storiesInset: storiesInset, transition: .immediate)
                 self.isSwitchingCurrentItemFilterByDragging = true
                 self.currentItemFilterUpdated?(self.currentItemFilter, self.transitionFraction, transition, false)
+                self.pinnedHeaderDisplayFractionUpdated?(transition)
             }
         case .cancelled, .ended:
             if let (layout, navigationBarHeight, visualNavigationHeight, originalNavigationHeight: originalNavigationHeight, cleanNavigationBarHeight, insets, isReorderingFilters, isEditing, inlineNavigationLocation, inlineNavigationTransitionFraction, storiesInset) = self.validLayout, let selectedIndex = self.availableFilters.firstIndex(where: { $0.id == self.selectedId }) {
@@ -742,6 +775,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                 }
                 self.isSwitchingCurrentItemFilterByDragging = false
                 self.currentItemFilterUpdated?(self.currentItemFilter, self.transitionFraction, transition, false)
+                self.pinnedHeaderDisplayFractionUpdated?(transition)
             }
         default:
             break
@@ -862,6 +896,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                 let transition: ContainedViewLayoutTransition = .animated(duration: 0.35, curve: .spring)
                 self.update(layout: layout, navigationBarHeight: navigationBarHeight, visualNavigationHeight: visualNavigationHeight, originalNavigationHeight: originalNavigationHeight, cleanNavigationBarHeight: cleanNavigationBarHeight, insets: insets, isReorderingFilters: isReorderingFilters, isEditing: isEditing, inlineNavigationLocation: inlineNavigationLocation, inlineNavigationTransitionFraction: inlineNavigationTransitionFraction, storiesInset: storiesInset, transition: transition)
                 self.currentItemFilterUpdated?(self.currentItemFilter, self.transitionFraction, transition, false)
+                self.pinnedHeaderDisplayFractionUpdated?(transition)
                 itemNode.emptyNode?.restartAnimation()
                 completion?()
             } else if self.pendingItemNode == nil {
@@ -915,6 +950,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                         strongSelf.selectedId = id
                         strongSelf.applyItemNodeAsCurrent(id: id, itemNode: itemNode)
                         strongSelf.currentItemFilterUpdated?(strongSelf.currentItemFilter, strongSelf.transitionFraction, .immediate, false)
+                        strongSelf.pinnedHeaderDisplayFractionUpdated?(.immediate)
                         
                         completion?()
                         return
@@ -971,6 +1007,7 @@ public final class ChatListContainerNode: ASDisplayNode, ASGestureRecognizerDele
                         strongSelf.update(layout: layout, navigationBarHeight: navigationBarHeight, visualNavigationHeight: visualNavigationHeight, originalNavigationHeight: originalNavigationHeight, cleanNavigationBarHeight: cleanNavigationBarHeight, insets: insets, isReorderingFilters: isReorderingFilters, isEditing: isEditing, inlineNavigationLocation: inlineNavigationLocation, inlineNavigationTransitionFraction: inlineNavigationTransitionFraction, storiesInset: storiesInset, transition: .immediate)
                         
                         strongSelf.currentItemFilterUpdated?(strongSelf.currentItemFilter, strongSelf.transitionFraction, transition, false)
+                        strongSelf.pinnedHeaderDisplayFractionUpdated?(transition)
                     }
                     
                     completion?()
@@ -1206,6 +1243,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         }
         self.mainContainerNode.contentScrollingEnded = { [weak self] listView in
             return self?.contentScrollingEnded(listView: listView, isPrimary: true) ?? false
+        }
+        self.mainContainerNode.pinnedHeaderDisplayFractionUpdated = { [weak self] transition in
+            self?.pinnedHeaderDisplayFractionUpdated(transition: transition)
         }
         self.mainContainerNode.didBeginInteractiveDragging = { [weak self] listView in
             self?.didBeginInteractiveDragging(listView: listView, isPrimary: true)
@@ -2238,6 +2278,19 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         return false
     }
     
+    private func pinnedHeaderDisplayFractionUpdated(transition: ContainedViewLayoutTransition) {
+        var pinnedFraction: CGFloat = 0.0
+        if let inlineStackContainerNode = self.inlineStackContainerNode, self.inlineStackContainerTransitionFraction != 0.0 {
+            pinnedFraction = (1.0 - self.inlineStackContainerTransitionFraction) * self.mainContainerNode.pinnedHeaderDisplayFraction + self.inlineStackContainerTransitionFraction * inlineStackContainerNode.pinnedHeaderDisplayFraction
+        } else {
+            pinnedFraction = self.mainContainerNode.pinnedHeaderDisplayFraction
+        }
+        
+        if let navigationBarComponentView = self.navigationBarView.view as? ChatListNavigationBar.View {
+            navigationBarComponentView.updateEdgeEffectForPinnedFraction(pinnedFraction: pinnedFraction, transition: ComponentTransition(transition))
+        }
+    }
+    
     func makeInlineChatList(location: ChatListControllerLocation) -> ChatListContainerNode {
         var forumPeerId: EnginePeer.Id?
         if case let .forum(peerId) = location {
@@ -2285,6 +2338,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 }
                 inlineStackContainerNode.contentScrollingEnded = { [weak self] listView in
                     return self?.contentScrollingEnded(listView: listView, isPrimary: false) ?? false
+                }
+                inlineStackContainerNode.pinnedHeaderDisplayFractionUpdated = { [weak self] transition in
+                    self?.pinnedHeaderDisplayFractionUpdated(transition: transition)
                 }
                 
                 inlineStackContainerNode.activateChatPreview = self.mainContainerNode.activateChatPreview

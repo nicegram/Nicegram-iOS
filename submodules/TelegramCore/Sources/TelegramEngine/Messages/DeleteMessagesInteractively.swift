@@ -218,7 +218,8 @@ func _internal_clearAuthorHistory(account: Account, peerId: PeerId, memberId: Pe
                 |> mapToSignal { result -> Signal<Void, Bool> in
                     if let result = result {
                         switch result {
-                        case let .affectedHistory(pts, ptsCount, offset):
+                        case let .affectedHistory(affectedHistoryData):
+                            let (pts, ptsCount, offset) = (affectedHistoryData.pts, affectedHistoryData.ptsCount, affectedHistoryData.offset)
                             account.stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                             if offset == 0 {
                                 return .fail(true)

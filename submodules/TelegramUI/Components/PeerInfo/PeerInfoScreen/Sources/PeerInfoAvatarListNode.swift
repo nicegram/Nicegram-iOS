@@ -103,7 +103,7 @@ final class PeerInfoAvatarListNode: ASDisplayNode {
             guard let strongSelf = self, let (_, _, _, _, _, isExpanded) = strongSelf.arguments, isExpanded else {
                 return
             }
-            let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+            let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                 return UIScreen.main.bounds
             })
             context.sharedContext.mainWindow?.presentInGlobalOverlay(pinchController)

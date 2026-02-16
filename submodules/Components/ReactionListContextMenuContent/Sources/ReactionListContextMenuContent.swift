@@ -22,9 +22,7 @@ private let avatarFont = avatarPlaceholderFont(size: 16.0)
 
 public final class ReactionListContextMenuContent: ContextControllerItemsContent {
     private final class BackButtonNode: HighlightTrackingButtonNode {
-        let highlightBackgroundNode: ASDisplayNode
         let titleLabelNode: ImmediateTextNode
-        let separatorNode: ASDisplayNode
         let iconNode: ASImageNode
         
         var action: (() -> Void)?
@@ -32,10 +30,6 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         private var theme: PresentationTheme?
         
         init() {
-            self.highlightBackgroundNode = ASDisplayNode()
-            self.highlightBackgroundNode.isAccessibilityElement = false
-            self.highlightBackgroundNode.alpha = 0.0
-            
             self.titleLabelNode = ImmediateTextNode()
             self.titleLabelNode.isAccessibilityElement = false
             self.titleLabelNode.maximumNumberOfLines = 1
@@ -44,30 +38,12 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             self.iconNode = ASImageNode()
             self.iconNode.isAccessibilityElement = false
             
-            self.separatorNode = ASDisplayNode()
-            self.separatorNode.isAccessibilityElement = false
-            
             super.init()
             
-            self.addSubnode(self.separatorNode)
-            self.addSubnode(self.highlightBackgroundNode)
             self.addSubnode(self.titleLabelNode)
             self.addSubnode(self.iconNode)
             
             self.isAccessibilityElement = true
-            
-            self.highligthedChanged = { [weak self] highlighted in
-                guard let strongSelf = self else {
-                    return
-                }
-                if highlighted {
-                    strongSelf.highlightBackgroundNode.alpha = 1.0
-                } else {
-                    let previousAlpha = strongSelf.highlightBackgroundNode.alpha
-                    strongSelf.highlightBackgroundNode.alpha = 0.0
-                    strongSelf.highlightBackgroundNode.layer.animateAlpha(from: previousAlpha, to: 0.0, duration: 0.2)
-                }
-            }
             
             self.addTarget(self, action: #selector(self.pressed), forControlEvents: .touchUpInside)
         }
@@ -78,8 +54,8 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         
         func update(size: CGSize, presentationData: PresentationData, isLast: Bool) {
             let standardIconWidth: CGFloat = 32.0
-            let sideInset: CGFloat = 16.0
-            let iconSideInset: CGFloat = 12.0
+            let sideInset: CGFloat = 18.0
+            let iconSideInset: CGFloat = 23.0
             
             if self.theme !== presentationData.theme {
                 self.theme = presentationData.theme
@@ -88,24 +64,16 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 self.accessibilityLabel = presentationData.strings.Common_Back
             }
             
-            self.highlightBackgroundNode.backgroundColor = presentationData.theme.contextMenu.itemHighlightedBackgroundColor
-            self.separatorNode.backgroundColor = presentationData.theme.contextMenu.itemSeparatorColor
-            
-            self.highlightBackgroundNode.frame = CGRect(origin: CGPoint(), size: size)
-            
             let titleFontSize = presentationData.listsFontSize.baseDisplaySize * 17.0 / 17.0
             
             self.titleLabelNode.attributedText = NSAttributedString(string: presentationData.strings.Common_Back, font: Font.regular(titleFontSize), textColor: presentationData.theme.contextMenu.primaryColor)
             let titleSize = self.titleLabelNode.updateLayout(CGSize(width: size.width - sideInset - standardIconWidth, height: 100.0))
-            self.titleLabelNode.frame = CGRect(origin: CGPoint(x: sideInset + 36.0, y: floor((size.height - titleSize.height) / 2.0)), size: titleSize)
+            self.titleLabelNode.frame = CGRect(origin: CGPoint(x: sideInset + 42.0, y: floor((size.height - titleSize.height) / 2.0)), size: titleSize)
             
             if let iconImage = self.iconNode.image {
                 let iconFrame = CGRect(origin: CGPoint(x: iconSideInset, y: floor((size.height - iconImage.size.height) / 2.0)), size: iconImage.size)
                 self.iconNode.frame = iconFrame
             }
-            
-            self.separatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: size.height - UIScreenPixel), size: CGSize(width: size.width, height: UIScreenPixel))
-            self.separatorNode.isHidden = isLast
         }
     }
     
@@ -405,13 +373,11 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             let availableReactions: AvailableReactions?
             let animationCache: AnimationCache
             let animationRenderer: MultiAnimationRenderer
-            let highlightBackgroundNode: ASDisplayNode
             let avatarNode: AvatarNode
             let titleLabelNode: ImmediateTextNode
             let textLabelNode: ImmediateTextNode
             let readIconView: UIImageView
             var credibilityIconView: ComponentView<Empty>?
-            let separatorNode: ASDisplayNode
             
             private var reactionLayer: InlineStickerItemLayer?
             private var iconFrame: CGRect?
@@ -434,10 +400,6 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 self.avatarNode = AvatarNode(font: avatarFont)
                 self.avatarNode.isAccessibilityElement = false
                 
-                self.highlightBackgroundNode = ASDisplayNode()
-                self.highlightBackgroundNode.isAccessibilityElement = false
-                self.highlightBackgroundNode.alpha = 0.0
-                
                 self.titleLabelNode = ImmediateTextNode()
                 self.titleLabelNode.isAccessibilityElement = false
                 self.titleLabelNode.maximumNumberOfLines = 1
@@ -450,32 +412,14 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 
                 self.readIconView = UIImageView(image: readIconImage)
                 
-                self.separatorNode = ASDisplayNode()
-                self.separatorNode.isAccessibilityElement = false
-                
                 super.init()
                 
                 self.isAccessibilityElement = true
                 
-                self.addSubnode(self.separatorNode)
-                self.addSubnode(self.highlightBackgroundNode)
                 self.addSubnode(self.avatarNode)
                 self.addSubnode(self.titleLabelNode)
                 self.addSubnode(self.textLabelNode)
                 self.view.addSubview(self.readIconView)
-                
-                self.highligthedChanged = { [weak self] highlighted in
-                    guard let strongSelf = self else {
-                        return
-                    }
-                    if highlighted {
-                        strongSelf.highlightBackgroundNode.alpha = 1.0
-                    } else {
-                        let previousAlpha = strongSelf.highlightBackgroundNode.alpha
-                        strongSelf.highlightBackgroundNode.alpha = 0.0
-                        strongSelf.highlightBackgroundNode.layer.animateAlpha(from: previousAlpha, to: 0.0, duration: 0.2)
-                    }
-                }
                 
                 self.addTarget(self, action: #selector(self.pressed), forControlEvents: .touchUpInside)
             }
@@ -553,9 +497,9 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             }
             
             func update(size: CGSize, presentationData: PresentationData, item: EngineMessageReactionListContext.Item, isLast: Bool, syncronousLoad: Bool) {
-                let avatarInset: CGFloat = 12.0
-                let avatarSpacing: CGFloat = 8.0
-                let avatarSize: CGFloat = 28.0
+                let avatarInset: CGFloat = 20.0
+                let avatarSpacing: CGFloat = 10.0
+                let avatarSize: CGFloat = 30.0
                 let sideInset: CGFloat = 16.0
                 
                 let reaction: MessageReaction.Reaction? = item.reaction
@@ -671,11 +615,6 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                     additionalTitleInset += 3.0 + credibilityIconSize.width
                 }
                 
-                self.highlightBackgroundNode.backgroundColor = presentationData.theme.contextMenu.itemHighlightedBackgroundColor
-                self.separatorNode.backgroundColor = presentationData.theme.contextMenu.itemSeparatorColor
-                
-                self.highlightBackgroundNode.frame = CGRect(origin: CGPoint(), size: size)
-                
                 self.avatarNode.frame = CGRect(origin: CGPoint(x: avatarInset, y: floor((size.height - avatarSize) / 2.0)), size: CGSize(width: avatarSize, height: avatarSize))
                 self.avatarNode.setPeer(context: self.context, theme: presentationData.theme, peer: item.peer, synchronousLoad: true)
                 
@@ -765,9 +704,6 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                     }
                     reactionLayer.frame = iconFrame
                 }
-                
-                self.separatorNode.frame = CGRect(origin: CGPoint(x: 0.0, y: size.height), size: CGSize(width: size.width, height: UIScreenPixel))
-                self.separatorNode.isHidden = isLast
             }
         }
         
@@ -961,6 +897,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             
             let heightFraction: CGFloat = presentationData.listsFontSize.baseDisplaySize / 17.0
             
+            let topInset: CGFloat = 5.0
             let itemHeight: CGFloat = (self.displayReadTimestamps ? 56.0 : 44.0) * heightFraction
             let visibleBounds = self.scrollNode.bounds.insetBy(dx: 0.0, dy: -180.0)
             
@@ -972,7 +909,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             
             if minVisibleIndex <= maxVisibleIndex {
                 for index in minVisibleIndex ... maxVisibleIndex {
-                    let itemFrame = CGRect(origin: CGPoint(x: 0.0, y: CGFloat(index) * itemHeight), size: CGSize(width: size.width, height: itemHeight))
+                    let itemFrame = CGRect(origin: CGPoint(x: 0.0, y: topInset + CGFloat(index) * itemHeight), size: CGSize(width: size.width, height: itemHeight))
                     
                     if let item = self.state.item(at: index) {
                         validIds.insert(index)
@@ -1059,12 +996,13 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         func update(presentationData: PresentationData, constrainedSize: CGSize, bottomInset: CGFloat, transition: ContainedViewLayoutTransition) -> (height: CGFloat, apparentHeight: CGFloat) {
             let heightFraction: CGFloat = presentationData.listsFontSize.baseDisplaySize / 17.0
             let itemHeight: CGFloat = (self.displayReadTimestamps ? 56.0 : 44.0) * heightFraction
+            let topInset: CGFloat = 5.0
             
             if self.presentationData?.theme !== presentationData.theme {
                 let sideInset: CGFloat = 40.0
-                let avatarInset: CGFloat = 12.0
-                let avatarSpacing: CGFloat = 8.0
-                let avatarSize: CGFloat = 28.0
+                let avatarInset: CGFloat = 20.0
+                let avatarSpacing: CGFloat = 10.0
+                let avatarSize: CGFloat = 30.0
                 let lineHeight: CGFloat = 8.0
                 
                 let shimmeringForegroundColor: UIColor
@@ -1096,7 +1034,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             }
             self.presentationData = presentationData
             
-            let size = CGSize(width: constrainedSize.width, height: CGFloat(self.state.totalCount) * itemHeight)
+            let size = CGSize(width: constrainedSize.width, height: topInset + CGFloat(self.state.totalCount) * itemHeight + topInset)
             
             let containerSize = CGSize(width: size.width, height: min(constrainedSize.height, size.height))
             self.currentSize = containerSize
@@ -1312,6 +1250,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             
             var topContentHeight: CGFloat = 0.0
             if let backButtonNode = self.backButtonNode {
+                topContentHeight += 6.0
                 let backButtonFrame = CGRect(origin: CGPoint(x: 0.0, y: topContentHeight), size: CGSize(width: constrainedSize.width, height: 44.0))
                 backButtonNode.update(size: backButtonFrame.size, presentationData: self.presentationData, isLast: self.tabListNode == nil)
                 transition.updateFrame(node: backButtonNode, frame: backButtonFrame)
@@ -1325,10 +1264,10 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 topContentHeight += tabListFrame.height
             }
             if let separatorNode = self.separatorNode {
-                let separatorFrame = CGRect(origin: CGPoint(x: 0.0, y: topContentHeight), size: CGSize(width: constrainedSize.width, height: 7.0))
-                separatorNode.backgroundColor = self.presentationData.theme.contextMenu.sectionSeparatorColor
+                let separatorFrame = CGRect(origin: CGPoint(x: 18.0, y: topContentHeight + 4.0), size: CGSize(width: max(0.0, constrainedSize.width - 18.0 * 2.0), height: 1.0))
+                separatorNode.backgroundColor = self.presentationData.theme.contextMenu.itemSeparatorColor
                 transition.updateFrame(node: separatorNode, frame: separatorFrame)
-                topContentHeight += separatorFrame.height
+                topContentHeight += 5.0
             }
             
             var tabLayouts: [Int: (height: CGFloat, apparentHeight: CGFloat)] = [:]

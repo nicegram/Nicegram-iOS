@@ -589,7 +589,7 @@ public final class TextFieldComponent: Component {
             }
         }
         
-        public func chatInputTextNodeShouldReturn() -> Bool {
+        public func chatInputTextNodeShouldReturn(modifierFlags: UIKeyModifierFlags) -> Bool {
             guard let component = self.component else {
                 return true
             }

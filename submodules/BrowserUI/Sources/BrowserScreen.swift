@@ -1230,7 +1230,7 @@ public class BrowserScreen: ViewController, MinimizableController {
                 return ContextController.Items(content: .list(items))
             }
             
-            let contextController = ContextController(presentationData: self.presentationData, source: source, items: items)
+            let contextController = makeContextController(presentationData: self.presentationData, source: source, items: items)
             contextController.dismissed = { [weak content] in
                 if let webContent = content as? BrowserWebContent {
                     webContent.releaseInstantView()
@@ -1342,7 +1342,7 @@ public class BrowserScreen: ViewController, MinimizableController {
                 return
             }
             
-            let contextController = ContextController(presentationData: self.presentationData, source: source, items: .single(ContextController.Items(content: .list(items))))
+            let contextController = makeContextController(presentationData: self.presentationData, source: source, items: .single(ContextController.Items(content: .list(items))))
             self.controller?.present(contextController, in: .window(.root))
         }
         

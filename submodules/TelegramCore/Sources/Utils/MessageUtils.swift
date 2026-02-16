@@ -345,18 +345,18 @@ public extension [Message] {
         let chats: [Api.Chat]
         let users: [Api.User]
         switch apiMessages {
-            case let .channelMessages(_, _, _, _, apiMessages, _, apiChats, apiUsers):
-                messages = apiMessages
-                chats = apiChats
-                users = apiUsers
-            case let .messages(apiMessages, _, apiChats, apiUsers):
-                messages = apiMessages
-                chats = apiChats
-                users = apiUsers
-            case let .messagesSlice(_, _, _, _, _, apiMessages, _, apiChats, apiUsers):
-                messages = apiMessages
-                chats = apiChats
-                users = apiUsers
+            case let .channelMessages(channelMessages):
+                messages = channelMessages.messages
+                chats = channelMessages.chats
+                users = channelMessages.users
+            case let .messages(_messages):
+                messages = _messages.messages
+                chats = _messages.chats
+                users = _messages.users
+            case let .messagesSlice(messagesSlice):
+                messages = messagesSlice.messages
+                chats = messagesSlice.chats
+                users = messagesSlice.users
             case .messagesNotModified:
                 messages = []
                 chats = []

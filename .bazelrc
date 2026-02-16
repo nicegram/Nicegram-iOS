@@ -19,8 +19,7 @@ build --features=swift.enable_vfsoverlays
 build --strategy=Genrule=standalone
 build --spawn_strategy=standalone
 
-build --strategy=SwiftCompile=standalone
-build --define RULES_SWIFT_BUILD_DUMMY_WORKER=1
+build --strategy=SwiftCompile=worker
 
 build:swift_profile --jobs=1
 build:swift_profile --local_cpu_resources=1

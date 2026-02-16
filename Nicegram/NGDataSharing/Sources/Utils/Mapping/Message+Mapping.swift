@@ -47,7 +47,7 @@ extension FeatDataSharing.Message {
         users: [Api.User]
     ) {
         do {
-            let message = try message.wrapped().message.unwrap()
+            let message = try message.message.unwrap()
             
             let author = Author(
                 message: message,
@@ -57,8 +57,8 @@ extension FeatDataSharing.Message {
             
             let commentsCount: Int32
             switch message.replies {
-            case let .messageReplies(_, replies, _, _, _, _, _):
-                commentsCount = replies
+            case let .messageReplies(messageReplies):
+                commentsCount = messageReplies.replies
             case nil:
                 commentsCount = 0
             }

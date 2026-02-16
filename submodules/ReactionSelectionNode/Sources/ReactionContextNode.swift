@@ -510,7 +510,7 @@ public final class ReactionContextNode: ASDisplayNode, ASScrollViewDelegate {
         self.backgroundMaskNode = ASDisplayNode()
         var backgroundGlassParams: ReactionContextBackgroundNode.GlassParams?
         if case let .glass(isTinted) = style {
-            backgroundGlassParams = ReactionContextBackgroundNode.GlassParams(isTinted: isTinted)
+            backgroundGlassParams = ReactionContextBackgroundNode.GlassParams(isDark: presentationData.theme.overallDarkAppearance, isTinted: isTinted)
         }
         self.backgroundNode = ReactionContextBackgroundNode(glass: backgroundGlassParams, largeCircleSize: largeCircleSize, smallCircleSize: smallCircleSize, maskNode: self.backgroundMaskNode)
         self.leftBackgroundMaskNode = ASDisplayNode()

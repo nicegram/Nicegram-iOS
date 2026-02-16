@@ -422,7 +422,7 @@ final class ChatTranslationPanelNode: ASDisplayNode {
         }
             
         if let controller = self.controller() {
-            let contextController = ContextController(context: context, presentationData: presentationData, source: .reference(TranslationContextReferenceContentSource(controller: controller, sourceNode: node)), items: items, gesture: gesture)
+            let contextController = makeContextController(context: context, presentationData: presentationData, source: .reference(TranslationContextReferenceContentSource(controller: controller, sourceNode: node)), items: items, gesture: gesture)
             controller.presentInGlobalOverlay(contextController)
         }
     }

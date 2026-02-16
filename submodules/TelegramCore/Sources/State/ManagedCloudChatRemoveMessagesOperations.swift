@@ -205,7 +205,8 @@ private func removeMessages(postbox: Postbox, network: Network, stateManager: Ac
                 |> mapToSignal { result -> Signal<Void, NoError> in
                     if let result = result {
                         switch result {
-                        case let .affectedMessages(pts, ptsCount):
+                        case let .affectedMessages(affectedMessagesData):
+                            let (pts, ptsCount) = (affectedMessagesData.pts, affectedMessagesData.ptsCount)
                             stateManager.addUpdateGroups([.updateChannelPts(channelId: peer.id.id._internalGetInt64Value(), pts: pts, ptsCount: ptsCount)])
                         }
                     }
@@ -240,13 +241,14 @@ private func removeMessages(postbox: Postbox, network: Network, stateManager: Ac
                 |> mapToSignal { result -> Signal<Void, NoError> in
                     if let result = result {
                         switch result {
-                        case let .affectedMessages(pts, ptsCount):
+                        case let .affectedMessages(affectedMessagesData):
+                            let (pts, ptsCount) = (affectedMessagesData.pts, affectedMessagesData.ptsCount)
                             stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                         }
                     }
                     return .complete()
             }
-            
+
             signal = signal
             |> then(partSignal)
         }
@@ -396,7 +398,8 @@ private func requestClearHistory(postbox: Postbox, network: Network, stateManage
     |> mapToSignal { result -> Signal<Void, Bool> in
         if let result = result {
             switch result {
-                case let .affectedHistory(pts, ptsCount, offset):
+                case let .affectedHistory(affectedHistoryData):
+                    let (pts, ptsCount, offset) = (affectedHistoryData.pts, affectedHistoryData.ptsCount, affectedHistoryData.offset)
                     stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                     if offset == 0 {
                         return .fail(true)
@@ -463,7 +466,8 @@ private func _internal_clearHistory(transaction: Transaction, postbox: Postbox, 
                 |> mapToSignal { result -> Signal<Void, Bool> in
                     if let result = result {
                         switch result {
-                        case let .affectedHistory(pts, ptsCount, offset):
+                        case let .affectedHistory(affectedHistoryData):
+                            let (pts, ptsCount, offset) = (affectedHistoryData.pts, affectedHistoryData.ptsCount, affectedHistoryData.offset)
                             stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                             if offset == 0 {
                                 return .fail(true)
@@ -491,7 +495,8 @@ private func _internal_clearHistory(transaction: Transaction, postbox: Postbox, 
                 |> mapToSignal { result -> Signal<Void, NoError> in
                     if let result = result {
                         switch result {
-                        case let .affectedHistory(pts, ptsCount, _):
+                        case let .affectedHistory(affectedHistoryData):
+                            let (pts, ptsCount) = (affectedHistoryData.pts, affectedHistoryData.ptsCount)
                             stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                             return .complete()
                         }
@@ -539,7 +544,8 @@ private func _internal_clearHistory(transaction: Transaction, postbox: Postbox, 
                     |> mapToSignal { result -> Signal<Void, Bool> in
                         if let result = result {
                             switch result {
-                            case let .affectedHistory(pts, ptsCount, offset):
+                            case let .affectedHistory(affectedHistoryData):
+                                let (pts, ptsCount, offset) = (affectedHistoryData.pts, affectedHistoryData.ptsCount, affectedHistoryData.offset)
                                 stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                                 if offset == 0 {
                                     return .fail(true)

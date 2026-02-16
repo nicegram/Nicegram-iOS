@@ -168,7 +168,7 @@ final class GiftListItemComponent: Component {
                 if let current = self.resaleGiftsContexts[id] {
                     resaleGiftsContext = current
                 } else {
-                    resaleGiftsContext = ResaleGiftsContext(account: component.context.account, giftId: id)
+                    resaleGiftsContext = ResaleGiftsContext(account: component.context.account, giftId: id, forCrafting: false)
                     self.resaleGiftsContexts[id] = resaleGiftsContext
                 }
                 
@@ -473,6 +473,7 @@ final class GiftListItemComponent: Component {
                                 content: AnyComponent(
                                     GiftItemComponent(
                                         context: component.context,
+                                        style: .glass,
                                         theme: component.theme,
                                         strings: presentationData.strings,
                                         peer: nil,

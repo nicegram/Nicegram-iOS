@@ -82,13 +82,6 @@ class BazelCommandLine:
         ]
 
         self.common_debug_args = [
-            # https://github.com/bazelbuild/rules_swift
-            # If enabled, Swift compilation actions will use batch mode by passing
-            # `-enable-batch-mode` to `swiftc`. This is a new compilation mode as of
-            # Swift 4.2 that is intended to speed up non-incremental non-WMO builds by
-            # invoking a smaller number of frontend processes and passing them batches of
-            # source files.
-            '--features=swift.enable_batch_mode',
         ]
 
         self.common_release_args = [

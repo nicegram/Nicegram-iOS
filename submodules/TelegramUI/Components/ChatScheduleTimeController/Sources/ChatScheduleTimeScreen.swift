@@ -167,15 +167,15 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             var contentHeight: CGFloat = 0.0
             contentHeight += 30.0
                         
-            let barButtonSize = CGSize(width: 40.0, height: 40.0)
+            let barButtonSize = CGSize(width: 44.0, height: 44.0)
             let cancelSize = self.cancel.update(
                 transition: transition,
                 component: AnyComponent(
                     GlassBarButtonComponent(
                         size: barButtonSize,
-                        backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                        backgroundColor: nil,
                         isDark: environment.theme.overallDarkAppearance,
-                        state: .generic,
+                        state: .glass,
                         component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
                             BundleIconComponent(
                                 name: "Navigation/Close",
@@ -750,6 +750,8 @@ private final class ChatScheduleTimeScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -1139,7 +1141,7 @@ private final class MenuComponent: Component {
                 componentTransition.setFrame(view: view, frame: CGRect(origin: .zero, size: componentSize))
             }
             
-            self.backgroundView.update(size: backgroundFrame.size, cornerRadius: 30.0, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: component.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: transition)
+            self.backgroundView.update(size: backgroundFrame.size, cornerRadius: 30.0, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: transition)
             self.backgroundView.frame = backgroundFrame
             
             self.containerView.frame = CGRect(origin: .zero, size: availableSize)

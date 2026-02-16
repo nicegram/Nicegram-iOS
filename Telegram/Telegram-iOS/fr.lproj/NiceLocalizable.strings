@@ -152,8 +152,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Votre numéro sera masqué dans l'interface utilisateur uniquement. Pour le masquer aux autres, veuillez utiliser les paramètres de confidentialité.";
 "NicegramSettings.Other.showProfileId" = "Afficher l'identifiant du profil";
 "NicegramSettings.Other.showRegDate" = "Afficher la date d'inscription";
-"NicegramSettings.Unblock.Header" = "Débloquer";
-"NicegramSettings.Unblock.Button" = "Guide de déblocage";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Télécharger des vidéos dans la galerie";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignorer les langues";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "L'application détecte la langue de chaque message sur votre appareil. C'est une tâche de haute performance qui peut affecter l'autonomie de votre batterie.";

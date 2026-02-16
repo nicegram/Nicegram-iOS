@@ -152,8 +152,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Twój numer zostanie ukryty tylko w interfejsie użytkownika. Aby ukryć go przed innymi, użyj ustawień prywatności.";
 "NicegramSettings.Other.showProfileId" = "Pokaż ID";
 "NicegramSettings.Other.showRegDate" = "Pokaż datę rejestracji";
-"NicegramSettings.Unblock.Header" = "Odblokuj";
-"NicegramSettings.Unblock.Button" = "Odblokuj przewodnik";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Pobierz filmy do galerii";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignorowane języki";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "Aplikacja wykrywa język każdej wiadomości na urządzeniu. Jest to zadanie o wysokim stopniu zaawansowania, które może mieć wpływ na żywotność baterii.";

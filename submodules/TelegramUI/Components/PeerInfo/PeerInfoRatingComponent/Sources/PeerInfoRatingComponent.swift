@@ -89,7 +89,7 @@ private func generateNumberOffsets() -> [CGPoint] {
         CGPoint(x: 0.9900000000000001, y: 0.0),
         CGPoint(x: 0.66, y: 0.0),
         CGPoint(x: 0.5775, y: 0.0),
-        CGPoint(x: 1.2375, y: 0.0),
+        CGPoint(x: 0.7425, y: 0.0),
         CGPoint(x: 0.9900000000000001, y: 0.0),
         CGPoint(x: 1.32, y: 0.0),
         CGPoint(x: 1.155, y: 0.0),

@@ -35,7 +35,7 @@ public enum UpdateContactNoteError {
 func _internal_updateContactNote(account: Account, peerId: PeerId, text: String, entities: [MessageTextEntity]) -> Signal<Never, UpdateContactNoteError> {
     return account.postbox.transaction { transaction -> Signal<Void, UpdateContactNoteError> in
         if let peer = transaction.getPeer(peerId) as? TelegramUser, let inputUser = apiInputUser(peer) {
-            return account.network.request(Api.functions.contacts.updateContactNote(id: inputUser, note: .textWithEntities(text: text, entities: apiEntitiesFromMessageTextEntities(entities, associatedPeers: SimpleDictionary()))))
+            return account.network.request(Api.functions.contacts.updateContactNote(id: inputUser, note: .textWithEntities(.init(text: text, entities: apiEntitiesFromMessageTextEntities(entities, associatedPeers: SimpleDictionary())))))
             |> mapError { _ -> UpdateContactNoteError in
                 return .generic
             }

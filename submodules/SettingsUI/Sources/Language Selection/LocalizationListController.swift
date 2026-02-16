@@ -8,9 +8,24 @@ import TelegramCore
 import TelegramPresentationData
 import AccountContext
 import SearchUI
+import ItemListUI
+
+public enum LocalizationListEntryTag: ItemListItemTag, Equatable {
+    case showButton
+    case translateChats
+
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? LocalizationListEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
 
 public class LocalizationListController: ViewController {
     private let context: AccountContext
+    private let focusOnItemTag: LocalizationListEntryTag?
     
     private var controllerNode: LocalizationListControllerNode {
         return self.displayNode as! LocalizationListControllerNode
@@ -31,8 +46,9 @@ public class LocalizationListController: ViewController {
     
     private var previousContentOffset: ListViewVisibleContentOffset?
     
-    public init(context: AccountContext) {
+    public init(context: AccountContext, focusOnItemTag: LocalizationListEntryTag? = nil) {
         self.context = context
+        self.focusOnItemTag = focusOnItemTag
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
@@ -125,9 +141,9 @@ public class LocalizationListController: ViewController {
             self?.present(c, in: .window(.root), with: a)
         }, push: { [weak self] c in
             self?.push(c)
-        })
+        }, focusOnItemTag: self.focusOnItemTag)
         
-        self.controllerNode.listNode.visibleContentOffsetChanged = { [weak self] offset in
+        self.controllerNode.listNode.visibleContentOffsetChanged = { [weak self] offset, _ in
             if let strongSelf = self {
                 if let searchContentNode = strongSelf.searchContentNode {
                     searchContentNode.updateListVisibleContentOffset(offset)

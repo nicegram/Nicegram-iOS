@@ -390,6 +390,13 @@ class ChannelMembersSearchControllerNode: ASDisplayNode {
                                         }
                                 }
                             }
+                        case .ownershipTransfer:
+                            if peer.id == context.account.peerId {
+                                continue
+                            }
+                            if let user = peer as? TelegramUser, user.botInfo != nil || user.flags.contains(.isSupport) {
+                                continue
+                            }
                     }
                     let renderedParticipant: RenderedChannelParticipant
                     switch participant {
@@ -531,7 +538,7 @@ class ChannelMembersSearchControllerNode: ASDisplayNode {
                     var label: String?
                     var enabled = true
                     switch mode {
-                        case .ban, .promote:
+                        case .ban, .promote, .ownershipTransfer:
                             if participant.peer.id == context.account.peerId {
                                 continue participantsLoop
                             }

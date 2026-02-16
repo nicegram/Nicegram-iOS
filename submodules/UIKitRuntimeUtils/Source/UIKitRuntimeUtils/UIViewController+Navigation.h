@@ -26,6 +26,46 @@ typedef NS_OPTIONS(NSUInteger, UIResponderDisableAutomaticKeyboardHandling) {
 
 @end
 
+@interface CALayerSpringParametersOverrideParameters : NSObject
+
+- (instancetype _Nonnull)init;
+
+@end
+
+@interface CALayerSpringParametersOverrideParametersSpring : CALayerSpringParametersOverrideParameters
+
+@property (nonatomic, readonly) CGFloat stiffness;
+@property (nonatomic, readonly) CGFloat damping;
+@property (nonatomic, readonly) double duration;
+
+- (instancetype _Nonnull)initWithStiffness:(CGFloat)stiffness damping:(CGFloat)damping duration:(double)duration;
+
+@end
+
+@interface CALayerSpringParametersOverrideParametersCustomCurve : CALayerSpringParametersOverrideParameters
+
+@property (nonatomic, readonly) CGPoint cp1;
+@property (nonatomic, readonly) CGPoint cp2;
+
+- (instancetype _Nonnull)initWithCp1:(CGPoint)cp1 cp2:(CGPoint)cp2;
+
+@end
+
+@interface CALayerSpringParametersOverride : NSObject
+
+@property (nonatomic, strong, readonly) CALayerSpringParametersOverrideParameters * _Nullable parameters;
+
+- (instancetype _Nonnull)initWithParameters:(CALayerSpringParametersOverrideParameters * _Nullable)parameters;
+
+@end
+
+@interface CALayer (TelegramAddAnimation)
+
++ (void)pushSpringParametersOverride:(CALayerSpringParametersOverride * _Nonnull)springParametersOverride;
++ (void)popSpringParametersOverride;
+
+@end
+
 @interface UIView (Navigation)
 
 @property (nonatomic) bool disablesInteractiveTransitionGestureRecognizer;

@@ -137,7 +137,7 @@ extension ChatControllerImpl {
             
             self.canReadHistory.set(false)
             
-            let controller = ContextController(presentationData: self.presentationData, source: source, items: .single(ContextController.Items(content: .list(items))), recognizer: recognizer, gesture: gesture, disableScreenshots: false)
+            let controller = makeContextController(presentationData: self.presentationData, source: source, items: .single(ContextController.Items(content: .list(items))), recognizer: recognizer, gesture: gesture, disableScreenshots: false)
             controller.dismissed = { [weak self] in
                 self?.canReadHistory.set(true)
             }

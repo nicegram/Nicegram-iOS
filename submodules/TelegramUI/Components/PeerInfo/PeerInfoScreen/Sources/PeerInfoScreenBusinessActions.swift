@@ -86,7 +86,7 @@ extension PeerInfoScreenNode {
         
         let actions = ContextController.Items(content: .list(items))
         
-        let contextController = ContextController(presentationData: self.presentationData, source: .extracted(PeerInfoContextExtractedContentSource(sourceNode: sourceNode)), items: .single(actions), gesture: gesture)
+        let contextController = makeContextController(presentationData: self.presentationData, source: .extracted(PeerInfoContextExtractedContentSource(sourceNode: sourceNode)), items: .single(actions), gesture: gesture)
         self.controller?.present(contextController, in: .window(.root))
     }
     
@@ -176,7 +176,7 @@ extension PeerInfoScreenNode {
         
         let actions = ContextController.Items(content: .list(items))
         
-        let contextController = ContextController(presentationData: self.presentationData, source: .extracted(PeerInfoContextExtractedContentSource(sourceNode: sourceNode)), items: .single(actions), gesture: gesture)
+        let contextController = makeContextController(presentationData: self.presentationData, source: .extracted(PeerInfoContextExtractedContentSource(sourceNode: sourceNode)), items: .single(actions), gesture: gesture)
         self.controller?.present(contextController, in: .window(.root))
     }
 }

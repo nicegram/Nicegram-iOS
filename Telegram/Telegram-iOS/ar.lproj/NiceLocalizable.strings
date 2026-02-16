@@ -154,8 +154,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "سيتم اخفاء رقمك من التطبيق فقط. لأخفاءهُ من المستخدمين الآخرين، يرجى استخدام إعدادات الخصوصية.";
 "NicegramSettings.Other.showProfileId" = "إظهار معرف الملف الشخصي ID";
 "NicegramSettings.Other.showRegDate" = "إظهار تاريخ التسجيل";
-"NicegramSettings.Unblock.Header" = "فتح";
-"NicegramSettings.Unblock.Button" = "دليل الفتح";
 "NicegramSettings.RoundVideos.DownloadVideos" = "نزّل الفيديوهات إلى المعرض";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "تجاهل اللغات";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "التطبيق يحدد لغات كل رسالة في جهازك. ويتطلب اداء عالي من الجهاز و بالتالي إستهلاك البطارية.";

@@ -472,6 +472,7 @@ public final class ChatTextInputPanelComponent: Component {
                         var presentationInterfaceState = ChatPresentationInterfaceState(
                             chatWallpaper: .color(0),
                             theme: component.theme,
+                            preferredGlassType: .default,
                             strings: component.strings,
                             dateTimeFormat: PresentationDateTimeFormat(),
                             nameDisplayOrder: .firstLast,
@@ -773,6 +774,7 @@ public final class ChatTextInputPanelComponent: Component {
             var presentationInterfaceState = ChatPresentationInterfaceState(
                 chatWallpaper: .color(0),
                 theme: component.theme,
+                preferredGlassType: .default,
                 strings: component.strings,
                 dateTimeFormat: PresentationDateTimeFormat(),
                 nameDisplayOrder: .firstLast,

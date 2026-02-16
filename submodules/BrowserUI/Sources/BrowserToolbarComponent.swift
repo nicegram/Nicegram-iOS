@@ -94,7 +94,7 @@ final class BrowserToolbarComponent: CombinedComponent {
                     size: backgroundSize,
                     cornerRadius: backgroundHeight * 0.5,
                     isDark: context.component.theme.overallDarkAppearance,
-                    tintColor: .init(kind: .panel, color: UIColor(white: context.component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)),
+                    tintColor: .init(kind: .panel),
                     isInteractive: true
                 ),
                 availableSize: backgroundSize,

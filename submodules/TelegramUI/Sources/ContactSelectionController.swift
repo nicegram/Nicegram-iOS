@@ -178,10 +178,8 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
         self.title = self.titleProducer(self.presentationData.strings)
         
         if glass {
-
         } else {
             self.navigationItem.backBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Back, style: .plain, target: nil, action: nil)
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
         }
         
         if self.multipleSelection == .always {
@@ -413,15 +411,6 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        if let presentationArguments = self.presentationArguments as? ViewControllerPresentationArguments {
-            switch presentationArguments.presentationAnimation {
-                case .modalSheet:
-                    self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(cancelPressed))
-                case .none:
-                    break
-            }
-        }
-        
         self.contactsNode.contactListNode.enableUpdates = true
     }
     
@@ -538,7 +527,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
                 }
             })))
             
-            let contextController = ContextController(presentationData: presentationData, source: .reference(ContactContextReferenceContentSource(controller: self, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(ContactContextReferenceContentSource(controller: self, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
             self.present(contextController, in: .window(.root))
             return
         }

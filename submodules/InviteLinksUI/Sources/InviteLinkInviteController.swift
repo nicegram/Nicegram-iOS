@@ -518,7 +518,7 @@ public final class InviteLinkInviteController: ViewController {
                     })))
                 }
                 
-                let contextController = ContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+                let contextController = makeContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
                 self.controller?.presentInGlobalOverlay(contextController)
             }, copyLink: { [weak self] invite in
                 UIPasteboard.general.string = invite.link

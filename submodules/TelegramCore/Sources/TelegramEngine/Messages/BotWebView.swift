@@ -19,7 +19,7 @@ public enum RequestSimpleWebViewSource : Equatable {
 func _internal_requestSimpleWebView(postbox: Postbox, network: Network, botId: PeerId, url: String?, source: RequestSimpleWebViewSource, themeParams: [String: Any]?) -> Signal<RequestWebViewResult, RequestWebViewError> {
     var serializedThemeParams: Api.DataJSON?
     if let themeParams = themeParams, let data = try? JSONSerialization.data(withJSONObject: themeParams, options: []), let dataString = String(data: data, encoding: .utf8) {
-        serializedThemeParams = .dataJSON(data: dataString)
+        serializedThemeParams = .dataJSON(.init(data: dataString))
     }
     return postbox.transaction { transaction -> Signal<RequestWebViewResult, RequestWebViewError> in
         guard let bot = transaction.getPeer(botId), let inputUser = apiInputUser(bot) else {
@@ -51,7 +51,8 @@ func _internal_requestSimpleWebView(postbox: Postbox, network: Network, botId: P
         }
         |> mapToSignal { result -> Signal<RequestWebViewResult, RequestWebViewError> in
             switch result {
-            case let .webViewResultUrl(flags, queryId, url):
+            case let .webViewResultUrl(webViewResultUrlData):
+                let (flags, queryId, url) = (webViewResultUrlData.flags, webViewResultUrlData.queryId, webViewResultUrlData.url)
                 var resultFlags: RequestWebViewResult.Flags = []
                 if (flags & (1 << 1)) != 0 {
                     resultFlags.insert(.fullSize)
@@ -70,7 +71,7 @@ func _internal_requestSimpleWebView(postbox: Postbox, network: Network, botId: P
 func _internal_requestMainWebView(postbox: Postbox, network: Network, peerId: PeerId, botId: PeerId, source: RequestSimpleWebViewSource, themeParams: [String: Any]?) -> Signal<RequestWebViewResult, RequestWebViewError> {
     var serializedThemeParams: Api.DataJSON?
     if let themeParams = themeParams, let data = try? JSONSerialization.data(withJSONObject: themeParams, options: []), let dataString = String(data: data, encoding: .utf8) {
-        serializedThemeParams = .dataJSON(data: dataString)
+        serializedThemeParams = .dataJSON(.init(data: dataString))
     }
     return postbox.transaction { transaction -> Signal<RequestWebViewResult, RequestWebViewError> in
         guard let bot = transaction.getPeer(botId), let inputUser = apiInputUser(bot) else {
@@ -101,7 +102,8 @@ func _internal_requestMainWebView(postbox: Postbox, network: Network, peerId: Pe
         }
         |> mapToSignal { result -> Signal<RequestWebViewResult, RequestWebViewError> in
             switch result {
-            case let .webViewResultUrl(flags, queryId, url):
+            case let .webViewResultUrl(webViewResultUrlData):
+                let (flags, queryId, url) = (webViewResultUrlData.flags, webViewResultUrlData.queryId, webViewResultUrlData.url)
                 var resultFlags: RequestWebViewResult.Flags = []
                 if (flags & (1 << 1)) != 0 {
                     resultFlags.insert(.fullSize)
@@ -160,7 +162,7 @@ private func keepWebViewSignal(network: Network, stateManager: AccountStateManag
                     replyFlags |= 1 << 0
                     topMsgId = Int32(clamping: threadId)
                 }
-                replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyToMessageId.id, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil)
+                replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyToMessageId.id, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil))
             }
             let signal: Signal<Never, KeepWebViewError> = network.request(Api.functions.messages.prolongWebView(flags: flags, peer: peer, bot: bot, queryId: queryId, replyTo: replyTo, sendAs: sendAs))
             |> mapError { _ -> KeepWebViewError in
@@ -204,7 +206,7 @@ private func keepWebViewSignal(network: Network, stateManager: AccountStateManag
 func _internal_requestWebView(postbox: Postbox, network: Network, stateManager: AccountStateManager, peerId: PeerId, botId: PeerId, url: String?, payload: String?, themeParams: [String: Any]?, fromMenu: Bool, replyToMessageId: MessageId?, threadId: Int64?) -> Signal<RequestWebViewResult, RequestWebViewError> {
     var serializedThemeParams: Api.DataJSON?
     if let themeParams = themeParams, let data = try? JSONSerialization.data(withJSONObject: themeParams, options: []), let dataString = String(data: data, encoding: .utf8) {
-        serializedThemeParams = .dataJSON(data: dataString)
+        serializedThemeParams = .dataJSON(.init(data: dataString))
     }
     
     return postbox.transaction { transaction -> Signal<RequestWebViewResult, RequestWebViewError> in
@@ -248,9 +250,9 @@ func _internal_requestWebView(postbox: Postbox, network: Network, stateManager: 
             } else if topMsgId != nil {
                 replyFlags |= 1 << 0
             }
-            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyToMessageId.id, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil)
+            replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyToMessageId.id, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil))
         } else if let monoforumPeerId {
-            replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+            replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
         }
 
         return network.request(Api.functions.messages.requestWebView(flags: flags, peer: inputPeer, bot: inputBot, url: url, startParam: payload, themeParams: serializedThemeParams, platform: botWebViewPlatform, replyTo: replyTo, sendAs: nil))
@@ -259,7 +261,8 @@ func _internal_requestWebView(postbox: Postbox, network: Network, stateManager: 
         }
         |> mapToSignal { result -> Signal<RequestWebViewResult, RequestWebViewError> in
             switch result {
-                case let .webViewResultUrl(webViewFlags, queryId, url):
+                case let .webViewResultUrl(webViewResultUrlData):
+                let (webViewFlags, queryId, url) = (webViewResultUrlData.flags, webViewResultUrlData.queryId, webViewResultUrlData.url)
                 var resultFlags: RequestWebViewResult.Flags = []
                 if (webViewFlags & (1 << 1)) != 0 {
                     resultFlags.insert(.fullSize)
@@ -273,7 +276,7 @@ func _internal_requestWebView(postbox: Postbox, network: Network, stateManager: 
                 } else {
                     keepAlive = nil
                 }
-                
+
                 return .single(RequestWebViewResult(flags: resultFlags, queryId: queryId, url: url, keepAliveSignal: keepAlive))
             }
         }
@@ -309,7 +312,7 @@ func _internal_sendWebViewData(postbox: Postbox, network: Network, stateManager:
 func _internal_requestAppWebView(postbox: Postbox, network: Network, stateManager: AccountStateManager, peerId: PeerId, appReference: BotAppReference, payload: String?, themeParams: [String: Any]?, compact: Bool, fullscreen: Bool, allowWrite: Bool) -> Signal<RequestWebViewResult, RequestWebViewError> {
     var serializedThemeParams: Api.DataJSON?
     if let themeParams = themeParams, let data = try? JSONSerialization.data(withJSONObject: themeParams, options: []), let dataString = String(data: data, encoding: .utf8) {
-        serializedThemeParams = .dataJSON(data: dataString)
+        serializedThemeParams = .dataJSON(.init(data: dataString))
     }
     
     return postbox.transaction { transaction -> Signal<RequestWebViewResult, RequestWebViewError> in
@@ -320,12 +323,12 @@ func _internal_requestAppWebView(postbox: Postbox, network: Network, stateManage
         let app: Api.InputBotApp
         switch appReference {
         case let .id(id, accessHash):
-            app = .inputBotAppID(id: id, accessHash: accessHash)
+            app = .inputBotAppID(.init(id: id, accessHash: accessHash))
         case let .shortName(peerId, shortName):
             guard let bot = transaction.getPeer(peerId), let inputBot = apiInputUser(bot) else {
                 return .fail(.generic)
             }
-            app = .inputBotAppShortName(botId: inputBot, shortName: shortName)
+            app = .inputBotAppShortName(.init(botId: inputBot, shortName: shortName))
         }
 
         var flags: Int32 = 0
@@ -351,7 +354,8 @@ func _internal_requestAppWebView(postbox: Postbox, network: Network, stateManage
         }
         |> mapToSignal { result -> Signal<RequestWebViewResult, RequestWebViewError> in
             switch result {
-            case let .webViewResultUrl(flags, queryId, url):
+            case let .webViewResultUrl(webViewResultUrlData):
+                let (flags, queryId, url) = (webViewResultUrlData.flags, webViewResultUrlData.queryId, webViewResultUrlData.url)
                 var resultFlags: RequestWebViewResult.Flags = []
                 if (flags & (1 << 1)) != 0 {
                     resultFlags.insert(.fullSize)
@@ -415,7 +419,7 @@ public enum InvokeBotCustomMethodError {
 }
 
 func _internal_invokeBotCustomMethod(postbox: Postbox, network: Network, botId: PeerId, method: String, params: String) -> Signal<String, InvokeBotCustomMethodError> {
-    let params = Api.DataJSON.dataJSON(data: params)
+    let params = Api.DataJSON.dataJSON(.init(data: params))
     return postbox.transaction { transaction -> Signal<String, InvokeBotCustomMethodError> in
         guard let bot = transaction.getPeer(botId), let inputUser = apiInputUser(bot) else {
             return .fail(.generic)
@@ -425,7 +429,8 @@ func _internal_invokeBotCustomMethod(postbox: Postbox, network: Network, botId: 
             return .generic
         }
         |> map { result -> String in
-            if case let .dataJSON(data) = result {
+            if case let .dataJSON(dataJSONData) = result {
+                let data = dataJSONData.data
                 return data
             } else {
                 return ""
@@ -1164,13 +1169,15 @@ fileprivate func  _internal_requestConnectedStarRefBots(account: Account, id: En
             }
             return account.postbox.transaction { transaction -> (items: [EngineConnectedStarRefBotsContext.Item], totalCount: Int, nextOffset: (timestamp: Int32, link: String)?)? in
                 switch result {
-                case let .connectedStarRefBots(count, connectedBots, users):
+                case let .connectedStarRefBots(connectedStarRefBotsData):
+                    let (count, connectedBots, users) = (connectedStarRefBotsData.count, connectedStarRefBotsData.connectedBots, connectedStarRefBotsData.users)
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(users: users))
                     
                     var items: [EngineConnectedStarRefBotsContext.Item] = []
                     for connectedBot in connectedBots {
                         switch connectedBot {
-                        case let .connectedBotStarRef(_, url, date, botId, commissionPermille, durationMonths, participants, revenue):
+                        case let .connectedBotStarRef(connectedBotStarRefData):
+                            let (url, date, botId, commissionPermille, durationMonths, participants, revenue) = (connectedBotStarRefData.url, connectedBotStarRefData.date, connectedBotStarRefData.botId, connectedBotStarRefData.commissionPermille, connectedBotStarRefData.durationMonths, connectedBotStarRefData.participants, connectedBotStarRefData.revenue)
                             guard let botPeer = transaction.getPeer(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId))) else {
                                 continue
                             }
@@ -1233,7 +1240,8 @@ fileprivate func _internal_requestSuggestedStarRefBots(account: Account, id: Eng
             }
             return account.postbox.transaction { transaction -> (items: [EngineSuggestedStarRefBotsContext.Item], totalCount: Int, nextOffset: String?)? in
                 switch result {
-                case let .suggestedStarRefBots(_, count, suggestedBots, users, nextOffset):
+                case let .suggestedStarRefBots(suggestedStarRefBotsData):
+                    let (count, suggestedBots, users, nextOffset) = (suggestedStarRefBotsData.count, suggestedStarRefBotsData.suggestedBots, suggestedStarRefBotsData.users, suggestedStarRefBotsData.nextOffset)
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(users: users))
                     
                     var items: [EngineSuggestedStarRefBotsContext.Item] = []
@@ -1278,12 +1286,14 @@ func _internal_connectStarRefBot(account: Account, id: EnginePeer.Id, botId: Eng
         |> mapToSignal { result -> Signal<EngineConnectedStarRefBotsContext.Item, ConnectStarRefBotError> in
             return account.postbox.transaction { transaction -> EngineConnectedStarRefBotsContext.Item? in
                 switch result {
-                case let .connectedStarRefBots(_, connectedBots, users):
+                case let .connectedStarRefBots(connectedStarRefBotsData):
+                    let (connectedBots, users) = (connectedStarRefBotsData.connectedBots, connectedStarRefBotsData.users)
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(users: users))
-                    
+
                     if let bot = connectedBots.first {
                         switch bot {
-                        case let .connectedBotStarRef(_, url, date, botId, commissionPermille, durationMonths, participants, revenue):
+                        case let .connectedBotStarRef(connectedBotStarRefData):
+                            let (url, date, botId, commissionPermille, durationMonths, participants, revenue) = (connectedBotStarRefData.url, connectedBotStarRefData.date, connectedBotStarRefData.botId, connectedBotStarRefData.commissionPermille, connectedBotStarRefData.durationMonths, connectedBotStarRefData.participants, connectedBotStarRefData.revenue)
                             guard let botPeer = transaction.getPeer(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId))) else {
                                 return nil
                             }
@@ -1333,9 +1343,10 @@ fileprivate func _internal_removeConnectedStarRefBot(account: Account, id: Engin
         |> mapToSignal { result -> Signal<Never, ConnectStarRefBotError> in
             return account.postbox.transaction { transaction -> Void in
                 switch result {
-                case let .connectedStarRefBots(_, connectedBots, users):
+                case let .connectedStarRefBots(connectedStarRefBotsData):
+                    let (connectedBots, users) = (connectedStarRefBotsData.connectedBots, connectedStarRefBotsData.users)
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(users: users))
-                    
+
                     let _ = connectedBots
                 }
                 
@@ -1369,12 +1380,14 @@ func _internal_getStarRefBotConnection(account: Account, id: EnginePeer.Id, targ
             }
             return account.postbox.transaction { transaction -> EngineConnectedStarRefBotsContext.Item? in
                 switch result {
-                case let .connectedStarRefBots(_, connectedBots, users):
+                case let .connectedStarRefBots(connectedStarRefBotsData):
+                    let (connectedBots, users) = (connectedStarRefBotsData.connectedBots, connectedStarRefBotsData.users)
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(users: users))
-                    
+
                     if let bot = connectedBots.first {
                         switch bot {
-                        case let .connectedBotStarRef(flags, url, date, botId, commissionPermille, durationMonths, participants, revenue):
+                        case let .connectedBotStarRef(connectedBotStarRefData):
+                            let (flags, url, date, botId, commissionPermille, durationMonths, participants, revenue) = (connectedBotStarRefData.flags, connectedBotStarRefData.url, connectedBotStarRefData.date, connectedBotStarRefData.botId, connectedBotStarRefData.commissionPermille, connectedBotStarRefData.durationMonths, connectedBotStarRefData.participants, connectedBotStarRefData.revenue)
                             let isRevoked = (flags & (1 << 1)) != 0
                             if isRevoked {
                                return nil
@@ -1431,9 +1444,19 @@ func _internal_getPossibleStarRefBotTargets(account: Account) -> Signal<[EngineP
             
             if let apiChannels {
                 switch apiChannels {
-                case let .chats(chats), let .chatsSlice(_, chats):
+                case let .chats(chatsData):
+                    let chats = chatsData.chats
                     updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(chats: chats, users: []))
-                    
+
+                    for chat in chats {
+                        if let peer = transaction.getPeer(chat.peerId) {
+                            result.append(EnginePeer(peer))
+                        }
+                    }
+                case let .chatsSlice(chatsSliceData):
+                    let chats = chatsSliceData.chats
+                    updatePeers(transaction: transaction, accountPeerId: account.peerId, peers: AccumulatedPeers(chats: chats, users: []))
+
                     for chat in chats {
                         if let peer = transaction.getPeer(chat.peerId) {
                             result.append(EnginePeer(peer))

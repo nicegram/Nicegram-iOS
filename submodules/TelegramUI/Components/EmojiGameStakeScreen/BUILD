@@ -48,6 +48,7 @@ swift_library(
         "//submodules/TelegramUI/Components/EdgeEffect",
         "//submodules/Components/MultilineTextWithEntitiesComponent",
         "//submodules/TelegramUI/Components/PlainButtonComponent",
+        "//submodules/Components/ResizableSheetComponent",
     ],
     visibility = [
         "//visibility:public",

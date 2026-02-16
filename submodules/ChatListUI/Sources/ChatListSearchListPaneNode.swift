@@ -5622,7 +5622,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
                 f(.default)
                 self.searchScopePromise.set(.channels)
             })))
-            let contextController = ContextController(presentationData: self.presentationData, source: .reference(ChatListSearchReferenceContentSource(sourceNode: sourceNode)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+            let contextController = makeContextController(presentationData: self.presentationData, source: .reference(ChatListSearchReferenceContentSource(sourceNode: sourceNode)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
             self.interaction.present(contextController, nil)
         })
     }

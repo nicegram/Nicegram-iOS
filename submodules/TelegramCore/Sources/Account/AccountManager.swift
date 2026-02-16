@@ -655,7 +655,8 @@ private func cleanupAccount(networkArguments: NetworkInitializationArguments, ac
                 }
                 |> mapToSignal { result -> Signal<Void, NoError> in
                     switch result {
-                    case let .loggedOut(_, futureAuthToken):
+                    case let .loggedOut(loggedOutData):
+                        let futureAuthToken = loggedOutData.futureAuthToken
                         if let futureAuthToken = futureAuthToken {
                             storeFutureLoginToken(accountManager: accountManager, token: futureAuthToken.makeData())
                         }

@@ -120,10 +120,10 @@ private final class BirthdayPickerSheetContentComponent: Component {
                 transition: transition,
                 component: AnyComponent(
                     GlassBarButtonComponent(
-                        size: CGSize(width: 40.0, height: 40.0),
-                        backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                        size: CGSize(width: 44.0, height: 44.0),
+                        backgroundColor: nil,
                         isDark: environment.theme.overallDarkAppearance,
-                        state: .generic,
+                        state: .glass,
                         component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
                             BundleIconComponent(
                                 name: "Navigation/Close",
@@ -138,7 +138,7 @@ private final class BirthdayPickerSheetContentComponent: Component {
                     )
                 ),
                 environment: {},
-                containerSize: CGSize(width: 40.0, height: 40.0)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             let cancelFrame = CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelSize)
             if let cancelView = self.cancel.view {
@@ -270,6 +270,8 @@ private final class BirthdayPickerScreenComponent: Component {
             }
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: self.didAppear || environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -332,7 +334,7 @@ private final class BirthdayPickerScreenComponent: Component {
                         }
                     )),
                     style: .glass,
-                    backgroundColor: .color(environment.theme.list.plainBackgroundColor),
+                    backgroundColor: .color(environment.theme.list.modalPlainBackgroundColor),
                     followContentSizeChanges: true,
                     isScrollEnabled: false,
                     animateOut: self.sheetAnimateOut

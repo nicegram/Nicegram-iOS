@@ -101,7 +101,7 @@ func _internal_updateChannelOwnership(account: Account, channelId: PeerId, membe
                         guard let kdfResult = passwordKDF(encryptionProvider: account.network.encryptionProvider, password: password, derivation: currentPasswordDerivation, srpSessionData: srpSessionData) else {
                             return .fail(.generic)
                         }
-                        return .single(.inputCheckPasswordSRP(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1)))
+                        return .single(.inputCheckPasswordSRP(.init(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1))))
                     } else {
                         return .fail(.twoStepAuthMissing)
                     }

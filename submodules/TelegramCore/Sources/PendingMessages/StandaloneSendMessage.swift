@@ -445,14 +445,14 @@ private func sendUploadedMessageContent(
                         if let _ = replyTodoItemId {
                             replyFlags |= 1 << 6
                         }
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId))
                     } else if let replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                         }
                     } else if let monoforumPeerId {
-                        replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                        replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                     }
                 
                     if suggestedPost != nil {
@@ -479,11 +479,11 @@ private func sendUploadedMessageContent(
                         if let _ = replyTodoItemId {
                             replyFlags |= 1 << 6
                         }
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId))
                     } else if let replyToStoryId = replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                         }
                     }
                 
@@ -520,33 +520,33 @@ private func sendUploadedMessageContent(
                         if monoforumPeerId != nil {
                             replyFlags |= 1 << 5
                         }
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil))
                     } else if let replyToStoryId = replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                         }
                     }
-                
+
                     sendMessageRequest = network.request(Api.functions.messages.sendInlineBotResult(flags: flags, peer: inputPeer, replyTo: replyTo, randomId: uniqueId, queryId: chatContextResult.queryId, id: chatContextResult.id, scheduleDate: scheduleTime, sendAs: sendAsInputPeer, quickReplyShortcut: nil, allowPaidStars: allowPaidStars))
                     |> map(NetworkRequestResult.result)
                 case .messageScreenshot:
                     let replyTo: Api.InputReplyTo
-                
+
                     if let replyMessageId = replyMessageId {
                         let replyFlags: Int32 = 0
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                     } else if let replyToStoryId = replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                         } else {
                             let replyFlags: Int32 = 0
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                            replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                         }
                     } else {
                         let replyFlags: Int32 = 0
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                     }
                 
                     sendMessageRequest = network.request(Api.functions.messages.sendScreenshotNotification(peer: inputPeer, replyTo: replyTo, randomId: uniqueId))
@@ -698,19 +698,19 @@ private func sendMessageContent(account: Account, peerId: PeerId, attributes: [M
                     var replyTo: Api.InputReplyTo?
                     if let replyMessageId = replyMessageId {
                         flags |= 1 << 0
-                        
+
                         let replyFlags: Int32 = 0
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                     } else if let replyToStoryId = replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                         }
                     } else if let threadId {
                         flags |= 1 << 0
-                        replyTo = .inputReplyToMessage(flags: flags, replyToMsgId: threadId, topMsgId: threadId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                        replyTo = .inputReplyToMessage(.init(flags: flags, replyToMsgId: threadId, topMsgId: threadId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                     }
-                
+
                     sendMessageRequest = account.network.request(Api.functions.messages.sendMessage(flags: flags, peer: inputPeer, replyTo: replyTo, message: text, randomId: uniqueId, replyMarkup: nil, entities: messageEntities, scheduleDate: scheduleTime, scheduleRepeatPeriod: scheduleRepeatPeriod, sendAs: sendAsInputPeer, quickReplyShortcut: nil, effect: nil, allowPaidStars: allowPaidStars, suggestedPost: nil))
                     |> `catch` { _ -> Signal<Api.Updates, NoError> in
                         return .complete()
@@ -719,17 +719,17 @@ private func sendMessageContent(account: Account, peerId: PeerId, attributes: [M
                     var replyTo: Api.InputReplyTo?
                     if let replyMessageId = replyMessageId {
                         flags |= 1 << 0
-                        
+
                         let replyFlags: Int32 = 0
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                     } else if let replyToStoryId = replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                         }
                     } else if let threadId {
                         flags |= 1 << 0
-                        replyTo = .inputReplyToMessage(flags: flags, replyToMsgId: threadId, topMsgId: threadId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                        replyTo = .inputReplyToMessage(.init(flags: flags, replyToMsgId: threadId, topMsgId: threadId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                     }
                 
                     if suggestedPost != nil {
@@ -765,8 +765,9 @@ private func uploadedImage(account: Account, data: Data) -> Signal<UploadMediaEv
         |> mapError { _ -> StandaloneSendMessageError in return .generic }
         |> map { next -> UploadMediaEvent in
             switch next {
-                case let .inputFile(inputFile):
-                    return .result(Api.InputMedia.inputMediaUploadedPhoto(flags: 0, file: inputFile, stickers: nil, ttlSeconds: nil))
+                case let .inputFile(inputFileData):
+                    let inputFile = inputFileData
+                    return .result(Api.InputMedia.inputMediaUploadedPhoto(.init(flags: 0, file: inputFile, stickers: nil, ttlSeconds: nil)))
                 case .inputSecretFile:
                         preconditionFailure()
                 case let .progress(progress):
@@ -780,8 +781,9 @@ private func uploadedFile(account: Account, data: Data, mimeType: String, attrib
         |> mapError { _ -> PendingMessageUploadError in return .generic }
         |> map { next -> UploadMediaEvent in
             switch next {
-                case let .inputFile(inputFile):
-                    return .result(Api.InputMedia.inputMediaUploadedDocument(flags: 0, file: inputFile, thumb: nil, mimeType: mimeType, attributes: inputDocumentAttributesFromFileAttributes(attributes), stickers: nil, videoCover: nil, videoTimestamp: nil, ttlSeconds: nil))
+                case let .inputFile(inputFileData):
+                    let inputFile = inputFileData
+                    return .result(Api.InputMedia.inputMediaUploadedDocument(.init(flags: 0, file: inputFile, thumb: nil, mimeType: mimeType, attributes: inputDocumentAttributesFromFileAttributes(attributes), stickers: nil, videoCover: nil, videoTimestamp: nil, ttlSeconds: nil)))
                 case .inputSecretFile:
                     preconditionFailure()
                 case let .progress(progress):

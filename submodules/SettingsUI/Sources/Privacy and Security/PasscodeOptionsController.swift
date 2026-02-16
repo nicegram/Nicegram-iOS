@@ -44,6 +44,21 @@ private enum PasscodeOptionsSection: Int32 {
     case options
 }
 
+public enum PasscodeOptionsEntryTag: ItemListItemTag, Equatable {
+    case togglePasscode
+    case changePasscode
+    case autolock
+    case touchId
+   
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? PasscodeOptionsEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private enum PasscodeOptionsEntry: ItemListNodeEntry {
     case togglePasscode(PresentationTheme, String, Bool)
     case changePasscode(PresentationTheme, String)
@@ -123,21 +138,21 @@ private enum PasscodeOptionsEntry: ItemListNodeEntry {
                     if value {
                         arguments.turnPasscodeOff()
                     }
-                })
+                }, tag: PasscodeOptionsEntryTag.togglePasscode)
             case let .changePasscode(_, title):
                 return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: title, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.changePasscode()
-                })
+                }, tag: PasscodeOptionsEntryTag.changePasscode)
             case let .settingInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .autoLock(_, title, value):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.changePasscodeTimeout()
-                })
+                }, tag: PasscodeOptionsEntryTag.autolock)
             case let .touchId(_, title, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.changeTouchId(value)
-                })
+                }, tag: PasscodeOptionsEntryTag.touchId)
         }
     }
 }
@@ -220,7 +235,7 @@ private func passcodeOptionsControllerEntries(presentationData: PresentationData
     return entries
 }
 
-func passcodeOptionsController(context: AccountContext) -> ViewController {
+func passcodeOptionsController(context: AccountContext, focusOnItemTag: PasscodeOptionsEntryTag? = nil) -> ViewController {
     let initialState = PasscodeOptionsControllerState()
     
     let statePromise = ValuePromise(initialState, ignoreRepeated: true)
@@ -399,7 +414,7 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
         |> map { presentationData, state, passcodeOptionsData -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.PasscodeSettings_Title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: passcodeOptionsControllerEntries(presentationData: presentationData, state: state, passcodeOptionsData: passcodeOptionsData), style: .blocks, emptyStateItem: nil, animateChanges: false)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: passcodeOptionsControllerEntries(presentationData: presentationData, state: state, passcodeOptionsData: passcodeOptionsData), style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, animateChanges: false)
             
             return (controllerState, (listState, arguments))
         } |> afterDisposed {
@@ -420,6 +435,20 @@ func passcodeOptionsController(context: AccountContext) -> ViewController {
     }
     replaceTopControllerImpl = { [weak controller] c, animated in
         (controller?.navigationController as? NavigationController)?.replaceTopController(c, animated: animated)
+    }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
     }
     
     return controller

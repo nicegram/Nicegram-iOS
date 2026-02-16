@@ -50,7 +50,7 @@ func _internal_requestChangeAccountPhoneNumberVerification(account: Account, api
         appSandbox = pushNotificationConfiguration.isSandbox ? .boolTrue : .boolFalse
     }
     
-    return account.network.request(Api.functions.account.sendChangePhoneCode(phoneNumber: phoneNumber, settings: .codeSettings(flags: flags, logoutTokens: nil, token: token, appSandbox: appSandbox)), automaticFloodWait: false)
+    return account.network.request(Api.functions.account.sendChangePhoneCode(phoneNumber: phoneNumber, settings: .codeSettings(.init(flags: flags, logoutTokens: nil, token: token, appSandbox: appSandbox))), automaticFloodWait: false)
         |> mapError { error -> RequestChangeAccountPhoneNumberVerificationError in
             if error.errorDescription.hasPrefix("FLOOD_WAIT") {
                 return .limitExceeded
@@ -66,13 +66,15 @@ func _internal_requestChangeAccountPhoneNumberVerification(account: Account, api
         }
         |> mapToSignal { sentCode -> Signal<ChangeAccountPhoneNumberData, RequestChangeAccountPhoneNumberVerificationError> in
             switch sentCode {
-            case let .sentCode(_, type, phoneCodeHash, nextType, codeTimeout):
+            case let .sentCode(sentCodeData):
+                let (type, phoneCodeHash, nextType, codeTimeout) = (sentCodeData.type, sentCodeData.phoneCodeHash, sentCodeData.nextType, sentCodeData.timeout)
                 var parsedNextType: AuthorizationCodeNextType?
                 if let nextType = nextType {
                     parsedNextType = AuthorizationCodeNextType(apiType: nextType)
                 }
-                
-                if case let .sentCodeTypeFirebaseSms(_, _, _, _, receipt, pushTimeout, _) = type {
+
+                if case let .sentCodeTypeFirebaseSms(sentCodeTypeFirebaseSmsData) = type {
+                    let (receipt, pushTimeout) = (sentCodeTypeFirebaseSmsData.receipt, sentCodeTypeFirebaseSmsData.pushTimeout)
                     return firebaseSecretStream
                     |> map { mapping -> String? in
                         guard let receipt = receipt else {
@@ -141,13 +143,15 @@ private func internalResendChangeAccountPhoneNumberVerification(account: Account
         }
     |> mapToSignal { sentCode -> Signal<ChangeAccountPhoneNumberData, RequestChangeAccountPhoneNumberVerificationError> in
         switch sentCode {
-        case let .sentCode(_, type, phoneCodeHash, nextType, codeTimeout):
+        case let .sentCode(sentCodeData):
+            let (type, phoneCodeHash, nextType, codeTimeout) = (sentCodeData.type, sentCodeData.phoneCodeHash, sentCodeData.nextType, sentCodeData.timeout)
             var parsedNextType: AuthorizationCodeNextType?
             if let nextType = nextType {
                 parsedNextType = AuthorizationCodeNextType(apiType: nextType)
             }
-            
-            if case let .sentCodeTypeFirebaseSms(_, _, _, _, receipt, pushTimeout, _) = type {
+
+            if case let .sentCodeTypeFirebaseSms(sentCodeTypeFirebaseSmsData) = type {
+                let (receipt, pushTimeout) = (sentCodeTypeFirebaseSmsData.receipt, sentCodeTypeFirebaseSmsData.pushTimeout)
                 return firebaseSecretStream
                 |> map { mapping -> String? in
                     guard let receipt = receipt else {

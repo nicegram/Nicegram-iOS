@@ -12,6 +12,7 @@ public final class ChatFloatingTopicsPanel: Component {
     
     public let context: AccountContext
     public let theme: PresentationTheme
+    public let preferClearGlass: Bool
     public let strings: PresentationStrings
     public let location: ChatSideTopicsPanel.Location
     public let peerId: EnginePeer.Id
@@ -25,6 +26,7 @@ public final class ChatFloatingTopicsPanel: Component {
     public init(
         context: AccountContext,
         theme: PresentationTheme,
+        preferClearGlass: Bool,
         strings: PresentationStrings,
         location: ChatSideTopicsPanel.Location,
         peerId: EnginePeer.Id,
@@ -37,6 +39,7 @@ public final class ChatFloatingTopicsPanel: Component {
     ) {
         self.context = context
         self.theme = theme
+        self.preferClearGlass = preferClearGlass
         self.strings = strings
         self.location = location
         self.peerId = peerId
@@ -53,6 +56,9 @@ public final class ChatFloatingTopicsPanel: Component {
             return false
         }
         if lhs.theme !== rhs.theme {
+            return false
+        }
+        if lhs.preferClearGlass != rhs.preferClearGlass {
             return false
         }
         if lhs.strings !== rhs.strings {
@@ -247,7 +253,15 @@ public final class ChatFloatingTopicsPanel: Component {
                 }
                 
                 transition.setFrame(view: sharedPanelBackgroundView, frame: currentPanelBackgroundFrame)
-                sharedPanelBackgroundView.update(size: currentPanelBackgroundFrame.size, cornerRadius: 20.0, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: component.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: transition)
+                
+                let defaultGlassTintColor: GlassBackgroundView.TintColor
+                if component.preferClearGlass {
+                    defaultGlassTintColor = .init(kind: .clear)
+                } else {
+                    defaultGlassTintColor = .init(kind: .panel)
+                }
+                
+                sharedPanelBackgroundView.update(size: currentPanelBackgroundFrame.size, cornerRadius: 20.0, isDark: component.theme.overallDarkAppearance, tintColor: defaultGlassTintColor, transition: transition)
             }
             
             transition.setFrame(view: self.containerView, frame: CGRect(origin: CGPoint(), size: availableSize))

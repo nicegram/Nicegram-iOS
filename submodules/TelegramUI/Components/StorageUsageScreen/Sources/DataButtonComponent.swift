@@ -18,15 +18,18 @@ final class DataButtonComponent: Component {
     let theme: PresentationTheme
     let title: String
     let action: () -> Void
+    let tag: AnyObject?
     
     init(
         theme: PresentationTheme,
         title: String,
-        action: @escaping () -> Void
+        action: @escaping () -> Void,
+        tag: AnyObject? = nil
     ) {
         self.theme = theme
         self.title = title
         self.action = action
+        self.tag = tag
     }
     
     static func ==(lhs: DataButtonComponent, rhs: DataButtonComponent) -> Bool {
@@ -36,10 +39,23 @@ final class DataButtonComponent: Component {
         if lhs.title != rhs.title {
             return false
         }
+        if lhs.tag !== rhs.tag {
+            return false
+        }
         return true
     }
     
-    class View: HighlightTrackingButton {
+    class View: HighlightTrackingButton, ComponentTaggedView {
+        public func matches(tag: Any) -> Bool {
+            if let component = self.component, let componentTag = component.tag {
+                let tag = tag as AnyObject
+                if componentTag === tag {
+                    return true
+                }
+            }
+            return false
+        }
+        
         private let title = ComponentView<Empty>()
         
         private var component: DataButtonComponent?
@@ -93,6 +109,10 @@ final class DataButtonComponent: Component {
                 return
             }
             component.action()
+        }
+        
+        func displayHighlight() {
+            
         }
         
         func update(component: DataButtonComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {

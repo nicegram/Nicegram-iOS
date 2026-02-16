@@ -244,13 +244,15 @@ func _internal_createForumChannelTopic(postbox: Postbox, network: Network, state
             topicId = nil
             for update in result.allUpdates {
                 switch update {
-                case let .updateNewChannelMessage(message, _, _):
+                case let .updateNewChannelMessage(updateNewChannelMessageData):
+                    let (message, _, _) = (updateNewChannelMessageData.message, updateNewChannelMessageData.pts, updateNewChannelMessageData.ptsCount)
                     if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum) {
                         if case let .Id(id) = message.id {
                             topicId = Int64(id.id)
                         }
                     }
-                case let .updateNewMessage(message, _, _):
+                case let .updateNewMessage(updateNewMessageData):
+                    let (message, _, _) = (updateNewMessageData.message, updateNewMessageData.pts, updateNewMessageData.ptsCount)
                     if let message = StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForum) {
                         if case let .Id(id) = message.id {
                             topicId = Int64(id.id)
@@ -489,7 +491,7 @@ func _internal_setForumChannelPinnedTopics(account: Account, id: EnginePeer.Id, 
         return account.postbox.transaction { transaction -> [Api.InputDialogPeer] in
             transaction.setPeerPinnedThreads(peerId: id, threadIds: threadIds)
             
-            return threadIds.compactMap { transaction.getPeer(PeerId($0)).flatMap(apiInputPeer).flatMap({ .inputDialogPeer(peer: $0) }) }
+            return threadIds.compactMap { transaction.getPeer(PeerId($0)).flatMap(apiInputPeer).flatMap({ .inputDialogPeer(.init(peer: $0)) }) }
         }
         |> castError(SetForumChannelTopicPinnedError.self)
         |> mapToSignal { inputPeers -> Signal<Never, SetForumChannelTopicPinnedError> in
@@ -773,7 +775,8 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
             }
             |> mapToSignal { result -> Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> in
                 switch result {
-                case .savedDialogs(let dialogs, let messages, let chats, let users), .savedDialogsSlice(_, let dialogs, let messages, let chats, let users):
+                case let .savedDialogs(savedDialogsData):
+                    let (dialogs, messages, chats, users) = (savedDialogsData.dialogs, savedDialogsData.messages, savedDialogsData.chats, savedDialogsData.users)
                     var items: [LoadMessageHistoryThreadsResult.Item] = []
                     var pinnedIds: [Int64] = []
                     
@@ -785,7 +788,8 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
                     
                     for dialog in dialogs {
                         switch dialog {
-                        case let .savedDialog(flags, peer, topMessage):
+                        case let .savedDialog(savedDialogData):
+                            let (flags, peer, topMessage) = (savedDialogData.flags, savedDialogData.peer, savedDialogData.topMessage)
                             if (flags & (1 << 2)) != 0 {
                                 pinnedIds.append(peer.peerId.toInt64())
                             }
@@ -843,7 +847,8 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
                                 index: topicIndex,
                                 threadPeer: threadPeer
                             ))
-                        case let .monoForumDialog(flags, peer, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadReactionsCount, _):
+                        case let .monoForumDialog(monoForumDialogData):
+                            let (flags, peer, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadReactionsCount) = (monoForumDialogData.flags, monoForumDialogData.peer, monoForumDialogData.topMessage, monoForumDialogData.readInboxMaxId, monoForumDialogData.readOutboxMaxId, monoForumDialogData.unreadCount, monoForumDialogData.unreadReactionsCount)
                             let isMarkedUnread = (flags & (1 << 3)) != 0
                             let data = MessageHistoryThreadData(
                                 creationDate: 0,
@@ -927,6 +932,163 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
                         users: users,
                         chats: chats
                     ))
+                case let .savedDialogsSlice(savedDialogsSliceData):
+                    let (dialogs, messages, chats, users) = (savedDialogsSliceData.dialogs, savedDialogsSliceData.messages, savedDialogsSliceData.chats, savedDialogsSliceData.users)
+                    var items: [LoadMessageHistoryThreadsResult.Item] = []
+                    var pinnedIds: [Int64] = []
+
+                    let addedMessages = messages.compactMap { message -> StoreMessage? in
+                        return StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: false)
+                    }
+
+                    var minIndex: StoredPeerThreadCombinedState.Index?
+
+                    for dialog in dialogs {
+                        switch dialog {
+                        case let .savedDialog(savedDialogData):
+                            let (flags, peer, topMessage) = (savedDialogData.flags, savedDialogData.peer, savedDialogData.topMessage)
+                            if (flags & (1 << 2)) != 0 {
+                                pinnedIds.append(peer.peerId.toInt64())
+                            }
+
+                            let data = MessageHistoryThreadData(
+                                creationDate: 0,
+                                isOwnedByMe: true,
+                                author: peer.peerId,
+                                info: EngineMessageHistoryThread.Info(
+                                    title: "",
+                                    icon: nil,
+                                    iconColor: 0
+                                ),
+                                incomingUnreadCount: 0,
+                                isMarkedUnread: false,
+                                maxIncomingReadId: 0,
+                                maxKnownMessageId: topMessage,
+                                maxOutgoingReadId: 0,
+                                isClosed: false,
+                                isHidden: false,
+                                notificationSettings: TelegramPeerNotificationSettings.defaultSettings,
+                                isMessageFeeRemoved: false
+                            )
+
+                            var topTimestamp: Int32 = 1
+                            for message in addedMessages {
+                                if message.id.peerId == peerId && message.threadId == peer.peerId.toInt64() {
+                                    topTimestamp = max(topTimestamp, message.timestamp)
+                                }
+                            }
+
+                            let topicIndex = StoredPeerThreadCombinedState.Index(timestamp: topTimestamp, threadId: peer.peerId.toInt64(), messageId: topMessage)
+                            if let minIndexValue = minIndex {
+                                if topicIndex < minIndexValue {
+                                    minIndex = topicIndex
+                                }
+                            } else {
+                                minIndex = topicIndex
+                            }
+
+                            var threadPeer: Peer?
+                            for user in users {
+                                if user.peerId == peer.peerId {
+                                    threadPeer = TelegramUser(user: user)
+                                    break
+                                }
+                            }
+
+                            items.append(LoadMessageHistoryThreadsResult.Item(
+                                threadId: peer.peerId.toInt64(),
+                                data: data,
+                                topMessage: topMessage,
+                                unreadMentionsCount: 0,
+                                unreadReactionsCount: 0,
+                                index: topicIndex,
+                                threadPeer: threadPeer
+                            ))
+                        case let .monoForumDialog(monoForumDialogData):
+                            let (flags, peer, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadReactionsCount) = (monoForumDialogData.flags, monoForumDialogData.peer, monoForumDialogData.topMessage, monoForumDialogData.readInboxMaxId, monoForumDialogData.readOutboxMaxId, monoForumDialogData.unreadCount, monoForumDialogData.unreadReactionsCount)
+                            let isMarkedUnread = (flags & (1 << 3)) != 0
+                            let data = MessageHistoryThreadData(
+                                creationDate: 0,
+                                isOwnedByMe: true,
+                                author: accountPeerId,
+                                info: EngineMessageHistoryThread.Info(
+                                    title: "",
+                                    icon: nil,
+                                    iconColor: 0
+                                ),
+                                incomingUnreadCount: unreadCount,
+                                isMarkedUnread: isMarkedUnread,
+                                maxIncomingReadId: readInboxMaxId,
+                                maxKnownMessageId: topMessage,
+                                maxOutgoingReadId: readOutboxMaxId,
+                                isClosed: false,
+                                isHidden: false,
+                                notificationSettings: TelegramPeerNotificationSettings.defaultSettings,
+                                isMessageFeeRemoved: (flags & (1 << 4)) != 0
+                            )
+
+                            var topTimestamp: Int32 = 1
+                            for message in addedMessages {
+                                if message.id.peerId == peerId && message.threadId == peer.peerId.toInt64() {
+                                    topTimestamp = max(topTimestamp, message.timestamp)
+                                }
+                            }
+
+                            let topicIndex = StoredPeerThreadCombinedState.Index(timestamp: topTimestamp, threadId: peer.peerId.toInt64(), messageId: topMessage)
+                            if let minIndexValue = minIndex {
+                                if topicIndex < minIndexValue {
+                                    minIndex = topicIndex
+                                }
+                            } else {
+                                minIndex = topicIndex
+                            }
+
+                            var threadPeer: Peer?
+                            for user in users {
+                                if user.peerId == peer.peerId {
+                                    threadPeer = TelegramUser(user: user)
+                                    break
+                                }
+                            }
+
+                            items.append(LoadMessageHistoryThreadsResult.Item(
+                                threadId: peer.peerId.toInt64(),
+                                data: data,
+                                topMessage: topMessage,
+                                unreadMentionsCount: 0,
+                                unreadReactionsCount: unreadReactionsCount,
+                                index: topicIndex,
+                                threadPeer: threadPeer
+                            ))
+                        }
+                    }
+
+                    var pinnedThreadIds: [Int64]?
+                    if offsetIndex == nil {
+                        pinnedThreadIds = pinnedIds
+                    }
+
+                    var nextIndex: StoredPeerThreadCombinedState.Index
+                    if dialogs.count != 0 {
+                        nextIndex = minIndex ?? StoredPeerThreadCombinedState.Index(timestamp: 0, threadId: 0, messageId: 1)
+                    } else {
+                        nextIndex = StoredPeerThreadCombinedState.Index(timestamp: 0, threadId: 0, messageId: 1)
+                    }
+                    if let offsetIndex = offsetIndex, nextIndex == offsetIndex {
+                        nextIndex = StoredPeerThreadCombinedState.Index(timestamp: 0, threadId: 0, messageId: 1)
+                    }
+
+                    let combinedState = PeerThreadCombinedState(validIndexBoundary: nextIndex)
+
+                    return .single(LoadMessageHistoryThreadsResult(
+                        peerId: peerId,
+                        items: items,
+                        messages: addedMessages,
+                        pinnedThreadIds: pinnedThreadIds,
+                        combinedState: combinedState,
+                        users: users,
+                        chats: chats
+                    ))
                 case .savedDialogsNotModified:
                     return .complete()
                 }
@@ -981,7 +1143,8 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
                 }
                 |> mapToSignal { result -> Signal<LoadMessageHistoryThreadsResult, LoadMessageHistoryThreadsError> in
                     switch result {
-                    case let .forumTopics(_, _, topics, messages, chats, users, pts):
+                    case let .forumTopics(forumTopicsData):
+                        let (topics, messages, chats, users, pts) = (forumTopicsData.topics, forumTopicsData.messages, forumTopicsData.chats, forumTopicsData.users, forumTopicsData.pts)
                         var items: [LoadMessageHistoryThreadsResult.Item] = []
                         var pinnedIds: [Int64] = []
                         
@@ -994,7 +1157,8 @@ func _internal_requestMessageHistoryThreads(accountPeerId: PeerId, postbox: Post
                         
                         for topic in topics {
                             switch topic {
-                            case let .forumTopic(flags, id, date, peer, title, iconColor, iconEmojiId, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadMentionsCount, unreadReactionsCount, fromId, notifySettings, draft):
+                            case let .forumTopic(forumTopicData):
+                                let (flags, id, date, peer, title, iconColor, iconEmojiId, topMessage, readInboxMaxId, readOutboxMaxId, unreadCount, unreadMentionsCount, unreadReactionsCount, fromId, notifySettings, draft) = (forumTopicData.flags, forumTopicData.id, forumTopicData.date, forumTopicData.peer, forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId, forumTopicData.topMessage, forumTopicData.readInboxMaxId, forumTopicData.readOutboxMaxId, forumTopicData.unreadCount, forumTopicData.unreadMentionsCount, forumTopicData.unreadReactionsCount, forumTopicData.fromId, forumTopicData.notifySettings, forumTopicData.draft)
                                 let _ = draft
                                 let _ = peer
                                 
@@ -1167,7 +1331,7 @@ func _internal_forumChannelTopicNotificationExceptions(account: Account, id: Eng
             return .single([])
         }
         
-        return account.network.request(Api.functions.account.getNotifyExceptions(flags: 1 << 0, peer: Api.InputNotifyPeer.inputNotifyPeer(peer: inputPeer)))
+        return account.network.request(Api.functions.account.getNotifyExceptions(flags: 1 << 0, peer: Api.InputNotifyPeer.inputNotifyPeer(.init(peer: inputPeer))))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.Updates?, NoError> in
             return .single(nil)
@@ -1180,9 +1344,11 @@ func _internal_forumChannelTopicNotificationExceptions(account: Account, id: Eng
             var list: [(threadId: Int64, notificationSettings: EnginePeer.NotificationSettings)] = []
             for update in result.allUpdates {
                 switch update {
-                case let .updateNotifySettings(peer, notifySettings):
+                case let .updateNotifySettings(updateNotifySettingsData):
+                    let (peer, notifySettings) = (updateNotifySettingsData.peer, updateNotifySettingsData.notifySettings)
                     switch peer {
-                    case let .notifyForumTopic(_, topMsgId):
+                    case let .notifyForumTopic(notifyForumTopicData):
+                        let topMsgId = notifyForumTopicData.topMsgId
                         list.append((Int64(topMsgId), EnginePeer.NotificationSettings(TelegramPeerNotificationSettings(apiSettings: notifySettings))))
                     default:
                         break
@@ -1199,10 +1365,12 @@ func _internal_forumChannelTopicNotificationExceptions(account: Account, id: Eng
                 var infoMapping: [Int64: EngineMessageHistoryThread.Info] = [:]
                 
                 switch result {
-                case let .forumTopics(_, _, topics, _, _, _, _):
+                case let .forumTopics(forumTopicsData):
+                    let topics = forumTopicsData.topics
                     for topic in topics {
                         switch topic {
-                        case let .forumTopic(_, id, _, _, title, iconColor, iconEmojiId, _, _, _, _, _, _, _, _, _):
+                        case let .forumTopic(forumTopicData):
+                            let (id, title, iconColor, iconEmojiId) = (forumTopicData.id, forumTopicData.title, forumTopicData.iconColor, forumTopicData.iconEmojiId)
                             infoMapping[Int64(id)] = EngineMessageHistoryThread.Info(title: title, icon: iconEmojiId, iconColor: iconColor)
                         case .forumTopicDeleted:
                             break

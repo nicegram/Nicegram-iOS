@@ -94,7 +94,7 @@ public final class ChatRecordingViewOnceButtonNode: HighlightTrackingButtonNode 
         
         let backgroundFrame = CGRect(origin: CGPoint(x: floorToScreenPixels(size.width / 2.0 - innerSize.width / 2.0), y: floorToScreenPixels(size.height / 2.0 - innerSize.height / 2.0)), size: innerSize)
         self.backgroundView.frame = backgroundFrame
-        self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: .immediate)
+        self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: .immediate)
 
         if let iconImage = self.iconView.image {
             let iconFrame = CGRect(origin: CGPoint(x: floorToScreenPixels(size.width / 2.0 - iconImage.size.width / 2.0), y: floorToScreenPixels(size.height / 2.0 - iconImage.size.height / 2.0)), size: iconImage.size)

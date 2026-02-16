@@ -68,7 +68,8 @@ public func _internal_managedUpdatedRecentPeers(accountPeerId: PeerId, postbox: 
     |> mapToSignal { result -> Signal<Void, NoError> in
         return postbox.transaction { transaction -> Void in
             switch result {
-                case let .topPeers(_, _, users):
+                case let .topPeers(topPeersData):
+                    let users = topPeersData.users
                     let parsedPeers = AccumulatedPeers(users: users)
                     updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
 
@@ -156,16 +157,19 @@ func _internal_managedRecentlyUsedInlineBots(postbox: Postbox, network: Network,
         switch result {
         case .topPeersDisabled:
             break
-        case let .topPeers(categories, _, users):
+        case let .topPeers(topPeersData):
+            let (categories, users) = (topPeersData.categories, topPeersData.users)
             let parsedPeers = AccumulatedPeers(users: users)
             
             var peersWithRating: [(PeerId, Double)] = []
             for category in categories {
                 switch category {
-                case let .topPeerCategoryPeers(_, _, topPeers):
+                case let .topPeerCategoryPeers(topPeerCategoryPeersData):
+                    let (_, _, topPeers) = (topPeerCategoryPeersData.category, topPeerCategoryPeersData.count, topPeerCategoryPeersData.peers)
                     for topPeer in topPeers {
                         switch topPeer {
-                        case let .topPeer(apiPeer, rating):
+                        case let .topPeer(topPeerData):
+                            let (apiPeer, rating) = (topPeerData.peer, topPeerData.rating)
                             peersWithRating.append((apiPeer.peerId, rating))
                         }
                     }
@@ -287,7 +291,8 @@ public func _internal_managedUpdatedRecentApps(accountPeerId: PeerId, postbox: P
     |> mapToSignal { result -> Signal<Void, NoError> in
         return postbox.transaction { transaction -> Void in
             switch result {
-            case let .topPeers(_, _, users):
+            case let .topPeers(topPeersData):
+                let users = topPeersData.users
                 let parsedPeers = AccumulatedPeers(users: users)
                 updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
                 

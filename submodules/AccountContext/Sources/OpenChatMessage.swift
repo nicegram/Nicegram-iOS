@@ -48,6 +48,7 @@ public final class OpenChatMessageParams {
     public let playlistLocation: PeerMessagesPlaylistLocation?
     public let gallerySource: GalleryControllerItemSource?
     public let centralItemUpdated: ((MessageId) -> Void)?
+    public let navigateToMessageContext: ((EngineMessage) -> Void)?
     public let getSourceRect: (() -> CGRect?)?
     public let blockInteraction: Promise<Bool>
     
@@ -81,6 +82,7 @@ public final class OpenChatMessageParams {
         playlistLocation: PeerMessagesPlaylistLocation? = nil,
         gallerySource: GalleryControllerItemSource? = nil,
         centralItemUpdated: ((MessageId) -> Void)? = nil,
+        navigateToMessageContext: ((EngineMessage) -> Void)? = nil,
         getSourceRect: (() -> CGRect?)? = nil
     ) {
         self.context = context
@@ -112,6 +114,7 @@ public final class OpenChatMessageParams {
         self.playlistLocation = playlistLocation
         self.gallerySource = gallerySource
         self.centralItemUpdated = centralItemUpdated
+        self.navigateToMessageContext = navigateToMessageContext
         self.getSourceRect = getSourceRect
         self.blockInteraction = Promise()
     }

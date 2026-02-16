@@ -36,6 +36,18 @@ private enum QuickReactionSetupControllerSection: Int32 {
     case items
 }
 
+public enum QuickReactionSetupEntryTag: ItemListItemTag, Equatable {
+    case choose
+    
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? QuickReactionSetupEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private enum QuickReactionSetupControllerEntry: ItemListNodeEntry {
     enum StableId: Hashable {
         case demoHeader
@@ -203,7 +215,8 @@ private func quickReactionSetupControllerEntries(
 
 public func quickReactionSetupController(
     context: AccountContext,
-    updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil
+    updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
+    focusOnItemTag: QuickReactionSetupEntryTag? = nil
 ) -> ViewController {
     let statePromise = ValuePromise(QuickReactionSetupControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: QuickReactionSetupControllerState())
@@ -370,6 +383,12 @@ public func quickReactionSetupController(
             return
         }
         controller.dismiss()
+    }
+    
+    if focusOnItemTag == .choose {
+        Queue.mainQueue().after(0.1) {
+            arguments.openQuickReaction()
+        }
     }
     
     return controller

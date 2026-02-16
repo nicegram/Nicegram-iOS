@@ -492,7 +492,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                 }
             })))
             
-            let contextController = ContextController(presentationData: presentationData, source: .reference(ContactContextReferenceContentSource(controller: self, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(ContactContextReferenceContentSource(controller: self, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
             self.present(contextController, in: .window(.root))
         }
         

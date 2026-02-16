@@ -134,7 +134,7 @@ private final class GiftsTabItemComponent: Component {
                             file = gift.file
                         case let .unique(gift):
                             for attribute in gift.attributes {
-                                if case let .model(_, fileValue, _) = attribute {
+                                if case let .model(_, fileValue, _, _) = attribute {
                                     file = fileValue
                                 }
                             }
@@ -275,7 +275,7 @@ final class PeerInfoPaneTabsContainerPaneNode: ASDisplayNode {
                         file = gift.file
                     case let .unique(gift):
                         for attribute in gift.attributes {
-                            if case let .model(_, fileValue, _) = attribute {
+                            if case let .model(_, fileValue, _, _) = attribute {
                                 file = fileValue
                             }
                         }
@@ -425,6 +425,7 @@ private final class PeerInfoPendingPane {
         sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?,
         initialStoryFolderId: Int64?,
         initialGiftCollectionId: Int64?,
+        switchToMediaTarget: PeerInfoSwitchToMediaTarget?,
         key: PeerInfoPaneKey,
         hasBecomeReady: @escaping (PeerInfoPaneKey) -> Void,
         parentController: ViewController?,
@@ -528,7 +529,7 @@ private final class PeerInfoPendingPane {
                 openAddStory()
             }
         case .media:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .photoOrVideo, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .photoOrVideo, captureProtected: captureProtected, initialFocusMessageIndex: switchToMediaTarget?.kind == .photoVideo ? switchToMediaTarget?.messageIndex : nil)
             paneNode = visualPaneNode
             visualPaneNode.openCurrentDate = {
                 openMediaCalendar()
@@ -537,15 +538,15 @@ private final class PeerInfoPendingPane {
                 paneDidScroll()
             }
         case .files:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .files, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .files, captureProtected: captureProtected, initialFocusMessageIndex: switchToMediaTarget?.kind == .photoVideo ? switchToMediaTarget?.messageIndex : nil)
             paneNode = visualPaneNode
         case .links:
             paneNode = PeerInfoListPaneNode(context: context, updatedPresentationData: updatedPresentationData, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, tagMask: .webPage)
         case .voice:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .voiceAndVideoMessages, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .voiceAndVideoMessages, captureProtected: captureProtected, initialFocusMessageIndex: nil)
             paneNode = visualPaneNode
         case .music:
-            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .music, captureProtected: captureProtected)
+            let visualPaneNode = PeerInfoVisualMediaPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .music, captureProtected: captureProtected, initialFocusMessageIndex: nil)
             paneNode = visualPaneNode
         case .gifs:
             let visualPaneNode = PeerInfoGifPaneNode(context: context, chatControllerInteraction: chatControllerInteraction, peerId: chatLocationPeerId, chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, contentType: .gifs)
@@ -669,6 +670,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     private var shouldFadeIn = false
     private var initialStoryFolderId: Int64?
     private var initialGiftCollectionId: Int64?
+    private var switchToMediaTarget: PeerInfoSwitchToMediaTarget?
     
     private var isDraggingTabs: Bool = false
     private var transitionFraction: CGFloat = 0.0
@@ -696,7 +698,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
     
     private let initialPaneKey: PeerInfoPaneKey?
     
-    init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: PeerId, chatLocation: ChatLocation, sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, isMediaOnly: Bool, initialPaneKey: PeerInfoPaneKey?, initialStoryFolderId: Int64?, initialGiftCollectionId: Int64?) {
+    init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?, peerId: PeerId, chatLocation: ChatLocation, sharedMediaFromForumTopic: (EnginePeer.Id, Int64)?, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, isMediaOnly: Bool, initialPaneKey: PeerInfoPaneKey?, initialStoryFolderId: Int64?, initialGiftCollectionId: Int64?, switchToMediaTarget: PeerInfoSwitchToMediaTarget?) {
         // Nicegram NftSticker
         self.nftsViewModel = UserNftsViewModel(userId: .init(peerId))
         //
@@ -710,6 +712,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
         self.initialPaneKey = initialPaneKey
         self.initialStoryFolderId = initialStoryFolderId
         self.initialGiftCollectionId = initialGiftCollectionId
+        self.switchToMediaTarget = switchToMediaTarget
         
         self.tabsBackgroundContainer = GlassBackgroundContainerView()
         self.tabsBackgroundView = GlassBackgroundView()
@@ -945,7 +948,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
             }
         })))
         
-        let contextController = ContextController(
+        let contextController = makeContextController(
             presentationData: params.presentationData,
             source: .reference(TabsReferenceContentSource(sourceView: sourceView)),
             items: .single(ContextController.Items(content: .list(items))),
@@ -1060,6 +1063,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                 var leftScope = false
                 var initialStoryFolderId: Int64?
                 var initialGiftCollectionId: Int64?
+                var switchToMediaTarget: PeerInfoSwitchToMediaTarget?
                 if case .stories = key {
                     if let initialStoryFolderIdValue = self.initialStoryFolderId {
                         self.initialStoryFolderId = nil
@@ -1070,6 +1074,18 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                     if let initialGiftCollectionIdValue = self.initialGiftCollectionId {
                         self.initialGiftCollectionId = nil
                         initialGiftCollectionId = initialGiftCollectionIdValue
+                    }
+                }
+                if case .media = key {
+                    if let switchToMediaTargetValue = self.switchToMediaTarget, case .photoVideo = switchToMediaTargetValue.kind {
+                        self.switchToMediaTarget = nil
+                        switchToMediaTarget = switchToMediaTargetValue
+                    }
+                }
+                if case .files = key {
+                    if let switchToMediaTargetValue = self.switchToMediaTarget, case .file = switchToMediaTargetValue.kind {
+                        self.switchToMediaTarget = nil
+                        switchToMediaTarget = switchToMediaTargetValue
                     }
                 }
                 let pane = PeerInfoPendingPane(
@@ -1095,6 +1111,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
                     sharedMediaFromForumTopic: self.sharedMediaFromForumTopic,
                     initialStoryFolderId: initialStoryFolderId,
                     initialGiftCollectionId: initialGiftCollectionId,
+                    switchToMediaTarget: switchToMediaTarget,
                     key: key,
                     hasBecomeReady: { [weak self] key in
                         let apply: () -> Void = {
@@ -1423,7 +1440,7 @@ final class PeerInfoPaneContainerNode: ASDisplayNode, ASGestureRecognizerDelegat
         self.tabsBackgroundContainer.update(size: tabContainerFrame.size, isDark: presentationData.theme.overallDarkAppearance, transition: ComponentTransition(transition))
         
         transition.updateFrame(view: self.tabsBackgroundView, frame: CGRect(origin: CGPoint(), size: tabContainerFrame.size))
-        self.tabsBackgroundView.update(size: tabContainerFrame.size, cornerRadius: tabContainerFrame.height * 0.5, isDark: presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: presentationData.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), transition: ComponentTransition(transition))
+        self.tabsBackgroundView.update(size: tabContainerFrame.size, cornerRadius: tabContainerFrame.height * 0.5, isDark: presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: ComponentTransition(transition))
         
         ComponentTransition(transition).setAlpha(view: self.tabsBackgroundContainer, alpha: tabsAlpha)
         

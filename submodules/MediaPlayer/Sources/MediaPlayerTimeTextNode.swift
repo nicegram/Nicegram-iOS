@@ -171,6 +171,31 @@ public final class MediaPlayerTimeTextNode: ASDisplayNode {
         self.updateTimer = nil
     }
     
+    public static func timestampString(for status: MediaPlayerStatus, mode: MediaPlayerTimeTextNodeMode) -> String? {
+        if Double(0.0).isLess(than: status.duration) {
+            let timestamp = max(0.0, status.timestamp)
+            let duration = status.duration
+            let timestampSeconds: Double
+            if !status.generationTimestamp.isZero {
+                timestampSeconds = timestamp + (CACurrentMediaTime() - status.generationTimestamp)
+            } else {
+                timestampSeconds = timestamp
+            }
+            switch mode {
+            case .normal:
+                let timestamp = Int32(truncatingIfNeeded: Int64(floor(timestampSeconds)))
+                let state = MediaPlayerTimeTextNodeState(hours: timestamp / (60 * 60), minutes: timestamp % (60 * 60) / 60, seconds: timestamp % 60)
+                return state.string
+            case .reversed:
+                let timestamp = abs(Int32(Int32(truncatingIfNeeded: Int64(floor(timestampSeconds - duration)))))
+                let state = MediaPlayerTimeTextNodeState(hours: timestamp / (60 * 60), minutes: timestamp % (60 * 60) / 60, seconds: timestamp % 60)
+                return state.string
+            }
+        } else {
+            return nil
+        }
+    }
+    
     func updateTimestamp() {
         if ((self.statusValue?.duration ?? 0.0) < 0.1) && self.state.seconds != nil && self.keepPreviousValueOnEmptyState {
             return
@@ -216,14 +241,6 @@ public final class MediaPlayerTimeTextNode: ASDisplayNode {
         } else {
             self.state = MediaPlayerTimeTextNodeState()
         }
-    }
-    
-    private let digitsSet = CharacterSet(charactersIn: "0123456789")
-    private func widthForString(_ string: String) -> CGFloat {
-        let convertedString = string.components(separatedBy: digitsSet).joined(separator: "8")
-        let text = NSAttributedString(string: convertedString, font: textFont, textColor: .black)
-        let size = text.boundingRect(with: CGSize(width: 200.0, height: 100.0), options: NSStringDrawingOptions.usesLineFragmentOrigin, context: nil).size
-        return size.width
     }
     
     override public func drawParameters(forAsyncLayer layer: _ASDisplayLayer) -> NSObjectProtocol? {

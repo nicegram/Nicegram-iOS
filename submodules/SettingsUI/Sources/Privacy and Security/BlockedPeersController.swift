@@ -203,11 +203,17 @@ private func blockedPeersControllerEntries(presentationData: PresentationData, s
     return entries
 }
 
-public func blockedPeersController(context: AccountContext, blockedPeersContext: BlockedPeersContext) -> ViewController {
+public func blockedPeersController(context: AccountContext, blockedPeersContext: BlockedPeersContext, forceEdit: Bool = false) -> ViewController {
     let statePromise = ValuePromise(BlockedPeersControllerState(), ignoreRepeated: true)
     let stateValue = Atomic(value: BlockedPeersControllerState())
     let updateState: ((BlockedPeersControllerState) -> BlockedPeersControllerState) -> Void = { f in
         statePromise.set(stateValue.modify { f($0) })
+    }
+    
+    if forceEdit {
+        updateState {
+            $0.withUpdatedEditing(true)
+        }
     }
     
     var pushControllerImpl: ((ViewController) -> Void)?

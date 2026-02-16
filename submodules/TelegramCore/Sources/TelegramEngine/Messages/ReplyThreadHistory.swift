@@ -156,7 +156,8 @@ private class ReplyThreadHistoryContextImpl {
             |> mapToSignal { discussionMessage -> Signal<DiscussionMessage, FetchChannelReplyThreadMessageError> in
                 return account.postbox.transaction { transaction -> Signal<DiscussionMessage, FetchChannelReplyThreadMessageError> in
                     switch discussionMessage {
-                    case let .discussionMessage(_, messages, maxId, readInboxMaxId, readOutboxMaxId, unreadCount, chats, users):
+                    case let .discussionMessage(discussionMessageData):
+                        let (messages, maxId, readInboxMaxId, readOutboxMaxId, unreadCount, chats, users) = (discussionMessageData.messages, discussionMessageData.maxId, discussionMessageData.readInboxMaxId, discussionMessageData.readOutboxMaxId, discussionMessageData.unreadCount, discussionMessageData.chats, discussionMessageData.users)
                         let parsedMessages = messages.compactMap { message -> StoreMessage? in
                             StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForumOrMonoForum)
                         }
@@ -476,7 +477,8 @@ private class ReplyThreadHistoryContextImpl {
                     let validateSignal = strongSelf.account.network.request(Api.functions.messages.getDiscussionMessage(peer: inputPeer, msgId: Int32(clamping: threadId)))
                     |> map { result -> (MessageId?, Int) in
                         switch result {
-                        case let .discussionMessage(_, _, _, readInboxMaxId, _, unreadCount, _, _):
+                        case let .discussionMessage(discussionMessageData):
+                            let (readInboxMaxId, unreadCount) = (discussionMessageData.readInboxMaxId, discussionMessageData.unreadCount)
                             return (readInboxMaxId.flatMap({ MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: $0) }), Int(unreadCount))
                         }
                     }
@@ -670,7 +672,8 @@ func _internal_fetchChannelReplyThreadMessage(account: Account, messageId: Messa
             }
             return account.postbox.transaction { transaction -> DiscussionMessage? in
                 switch discussionMessage {
-                case let .discussionMessage(_, messages, maxId, readInboxMaxId, readOutboxMaxId, unreadCount, chats, users):
+                case let .discussionMessage(discussionMessageData):
+                    let (messages, maxId, readInboxMaxId, readOutboxMaxId, unreadCount, chats, users) = (discussionMessageData.messages, discussionMessageData.maxId, discussionMessageData.readInboxMaxId, discussionMessageData.readOutboxMaxId, discussionMessageData.unreadCount, discussionMessageData.chats, discussionMessageData.users)
                     let parsedMessages = messages.compactMap { message -> StoreMessage? in
                         StoreMessage(apiMessage: message, accountPeerId: accountPeerId, peerIsForum: peer.isForumOrMonoForum)
                     }

@@ -36,21 +36,27 @@ public final class HeaderPanelContainerComponent: Component {
     }
     
     public let theme: PresentationTheme
+    public let preferClearGlass: Bool
     public let tabs: AnyComponent<Empty>?
     public let panels: [Panel]
     
     public init(
         theme: PresentationTheme,
+        preferClearGlass: Bool = false,
         tabs: AnyComponent<Empty>?,
         panels: [Panel]
     ) {
         self.theme = theme
+        self.preferClearGlass = preferClearGlass
         self.tabs = tabs
         self.panels = panels
     }
     
     public static func ==(lhs: HeaderPanelContainerComponent, rhs: HeaderPanelContainerComponent) -> Bool {
         if lhs.theme !== rhs.theme {
+            return false
+        }
+        if lhs.preferClearGlass != rhs.preferClearGlass {
             return false
         }
         if lhs.tabs != rhs.tabs {
@@ -246,7 +252,7 @@ public final class HeaderPanelContainerComponent: Component {
             
             let backgroundFrame = CGRect(origin: CGPoint(x: sideInset, y: 0.0), size: CGSize(width: size.width - sideInset * 2.0, height: backgroundSize.height))
             transition.setFrame(view: self.backgroundView, frame: backgroundFrame)
-            self.backgroundView.update(size: backgroundFrame.size, cornerRadius: 20.0, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: transition)
+            self.backgroundView.update(size: backgroundFrame.size, cornerRadius: 20.0, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: component.preferClearGlass ? .clear : .panel), isInteractive: true, transition: transition)
             
             transition.setAlpha(view: self.backgroundContainer, alpha: (component.tabs != nil || !component.panels.isEmpty) ? 1.0 : 0.0)
             

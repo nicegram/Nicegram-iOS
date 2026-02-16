@@ -1,7 +1,8 @@
 import Foundation
 import Postbox
 import SwiftSignalKit
-
+import TelegramApi
+import MtProtoKit
 
 func _internal_removePeerChat(account: Account, peerId: PeerId, reportChatSpam: Bool, deleteGloballyIfPossible: Bool = false) -> Signal<Void, NoError> {
     return account.postbox.transaction { transaction -> Void in
@@ -77,5 +78,24 @@ func _internal_removePeerChat(account: Account, transaction: Transaction, mediaB
     
     if peerId.namespace == Namespaces.Peer.CloudChannel {
         transaction.clearItemCacheCollection(collectionId: Namespaces.CachedItemCollection.cachedGroupCallDisplayAsPeers)
+    }
+}
+
+func _internal_getFutureCreatorAfterLeave(account: Account, peerId: EnginePeer.Id) -> Signal<EnginePeer?, NoError> {
+    return account.postbox.transaction { transaction in
+        return transaction.getPeer(peerId).flatMap(apiInputChannel)
+    }
+    |> mapToSignal { channel in
+        guard let channel else {
+            return .single(nil)
+        }
+        return account.network.request(Api.functions.channels.getFutureCreatorAfterLeave(channel: channel))
+        |> map(Optional.init)
+        |> `catch` { _ in
+            return .single(nil)
+        }
+        |> map { user in
+            return user.flatMap { TelegramUser(user: $0) }.map(EnginePeer.init)
+        }
     }
 }

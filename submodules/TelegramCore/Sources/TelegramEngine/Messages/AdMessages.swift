@@ -510,7 +510,8 @@ private class AdMessagesHistoryContextImpl {
 
                 return account.postbox.transaction { transaction -> (interPostInterval: Int32?, startDelay: Int32?, betweenDelay: Int32?, messages: [Message]) in
                     switch result {
-                    case let .sponsoredMessages(_, postsBetween, startDelay, betweenDelay, messages, chats, users):
+                    case let .sponsoredMessages(sponsoredMessagesData):
+                        let (postsBetween, startDelay, betweenDelay, messages, chats, users) = (sponsoredMessagesData.postsBetween, sponsoredMessagesData.startDelay, sponsoredMessagesData.betweenDelay, sponsoredMessagesData.messages, sponsoredMessagesData.chats, sponsoredMessagesData.users)
                         let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                         updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
 
@@ -518,7 +519,8 @@ private class AdMessagesHistoryContextImpl {
 
                         for message in messages {
                             switch message {
-                            case let .sponsoredMessage(flags, randomId, url, title, message, entities, photo, media, color, buttonText, sponsorInfo, additionalInfo, minDisplayDuration, maxDisplayDuration):
+                            case let .sponsoredMessage(sponsoredMessageData):
+                                let (flags, randomId, url, title, message, entities, apiPhoto, media, color, buttonText, sponsorInfo, additionalInfo, minDisplayDuration, maxDisplayDuration) = (sponsoredMessageData.flags, sponsoredMessageData.randomId, sponsoredMessageData.url, sponsoredMessageData.title, sponsoredMessageData.message, sponsoredMessageData.entities, sponsoredMessageData.photo, sponsoredMessageData.media, sponsoredMessageData.color, sponsoredMessageData.buttonText, sponsoredMessageData.sponsorInfo, sponsoredMessageData.additionalInfo, sponsoredMessageData.minDisplayDuration, sponsoredMessageData.maxDisplayDuration)
                                 var parsedEntities: [MessageTextEntity] = []
                                 if let entities = entities {
                                     parsedEntities = messageTextEntitiesFromApiEntities(entities)
@@ -531,7 +533,8 @@ private class AdMessagesHistoryContextImpl {
                                 var backgroundEmojiId: Int64?
                                 if let color {
                                     switch color {
-                                    case let .peerColor(_, color, backgroundEmojiIdValue):
+                                    case let .peerColor(peerColorData):
+                                        let (color, backgroundEmojiIdValue) = (peerColorData.color, peerColorData.backgroundEmojiId)
                                         nameColorIndex = color
                                         backgroundEmojiId = backgroundEmojiIdValue
                                     default:
@@ -539,7 +542,7 @@ private class AdMessagesHistoryContextImpl {
                                     }
                                 }
                                 
-                                let photo = photo.flatMap { telegramMediaImageFromApiPhoto($0) }
+                                let photo = apiPhoto.flatMap { telegramMediaImageFromApiPhoto($0) }
                                 let contentMedia = textMediaAndExpirationTimerFromApiMedia(media, peerId).media
                                 
                                 parsedMessages.append(CachedMessage(

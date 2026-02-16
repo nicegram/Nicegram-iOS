@@ -172,7 +172,7 @@ public class InviteContactsController: ViewController, MFMessageComposeViewContr
             self?.updateRightBarButtonItem()
         }
         
-        self.contactsNode.listNode.visibleContentOffsetChanged = { [weak self] offset in
+        self.contactsNode.listNode.visibleContentOffsetChanged = { [weak self] offset, _ in
             if let strongSelf = self, let searchContentNode = strongSelf.searchContentNode {
                 searchContentNode.updateListVisibleContentOffset(offset)
             }

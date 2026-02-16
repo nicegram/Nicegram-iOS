@@ -32,7 +32,8 @@ func _internal_getPaidMessagesRevenue(account: Account, scopePeerId: PeerId, pee
                 return nil
             }
             switch result {
-            case let .paidMessagesRevenue(amount):
+            case let .paidMessagesRevenue(paidMessagesRevenueData):
+                let amount = paidMessagesRevenueData.starsAmount
                 return StarsAmount(value: amount, nanos: 0)
             }
         }

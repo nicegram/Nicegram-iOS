@@ -443,7 +443,7 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
             let dismissPromise = ValuePromise<Bool>(false)
             let source = PeerInfoMemberExtractedContentSource(sourceNode: node, keepInPlace: false, blurBackground: true, centerVertically: false, shouldBeDismissed: dismissPromise.get())
             
-            let contextController = ContextController(presentationData: presentationData, source: .extracted(source), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: .extracted(source), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
             self.parentController?.presentInGlobalOverlay(contextController)
         })
         self.enclosingPeer = enclosingPeer

@@ -380,7 +380,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
             let verticalPadding: CGFloat = 8.0
             let pageBackgroundFrame = CGRect(origin: CGPoint(x: insets.left + 16.0, y: insets.top + 16.0), size: CGSize(width: horizontalPadding * 2.0 + pageIndicatorSize.width, height: verticalPadding * 2.0 + pageIndicatorSize.height))
             
-            self.pageIndicatorBackground.update(size: pageBackgroundFrame.size, cornerRadius: pageBackgroundFrame.size.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.presentationData.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), transition: transition)
+            self.pageIndicatorBackground.update(size: pageBackgroundFrame.size, cornerRadius: pageBackgroundFrame.size.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: transition)
             self.pageIndicatorBackground.bounds = CGRect(origin: .zero, size: pageBackgroundFrame.size)
             transition.setPosition(view: self.pageIndicatorBackground, position: pageBackgroundFrame.center)
             view.frame = CGRect(origin: CGPoint(x: horizontalPadding, y: verticalPadding), size: pageIndicatorSize)

@@ -124,7 +124,7 @@ private func synchronizeSavedGifs(transaction: Transaction, accountPeerId: PeerI
             }
             
             let saveGif: (Data) -> Signal<Api.Bool, SaveGifError> = { fileReference in
-                return network.request(Api.functions.messages.saveGif(id: .inputDocument(id: id, accessHash: accessHash, fileReference: Buffer(data: fileReference)), unsave: .boolFalse))
+                return network.request(Api.functions.messages.saveGif(id: .inputDocument(.init(id: id, accessHash: accessHash, fileReference: Buffer(data: fileReference))), unsave: .boolFalse))
                 |> mapError { error -> SaveGifError in
                     if error.errorDescription.hasPrefix("FILEREF_INVALID") || error.errorDescription.hasPrefix("FILE_REFERENCE_") {
                         return .invalidReference
@@ -166,7 +166,7 @@ private func synchronizeSavedGifs(transaction: Transaction, accountPeerId: PeerI
                 return .complete()
             }
         case let .remove(id, accessHash):
-            return network.request(Api.functions.messages.saveGif(id: .inputDocument(id: id, accessHash: accessHash, fileReference: Buffer()), unsave: .boolTrue))
+            return network.request(Api.functions.messages.saveGif(id: .inputDocument(.init(id: id, accessHash: accessHash, fileReference: Buffer())), unsave: .boolTrue))
             |> `catch` { _ -> Signal<Api.Bool, NoError> in
                 return .single(.boolFalse)
             }

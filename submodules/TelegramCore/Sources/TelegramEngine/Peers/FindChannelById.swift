@@ -4,7 +4,7 @@ import Postbox
 import TelegramApi
 
 func _internal_findChannelById(accountPeerId: PeerId, postbox: Postbox, network: Network, channelId: Int64) -> Signal<Peer?, NoError> {
-    return network.request(Api.functions.channels.getChannels(id: [.inputChannel(channelId: channelId, accessHash: 0)]))
+    return network.request(Api.functions.channels.getChannels(id: [.inputChannel(.init(channelId: channelId, accessHash: 0))]))
     |> map(Optional.init)
     |> `catch` { _ -> Signal<Api.messages.Chats?, NoError> in
         return .single(nil)
@@ -16,9 +16,11 @@ func _internal_findChannelById(accountPeerId: PeerId, postbox: Postbox, network:
             }
             let chats: [Api.Chat]
             switch result {
-            case let .chats(apiChats):
+            case let .chats(chatsData):
+                let apiChats = chatsData.chats
                 chats = apiChats
-            case let .chatsSlice(_, apiChats):
+            case let .chatsSlice(chatsSliceData):
+                let (_, apiChats) = (chatsSliceData.count, chatsSliceData.chats)
                 chats = apiChats
             }
             guard let id = chats.first?.peerId else {

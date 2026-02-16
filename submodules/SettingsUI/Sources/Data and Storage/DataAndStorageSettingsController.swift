@@ -90,6 +90,7 @@ public enum DataAndStorageEntryTag: ItemListItemTag, Equatable {
     case raiseToListen
     case autoSave(AutomaticSaveIncomingPeerType)
     case sensitiveContent
+    case useLessVoiceData
     
     public func isEqual(to other: ItemListItemTag) -> Bool {
         if let other = other as? DataAndStorageEntryTag, self == other {
@@ -409,7 +410,7 @@ private enum DataAndStorageEntry: ItemListNodeEntry {
             case let .useLessVoiceData(_, text, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleVoiceUseLessData(value)
-                }, tag: nil)
+                }, tag: DataAndStorageEntryTag.useLessVoiceData)
             case let .useLessVoiceDataInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .otherHeader(_, text):
@@ -1012,6 +1013,20 @@ public func dataAndStorageController(context: AccountContext, focusOnItemTag: Da
             update()
         })
     }
-
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
+    }
+    
     return controller
 }

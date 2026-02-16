@@ -220,10 +220,10 @@ private final class StoryStealthModeSheetContentComponent: Component {
                 let cancelButtonSize = cancelButton.update(
                     transition: transition,
                     component: AnyComponent(GlassBarButtonComponent(
-                        size: CGSize(width: 40.0, height: 40.0),
-                        backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                        size: CGSize(width: 44.0, height: 44.0),
+                        backgroundColor: nil,
                         isDark: environment.theme.overallDarkAppearance,
-                        state: .generic,
+                        state: .glass,
                         component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
                             BundleIconComponent(
                                 name: "Navigation/Close",
@@ -235,7 +235,7 @@ private final class StoryStealthModeSheetContentComponent: Component {
                         }
                     )),
                     environment: {},
-                    containerSize: CGSize(width: 40.0, height: 40.0)
+                    containerSize: CGSize(width: 44.0, height: 44.0)
                 )
                 if let cancelButtonView = cancelButton.view {
                     if cancelButtonView.superview == nil {
@@ -403,6 +403,8 @@ private final class StoryStealthModeSheetScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,

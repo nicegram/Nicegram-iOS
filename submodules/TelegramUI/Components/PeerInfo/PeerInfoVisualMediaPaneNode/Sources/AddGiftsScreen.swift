@@ -429,7 +429,7 @@ public final class AddGiftsScreen: ViewControllerComponentContainer {
             return ContextController.Items(content: .list(items))
         }
         
-        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: items, gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: self, sourceView: sourceView)), items: items, gesture: gesture)
         self.presentInGlobalOverlay(contextController)
     }
     

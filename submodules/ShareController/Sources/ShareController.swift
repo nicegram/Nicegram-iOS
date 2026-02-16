@@ -1,6 +1,3 @@
-// Nicegram Imports
-import NGWebUtils
-//
 import Foundation
 import UIKit
 import Display
@@ -1123,10 +1120,6 @@ public final class ShareController: ViewController {
                             var restrictedText: String?
                             for attribute in message.attributes {
                                 if let attribute = attribute as? RestrictedContentMessageAttribute {
-                                    //  MARK: - Nicegram (allow saving restricted content)
-                                    let isAllowedShare = isAllowedShare(restrictionReason: attribute.platformText(platform: "ios", contentSettings: strongSelf.currentContext.contentSettings, extractReason: true), contentSettings: strongSelf.currentContext.contentSettings)
-                                    if isAllowedShare { continue }
-                                    
                                     restrictedText = attribute.platformText(platform: "ios", contentSettings: strongSelf.currentContext.contentSettings) ?? ""
                                 }
                             }

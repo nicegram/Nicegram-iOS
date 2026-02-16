@@ -835,6 +835,17 @@ private func makeLayerSubtreeSnapshotAsView(layer: CALayer) -> UIView? {
 }
 
 
+public func findParentScrollView(view: UIView?) -> UIScrollView? {
+    if let view = view {
+        if let view = view as? UIScrollView {
+            return view
+        }
+        return findParentScrollView(view: view.superview)
+    } else {
+        return nil
+    }
+}
+
 public extension UIView {
     func snapshotContentTree(unhide: Bool = false, keepPortals: Bool = false, keepTransform: Bool = false) -> UIView? {
         let wasHidden = self.isHidden
@@ -879,6 +890,10 @@ public extension CALayer {
 public extension CALayer {
     static func blur() -> NSObject? {
         return makeBlurFilter()
+    }
+    
+    static func variableBlur() -> NSObject? {
+        return makeVariableBlurFilter()
     }
     
     static func luminanceToAlpha() -> NSObject? {

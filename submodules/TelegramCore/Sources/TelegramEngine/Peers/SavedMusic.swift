@@ -54,7 +54,7 @@ func _internal_getSavedMusicById(postbox: Postbox, network: Network, peer: PeerR
     guard let inputUser, let resource = file.resource as? CloudDocumentMediaResource else {
         return .single(nil)
     }
-    return network.request(Api.functions.users.getSavedMusicByID(id: inputUser, documents: [.inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))]))
+    return network.request(Api.functions.users.getSavedMusicByID(id: inputUser, documents: [.inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)))]))
     |> map(Optional.init)
     |> `catch` { _ -> Signal<Api.users.SavedMusic?, NoError> in
         return .single(nil)
@@ -62,8 +62,8 @@ func _internal_getSavedMusicById(postbox: Postbox, network: Network, peer: PeerR
     |> map { result -> TelegramMediaFile? in
         if let result {
             switch result {
-            case let .savedMusic(_, documents):
-                if let file = documents.first.flatMap({ telegramMediaFileFromApiDocument($0, altDocuments: nil) }) {
+            case let .savedMusic(savedMusicData):
+                if let file = savedMusicData.documents.first.flatMap({ telegramMediaFileFromApiDocument($0, altDocuments: nil) }) {
                     return file
                 }
             default:
@@ -104,7 +104,8 @@ func _internal_keepSavedMusicIdsUpdated(postbox: Postbox, network: Network, acco
             }
             return postbox.transaction { transaction in
                 switch result {
-                case let .savedMusicIds(ids):
+                case let .savedMusicIds(savedMusicIdsData):
+                    let ids = savedMusicIdsData.ids
                     let savedMusicIdsList = SavedMusicIdsList(items: ids)
                     transaction.setPreferencesEntry(key: PreferencesKeys.savedMusicIds(), value: PreferencesEntry(savedMusicIdsList))
                 case .savedMusicIdsNotModified:
@@ -188,9 +189,9 @@ func _internal_addSavedMusic(account: Account, file: FileMediaReference, afterFi
             var afterId: Api.InputDocument?
             if let afterFile, let resource = afterFile.media.resource as? CloudDocumentMediaResource {
                 flags = 1 << 1
-                afterId = .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))
+                afterId = .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)))
             }
-            return account.network.request(Api.functions.account.saveMusic(flags: flags, id: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), afterId: afterId))
+            return account.network.request(Api.functions.account.saveMusic(flags: flags, id: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), afterId: afterId))
         })
         |> mapError { _ -> AddSavedMusicError in
             return .generic
@@ -233,7 +234,7 @@ func _internal_removeSavedMusic(account: Account, file: FileMediaReference) -> S
         }
         let flags: Int32 = 1 << 0
         return revalidatedMusic(account: account, file: file, signal: { resource in
-            return account.network.request(Api.functions.account.saveMusic(flags: flags, id: .inputDocument(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference)), afterId: nil))
+            return account.network.request(Api.functions.account.saveMusic(flags: flags, id: .inputDocument(.init(id: resource.fileId, accessHash: resource.accessHash, fileReference: Buffer(data: resource.fileReference))), afterId: nil))
         })
         |> `catch` { _ -> Signal<Api.Bool, NoError> in
             return .complete()
@@ -365,10 +366,10 @@ public final class ProfileSavedMusicContext {
             return network.request(Api.functions.users.getSavedMusic(id: inputUser, offset: offset, limit: 32, hash: 0))
             |> map { result -> ([TelegramMediaFile], Int32) in
                 switch result {
-                case let .savedMusic(count, documents):
-                    return (documents.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: nil) }, count)
-                case let .savedMusicNotModified(count):
-                    return ([], count)
+                case let .savedMusic(savedMusicData):
+                    return (savedMusicData.documents.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: nil) }, savedMusicData.count)
+                case let .savedMusicNotModified(savedMusicNotModifiedData):
+                    return ([], savedMusicNotModifiedData.count)
                 }
             }
         }

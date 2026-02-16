@@ -333,7 +333,7 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                       "G 6\n"
                       "S \"\\x03\\x04\\x03\\x03\\x03\\x02\\x03\\x01\\x00\\x1b\\x00\\x03\\x02\\x00\\x01\"\n"
                       "G 3\n"
-                      "S \"\\x00\\x01\\x00\\x00\\x15\"\n";
+                      "S \"\\x00\\x01\\x00\"\n";
 
     uint8_t grease[8];
     if (!MTGenerateGreaseValues(grease)) {
@@ -344,9 +344,6 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
     NSMutableArray<NSNumber *> *lengthStack = [[NSMutableArray alloc] init];
 
     HelloParseState state = { .position = 0 };
-
-    NSUInteger trailingZeroStart = 0;
-    NSUInteger trailingZeroRemaining = 0;
 
     while (true) {
         HelloGenerationCommand command = parseCommand(code, &state);
@@ -364,25 +361,6 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                     return nil;
                 }
                 [resultData appendData:data];
-
-                if (data.length > 0) {
-                    bool allZero = true;
-                    const uint8_t *bytes = (const uint8_t *)data.bytes;
-                    for (NSUInteger i = 0; i < data.length; i++) {
-                        if (bytes[i] != 0) {
-                            allZero = false;
-                            break;
-                        }
-                    }
-                    if (allZero) {
-                        trailingZeroStart = resultData.length - data.length;
-                        trailingZeroRemaining = data.length;
-                    } else {
-                        trailingZeroRemaining = 0;
-                    }
-                } else {
-                    trailingZeroRemaining = 0;
-                }
                 break;
             }
             case HelloGenerationCommandZero: {
@@ -398,12 +376,6 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                 }
                 NSMutableData *zeros = [[NSMutableData alloc] initWithLength:(NSUInteger)zeroLength];
                 [resultData appendData:zeros];
-                if (zeroLength > 0) {
-                    trailingZeroStart = resultData.length - zeros.length;
-                    trailingZeroRemaining = zeros.length;
-                } else {
-                    trailingZeroRemaining = 0;
-                }
                 break;
             }
             case HelloGenerationCommandRandom: {
@@ -422,7 +394,6 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                     return nil;
                 }
                 [resultData appendData:randomData];
-                trailingZeroRemaining = 0;
                 break;
             }
             case HelloGenerationCommandDomain: {
@@ -430,7 +401,6 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                 if (!parseEndlineOrEnd(code, &state)) {
                     return nil;
                 }
-                trailingZeroRemaining = 0;
                 break;
             }
             case HelloGenerationCommandGrease: {
@@ -447,7 +417,6 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                 uint8_t value = grease[greaseIndex];
                 [resultData appendBytes:&value length:1];
                 [resultData appendBytes:&value length:1];
-                trailingZeroRemaining = 0;
                 break;
             }
             case HelloGenerationCommandKey: {
@@ -457,24 +426,15 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                 NSMutableData *key = [[NSMutableData alloc] initWithLength:32];
                 generate_public_key((unsigned char *)key.mutableBytes, provider);
                 [resultData appendData:key];
-                trailingZeroRemaining = 0;
                 break;
             }
             case HelloGenerationCommandPushLengthPosition: {
                 if (!parseEndlineOrEnd(code, &state)) {
                     return nil;
                 }
-                NSUInteger lengthPosition = 0;
-                if (trailingZeroRemaining >= 2) {
-                    lengthPosition = trailingZeroStart + trailingZeroRemaining - 2;
-                    trailingZeroRemaining -= 2;
-                } else {
-                    lengthPosition = resultData.length;
-                    uint8_t zeroBytes[2] = { 0, 0 };
-                    [resultData appendBytes:zeroBytes length:2];
-                    trailingZeroStart = lengthPosition;
-                    trailingZeroRemaining = 0;
-                }
+                NSUInteger lengthPosition = resultData.length;
+                uint8_t zeroBytes[2] = { 0, 0 };
+                [resultData appendBytes:zeroBytes length:2];
                 [lengthStack addObject:@(lengthPosition)];
                 break;
             }
@@ -499,34 +459,26 @@ static NSMutableData *executeGenerationCode(id<EncryptionProvider> provider, NSD
                 return nil;
             }
         }
-
-        if (trailingZeroRemaining == 0) {
-            trailingZeroStart = 0;
-        }
     }
 
     if (lengthStack.count != 0) {
         return nil;
     }
 
-    if (resultData.length > 517) {
-        return nil;
-    }
+    NSUInteger baseLength = resultData.length;
+    if (baseLength < 513) {
+        uint8_t paddingType[2] = { 0x00, 0x15 };
+        [resultData appendBytes:paddingType length:2];
 
-    NSUInteger paddingLengthPosition = resultData.length;
-    uint8_t paddingPlaceholder[2] = { 0, 0 };
-    [resultData appendBytes:paddingPlaceholder length:2];
-    while (resultData.length < 517) {
-        uint8_t zero = 0;
-        [resultData appendBytes:&zero length:1];
-    }
-    if (resultData.length != 517) {
-        return nil;
-    }
+        uint16_t paddingLength = (uint16_t)(513 - baseLength);
+        uint8_t paddingLengthBytes[2] = { (uint8_t)((paddingLength >> 8) & 0xff), (uint8_t)(paddingLength & 0xff) };
+        [resultData appendBytes:paddingLengthBytes length:2];
 
-    uint16_t paddingLength = (uint16_t)(resultData.length - paddingLengthPosition - 2);
-    ((uint8_t *)resultData.mutableBytes)[paddingLengthPosition] = (uint8_t)((paddingLength >> 8) & 0xff);
-    ((uint8_t *)resultData.mutableBytes)[paddingLengthPosition + 1] = (uint8_t)(paddingLength & 0xff);
+        if (paddingLength > 0) {
+            NSMutableData *zeros = [[NSMutableData alloc] initWithLength:paddingLength];
+            [resultData appendData:zeros];
+        }
+    }
 
     return resultData;
 }
@@ -1050,7 +1002,7 @@ struct ctr_state {
                         if (strongSelf->_mtpIp != nil && [strongSelf->_mtpSecret isKindOfClass:[MTProxySecretType2 class]]) {
                             MTProxySecretType2 *secret = (MTProxySecretType2 *)(strongSelf->_mtpSecret);
                             NSMutableData *helloData = MTCreateSafariClientHello(secret.domain, strongSelf->_encryptionProvider);
-                            if (helloData == nil || helloData.length != 517) {
+                            if (helloData == nil || helloData.length < 513) {
                                 [strongSelf closeAndNotifyWithError:true];
                                 return;
                             }

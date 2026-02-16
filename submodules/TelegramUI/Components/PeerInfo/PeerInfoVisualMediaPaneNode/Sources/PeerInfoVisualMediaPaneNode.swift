@@ -1113,6 +1113,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
     private let directMediaImageCache: DirectMediaImageCache
     private var items: SparseItemGrid.Items?
     private var didUpdateItemsOnce: Bool = false
+    private var initialMessageIndex: EngineMessage.Index?
 
     private var isDeceleratingAfterTracking = false
     
@@ -1164,7 +1165,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
         
-    public init(context: AccountContext, chatControllerInteraction: ChatControllerInteraction, peerId: PeerId, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, contentType: ContentType, captureProtected: Bool) {
+    public init(context: AccountContext, chatControllerInteraction: ChatControllerInteraction, peerId: PeerId, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, contentType: ContentType, captureProtected: Bool, initialFocusMessageIndex: EngineMessage.Index?) {
         self.context = context
         self.peerId = peerId
         self.chatLocation = chatLocation
@@ -1173,6 +1174,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         self.contentType = contentType
         self.contentTypePromise = ValuePromise<ContentType>(contentType)
         self.stateTag = tagMaskForType(contentType)
+        self.initialMessageIndex = initialFocusMessageIndex
 
         self.presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
 
@@ -1234,7 +1236,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
             threadId = message.threadId
         }
 
-        self.listSource = self.context.engine.messages.sparseMessageList(peerId: self.peerId, threadId: threadId, tag: tagMaskForType(self.contentType))
+        self.listSource = self.context.engine.messages.sparseMessageList(peerId: self.peerId, threadId: threadId, tag: tagMaskForType(self.contentType), initialMessageIndex: initialFocusMessageIndex)
         if threadId == nil {
             switch contentType {
             case .photoOrVideo, .photo, .video:
@@ -1247,6 +1249,11 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         }
         
         super.init()
+        
+        if self.initialMessageIndex != nil {
+            self.didSetReady = true
+            self.ready.set(.single(true))
+        }
 
         let _ = (ApplicationSpecificNotice.getSharedMediaScrollingTooltip(accountManager: context.sharedContext.accountManager)
         |> deliverOnMainQueue).start(next: { [weak self] count in
@@ -1720,6 +1727,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
         }
         self.isRequestingView = true
         var firstTime = true
+        var firstTimeRealData = true
         let queue = Queue()
 
         self.listDisposable.set((self.listSource.state
@@ -1728,15 +1736,20 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
 
             var mappedItems: [SparseItemGrid.Item] = []
             var mappedHoles: [SparseItemGrid.HoleAnchor] = []
-            for item in list.items {
-                switch item.content {
-                case let .message(message, isLocal):
-                    mappedItems.append(VisualMediaItem(index: item.index, message: message, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
-                    if !isLocal {
-                        mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: message.id, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
+            var totalCount = list.totalCount
+            if list.items.isEmpty && list.isLoading && list.totalCount == 0 {
+                totalCount = 100
+            } else {
+                for item in list.items {
+                    switch item.content {
+                    case let .message(message, isLocal):
+                        mappedItems.append(VisualMediaItem(index: item.index, message: message, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
+                        if !isLocal {
+                            mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: message.id, localMonthTimestamp: Month(localTimestamp: message.timestamp + timezoneOffset).packedValue))
+                        }
+                    case let .placeholder(id, timestamp):
+                        mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: id, localMonthTimestamp: Month(localTimestamp: timestamp + timezoneOffset).packedValue))
                     }
-                case let .placeholder(id, timestamp):
-                    mappedHoles.append(VisualMediaHoleAnchor(index: item.index, messageId: id, localMonthTimestamp: Month(localTimestamp: timestamp + timezoneOffset).packedValue))
                 }
             }
 
@@ -1748,7 +1761,7 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
                 let items = SparseItemGrid.Items(
                     items: mappedItems,
                     holeAnchors: mappedHoles,
-                    count: list.totalCount,
+                    count: totalCount,
                     itemBinding: strongSelf.itemGridBinding,
                     headerText: nil,
                     snapTopInset: true
@@ -1756,24 +1769,34 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
 
                 let currentSynchronous = synchronous && firstTime
                 let currentReloadAtTop = reloadAtTop && firstTime
+                
+                var crossfade = currentReloadAtTop
+                if firstTimeRealData && !list.isLoading {
+                    firstTimeRealData = false
+                    if !firstTime {
+                        crossfade = true
+                    }
+                }
+                
                 firstTime = false
-                strongSelf.updateHistory(items: items, synchronous: currentSynchronous, reloadAtTop: currentReloadAtTop)
+                strongSelf.updateHistory(items: items, synchronous: currentSynchronous, crossfade: crossfade)
                 strongSelf.isRequestingView = false
             }
         }))
     }
     
-    private func updateHistory(items: SparseItemGrid.Items, synchronous: Bool, reloadAtTop: Bool) {
+    private func updateHistory(items: SparseItemGrid.Items, synchronous: Bool, crossfade: Bool) {
         self.items = items
 
         if let (size, topInset, sideInset, bottomInset, deviceMetrics, visibleHeight, isScrollingLockedAtTop, expandProgress, navigationHeight, presentationData) = self.currentParams {
             var gridSnapshot: UIView?
-            if reloadAtTop {
+            if crossfade {
                 gridSnapshot = self.itemGrid.view.snapshotView(afterScreenUpdates: false)
             }
             self.update(size: size, topInset: topInset, sideInset: sideInset, bottomInset: bottomInset, deviceMetrics: deviceMetrics, visibleHeight: visibleHeight, isScrollingLockedAtTop: isScrollingLockedAtTop, expandProgress: expandProgress, navigationHeight: navigationHeight, presentationData: presentationData, synchronous: false, transition: .immediate)
             if let gridSnapshot = gridSnapshot {
                 self.view.addSubview(gridSnapshot)
+                self.itemGrid.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
                 gridSnapshot.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false, completion: { [weak gridSnapshot] _ in
                     gridSnapshot?.removeFromSuperview()
                 })
@@ -2194,6 +2217,23 @@ public final class PeerInfoVisualMediaPaneNode: ASDisplayNode, PeerInfoPaneNode,
             }
          
             self.itemGrid.update(size: size, insets: UIEdgeInsets(top: topInset, left: sideInset, bottom:  bottomInset, right: sideInset), useSideInsets: !isList, scrollIndicatorInsets: UIEdgeInsets(top: 0.0, left: sideInset, bottom: bottomInset, right: sideInset), lockScrollingAtTop: isScrollingLockedAtTop, fixedItemHeight: fixedItemHeight, fixedItemAspect: nil, items: items, theme: self.itemGridBinding.chatPresentationData.theme.theme, synchronous: wasFirstTime ? .full : .none)
+            if let initialMessageIndexValue = self.initialMessageIndex, items.items.contains(where: { item in
+                if let _ = item as? VisualMediaItem {
+                    return true
+                } else {
+                    return false
+                }
+            }) {
+                self.initialMessageIndex = nil
+                for item in items.items {
+                    if let item = item as? VisualMediaItem {
+                        if item.message.index <= initialMessageIndexValue {
+                            self.itemGrid.scrollToItem(at: item.index, force: true)
+                            break
+                        }
+                    }
+                }
+            }
         }
     }
 

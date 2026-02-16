@@ -45,7 +45,8 @@ public extension TelegramEngine {
             }
             |> mapToSignal { result -> Signal<ParsedInfo, GetInfoError> in
                 switch result {
-                case let .historyImportParsed(flags, title):
+                case let .historyImportParsed(historyImportParsedData):
+                    let (flags, title) = (historyImportParsedData.flags, historyImportParsedData.title)
                     if (flags & (1 << 0)) != 0 {
                         return .single(.privateChat(title: title))
                     } else if (flags & (1 << 1)) != 0 {
@@ -91,7 +92,8 @@ public extension TelegramEngine {
                         }
                         |> map { result -> Session in
                             switch result {
-                            case let .historyImport(id):
+                            case let .historyImport(historyImportData):
+                                let id = historyImportData.id
                                 return Session(peerId: peerId, inputPeer: inputPeer, id: id)
                             }
                         }
@@ -138,10 +140,10 @@ public extension TelegramEngine {
                 case let .inputFile(inputFile):
                     switch type {
                     case .photo:
-                        inputMedia = .inputMediaUploadedPhoto(flags: 0, file: inputFile, stickers: nil, ttlSeconds: nil)
+                        inputMedia = .inputMediaUploadedPhoto(.init(flags: 0, file: inputFile, stickers: nil, ttlSeconds: nil))
                     case .file, .video, .sticker, .voice:
                         var attributes: [Api.DocumentAttribute] = []
-                        attributes.append(.documentAttributeFilename(fileName: fileName))
+                        attributes.append(.documentAttributeFilename(.init(fileName: fileName)))
                         var resolvedMimeType = mimeType
                         switch type {
                         case .video:
@@ -153,7 +155,7 @@ public extension TelegramEngine {
                         default:
                             break
                         }
-                        inputMedia = .inputMediaUploadedDocument(flags: 0, file: inputFile, thumb: nil, mimeType: resolvedMimeType, attributes: attributes, stickers: nil, videoCover: nil, videoTimestamp: nil, ttlSeconds: nil)
+                        inputMedia = .inputMediaUploadedDocument(.init(flags: 0, file: inputFile, thumb: nil, mimeType: resolvedMimeType, attributes: attributes, stickers: nil, videoCover: nil, videoTimestamp: nil, ttlSeconds: nil))
                     }
                 case let .progress(value):
                     return .single(value)
@@ -245,7 +247,8 @@ public extension TelegramEngine {
                 }
                 |> map { result -> CheckPeerImportResult in
                     switch result {
-                    case let .checkedHistoryImportPeer(confirmText):
+                    case let .checkedHistoryImportPeer(checkedHistoryImportPeerData):
+                        let confirmText = checkedHistoryImportPeerData.confirmText
                         if confirmText.isEmpty {
                             return .allowed
                         } else {

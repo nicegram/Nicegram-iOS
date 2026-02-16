@@ -10,7 +10,8 @@ func validatedEncryptionConfig(postbox: Postbox, network: Network) -> Signal<Sec
     |> retryRequest
     |> mapToSignal { result -> Signal<SecretChatEncryptionConfig, NoError> in
         switch result {
-            case let .dhConfig(g, p, version, _):
+            case let .dhConfig(dhConfigData):
+                let (g, p, version) = (dhConfigData.g, dhConfigData.p, dhConfigData.version)
                 if !MTCheckIsSafeG(UInt32(g)) {
                     Logger.shared.log("SecretChatEncryptionConfig", "Invalid g")
                     return .complete()
@@ -26,7 +27,7 @@ func validatedEncryptionConfig(postbox: Postbox, network: Network) -> Signal<Sec
                     return .never()
                 }
                 return .single(SecretChatEncryptionConfig(g: g, p: MemoryBuffer(p), version: version))
-            case .dhConfigNotModified(_):
+            case .dhConfigNotModified:
                 assertionFailure()
                 return .never()
         }

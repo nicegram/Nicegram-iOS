@@ -17,6 +17,7 @@ public final class GlassBarButtonComponent: Component {
     public let isDark: Bool
     public let state: DisplayState?
     public let isEnabled: Bool
+    public let isVisible: Bool
     public let animateScale: Bool
     public let component: AnyComponentWithIdentity<Empty>
     public let action: ((UIView) -> Void)?
@@ -28,6 +29,7 @@ public final class GlassBarButtonComponent: Component {
         isDark: Bool,
         state: DisplayState? = nil,
         isEnabled: Bool = true,
+        isVisible: Bool = true,
         animateScale: Bool = true,
         component: AnyComponentWithIdentity<Empty>,
         action: ((UIView) -> Void)?,
@@ -38,6 +40,7 @@ public final class GlassBarButtonComponent: Component {
         self.isDark = isDark
         self.state = state
         self.isEnabled = isEnabled
+        self.isVisible = isVisible
         self.animateScale = animateScale
         self.component = component
         self.action = action
@@ -58,6 +61,9 @@ public final class GlassBarButtonComponent: Component {
             return false
         }
         if lhs.isEnabled != rhs.isEnabled {
+            return false
+        }
+        if lhs.isVisible != rhs.isVisible {
             return false
         }
         if lhs.animateScale != rhs.animateScale {
@@ -113,6 +119,10 @@ public final class GlassBarButtonComponent: Component {
                 guard let self, let component = self.component, component.animateScale else {
                     return
                 }
+                if [.glass, .tintedGlass].contains(component.state) {
+                    return
+                }
+                
                 if highlighted {
                     self.containerView.layer.animateSpring(from: CGFloat((self.containerView.layer.presentation()?.value(forKeyPath: "transform.scale.y") as? NSNumber)?.floatValue ?? 1.0) as NSNumber, to: 1.3636 as NSNumber, keyPath: "transform.scale", duration: 0.5, removeOnCompletion: false)
                 } else {
@@ -226,7 +236,7 @@ public final class GlassBarButtonComponent: Component {
             
             let cornerRadius = containerSize.height * 0.5
             if let backgroundColor = component.backgroundColor {
-                self.genericBackgroundView.update(size: containerSize, cornerRadius: cornerRadius, isDark: component.isDark, tintColor: .init(kind: .custom, color: backgroundColor), transition: transition)
+                self.genericBackgroundView.update(size: containerSize, cornerRadius: cornerRadius, isDark: component.isDark, tintColor: .init(kind: .custom(style: .default, color: backgroundColor)), transition: transition)
             }
                         
             let bounds = CGRect(origin: .zero, size: containerSize)
@@ -256,7 +266,7 @@ public final class GlassBarButtonComponent: Component {
                     
                     transition.animateAlpha(view: glassBackgroundView, from: 0.0, to: 1.0)
                 }
-                glassBackgroundView.update(size: containerSize, cornerRadius: cornerRadius, isDark: component.isDark, tintColor: .init(kind: effectiveState == .tintedGlass ? .custom : .panel , color: backgroundColor.withMultipliedAlpha(effectiveState == .tintedGlass ? 1.0 : 0.7)), isInteractive: true, transition: glassBackgroundTransition)
+                glassBackgroundView.update(size: containerSize, cornerRadius: cornerRadius, isDark: component.isDark, tintColor: .init(kind: effectiveState == .tintedGlass ? .custom(style: .default, color: backgroundColor.withMultipliedAlpha(effectiveState == .tintedGlass ? 1.0 : 0.7)) : .panel), isInteractive: true, isVisible: component.isVisible, transition: glassBackgroundTransition)
                 glassBackgroundTransition.setFrame(view: glassBackgroundView, frame: bounds)
             } else if case .glass = component.state {
                 let glassBackgroundView: GlassBackgroundView
@@ -273,7 +283,7 @@ public final class GlassBarButtonComponent: Component {
                     
                     transition.animateAlpha(view: glassBackgroundView, from: 0.0, to: 1.0)
                 }
-                glassBackgroundView.update(size: containerSize, cornerRadius: cornerRadius, isDark: component.isDark, tintColor: .init(kind: .panel, color: UIColor(white: component.isDark ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: glassBackgroundTransition)
+                glassBackgroundView.update(size: containerSize, cornerRadius: cornerRadius, isDark: component.isDark, tintColor: .init(kind: .panel), isInteractive: true, isVisible: component.isVisible, transition: glassBackgroundTransition)
                 glassBackgroundTransition.setFrame(view: glassBackgroundView, frame: bounds)
             } else if let glassBackgroundView = self.glassBackgroundView {
                 self.glassBackgroundView = nil
@@ -430,7 +440,18 @@ private class SimpleGlassView: UIView {
     }
     
     public func update(size: CGSize, cornerRadius: CGFloat, isDark: Bool, tintColor: GlassBackgroundView.TintColor, isInteractive: Bool = false, transition: ComponentTransition) {
-        self.backgroundNode.updateColor(color: tintColor.color, forceKeepBlur: tintColor.color.alpha != 1.0, transition: transition.containedViewLayoutTransition)
+        let colorValue: UIColor
+        switch tintColor.kind {
+        case .clear, .panel:
+            if isDark {
+                colorValue = UIColor(white: 1.0, alpha: 0.025)
+            } else {
+                colorValue = UIColor(white: 1.0, alpha: 0.1)
+            }
+        case let .custom(_, color):
+            colorValue = color
+        }
+        self.backgroundNode.updateColor(color: colorValue, forceKeepBlur: colorValue.alpha != 1.0, transition: transition.containedViewLayoutTransition)
         self.backgroundNode.update(size: size, cornerRadius: cornerRadius, transition: transition.containedViewLayoutTransition)
         transition.setFrame(view: self.backgroundNode.view, frame: CGRect(origin: CGPoint(), size: size))
                 

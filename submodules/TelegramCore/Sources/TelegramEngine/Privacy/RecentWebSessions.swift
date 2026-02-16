@@ -30,12 +30,14 @@ func webSessions(network: Network) -> Signal<([WebAuthorization], [PeerId: Peer]
         var sessions: [WebAuthorization] = []
         var peers:[PeerId : Peer] = [:]
         switch result {
-        case let .webAuthorizations(authorizations, users):
+        case let .webAuthorizations(webAuthorizationsData):
+            let (authorizations, users) = (webAuthorizationsData.authorizations, webAuthorizationsData.users)
             for authorization in authorizations {
                 switch authorization {
-                case let .webAuthorization(hash, botId, domain, browser, platform, dateCreated, dateActive, ip, region):
+                case let .webAuthorization(webAuthorizationData):
+                    let (hash, botId, domain, browser, platform, dateCreated, dateActive, ip, region) = (webAuthorizationData.hash, webAuthorizationData.botId, webAuthorizationData.domain, webAuthorizationData.browser, webAuthorizationData.platform, webAuthorizationData.dateCreated, webAuthorizationData.dateActive, webAuthorizationData.ip, webAuthorizationData.region)
                     sessions.append(WebAuthorization(hash: hash, botId: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(botId)), domain: domain, browser: browser, platform: platform, dateCreated: dateCreated, dateActive: dateActive, ip: ip, region: region))
-                    
+
                 }
             }
             for user in users {

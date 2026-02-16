@@ -80,7 +80,7 @@ private final class SearchContextItemNode: ASDisplayNode, ContextMenuCustomNode,
             environment: {},
             containerSize: size
         )
-        let iconFrame = CGRect(origin: CGPoint(x: 17.0, y: floorToScreenPixels((size.height - iconSize.height) / 2.0)), size: iconSize)
+        let iconFrame = CGRect(origin: CGPoint(x: 23.0, y: floorToScreenPixels((size.height - iconSize.height) / 2.0)), size: iconSize)
         if let iconView = self.icon.view {
             if iconView.superview == nil {
                 self.view.addSubview(iconView)
@@ -88,7 +88,7 @@ private final class SearchContextItemNode: ASDisplayNode, ContextMenuCustomNode,
             transition.setFrame(view: iconView, frame: iconFrame)
         }
         
-        let inputInset: CGFloat = 42.0
+        let inputInset: CGFloat = 46.0
         
         self.inputField.parentState = self.state
         let inputFieldSize = self.inputField.update(

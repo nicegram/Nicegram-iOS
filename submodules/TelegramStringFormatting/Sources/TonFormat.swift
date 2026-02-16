@@ -96,7 +96,7 @@ public func formatTonAmountText(_ value: Int64, dateTimeFormat: PresentationDate
 }
 
 public func formatStarsAmountText(_ amount: StarsAmount, dateTimeFormat: PresentationDateTimeFormat, showPlus: Bool = false) -> String {
-    var balanceText = presentationStringsFormattedNumber(Int32(amount.value), dateTimeFormat.groupingSeparator)
+    var balanceText = presentationStringsFormattedNumber(Int32(clamping: amount.value), dateTimeFormat.groupingSeparator)
     let fraction = abs(Double(amount.nanos)) / 10e6
     if fraction > 0.0 {
         balanceText.append(dateTimeFormat.decimalSeparator)

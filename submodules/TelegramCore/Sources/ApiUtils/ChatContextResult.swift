@@ -490,7 +490,8 @@ public final class ChatContextResultCollection: Equatable, Codable {
 extension ChatContextResultMessage {
     init(apiMessage: Api.BotInlineMessage) {
         switch apiMessage {
-            case let .botInlineMessageMediaAuto(_, message, entities, replyMarkup):
+            case let .botInlineMessageMediaAuto(botInlineMessageMediaAutoData):
+                let (_, message, entities, replyMarkup) = (botInlineMessageMediaAutoData.flags, botInlineMessageMediaAutoData.message, botInlineMessageMediaAutoData.entities, botInlineMessageMediaAutoData.replyMarkup)
                 var parsedEntities: TextEntitiesMessageAttribute?
                 if let entities = entities, !entities.isEmpty {
                     parsedEntities = TextEntitiesMessageAttribute(entities: messageTextEntitiesFromApiEntities(entities))
@@ -500,7 +501,8 @@ extension ChatContextResultMessage {
                     parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
                 }
                 self = .auto(caption: message, entities: parsedEntities, replyMarkup: parsedReplyMarkup)
-            case let .botInlineMessageText(flags, message, entities, replyMarkup):
+            case let .botInlineMessageText(botInlineMessageTextData):
+                let (flags, message, entities, replyMarkup) = (botInlineMessageTextData.flags, botInlineMessageTextData.message, botInlineMessageTextData.entities, botInlineMessageTextData.replyMarkup)
                 var parsedEntities: TextEntitiesMessageAttribute?
                 if let entities = entities, !entities.isEmpty {
                     parsedEntities = TextEntitiesMessageAttribute(entities: messageTextEntitiesFromApiEntities(entities))
@@ -516,28 +518,32 @@ extension ChatContextResultMessage {
                     isManuallyAdded: false,
                     isSafe: false
                 ), replyMarkup: parsedReplyMarkup)
-            case let .botInlineMessageMediaGeo(_, geo, heading, period, proximityNotificationRadius, replyMarkup):
+            case let .botInlineMessageMediaGeo(botInlineMessageMediaGeoData):
+                let (_, geo, heading, period, proximityNotificationRadius, replyMarkup) = (botInlineMessageMediaGeoData.flags, botInlineMessageMediaGeoData.geo, botInlineMessageMediaGeoData.heading, botInlineMessageMediaGeoData.period, botInlineMessageMediaGeoData.proximityNotificationRadius, botInlineMessageMediaGeoData.replyMarkup)
                 let media = telegramMediaMapFromApiGeoPoint(geo, title: nil, address: nil, provider: nil, venueId: nil, venueType: nil, liveBroadcastingTimeout: period, liveProximityNotificationRadius: proximityNotificationRadius, heading: heading)
                 var parsedReplyMarkup: ReplyMarkupMessageAttribute?
                 if let replyMarkup = replyMarkup {
                     parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
                 }
                 self = .mapLocation(media: media, replyMarkup: parsedReplyMarkup)
-            case let .botInlineMessageMediaVenue(_, geo, title, address, provider, venueId, venueType, replyMarkup):
+            case let .botInlineMessageMediaVenue(botInlineMessageMediaVenueData):
+                let (_, geo, title, address, provider, venueId, venueType, replyMarkup) = (botInlineMessageMediaVenueData.flags, botInlineMessageMediaVenueData.geo, botInlineMessageMediaVenueData.title, botInlineMessageMediaVenueData.address, botInlineMessageMediaVenueData.provider, botInlineMessageMediaVenueData.venueId, botInlineMessageMediaVenueData.venueType, botInlineMessageMediaVenueData.replyMarkup)
                 let media = telegramMediaMapFromApiGeoPoint(geo, title: title, address: address, provider: provider, venueId: venueId, venueType: venueType, liveBroadcastingTimeout: nil, liveProximityNotificationRadius: nil, heading: nil)
                 var parsedReplyMarkup: ReplyMarkupMessageAttribute?
                 if let replyMarkup = replyMarkup {
                     parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
                 }
                 self = .mapLocation(media: media, replyMarkup: parsedReplyMarkup)
-            case let .botInlineMessageMediaContact(_, phoneNumber, firstName, lastName, vcard, replyMarkup):
+            case let .botInlineMessageMediaContact(botInlineMessageMediaContactData):
+                let (_, phoneNumber, firstName, lastName, vcard, replyMarkup) = (botInlineMessageMediaContactData.flags, botInlineMessageMediaContactData.phoneNumber, botInlineMessageMediaContactData.firstName, botInlineMessageMediaContactData.lastName, botInlineMessageMediaContactData.vcard, botInlineMessageMediaContactData.replyMarkup)
                 let media = TelegramMediaContact(firstName: firstName, lastName: lastName, phoneNumber: phoneNumber, peerId: nil, vCardData: vcard.isEmpty ? nil : vcard)
                 var parsedReplyMarkup: ReplyMarkupMessageAttribute?
                 if let replyMarkup = replyMarkup {
                     parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
                 }
                 self = .contact(media: media, replyMarkup: parsedReplyMarkup)
-            case let .botInlineMessageMediaInvoice(flags, title, description, photo, currency, totalAmount, replyMarkup):
+            case let .botInlineMessageMediaInvoice(botInlineMessageMediaInvoiceData):
+                let (flags, title, description, photo, currency, totalAmount, replyMarkup) = (botInlineMessageMediaInvoiceData.flags, botInlineMessageMediaInvoiceData.title, botInlineMessageMediaInvoiceData.description, botInlineMessageMediaInvoiceData.photo, botInlineMessageMediaInvoiceData.currency, botInlineMessageMediaInvoiceData.totalAmount, botInlineMessageMediaInvoiceData.replyMarkup)
                 var parsedFlags = TelegramMediaInvoiceFlags()
                 if (flags & (1 << 3)) != 0 {
                     parsedFlags.insert(.isTest)
@@ -550,7 +556,8 @@ extension ChatContextResultMessage {
                     parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
                 }
                 self = .invoice(media: TelegramMediaInvoice(title: title, description: description, photo: photo.flatMap(TelegramMediaWebFile.init), receiptMessageId: nil, currency: currency, totalAmount: totalAmount, startParam: "", extendedMedia: nil, subscriptionPeriod: nil, flags: parsedFlags, version: TelegramMediaInvoice.lastVersion), replyMarkup: parsedReplyMarkup)
-            case let .botInlineMessageMediaWebPage(flags, message, entities, url, replyMarkup):
+            case let .botInlineMessageMediaWebPage(botInlineMessageMediaWebPageData):
+                let (flags, message, entities, url, replyMarkup) = (botInlineMessageMediaWebPageData.flags, botInlineMessageMediaWebPageData.message, botInlineMessageMediaWebPageData.entities, botInlineMessageMediaWebPageData.url, botInlineMessageMediaWebPageData.replyMarkup)
                 var parsedReplyMarkup: ReplyMarkupMessageAttribute?
                 if let replyMarkup = replyMarkup {
                     parsedReplyMarkup = ReplyMarkupMessageAttribute(apiMarkup: replyMarkup)
@@ -590,9 +597,11 @@ extension ChatContextResultMessage {
 extension ChatContextResult {
     init(apiResult: Api.BotInlineResult, queryId: Int64) {
         switch apiResult {
-            case let .botInlineResult(_, id, type, title, description, url, thumb, content, sendMessage):
+            case let .botInlineResult(botInlineResultData):
+                let (_, id, type, title, description, url, thumb, content, sendMessage) = (botInlineResultData.flags, botInlineResultData.id, botInlineResultData.type, botInlineResultData.title, botInlineResultData.description, botInlineResultData.url, botInlineResultData.thumb, botInlineResultData.content, botInlineResultData.sendMessage)
                 self = .externalReference(ChatContextResult.ExternalReference(queryId: queryId, id: id, type: type, title: title, description: description, url: url, content: content.flatMap(TelegramMediaWebFile.init), thumbnail: thumb.flatMap(TelegramMediaWebFile.init), message: ChatContextResultMessage(apiMessage: sendMessage)))
-            case let .botInlineMediaResult(_, id, type, photo, document, title, description, sendMessage):
+            case let .botInlineMediaResult(botInlineMediaResultData):
+                let (_, id, type, photo, document, title, description, sendMessage) = (botInlineMediaResultData.flags, botInlineMediaResultData.id, botInlineMediaResultData.type, botInlineMediaResultData.photo, botInlineMediaResultData.document, botInlineMediaResultData.title, botInlineMediaResultData.description, botInlineMediaResultData.sendMessage)
                 var image: TelegramMediaImage?
                 var file: TelegramMediaFile?
                 if let photo = photo, let parsedImage = telegramMediaImageFromApiPhoto(photo) {
@@ -609,7 +618,8 @@ extension ChatContextResult {
 extension ChatContextResultSwitchPeer {
     init(apiSwitchPeer: Api.InlineBotSwitchPM) {
         switch apiSwitchPeer {
-            case let .inlineBotSwitchPM(text, startParam):
+            case let .inlineBotSwitchPM(inlineBotSwitchPMData):
+                let (text, startParam) = (inlineBotSwitchPMData.text, inlineBotSwitchPMData.startParam)
                 self.init(text: text, startParam: startParam)
         }
     }
@@ -618,7 +628,8 @@ extension ChatContextResultSwitchPeer {
 extension ChatContextResultWebView {
     init(apiSwitchWebView: Api.InlineBotWebView) {
         switch apiSwitchWebView {
-            case let .inlineBotWebView(text, url):
+            case let .inlineBotWebView(inlineBotWebViewData):
+                let (text, url) = (inlineBotWebViewData.text, inlineBotWebViewData.url)
                 self.init(text: text, url: url)
         }
     }
@@ -627,7 +638,8 @@ extension ChatContextResultWebView {
 extension ChatContextResultCollection {
     convenience init(apiResults: Api.messages.BotResults, botId: PeerId, peerId: PeerId, query: String, geoPoint: (Double, Double)?) {
         switch apiResults {
-            case let .botResults(flags, queryId, nextOffset, switchPm, switchWebView, results, cacheTime, _):
+            case let .botResults(botResultsData):
+                let (flags, queryId, nextOffset, switchPm, switchWebView, results, cacheTime, _) = (botResultsData.flags, botResultsData.queryId, botResultsData.nextOffset, botResultsData.switchPm, botResultsData.switchWebview, botResultsData.results, botResultsData.cacheTime, botResultsData.users)
                 var switchPeer: ChatContextResultSwitchPeer?
                 if let switchPm = switchPm {
                     switchPeer = ChatContextResultSwitchPeer(apiSwitchPeer: switchPm)

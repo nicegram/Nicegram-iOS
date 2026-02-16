@@ -98,7 +98,6 @@ private final class VoiceChatRecordingContextItemNode: ASDisplayNode, ContextMen
     private let actionSelected: (ContextMenuActionResult) -> Void
     
     private let backgroundNode: ASDisplayNode
-    private let highlightedBackgroundNode: ASDisplayNode
     private let textNode: ImmediateTextNode
     private let statusNode: ImmediateTextNode
     private let iconNode: VoiceChatRecordingIconNode
@@ -120,10 +119,6 @@ private final class VoiceChatRecordingContextItemNode: ASDisplayNode, ContextMen
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isAccessibilityElement = false
         self.backgroundNode.backgroundColor = presentationData.theme.contextMenu.itemBackgroundColor
-        self.highlightedBackgroundNode = ASDisplayNode()
-        self.highlightedBackgroundNode.isAccessibilityElement = false
-        self.highlightedBackgroundNode.backgroundColor = presentationData.theme.contextMenu.itemHighlightedBackgroundColor
-        self.highlightedBackgroundNode.alpha = 0.0
         
         self.textNode = ImmediateTextNode()
         self.textNode.isAccessibilityElement = false
@@ -149,23 +144,11 @@ private final class VoiceChatRecordingContextItemNode: ASDisplayNode, ContextMen
         super.init()
         
         self.addSubnode(self.backgroundNode)
-        self.addSubnode(self.highlightedBackgroundNode)
         self.addSubnode(self.textNode)
         self.addSubnode(self.statusNode)
         self.addSubnode(self.iconNode)
         self.addSubnode(self.buttonNode)
         
-        self.buttonNode.highligthedChanged = { [weak self] highligted in
-            guard let strongSelf = self else {
-                return
-            }
-            if highligted {
-                strongSelf.highlightedBackgroundNode.alpha = 1.0
-            } else {
-                strongSelf.highlightedBackgroundNode.alpha = 0.0
-                strongSelf.highlightedBackgroundNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3)
-            }
-        }
         self.buttonNode.addTarget(self, action: #selector(self.buttonPressed), forControlEvents: .touchUpInside)
     }
     
@@ -176,14 +159,8 @@ private final class VoiceChatRecordingContextItemNode: ASDisplayNode, ContextMen
     override func didLoad() {
         super.didLoad()
         
-        self.pointerInteraction = PointerInteraction(node: self.buttonNode, style: .hover, willEnter: { [weak self] in
-            if let strongSelf = self {
-                strongSelf.highlightedBackgroundNode.alpha = 0.75
-            }
-        }, willExit: { [weak self] in
-            if let strongSelf = self {
-                strongSelf.highlightedBackgroundNode.alpha = 0.0
-            }
+        self.pointerInteraction = PointerInteraction(node: self.buttonNode, style: .hover, willEnter: {
+        }, willExit: {
         })
         
         let timer = SwiftSignalKit.Timer(timeout: 0.5, repeat: true, completion: { [weak self] in
@@ -205,15 +182,16 @@ private final class VoiceChatRecordingContextItemNode: ASDisplayNode, ContextMen
         let subtextFont = Font.regular(self.presentationData.listsFontSize.baseDisplaySize * 13.0 / 17.0)
         self.statusNode.attributedText = NSAttributedString(string: stringForDuration(Int32(duration)), font: subtextFont, textColor: presentationData.theme.contextMenu.secondaryColor)
         
-        let sideInset: CGFloat = 16.0
+        let sideInset: CGFloat = 18.0
+        let iconSideInset: CGFloat = 22.0
         let statusSize = self.statusNode.updateLayout(CGSize(width: size.width - sideInset - 32.0, height: .greatestFiniteMagnitude))
-        transition.updateFrameAdditive(node: self.statusNode, frame: CGRect(origin: CGPoint(x: sideInset, y: self.statusNode.frame.minY), size: statusSize))
+        transition.updateFrameAdditive(node: self.statusNode, frame: CGRect(origin: CGPoint(x: iconSideInset + 38.0, y: self.statusNode.frame.minY), size: statusSize))
     }
     
     func updateLayout(constrainedWidth: CGFloat, constrainedHeight: CGFloat) -> (CGSize, (CGSize, ContainedViewLayoutTransition) -> Void) {
-        let sideInset: CGFloat = 16.0
-        let iconSideInset: CGFloat = 12.0
-        let verticalInset: CGFloat = 12.0
+        let sideInset: CGFloat = 18.0
+        let iconSideInset: CGFloat = 22.0
+        let verticalInset: CGFloat = 11.0
         
         let iconSide = 16.0 + (1.0 + UIScreenPixel) * 2.0
         let iconSize: CGSize = CGSize(width: iconSide, height: iconSide)
@@ -237,23 +215,21 @@ private final class VoiceChatRecordingContextItemNode: ASDisplayNode, ContextMen
                 self.updateTime(transition: .immediate)
             }
             let verticalOrigin = floor((size.height - combinedTextHeight) / 2.0)
-            let textFrame = CGRect(origin: CGPoint(x: sideInset, y: verticalOrigin), size: textSize)
+            let textFrame = CGRect(origin: CGPoint(x: iconSideInset + 38.0, y: verticalOrigin), size: textSize)
             transition.updateFrameAdditive(node: self.textNode, frame: textFrame)
-            transition.updateFrameAdditive(node: self.statusNode, frame: CGRect(origin: CGPoint(x: sideInset, y: verticalOrigin + verticalSpacing + textSize.height), size: textSize))
+            transition.updateFrameAdditive(node: self.statusNode, frame: CGRect(origin: CGPoint(x: iconSideInset + 38.0, y: verticalOrigin + verticalSpacing + textSize.height), size: textSize))
             
             if !iconSize.width.isZero {
-                transition.updateFrameAdditive(node: self.iconNode, frame: CGRect(origin: CGPoint(x: size.width - standardIconWidth - iconSideInset + floor((standardIconWidth - iconSize.width) / 2.0), y: floor((size.height - iconSize.height) / 2.0)), size: iconSize))
+                transition.updateFrameAdditive(node: self.iconNode, frame: CGRect(origin: CGPoint(x: iconSideInset + floor((standardIconWidth - iconSize.width) / 2.0), y: floor((size.height - iconSize.height) / 2.0)), size: iconSize))
             }
             
             transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))
-            transition.updateFrame(node: self.highlightedBackgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))
             transition.updateFrame(node: self.buttonNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))
         })
     }
     
     func updateTheme(presentationData: PresentationData) {
         self.backgroundNode.backgroundColor = presentationData.theme.contextMenu.itemBackgroundColor
-        self.highlightedBackgroundNode.backgroundColor = presentationData.theme.contextMenu.itemHighlightedBackgroundColor
         
         let textFont = Font.regular(presentationData.listsFontSize.baseDisplaySize)
         let subtextFont = Font.regular(presentationData.listsFontSize.baseDisplaySize * 13.0 / 17.0)
@@ -284,10 +260,5 @@ private final class VoiceChatRecordingContextItemNode: ASDisplayNode, ContextMen
     }
     
     func setIsHighlighted(_ value: Bool) {
-        if value {
-            self.highlightedBackgroundNode.alpha = 1.0
-        } else {
-            self.highlightedBackgroundNode.alpha = 0.0
-        }
     }
 }

@@ -32,7 +32,7 @@ final class SecretMediaPreviewFooterContentNode: GalleryFooterContentNode {
         }
     }
     
-    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
+    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> LayoutInfo {
         let width = size.width
         let panelHeight: CGFloat = 44.0 + bottomInset
         
@@ -40,7 +40,7 @@ final class SecretMediaPreviewFooterContentNode: GalleryFooterContentNode {
         let textSize = self.textNode.updateLayout(CGSize(width: width - sideInset * 2.0, height: CGFloat.greatestFiniteMagnitude))
         transition.updateFrame(node: self.textNode, frame: CGRect(origin: CGPoint(x: floor((width - textSize.width) / 2.0), y: floor((44.0 - textSize.height) / 2.0)), size: textSize))
         
-        return panelHeight
+        return LayoutInfo(height: panelHeight, needsShadow: false)
     }
 }
 

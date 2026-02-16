@@ -59,10 +59,11 @@ public class ItemListSectionHeaderItem: ListViewItem, ItemListItem {
     let actionText: String?
     let action: (() -> Void)?
     public let sectionId: ItemListSectionId
+    public let tag: ItemListItemTag?
     
     public let isAlwaysPlain: Bool = true
     
-    public init(presentationData: ItemListPresentationData, text: String, badge: String? = nil, badgeStyle: BadgeStyle? = nil, multiline: Bool = false, activityIndicator: ItemListSectionHeaderActivityIndicator = .none, accessoryText: ItemListSectionHeaderAccessoryText? = nil, actionText: String? = nil, action: (() -> Void)? = nil, sectionId: ItemListSectionId) {
+    public init(presentationData: ItemListPresentationData, text: String, badge: String? = nil, badgeStyle: BadgeStyle? = nil, multiline: Bool = false, activityIndicator: ItemListSectionHeaderActivityIndicator = .none, accessoryText: ItemListSectionHeaderAccessoryText? = nil, actionText: String? = nil, action: (() -> Void)? = nil, sectionId: ItemListSectionId, tag: ItemListItemTag? = nil) {
         self.presentationData = presentationData
         self.text = text
         self.badge = badge
@@ -73,6 +74,7 @@ public class ItemListSectionHeaderItem: ListViewItem, ItemListItem {
         self.actionText = actionText
         self.action = action
         self.sectionId = sectionId
+        self.tag = tag
     }
     
     public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -124,6 +126,10 @@ public class ItemListSectionHeaderItemNode: ListViewItemNode {
     private var actionButtonNode: HighlightableButtonNode?
 
     private let activateArea: AccessibilityAreaNode
+    
+    public var tag: ItemListItemTag? {
+        return self.item?.tag
+    }
     
     public init() {
         self.titleNode = TextNode()

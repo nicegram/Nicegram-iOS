@@ -230,7 +230,8 @@ extension SelectivePrivacySettings {
                     current = .enableEveryone(disableFor: [:])
                 case .privacyValueAllowContacts:
                     current = .enableContacts(enableFor: [:], disableFor: [:], enableForPremium: false, enableForBots: false)
-                case let .privacyValueAllowUsers(users):
+                case let .privacyValueAllowUsers(privacyValueAllowUsersData):
+                    let users = privacyValueAllowUsersData.users
                     for id in users {
                         if let peer = peers[PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id))] {
                             enableFor[peer.peer.id] = peer
@@ -240,13 +241,15 @@ extension SelectivePrivacySettings {
                     break
                 case .privacyValueDisallowContacts:
                     break
-                case let .privacyValueDisallowUsers(users):
+                case let .privacyValueDisallowUsers(privacyValueDisallowUsersData):
+                    let users = privacyValueDisallowUsersData.users
                     for id in users {
                         if let peer = peers[PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(id))] {
                             disableFor[peer.peer.id] = peer
                         }
                     }
-                case let .privacyValueAllowChatParticipants(chats):
+                case let .privacyValueAllowChatParticipants(privacyValueAllowChatParticipantsData):
+                    let chats = privacyValueAllowChatParticipantsData.chats
                     for id in chats {
                         for possibleId in [PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id)), PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))] {
                             if let peer = peers[possibleId] {
@@ -254,7 +257,8 @@ extension SelectivePrivacySettings {
                             }
                         }
                     }
-                case let .privacyValueDisallowChatParticipants(chats):
+                case let .privacyValueDisallowChatParticipants(privacyValueDisallowChatParticipantsData):
+                    let chats = privacyValueDisallowChatParticipantsData.chats
                     for id in chats {
                         for possibleId in [PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id)), PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))] {
                             if let peer = peers[possibleId] {
@@ -337,7 +341,8 @@ extension TelegramDisallowedGifts {
     init(apiDisallowedGifts: Api.DisallowedGiftsSettings?) {
         var disallowedGifts: TelegramDisallowedGifts = []
         switch apiDisallowedGifts {
-        case let .disallowedGiftsSettings(giftFlags):
+        case let .disallowedGiftsSettings(disallowedGiftsSettingsData):
+            let giftFlags = disallowedGiftsSettingsData.flags
             if (giftFlags & (1 << 0)) != 0 {
                 disallowedGifts.insert(.unlimited)
             }

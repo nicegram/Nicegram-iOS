@@ -15,16 +15,15 @@ import ChatControllerInteraction
 
 extension ChatControllerImpl {    
     var keyShortcutsInternal: [KeyShortcut] {
-        if !self.traceVisibility() || !isTopmostChatController(self) {
+        if !isTopmostChatController(self) {
             return []
         }
         
         let strings = self.presentationData.strings
         
-        var inputShortcuts: [KeyShortcut]
+        var inputShortcuts: [KeyShortcut] = []
         if self.chatDisplayNode.isInputViewFocused {
             inputShortcuts = [
-                KeyShortcut(title: strings.KeyCommand_SendMessage, input: "\r", action: {}),
                 KeyShortcut(input: "B", modifiers: [.command], action: { [weak self] in
                     if let strongSelf = self {
                         strongSelf.interfaceInteraction?.updateTextInputStateAndMode { current, inputMode in
@@ -80,6 +79,16 @@ extension ChatControllerImpl {
                     }
                 })
             ]
+            
+            if self.context.sharedContext.currentChatSettings.with({ $0 }).sendWithCmdEnter {
+                inputShortcuts.append(
+                    KeyShortcut(title: strings.KeyCommand_SendMessage, input: "\r", modifiers: [.command], action: {})
+                )
+            } else {
+                inputShortcuts.append(
+                    KeyShortcut(title: strings.KeyCommand_SendMessage, input: "\r", action: {})
+                )
+            }
         } else if UIResponder.currentFirst() == nil {
             inputShortcuts = [
                 KeyShortcut(title: strings.KeyCommand_FocusOnInputField, input: "\r", action: { [weak self] in

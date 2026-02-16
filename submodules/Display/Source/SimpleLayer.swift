@@ -116,3 +116,9 @@ open class SimpleTransformLayer: CATransformLayer {
         fatalError("init(coder:) has not been implemented")
     }
 }
+
+public final class SimpleLayerDelegate: NSObject, CALayerDelegate {
+    public func action(for layer: CALayer, forKey event: String) -> CAAction? {
+        return nullAction
+    }
+}

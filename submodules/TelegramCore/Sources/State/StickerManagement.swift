@@ -65,14 +65,16 @@ func resolveMissingStickerSets(network: Network, postbox: Postbox, stickerSets: 
     var missingSignals: [Signal<(Int, Api.StickerSetCovered)?, NoError>] = []
     for i in 0 ..< stickerSets.count {
         switch stickerSets[i] {
-        case let .stickerSetNoCovered(value), let .stickerSetCovered(value, _):
+        case let .stickerSetNoCovered(stickerSetNoCoveredData):
+            let value = stickerSetNoCoveredData.set
             switch value {
-            case let .stickerSet(_, _, id, accessHash, _, _, _, _, _, _, _, hash):
+            case let .stickerSet(stickerSetData):
+                let (id, accessHash, hash) = (stickerSetData.id, stickerSetData.accessHash, stickerSetData.hash)
                 if ignorePacksWithHashes[id] == hash {
                     continue
                 }
-                
-                missingSignals.append(network.request(Api.functions.messages.getStickerSet(stickerset: .inputStickerSetID(id: id, accessHash: accessHash), hash: 0))
+
+                missingSignals.append(network.request(Api.functions.messages.getStickerSet(stickerset: .inputStickerSetID(.init(id: id, accessHash: accessHash)), hash: 0))
                 |> map(Optional.init)
                 |> `catch` { _ -> Signal<Api.messages.StickerSet?, NoError> in
                     return .single(nil)
@@ -80,8 +82,37 @@ func resolveMissingStickerSets(network: Network, postbox: Postbox, stickerSets: 
                 |> map { result -> (Int, Api.StickerSetCovered)? in
                     if let result = result {
                         switch result {
-                        case let .stickerSet(set, packs, keywords, documents):
-                            return (i, Api.StickerSetCovered.stickerSetFullCovered(set: set, packs: packs, keywords: keywords, documents: documents))
+                        case let .stickerSet(stickerSetData):
+                            let (set, packs, keywords, documents) = (stickerSetData.set, stickerSetData.packs, stickerSetData.keywords, stickerSetData.documents)
+                            return (i, Api.StickerSetCovered.stickerSetFullCovered(.init(set: set, packs: packs, keywords: keywords, documents: documents)))
+                        case .stickerSetNotModified:
+                            return nil
+                        }
+                    } else {
+                        return nil
+                    }
+                })
+            }
+        case let .stickerSetCovered(stickerSetCoveredData):
+            let value = stickerSetCoveredData.set
+            switch value {
+            case let .stickerSet(stickerSetData):
+                let (id, accessHash, hash) = (stickerSetData.id, stickerSetData.accessHash, stickerSetData.hash)
+                if ignorePacksWithHashes[id] == hash {
+                    continue
+                }
+
+                missingSignals.append(network.request(Api.functions.messages.getStickerSet(stickerset: .inputStickerSetID(.init(id: id, accessHash: accessHash)), hash: 0))
+                |> map(Optional.init)
+                |> `catch` { _ -> Signal<Api.messages.StickerSet?, NoError> in
+                    return .single(nil)
+                }
+                |> map { result -> (Int, Api.StickerSetCovered)? in
+                    if let result = result {
+                        switch result {
+                        case let .stickerSet(stickerSetData):
+                            let (set, packs, keywords, documents) = (stickerSetData.set, stickerSetData.packs, stickerSetData.keywords, stickerSetData.documents)
+                            return (i, Api.StickerSetCovered.stickerSetFullCovered(.init(set: set, packs: packs, keywords: keywords, documents: documents)))
                         case .stickerSetNotModified:
                             return nil
                         }
@@ -142,7 +173,8 @@ func updatedFeaturedStickerPacks(network: Network, postbox: Postbox, category: F
                 switch result {
                 case .featuredStickersNotModified:
                     return .single(.notModified)
-                case let .featuredStickers(flags, _, _, sets, unread):
+                case let .featuredStickers(featuredStickersData):
+                    let (flags, sets, unread) = (featuredStickersData.flags, featuredStickersData.sets, featuredStickersData.unread)
                     return resolveMissingStickerSets(network: network, postbox: postbox, stickerSets: sets, ignorePacksWithHashes: initialPackMap.filter { $0.value.topItems.count > 1 }.mapValues({ item in
                         item.info.hash
                     }))
@@ -179,7 +211,8 @@ func updatedFeaturedStickerPacks(network: Network, postbox: Postbox, category: F
                 switch result {
                 case .featuredStickersNotModified:
                     return .single(.notModified)
-                case let .featuredStickers(flags, _, _, sets, unread):
+                case let .featuredStickers(featuredStickersData):
+                    let (flags, sets, unread) = (featuredStickersData.flags, featuredStickersData.sets, featuredStickersData.unread)
                     return resolveMissingStickerSets(network: network, postbox: postbox, stickerSets: sets, ignorePacksWithHashes: initialPackMap.mapValues({ item in
                         item.info.hash
                     }))
@@ -242,7 +275,8 @@ public func requestOldFeaturedStickerPacks(network: Network, postbox: Postbox, o
         switch result {
         case .featuredStickersNotModified:
             return []
-        case let .featuredStickers(_, _, _, sets, unread):
+        case let .featuredStickers(featuredStickersData):
+            let (sets, unread) = (featuredStickersData.sets, featuredStickersData.unread)
             let unreadIds = Set(unread)
             var updatedPacks: [FeaturedStickerPackItem] = []
             for set in sets {
@@ -288,14 +322,16 @@ public func preloadedFeaturedStickerSet(network: Network, postbox: Postbox, id: 
 
 func parsePreviewStickerSet(_ set: Api.StickerSetCovered, namespace: ItemCollectionId.Namespace) -> (StickerPackCollectionInfo, [StickerPackItem]) {
     switch set {
-    case let .stickerSetCovered(set, cover):
+    case let .stickerSetCovered(stickerSetCoveredData):
+        let (set, cover) = (stickerSetCoveredData.set, stickerSetCoveredData.cover)
         let info = StickerPackCollectionInfo(apiSet: set, namespace: namespace)
         var items: [StickerPackItem] = []
         if let file = telegramMediaFileFromApiDocument(cover, altDocuments: []), let id = file.id {
             items.append(StickerPackItem(index: ItemCollectionItemIndex(index: 0, id: id.id), file: file, indexKeys: []))
         }
         return (info, items)
-    case let .stickerSetMultiCovered(set, covers):
+    case let .stickerSetMultiCovered(stickerSetMultiCoveredData):
+        let (set, covers) = (stickerSetMultiCoveredData.set, stickerSetMultiCoveredData.covers)
         let info = StickerPackCollectionInfo(apiSet: set, namespace: namespace)
         var items: [StickerPackItem] = []
         for cover in covers {
@@ -304,11 +340,13 @@ func parsePreviewStickerSet(_ set: Api.StickerSetCovered, namespace: ItemCollect
             }
         }
         return (info, items)
-    case let .stickerSetFullCovered(set, packs, keywords, documents):
+    case let .stickerSetFullCovered(stickerSetFullCoveredData):
+        let (set, packs, keywords, documents) = (stickerSetFullCoveredData.set, stickerSetFullCoveredData.packs, stickerSetFullCoveredData.keywords, stickerSetFullCoveredData.documents)
         var indexKeysByFile: [MediaId: [MemoryBuffer]] = [:]
         for pack in packs {
             switch pack {
-            case let .stickerPack(text, fileIds):
+            case let .stickerPack(stickerPackData):
+                let (text, fileIds) = (stickerPackData.emoticon, stickerPackData.documents)
                 let key = ValueBoxKey(text).toMemoryBuffer()
                 for fileId in fileIds {
                     let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: fileId)
@@ -323,7 +361,8 @@ func parsePreviewStickerSet(_ set: Api.StickerSetCovered, namespace: ItemCollect
         }
         for keyword in keywords {
             switch keyword {
-            case let .stickerKeyword(documentId, texts):
+            case let .stickerKeyword(stickerKeywordData):
+                let (documentId, texts) = (stickerKeywordData.documentId, stickerKeywordData.keyword)
                 for text in texts {
                     let key = ValueBoxKey(text).toMemoryBuffer()
                     let mediaId = MediaId(namespace: Namespaces.Media.CloudFile, id: documentId)
@@ -350,7 +389,8 @@ func parsePreviewStickerSet(_ set: Api.StickerSetCovered, namespace: ItemCollect
             }
         }
         return (info, items)
-    case let .stickerSetNoCovered(set):
+    case let .stickerSetNoCovered(stickerSetNoCoveredData):
+        let set = stickerSetNoCoveredData.set
         let info = StickerPackCollectionInfo(apiSet: set, namespace: namespace)
         let items: [StickerPackItem] = []
         return (info, items)

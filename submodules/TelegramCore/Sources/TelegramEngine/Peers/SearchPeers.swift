@@ -36,7 +36,8 @@ public func _internal_searchPeers(accountPeerId: PeerId, postbox: Postbox, netwo
     |> mapToSignal { result -> Signal<([FoundPeer], [FoundPeer]), NoError> in
         if let result = result {
             switch result {
-            case let .found(myResults, results, chats, users):
+            case let .found(foundData):
+                let (myResults, results, chats, users) = (foundData.myResults, foundData.results, foundData.chats, foundData.users)
                 return postbox.transaction { transaction -> ([FoundPeer], [FoundPeer]) in
                     var subscribers: [PeerId: Int32] = [:]
                     
@@ -45,7 +46,8 @@ public func _internal_searchPeers(accountPeerId: PeerId, postbox: Postbox, netwo
                     for chat in chats {
                         if let groupOrChannel = parseTelegramGroupOrChannel(chat: chat) {
                             switch chat {
-                            case let .channel(_, _, _, _, _, _, _, _, _, _, _, _, participantsCount, _, _, _, _, _, _, _, _, _, _):
+                            case let .channel(channelData):
+                                let participantsCount = channelData.participantsCount
                                 if let participantsCount = participantsCount {
                                     subscribers[groupOrChannel.id] = participantsCount
                                 }

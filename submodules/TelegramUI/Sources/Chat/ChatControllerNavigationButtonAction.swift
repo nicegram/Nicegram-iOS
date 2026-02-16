@@ -1,6 +1,3 @@
-// Nicegram Imports
-import NGWebUtils
-//
 import Foundation
 import UIKit
 import Postbox
@@ -440,14 +437,8 @@ extension ChatControllerImpl {
                             ))
                             return
                         }
-                                    
-                        //  MARK: - Nicegram (open restricted peer info)
-                        let contentSettings = self.context.currentContentSettings.with { $0 }
-                        let isAllowed = isAllowedPeerInfo(peer: peer, contentSettings: contentSettings)
-                        //
                         
-                        //  MARK: - Nicegram, isAllowed check added
-                        if (peer.restrictionText(platform: "ios", contentSettings: self.context.currentContentSettings.with { $0 }) == nil || isAllowed) && !self.presentationInterfaceState.isNotAccessible {
+                        if peer.restrictionText(platform: "ios", contentSettings: self.context.currentContentSettings.with { $0 }) == nil && !self.presentationInterfaceState.isNotAccessible {
                             if peer.id == self.context.account.peerId {
                                 if let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer, let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                                     self.effectiveNavigationController?.pushViewController(infoController)

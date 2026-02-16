@@ -42,7 +42,8 @@ func _internal_archivedStickerPacks(account: Account, namespace: ArchivedSticker
     |> map { result -> [ArchivedStickerPackItem] in
         var archivedItems: [ArchivedStickerPackItem] = []
         switch result {
-            case let .archivedStickers(_, sets):
+            case let .archivedStickers(archivedStickersData):
+                let sets = archivedStickersData.sets
                 for set in sets {
                     let (info, items) = parsePreviewStickerSet(set, namespace: namespace.itemCollectionNamespace)
                     archivedItems.append(ArchivedStickerPackItem(info: info, topItems: items))
@@ -55,7 +56,7 @@ func _internal_archivedStickerPacks(account: Account, namespace: ArchivedSticker
 }
 
 func _internal_removeArchivedStickerPack(account: Account, info: StickerPackCollectionInfo) -> Signal<Void, NoError> {
-    return account.network.request(Api.functions.messages.uninstallStickerSet(stickerset: Api.InputStickerSet.inputStickerSetID(id: info.id.id, accessHash: info.accessHash)))
+    return account.network.request(Api.functions.messages.uninstallStickerSet(stickerset: Api.InputStickerSet.inputStickerSetID(.init(id: info.id.id, accessHash: info.accessHash))))
     |> `catch` { _ -> Signal<Api.Bool, NoError> in
         return .single(.boolFalse)
     }

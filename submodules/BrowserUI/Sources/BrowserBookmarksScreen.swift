@@ -273,7 +273,7 @@ public final class BrowserBookmarksScreen: ViewController {
                 })))
                 
                 let items = ContextController.Items(content: .list(itemList))
-                let controller = ContextController(
+                let controller = makeContextController(
                     presentationData: presentationData,
                     source: .extracted(BrowserBookmarksContextExtractedContentSource(contentNode: sourceNode)),
                     items: .single(items),

@@ -32,7 +32,7 @@ func _internal_updateChannelMemberBannedRights(account: Account, peerId: PeerId,
                 if let rights = rights, !rights.flags.isEmpty {
                     apiRights = rights.apiBannedRights
                 } else {
-                    apiRights = .chatBannedRights(flags: 0, untilDate: 0)
+                    apiRights = .chatBannedRights(.init(flags: 0, untilDate: 0))
                 }
                 
                 return account.network.request(Api.functions.channels.editBanned(channel: inputChannel, participant: inputPeer, bannedRights: apiRights))

@@ -6,6 +6,7 @@ import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
 import SearchUI
+import CounterControllerTitleView
 
 public final class ChannelMembersSearchControllerImpl: ViewController, ChannelMembersSearchController {
     private let queue = Queue()
@@ -49,7 +50,17 @@ public final class ChannelMembersSearchControllerImpl: ViewController, ChannelMe
         
         self.statusBar.statusBarStyle = self.presentationData.theme.rootController.statusBarStyle.style
         
-        self.title = self.presentationData.strings.Channel_Members_Title
+        let title: String
+        switch params.mode {
+        case .ownershipTransfer:
+            title = self.presentationData.strings.AppointAnotherOwner_Title
+            let titleView = CounterControllerTitleView(theme: self.presentationData.theme)
+            titleView.title = CounterControllerTitle(title: title, counter: " ")
+            self.navigationItem.titleView = titleView
+        default:
+            title = self.presentationData.strings.Channel_Members_Title
+            self.title = title
+        }
         
         self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Cancel, style: .plain, target: self, action: #selector(self.cancelPressed))
         
@@ -74,16 +85,28 @@ public final class ChannelMembersSearchControllerImpl: ViewController, ChannelMe
             }
             strongSelf.presentationData = presentationData
             strongSelf.controllerNode.updatePresentationData(presentationData)
+            
+            if let titleView = strongSelf.navigationItem.titleView as? CounterControllerTitleView {
+                titleView.theme = presentationData.theme
+            }
         })
         
-        let _ = (params.context.account.postbox.loadedPeerWithId(peerId)
+        let _ = (params.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.peerId))
         |> take(1)
         |> deliverOnMainQueue).start(next: { [weak self] peer in
-            if let strongSelf = self {
-                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
-                    strongSelf.title = strongSelf.presentationData.strings.Channel_Subscribers_Title
+            guard let self, let peer else {
+                return
+            }
+            switch self.mode {
+            case .ownershipTransfer:
+                if let titleView = self.navigationItem.titleView as? CounterControllerTitleView {
+                    titleView.title = CounterControllerTitle(title: titleView.title.title, counter: peer.compactDisplayTitle)
+                }
+            default:
+                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                    self.title = self.presentationData.strings.Channel_Subscribers_Title
                 } else {
-                    strongSelf.title = strongSelf.presentationData.strings.Channel_Members_Title
+                    self.title = self.presentationData.strings.Channel_Members_Title
                 }
             }
         })
@@ -118,7 +141,7 @@ public final class ChannelMembersSearchControllerImpl: ViewController, ChannelMe
         
         self.displayNodeDidLoad()
         
-        self.controllerNode.listNode.visibleContentOffsetChanged = { [weak self] offset in
+        self.controllerNode.listNode.visibleContentOffsetChanged = { [weak self] offset, _ in
             if let strongSelf = self, let searchContentNode = strongSelf.searchContentNode {
                 searchContentNode.updateListVisibleContentOffset(offset)
             }

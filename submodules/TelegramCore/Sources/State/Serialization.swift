@@ -210,7 +210,7 @@ public class BoxedMessage: NSObject {
 
 public class Serialization: NSObject, MTSerialization {
     public func currentLayer() -> UInt {
-        return 221
+        return 222
     }
     
     public func parseMessage(_ data: Data!) -> Any! {
@@ -227,7 +227,8 @@ public class Serialization: NSObject, MTSerialization {
         return { data -> MTExportedAuthorizationData? in
             if let exported = functionContext.2.parse(Buffer(data: data)) {
                 switch exported {
-                    case let .exportedAuthorization(id, bytes):
+                    case let .exportedAuthorization(exportedAuthorizationData):
+                        let (id, bytes) = (exportedAuthorizationData.id, exportedAuthorizationData.bytes)
                         return MTExportedAuthorizationData(authorizationBytes: bytes.makeData(), authorizationId: id)
                 }
             } else {
@@ -246,11 +247,13 @@ public class Serialization: NSObject, MTSerialization {
         return { response -> MTDatacenterAddressListData? in
             if let config = parser.parse(Buffer(data: response)) {
                 switch config {
-                    case let .config(_, _, _, _, _, dcOptions, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+                    case let .config(configData):
+                        let dcOptions = configData.dcOptions
                         var addressDict: [NSNumber: [Any]] = [:]
                         for option in dcOptions {
                             switch option {
-                                case let .dcOption(flags, id, ipAddress, port, secret):
+                                case let .dcOption(dcOptionData):
+                                    let (flags, id, ipAddress, port, secret) = (dcOptionData.flags, dcOptionData.id, dcOptionData.ipAddress, dcOptionData.port, dcOptionData.secret)
                                     if addressDict[id as NSNumber] == nil {
                                         addressDict[id as NSNumber] = []
                                     }

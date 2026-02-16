@@ -98,7 +98,7 @@ final class TitleBarContentComponent: Component {
             let expandedBackgroundWidth = availableSize.width - 14.0 * 2.0
             let collapsedBackgroundWidth = titleSize.width + 32.0
             let backgroundSize = CGSize(width: expandedBackgroundWidth * (1.0 - collapseFraction) + collapsedBackgroundWidth * collapseFraction, height: 44.0)
-            self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundSize.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), transition: transition)
+            self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundSize.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: transition)
             let backgroundFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - backgroundSize.width) / 2.0), y: floor((availableSize.height - backgroundSize.height) / 2.0)), size: backgroundSize)
             transition.setFrame(view: self.backgroundView, frame: backgroundFrame)
             transition.setFrame(view: self.clippingView, frame: CGRect(origin: .zero, size: backgroundFrame.size))

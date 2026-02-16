@@ -629,6 +629,13 @@ public final class StoryPeerListComponent: Component {
             }
         }
         
+        public func openEmojiStatusSetup() {
+            guard let component = self.component, let titleIconView = self.titleIconView?.view else {
+                return
+            }
+            component.openStatusSetup(titleIconView)
+        }
+        
         private func updateScrolling(transition: ComponentTransition) {
             guard let component = self.component, let itemLayout = self.itemLayout else {
                 return

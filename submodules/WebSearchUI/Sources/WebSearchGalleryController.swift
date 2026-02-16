@@ -82,10 +82,12 @@ class WebSearchGalleryController: ViewController {
     private var centralEntryIndex: Int?
     
     private let centralItemTitle = Promise<String>()
-    private let centralItemTitleView = Promise<UIView?>()
+    private let centralItemTitleContent = Promise<GalleryTitleView.Content?>()
     private let centralItemNavigationStyle = Promise<GalleryItemNodeNavigationStyle>()
     private let centralItemFooterContentNode = Promise<(GalleryFooterContentNode?, GalleryOverlayContentNode?)>()
-    private let centralItemAttributesDisposable = DisposableSet();
+    private let centralItemAttributesDisposable = DisposableSet()
+    
+    private let titleView: GalleryTitleView
 
     private let checkedDisposable = MetaDisposable()
     private var checkNode: GalleryNavigationCheckNode?
@@ -104,6 +106,8 @@ class WebSearchGalleryController: ViewController {
         self.baseNavigationController = baseNavigationController
         
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        
+        self.titleView = GalleryTitleView(context: context, presentationData: self.presentationData)
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: WebSearchGalleryController.navigationTheme, strings: NavigationBarStrings(presentationStrings: self.presentationData.strings)))
         
@@ -151,8 +155,8 @@ class WebSearchGalleryController: ViewController {
             self?.navigationItem.title = title
         }))
         
-        self.centralItemAttributesDisposable.add(self.centralItemTitleView.get().start(next: { [weak self] titleView in
-            self?.navigationItem.titleView = titleView
+        self.centralItemAttributesDisposable.add(self.centralItemTitleContent.get().start(next: { [weak self] titleContent in
+            self?.titleView.setContent(content: titleContent)
         }))
         
         self.centralItemAttributesDisposable.add(self.centralItemFooterContentNode.get().start(next: { [weak self] footerContentNode, _ in
@@ -229,8 +233,10 @@ class WebSearchGalleryController: ViewController {
         }, editMedia: { _ in
         }, controller: { [weak self] in
             return self
+        }, currentItemNode: { [weak self] in
+            return self?.galleryNode.pager.centralItemNode()
         })
-        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction)
+        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, titleView: self.titleView)
         self.displayNodeDidLoad()
         
         self.galleryNode.statusBar = self.statusBar
@@ -263,7 +269,7 @@ class WebSearchGalleryController: ViewController {
                     
                     if let node = strongSelf.galleryNode.pager.centralItemNode() {
                         strongSelf.centralItemTitle.set(node.title())
-                        strongSelf.centralItemTitleView.set(node.titleView())
+                        strongSelf.centralItemTitleContent.set(node.titleContent())
                         strongSelf.centralItemNavigationStyle.set(node.navigationStyle())
                         strongSelf.centralItemFooterContentNode.set(node.footerContent())
                     }
@@ -315,7 +321,7 @@ class WebSearchGalleryController: ViewController {
         
         if let centralItemNode = self.galleryNode.pager.centralItemNode(), let presentationArguments = self.presentationArguments as? WebSearchGalleryControllerPresentationArguments {
             self.centralItemTitle.set(centralItemNode.title())
-            self.centralItemTitleView.set(centralItemNode.titleView())
+            self.centralItemTitleContent.set(centralItemNode.titleContent())
             self.centralItemNavigationStyle.set(centralItemNode.navigationStyle())
             self.centralItemFooterContentNode.set(centralItemNode.footerContent())
             

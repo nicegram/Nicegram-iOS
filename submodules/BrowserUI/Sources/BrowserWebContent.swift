@@ -798,7 +798,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             self.ignoreUpdatesUntilScrollingStopped = true
         }
     }
-    
+        
     @available(iOS 13.0, *)
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
         if #available(iOS 14.5, *), navigationAction.shouldPerformDownload {
@@ -827,13 +827,18 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                 //
                 
                 // Nicegram, added isNicegramDeeplink
-                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isNicegramDeeplink || isTelegramMeLink(url) || isTelegraPhLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
+                if (navigationAction.targetFrame == nil || navigationAction.targetFrame?.isMainFrame == true) && (isNicegramDeeplink || isTelegramMeLink(url) || url.hasPrefix("tg://")) && !url.contains("/auth/push?") && !self._state.url.contains("/auth/push?") {
                     decisionHandler(.cancel, preferences)
-                    self.minimize()
+                    if !url.contains("domain=oauth") {
+                        self.minimize()
+                    }
                     self.openAppUrl(url)
                 } else {
-                    if let scheme = navigationAction.request.url?.scheme, !["http", "https", "tonsite", "about"].contains(scheme.lowercased()) {
+                    if let scheme = navigationAction.request.url?.scheme?.lowercased(), !["http", "https", "tonsite", "about"].contains(scheme) {
                         decisionHandler(.cancel, preferences)
+                        if ["facetime"].contains(scheme) {
+                            return
+                        }
                         self.context.sharedContext.openExternalUrl(context: self.context, urlContext: .generic, url: url, forceExternal: true, presentationData: self.presentationData, navigationController: nil, dismissInput: {})
                     } else {
                         decisionHandler(.allow, preferences)

@@ -1476,6 +1476,16 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         let previousAdditionalSideInsets = self.validLayout?.4
         self.validLayout = (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, metrics, isSecondary, isMediaInputExpanded)
         
+        let defaultGlassTintColor: GlassBackgroundView.TintColor
+        let defaultGlassTintWithInnerColor: GlassBackgroundView.TintColor
+        if case .clear = interfaceState.preferredGlassType {
+            defaultGlassTintColor = .init(kind: .clear)
+            defaultGlassTintWithInnerColor = .init(kind: .clear, innerColor: interfaceState.theme.list.itemCheckColors.fillColor)
+        } else {
+            defaultGlassTintColor = .init(kind: .panel)
+            defaultGlassTintWithInnerColor = .init(kind: .panel, innerColor: interfaceState.theme.list.itemCheckColors.fillColor)
+        }
+        
         var leftInset = leftInset
         var rightInset = rightInset
         
@@ -2421,7 +2431,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         let menuButtonFrame = CGRect(x: leftInset + 8.0, y: menuButtonOriginY, width: menuButtonExpanded ? menuButtonWidth : menuCollapsedButtonWidth, height: menuButtonHeight)
         transition.updateFrameAsPositionAndBounds(node: self.menuButton, frame: menuButtonFrame)
         transition.updateFrame(view: self.menuButtonBackgroundView, frame: CGRect(origin: CGPoint(), size: menuButtonFrame.size))
-        self.menuButtonBackgroundView.update(size: menuButtonFrame.size, cornerRadius: menuButtonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7), innerColor: interfaceState.theme.chat.inputPanel.actionControlFillColor), transition: ComponentTransition(transition))
+        self.menuButtonBackgroundView.update(size: menuButtonFrame.size, cornerRadius: menuButtonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: defaultGlassTintWithInnerColor, transition: ComponentTransition(transition))
         transition.updateFrame(node: self.menuButtonClippingNode, frame: CGRect(origin: CGPoint(x: 19.0, y: 0.0), size: CGSize(width: menuButtonWidth - 19.0, height: menuButtonFrame.height)))
         var menuButtonTitleTransition = transition
         if buttonTitleUpdated {
@@ -2569,7 +2579,9 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             case let .audio(recorder, isLocked):
                 let hadAudioRecorder = self.mediaActionButtons.micButton.audioRecorder != nil
                 if !hadAudioRecorder, isLocked {
-                    self.mediaActionButtons.micButton.lock()
+                    DispatchQueue.main.async { [weak self] in
+                        self?.mediaActionButtons.micButton.lock()
+                    }
                 }
                 self.mediaActionButtons.micButton.audioRecorder = recorder
                 audioRecordingTimeNode.audioRecorder = recorder
@@ -2943,7 +2955,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         self.updateCounterTextNode(backgroundSize: textInputContainerBackgroundFrame.size, transition: transition)
         
         let textInputContainerBackgroundTransition = ComponentTransition(transition)
-        self.textInputContainerBackgroundView.update(size: textInputContainerBackgroundFrame.size, cornerRadius: floor(minimalInputHeight * 0.5), isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: true, transition: textInputContainerBackgroundTransition)
+        self.textInputContainerBackgroundView.update(size: textInputContainerBackgroundFrame.size, cornerRadius: floor(minimalInputHeight * 0.5), isDark: interfaceState.theme.overallDarkAppearance, tintColor: defaultGlassTintColor, isInteractive: true, transition: textInputContainerBackgroundTransition)
         
         transition.updateFrame(layer: self.textInputBackgroundNode.layer, frame: textInputContainerBackgroundFrame)
         transition.updateAlpha(node: self.textInputBackgroundNode, alpha: audioRecordingItemsAlpha)
@@ -3333,7 +3345,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         
         let attachmentButtonFrame = CGRect(origin: CGPoint(x: attachmentButtonX, y: textInputFrame.maxY - 40.0), size: CGSize(width: 40.0, height: 40.0))
         attachmentButtonX += 40.0 + 6.0
-        self.attachmentButtonBackground.update(size: attachmentButtonFrame.size, cornerRadius: attachmentButtonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: true, transition: ComponentTransition(transition))
+        self.attachmentButtonBackground.update(size: attachmentButtonFrame.size, cornerRadius: attachmentButtonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: defaultGlassTintColor, isInteractive: true, transition: ComponentTransition(transition))
         
         transition.updateFrame(layer: self.attachmentButtonBackground.layer, frame: attachmentButtonFrame)
         transition.updateFrame(layer: self.attachmentButton.layer, frame: CGRect(origin: CGPoint(), size: attachmentButtonFrame.size))
@@ -4112,7 +4124,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             }
             
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            let controller = PeekController(presentationData: presentationData, content: content, sourceView: {
+            let controller = makePeekController(presentationData: presentationData, content: content, sourceView: {
                 return (sourceView, sourceRect)
             })
             //strongSelf.peekController = controller
@@ -4601,15 +4613,29 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         }
     }
     
-    public func chatInputTextNodeShouldReturn() -> Bool {
+    public func chatInputTextNodeShouldReturn(modifierFlags: UIKeyModifierFlags) -> Bool {
+        var shouldSendMessage = false
         if self.sendActionButtons.sendButton.supernode != nil && !self.sendActionButtons.sendButton.isHidden && !self.sendActionButtons.sendContainerNode.alpha.isZero {
-            self.sendButtonPressed()
+            if let context = self.context, context.sharedContext.currentChatSettings.with({ $0 }).sendWithCmdEnter {
+                if modifierFlags.contains(.command) {
+                    shouldSendMessage = true
+                }
+            } else {
+                if modifierFlags.isEmpty {
+                    shouldSendMessage = true
+                }
+            }
         }
-        return false
+        if shouldSendMessage {
+            self.sendButtonPressed()
+            return false
+        }
+        
+        return true
     }
     
     @objc public func editableTextNodeShouldReturn(_ editableTextNode: ASEditableTextNode) -> Bool {
-        return self.chatInputTextNodeShouldReturn()
+        return self.chatInputTextNodeShouldReturn(modifierFlags: [])
     }
     
     private func applyUpdateSendButtonIcon() {

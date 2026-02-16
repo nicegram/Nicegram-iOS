@@ -50,19 +50,15 @@ private enum TwoStepVerificationUnlockSettingsSection: Int32 {
     case email
 }
 
-private enum TwoStepVerificationUnlockSettingsEntryTag: ItemListItemTag {
+public enum TwoStepVerificationUnlockSettingsEntryTag: ItemListItemTag {
     case password
+    case change
+    case disable
+    case changeEmail
     
-    func isEqual(to other: ItemListItemTag) -> Bool {
-        if let other = other as? TwoStepVerificationUnlockSettingsEntryTag {
-            switch self {
-                case .password:
-                    if case .password = other {
-                        return true
-                    } else {
-                        return false
-                    }
-            }
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? TwoStepVerificationUnlockSettingsEntryTag, self == other {
+            return true
         } else {
             return false
         }
@@ -159,15 +155,15 @@ private enum TwoStepVerificationUnlockSettingsEntry: ItemListNodeEntry {
             case let .changePassword(_, text):
                 return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openSetupPassword()
-                })
+                }, tag: TwoStepVerificationUnlockSettingsEntryTag.change)
             case let .turnPasswordOff(_, text):
                 return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openDisablePassword()
-                })
+                }, tag: TwoStepVerificationUnlockSettingsEntryTag.disable)
             case let .setupRecoveryEmail(_, text):
                 return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: text, kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                     arguments.openSetupEmail()
-                })
+                }, tag: TwoStepVerificationUnlockSettingsEntryTag.changeEmail)
             case let .passwordInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .pendingEmailConfirmInfo(_, text):
@@ -283,7 +279,7 @@ public enum TwoStepVerificationUnlockSettingsControllerData: Equatable {
     case manage(password: String, emailSet: Bool, pendingEmail: TwoStepVerificationPendingEmail?, hasSecureValues: Bool)
 }
 
-public func twoStepVerificationUnlockSettingsController(context: AccountContext, mode: TwoStepVerificationUnlockSettingsControllerMode, openSetupPasswordImmediately: Bool = false) -> ViewController {
+public func twoStepVerificationUnlockSettingsController(context: AccountContext, mode: TwoStepVerificationUnlockSettingsControllerMode, openSetupPasswordImmediately: Bool = false, focusOnItemTag: TwoStepVerificationUnlockSettingsEntryTag? = nil) -> ViewController {
     let initialState = TwoStepVerificationUnlockSettingsControllerState()
     
     let statePromise = ValuePromise(initialState, ignoreRepeated: true)
@@ -463,7 +459,7 @@ public func twoStepVerificationUnlockSettingsController(context: AccountContext,
                     return state
                 }
                 
-                replaceControllerImpl?(twoStepVerificationUnlockSettingsController(context: context, mode: .manage(password: password, email: settings.email, pendingEmail: pendingEmail, hasSecureValues: settings.secureSecret != nil)), true)
+                replaceControllerImpl?(twoStepVerificationUnlockSettingsController(context: context, mode: .manage(password: password, email: settings.email, pendingEmail: pendingEmail, hasSecureValues: settings.secureSecret != nil), focusOnItemTag: focusOnItemTag), true)
             }, error: { error in
                 updateState { state in
                     var state = state
@@ -969,7 +965,7 @@ public func twoStepVerificationUnlockSettingsController(context: AccountContext,
         }
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(title), leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: twoStepVerificationUnlockSettingsControllerEntries(presentationData: presentationData, state: state, data: data), style: .blocks, focusItemTag: didAppear ? TwoStepVerificationUnlockSettingsEntryTag.password : nil, emptyStateItem: emptyStateItem, animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: twoStepVerificationUnlockSettingsControllerEntries(presentationData: presentationData, state: state, data: data), style: .blocks, focusItemTag: focusOnItemTag ?? (didAppear ? TwoStepVerificationUnlockSettingsEntryTag.password : nil), emptyStateItem: emptyStateItem, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
@@ -1039,6 +1035,20 @@ public func twoStepVerificationUnlockSettingsController(context: AccountContext,
                 }
             }
         }))
+    }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
     }
     
     return controller

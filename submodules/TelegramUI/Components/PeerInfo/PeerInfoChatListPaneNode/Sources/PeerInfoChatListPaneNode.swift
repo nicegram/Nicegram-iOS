@@ -389,7 +389,7 @@ public final class PeerInfoChatListPaneNode: ASDisplayNode, PeerInfoPaneNode, AS
                 chatController.canReadHistory.set(false)
                 let source: ContextContentSource = .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node, navigationController: parentController.navigationController as? NavigationController))
                 
-                let contextController = ContextController(presentationData: self.presentationData, source: source, items: savedMessagesPeerMenuItems(context: self.context, threadId: threadId, parentController: parentController, deletePeerChat: { [weak self] peerId in
+                let contextController = makeContextController(presentationData: self.presentationData, source: source, items: savedMessagesPeerMenuItems(context: self.context, threadId: threadId, parentController: parentController, deletePeerChat: { [weak self] peerId in
                     guard let self else {
                         return
                     }

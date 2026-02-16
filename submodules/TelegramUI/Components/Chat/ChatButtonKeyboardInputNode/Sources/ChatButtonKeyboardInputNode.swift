@@ -11,20 +11,19 @@ import ChatPresentationInterfaceState
 import WallpaperBackgroundNode
 import ChatControllerInteraction
 import ChatInputNode
+import ComponentFlow
+import ComponentDisplayAdapters
+import GlassBackgroundComponent
+import EmojiStatusComponent
 
 private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNode {
-    var button: ReplyMarkupButton? {
-        didSet {
-            self.updateIcon()
-        }
-    }
+    private(set) var button: ReplyMarkupButton?
         
     private let backgroundContainerNode: ASDisplayNode
-    private var backgroundNode: WallpaperBubbleBackgroundNode?
-    private let backgroundColorNode: ASDisplayNode
-    private let backgroundAdditionalColorNode: ASDisplayNode
+    private let backgroundView: UIImageView
+    private var icon: ComponentView<Empty>?
     
-    private let highlightNode: ASImageNode
+    let tintMaskView: UIImageView
     
     private let textNode: ImmediateTextNode
     private var iconNode: ASImageNode?
@@ -33,22 +32,11 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
     
     init() {
         self.backgroundContainerNode = ASDisplayNode()
-        self.backgroundContainerNode.clipsToBounds = true
         self.backgroundContainerNode.allowsGroupOpacity = true
         self.backgroundContainerNode.isUserInteractionEnabled = false
-        self.backgroundContainerNode.cornerRadius = 10.0
-        self.backgroundContainerNode.layer.cornerCurve = .continuous
         
-        self.backgroundColorNode = ASDisplayNode()
-        self.backgroundColorNode.cornerRadius = 10.0
-        self.backgroundColorNode.layer.cornerCurve = .continuous
-        
-        self.backgroundAdditionalColorNode = ASDisplayNode()
-        self.backgroundAdditionalColorNode.backgroundColor = UIColor(rgb: 0xffffff, alpha: 0.1)
-        self.backgroundAdditionalColorNode.isHidden = true
-        
-        self.highlightNode = ASImageNode()
-        self.highlightNode.isUserInteractionEnabled = false
+        self.backgroundView = UIImageView()
+        self.tintMaskView = UIImageView()
         
         self.textNode = ImmediateTextNode()
         self.textNode.isUserInteractionEnabled = false
@@ -61,58 +49,68 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
         
         self.addSubnode(self.backgroundContainerNode)
         
-        self.backgroundContainerNode.addSubnode(self.backgroundColorNode)
-        self.backgroundContainerNode.addSubnode(self.backgroundAdditionalColorNode)
-        self.addSubnode(self.textNode)
+        self.backgroundView.isUserInteractionEnabled = false
+        self.backgroundContainerNode.view.addSubview(self.backgroundView)
         
-        self.backgroundContainerNode.addSubnode(self.highlightNode)
+        self.textNode.isUserInteractionEnabled = false
+        self.addSubnode(self.textNode)
                 
         self.highligthedChanged = { [weak self] highlighted in
             if let strongSelf = self {
                 if highlighted, !strongSelf.bounds.width.isZero {
-                    let scale = (strongSelf.bounds.width - 10.0) / strongSelf.bounds.width
-                    strongSelf.layer.animateScale(from: 1.0, to: scale, duration: 0.15, removeOnCompletion: false)
-                    
                     strongSelf.backgroundContainerNode.layer.removeAnimation(forKey: "opacity")
-                    strongSelf.backgroundContainerNode.alpha = 0.6
-                } else if let presentationLayer = strongSelf.layer.presentation() {
-                    strongSelf.layer.animateScale(from: CGFloat((presentationLayer.value(forKeyPath: "transform.scale.y") as? NSNumber)?.floatValue ?? 1.0), to: 1.0, duration: 0.25, removeOnCompletion: false)
-                    
+                    strongSelf.backgroundContainerNode.alpha = 0.9
+                } else {
                     strongSelf.backgroundContainerNode.alpha = 1.0
-                    strongSelf.backgroundContainerNode.layer.animateAlpha(from: 0.6, to: 1.0, duration: 0.2)
+                    strongSelf.backgroundContainerNode.layer.animateAlpha(from: 0.9, to: 1.0, duration: 0.2)
                 }
             }
         }
     }
     
-    override func setAttributedTitle(_ title: NSAttributedString, for state: UIControl.State) {
+    func update(context: AccountContext, size: CGSize, theme: PresentationTheme, wallpaperBackgroundNode: WallpaperBackgroundNode?, button: ReplyMarkupButton, message: EngineMessage) {
+        self.button = button
+        
+        if theme !== self.theme {
+            self.theme = theme
+        }
+        
+        if self.backgroundView.image == nil {
+            self.backgroundView.image = generateStretchableFilledCircleImage(diameter: 20.0, color: .white)?.withRenderingMode(.alwaysTemplate)
+            self.tintMaskView.image = self.backgroundView.image
+        }
+        self.tintMaskView.tintColor = .black
+        
+        var titleColor = theme.chat.inputButtonPanel.buttonTextColor
+        
+        if let color = button.style?.color {
+            switch color {
+            case .primary:
+                self.backgroundView.tintColor = theme.list.itemCheckColors.fillColor
+                titleColor = theme.list.itemCheckColors.foregroundColor
+            case .danger:
+                self.backgroundView.tintColor = UIColor(rgb: 0xFF3B30)
+                titleColor = .white
+            case .success:
+                self.backgroundView.tintColor = UIColor(rgb: 0x21B246)
+                titleColor = .white
+            }
+        } else {
+            self.backgroundView.tintColor = theme.overallDarkAppearance ? UIColor(white: 1.0, alpha: 0.25) : UIColor(white: 1.0, alpha: 0.85)
+        }
+        
+        let title = NSAttributedString(string: button.title, font: Font.regular(16.0), textColor: titleColor, paragraphAlignment: .center)
+        
         self.textNode.attributedText = title
         self.accessibilityLabel = title.string
-    }
-    
-    private var absoluteRect: (CGRect, CGSize)?
-    func update(rect: CGRect, within containerSize: CGSize, transition: ContainedViewLayoutTransition) {
-        self.absoluteRect = (rect, containerSize)
         
-        if let backgroundNode = self.backgroundNode {
-            var backgroundFrame = backgroundNode.frame
-            backgroundFrame.origin.x += rect.minX
-            backgroundFrame.origin.y += rect.minY
-            backgroundNode.update(rect: backgroundFrame, within: containerSize, transition: transition)
-        }
-    }
-    
-    private func updateIcon() {
-        guard let theme = self.theme else {
-            return
-        }
         var iconImage: UIImage?
         if let button = self.button {
             switch button.action {
-                case .openWebView:
-                    iconImage = PresentationResourcesChat.chatKeyboardActionButtonWebAppIconImage(theme)
-                default:
-                    iconImage = nil
+            case .openWebView:
+                iconImage = PresentationResourcesChat.chatKeyboardActionButtonWebAppIconImage(theme)
+            default:
+                iconImage = nil
             }
         }
         
@@ -121,6 +119,7 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
                 let iconNode = ASImageNode()
                 iconNode.contentMode = .center
                 self.iconNode = iconNode
+                iconNode.isUserInteractionEnabled = false
                 self.addSubnode(iconNode)
             }
             self.iconNode?.image = iconImage
@@ -129,71 +128,84 @@ private final class ChatButtonKeyboardInputButtonNode: HighlightTrackingButtonNo
             self.iconNode = nil
         }
         
-        self.setNeedsLayout()
-    }
-    
-    func updateTheme(theme: PresentationTheme, wallpaperBackgroundNode: WallpaperBackgroundNode?) {
-        if theme !== self.theme {
-            self.theme = theme
-                        
-            self.highlightNode.image = PresentationResourcesChat.chatInputButtonPanelButtonHighlightImage(theme)
-            
-            self.updateIcon()
-        }
-        
-        self.backgroundColorNode.backgroundColor = theme.chat.inputButtonPanel.buttonFillColor
-        if let alpha = self.backgroundColorNode.backgroundColor?.alpha, alpha < 1.0 {
-            self.backgroundColorNode.layer.compositingFilter = "softLightBlendMode"
-            self.backgroundAdditionalColorNode.isHidden = false
-        } else {
-            self.backgroundColorNode.layer.compositingFilter = nil
-            self.backgroundAdditionalColorNode.isHidden = true
-        }
-        
-        if wallpaperBackgroundNode?.hasExtraBubbleBackground() == true {
-            if self.backgroundNode == nil, let backgroundContent = wallpaperBackgroundNode?.makeBubbleBackground(for: .free) {
-                self.backgroundNode = backgroundContent
-                self.backgroundContainerNode.insertSubnode(backgroundContent, at: 0)
-                
-                self.setNeedsLayout()
-            }
-        } else {
-            self.backgroundNode?.removeFromSupernode()
-            self.backgroundNode = nil
-        }
-    }
-    
-    override func layout() {
-        super.layout()
-        
         self.backgroundContainerNode.frame = self.bounds
-        self.backgroundColorNode.frame = CGRect(origin: .zero, size: CGSize(width: self.bounds.width, height: self.bounds.height - 1.0))
-        self.backgroundAdditionalColorNode.frame = self.backgroundColorNode.frame
-        self.backgroundNode?.frame = self.backgroundColorNode.frame
-        
-        self.highlightNode.frame = self.bounds
-        
-        if let (rect, containerSize) = self.absoluteRect {
-            self.update(rect: rect, within: containerSize, transition: .immediate)
-        }
+        self.backgroundView.frame = CGRect(origin: .zero, size: CGSize(width: self.bounds.width, height: self.bounds.height))
         
         if let iconNode = self.iconNode {
             iconNode.frame = CGRect(x: self.frame.width - 16.0, y: 4.0, width: 12.0, height: 12.0)
         }
         
-        let textSize = self.textNode.updateLayout(CGSize(width: self.bounds.width - 16.0, height: self.bounds.height))
-        self.textNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((self.bounds.width - textSize.width) / 2.0), y: floorToScreenPixels((self.bounds.height - textSize.height) / 2.0)), size: textSize)
+        var maxTextWidth = size.width - 16.0
+        let iconSize = CGSize(width: 24.0, height: 24.0)
+        let iconSpacing: CGFloat = 6.0
+        if let iconFileId = button.style?.iconFileId {
+            let icon: ComponentView<Empty>
+            if let current = self.icon {
+                icon = current
+            } else {
+                icon = ComponentView()
+                self.icon = icon
+            }
+            maxTextWidth -= iconSize.width + iconSpacing
+            
+            var animationContent: EmojiStatusComponent.AnimationContent = .customEmoji(fileId: iconFileId)
+            if let file = message.associatedMedia[MediaId(namespace: Namespaces.Media.CloudFile, id: iconFileId)] as? TelegramMediaFile {
+                animationContent = .file(file: file)
+            }
+            
+            let _ = icon.update(
+                transition: .immediate,
+                component: AnyComponent(EmojiStatusComponent(
+                    context: context,
+                    animationCache: context.animationCache,
+                    animationRenderer: context.animationRenderer,
+                    content: .animation(
+                        content: animationContent,
+                        size: iconSize,
+                        placeholderColor: theme.overallDarkAppearance ? UIColor(white: 1.0, alpha: 0.1) : UIColor(white: 0.0, alpha: 0.1),
+                        themeColor: theme.list.itemPrimaryTextColor,
+                        loopMode: .count(0)
+                    ),
+                    isVisibleForAnimations: true,
+                    action: nil
+                )),
+                environment: {},
+                containerSize: iconSize
+            )
+        } else if let icon = self.icon {
+            self.icon = nil
+            icon.view?.removeFromSuperview()
+        }
+        
+        let textSize = self.textNode.updateLayout(CGSize(width: maxTextWidth, height: self.bounds.height))
+        
+        var textFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((self.bounds.width - textSize.width) / 2.0), y: floorToScreenPixels((self.bounds.height - textSize.height) / 2.0)), size: textSize)
+        if let iconView = self.icon?.view {
+            let contentX = floor((size.width - textSize.width - iconSize.width - iconSpacing) * 0.5)
+            textFrame.origin.x = contentX + iconSize.width + iconSpacing
+            
+            let iconFrame = CGRect(origin: CGPoint(x: contentX, y: floor((size.height - iconSize.height) * 0.5)), size: iconSize)
+            if iconView.superview == nil {
+                iconView.isUserInteractionEnabled = false
+                self.view.addSubview(iconView)
+            }
+            iconView.frame = iconFrame
+        }
+        
+        self.textNode.frame = textFrame
     }
 }
 
-public final class ChatButtonKeyboardInputNode: ChatInputNode {
+public final class ChatButtonKeyboardInputNode: ChatInputNode, UIScrollViewDelegate {
     private let context: AccountContext
     private let controllerInteraction: ChatControllerInteraction
 
+    private let backgroundView: BlurredBackgroundView
+    private let backgroundTintView: UIImageView
+    private let backgroundTintMaskView: UIView
+    private let backgroundChromeView: UIImageView
+    
     private let scrollNode: ASScrollNode
-
-    private var backgroundNode: WallpaperBubbleBackgroundNode?
-    private let backgroundColorNode: ASDisplayNode
     
     private var buttonNodes: [ChatButtonKeyboardInputButtonNode] = []
     private var message: Message?
@@ -204,19 +216,42 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
         self.context = context
         self.controllerInteraction = controllerInteraction
         
-        self.scrollNode = ASScrollNode()
+        self.backgroundView = BlurredBackgroundView(color: .black, enableBlur: true)
+        self.backgroundTintView = UIImageView()
         
-        self.backgroundColorNode = ASDisplayNode()
+        self.backgroundTintMaskView = UIView()
+        self.backgroundTintMaskView.backgroundColor = .white
+        
+        self.backgroundChromeView = UIImageView()
+        
+        self.scrollNode = ASScrollNode()
         
         super.init()
         
-        self.addSubnode(self.backgroundColorNode)
+        self.view.addSubview(self.backgroundView)
+        
+        self.view.addSubview(self.backgroundTintView)
+        if let filter = CALayer.luminanceToAlpha() {
+            self.backgroundTintMaskView.layer.filters = [filter]
+            self.backgroundTintView.mask = self.backgroundTintMaskView
+        }
+        
+        self.view.addSubview(self.backgroundChromeView)
         
         self.addSubnode(self.scrollNode)
         self.scrollNode.view.delaysContentTouches = false
         self.scrollNode.view.canCancelContentTouches = true
         self.scrollNode.view.alwaysBounceHorizontal = false
         self.scrollNode.view.alwaysBounceVertical = false
+        self.scrollNode.view.delegate = self
+        
+        self.scrollNode.view.clipsToBounds = true
+        self.scrollNode.cornerRadius = 30.0
+        self.scrollNode.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        
+        self.backgroundTintMaskView.clipsToBounds = true
+        self.backgroundTintMaskView.layer.cornerRadius = 30.0
+        self.backgroundTintMaskView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
     }
     
     override public func didLoad() {
@@ -227,38 +262,16 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
         }
     }
     
-    private var absoluteRect: (CGRect, CGSize)?
-    override public func updateAbsoluteRect(_ rect: CGRect, within containerSize: CGSize, transition: ContainedViewLayoutTransition) {
-        self.absoluteRect = (rect, containerSize)
-
-        if let backgroundNode = self.backgroundNode {
-            var backgroundFrame = backgroundNode.frame
-            backgroundFrame.origin.x += rect.minX
-            backgroundFrame.origin.y += rect.minY
-            backgroundNode.update(rect: backgroundFrame, within: containerSize, transition: transition)
-        }
-        
-        for buttonNode in self.buttonNodes {
-            var buttonFrame = buttonNode.frame
-            buttonFrame.origin.x += rect.minX
-            buttonFrame.origin.y += rect.minY
-            buttonNode.update(rect: buttonFrame, within: containerSize, transition: transition)
-        }
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        var bounds = self.backgroundTintMaskView.bounds
+        bounds.origin.y = scrollView.contentOffset.y
+        self.backgroundTintMaskView.bounds = bounds
     }
     
     override public func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, standardInputHeight: CGFloat, inputHeight: CGFloat, maximumHeight: CGFloat, inputPanelHeight: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, layoutMetrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isVisible: Bool, isExpanded: Bool) -> (CGFloat, CGFloat) {
-        if self.backgroundNode == nil {
-            if let backgroundNode = self.controllerInteraction.presentationContext.backgroundNode?.makeBubbleBackground(for: .free) {
-                self.backgroundNode = backgroundNode
-                self.insertSubnode(backgroundNode, at: 0)
-            }
-        }
-        
         let updatedTheme = self.theme !== interfaceState.theme
         if updatedTheme {
             self.theme = interfaceState.theme
-            
-            self.backgroundColorNode.backgroundColor = interfaceState.theme.chat.inputButtonPanel.panelBackgroundColor
         }
         
         var validatedMarkup: ReplyMarkupMessageAttribute?
@@ -275,9 +288,9 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
         
         self.message = interfaceState.keyboardButtonsMessage
         
-        if let markup = validatedMarkup {
-            let verticalInset: CGFloat = 16.0
-            let sideInset: CGFloat = 16.0 + leftInset
+        if let markup = validatedMarkup, let message = self.message {
+            let verticalInset: CGFloat = 18.0
+            let sideInset: CGFloat = 18.0 + leftInset
             var buttonHeight: CGFloat = 43.0
             let columnSpacing: CGFloat = 6.0
             let rowSpacing: CGFloat = 5.0
@@ -305,15 +318,14 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
                         buttonNode.titleNode.maximumNumberOfLines = 2
                         buttonNode.addTarget(self, action: #selector(self.buttonPressed(_:)), forControlEvents: [.touchUpInside])
                         self.scrollNode.addSubnode(buttonNode)
+                        self.backgroundTintMaskView.addSubview(buttonNode.tintMaskView)
                         self.buttonNodes.append(buttonNode)
                     }
-                    buttonNode.updateTheme(theme: interfaceState.theme, wallpaperBackgroundNode: self.controllerInteraction.presentationContext.backgroundNode)
                     buttonIndex += 1
-                    if buttonNode.button != button || updatedTheme {
-                        buttonNode.button = button
-                        buttonNode.setAttributedTitle(NSAttributedString(string: button.title, font: Font.regular(16.0), textColor: interfaceState.theme.chat.inputButtonPanel.buttonTextColor, paragraphAlignment: .center), for: [])
-                    }
-                    buttonNode.frame = CGRect(origin: CGPoint(x: sideInset + CGFloat(columnIndex) * (buttonWidth + columnSpacing), y: verticalOffset), size: CGSize(width: buttonWidth, height: buttonHeight))
+                    let buttonFrame = CGRect(origin: CGPoint(x: sideInset + CGFloat(columnIndex) * (buttonWidth + columnSpacing), y: verticalOffset), size: CGSize(width: buttonWidth, height: buttonHeight))
+                    buttonNode.frame = buttonFrame
+                    buttonNode.tintMaskView.frame = buttonFrame
+                    buttonNode.update(context: self.context, size: buttonFrame.size, theme: interfaceState.theme, wallpaperBackgroundNode: self.controllerInteraction.presentationContext.backgroundNode, button: button, message: EngineMessage(message))
                     columnIndex += 1
                 }
                 verticalOffset += buttonHeight + rowSpacing
@@ -321,6 +333,7 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
             
             for i in (buttonIndex ..< self.buttonNodes.count).reversed() {
                 self.buttonNodes[i].removeFromSupernode()
+                self.buttonNodes[i].tintMaskView.removeFromSuperview()
                 self.buttonNodes.remove(at: i)
             }
             
@@ -335,14 +348,27 @@ public final class ChatButtonKeyboardInputNode: ChatInputNode {
                 self.scrollNode.view.setContentOffset(CGPoint(), animated: false)
             }
             
-            if let backgroundNode = self.backgroundNode {
-                backgroundNode.frame = CGRect(origin: .zero, size: CGSize(width: width, height: panelHeight))
-            }
-            self.backgroundColorNode.frame = CGRect(origin: .zero, size: CGSize(width: width, height: panelHeight))
+            var backgroundFrame = CGRect(origin: CGPoint(), size: CGSize(width: width, height: panelHeight))
+            backgroundFrame.size.height += 32.0
+            let keyboardCornerRadius: CGFloat = 30.0
             
-            if let (rect, containerSize) = self.absoluteRect {
-                self.updateAbsoluteRect(rect, within: containerSize, transition: transition)
+            if self.backgroundChromeView.image == nil || updatedTheme {
+                self.backgroundChromeView.image = GlassBackgroundView.generateForegroundImage(size: CGSize(width: keyboardCornerRadius * 2.0, height: keyboardCornerRadius * 2.0), isDark: interfaceState.theme.overallDarkAppearance, fillColor: .clear)
             }
+            
+            if self.backgroundTintView.image == nil {
+                self.backgroundTintView.image = generateStretchableFilledCircleImage(diameter: keyboardCornerRadius * 2.0, color: .white)?.withRenderingMode(.alwaysTemplate)
+            }
+            self.backgroundTintView.tintColor = interfaceState.theme.chat.inputButtonPanel.panelBackgroundColor
+            
+            transition.updateFrame(view: self.backgroundView, frame: backgroundFrame)
+            transition.updateFrame(view: self.backgroundTintView, frame: backgroundFrame)
+            transition.updateFrame(view: self.backgroundTintMaskView, frame: CGRect(origin: CGPoint(), size: backgroundFrame.size))
+            
+            self.backgroundView.updateColor(color: .clear, forceKeepBlur: true, transition: .immediate)
+            self.backgroundView.update(size: backgroundFrame.size, cornerRadius: keyboardCornerRadius, maskedCorners: [.layerMinXMinYCorner, .layerMaxXMinYCorner], transition: transition)
+            
+            transition.updateFrame(view: self.backgroundChromeView, frame: backgroundFrame.insetBy(dx: -1.0, dy: 0.0))
             
             return (panelHeight, 0.0)
         } else {

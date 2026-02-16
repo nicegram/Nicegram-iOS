@@ -8,7 +8,7 @@ import GlassBackgroundComponent
 import LiquidLens
 import TabSelectionRecognizer
 
-extension CameraMode {
+extension CameraState.CameraMode {
     func title(strings: PresentationStrings) -> String {
         switch self {
         case .photo:
@@ -28,18 +28,18 @@ final class ModeComponent: Component {
     let isTablet: Bool
     let strings: PresentationStrings
     let tintColor: UIColor
-    let availableModes: [CameraMode]
-    let currentMode: CameraMode
-    let updatedMode: (CameraMode) -> Void
+    let availableModes: [CameraState.CameraMode]
+    let currentMode: CameraState.CameraMode
+    let updatedMode: (CameraState.CameraMode) -> Void
     let tag: AnyObject?
     
     init(
         isTablet: Bool,
         strings: PresentationStrings,
         tintColor: UIColor,
-        availableModes: [CameraMode],
-        currentMode: CameraMode,
-        updatedMode: @escaping (CameraMode) -> Void,
+        availableModes: [CameraState.CameraMode],
+        currentMode: CameraState.CameraMode,
+        updatedMode: @escaping (CameraState.CameraMode) -> Void,
         tag: AnyObject?
     ) {
         self.isTablet = isTablet

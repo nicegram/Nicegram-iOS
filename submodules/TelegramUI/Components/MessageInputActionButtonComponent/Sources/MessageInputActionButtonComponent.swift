@@ -532,16 +532,16 @@ public final class MessageInputActionButtonComponent: Component {
                 }
                 
                 var tintColor = UIColor(rgb: 0x25272e, alpha: 0.72)
-                let tintKind: GlassBackgroundView.TintColor.Kind = .custom
                 if case .send = component.mode {
                     tintColor = UIColor(rgb: 0x029dff)
                 }
+                let tintKind: GlassBackgroundView.TintColor.Kind = .custom(style: .default, color: tintColor)
                 
                 let glassTint: GlassBackgroundView.TintColor
                 if isTinted {
-                    glassTint = .init(kind: tintKind, color: tintColor)
+                    glassTint = .init(kind: tintKind)
                 } else {
-                    glassTint = .init(kind: .panel, color: defaultDarkPresentationTheme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
+                    glassTint = .init(kind: .panel)
                 }
                 
                 let buttonSize = CGSize(width: 40.0, height: 40.0)

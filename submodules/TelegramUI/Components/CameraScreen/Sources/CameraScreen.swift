@@ -46,13 +46,13 @@ let collageGrids: [Camera.CollageGrid] = [
     Camera.CollageGrid(rows: [Camera.CollageGrid.Row(columns: 2), Camera.CollageGrid.Row(columns: 2), Camera.CollageGrid.Row(columns: 2)])
 ]
 
-enum CameraMode: Int32, Equatable {
-    case photo
-    case video
-    case live
-}
-
 struct CameraState: Equatable {
+    enum CameraMode: Int32, Equatable {
+        case photo
+        case video
+        case live
+    }
+    
     enum Recording: Equatable {
         case none
         case holding
@@ -548,7 +548,7 @@ private final class CameraScreenComponent: CombinedComponent {
             self.buttonPressTimestamp = nil
         }
         
-        func updateCameraMode(_ mode: CameraMode) {
+        func updateCameraMode(_ mode: CameraState.CameraMode) {
             guard let controller = self.getController(), let camera = controller.camera else {
                 return
             }
@@ -2102,7 +2102,7 @@ private final class CameraScreenComponent: CombinedComponent {
                     availableModeControlSize = availableSize
                 }
                 
-                var availableModes: [CameraMode] = [.photo, .video]
+                var availableModes: [CameraState.CameraMode] = [.photo, .video]
                 if !isTablet && state.canLivestream {
                     availableModes.append(.live)
                 }
@@ -2216,6 +2216,12 @@ public class CameraScreenImpl: ViewController, CameraScreen {
         case story
         case sticker
         case avatar
+    }
+    
+    public enum CameraMode {
+        case photo
+        case video
+        case live
     }
     
     public enum PIPPosition: Int32 {
@@ -2528,8 +2534,18 @@ public class CameraScreenImpl: ViewController, CameraScreen {
                 self.mainPreviewView.resetPlaceholder(front: cameraFrontPosition)
             }
             
+            let cameraMode: CameraState.CameraMode
+            switch controller.cameraMode {
+            case .photo:
+                cameraMode = .photo
+            case .video:
+                cameraMode = .video
+            case .live:
+                cameraMode = .live
+            }
+            
             self.cameraState = CameraState(
-                mode: .photo,
+                mode: cameraMode,
                 position: cameraFrontPosition ? .front : .back,
                 flashMode: .off,
                 flashModeDidChange: false,
@@ -4002,6 +4018,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
 
     private let context: AccountContext
     fileprivate let mode: Mode
+    fileprivate let cameraMode: CameraMode
     fileprivate let customTarget: EnginePeer.Id?
     fileprivate let resumeLiveStream: Bool
     fileprivate let holder: CameraHolder?
@@ -4071,6 +4088,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
     public init(
         context: AccountContext,
         mode: Mode,
+        cameraMode: CameraMode = .photo,
         customTarget: EnginePeer.Id? = nil,
         resumeLiveStream: Bool = false,
         holder: CameraHolder? = nil,
@@ -4080,6 +4098,7 @@ public class CameraScreenImpl: ViewController, CameraScreen {
     ) {
         self.context = context
         self.mode = mode
+        self.cameraMode = cameraMode
         self.customTarget = customTarget
         self.resumeLiveStream = resumeLiveStream
         self.holder = holder

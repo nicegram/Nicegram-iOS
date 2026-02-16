@@ -534,16 +534,16 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
 private extension Api.Chat {
     var peerId: PeerId {
         switch self {
-            case let .chat(_, id, _, _, _, _, _, _, _, _):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id))
-            case let .chatEmpty(id):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id))
-            case let .chatForbidden(id, _):
-                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(id))
-            case let .channel(_, _, id, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))
-            case let .channelForbidden(_, id, _, _, _):
-                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))
+            case let .chat(chat):
+                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chat.id))
+            case let .chatEmpty(chatEmpty):
+                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatEmpty.id))
+            case let .chatForbidden(chatForbidden):
+                return PeerId(namespace: Namespaces.Peer.CloudGroup, id: PeerId.Id._internalFromInt64Value(chatForbidden.id))
+            case let .channel(channel):
+                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channel.id))
+            case let .channelForbidden(channelForbidden):
+                return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelForbidden.id))
         }
     }
 }

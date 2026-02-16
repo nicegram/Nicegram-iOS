@@ -1,3 +1,6 @@
+// Nicegram
+import TelegramBridge
+//
 import Foundation
 import UIKit
 import Display
@@ -530,7 +533,8 @@ public extension ChatControllerImpl {
         ChatControllerImpl.presentBotApp(context: self.context, parentController: self, botApp: botApp, botPeer: botPeer, payload: payload, mode: mode, concealed: concealed, commit: commit)
     }
     
-    fileprivate static func presentBotApp(context: AccountContext, parentController: ViewController, botApp: BotApp?, botPeer: EnginePeer, payload: String?, mode: ResolvedStartAppMode, concealed: Bool = false, commit: @escaping () -> Void = {}) {
+    // Nicegram, remove fileprivate, add customization
+    static func presentBotApp(context: AccountContext, parentController: ViewController, botApp: BotApp?, botPeer: EnginePeer, payload: String?, mode: ResolvedStartAppMode, concealed: Bool = false, customization: TelegramWebAppCustomization? = nil, commit: @escaping () -> Void = {}) {
         let chatController = parentController as? ChatControllerImpl
         let peerId: EnginePeer.Id
         let threadId = chatController?.chatLocation.threadId
@@ -549,6 +553,11 @@ public extension ChatControllerImpl {
                 }
             }
         }
+        // Nicegram
+        if let customization, customization.shouldSkipTermsOfService() {
+            skipTermsOfService = true
+        }
+        //
 
         chatController?.attachmentController?.dismiss(animated: true, completion: nil)
         
@@ -609,7 +618,8 @@ public extension ChatControllerImpl {
                 |> deliverOnMainQueue).startStandalone(next: { [weak parentController, weak chatController] result in
                     let params = WebAppParameters(source: .generic, peerId: peerId, botId: botPeer.id, botName: botApp.title, botVerified: botPeer.isVerified, botAddress: botPeer.addressName ?? "", appName: botApp.shortName, url: result.url, queryId: 0, payload: payload, buttonText: "", keepAliveSignal: nil, forceHasSettings: botApp.flags.contains(.hasSettings), fullSize: result.flags.contains(.fullSize), isFullscreen: result.flags.contains(.fullScreen), appSettings: appSettings)
                     var presentImpl: ((ViewController, Any?) -> Void)?
-                    let controller = standaloneWebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, threadId: threadId, openUrl: { url, concealed, forceUpdate, commit in
+                    // Nicegram, remove fileprivate, add customization
+                    let controller = standaloneWebAppController(context: context, updatedPresentationData: updatedPresentationData, params: params, threadId: threadId, customization: customization, openUrl: { url, concealed, forceUpdate, commit in
                         ChatControllerImpl.botOpenUrl(context: context, peerId: peerId, controller: chatController, url: url, concealed: concealed, forceUpdate: forceUpdate, present: { c, a in
                             presentImpl?(c, a)
                         }, commit: commit)

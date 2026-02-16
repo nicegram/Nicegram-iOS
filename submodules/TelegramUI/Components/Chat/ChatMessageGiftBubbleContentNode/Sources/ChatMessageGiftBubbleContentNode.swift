@@ -282,7 +282,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                 switch action.action {
                 case let .starGift(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     releasedBy = gift.releasedBy
-                case let .starGiftUnique(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
+                case let .starGiftUnique(gift, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
                     releasedBy = gift.releasedBy
                 default:
                     break
@@ -581,7 +581,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                 
                                 let isChannelGift = item.message.id.peerId.namespace == Namespaces.Peer.CloudChannel || channelPeerId != nil
                                 if isSelfGift {
-                                    title = item.presentationData.strings.Notification_StarGift_Self_Title
+                                    title = item.presentationData.strings.Notification_StarGift_Purchased_Title
                                 } else {
                                     if isPrepaidUpgrade && senderPeerId == channelPeerId {
                                         title = item.presentationData.strings.Gift_View_Unknown_Title
@@ -690,7 +690,7 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                     }
                                 }
                             }
-                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _, _, _, _, _, _, _, fromOffer):
+                        case let .starGiftUnique(gift, isUpgrade, _, _, _, _, isRefunded, _, _, _, _, _, _, _, _, _, fromOffer, _, isCrafted):
                             if case let .unique(uniqueGift) = gift {
                                 isStarGift = true
                                 
@@ -712,7 +712,13 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                 if isStoryEntity {
                                     title = uniqueGift.title
                                 } else if isSelfGift {
-                                    title = item.presentationData.strings.Notification_StarGift_Self_Title
+                                    if isCrafted {
+                                        title = item.presentationData.strings.Notification_StarGift_Crafted_Title
+                                    } else if isUpgrade {
+                                        title = item.presentationData.strings.Notification_StarGift_Upgraded_Title
+                                    } else {
+                                        title = item.presentationData.strings.Notification_StarGift_Purchased_Title
+                                    }
                                 } else if item.message.id.peerId.isTelegramNotifications {
                                     title = item.presentationData.strings.Notification_StarGift_TitleShort
                                 } else {
@@ -725,14 +731,21 @@ public class ChatMessageGiftBubbleContentNode: ChatMessageBubbleContentNode {
                                 } else {
                                     ribbonTitle = isStoryEntity ? "" : item.presentationData.strings.Notification_StarGift_Gift
                                 }
+                                                                
                                 buttonTitle = isStoryEntity ? "" : item.presentationData.strings.Notification_StarGift_View
                                 modelTitle = item.presentationData.strings.Notification_StarGift_Model
                                 backdropTitle = item.presentationData.strings.Notification_StarGift_Backdrop
                                 symbolTitle = item.presentationData.strings.Notification_StarGift_Symbol
                                 
+                                if uniqueGift.flags.contains(.isBurned) {
+                                    ribbonTitle = item.presentationData.strings.Notification_StarGift_Burned
+                                    customRibbonColors = [UIColor(rgb: 0xd9433a), UIColor(rgb: 0xff645b)]
+                                    buttonTitle = ""
+                                }
+                                
                                 for attribute in uniqueGift.attributes {
                                     switch attribute {
-                                    case let .model(name, file, _):
+                                    case let .model(name, file, _, _):
                                         modelValue = name
                                         animationFile = file
                                     case let .backdrop(name, _, innerColor, outerColor, patternColor, _, _):

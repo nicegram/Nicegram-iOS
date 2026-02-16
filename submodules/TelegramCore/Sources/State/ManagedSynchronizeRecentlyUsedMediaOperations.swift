@@ -128,7 +128,7 @@ private func synchronizeRecentlyUsedMedia(transaction: Transaction, accountPeerI
             }
             
             let addSticker: (Data) -> Signal<Api.Bool, SaveRecentlyUsedMediaError> = { fileReference in
-                return network.request(Api.functions.messages.saveRecentSticker(flags: 0, id: .inputDocument(id: id, accessHash: accessHash, fileReference: Buffer(data: fileReference)), unsave: .boolFalse))
+                return network.request(Api.functions.messages.saveRecentSticker(flags: 0, id: .inputDocument(.init(id: id, accessHash: accessHash, fileReference: Buffer(data: fileReference))), unsave: .boolFalse))
                 |> mapError { error -> SaveRecentlyUsedMediaError in
                     if error.errorDescription.hasPrefix("FILEREF_INVALID") || error.errorDescription.hasPrefix("FILE_REFERENCE_") {
                         return .invalidReference
@@ -170,7 +170,7 @@ private func synchronizeRecentlyUsedMedia(transaction: Transaction, accountPeerI
                 return .complete()
             }
         case let .remove(id, accessHash):
-            return network.request(Api.functions.messages.saveRecentSticker(flags: 0, id: .inputDocument(id: id, accessHash: accessHash, fileReference: Buffer()), unsave: .boolTrue))
+            return network.request(Api.functions.messages.saveRecentSticker(flags: 0, id: .inputDocument(.init(id: id, accessHash: accessHash, fileReference: Buffer())), unsave: .boolTrue))
             |> `catch` { _ -> Signal<Api.Bool, NoError> in
                 return .single(.boolFalse)
             }

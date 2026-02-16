@@ -35,19 +35,7 @@ public extension Peer {
         }
     }
     
-    // Nicegram
-    func restrictionReason(contentSettings: ContentSettings) -> String? {
-        restrictionText(platform: "ios", contentSettings: contentSettings, extractReason: true)
-    }
-    
-    func hasPornRestriction(contentSettings: ContentSettings) -> Bool {
-        let reason = restrictionReason(contentSettings: contentSettings)
-        return reason?.contains("porn") ?? false
-    }
-    //
-    
-    // Nicegram (extractReason)
-    func restrictionText(platform: String, contentSettings: ContentSettings, extractReason: Bool = false) -> String? {
+    func restrictionText(platform: String, contentSettings: ContentSettings) -> String? {
         var restrictionInfo: PeerAccessRestrictionInfo?
         switch self {
         case let user as TelegramUser:
@@ -65,11 +53,6 @@ public extension Peer {
                 }
                 if rule.platform == "all" || rule.platform == platform || contentSettings.addContentRestrictionReasons.contains(rule.platform) {
                     if !contentSettings.ignoreContentRestrictionReasons.contains(rule.reason) {
-                        // Nicegram
-                        if extractReason {
-                            return rule.reason
-                        }
-                        //
                         return rule.text
                     }
                 }

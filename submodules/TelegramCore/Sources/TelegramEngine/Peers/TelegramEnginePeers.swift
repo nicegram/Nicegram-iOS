@@ -612,6 +612,10 @@ public extension TelegramEngine {
             }
             |> ignoreValues
         }
+        
+        public func getFutureCreatorAfterLeave(peerId: EnginePeer.Id) -> Signal<EnginePeer?, NoError> {
+            return _internal_getFutureCreatorAfterLeave(account: self.account, peerId: peerId)
+        }
 
         public func terminateSecretChat(peerId: PeerId, requestRemoteHistoryRemoval: Bool) -> Signal<Never, NoError> {
             return self.account.postbox.transaction { transaction -> Void in
@@ -1648,7 +1652,7 @@ public extension TelegramEngine {
         }
         
         public func getCollectibleUsernameInfo(username: String) -> Signal<TelegramCollectibleItemInfo?, NoError> {
-            return self.account.network.request(Api.functions.fragment.getCollectibleInfo(collectible: .inputCollectibleUsername(username: username)))
+            return self.account.network.request(Api.functions.fragment.getCollectibleInfo(collectible: .inputCollectibleUsername(.init(username: username))))
             |> map(Optional.init)
             |> `catch` { _ -> Signal<Api.fragment.CollectibleInfo?, NoError> in
                 return .single(nil)
@@ -1658,7 +1662,8 @@ public extension TelegramEngine {
                     return nil
                 }
                 switch result {
-                case let .collectibleInfo(purchaseDate, currency, amount, cryptoCurrency, cryptoAmount, url):
+                case let .collectibleInfo(collectibleInfoData):
+                    let (purchaseDate, currency, amount, cryptoCurrency, cryptoAmount, url) = (collectibleInfoData.purchaseDate, collectibleInfoData.currency, collectibleInfoData.amount, collectibleInfoData.cryptoCurrency, collectibleInfoData.cryptoAmount, collectibleInfoData.url)
                     return TelegramCollectibleItemInfo(
                         subject: .username(username),
                         purchaseDate: purchaseDate,
@@ -1673,7 +1678,7 @@ public extension TelegramEngine {
         }
         
         public func getCollectiblePhoneNumberInfo(phoneNumber: String) -> Signal<TelegramCollectibleItemInfo?, NoError> {
-            return self.account.network.request(Api.functions.fragment.getCollectibleInfo(collectible: .inputCollectiblePhone(phone: phoneNumber)))
+            return self.account.network.request(Api.functions.fragment.getCollectibleInfo(collectible: .inputCollectiblePhone(.init(phone: phoneNumber))))
             |> map(Optional.init)
             |> `catch` { _ -> Signal<Api.fragment.CollectibleInfo?, NoError> in
                 return .single(nil)
@@ -1683,7 +1688,8 @@ public extension TelegramEngine {
                     return nil
                 }
                 switch result {
-                case let .collectibleInfo(purchaseDate, currency, amount, cryptoCurrency, cryptoAmount, url):
+                case let .collectibleInfo(collectibleInfoData):
+                    let (purchaseDate, currency, amount, cryptoCurrency, cryptoAmount, url) = (collectibleInfoData.purchaseDate, collectibleInfoData.currency, collectibleInfoData.amount, collectibleInfoData.cryptoCurrency, collectibleInfoData.cryptoAmount, collectibleInfoData.url)
                     return TelegramCollectibleItemInfo(
                         subject: .phoneNumber(phoneNumber),
                         purchaseDate: purchaseDate,
@@ -1741,7 +1747,8 @@ public extension TelegramEngine {
                 }
                 return self.account.postbox.transaction { transaction -> TelegramResolvedMessageLink? in
                     switch result {
-                    case let .resolvedBusinessChatLinks(_, peer, message, entities, chats, users):
+                    case let .resolvedBusinessChatLinks(resolvedBusinessChatLinksData):
+                        let (peer, message, entities, chats, users) = (resolvedBusinessChatLinksData.peer, resolvedBusinessChatLinksData.message, resolvedBusinessChatLinksData.entities, resolvedBusinessChatLinksData.chats, resolvedBusinessChatLinksData.users)
                         updatePeers(transaction: transaction, accountPeerId: self.account.peerId, peers: AccumulatedPeers(transaction: transaction, chats: chats, users: users))
                         
                         guard let peer = transaction.getPeer(peer.peerId) else {

@@ -25,7 +25,8 @@ public func _internal_exportMessageLink(postbox: Postbox, network: Network, peer
             return network.request(Api.functions.channels.exportMessageLink(flags: flags, channel: input, id: sourceMessageId.id)) |> mapError { _ in return }
             |> map { res in
                 switch res {
-                    case let .exportedMessageLink(link, _):
+                    case let .exportedMessageLink(exportedMessageLinkData):
+                        let (link, _) = (exportedMessageLinkData.link, exportedMessageLinkData.html)
                         return link
                 }
             } |> `catch` { _ -> Signal<String?, NoError> in

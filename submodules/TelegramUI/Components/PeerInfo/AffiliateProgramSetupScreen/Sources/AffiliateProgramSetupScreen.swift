@@ -505,7 +505,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
             }
             
             let presentationData = component.context.sharedContext.currentPresentationData.with({ $0 })
-            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: false)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: false)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
             controller.presentInGlobalOverlay(contextController)
         }
         
@@ -1343,7 +1343,7 @@ final class AffiliateProgramSetupScreenComponent: Component {
                                 
                                 let items = ContextController.Items(content: .list(itemList))
                                 
-                                let controller = ContextController(
+                                let controller = makeContextController(
                                     presentationData: presentationData,
                                     source: .extracted(ListContextExtractedContentSource(contentView: sourceView)),
                                     items: .single(items),

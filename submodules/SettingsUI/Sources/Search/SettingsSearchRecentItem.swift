@@ -187,14 +187,14 @@ class SettingsSearchRecentItemNode: ItemListRevealOptionsItemNode {
             
             let (subtitleLayout, subtitleApply) = makeSubtitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: subtitle, font: subtitleFont, textColor: item.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - leftInset - 16.0 - rightInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
-            var height = titleLayout.size.height
-            if subtitle.isEmpty {
-                height += 22.0
-            } else {
-                height += 39.0
+            var height: CGFloat = 30.0 + titleLayout.size.height
+            if !subtitle.isEmpty {
+                height += 9.0
             }
+            
             let contentSize = CGSize(width: params.width, height: height)
             let nodeLayout = ListViewItemNodeLayout(contentSize: contentSize, insets: UIEdgeInsets(top: firstWithHeader ? 29.0 : 0.0, left: 0.0, bottom: 0.0, right: 0.0))
+            
             return (nodeLayout, { [weak self] in
                 var updatedTheme: PresentationTheme?
                 if currentItem?.theme !== item.theme {
@@ -215,7 +215,7 @@ class SettingsSearchRecentItemNode: ItemListRevealOptionsItemNode {
                         let _ = titleApply()
                         let _ = subtitleApply()
                         
-                        let titleY: CGFloat = subtitle.isEmpty ? 11.0 : 11.0
+                        let titleY: CGFloat = subtitle.isEmpty ? 16.0 - UIScreenPixel : 11.0
                         strongSelf.titleNode.frame = CGRect(origin: CGPoint(x: leftInset, y: titleY), size: titleLayout.size)
                         strongSelf.subtitleNode.frame = CGRect(origin: CGPoint(x: leftInset, y: titleY + titleLayout.size.height + 1.0), size: subtitleLayout.size)
                         
@@ -223,7 +223,7 @@ class SettingsSearchRecentItemNode: ItemListRevealOptionsItemNode {
                         let topHighlightInset: CGFloat = (firstWithHeader || !nodeLayout.insets.top.isZero) ? 0.0 : separatorHeight
                         
                         strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: nodeLayout.contentSize.width, height: nodeLayout.contentSize.height))
-                        strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -nodeLayout.insets.top - topHighlightInset), size: CGSize(width: nodeLayout.size.width, height: nodeLayout.size.height + topHighlightInset))
+                        strongSelf.highlightedBackgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -topHighlightInset), size: CGSize(width: nodeLayout.size.width, height: nodeLayout.contentSize.height + topHighlightInset))
                         strongSelf.separatorNode.frame = CGRect(origin: CGPoint(x: leftInset, y: nodeLayout.contentSize.height - separatorHeight), size: CGSize(width: nodeLayout.size.width, height: separatorHeight))
                         strongSelf.separatorNode.isHidden = last
                         

@@ -399,7 +399,7 @@ private final class ItemComponent: Component {
             let totalWidth = titleSize.width + animationSize.width + spacing
             let size = CGSize(width: totalWidth + leftPadding + padding, height:36.0)
             
-            self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: transition)
+            self.backgroundView.update(size: size, cornerRadius: size.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
             transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: size))
             
             if let titleView = self.title.view {

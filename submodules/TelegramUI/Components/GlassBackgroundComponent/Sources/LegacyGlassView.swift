@@ -55,6 +55,11 @@ private func invokeBackdropLayerInitMethod(object: NSObject) -> NSObject? {
     }
 }
 
+public func createBackdropLayer() -> CALayer? {
+    return invokeBackdropLayerCreateMethod().flatMap(invokeBackdropLayerInitMethod) as? CALayer
+}
+
+
 private var cachedBackdropLayerSetScaleMethod: (@convention(c) (NSObject, Selector, Double) -> Void, Selector)?
 private func invokeBackdropLayerSetScaleMethod(object: NSObject, scale: Double) {
     if let cachedBackdropLayerSetScaleMethod {
@@ -93,7 +98,7 @@ final class LegacyGlassView: UIView {
     
     override init(frame: CGRect) {
         self.backdropLayerDelegate = BackdropLayerDelegate()
-        self.backdropLayer = invokeBackdropLayerCreateMethod().flatMap(invokeBackdropLayerInitMethod) as? CALayer
+        self.backdropLayer = createBackdropLayer()
         
         super.init(frame: frame)
         

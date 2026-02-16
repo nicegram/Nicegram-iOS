@@ -30,8 +30,9 @@ public final class MessagePriceItem: Equatable, ListViewItem, ItemListItem, List
     let updated: (Int64, Bool) -> Void
     let openSetCustom: (() -> Void)?
     let openPremiumInfo: (() -> Void)?
+    public let tag: ItemListItemTag?
     
-    public init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, isEnabled: Bool, minValue: Int64, maxValue: Int64, value: Int64, price: String, sectionId: ItemListSectionId, updated: @escaping (Int64, Bool) -> Void, openSetCustom: (() -> Void)? = nil, openPremiumInfo: (() -> Void)? = nil) {
+    public init(theme: PresentationTheme, strings: PresentationStrings, systemStyle: ItemListSystemStyle = .legacy, isEnabled: Bool, minValue: Int64, maxValue: Int64, value: Int64, price: String, sectionId: ItemListSectionId, updated: @escaping (Int64, Bool) -> Void, openSetCustom: (() -> Void)? = nil, openPremiumInfo: (() -> Void)? = nil, tag: ItemListItemTag? = nil) {
         self.theme = theme
         self.strings = strings
         self.systemStyle = systemStyle
@@ -44,6 +45,7 @@ public final class MessagePriceItem: Equatable, ListViewItem, ItemListItem, List
         self.updated = updated
         self.openSetCustom = openSetCustom
         self.openPremiumInfo = openPremiumInfo
+        self.tag = tag
     }
     
     public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -84,7 +86,6 @@ public final class MessagePriceItem: Equatable, ListViewItem, ItemListItem, List
     }
     
     public static func ==(lhs: MessagePriceItem, rhs: MessagePriceItem) -> Bool {
-        
         if lhs.theme !== rhs.theme {
             return false
         }
@@ -114,7 +115,7 @@ public final class MessagePriceItem: Equatable, ListViewItem, ItemListItem, List
     }
 }
 
-private class MessagePriceItemNode: ListViewItemNode {
+private class MessagePriceItemNode: ListViewItemNode, ItemListItemNode {
     private struct Amount: Equatable {
         private let sliderSteps: [Int]
         private let minRealValue: Int
@@ -196,6 +197,8 @@ private class MessagePriceItemNode: ListViewItemNode {
     }
     
     private let backgroundNode: ASDisplayNode
+    private let highlightNode: ASDisplayNode
+    
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
     private let maskNode: ASImageNode
@@ -216,9 +219,16 @@ private class MessagePriceItemNode: ListViewItemNode {
     private var item: MessagePriceItem?
     private var layoutParams: ListViewItemLayoutParams?
     
+    public var tag: ItemListItemTag? {
+        return self.item?.tag
+    }
+    
     init() {
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isLayerBacked = true
+        
+        self.highlightNode = ASDisplayNode()
+        self.highlightNode.isLayerBacked = true
         
         self.topStripeNode = ASDisplayNode()
         self.topStripeNode.isLayerBacked = true
@@ -292,6 +302,20 @@ private class MessagePriceItemNode: ListViewItemNode {
         self.item?.openSetCustom?()
     }
     
+    public func displayHighlight() {
+        if self.backgroundNode.supernode != nil {
+            self.insertSubnode(self.highlightNode, aboveSubnode: self.backgroundNode)
+        } else {
+            self.insertSubnode(self.highlightNode, at: 0)
+        }
+        
+        Queue.mainQueue().after(1.2, {
+            self.highlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { _ in
+                self.highlightNode.removeFromSupernode()
+            })
+        })
+    }
+    
     func asyncLayout() -> (_ item: MessagePriceItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
         let currentItem = self.item
         
@@ -324,6 +348,7 @@ private class MessagePriceItemNode: ListViewItemNode {
                     strongSelf.backgroundNode.backgroundColor = item.theme.list.itemBlocksBackgroundColor
                     strongSelf.topStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
                     strongSelf.bottomStripeNode.backgroundColor = item.theme.list.itemBlocksSeparatorColor
+                    strongSelf.highlightNode.backgroundColor = item.theme.list.itemSearchHighlightColor
                     
                     if strongSelf.backgroundNode.supernode == nil {
                         strongSelf.insertSubnode(strongSelf.backgroundNode, at: 0)
@@ -365,6 +390,7 @@ private class MessagePriceItemNode: ListViewItemNode {
                     strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
+                    strongSelf.highlightNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)
                     strongSelf.topStripeNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: layoutSize.width, height: separatorHeight))
                     strongSelf.bottomStripeNode.frame = CGRect(origin: CGPoint(x: bottomStripeInset, y: contentSize.height + bottomStripeOffset), size: CGSize(width: layoutSize.width - bottomStripeInset - params.rightInset - separatorRightInset, height: separatorHeight))

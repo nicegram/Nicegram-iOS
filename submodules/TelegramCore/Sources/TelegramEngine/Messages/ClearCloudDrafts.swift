@@ -15,12 +15,14 @@ func _internal_clearCloudDraftsInteractively(postbox: Postbox, network: Network,
             }
             var keys = Set<Key>()
             switch updates {
-                case let .updates(updates, users, chats, _, _):
+                case let .updates(updatesData):
+                    let (updates, users, chats) = (updatesData.updates, updatesData.users, updatesData.chats)
                     let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
-                    
+
                     for update in updates {
                         switch update {
-                            case let .updateDraftMessage(_, peer, topMsgId, savedPeerId, _):
+                            case let .updateDraftMessage(updateDraftMessageData):
+                                let (peer, topMsgId, savedPeerId) = (updateDraftMessageData.peer, updateDraftMessageData.topMsgId, updateDraftMessageData.savedPeerId)
                                 var threadId: Int64?
                                 if let savedPeerId {
                                     threadId = savedPeerId.peerId.toInt64()
@@ -55,10 +57,10 @@ func _internal_clearCloudDraftsInteractively(postbox: Postbox, network: Network,
                                 
                                 var innerFlags: Int32 = 0
                                 innerFlags |= 1 << 0
-                                replyTo = .inputReplyToMessage(flags: innerFlags, replyToMsgId: 0, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                                replyTo = .inputReplyToMessage(.init(flags: innerFlags, replyToMsgId: 0, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                             } else if let monoforumPeerId {
                                 flags |= (1 << 0)
-                                replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                                replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                             }
                             signals.append(network.request(Api.functions.messages.saveDraft(flags: flags, replyTo: replyTo, peer: inputPeer, message: "", entities: nil, media: nil, effect: nil, suggestedPost: nil))
                             |> `catch` { _ -> Signal<Api.Bool, NoError> in

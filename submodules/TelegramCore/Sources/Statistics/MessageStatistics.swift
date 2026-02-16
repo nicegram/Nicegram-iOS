@@ -98,7 +98,8 @@ private func requestMessageStats(postbox: Postbox, network: Network, messageId: 
         
         return signal
         |> mapToSignal { result -> Signal<MessageStats?, MTRpcError> in
-            if case let .messageStats(apiInteractionsGraph, apiReactionsGraph) = result {
+            if case let .messageStats(messageStatsData) = result {
+                let (apiInteractionsGraph, apiReactionsGraph) = (messageStatsData.viewsGraph, messageStatsData.reactionsByEmotionGraph)
                 let interactionsGraph = StatsGraph(apiStatsGraph: apiInteractionsGraph)
                 var interactionsGraphDelta: Int64 = 86400
                 if case let .Loaded(_, data) = interactionsGraph {

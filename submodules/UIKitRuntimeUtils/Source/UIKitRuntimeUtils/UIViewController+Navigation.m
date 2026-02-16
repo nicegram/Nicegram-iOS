@@ -4,7 +4,7 @@
 #import <objc/runtime.h>
 
 #import "NSWeakReference.h"
-
+#import <UIKitRuntimeUtils/UIKitUtils.h>
 
 @interface UIViewControllerPresentingProxy : UIViewController
 
@@ -109,6 +109,180 @@ static bool notyfyingShiftState = false;
     }
     
     [self _65087dc8_setPreferredFrameRateRange:range];
+}
+
+@end
+
+@implementation CALayerSpringParametersOverrideParameters
+
+- (instancetype _Nonnull)init {
+    self = [super init];
+    if (self != nil) {
+    }
+    return self;
+}
+
+@end
+
+@implementation CALayerSpringParametersOverrideParametersSpring
+
+- (instancetype _Nonnull)initWithStiffness:(CGFloat)stiffness damping:(CGFloat)damping duration:(double)duration {
+    self = [super init];
+    if (self != nil) {
+        _stiffness = stiffness;
+        _damping = damping;
+        _duration = duration;
+    }
+    return self;
+}
+
+@end
+
+@implementation CALayerSpringParametersOverrideParametersCustomCurve
+
+- (instancetype _Nonnull)initWithCp1:(CGPoint)cp1 cp2:(CGPoint)cp2 {
+    self = [super init];
+    if (self != nil) {
+        _cp1 = cp1;
+        _cp2 = cp2;
+    }
+    return self;
+}
+
+@end
+
+
+@implementation CALayerSpringParametersOverride
+
+- (instancetype _Nonnull)initWithParameters:(CALayerSpringParametersOverrideParameters * _Nullable)parameters {
+    self = [super init];
+    if (self != nil) {
+        _parameters = parameters;
+    }
+    return self;
+}
+
+@end
+
+static NSMutableArray<CALayerSpringParametersOverride *> *currentSpringParametersOverrideStack() {
+    static NSMutableArray *array = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        array = [[NSMutableArray alloc] init];
+    });
+    return array;
+}
+
+@implementation CALayer (TelegramAddAnimation)
+
++ (void)pushSpringParametersOverride:(CALayerSpringParametersOverride * _Nonnull)springParametersOverride {
+    if (springParametersOverride) {
+        [currentSpringParametersOverrideStack() addObject:springParametersOverride];
+    }
+}
+
++ (void)popSpringParametersOverride {
+    if (currentSpringParametersOverrideStack().count != 0) {
+        [currentSpringParametersOverrideStack() removeLastObject];
+    }
+}
+
+- (void)_65087dc8_addAnimation:(CAAnimation *)anim forKey:(NSString *)key {
+    CAAnimation *updatedAnimation = anim;
+    if (currentSpringParametersOverrideStack().count != 0 && [anim isKindOfClass:[CASpringAnimation class]]) {
+        CALayerSpringParametersOverride *overrideData = [currentSpringParametersOverrideStack() lastObject];
+        if (overrideData) {
+            if ([overrideData.parameters isKindOfClass:[CALayerSpringParametersOverrideParametersSpring class]]) {
+                CALayerSpringParametersOverrideParametersSpring *parameters = (CALayerSpringParametersOverrideParametersSpring *)overrideData.parameters;
+                CABasicAnimation *sourceAnimation = (CABasicAnimation *)anim;
+                
+                CASpringAnimation *animation = makeSpringBounceAnimationImpl(sourceAnimation.keyPath, 0.0, parameters.damping);
+                
+                animation.stiffness = parameters.stiffness;
+                animation.fromValue = sourceAnimation.fromValue;
+                animation.toValue = sourceAnimation.toValue;
+                animation.byValue = sourceAnimation.byValue;
+                animation.additive = sourceAnimation.additive;
+                animation.removedOnCompletion = sourceAnimation.isRemovedOnCompletion;
+                animation.fillMode = sourceAnimation.fillMode;
+                animation.beginTime = sourceAnimation.beginTime;
+                animation.timeOffset = sourceAnimation.timeOffset;
+                animation.repeatCount = sourceAnimation.repeatCount;
+                animation.autoreverses = sourceAnimation.autoreverses;
+                
+                float k = animationDurationFactorImpl();
+                __unused float speed = 1.0f;
+                if (k != 0.0 && k != 1.0) {
+                    speed = 1.0f / k;
+                }
+                animation.speed = sourceAnimation.speed * (float)(animation.duration / parameters.duration);
+                
+                updatedAnimation = animation;
+            } else if ([overrideData.parameters isKindOfClass:[CALayerSpringParametersOverrideParametersCustomCurve class]]) {
+                CALayerSpringParametersOverrideParametersCustomCurve *parameters = (CALayerSpringParametersOverrideParametersCustomCurve *)overrideData.parameters;
+                CABasicAnimation *sourceAnimation = (CABasicAnimation *)anim;
+                
+                CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:sourceAnimation.keyPath];
+                animation.fromValue = sourceAnimation.fromValue;
+                animation.toValue = sourceAnimation.toValue;
+                animation.byValue = sourceAnimation.byValue;
+                animation.additive = sourceAnimation.additive;
+                animation.duration = sourceAnimation.duration;
+                animation.timingFunction = [[CAMediaTimingFunction alloc] initWithControlPoints:parameters.cp1.x :parameters.cp1.y :parameters.cp2.x :parameters.cp2.y];
+                animation.removedOnCompletion = sourceAnimation.isRemovedOnCompletion;
+                animation.fillMode = sourceAnimation.fillMode;
+                animation.speed = sourceAnimation.speed;
+                animation.beginTime = sourceAnimation.beginTime;
+                animation.timeOffset = sourceAnimation.timeOffset;
+                animation.repeatCount = sourceAnimation.repeatCount;
+                animation.autoreverses = sourceAnimation.autoreverses;
+                
+                float k = animationDurationFactorImpl();
+                float speed = 1.0f;
+                if (k != 0.0 && k != 1.0) {
+                    speed = 1.0f / k;
+                }
+                animation.speed = speed * sourceAnimation.speed;
+                
+                updatedAnimation = animation;
+            } else {
+                bool isNativeGlass = false;
+                if (@available(iOS 26.0, *)) {
+                    isNativeGlass = true;
+                }
+                if (isNativeGlass && ABS(anim.duration - 0.3832) <= 0.0001) {
+                } else if (ABS(anim.duration - 0.5) <= 0.0001) {
+                } else {
+                    CABasicAnimation *sourceAnimation = (CABasicAnimation *)anim;
+                    
+                    CABasicAnimation *animation = [CABasicAnimation animationWithKeyPath:sourceAnimation.keyPath];
+                    animation.fromValue = sourceAnimation.fromValue;
+                    animation.toValue = sourceAnimation.toValue;
+                    animation.byValue = sourceAnimation.byValue;
+                    animation.additive = sourceAnimation.additive;
+                    animation.duration = sourceAnimation.duration;
+                    animation.timingFunction = [[CAMediaTimingFunction alloc] initWithControlPoints:0.380 :0.700 :0.125 :1.000];
+                    animation.removedOnCompletion = sourceAnimation.isRemovedOnCompletion;
+                    animation.fillMode = sourceAnimation.fillMode;
+                    animation.speed = sourceAnimation.speed;
+                    animation.beginTime = sourceAnimation.beginTime;
+                    animation.timeOffset = sourceAnimation.timeOffset;
+                    animation.repeatCount = sourceAnimation.repeatCount;
+                    animation.autoreverses = sourceAnimation.autoreverses;
+                    
+                    float k = animationDurationFactorImpl();
+                    float speed = 1.0f;
+                    if (k != 0.0 && k != 1.0) {
+                        speed = 1.0f / k;
+                    }
+                    animation.speed = speed * sourceAnimation.speed;
+                    
+                    updatedAnimation = animation;
+                }
+            }
+        }
+    }
+    [self _65087dc8_addAnimation:updatedAnimation forKey:key];
 }
 
 @end
@@ -253,6 +427,8 @@ static void registerEffectViewOverrides(void) {
         } else if (@available(iOS 15.0, *)) {
             [RuntimeUtils swizzleInstanceMethodOfClass:[CADisplayLink class] currentSelector:@selector(setPreferredFrameRateRange:) newSelector:@selector(_65087dc8_setPreferredFrameRateRange:)];
         }
+        
+        [RuntimeUtils swizzleInstanceMethodOfClass:[CALayer class] currentSelector:@selector(addAnimation:forKey:) newSelector:@selector(_65087dc8_addAnimation:forKey:)];
         
         [RuntimeUtils swizzleInstanceMethodOfClass:[UIFocusSystem class] currentSelector:@selector(updateFocusIfNeeded) newSelector:@selector(_65087dc8_updateFocusIfNeeded)];
         
@@ -404,12 +580,37 @@ static void registerEffectViewOverrides(void) {
 #pragma clang diagnostic pop
 }
 
+/*static void dumpViews(UIView *view, NSString *indent) {
+    NSLog(@"%@%@", indent, [view debugDescription]);
+    NSString *nextIndent = [indent stringByAppendingString:@"-"];
+    
+    if ([view isKindOfClass:[UIVisualEffectView class]]) {
+        UIVisualEffectView *effectView = (UIVisualEffectView *)view;
+        if (@available(iOS 26.0, *)) {
+            if ([effectView.effect isKindOfClass:[UIGlassEffect class]]) {
+                UIGlassEffect *effect = (UIGlassEffect *)effectView.effect;
+                NSObject *glass = [effect valueForKey:@"glass"];
+                NSLog(@"glass %@", glass.debugDescription);
+            }
+        }
+    }
+    
+    for (UIView *subview in view.subviews) {
+        dumpViews(subview, nextIndent);
+    }
+}*/
+
 - (UIWindow * _Nullable)internalGetKeyboard {
     Class windowClass = NSClassFromString(@"UIRemoteKeyboardWindow");
     if (!windowClass) {
         return nil;
     }
     UIWindow *result = [(id<UIRemoteKeyboardWindowProtocol>)windowClass remoteKeyboardWindowForScreen:[UIScreen mainScreen] create:false];
+    
+    if (result) {
+        //dumpViews(result, @"");
+    }
+    
     return result;
 }
 

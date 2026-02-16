@@ -457,7 +457,7 @@ public final class InviteRequestsSearchContainerNode: SearchDisplayControllerCon
         //            dismissPromise.set(true)
         //        }
                 
-                let contextController = ContextController(presentationData: presentationData, source: .extracted(source), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+                let contextController = makeContextController(presentationData: presentationData, source: .extracted(source), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
                 presentInGlobalOverlay(contextController)
             })
         })

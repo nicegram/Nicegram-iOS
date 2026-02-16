@@ -134,7 +134,7 @@ private func synchronizeGroupedPeers(transaction: Transaction, postbox: Postbox,
     var folderPeers: [Api.InputFolderPeer] = []
     for operation in operations {
         if let inputPeer = transaction.getPeer(operation.peerId).flatMap(apiInputPeer) {
-            folderPeers.append(.inputFolderPeer(peer: inputPeer, folderId: operation.groupId.rawValue))
+            folderPeers.append(.inputFolderPeer(.init(peer: inputPeer, folderId: operation.groupId.rawValue)))
         }
     }
     if folderPeers.isEmpty {

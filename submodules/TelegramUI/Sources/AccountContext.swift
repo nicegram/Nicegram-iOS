@@ -1,3 +1,6 @@
+// Nicegram
+import NGUtils
+//
 import Foundation
 import SwiftSignalKit
 import UIKit
@@ -343,7 +346,8 @@ public final class AccountContextImpl: AccountContext {
         
         let updatedContentSettings = getContentSettings(postbox: account.postbox)
         self.currentContentSettings = Atomic(value: contentSettings)
-        self._contentSettings.set(.single(contentSettings) |> then(updatedContentSettings))
+        // Nicegram SensitiveContentAccess, add ngAdjustContentSettings
+        self._contentSettings.set(.single(contentSettings) |> then(updatedContentSettings) |> ngAdjustContentSettings())
         
         let currentContentSettings = self.currentContentSettings
         self.contentSettingsDisposable = (self._contentSettings.get()

@@ -1268,6 +1268,7 @@ private final class ChatListFilterPresetController: ItemListController {
             let presentationInterfaceState = ChatPresentationInterfaceState(
                 chatWallpaper: .builtin(WallpaperSettings()),
                 theme: presentationData.theme,
+                preferredGlassType: .default,
                 strings: presentationData.strings,
                 dateTimeFormat: presentationData.dateTimeFormat,
                 nameDisplayOrder: presentationData.nameDisplayOrder,
@@ -1387,7 +1388,7 @@ private final class ChatListFilterPresetController: ItemListController {
     }
 }
 
-func chatListFilterPresetController(context: AccountContext, currentPreset initialPreset: ChatListFilter?, updated: @escaping ([ChatListFilter]) -> Void) -> ViewController {
+public func chatListFilterPresetController(context: AccountContext, currentPreset initialPreset: ChatListFilter?, updated: @escaping ([ChatListFilter]) -> Void) -> ViewController {
     let initialName: ChatFolderTitle
     if let initialPreset {
         initialName = initialPreset.title
@@ -1927,7 +1928,7 @@ func chatListFilterPresetController(context: AccountContext, currentPreset initi
                     })
                 })))
                 
-                let contextController = ContextController(presentationData: presentationData, source: .extracted(InviteLinkContextExtractedContentSource(controller: controller, sourceNode: node, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+                let contextController = makeContextController(presentationData: presentationData, source: .extracted(InviteLinkContextExtractedContentSource(controller: controller, sourceNode: node, keepInPlace: false, blurBackground: true)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
                 presentInGlobalOverlayImpl?(contextController)
             })
         },
@@ -1968,7 +1969,7 @@ func chatListFilterPresetController(context: AccountContext, currentPreset initi
                 })
             })))
             
-            let contextController = ContextController(presentationData: presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+            let contextController = makeContextController(presentationData: presentationData, source: .controller(ContextControllerContentSourceImpl(controller: chatController, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
             presentInGlobalOverlayImpl?(contextController)
         },
         updateTagColor: { color in

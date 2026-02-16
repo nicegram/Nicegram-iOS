@@ -19,14 +19,18 @@ public final class ChatNavigationBarTitleView: UIView, NavigationBarTitleView {
     private final class ContentData {
         let context: AccountContext
         let theme: PresentationTheme
+        let preferClearGlass: Bool
+        let wallpaper: TelegramWallpaper
         let strings: PresentationStrings
         let dateTimeFormat: PresentationDateTimeFormat
         let nameDisplayOrder: PresentationPersonNameOrder
         let content: ChatTitleContent
         
-        init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, content: ChatTitleContent) {
+        init(context: AccountContext, theme: PresentationTheme, preferClearGlass: Bool, wallpaper: TelegramWallpaper, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, content: ChatTitleContent) {
             self.context = context
             self.theme = theme
+            self.preferClearGlass = preferClearGlass
+            self.wallpaper = wallpaper
             self.strings = strings
             self.dateTimeFormat = dateTimeFormat
             self.nameDisplayOrder = nameDisplayOrder
@@ -41,7 +45,9 @@ public final class ChatNavigationBarTitleView: UIView, NavigationBarTitleView {
     private var activities: ChatTitleComponent.Activities?
     private var networkState: AccountNetworkState?
     
+    private var ignoreParentTransitionRequests: Bool = false
     public var requestUpdate: ((ContainedViewLayoutTransition) -> Void)?
+    
     public var tapAction: (() -> Void)?
     public var longTapAction: (() -> Void)?
     
@@ -72,21 +78,28 @@ public final class ChatNavigationBarTitleView: UIView, NavigationBarTitleView {
     public func update(
         context: AccountContext,
         theme: PresentationTheme,
+        preferClearGlass: Bool,
+        wallpaper: TelegramWallpaper,
         strings: PresentationStrings,
         dateTimeFormat: PresentationDateTimeFormat,
         nameDisplayOrder: PresentationPersonNameOrder,
         content: ChatTitleContent,
-        transition: ComponentTransition
+        transition: ComponentTransition,
+        ignoreParentTransitionRequests: Bool = false
     ) {
+        self.ignoreParentTransitionRequests = ignoreParentTransitionRequests
         self.contentData = ContentData(
             context: context,
             theme: theme,
+            preferClearGlass: preferClearGlass,
+            wallpaper: wallpaper,
             strings: strings,
             dateTimeFormat: dateTimeFormat,
             nameDisplayOrder: nameDisplayOrder,
             content: content
         )
         self.update(transition: transition)
+        self.ignoreParentTransitionRequests = false
     }
     
     public func updateActivities(activities: ChatTitleComponent.Activities?, transition: ComponentTransition) {
@@ -104,22 +117,27 @@ public final class ChatNavigationBarTitleView: UIView, NavigationBarTitleView {
     }
     
     private func update(transition: ComponentTransition) {
-        self.requestUpdate?(transition.containedViewLayoutTransition)
+        if !self.ignoreParentTransitionRequests {
+            self.requestUpdate?(transition.containedViewLayoutTransition)
+        }
     }
     
     public func updateLayout(availableSize: CGSize, transition: ContainedViewLayoutTransition) -> CGSize {
         let transition = ComponentTransition(transition)
         
         if let contentData = self.contentData {
+            let displayBackground: Bool = true
+            
             let titleSize = self.title.update(
                 transition: transition,
                 component: AnyComponent(ChatTitleComponent(
                     context: contentData.context,
                     theme: contentData.theme,
+                    preferClearGlass: contentData.preferClearGlass,
                     strings: contentData.strings,
                     dateTimeFormat: contentData.dateTimeFormat,
                     nameDisplayOrder: contentData.nameDisplayOrder,
-                    displayBackground: true,
+                    displayBackground: displayBackground,
                     content: contentData.content,
                     activities: self.activities,
                     networkState: self.networkState,
@@ -182,6 +200,7 @@ public final class ChatTitleComponent: Component {
     
     public let context: AccountContext
     public let theme: PresentationTheme
+    public let preferClearGlass: Bool
     public let strings: PresentationStrings
     public let dateTimeFormat: PresentationDateTimeFormat
     public let nameDisplayOrder: PresentationPersonNameOrder
@@ -195,6 +214,7 @@ public final class ChatTitleComponent: Component {
     public init(
         context: AccountContext,
         theme: PresentationTheme,
+        preferClearGlass: Bool,
         strings: PresentationStrings,
         dateTimeFormat: PresentationDateTimeFormat,
         nameDisplayOrder: PresentationPersonNameOrder,
@@ -207,6 +227,7 @@ public final class ChatTitleComponent: Component {
     ) {
         self.context = context
         self.theme = theme
+        self.preferClearGlass = preferClearGlass
         self.strings = strings
         self.dateTimeFormat = dateTimeFormat
         self.nameDisplayOrder = nameDisplayOrder
@@ -223,6 +244,9 @@ public final class ChatTitleComponent: Component {
             return false
         }
         if lhs.theme !== rhs.theme {
+            return false
+        }
+        if lhs.preferClearGlass != rhs.preferClearGlass {
             return false
         }
         if lhs.strings !== rhs.strings {
@@ -1023,6 +1047,7 @@ public final class ChatTitleComponent: Component {
             if let minSubtitleWidth {
                 contentSize.width = max(contentSize.width, minSubtitleWidth)
             }
+            contentSize.width = max(min(150.0, availableSize.width - containerSideInset * 2.0), contentSize.width)
             contentSize.height += subtitleSize.height
             
             let containerSize = CGSize(width: contentSize.width + containerSideInset * 2.0, height: 44.0)
@@ -1135,7 +1160,7 @@ public final class ChatTitleComponent: Component {
                     backgroundView.contentView.addSubview(self.contentContainer)
                 }
                 transition.setFrame(view: backgroundView, frame: containerFrame)
-                backgroundView.update(size: containerFrame.size, cornerRadius: containerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: component.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: isEnabled, transition: transition)
+                backgroundView.update(size: containerFrame.size, cornerRadius: containerFrame.height * 0.5, isDark: component.theme.overallDarkAppearance, tintColor: .init(kind: component.preferClearGlass ? .clear : .panel), isInteractive: isEnabled, transition: transition)
                 transition.setFrame(view: self.contentContainer, frame: CGRect(origin: CGPoint(), size: containerFrame.size))
                 self.contentContainer.layer.cornerRadius = containerFrame.height * 0.5
             } else {

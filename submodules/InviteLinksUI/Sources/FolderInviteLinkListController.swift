@@ -501,7 +501,7 @@ public func folderInviteLinkListController(context: AccountContext, updatedPrese
             })
         })))
 
-        let contextController = ContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(InviteLinkContextReferenceContentSource(controller: controller, sourceNode: node)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         presentInGlobalOverlayImpl?(contextController)
     }, peerAction: { peer, isEnabled in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }

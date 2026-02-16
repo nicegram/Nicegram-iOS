@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import TelegramCore
 import AccountContext
-import NGWebUtils
 import NGData
 import ChatPresentationInterfaceState
 import ChatInputPanelNode
@@ -13,16 +12,9 @@ import ChatControllerInteraction
 import ChatTextInputPanelNode
 
 func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, context: AccountContext, currentPanel: ChatInputPanelNode?, currentSecondaryPanel: ChatInputPanelNode?, textInputPanelNode: ChatTextInputPanelNode?, chatControllerInteraction: ChatControllerInteraction?, interfaceInteraction: ChatPanelInterfaceInteraction?) -> (primary: ChatInputPanelNode?, secondary: ChatInputPanelNode?) {
-    if isNGForceBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
+    if let renderedPeer = chatPresentationInterfaceState.renderedPeer, renderedPeer.peer?.restrictionText(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) != nil {
         return (nil, nil)
     }
-        
-    if let renderedPeer = chatPresentationInterfaceState.renderedPeer, renderedPeer.peer?.restrictionText(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) != nil {
-        if !isAllowedChat(peer: renderedPeer.peer, contentSettings: context.currentContentSettings.with { $0 }) {
-            return (nil, nil)
-        }
-    }
-    
     if chatPresentationInterfaceState.isNotAccessible {
         return (nil, nil)
     }

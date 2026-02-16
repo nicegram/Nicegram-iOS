@@ -1,6 +1,3 @@
-// Nicegram Imports
-import NGWebUtils
-//
 import Foundation
 import UIKit
 import AsyncDisplayKit
@@ -842,9 +839,7 @@ public final class AvatarNode: ASDisplayNode {
                     representation = nil
                     icon = .storyIcon
                 }
-            }
-            // Nicegram (isAllowedChat)
-            else if peer?.restrictionText(platform: "ios", contentSettings: genericContext.currentContentSettings.with { $0 }) == nil || isAllowedChat(peer: peer?._asPeer(), contentSettings: genericContext.currentContentSettings.with { $0 }) {
+            } else if peer?.restrictionText(platform: "ios", contentSettings: genericContext.currentContentSettings.with { $0 }) == nil {
                 representation = peer?.smallProfileImage
             }
             
@@ -1171,7 +1166,7 @@ public final class AvatarNode: ASDisplayNode {
             if let parameters = parameters as? AvatarNodeParameters, let cutoutRect = parameters.cutoutRect {
                 context.setBlendMode(.copy)
                 context.setFillColor(UIColor.clear.cgColor)
-                context.fillEllipse(in: cutoutRect.offsetBy(dx: 0.0, dy: bounds.height - cutoutRect.maxY - cutoutRect.height))
+                context.fillEllipse(in: cutoutRect)
             }
         }
     }

@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import Display
+import UIKitRuntimeUtils
 
 #if targetEnvironment(simulator)
 @_silgen_name("UIAnimationDragCoefficient") func UIAnimationDragCoefficient() -> Float
@@ -18,30 +19,46 @@ public extension UIView {
 
 public extension CALayer {
     func animate(from: Any, to: Any, keyPath: String, duration: Double, delay: Double, curve: ComponentTransition.Animation.Curve, removeOnCompletion: Bool, additive: Bool, completion: ((Bool) -> Void)? = nil, key: String? = nil) {
-        let timingFunction: String
-        let mediaTimingFunction: CAMediaTimingFunction?
-        switch curve {
-        case .spring:
-            timingFunction = kCAMediaTimingFunctionSpring
-            mediaTimingFunction = nil
-        default:
-            timingFunction = CAMediaTimingFunctionName.easeInEaseOut.rawValue
-            mediaTimingFunction = curve.asTimingFunction()
+        if case let .bounce(stiffness, damping) = curve {
+            self.animateSpring(
+                from: from,
+                to: to,
+                keyPath: keyPath,
+                duration: duration,
+                delay: delay,
+                stiffness: stiffness,
+                damping: damping,
+                removeOnCompletion: removeOnCompletion,
+                additive: additive,
+                completion: completion,
+                key: key
+            )
+        } else {
+            let timingFunction: String
+            let mediaTimingFunction: CAMediaTimingFunction?
+            switch curve {
+            case .spring:
+                timingFunction = kCAMediaTimingFunctionSpring
+                mediaTimingFunction = nil
+            default:
+                timingFunction = CAMediaTimingFunctionName.easeInEaseOut.rawValue
+                mediaTimingFunction = curve.asTimingFunction()
+            }
+            
+            self.animate(
+                from: from,
+                to: to,
+                keyPath: keyPath,
+                timingFunction: timingFunction,
+                duration: duration,
+                delay: delay,
+                mediaTimingFunction: mediaTimingFunction,
+                removeOnCompletion: removeOnCompletion,
+                additive: additive,
+                completion: completion,
+                key: key
+            )
         }
-        
-        self.animate(
-            from: from,
-            to: to,
-            keyPath: keyPath,
-            timingFunction: timingFunction,
-            duration: duration,
-            delay: delay,
-            mediaTimingFunction: mediaTimingFunction,
-            removeOnCompletion: removeOnCompletion,
-            additive: additive,
-            completion: completion,
-            key: key
-        )
     }
 }
 
@@ -54,21 +71,23 @@ private extension ComponentTransition.Animation.Curve {
             return CAMediaTimingFunction(name: .linear)
         case let .custom(a, b, c, d):
             return CAMediaTimingFunction(controlPoints: a, b, c, d)
-        case .spring:
+        case .spring, .bounce:
             preconditionFailure()
         }
     }
 
     var viewAnimationOptions: UIView.AnimationOptions {
         switch self {
-            case .linear:
-                return [.curveLinear]
-            case .easeInOut:
-                return [.curveEaseInOut]
-            case .spring:
-                return UIView.AnimationOptions(rawValue: 7 << 16)
-            case .custom:
-                return []
+        case .linear:
+            return [.curveLinear]
+        case .easeInOut:
+            return [.curveEaseInOut]
+        case .spring:
+            return UIView.AnimationOptions(rawValue: 7 << 16)
+        case .custom:
+            return []
+        case .bounce:
+            return []
         }
     }
 }
@@ -84,7 +103,7 @@ public extension ComponentTransition.Animation {
 }
 
 public extension ComponentTransition {
-    func animateView(allowUserInteraction: Bool = false, delay: Double = 0.0, _ f: @escaping () -> Void, completion: ((Bool) -> Void)? = nil) {
+    func animateView(allowUserInteraction: Bool = true, delay: Double = 0.0, _ f: @escaping () -> Void, completion: ((Bool) -> Void)? = nil) {
         switch self.animation {
         case .none:
             f()
@@ -94,9 +113,26 @@ public extension ComponentTransition {
             if allowUserInteraction {
                 options.insert(.allowUserInteraction)
             }
-            UIView.animate(withDuration: duration, delay: delay, options: options, animations: {
-                f()
-            }, completion: completion)
+            switch curve {
+            case .spring, .bounce, .custom:
+                var parameters: CALayerSpringParametersOverrideParameters?
+                var dampingValue: CGFloat = 500.0
+                if case let .bounce(stiffness, damping) = curve {
+                    dampingValue = damping
+                    parameters = CALayerSpringParametersOverrideParametersSpring(stiffness: stiffness, damping: damping, duration: duration)
+                } else if case let .custom(a, b, c, d) = curve {
+                    parameters = CALayerSpringParametersOverrideParametersCustomCurve(cp1: CGPoint(x: CGFloat(a), y: CGFloat(b)), cp2: CGPoint(x: CGFloat(c), y: CGFloat(d)))
+                }
+                CALayer.push(CALayerSpringParametersOverride(parameters: parameters))
+                UIView.animate(withDuration: duration, delay: delay, usingSpringWithDamping: dampingValue, initialSpringVelocity: 0.0, options: options, animations: {
+                    f()
+                }, completion: completion)
+                CALayer.popSpringParametersOverride()
+            default:
+                UIView.animate(withDuration: duration, delay: delay, options: options, animations: {
+                    f()
+                }, completion: completion)
+            }
         }
     }
 }
@@ -108,6 +144,7 @@ public struct ComponentTransition {
             case spring
             case linear
             case custom(Float, Float, Float, Float)
+            case bounce(stiffness: CGFloat, damping: CGFloat)
             
             public func solve(at offset: CGFloat) -> CGFloat {
                 switch self {
@@ -119,6 +156,9 @@ public struct ComponentTransition {
                     return offset
                 case let .custom(c1x, c1y, c2x, c2y):
                     return bezierPoint(CGFloat(c1x), CGFloat(c1y), CGFloat(c2x), CGFloat(c2y), offset)
+                case .bounce:
+                    assertionFailure()
+                    return listViewAnimationCurveSystem(offset)
                 }
             }
             
@@ -188,8 +228,6 @@ public struct ComponentTransition {
         switch self.animation {
         case .none:
             view.frame = frame
-            //view.bounds = CGRect(origin: view.bounds.origin, size: frame.size)
-            //view.layer.position = CGPoint(x: frame.midX, y: frame.midY)
             view.layer.removeAnimation(forKey: "position")
             view.layer.removeAnimation(forKey: "bounds")
             view.layer.removeAnimation(forKey: "bounds.size")
@@ -206,8 +244,6 @@ public struct ComponentTransition {
             }
             
             view.frame = frame
-            //view.bounds = CGRect(origin: previousBounds.origin, size: frame.size)
-            //view.center = CGPoint(x: frame.midX, y: frame.midY)
             
             let anchorPoint = view.layer.anchorPoint
             let updatedPosition = CGPoint(x: frame.minX + frame.width * anchorPoint.x, y: frame.minY + frame.height * anchorPoint.y)
@@ -1431,4 +1467,138 @@ public struct ComponentTransition {
             )
         }
     }
+    
+    public func animatePositionParabollic(layer: CALayer, from fromPosition: CGPoint, to toPosition: CGPoint, additive: Bool = false, completion: ((Bool) -> Void)? = nil) {
+        switch self.animation {
+        case .none:
+            completion?(true)
+        case let .curve(duration, curve):
+            let timingFunction: String
+            let mediaTimingFunction: CAMediaTimingFunction?
+            switch curve {
+            case .spring:
+                timingFunction = kCAMediaTimingFunctionSpring
+                mediaTimingFunction = nil
+            case .linear:
+                timingFunction = CAMediaTimingFunctionName.linear.rawValue
+                mediaTimingFunction = curve.asTimingFunction()
+            default:
+                timingFunction = CAMediaTimingFunctionName.easeInEaseOut.rawValue
+                mediaTimingFunction = curve.asTimingFunction()
+            }
+
+            let keyframes = generateParabolicMotionKeyframes(from: fromPosition, to: toPosition)
+            layer.animateKeyframes(values: keyframes.map(NSValue.init(cgPoint:)), duration: duration, keyPath: "position", timingFunction: timingFunction, mediaTimingFunction: mediaTimingFunction, removeOnCompletion: true, additive: additive, completion: { value in
+                completion?(value)
+            })
+        }
+    }
+}
+
+private func generateParabolicMotionKeyframes(
+    from start: CGPoint,
+    to end: CGPoint,
+    steps: Int = 10
+) -> [CGPoint] {
+    let dampingRatio: CGFloat = 0.65       // < 1 => overshoot
+    let angularFrequency: CGFloat = 16.0   // higher => snappier
+    let liftFactor: CGFloat = 0.25
+    let minLift: CGFloat = 24
+    let maxLift: CGFloat = 180
+
+    let dx = end.x - start.x
+    let dy = end.y - start.y
+    let chord = hypot(dx, dy)
+    if chord < 0.001 { return Array(repeating: start, count: steps) }
+    
+    // Control point (direction-aware arc: down arcs down, up arcs up)
+    let liftMag = min(max(chord * liftFactor, minLift), maxLift)
+    let signedLift: CGFloat = (dy > 0) ? liftMag : -liftMag
+    
+    let control = CGPoint(
+        x: (start.x + end.x) * 0.5,
+        y: (start.y + end.y) * 0.5 + signedLift
+    )
+    
+    // Quadratic Bézier point
+    let bezier: (CGFloat) -> CGPoint = { t in
+        let tt: CGFloat = min(max(t, 0.0), 1.0)
+        let u: CGFloat = 1.0 - tt
+        let x: CGFloat = (u*u*start.x) + (2*u*tt*control.x) + (tt*tt*end.x)
+        let y: CGFloat = (u*u*start.y) + (2*u*tt*control.y) + (tt*tt*end.y)
+        return CGPoint(
+            x: x,
+            y: y
+        )
+    }
+    
+    // Quadratic Bézier derivative: B'(t) = 2(1-t)(P1-P0) + 2t(P2-P1)
+    let bezierDerivative: (CGFloat) -> CGPoint = { t in
+        let tt = min(max(t, 0), 1)
+        let a = CGPoint(x: control.x - start.x, y: control.y - start.y)
+        let b = CGPoint(x: end.x - control.x,   y: end.y - control.y)
+        let x = 2 * (1 - tt) * a.x + 2 * tt * b.x
+        let y = 2 * (1 - tt) * a.y + 2 * tt * b.y
+        return CGPoint(x: x, y: y)
+    }
+    let _ = bezierDerivative
+    
+    // Approximate curve length by sampling speeds (polyline integral)
+    let approximateBezierLength: (Int) -> CGFloat = { samples in
+        guard samples >= 2 else { return 0 }
+        var length: CGFloat = 0
+        var prev = bezier(0)
+        for i in 1..<samples {
+            let t = CGFloat(i) / CGFloat(samples - 1)
+            let p = bezier(t)
+            length += hypot(p.x - prev.x, p.y - prev.y)
+            prev = p
+        }
+        return length
+    }
+    
+    let curveLength = approximateBezierLength(80)
+    
+    // End tangent direction: B'(1) = 2(P2 - P1)
+    let tan = CGPoint(x: 2 * (end.x - control.x), y: 2 * (end.y - control.y))
+    let tanLen = hypot(tan.x, tan.y)
+    let tanUnit = tanLen > 0.0001
+    ? CGPoint(x: tan.x / tanLen, y: tan.y / tanLen)
+    : CGPoint(x: dx / chord, y: dy / chord)
+    
+    // Spring progress p(time): 0 -> 1 with overshoot if dampingRatio < 1
+    let zeta = min(max(dampingRatio, 0.01), 0.99)
+    let omega = max(angularFrequency, 0.01)
+    let omegaD = omega * sqrt(1 - zeta*zeta)
+    let zetaTerm = zeta / sqrt(1 - zeta*zeta)
+    
+    let springProgress: (CGFloat) -> CGFloat = { time in
+        let expTerm = exp(-zeta * omega * time)
+        return 1 - expTerm * (cos(omegaD * time) + zetaTerm * sin(omegaD * time))
+    }
+    
+    // Ensure we include at least one overshoot peak (~pi/omegaD), plus settling.
+    let duration: CGFloat = max(0.45, (CGFloat.pi * 1.6) / omegaD)
+    
+    var frames: [CGPoint] = []
+    frames.reserveCapacity(steps)
+    
+    for i in 0..<steps {
+        let alpha = CGFloat(i) / CGFloat(steps - 1)   // 0..1
+        let time = alpha * duration
+        let tSpring = springProgress(time)
+        
+        if tSpring <= 1.0 {
+            frames.append(bezier(tSpring))
+        } else {
+            // excess of 1.0 maps to extra arc-lengths along end tangent
+            let excess = tSpring - 1.0
+            let d = excess * curveLength // <-- 100% = curve length
+            frames.append(CGPoint(x: end.x + tanUnit.x * d, y: end.y + tanUnit.y * d))
+        }
+    }
+    
+    // Usually desired: land exactly on target
+    frames[frames.count - 1] = end
+    return frames
 }

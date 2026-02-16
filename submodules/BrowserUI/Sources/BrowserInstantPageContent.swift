@@ -1198,7 +1198,7 @@ final class BrowserInstantPageContent: UIView, BrowserContent, UIScrollViewDeleg
     }
     
     private func activatePinchPreview(sourceNode: PinchSourceContainerNode) {
-        let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: { [weak self] in
+        let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: { [weak self] in
             guard let self else {
                 return CGRect()
             }

@@ -9,6 +9,7 @@ import AccountContext
 import TelegramPresentationData
 import StickerResources
 import ContextUI
+import ContextControllerImpl
 
 final class StickerPackListContextItem: ContextMenuCustomItem {
     let context: AccountContext

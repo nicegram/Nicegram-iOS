@@ -30,6 +30,10 @@ private final class SectionTitleContextItemNode: ASDisplayNode, ContextMenuCusto
         return false
     }
     
+    var needsPadding: Bool {
+        return false
+    }
+    
     init(presentationData: PresentationData, item: SectionTitleContextItem, getController: @escaping () -> ContextControllerProtocol?, actionSelected: @escaping (ContextMenuActionResult) -> Void) {
         self.item = item
         self.presentationData = presentationData
@@ -56,17 +60,17 @@ private final class SectionTitleContextItemNode: ASDisplayNode, ContextMenuCusto
     }
 
     func updateLayout(constrainedWidth: CGFloat, constrainedHeight: CGFloat) -> (CGSize, (CGSize, ContainedViewLayoutTransition) -> Void) {
-        let sideInset: CGFloat = 16.0
+        let sideInset: CGFloat = 18.0 + 4.0
 
         let textSize = self.textNode.updateLayout(CGSize(width: constrainedWidth - sideInset - sideInset, height: .greatestFiniteMagnitude))
-        let height: CGFloat = 28.0
+        let height: CGFloat = 10.0 + 28.0
         
         return (CGSize(width: textSize.width + sideInset + sideInset, height: height), { size, transition in
-            let verticalOrigin = floor((size.height - textSize.height) / 2.0)
+            let verticalOrigin = floor((size.height - 10.0 - textSize.height) / 2.0)
             let textFrame = CGRect(origin: CGPoint(x: sideInset, y: verticalOrigin), size: textSize)
             transition.updateFrameAdditive(node: self.textNode, frame: textFrame)
             
-            transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height)))
+            transition.updateFrame(node: self.backgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.height - 10.0)))
         })
     }
     

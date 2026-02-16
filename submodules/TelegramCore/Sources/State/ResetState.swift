@@ -147,7 +147,8 @@ func _internal_resetAccountState(postbox: Postbox, network: Network, accountPeer
                 
                 if let currentState = transaction.getState() as? AuthorizedAccountState {
                     switch state {
-                    case let .state(pts, qts, date, seq, _):
+                    case let .state(stateData):
+                        let (pts, qts, date, seq) = (stateData.pts, stateData.qts, stateData.date, stateData.seq)
                         transaction.setState(currentState.changedState(AuthorizedAccountState.State(pts: pts, qts: qts, date: date, seq: seq)))
                     }
                 }

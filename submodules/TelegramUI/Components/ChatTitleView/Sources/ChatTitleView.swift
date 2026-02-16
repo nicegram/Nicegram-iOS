@@ -1097,7 +1097,7 @@ public final class ChatTitleView: UIView, NavigationBarTitleView {
         backgroundFrame = backgroundFrame.insetBy(dx: -12.0, dy: 0.0)
         let componentTransition = ComponentTransition(transition)
         componentTransition.setFrame(view: self.backgroundView, frame: backgroundFrame)
-        self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: false, transition: componentTransition)
+        self.backgroundView.update(size: backgroundFrame.size, cornerRadius: backgroundFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: false, transition: componentTransition)
         
         return availableSize
     }

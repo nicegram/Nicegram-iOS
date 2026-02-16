@@ -26,6 +26,14 @@ import TelegramUIPreferences
 import SegmentControlComponent
 import GlassBackgroundComponent
 
+public enum DataUsageEntryTag {
+    case mobile
+    case wifi
+    case reset
+}
+
+private let resetTag = GenericComponentViewTag()
+
 final class DataUsageScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
@@ -454,6 +462,25 @@ final class DataUsageScreenComponent: Component {
         }
         
         func update(component: DataUsageScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<ViewControllerComponentContainer.Environment>, transition: ComponentTransition) -> CGSize {
+            let environment = environment[ViewControllerComponentContainer.Environment.self].value
+            if self.component == nil {
+                if let controller = environment.controller() as? DataUsageScreen, let focusOnItemTag = controller.focusOnItemTag {
+                    switch focusOnItemTag {
+                    case .mobile:
+                        self.selectedStats = .mobile
+                    case .wifi:
+                        self.selectedStats = .wifi
+                    case .reset:
+                        Queue.mainQueue().after(0.1, {
+                            if let view = self.clearButtonView.view as? DataButtonComponent.View {
+                                view.displayHighlight()
+                                self.scrollView.setContentOffset(CGPoint(x: 0.0, y: self.scrollView.contentSize.height - self.scrollView.bounds.height), animated: true)
+                            }
+                        })
+                    }
+                }
+            }
+            
             self.component = component
             self.state = state
             
@@ -482,7 +509,6 @@ final class DataUsageScreenComponent: Component {
                 })
             }
             
-            let environment = environment[ViewControllerComponentContainer.Environment.self].value
             
             let animationHint = transition.userData(AnimationHint.self)
             
@@ -876,7 +902,7 @@ final class DataUsageScreenComponent: Component {
                         SegmentControlComponent.Item(id: AnyHashable(SelectedStats.mobile), title: environment.strings.DataUsage_TopSectionMobile),
                         SegmentControlComponent.Item(id: AnyHashable(SelectedStats.wifi), title: environment.strings.DataUsage_TopSectionWifi)
                     ],
-                    selectedId: "total",
+                    selectedId: AnyHashable(self.selectedStats),
                     action: { [weak self] id in
                         guard let self, let id = id.base as? SelectedStats else {
                             return
@@ -1087,7 +1113,8 @@ final class DataUsageScreenComponent: Component {
                     title: environment.strings.DataUsage_Reset,
                     action: { [weak self] in
                         self?.requestClear()
-                    }
+                    },
+                    tag: resetTag
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 1000.0)
@@ -1210,6 +1237,7 @@ final class DataUsageScreenComponent: Component {
 
 public final class DataUsageScreen: ViewControllerComponentContainer {
     private let context: AccountContext
+    fileprivate let focusOnItemTag: DataUsageEntryTag?
     
     private let overNavigationContainer: UIView
     
@@ -1218,8 +1246,9 @@ public final class DataUsageScreen: ViewControllerComponentContainer {
         return self.readyValue
     }
     
-    public init(context: AccountContext, stats: NetworkUsageStats, mediaAutoDownloadSettings: MediaAutoDownloadSettings, makeAutodownloadSettingsController: @escaping (Bool) -> ViewController) {
+    public init(context: AccountContext, stats: NetworkUsageStats, mediaAutoDownloadSettings: MediaAutoDownloadSettings, makeAutodownloadSettingsController: @escaping (Bool) -> ViewController, focusOnItemTag: DataUsageEntryTag? = nil) {
         self.context = context
+        self.focusOnItemTag = focusOnItemTag
         
         self.overNavigationContainer = SparseContainerView()
         

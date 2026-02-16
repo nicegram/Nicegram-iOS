@@ -36,8 +36,8 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
     private var presentationData: PresentationData?
     
     private let backgroundContainer: GlassBackgroundContainerView
-    private let leftButtonsBackground: GlassBackgroundView
-    private let rightButtonsBackground: GlassBackgroundView
+    let leftButtonsBackground: GlassContextExtractableContainer
+    let rightButtonsBackground: GlassContextExtractableContainer
     private let leftButtonsContainer: UIView
     private let rightButtonsContainer: UIView
     
@@ -55,8 +55,8 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
     
     override init() {
         self.backgroundContainer = GlassBackgroundContainerView()
-        self.leftButtonsBackground = GlassBackgroundView()
-        self.rightButtonsBackground = GlassBackgroundView()
+        self.leftButtonsBackground = GlassContextExtractableContainer()
+        self.rightButtonsBackground = GlassContextExtractableContainer()
         
         self.leftButtonsContainer = UIView()
         self.leftButtonsContainer.clipsToBounds = true
@@ -352,10 +352,10 @@ final class PeerInfoHeaderNavigationButtonContainerNode: SparseNode {
         let tintColor: GlassBackgroundView.TintColor
         let tintIsDark: Bool
         if self.isOverColoredContents {
-            tintColor = .init(kind: .custom, color: self.backgroundContentColor)
+            tintColor = .init(kind: .custom(style: .default, color: self.backgroundContentColor))
             tintIsDark = presentationData.theme.overallDarkAppearance
         } else {
-            tintColor = .init(kind: .panel, color: UIColor(white: presentationData.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6))
+            tintColor = .init(kind: .panel)
             tintIsDark = presentationData.theme.overallDarkAppearance
         }
         

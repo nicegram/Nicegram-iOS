@@ -183,7 +183,7 @@ final class EmojisChatInputContextPanelNode: ChatInputContextPanelNode {
             }
             
             let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-            let controller = PeekController(presentationData: presentationData, content: content, sourceView: {
+            let controller = makePeekController(presentationData: presentationData, content: content, sourceView: {
                 return (sourceView, sourceRect)
             })
             /*controller.visibilityUpdated = { [weak self] visible in

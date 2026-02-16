@@ -450,7 +450,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                 })))
             }
             
-            let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: true)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, actionsOnTop: true)), items: .single(ContextController.Items(id: AnyHashable(0), content: .list(items))), gesture: nil)
             controller.presentInGlobalOverlay(contextController)
         }
         
@@ -2153,7 +2153,7 @@ final class PeerBadgeAvatarComponent: Component {
                 peer: component.peer,
                 synchronousLoad: synchronousLoad,
                 displayDimensions: size,
-                cutoutRect: component.hasBadge ? badgeFrame.insetBy(dx: -(1.0 + UIScreenPixel), dy: -(1.0 + UIScreenPixel)) : nil
+                cutoutRect: component.hasBadge ? CGRect(origin: CGPoint(x: badgeFrame.minX, y: size.height - badgeFrame.maxY), size: badgeFrame.size).insetBy(dx: -1.0 + UIScreenPixel, dy: -1.0 + UIScreenPixel) : nil
             )
             
             if self.badgeBackground.image == nil {

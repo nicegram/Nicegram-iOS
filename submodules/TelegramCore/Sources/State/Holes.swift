@@ -244,21 +244,24 @@ func withResolvedAssociatedMessages<T>(postbox: Postbox, source: FetchMessageHis
                 if let peer = transaction.getPeer(peerId) ?? parsedPeers.get(peerId) {
                     var signal: Signal<Api.messages.Messages, MTRpcError>?
                     if peerId.namespace == Namespaces.Peer.CloudUser || peerId.namespace == Namespaces.Peer.CloudGroup {
-                        signal = source.request(Api.functions.messages.getMessages(id: messageIds.targetIdsBySourceId.values.map({ Api.InputMessage.inputMessageReplyTo(id: $0.id) })))
+                        signal = source.request(Api.functions.messages.getMessages(id: messageIds.targetIdsBySourceId.values.map({ Api.InputMessage.inputMessageReplyTo(.init(id: $0.id)) })))
                     } else if peerId.namespace == Namespaces.Peer.CloudChannel {
                         if let inputChannel = apiInputChannel(peer) {
-                            signal = source.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.targetIdsBySourceId.values.map({ Api.InputMessage.inputMessageReplyTo(id: $0.id) })))
+                            signal = source.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.targetIdsBySourceId.values.map({ Api.InputMessage.inputMessageReplyTo(.init(id: $0.id)) })))
                         }
                     }
                     if let signal = signal {
                         signals.append(signal
                         |> map { result in
                             switch result {
-                                case let .messages(messages, _, chats, users):
+                                case let .messages(messagesData):
+                                    let (messages, _, chats, users) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
                                     return (peer, messages, chats, users)
-                                case let .messagesSlice(_, _, _, _, _, messages, _, chats, users):
+                                case let .messagesSlice(messagesSliceData):
+                                    let (messages, chats, users) = (messagesSliceData.messages, messagesSliceData.chats, messagesSliceData.users)
                                     return (peer, messages, chats, users)
-                                case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
+                                case let .channelMessages(channelMessagesData):
+                                    let (messages, apiTopics, chats, users) = (channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
                                     let _ = apiTopics
                                     return (peer, messages, chats, users)
                                 case .messagesNotModified:
@@ -275,21 +278,24 @@ func withResolvedAssociatedMessages<T>(postbox: Postbox, source: FetchMessageHis
                 if let peer = transaction.getPeer(peerId) ?? parsedPeers.get(peerId) {
                     var signal: Signal<Api.messages.Messages, MTRpcError>?
                     if peerId.namespace == Namespaces.Peer.CloudUser || peerId.namespace == Namespaces.Peer.CloudGroup {
-                        signal = source.request(Api.functions.messages.getMessages(id: messageIds.map({ Api.InputMessage.inputMessageID(id: $0.id) })))
+                        signal = source.request(Api.functions.messages.getMessages(id: messageIds.map({ Api.InputMessage.inputMessageID(.init(id: $0.id)) })))
                     } else if peerId.namespace == Namespaces.Peer.CloudChannel {
                         if let inputChannel = apiInputChannel(peer) {
-                            signal = source.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.map({ Api.InputMessage.inputMessageID(id: $0.id) })))
+                            signal = source.request(Api.functions.channels.getMessages(channel: inputChannel, id: messageIds.map({ Api.InputMessage.inputMessageID(.init(id: $0.id)) })))
                         }
                     }
                     if let signal = signal {
                         signals.append(signal
                         |> map { result in
                             switch result {
-                                case let .messages(messages, _, chats, users):
+                                case let .messages(messagesData):
+                                    let (messages, _, chats, users) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
                                     return (peer, messages, chats, users)
-                                case let .messagesSlice(_, _, _, _, _, messages, _, chats, users):
+                                case let .messagesSlice(messagesSliceData):
+                                    let (messages, chats, users) = (messagesSliceData.messages, messagesSliceData.chats, messagesSliceData.users)
                                     return (peer, messages, chats, users)
-                                case let .channelMessages(_, _, _, _, messages, apiTopics, chats, users):
+                                case let .channelMessages(channelMessagesData):
+                                    let (messages, apiTopics, chats, users) = (channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
                                     let _ = apiTopics
                                     return (peer, messages, chats, users)
                                 case .messagesNotModified:
@@ -919,15 +925,18 @@ func fetchMessageHistoryHole(accountPeerId: PeerId, source: FetchMessageHistoryH
                     let users: [Api.User]
                     var channelPts: Int32?
                     switch result {
-                        case let .messages(messages: apiMessages, _, chats: apiChats, users: apiUsers):
+                        case let .messages(messagesData):
+                            let (apiMessages, _, apiChats, apiUsers) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .messagesSlice(_, _, _, _, _, messages: apiMessages, _, chats: apiChats, users: apiUsers):
+                        case let .messagesSlice(messagesSliceData):
+                            let (apiMessages, apiChats, apiUsers) = (messagesSliceData.messages, messagesSliceData.chats, messagesSliceData.users)
                             messages = apiMessages
                             chats = apiChats
                             users = apiUsers
-                        case let .channelMessages(_, pts, _, _, apiMessages, apiTopics, apiChats, apiUsers):
+                        case let .channelMessages(channelMessagesData):
+                            let (pts, apiMessages, apiTopics, apiChats, apiUsers) = (channelMessagesData.pts, channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
                             messages = apiMessages
                             let _ = apiTopics
                             chats = apiChats
@@ -1089,13 +1098,13 @@ func fetchMessageHistoryHole(accountPeerId: PeerId, source: FetchMessageHistoryH
 func groupBoundaryPeer(_ peerId: PeerId, accountPeerId: PeerId) -> Api.Peer {
     switch peerId.namespace {
         case Namespaces.Peer.CloudUser:
-            return Api.Peer.peerUser(userId: peerId.id._internalGetInt64Value())
+            return Api.Peer.peerUser(.init(userId: peerId.id._internalGetInt64Value()))
         case Namespaces.Peer.CloudGroup:
-            return Api.Peer.peerChat(chatId: peerId.id._internalGetInt64Value())
+            return Api.Peer.peerChat(.init(chatId: peerId.id._internalGetInt64Value()))
         case Namespaces.Peer.CloudChannel:
-            return Api.Peer.peerChannel(channelId: peerId.id._internalGetInt64Value())
+            return Api.Peer.peerChannel(.init(channelId: peerId.id._internalGetInt64Value()))
         default:
-            return Api.Peer.peerUser(userId: accountPeerId.id._internalGetInt64Value())
+            return Api.Peer.peerUser(.init(userId: accountPeerId.id._internalGetInt64Value()))
     }
 }
 
@@ -1210,22 +1219,25 @@ func fetchCallListHole(network: Network, postbox: Postbox, accountPeerId: PeerId
     offset = single((holeIndex.timestamp, min(holeIndex.id.id, Int32.max - 1) + 1, Api.InputPeer.inputPeerEmpty), NoError.self)
     return offset
     |> mapToSignal { (timestamp, id, peer) -> Signal<Void, NoError> in
-        let searchResult = network.request(Api.functions.messages.search(flags: 0, peer: .inputPeerEmpty, q: "", fromId: nil, savedPeerId: nil, savedReaction: nil, topMsgId: nil, filter: .inputMessagesFilterPhoneCalls(flags: 0), minDate: 0, maxDate: holeIndex.timestamp, offsetId: 0, addOffset: 0, limit: limit, maxId: holeIndex.id.id, minId: 0, hash: 0))
+        let searchResult = network.request(Api.functions.messages.search(flags: 0, peer: .inputPeerEmpty, q: "", fromId: nil, savedPeerId: nil, savedReaction: nil, topMsgId: nil, filter: .inputMessagesFilterPhoneCalls(.init(flags: 0)), minDate: 0, maxDate: holeIndex.timestamp, offsetId: 0, addOffset: 0, limit: limit, maxId: holeIndex.id.id, minId: 0, hash: 0))
         |> retryRequest
         |> mapToSignal { result -> Signal<Void, NoError> in
             let messages: [Api.Message]
             let chats: [Api.Chat]
             let users: [Api.User]
             switch result {
-                case let .messages(messages: apiMessages, _, chats: apiChats, users: apiUsers):
+                case let .messages(messagesData):
+                    let (apiMessages, _, apiChats, apiUsers) = (messagesData.messages, messagesData.topics, messagesData.chats, messagesData.users)
                     messages = apiMessages
                     chats = apiChats
                     users = apiUsers
-                case let .messagesSlice(_, _, _, _, _, messages: apiMessages, _, chats: apiChats, users: apiUsers):
+                case let .messagesSlice(messagesSliceData):
+                    let (apiMessages, apiChats, apiUsers) = (messagesSliceData.messages, messagesSliceData.chats, messagesSliceData.users)
                     messages = apiMessages
                     chats = apiChats
                     users = apiUsers
-                case let .channelMessages(_, _, _, _, apiMessages, apiTopics, apiChats, apiUsers):
+                case let .channelMessages(channelMessagesData):
+                    let (apiMessages, apiTopics, apiChats, apiUsers) = (channelMessagesData.messages, channelMessagesData.topics, channelMessagesData.chats, channelMessagesData.users)
                     messages = apiMessages
                     let _ = apiTopics
                     chats = apiChats

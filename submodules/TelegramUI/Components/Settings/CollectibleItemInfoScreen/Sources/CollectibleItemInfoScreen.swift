@@ -581,6 +581,8 @@ private final class CollectibleItemInfoScreenComponent: Component {
             self.environment = environment
             
             let sheetEnvironment = SheetComponentEnvironment(
+                metrics: environment.metrics,
+                deviceMetrics: environment.deviceMetrics,
                 isDisplaying: environment.isVisible,
                 isCentered: environment.metrics.widthClass == .regular,
                 hasInputHeight: !environment.inputHeight.isZero,
@@ -620,7 +622,7 @@ private final class CollectibleItemInfoScreenComponent: Component {
                         }
                     )),
                     style: .glass,
-                    backgroundColor: .color(environment.theme.list.plainBackgroundColor),
+                    backgroundColor: .color(environment.theme.list.modalPlainBackgroundColor),
                     animateOut: self.sheetAnimateOut
                 )),
                 environment: {

@@ -233,7 +233,7 @@ public final class MediaGroupsScreen: ViewController, AttachmentContainable {
                 self?.view.window?.endEditing(true)
             }
             
-            self.listNode.visibleContentOffsetChanged = { [weak self] _ in
+            self.listNode.visibleContentOffsetChanged = { [weak self] _, _ in
                 self?.updateNavigation(transition: .immediate)
             }
         }

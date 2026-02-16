@@ -52,6 +52,8 @@ private final class CocoonInfoSheetContent: CombinedComponent {
                 
         fileprivate let playButtonAnimation = ActionSlot<Void>()
         private var didPlayAnimation = false
+        
+        var cachedDescription: String?
                 
         init(
             context: AccountContext,
@@ -91,16 +93,17 @@ private final class CocoonInfoSheetContent: CombinedComponent {
     }
     
     static var body: Body {
+        let background = Child(GradientBackgroundComponent.self)
         let closeButton = Child(GlassBarButtonComponent.self)
         let icon = Child(BundleIconComponent.self)
-        let title = Child(BalancedTextComponent.self)
+        let logo = Child(BundleIconComponent.self)
         let text = Child(BalancedTextComponent.self)
         let list = Child(List<Empty>.self)
         let additionalText = Child(MultilineTextComponent.self)
         let button = Child(ButtonComponent.self)
         
         let navigateDisposable = MetaDisposable()
-                                
+        
         return { context in
             let component = context.component
             let environment = context.environment[ViewControllerComponentContainer.Environment.self].value
@@ -112,7 +115,6 @@ private final class CocoonInfoSheetContent: CombinedComponent {
             let sideInset: CGFloat = 30.0 + environment.safeInsets.left
             let textSideInset: CGFloat = 30.0 + environment.safeInsets.left
             
-            let titleFont = Font.bold(24.0)
             let textFont = Font.regular(15.0)
             let boldTextFont = Font.semibold(15.0)
             
@@ -122,42 +124,48 @@ private final class CocoonInfoSheetContent: CombinedComponent {
             
             let spacing: CGFloat = 16.0
             var contentSize = CGSize(width: context.availableSize.width, height: 28.0)
-                                                          
-            let icon = icon.update(
-                component: BundleIconComponent(
-                    name: "Premium/Cocoon", tintColor: nil
-                ),
-                availableSize: context.availableSize,
-                transition: context.transition
-            )
-            context.add(icon
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + icon.size.height / 2.0))
-            )
-            contentSize.height += icon.size.height
-            contentSize.height += 14.0
-        
-            let title = title.update(
-                component: BalancedTextComponent(
-                    text: .plain(NSAttributedString(string: strings.CocoonInfo_Title, font: titleFont, textColor: textColor)),
-                    horizontalAlignment: .center,
-                    maximumNumberOfLines: 0,
-                    lineSpacing: 0.1
-                ),
-                availableSize: CGSize(width: context.availableSize.width - textSideInset * 2.0, height: context.availableSize.height),
-                transition: .immediate
-            )
-            context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + title.size.height / 2.0))
-            )
-            contentSize.height += title.size.height
-            contentSize.height += spacing - 8.0
+            
+            let descriptionText: String
+            if let cachedDescription = state.cachedDescription {
+                descriptionText = cachedDescription
+            } else {
+                func updateText(_ input: String) -> String {
+                    let pattern = #"\(([^()]*)\)"#
+                    let boldPattern = #"\*\*(.*?)\*\*"#
+
+                    let regex = try! NSRegularExpression(pattern: pattern)
+                    let boldRegex = try! NSRegularExpression(pattern: boldPattern)
+
+                    let nsInput = input as NSString
+                    var result = input
+
+                    let matches = regex.matches(in: input, range: NSRange(location: 0, length: nsInput.length))
+
+                    for match in matches.reversed() {
+                        let range = match.range(at: 1)
+                        let inner = nsInput.substring(with: range)
+
+                        let replacedInner = boldRegex.stringByReplacingMatches(
+                            in: inner,
+                            range: NSRange(location: 0, length: (inner as NSString).length),
+                            withTemplate: "[$1]()"
+                        )
+
+                        result = (result as NSString).replacingCharacters(in: range, with: replacedInner)
+                    }
+
+                    return result
+                }
+                descriptionText = updateText(strings.CocoonInfo_Description)
+                state.cachedDescription = descriptionText
+            }
             
             let attributedText = parseMarkdownIntoAttributedString(
-                strings.CocoonInfo_Description,
+                descriptionText,
                 attributes: MarkdownAttributes(
-                    body: MarkdownAttributeSet(font: textFont, textColor: textColor),
-                    bold: MarkdownAttributeSet(font: boldTextFont, textColor: textColor),
-                    link: MarkdownAttributeSet(font: textFont, textColor: linkColor),
+                    body: MarkdownAttributeSet(font: textFont, textColor: UIColor(rgb: 0xb8c9ef)),
+                    bold: MarkdownAttributeSet(font: boldTextFont, textColor: UIColor(rgb: 0xb8c9ef)),
+                    link: MarkdownAttributeSet(font: boldTextFont, textColor: UIColor(rgb: 0xffffff)),
                     linkAttribute: { _ in return nil }
                 )
             )
@@ -171,11 +179,52 @@ private final class CocoonInfoSheetContent: CombinedComponent {
                 availableSize: CGSize(width: context.availableSize.width - textSideInset * 2.0, height: context.availableSize.height),
                 transition: .immediate
             )
+                                            
+            let background = background.update(
+                component: GradientBackgroundComponent(
+                    colors: [
+                        UIColor(rgb: 0x061129),
+                        UIColor(rgb: 0x08153d)
+                    ]
+                ),
+                availableSize: CGSize(width: context.availableSize.width, height: text.size.height + 220.0),
+                transition: context.transition
+            )
+            context.add(background
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: background.size.height / 2.0))
+            )
+            
+            let icon = icon.update(
+                component: BundleIconComponent(
+                    name: "Premium/Cocoon", tintColor: nil
+                ),
+                availableSize: context.availableSize,
+                transition: context.transition
+            )
+            context.add(icon
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + icon.size.height / 2.0))
+            )
+            contentSize.height += icon.size.height
+            contentSize.height += 14.0
+        
+            let logo = logo.update(
+                component: BundleIconComponent(
+                    name: "Premium/CocoonLogo", tintColor: nil
+                ),
+                availableSize: context.availableSize,
+                transition: .immediate
+            )
+            context.add(logo
+                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + logo.size.height / 2.0))
+            )
+            contentSize.height += logo.size.height
+            contentSize.height += spacing - 8.0
+            
             context.add(text
                 .position(CGPoint(x: context.availableSize.width / 2.0, y: contentSize.height + text.size.height / 2.0))
             )
             contentSize.height += text.size.height
-            contentSize.height += spacing + 9.0
+            contentSize.height += spacing + 31.0
             
             var items: [AnyComponentWithIdentity<Empty>] = []
             items.append(
@@ -292,14 +341,14 @@ private final class CocoonInfoSheetContent: CombinedComponent {
             
             let closeButton = closeButton.update(
                 component: GlassBarButtonComponent(
-                    size: CGSize(width: 40.0, height: 40.0),
-                    backgroundColor: theme.rootController.navigationBar.glassBarButtonBackgroundColor,
-                    isDark: theme.overallDarkAppearance,
-                    state: .generic,
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: UIColor(rgb: 0x071533),
+                    isDark: true,
+                    state: .tintedGlass,
                     component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
                         BundleIconComponent(
                             name: "Navigation/Close",
-                            tintColor: theme.chat.inputPanel.panelControlColor
+                            tintColor: .white
                         )
                     )),
                     action: { [weak state] _ in
@@ -309,7 +358,7 @@ private final class CocoonInfoSheetContent: CombinedComponent {
                         state.dismiss(animated: true)
                     }
                 ),
-                availableSize: CGSize(width: 40.0, height: 40.0),
+                availableSize: CGSize(width: 44.0, height: 44.0),
                 transition: .immediate
             )
             context.add(closeButton
@@ -421,6 +470,8 @@ final class CocoonInfoSheetComponent: CombinedComponent {
                 environment: {
                     environment
                     SheetComponentEnvironment(
+                        metrics: environment.metrics,
+                        deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,
                         isCentered: environment.metrics.widthClass == .regular,
                         hasInputHeight: !environment.inputHeight.isZero,
@@ -665,5 +716,68 @@ private final class ParagraphComponent: CombinedComponent {
         
             return CGSize(width: context.availableSize.width, height: textTopInset + title.size.height + text.size.height + 20.0)
         }
+    }
+}
+
+private final class GradientBackgroundComponent: Component {
+    let colors: [UIColor]
+    
+    init(
+        colors: [UIColor]
+    ) {
+        self.colors = colors
+    }
+    
+    static func ==(lhs: GradientBackgroundComponent, rhs: GradientBackgroundComponent) -> Bool {
+        if lhs.colors != rhs.colors {
+            return false
+        }
+        return true
+    }
+    
+    public final class View: UIView {
+        private let gradientLayer: CAGradientLayer
+        
+        private var component: GradientBackgroundComponent?
+        
+        override init(frame: CGRect) {
+            self.gradientLayer = CAGradientLayer()
+            
+            super.init(frame: frame)
+            
+            self.layer.addSublayer(self.gradientLayer)
+        }
+        
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+        
+        func update(component: GradientBackgroundComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+            self.gradientLayer.frame = CGRect(origin: .zero, size: availableSize)
+            
+            var locations: [NSNumber] = []
+            let delta = 1.0 / CGFloat(component.colors.count - 1)
+            for i in 0 ..< component.colors.count {
+                locations.append((delta * CGFloat(i)) as NSNumber)
+            }
+
+            self.gradientLayer.locations = locations
+            self.gradientLayer.colors = component.colors.reversed().map { $0.cgColor }
+            self.gradientLayer.type = .radial
+            self.gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.5)
+            self.gradientLayer.endPoint = CGPoint(x: 1.0, y: 1.0)
+
+            self.component = component
+            
+            return availableSize
+        }
+    }
+    
+    public func makeView() -> View {
+        return View(frame: CGRect())
+    }
+    
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+        return view.update(component: self, availableSize: availableSize, state: state, environment: environment, transition: transition)
     }
 }

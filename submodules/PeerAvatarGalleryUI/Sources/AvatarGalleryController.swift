@@ -412,7 +412,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
     private var centralEntryIndex: Int?
     
     private let centralItemTitle = Promise<String>()
-    private let centralItemTitleView = Promise<UIView?>()
+    private let centralItemTitleContent = Promise<GalleryTitleView.Content?>()
     private let centralItemRightBarButtonItems = Promise<[UIBarButtonItem]?>(nil)
     private let centralItemNavigationStyle = Promise<GalleryItemNodeNavigationStyle>()
     private let centralItemFooterContentNode = Promise<(GalleryFooterContentNode?, GalleryOverlayContentNode?)>()
@@ -426,6 +426,8 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
     public var hiddenMedia: Signal<AvatarGalleryEntry?, NoError> {
         return self._hiddenMedia.get()
     }
+    
+    private let titleView: GalleryTitleView
     
     private let replaceRootController: (ViewController, Promise<Bool>?) -> Void
     
@@ -441,10 +443,14 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
         
         self.centralEntryIndex = centralEntryIndex
         
+        self.titleView = GalleryTitleView(context: context, presentationData: self.presentationData)
+        
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: GalleryController.darkNavigationTheme, strings: NavigationBarStrings(presentationStrings: self.presentationData.strings)))
         
         let backItem = UIBarButtonItem(backButtonAppearanceWithTitle: self.presentationData.strings.Common_Back, target: self, action: #selector(self.donePressed))
         self.navigationItem.leftBarButtonItem = backItem
+        
+        self.navigationItem.titleView = self.titleView
         
         self.statusBar.statusBarStyle = .White
         
@@ -546,8 +552,8 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
             }
         }))
         
-        self.centralItemAttributesDisposable.add(self.centralItemTitleView.get().start(next: { [weak self] titleView in
-            self?.navigationItem.titleView = titleView
+        self.centralItemAttributesDisposable.add(self.centralItemTitleContent.get().start(next: { [weak self] titleContent in
+            self?.titleView.setContent(content: titleContent)
         }))
         
         self.centralItemAttributesDisposable.add(self.centralItemRightBarButtonItems.get().start(next: { [weak self] rightBarButtonItems in
@@ -630,8 +636,10 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
         }, editMedia: { _ in
         }, controller: { [weak self] in
             return self
+        }, currentItemNode: { [weak self] in
+            return self?.galleryNode.pager.centralItemNode()
         })
-        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction)
+        self.displayNode = GalleryControllerNode(context: self.context, controllerInteraction: controllerInteraction, titleView: self.titleView)
         self.displayNodeDidLoad()
         
         self.galleryNode.pager.updateOnReplacement = true
@@ -678,7 +686,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
                     
                     if let node = strongSelf.galleryNode.pager.centralItemNode() {
                         strongSelf.centralItemTitle.set(node.title())
-                        strongSelf.centralItemTitleView.set(node.titleView())
+                        strongSelf.centralItemTitleContent.set(node.titleContent())
                         strongSelf.centralItemRightBarButtonItems.set(node.rightBarButtonItems())
                         strongSelf.centralItemNavigationStyle.set(node.navigationStyle())
                         strongSelf.centralItemFooterContentNode.set(node.footerContent())
@@ -707,7 +715,7 @@ public class AvatarGalleryController: ViewController, StandalonePresentableContr
         
         if let centralItemNode = self.galleryNode.pager.centralItemNode(), let presentationArguments = self.presentationArguments as? AvatarGalleryControllerPresentationArguments {
             self.centralItemTitle.set(centralItemNode.title())
-            self.centralItemTitleView.set(centralItemNode.titleView())
+            self.centralItemTitleContent.set(centralItemNode.titleContent())
             self.centralItemRightBarButtonItems.set(centralItemNode.rightBarButtonItems())
             self.centralItemNavigationStyle.set(centralItemNode.navigationStyle())
             self.centralItemFooterContentNode.set(centralItemNode.footerContent())

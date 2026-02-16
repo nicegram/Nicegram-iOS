@@ -29,6 +29,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
     
     let context: AccountContext
     let gift: StarGift
+    let crafted: Bool
     let attributes: [StarGift.UniqueGift.Attribute]
     let selectedAttributes: [StarGift.UniqueGift.Attribute]?
     let focusedAttribute: StarGift.UniqueGift.Attribute?
@@ -36,12 +37,14 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
     init(
         context: AccountContext,
         gift: StarGift,
+        crafted: Bool,
         attributes: [StarGift.UniqueGift.Attribute],
         selectedAttributes: [StarGift.UniqueGift.Attribute]?,
         focusedAttribute: StarGift.UniqueGift.Attribute?
     ) {
         self.context = context
         self.gift = gift
+        self.crafted = crafted
         self.attributes = attributes
         self.selectedAttributes = selectedAttributes
         self.focusedAttribute = focusedAttribute
@@ -109,6 +112,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
         private var giftItems: [AnyHashable: ComponentView<Empty>] = [:]
         
         private var selectedSection: SelectedSection = .models
+        private var displayCraftableModels = false
         
         private let giftCompositionExternalState = GiftCompositionComponent.ExternalState()
                         
@@ -119,7 +123,8 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
         private var previewBackdropIndex: Int = 0
         private var previewSymbolIndex: Int = 0
         
-        private var previewModels: [StarGift.UniqueGift.Attribute] = []
+        private var previewPrimaryModels: [StarGift.UniqueGift.Attribute] = []
+        private var previewCraftableModels: [StarGift.UniqueGift.Attribute] = []
         private var previewBackdrops: [StarGift.UniqueGift.Attribute] = []
         private var previewSymbols: [StarGift.UniqueGift.Attribute] = []
         
@@ -127,9 +132,14 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
         private var selectedBackdrop: StarGift.UniqueGift.Attribute?
         private var selectedSymbol: StarGift.UniqueGift.Attribute?
         
-        private var modelCount: Int32 = 0
+        private var craftableModelCount: Int32 = 0
+        private var primaryModelCount: Int32 = 0
         private var backdropCount: Int32 = 0
         private var symbolCount: Int32 = 0
+        
+        private var currentDescriptionHeight: CGFloat = 0.0
+        
+        private var cachedSmallChevronImage: (UIImage, PresentationTheme)?
         
         private var ignoreScrolling: Bool = false
                 
@@ -199,6 +209,8 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             self.containerView.addSubview(self.navigationBarContainer)
             
             self.dimView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.dimTapGesture(_:))))
+            
+            self.alpha = 0.0
         }
         
         required init?(coder: NSCoder) {
@@ -268,6 +280,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
         }
         
         func animateIn() {
+            self.alpha = 1.0
             self.dimView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
             let animateOffset: CGFloat = self.bounds.height - self.backgroundLayer.frame.minY
             self.scrollContentClippingView.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
@@ -287,8 +300,9 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
         }
         
         private func previewTimerTick() {
-            guard !self.previewModels.isEmpty else { return }
-            self.previewModelIndex = (self.previewModelIndex + 1) % self.previewModels.count
+            let previewModels = self.displayCraftableModels ? self.previewCraftableModels : self.previewPrimaryModels
+            guard !previewModels.isEmpty else { return }
+            self.previewModelIndex = (self.previewModelIndex + 1) % previewModels.count
             
             let previousSymbolIndex = self.previewSymbolIndex
             var randomSymbolIndex = previousSymbolIndex
@@ -328,7 +342,12 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             switch self.selectedSection {
             case .models:
                 let models = Array(attributes.filter({ attribute in
-                    if case .model = attribute {
+                    if case let .model(_, _, _, crafted) = attribute {
+                        if self.displayCraftableModels && !crafted {
+                            return false
+                        } else if !self.displayCraftableModels && crafted {
+                            return false
+                        }
                         return true
                     } else {
                         return false
@@ -338,7 +357,8 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                     effectiveGifts.append([model])
                 }
             case .backdrops:
-                let selectedModel = self.selectedModel ?? self.previewModels[self.previewModelIndex]
+                let previewModels = self.displayCraftableModels ? self.previewCraftableModels : previewPrimaryModels
+                let selectedModel = self.selectedModel ?? previewModels[self.previewModelIndex]
                 let selectedSymbol = self.selectedSymbol ?? self.previewSymbols[self.previewSymbolIndex]
                 let backdrops = Array(attributes.filter({ attribute in
                     if case .backdrop = attribute {
@@ -394,7 +414,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             let optionWidth = (fillingSize - 16.0 * 2.0 - optionSpacing * 2.0) / 3.0
             let optionSize = CGSize(width: optionWidth, height: 126.0)
             
-            let topInset: CGFloat = 393.0
+            let topInset: CGFloat = 375.0 + self.currentDescriptionHeight
             
             var validIds: [AnyHashable] = []
             var itemFrame = CGRect(origin: CGPoint(x: sideInset, y: topInset + 9.0), size: optionSize)
@@ -407,7 +427,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                 
                 var itemId = ""
                 var title = ""
-                var rarity: Int32 = 0
+                var rarity: StarGift.UniqueGift.Attribute.Rarity?
                 
                 var modelAttribute: StarGift.UniqueGift.Attribute?
                 var backdropAttribute: StarGift.UniqueGift.Attribute?
@@ -425,14 +445,14 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                 var isSelected = false
                 for attribute in attributeList {
                     switch attribute {
-                    case let .model(name, file, rarityValue):
+                    case let .model(name, file, rarityValue, _):
                         itemId += "\(file.fileId.id)"
                         if self.selectedSection == .models {
                             title = name
                             rarity = rarityValue
                             modelAttribute = attribute
                             
-                            if case let .model(_, selectedFile, _) = self.selectedModel {
+                            if case let .model(_, selectedFile, _, _) = self.selectedModel {
                                 isSelected = file.fileId == selectedFile.fileId
                             } else {
                                 isSelected = false
@@ -499,7 +519,8 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                                         title: title,
                                         ribbon: nil,
                                         isSelected: isSelected,
-                                        mode: .upgradePreview
+                                        mode: .upgradePreview,
+                                        allowAnimations: self.selectedSection != .backdrops
                                     )
                                 ),
                                 effectAlignment: .center,
@@ -598,13 +619,20 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             let sideInset: CGFloat = rawSideInset + 16.0
             
             if self.component == nil {
-                var modelCount: Int32 = 0
+                self.displayCraftableModels = component.crafted
+                
+                var primaryModelCount: Int32 = 0
+                var craftableModelCount: Int32 = 0
                 var backdropCount: Int32 = 0
                 var symbolCount: Int32 = 0
                 for attribute in component.attributes {
                     switch attribute {
-                    case .model:
-                        modelCount += 1
+                    case let .model(_, _, _, crafted):
+                        if crafted {
+                            craftableModelCount += 1
+                        } else {
+                            primaryModelCount += 1
+                        }
                     case .backdrop:
                         backdropCount += 1
                     case .pattern:
@@ -613,18 +641,34 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                         break
                     }
                 }
-                self.modelCount = modelCount
+                self.primaryModelCount = primaryModelCount
+                self.craftableModelCount = craftableModelCount
                 self.backdropCount = backdropCount
                 self.symbolCount = symbolCount
                 
-                let randomModels = Array(component.attributes.filter({ attribute in
-                    if case .model = attribute {
+                let randomPrimaryModels = Array(component.attributes.filter({ attribute in
+                    if case let .model(_, _, _, crafted) = attribute {
+                        if crafted {
+                            return false
+                        }
                         return true
                     } else {
                         return false
                     }
                 }).shuffled().prefix(15))
-                self.previewModels = randomModels
+                self.previewPrimaryModels = randomPrimaryModels
+                
+                let randomCraftableModels = Array(component.attributes.filter({ attribute in
+                    if case let .model(_, _, _, crafted) = attribute {
+                        if !crafted {
+                            return false
+                        }
+                        return true
+                    } else {
+                        return false
+                    }
+                }).shuffled().prefix(15))
+                self.previewCraftableModels = randomCraftableModels
                 
                 let randomBackdrops = Array(component.attributes.filter({ attribute in
                     if case .backdrop = attribute {
@@ -693,14 +737,15 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             var badgeColor: UIColor = .white.withAlphaComponent(0.4)
             
             var attributes: [StarGift.UniqueGift.Attribute] = []
-            if !self.previewModels.isEmpty {
+            let previewModels = self.displayCraftableModels ? self.previewCraftableModels : self.previewPrimaryModels
+            if !previewModels.isEmpty {
                 if self.isPlaying {
-                    attributes.append(self.previewModels[self.previewModelIndex])
+                    attributes.append(previewModels[self.previewModelIndex])
                     attributes.append(self.previewBackdrops[self.previewBackdropIndex])
                     attributes.append(self.previewSymbols[self.previewSymbolIndex])
                 } else {
                     if self.selectedModel == nil {
-                        self.selectedModel = self.previewModels[self.previewModelIndex]
+                        self.selectedModel = previewModels[self.previewModelIndex]
                     }
                     if self.selectedBackdrop == nil {
                         self.selectedBackdrop = self.previewBackdrops[self.previewBackdropIndex]
@@ -727,7 +772,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                     return false
                 }
             }), case let .backdrop(_, _, innerColor, outerColor, _, _, _) = backdropAttribute {
-                buttonColor = UIColor(rgb: UInt32(bitPattern: innerColor)).withMultipliedBrightnessBy(1.05)
+                buttonColor = UIColor(rgb: UInt32(bitPattern: outerColor)).mixedWith(.white, alpha: 0.2)
                 
                 badgeColor = UIColor(rgb: UInt32(bitPattern: innerColor)).withMultipliedBrightnessBy(1.05)
                 let outer = UIColor(rgb: UInt32(bitPattern: outerColor))
@@ -774,8 +819,11 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             contentHeight += headerSize.height
             
             var titleText: String = ""
-            if case let .generic(gift) = component.gift {
+            switch component.gift {
+            case let .generic(gift):
                 titleText = gift.title ?? ""
+            case let .unique(gift):
+                titleText = gift.title
             }
             
             let titleSize = self.title.update(
@@ -826,7 +874,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             }
             
             let attributeSpacing: CGFloat = 10.0
-            let attributeWidth: CGFloat = floor((fillingSize - attributeSpacing * CGFloat(attributes.count - 1)) / CGFloat(attributes.count))
+            let attributeWidth: CGFloat = floor((fillingSize - 32.0 - attributeSpacing * CGFloat(attributes.count - 1)) / CGFloat(attributes.count))
             let attributeHeight: CGFloat = 45.0
             
             for i in 0 ..< attributes.count {
@@ -920,12 +968,22 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             let itemHeight: CGFloat = 126.0
             let itemSpacing: CGFloat = 10.0
             
-            let descriptionText: String
+            var descriptionText: String
             let itemCount: Int32
             switch self.selectedSection {
             case .models:
-                descriptionText = environment.strings.Gift_Variants_CollectionInfo(environment.strings.Gift_Variants_CollectionInfo_Model(self.modelCount)).string
-                itemCount = self.modelCount
+                if self.displayCraftableModels {
+                    descriptionText = environment.strings.Gift_Variants_CollectionInfo(environment.strings.Gift_Variants_CollectionInfo_CraftableModel(self.craftableModelCount)).string
+                    itemCount = self.craftableModelCount
+                    descriptionText += "\n[\(environment.strings.Gift_Variants_ViewPrimaryModels) >]()"
+                } else {
+                    descriptionText = environment.strings.Gift_Variants_CollectionInfo(environment.strings.Gift_Variants_CollectionInfo_Model(self.primaryModelCount)).string
+                    itemCount = self.primaryModelCount
+                    
+                    if self.craftableModelCount > 0 {
+                        descriptionText += "\n[\(environment.strings.Gift_Variants_ViewCraftableModels) >]()"
+                    }
+                }
             case .backdrops:
                 descriptionText = environment.strings.Gift_Variants_CollectionInfo(environment.strings.Gift_Variants_CollectionInfo_Backdrop(self.backdropCount)).string
                 itemCount = self.backdropCount
@@ -937,14 +995,45 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
             let descriptionFont = Font.regular(13.0)
             let descriptionBoldFont = Font.semibold(13.0)
             let descriptionTextColor = theme.list.itemSecondaryTextColor
-            let descriptionMarkdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: descriptionFont, textColor: descriptionTextColor), bold: MarkdownAttributeSet(font: descriptionBoldFont, textColor: descriptionTextColor), link: MarkdownAttributeSet(font: descriptionFont, textColor: descriptionTextColor), linkAttribute: { contents in
+            let descriptionLinkColor = theme.list.itemAccentColor
+            let descriptionMarkdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: descriptionFont, textColor: descriptionTextColor), bold: MarkdownAttributeSet(font: descriptionBoldFont, textColor: descriptionTextColor), link: MarkdownAttributeSet(font: descriptionFont, textColor: descriptionLinkColor), linkAttribute: { contents in
                 return (TelegramTextAttributes.URL, contents)
             })
+            
+            if self.cachedSmallChevronImage == nil || self.cachedSmallChevronImage?.1 !== environment.theme {
+                self.cachedSmallChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: descriptionLinkColor)!, theme)
+            }
+            
+            let descriptionAttributedString = parseMarkdownIntoAttributedString(descriptionText, attributes: descriptionMarkdownAttributes, textAlignment: .center).mutableCopy() as! NSMutableAttributedString
+            if let range = descriptionAttributedString.string.range(of: ">"), let chevronImage = self.cachedSmallChevronImage?.0 {
+                descriptionAttributedString.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: descriptionAttributedString.string))
+            }
             
             let descriptionSize = self.descriptionText.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .markdown(text: descriptionText, attributes: descriptionMarkdownAttributes)
+                    text: .plain(descriptionAttributedString),
+                    horizontalAlignment: .center,
+                    maximumNumberOfLines: 3,
+                    lineSpacing: 0.2,
+                    highlightColor: descriptionLinkColor.withAlphaComponent(0.1),
+                    highlightInset: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: -8.0),
+                    highlightAction: { attributes in
+                        if let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] {
+                            return NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)
+                        } else {
+                            return nil
+                        }
+                    },
+                    tapAction: { [weak self] attributes, _ in
+                        if let self, let _ = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.URL)] as? String {
+                            self.displayCraftableModels = !self.displayCraftableModels
+                            self.isPlaying = false
+                            
+                            self.updateEffectiveGifts(attributes: component.attributes)
+                            self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.4, curve: .spring)))
+                        }
+                    }
                 )),
                 environment: {},
                 containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 100.0)
@@ -956,6 +1045,7 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                 }
                 descriptionView.frame = descriptionFrame
             }
+            self.currentDescriptionHeight = descriptionSize.height
             contentHeight += descriptionSize.height
             contentHeight += 26.0
             
@@ -1044,6 +1134,13 @@ private final class GiftUpgradeVariantsScreenComponent: Component {
                             self.previewTimerTick()
                         }
                         self.state?.updated(transition: .easeInOut(duration: 0.25))
+                        
+                        if let buttonView = self.playbackButton.view {
+                            buttonView.isUserInteractionEnabled = false
+                            Queue.mainQueue().after(0.3, {
+                                buttonView.isUserInteractionEnabled = true
+                            })
+                        }
                     }
                 )),
                 environment: {},
@@ -1139,6 +1236,7 @@ public class GiftUpgradeVariantsScreen: ViewControllerComponentContainer {
     public init(
         context: AccountContext,
         gift: StarGift,
+        crafted: Bool = false,
         attributes: [StarGift.UniqueGift.Attribute],
         selectedAttributes: [StarGift.UniqueGift.Attribute]?,
         focusedAttribute: StarGift.UniqueGift.Attribute?
@@ -1148,6 +1246,7 @@ public class GiftUpgradeVariantsScreen: ViewControllerComponentContainer {
         super.init(context: context, component: GiftUpgradeVariantsScreenComponent(
             context: context,
             gift: gift,
+            crafted: crafted,
             attributes: attributes,
             selectedAttributes: selectedAttributes,
             focusedAttribute: focusedAttribute
@@ -1175,7 +1274,9 @@ public class GiftUpgradeVariantsScreen: ViewControllerComponentContainer {
             self.didPlayAppearAnimation = true
             
             if let componentView = self.node.hostView.componentView as? GiftUpgradeVariantsScreenComponent.View {
-                componentView.animateIn()
+                Queue.mainQueue().justDispatch {
+                    componentView.animateIn()
+                }
             }
         }
     }
@@ -1266,11 +1367,15 @@ private final class AttributeInfoComponent: Component {
             self.background.frame = backgroundFrame
             transition.setBackgroundColor(layer: self.background, color: component.backgroundColor)
             
+            func formatPercentage(_ value: Float) -> String {
+                return String(format: "%0.1f", value).replacingOccurrences(of: ".0", with: "").replacingOccurrences(of: ",0", with: "") + "%"
+            }
+            
             let title: String
             let subtitle: String
-            let rarity: Int32
+            let rarity: StarGift.UniqueGift.Attribute.Rarity?
             switch component.attribute {
-            case let .model(name, _, rarityValue):
+            case let .model(name, _, rarityValue, _):
                 title = name
                 subtitle = component.strings.Gift_Variants_Model
                 rarity = rarityValue
@@ -1285,7 +1390,7 @@ private final class AttributeInfoComponent: Component {
             default:
                 title = ""
                 subtitle = ""
-                rarity = 0
+                rarity = nil
             }
                     
             let titleSize = self.title.update(
@@ -1328,20 +1433,51 @@ private final class AttributeInfoComponent: Component {
                 transition.setFrame(view: subtitleView, frame: subtitleFrame)
             }
             
-            func formatPercentage(_ value: Float) -> String {
-                return String(format: "%0.1f", value).replacingOccurrences(of: ".0", with: "").replacingOccurrences(of: ",0", with: "")
+            var badgeString = ""
+            var badgeColor = component.badgeColor
+            if let rarity {
+                switch rarity {
+                case let .permille(value):
+                    if value == 0 {
+                        badgeString = "<\(formatPercentage(0.1))"
+                    } else {
+                        badgeString = formatPercentage(Float(value) * 0.1)
+                    }
+                case .epic:
+                    badgeString = component.strings.Gift_Attribute_Epic
+                    badgeColor = UIColor(rgb: 0xaf52de)
+                case .legendary:
+                    badgeString = component.strings.Gift_Attribute_Legendary
+                    badgeColor = UIColor(rgb: 0xd57e32)
+                case .rare:
+                    badgeString = component.strings.Gift_Attribute_Rare
+                    badgeColor = UIColor(rgb: 0x25a3b9)
+                case .uncommon:
+                    badgeString = component.strings.Gift_Attribute_Uncommon
+                    badgeColor = UIColor(rgb: 0x22b447)
+                }
             }
-            let percentage = Float(rarity) * 0.1
+            
+            var badgeItems: [AnimatedTextComponent.Item] = []
+            if badgeString.contains("%") {
+                var clippedRarity = badgeString
+                clippedRarity.removeLast()
+                badgeItems = [
+                    AnimatedTextComponent.Item(id: "value", content: .text(clippedRarity)),
+                    AnimatedTextComponent.Item(id: "percent", content: .text("%")),
+                ]
+            } else {
+                badgeItems = [
+                    AnimatedTextComponent.Item(id: "rarity", content: .text(badgeString))
+                ]
+            }
             
             let badgeSize = self.badge.update(
                 transition: .spring(duration: 0.2),
                 component: AnyComponent(AnimatedTextComponent(
                     font: Font.with(size: 12.0, weight: .semibold, traits: .monospacedNumbers),
                     color: UIColor.white,
-                    items: [
-                        AnimatedTextComponent.Item(id: "value", content: .text(formatPercentage(percentage))),
-                        AnimatedTextComponent.Item(id: "percent", content: .text("%")),
-                    ],
+                    items: badgeItems,
                     noDelay: true,
                     blur: true
                 )),
@@ -1358,8 +1494,7 @@ private final class AttributeInfoComponent: Component {
             
             let badgeBackgroundFrame = badgeFrame.insetBy(dx: -5.5, dy: -2.0)
             transition.setFrame(layer: self.badgeBackground, frame: badgeBackgroundFrame)
-            transition.setBackgroundColor(layer: self.badgeBackground, color: component.badgeColor)
-            
+            transition.setBackgroundColor(layer: self.badgeBackground, color: badgeColor)
             
             return availableSize
         }

@@ -48,6 +48,19 @@ private enum IncomingMessagePrivacySection: Int32 {
     case exceptions
 }
 
+public enum IncomingMessagePrivacyEntryTag: ItemListItemTag, Equatable {
+    case setPrice
+    case removeFee
+
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? IncomingMessagePrivacyEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private enum GlobalAutoremoveEntry: ItemListNodeEntry {
     case header
     case optionEverybody(value: GlobalPrivacySettings.NonContactChatsPrivacy)
@@ -166,7 +179,7 @@ private enum GlobalAutoremoveEntry: ItemListNodeEntry {
         case let .exceptions(count):
             return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: presentationData.strings.Privacy_Messages_RemoveFee, label: count > 0 ? "\(count)" : "", sectionId: self.section, style: .blocks, action: {
                 arguments.openExceptions()
-            })
+            }, tag: IncomingMessagePrivacyEntryTag.removeFee)
         case .exceptionsInfo:
             return ItemListTextItem(presentationData: presentationData, text: .markdown(presentationData.strings.Privacy_Messages_RemoveFeeInfo), sectionId: self.section)
         }
@@ -212,7 +225,7 @@ private func incomingMessagePrivacyScreenEntries(presentationData: PresentationD
     return entries
 }
 
-public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalPrivacySettings.NonContactChatsPrivacy, exceptions: SelectivePrivacySettings, update: @escaping (GlobalPrivacySettings.NonContactChatsPrivacy) -> Void) -> ViewController {
+public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalPrivacySettings.NonContactChatsPrivacy, exceptions: SelectivePrivacySettings, update: @escaping (GlobalPrivacySettings.NonContactChatsPrivacy) -> Void, focusOnItemTag: IncomingMessagePrivacyEntryTag? = nil) -> ViewController {
     var disableFor: [EnginePeer.Id: SelectivePrivacyPeer] = [:]
     if case let .enableContacts(value, _, _, _) = exceptions {
         disableFor = value
@@ -424,7 +437,7 @@ public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalP
         let animateChanges = false
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: title, leftNavigationButton: nil, rightNavigationButton: rightNavigationButton, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, emptyStateItem: nil, crossfadeState: false, animateChanges: animateChanges, scrollEnabled: true)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, crossfadeState: false, animateChanges: animateChanges, scrollEnabled: true)
         
         return (controllerState, (listState, arguments))
     }
@@ -466,6 +479,20 @@ public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalP
     }
     dismissImpl = { [weak controller] in
         controller?.dismiss()
+    }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
     }
     
     return controller

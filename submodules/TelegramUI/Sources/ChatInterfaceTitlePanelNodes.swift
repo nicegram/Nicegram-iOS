@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import TelegramCore
 import AccountContext
-import NGWebUtils
 import ChatPresentationInterfaceState
 import ChatControllerInteraction
 import ComponentFlow
@@ -18,14 +17,7 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
         return nil
     }
     if chatPresentationInterfaceState.renderedPeer?.peer?.restrictionText(platform: "ios", contentSettings: context.currentContentSettings.with { $0 }) != nil {
-        if isAllowedChat(peer: chatPresentationInterfaceState.renderedPeer?.peer, contentSettings: context.currentContentSettings.with { $0 }) {
-        } else {
-            return nil
-        }
-    } else {
-        if isNGForceBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
-            return nil
-        }
+        return nil
     }
     if let search = chatPresentationInterfaceState.search {
         var matches = false
@@ -264,6 +256,7 @@ func floatingTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInte
         return ChatFloatingTopicsPanel(
             context: context,
             theme: chatPresentationInterfaceState.theme,
+            preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear,
             strings: chatPresentationInterfaceState.strings,
             location: topicListDisplayModeOnTheSide ? .side : .top,
             peerId: peerId,
@@ -290,6 +283,7 @@ func floatingTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInte
         return ChatFloatingTopicsPanel(
             context: context,
             theme: chatPresentationInterfaceState.theme,
+            preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear,
             strings: chatPresentationInterfaceState.strings,
             location: topicListDisplayModeOnTheSide ? .side : .top,
             peerId: peerId,
@@ -311,15 +305,16 @@ func floatingTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInte
                 controller.openDeleteMonoforumPeer(peerId: EnginePeer.Id(threadId))
             }
         )
-    } else if let user = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.isForum, chatPresentationInterfaceState.search == nil {
+    } else if let user = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum), chatPresentationInterfaceState.search == nil {
         let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
         return ChatFloatingTopicsPanel(
             context: context,
             theme: chatPresentationInterfaceState.theme,
+            preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear,
             strings: chatPresentationInterfaceState.strings,
             location: topicListDisplayModeOnTheSide ? .side : .top,
             peerId: peerId,
-            kind: .botForum,
+            kind: .botForum(forumManagedByUser: botInfo.flags.contains(.forumManagedByUser)),
             topicId: chatPresentationInterfaceState.chatLocation.threadId,
             controller: { [weak interfaceInteraction] in
                 return interfaceInteraction?.chatController()

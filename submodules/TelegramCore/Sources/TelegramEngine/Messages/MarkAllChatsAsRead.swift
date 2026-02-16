@@ -20,7 +20,8 @@ func _internal_markAllChatsAsRead(postbox: Postbox, network: Network, stateManag
             var signals: [Signal<Void, NoError>] = []
             for peer in result {
                 switch peer {
-                    case let .dialogPeer(peer):
+                    case let .dialogPeer(dialogPeerData):
+                        let peer = dialogPeerData.peer
                         let peerId = peer.peerId
                         if peerId.namespace == Namespaces.Peer.CloudChannel {
                             if let inputChannel = transaction.getPeer(peerId).flatMap(apiInputChannel) {
@@ -42,7 +43,8 @@ func _internal_markAllChatsAsRead(postbox: Postbox, network: Network, stateManag
                                 |> mapToSignal { result -> Signal<Void, NoError> in
                                     if let result = result {
                                         switch result {
-                                            case let .affectedMessages(pts, ptsCount):
+                                            case let .affectedMessages(affectedMessagesData):
+                                                let (pts, ptsCount) = (affectedMessagesData.pts, affectedMessagesData.ptsCount)
                                                 stateManager.addUpdateGroups([.updatePts(pts: pts, ptsCount: ptsCount)])
                                         }
                                     }

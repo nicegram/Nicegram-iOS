@@ -17,6 +17,9 @@ import AppLockState
 import NotificationsPresentationData
 import RangeSet
 import ConvertOpusToAAC
+import CoreServices
+import ImageIO
+import UniformTypeIdentifiers
 
 private let queue = Queue()
 
@@ -275,13 +278,18 @@ private extension CGSize {
     }
 }
 
-private func convertLottieImage(data: Data) -> UIImage? {
+private func convertLottieImage(data: Data, size: CGSize, forceSquare: Bool) -> UIImage? {
     let decompressedData = TGGUnzipData(data, 512 * 1024) ?? data
     guard let animation = LottieInstance(data: decompressedData, fitzModifier: .none, colorReplacements: nil, cacheKey: "") else {
         return nil
     }
-    let size = animation.dimensions.fitted(CGSize(width: 200.0, height: 200.0))
-    let context = DrawingContext(size: size, scale: 1.0, opaque: false, clear: true)
+    let actualSize: CGSize
+    if forceSquare {
+        actualSize = animation.dimensions.fitted(size)
+    } else {
+        actualSize = size
+    }
+    let context = DrawingContext(size: actualSize, scale: 1.0, opaque: false, clear: true)
     animation.renderFrame(with: 0, into: context.bytes.assumingMemoryBound(to: UInt8.self), width: Int32(context.scaledSize.width), height: Int32(context.scaledSize.height), bytesPerRow: Int32(context.bytesPerRow))
     return context.generateImage()
 }
@@ -486,9 +494,21 @@ private func peerAvatar(mediaBox: MediaBox, accountPeerId: PeerId, peer: Peer, i
 
 @available(iOSApplicationExtension 10.0, iOS 10.0, *)
 private struct NotificationContent: CustomStringConvertible {
+    struct CustomEmoji {
+        var range: Range<Int>
+        var fileId: Int64
+        
+        init(range: Range<Int>, fileId: Int64) {
+            self.range = range
+            self.fileId = fileId
+        }
+    }
+    
     var title: String?
     var subtitle: String?
     var body: String?
+    var customEmoji: [CustomEmoji] = []
+    var resolvedEmojiFiles: [Int64: String] = [:]
     var threadId: String?
     var sound: String?
     var badge: Int?
@@ -519,6 +539,7 @@ private struct NotificationContent: CustomStringConvertible {
         string += " senderImage: \(self.senderImage != nil ? "non-empty" : "empty"),\n"
         string += " isLockedMessage: \(String(describing: self.isLockedMessage)),\n"
         string += " attachments: \(self.attachments),\n"
+        string += " resolvedEmojiFiles: \(self.resolvedEmojiFiles.count) files,\n"
         string += "}"
         return string
     }
@@ -565,11 +586,51 @@ private struct NotificationContent: CustomStringConvertible {
                 content.title = title
             }
         }
+        
         if let subtitle = self.subtitle {
             content.subtitle = subtitle
         }
         if let body = self.body {
-            content.body = body
+            if #available(iOS 18.0, *) {
+                if !self.resolvedEmojiFiles.isEmpty {
+                    let attributedString = NSMutableAttributedString(string: body)
+                    
+                    let sortedEmoji = self.customEmoji.sorted(by: { $0.range.lowerBound < $1.range.lowerBound })
+                    
+                    for emoji in sortedEmoji.reversed() {
+                        if emoji.range.lowerBound < 0 || emoji.range.upperBound > attributedString.length {
+                            continue
+                        }
+                        guard let filePath = self.resolvedEmojiFiles[emoji.fileId] else {
+                            continue
+                        }
+                        guard let fileData = try? Data(contentsOf: URL(fileURLWithPath: filePath)) else {
+                            continue
+                        }
+                        let image: UIImage
+                        if let lottieImage = convertLottieImage(data: fileData, size: CGSize(width: 40.0, height: 40.0), forceSquare: false) {
+                            image = lottieImage
+                        } else if let webpImage = WebP.convert(fromWebP: fileData) {
+                            image = webpImage
+                        } else {
+                            continue
+                        }
+                        
+                        let emojiRange = NSRange(location: emoji.range.lowerBound, length: emoji.range.upperBound - emoji.range.lowerBound)
+                        let substring = attributedString.attributedSubstring(from: emojiRange)
+                        
+                        let glyph = try! Customoji.makeGlyph(from: image, description: substring.string, tileSizes: [40], cropToSquare: false)
+                        let imageString = NSAttributedString(adaptiveImageGlyph: glyph, attributes: [:])
+                        attributedString.replaceCharacters(in: emojiRange, with: "")
+                        attributedString.insert(imageString, at: emojiRange.lowerBound)
+                    }
+                    content.setValue(attributedString, forKey: "attributedBody")
+                } else {
+                    content.body = body
+                }
+            } else {
+                content.body = body
+            }
         }
         
         if !content.title.isEmpty || !content.subtitle.isEmpty || !content.body.isEmpty {
@@ -1021,7 +1082,7 @@ private final class NotificationServiceHandler {
 
                     enum Action {
                         case logout
-                        case poll(peerId: PeerId, content: NotificationContent, messageId: MessageId?, reportDelivery: Bool)
+                        case poll(peerId: PeerId, content: NotificationContent, messageId: MessageId?, reportDelivery: Bool, enableInlineEmoji: Bool)
                         case pollStories(peerId: PeerId, content: NotificationContent, storyId: Int32, isReaction: Bool)
                         case deleteMessage([MessageId])
                         case readReactions([MessageId])
@@ -1043,7 +1104,7 @@ private final class NotificationServiceHandler {
                             action = .logout
                         case "MESSAGE_MUTED":
                             if let peerId = peerId {
-                                action = .poll(peerId: peerId, content: NotificationContent(isLockedMessage: nil), messageId: nil, reportDelivery: false)
+                                action = .poll(peerId: peerId, content: NotificationContent(isLockedMessage: nil), messageId: nil, reportDelivery: false, enableInlineEmoji: false)
                             }
                         case "MESSAGE_DELETED":
                             if let peerId = peerId {
@@ -1234,7 +1295,11 @@ private final class NotificationServiceHandler {
                                         reportDelivery = true
                                     }
                                 }
-                                action = .poll(peerId: peerId, content: content, messageId: messageIdValue, reportDelivery: reportDelivery)
+                                var enableInlineEmoji = true
+                                if let _ = aps["_ddie"] {
+                                    enableInlineEmoji = false
+                                }
+                                action = .poll(peerId: peerId, content: content, messageId: messageIdValue, reportDelivery: reportDelivery, enableInlineEmoji: enableInlineEmoji)
                             }
                             
                             updateCurrentContent(content)
@@ -1341,7 +1406,7 @@ private final class NotificationServiceHandler {
                             let content = NotificationContent(isLockedMessage: nil)
                             updateCurrentContent(content)
                             completed()
-                        case let .poll(peerId, initialContent, messageId, reportDelivery):
+                        case let .poll(peerId, initialContent, messageId, reportDelivery, enableInlineEmoji):
                             Logger.shared.log("NotificationService \(episode)", "Will poll")
                             if let stateManager = strongSelf.stateManager {
                                 let shouldKeepConnection = stateManager.network.shouldKeepConnection
@@ -1360,7 +1425,7 @@ private final class NotificationServiceHandler {
                                         let mediaAttachment = mediaAttachment ?? customMedia
 
                                         var fetchMediaSignal: Signal<Data?, NoError> = .single(nil)
-                                        if let mediaAttachment = mediaAttachment {
+                                        if let mediaAttachment {
                                             var contentType: MediaResourceUserContentType = .other
                                             var fetchResource: TelegramMultipartFetchableResource?
                                             if let image = mediaAttachment as? TelegramMediaImage, let representation = largestImageRepresentation(image.representations), let resource = representation.resource as? TelegramMultipartFetchableResource {
@@ -1527,10 +1592,146 @@ private final class NotificationServiceHandler {
                                         }
                                         
                                         let wasDisplayed = stateManager.postbox.transaction { transaction -> Bool in
+                                            var wasDisplayed = false
                                             if let messageId {
-                                                return _internal_getMessageNotificationWasDisplayed(transaction: transaction, id: messageId)
-                                            } else {
-                                                return false
+                                                wasDisplayed = _internal_getMessageNotificationWasDisplayed(transaction: transaction, id: messageId)
+                                            }
+                                            
+                                            return wasDisplayed
+                                        }
+                                        
+                                        let maxEmojiCount: Int = 10
+                                        var uniqueEmojiIds: [Int64] = []
+                                        for emoji in content.customEmoji {
+                                            if !uniqueEmojiIds.contains(emoji.fileId) {
+                                                uniqueEmojiIds.append(emoji.fileId)
+                                                if uniqueEmojiIds.count >= maxEmojiCount {
+                                                    break
+                                                }
+                                            }
+                                        }
+                                        
+                                        let resolvedEmojiFiles: Signal<[Int64: String], NoError> = _internal_resolveInlineStickers(postbox: stateManager.postbox, network: stateManager.network, fileIds: uniqueEmojiIds)
+                                        |> mapToSignal { files -> Signal<[Int64: String], NoError> in
+                                            var fetchSignals: [Signal<(Int64, String?), NoError>] = []
+                                            
+                                            for (_, file) in files {
+                                                if let resource = file.resource as? TelegramMultipartFetchableResource {
+                                                    let fetchSignal: Signal<(Int64, String?), NoError>
+                                                    if let path = stateManager.postbox.mediaBox.completedResourcePath(resource) {
+                                                        fetchSignal = .single((file.fileId.id, path))
+                                                    } else {
+                                                        let intervals: Signal<[(Range<Int64>, MediaBoxFetchPriority)], NoError> = .single([(0 ..< Int64.max, MediaBoxFetchPriority.maximum)])
+                                                        let fetchDataSignal: Signal<Data?, NoError> = Signal { subscriber in
+                                                            final class DataValue {
+                                                                var data = Data()
+                                                                var missingRanges = RangeSet<Int64>(0 ..< Int64.max)
+                                                            }
+                                                            
+                                                            let collectedData = Atomic<DataValue>(value: DataValue())
+                                                            
+                                                            return standaloneMultipartFetch(
+                                                                accountPeerId: stateManager.accountPeerId,
+                                                                postbox: stateManager.postbox,
+                                                                network: stateManager.network,
+                                                                resource: resource,
+                                                                datacenterId: resource.datacenterId,
+                                                                size: nil,
+                                                                intervals: intervals,
+                                                                parameters: MediaResourceFetchParameters(
+                                                                    tag: nil,
+                                                                    info: resourceFetchInfo(resource: resource),
+                                                                    location: messageId.flatMap { messageId in
+                                                                        return MediaResourceStorageLocation(
+                                                                            peerId: peerId,
+                                                                            messageId: messageId
+                                                                        )
+                                                                    },
+                                                                    contentType: .sticker,
+                                                                    isRandomAccessAllowed: true
+                                                                ),
+                                                                encryptionKey: nil,
+                                                                decryptedSize: nil,
+                                                                continueInBackground: false,
+                                                                useMainConnection: true
+                                                            ).start(next: { result in
+                                                                switch result {
+                                                                case let .dataPart(offset, data, dataRange, _):
+                                                                    var isCompleted = false
+                                                                    let _ = collectedData.modify { current in
+                                                                        let current = current
+                                                                        
+                                                                        let fillRange = Int(offset) ..< (Int(offset) + data.count)
+                                                                        if current.data.count < fillRange.upperBound {
+                                                                            current.data.count = fillRange.upperBound
+                                                                        }
+                                                                        current.data.withUnsafeMutableBytes { buffer -> Void in
+                                                                            let bytes = buffer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                                                                            data.copyBytes(to: bytes.advanced(by: Int(offset)), from: Int(dataRange.lowerBound) ..< Int(dataRange.upperBound))
+                                                                        }
+                                                                        current.missingRanges.remove(contentsOf: Int64(fillRange.lowerBound) ..< Int64(fillRange.upperBound))
+                                                                        
+                                                                        if current.missingRanges.isEmpty {
+                                                                            isCompleted = true
+                                                                        }
+                                                                        return current
+                                                                    }
+                                                                    if isCompleted {
+                                                                        let data = collectedData.with({ $0.data })
+                                                                        subscriber.putNext( data)
+                                                                        subscriber.putCompletion()
+                                                                    }
+                                                                case let .resourceSizeUpdated(size):
+                                                                    var isCompleted = false
+                                                                    let _ = collectedData.modify { current in
+                                                                        let current = current
+                                                                        current.missingRanges.remove(contentsOf: size ..< Int64.max)
+                                                                        if current.missingRanges.isEmpty {
+                                                                            isCompleted = true
+                                                                        }
+                                                                        return current
+                                                                    }
+                                                                    if isCompleted {
+                                                                        let data = collectedData.with({ $0.data })
+                                                                        subscriber.putNext(data)
+                                                                        subscriber.putCompletion()
+                                                                    }
+                                                                default:
+                                                                    break
+                                                                }
+                                                            }, error: { _ in
+                                                                subscriber.putNext(nil)
+                                                                subscriber.putCompletion()
+                                                            }, completed: {
+                                                                let data = collectedData.with({ $0.data })
+                                                                subscriber.putNext(data)
+                                                                subscriber.putCompletion()
+                                                            })
+                                                        }
+                                                        fetchSignal = fetchDataSignal |> map { data -> (Int64, String?) in
+                                                            guard let data else {
+                                                                return (file.fileId.id, nil)
+                                                            }
+                                                            stateManager.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
+                                                            if let path = stateManager.postbox.mediaBox.completedResourcePath(resource) {
+                                                                return (file.fileId.id, path)
+                                                            } else {
+                                                                return (file.fileId.id, nil)
+                                                            }
+                                                        }
+                                                    }
+                                                    fetchSignals.append(fetchSignal)
+                                                }
+                                            }
+                                            return combineLatest(fetchSignals)
+                                            |> map { results -> [Int64: String] in
+                                                var result: [Int64: String] = [:]
+                                                for (id, path) in results {
+                                                    if let path {
+                                                        result[id] = path
+                                                    }
+                                                }
+                                                return result
                                             }
                                         }
 
@@ -1540,9 +1741,11 @@ private final class NotificationServiceHandler {
                                             |> timeout(10.0, queue: queue, alternate: .single(nil)),
                                             fetchNotificationSoundSignal
                                             |> timeout(10.0, queue: queue, alternate: .single(nil)),
-                                            wasDisplayed
+                                            wasDisplayed,
+                                            resolvedEmojiFiles
+                                            |> timeout(10.0, queue: queue, alternate: .single([:])),
                                         )
-                                        |> deliverOn(queue)).start(next: { mediaData, notificationSoundData, wasDisplayed in
+                                        |> deliverOn(queue)).start(next: { mediaData, notificationSoundData, wasDisplayed, resolvedEmojiFiles in
                                             guard let strongSelf = self, let stateManager = strongSelf.stateManager else {
                                                 completed()
                                                 return
@@ -1614,7 +1817,7 @@ private final class NotificationServiceHandler {
                                                             stateManager.postbox.mediaBox.storeResourceData(resource.id, data: mediaData, synchronous: true)
                                                         }
                                                         if let storedPath = stateManager.postbox.mediaBox.completedResourcePath(resource) {
-                                                            if let data = try? Data(contentsOf: URL(fileURLWithPath: storedPath)), let image = convertLottieImage(data: data) {
+                                                            if let data = try? Data(contentsOf: URL(fileURLWithPath: storedPath)), let image = convertLottieImage(data: data, size: CGSize(width: 200.0, height: 200.0), forceSquare: false) {
                                                                 let tempFile = TempBox.shared.tempFile(fileName: "image.png")
                                                                 let _ = try? image.pngData()?.write(to: URL(fileURLWithPath: tempFile.path))
                                                                 if let attachment = try? UNNotificationAttachment(identifier: "image", url: URL(fileURLWithPath: tempFile.path), options: nil) {
@@ -1653,6 +1856,8 @@ private final class NotificationServiceHandler {
                                                         }
                                                     }
                                                 }
+                                                
+                                                content.resolvedEmojiFiles = resolvedEmojiFiles
 
                                                 Logger.shared.log("NotificationService \(episode)", "Updating content to \(content)")
 
@@ -1769,10 +1974,25 @@ private final class NotificationServiceHandler {
                                     |> takeLast
                                     |> mapToSignal { content, _ -> Signal<(NotificationContent, Media?), NoError> in
                                         return stateManager.postbox.transaction { transaction -> (NotificationContent, Media?) in
+                                            var content = content
+                                            
                                             var parsedMedia: Media?
                                             if let messageId, let message = transaction.getMessage(messageId), !message.containsSecretMedia, !message.attributes.contains(where: { $0 is MediaSpoilerMessageAttribute }) {
                                                 if let media = message.media.first {
                                                     parsedMedia = media
+                                                }
+                                                if enableInlineEmoji, let textEntitiesAttribute = message.textEntitiesAttribute, let author = message.author {
+                                                    let authorTitle = author.debugDisplayTitle
+                                                    let messagePrefix = "\(authorTitle): "
+                                                    let messagePrefixLength = (messagePrefix as NSString).length
+                                                    for entity in textEntitiesAttribute.entities {
+                                                        if case let .CustomEmoji(_, fileId) = entity.type {
+                                                            content.customEmoji.append(NotificationContent.CustomEmoji(range: (entity.range.lowerBound + messagePrefixLength) ..< (entity.range.upperBound + messagePrefixLength), fileId: fileId))
+                                                        }
+                                                    }
+                                                    if !content.customEmoji.isEmpty {
+                                                        content.body = messagePrefix + message.text
+                                                    }
                                                 }
                                             }
                                             
@@ -2351,5 +2571,432 @@ final class NotificationService: UNNotificationServiceExtension {
                 contentHandler(initialContent)
             }
         }
+    }
+}
+
+typealias CMJImage = UIImage
+
+// MARK: - Public Namespace
+
+/// A lightweight utility for turning ordinary bitmap images into ``NSAdaptiveImageGlyph`` (Apple “Genmoji”) objects.
+///
+/// ## Overview
+/// The public API is minimal — a single call to generate a glyph and helper utilities for
+/// de/serialising attributed strings.
+///
+/// ```swift
+/// // Synchronous usage
+/// let glyph = try Customoji.makeGlyph(
+///     from: image,
+///     description: "alt text",
+///     cropToSquare: true
+/// )
+/// let attr = NSAttributedString(adaptiveImageGlyph: glyph, attributes: [:])
+/// ```
+///
+/// ## Requirements
+/// * iOS 18 / macOS 15
+/// * Swift 5.10+
+///
+/// ## Topics
+/// - Generating glyphs: ``makeGlyph(from:description:identifier:tileSizes:cropToSquare:heicQuality:)``
+/// - Generating glyphs asynchronously: ``makeGlyphAsync(from:description:identifier:tileSizes:cropToSquare:heicQuality:)``
+/// - Serialising: ``decompose(_:)`` / ``recompose(plain:ranges:blobs:)``
+///
+public struct Customoji {
+
+    // MARK: Library-scoped Errors
+    /// Errors that can be thrown by ``Customoji``.
+    public enum Error: Swift.Error, LocalizedError {
+        /// The input image is not square and ``makeGlyph(from:description:identifier:tileSizes:cropToSquare:heicQuality:)`` was called with `cropToSquare == false`.
+        case nonSquare
+        /// The longest side of the input image exceeds ``maxSide`` pixels (defaults to 4096).
+        case imageTooLarge
+        /// Failed to create an in-memory HEIC container via *Image I/O*.
+        case heicDestinationCreationFailed
+        /// Failed to finalise the HEIC container after writing all tiles.
+        case heicFinalizeFailed
+        /// Internal resize operation failed when generating a tile.
+        case imageScaleFailed
+        /// A `CGImage` representation could not be extracted from the source image.
+        case cgImageUnavailable
+        /// The `tileSizes` parameter was empty, not strictly ascending, contained duplicates, or exceeded the source size.
+        case invalidTileSizes
+        /// No tiles were generated — normally unreachable unless all requested sizes were invalid.
+        case noTilesGenerated
+        /// The current platform is neither UIKit- nor AppKit-based (unlikely in practice).
+        case unsupportedPlatform
+        /// The `heicQuality` parameter was outside the 0.0 … 1.0 range.
+        case invalidHeicQuality
+        /// Cropping or scaling to a square failed.
+        case squareCropFailed
+
+        /// Textual description suitable for presenting to users.
+        public var errorDescription: String? {
+            switch self {
+            case .nonSquare: return "Input image must be square."
+            case .imageTooLarge:
+                return "Source image is too large to process safely."
+            case .heicDestinationCreationFailed:
+                return
+                    "Failed to create an in-memory HEIC destination container."
+            case .heicFinalizeFailed: return "Failed to finalize HEIC encoding."
+            case .imageScaleFailed: return "Failed to rescale CGImage tile."
+            case .cgImageUnavailable:
+                return "Unable to obtain CGImage from the source image."
+            case .invalidTileSizes:
+                return
+                    "Tile sizes must be unique, strictly ascending, and not exceed the source size."
+            case .noTilesGenerated:
+                return "No tiles were generated from the source image."
+            case .unsupportedPlatform:
+                return
+                    "Unsupported platform when attempting to extract CGImage."
+            case .invalidHeicQuality:
+                return "HEIC quality must be between 0.0 and 1.0."
+            case .squareCropFailed:
+                return "Failed to create a square crop of the input image."
+            }
+        }
+    }
+
+    /// Default tile sizes (in pixels) officially used by Apple for Genmoji.
+    public static let defaultTileSizes = [40, 64, 96, 160, 320]
+
+    /// Maximum allowed side length (in pixels) to guard against excessive memory consumption.
+    private static let maxSide = 4_096
+
+    // MARK: - Synchronous Builder
+    #if swift(>=5.10)
+        @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
+        /// Generates an ``NSAdaptiveImageGlyph`` synchronously on the **current** thread.
+        ///
+        /// - Parameters:
+        ///   - image: Source image. Can be rectangular; see `cropToSquare`.
+        ///   - description: A human-readable accessibility description (VoiceOver/Narrator).
+        ///   - identifier: A globally unique content identifier. Defaults to a fresh UUID.
+        ///   - tileSizes: Desired tile sizes, in pixels. Must be strictly ascending. Defaults to ``defaultTileSizes``.
+        ///   - cropToSquare: When `true`, the central square area is cropped if the input image is not square.
+        ///   - heicQuality: Lossy compression quality between `0.0` and `1.0`. Defaults to `0.8`.
+        /// - Throws: ``Customoji/Error`` if validation or encoding fails.
+        /// - Returns: A fully-formed glyph ready for attribution.
+        static func makeGlyph(
+            from image: CMJImage,
+            description: String,
+            identifier: String = UUID().uuidString,
+            tileSizes: [Int] = defaultTileSizes,
+            cropToSquare: Bool = false,
+            heicQuality: CGFloat = 0.8
+        ) throws -> NSAdaptiveImageGlyph {
+            try validatePixelSide(of: image)
+            let cg = try extractCGImage(from: image)
+
+            return try coreMakeGlyph(
+                from: cg,
+                description: description,
+                identifier: identifier,
+                tileSizes: tileSizes,
+                cropToSquare: cropToSquare,
+                heicQuality: heicQuality
+            )
+        }
+    #endif
+
+    // MARK: - AttributedString Utilities
+    #if swift(>=5.10)
+        @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
+        /// Breaks an ``NSAttributedString`` that may contain adaptive-image glyphs into three parts.
+        ///
+        /// This is handy when you need to **serialise** rich text for network transport or persistent
+        /// storage, because `NSAdaptiveImageGlyph` itself is not `Codable`.
+        ///
+        /// ```swift
+        /// let (plain, ranges, blobs) = Customoji.decompose(attrString)
+        /// ```
+        ///
+        /// - Returns: A tuple where:
+        ///   - plain: UTF-16 plain text.
+        ///   - ranges: An array mapping text ranges to glyph identifiers.
+        ///   - blobs: A dictionary mapping identifier → raw HEIC data.
+        @inlinable
+        public static func decompose(_ attr: NSAttributedString) -> (
+            plain: String, ranges: [(NSRange, String)], blobs: [String: Data]
+        ) {
+            var ranges = [(NSRange, String)]()
+            var blobs = [String: Data]()
+
+            attr.enumerateAttribute(
+                .adaptiveImageGlyph,
+                in: NSRange(location: 0, length: attr.length)
+            ) { value, range, _ in
+                guard let g = value as? NSAdaptiveImageGlyph else { return }
+                let id = g.contentIdentifier
+                ranges.append((range, id))
+                blobs[id] = blobs[id] ?? g.imageContent
+            }
+
+            return (attr.string, ranges, blobs)
+        }
+
+        @available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
+        /// Reassembles an attributed string previously produced by ``decompose(_:)``.
+        ///
+        /// - Parameters:
+        ///   - plain: The plain UTF-16 text.
+        ///   - ranges: An array of `(NSRange, identifier)` pairs.
+        ///   - blobs: A dictionary of identifier → HEIC data. *Must* contain every identifier referenced by `ranges`.
+        /// - Returns: A fully restored `NSAttributedString` with adaptive-image glyphs reinstated.
+        public static func recompose(
+            plain: String,
+            ranges: [(NSRange, String)],
+            blobs: [String: Data]
+        ) -> NSAttributedString {
+            let out = NSMutableAttributedString(string: plain)
+            var cache = [String: NSAdaptiveImageGlyph]()
+
+            ranges.forEach { (range, id) in
+                if cache[id] == nil, let data = blobs[id] {
+                    cache[id] = NSAdaptiveImageGlyph(imageContent: data)
+                }
+                if let glyph = cache[id] {
+                    out.addAttribute(
+                        .adaptiveImageGlyph,
+                        value: glyph,
+                        range: range
+                    )
+                }
+            }
+            return out
+        }
+    #endif
+
+    // MARK: - Helper: Pixel-Side Validation
+    /// Ensures that the image’s **longer edge** does not exceed ``maxSide`` pixels, guarding against
+    /// excessive memory usage during HEIC encoding.
+    private static func validatePixelSide(of image: CMJImage) throws {
+        #if canImport(UIKit)
+            let scale = image.scale == 0 ? 1 : image.scale
+            let px = Int(max(image.size.width, image.size.height) * scale)
+        #elseif canImport(AppKit)
+            let px = Int(
+                max(image.size.width, image.size.height)
+                    * CGFloat(NSScreen.main?.backingScaleFactor ?? 1)
+            )
+        #endif
+        guard px <= maxSide else { throw Error.imageTooLarge }
+    }
+}
+
+// =============================================================
+//  Below this line lies the internal implementation.
+//  Public-facing symbols have already been documented above.
+// =============================================================
+
+// MARK: - Core Builder
+@available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
+extension Customoji {
+    @Sendable fileprivate static func coreMakeGlyph(
+        from original: CGImage,
+        description: String,
+        identifier: String,
+        tileSizes: [Int],
+        cropToSquare: Bool,
+        heicQuality: CGFloat
+    ) throws -> NSAdaptiveImageGlyph {
+        let cg = try ensureSquare(original, cropIfNeeded: cropToSquare)
+        guard cg.width <= maxSide else { throw Error.imageTooLarge }
+
+        let validSizes = try validatedTileSizes(tileSizes, max: cg.width)
+        let data = try heicData(
+            from: cg,
+            id: identifier,
+            description: description,
+            tileSizes: validSizes,
+            quality: heicQuality
+        )
+        return NSAdaptiveImageGlyph(imageContent: data)
+    }
+}
+
+// MARK: - HEIC Encoder
+@available(iOS 18.0, macCatalyst 18.0, macOS 15.0, *)
+extension Customoji {
+    fileprivate static func heicData(
+        from cg: CGImage,
+        id: String,
+        description: String,
+        tileSizes: [Int],
+        quality: CGFloat
+    ) throws -> Data {
+        guard (0...1).contains(quality) else { throw Error.invalidHeicQuality }
+
+        let destData = NSMutableData()
+        guard
+            let dest = CGImageDestinationCreateWithData(
+                destData,
+                UTType.heic.identifier as CFString,
+                tileSizes.count,
+                nil
+            )
+        else {
+            throw Error.heicDestinationCreationFailed
+        }
+
+        // Attach Genmoji metadata
+        let meta = CGImageMetadataCreateMutable()
+        CGImageMetadataSetValueWithPath(
+            meta,
+            nil,
+            "tiff:\(kCGImagePropertyTIFFDocumentName)" as CFString,
+            id as CFString
+        )
+        CGImageMetadataSetValueWithPath(
+            meta,
+            nil,
+            "dc:description" as CFString,
+            description as CFString
+        )
+
+        for (idx, side) in tileSizes.enumerated() {
+            if Task.isCancelled { throw CancellationError() }
+            guard let img = cg.scaled(to: side) else {
+                throw Error.imageScaleFailed
+            }
+            let opts =
+                [kCGImageDestinationLossyCompressionQuality: quality]
+                as CFDictionary
+            if idx == 0 {
+                CGImageDestinationAddImageAndMetadata(dest, img, meta, opts)
+            } else {
+                CGImageDestinationAddImage(dest, img, opts)
+            }
+        }
+
+        guard CGImageDestinationFinalize(dest) else {
+            throw Error.heicFinalizeFailed
+        }
+        return destData as Data
+    }
+}
+
+// MARK: - CGImage Helpers
+extension CGImage {
+    /// Returns a copy whose longer edge equals `side` pixels. *Assumes the input is already square.*
+    fileprivate func scaled(to side: Int) -> CGImage? {
+        guard width != side else { return self }
+        guard let cs = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+
+        let hasAlpha: Bool = {
+            switch alphaInfo {
+            case .none, .noneSkipFirst, .noneSkipLast: return false
+            default: return true
+            }
+        }()
+        let bitmapInfo: UInt32 =
+            hasAlpha
+            ? CGImageAlphaInfo.premultipliedLast.rawValue
+            : CGImageAlphaInfo.noneSkipLast.rawValue
+
+        guard
+            let ctx = CGContext(
+                data: nil,
+                width: side,
+                height: side,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: cs,
+                bitmapInfo: bitmapInfo
+            )
+        else { return nil }
+
+        ctx.interpolationQuality = .high
+        ctx.draw(self, in: CGRect(x: 0, y: 0, width: side, height: side))
+        return ctx.makeImage()
+    }
+}
+
+// MARK: - Image Extraction Helpers
+extension Customoji {
+    fileprivate static func extractCGImage(from image: CMJImage) throws
+        -> CGImage
+    {
+        #if canImport(UIKit)
+            if let cg = (image as UIImage).cgImage { return cg }
+
+            var rendered: CGImage?
+            let work = { rendered = renderCGImage(image as! UIImage) }
+            if Thread.isMainThread {
+                work()
+            } else {
+                DispatchQueue.main.sync(execute: work)
+            }
+            if let cg = rendered { return cg }
+        #elseif canImport(AppKit)
+            var rect = CGRect(origin: .zero, size: image.size)
+            if let cg = (image as NSImage).cgImage(
+                forProposedRect: &rect,
+                context: nil,
+                hints: nil
+            ) {
+                return cg
+            }
+            if let tiff = (image as NSImage).tiffRepresentation,
+                let rep = NSBitmapImageRep(data: tiff), let cg = rep.cgImage
+            {
+                return cg
+            }
+        #endif
+        throw Error.cgImageUnavailable
+    }
+
+    #if canImport(UIKit)
+        private static func renderCGImage(_ image: UIImage) -> CGImage? {
+            precondition(Thread.isMainThread, "Must be on main thread")
+            let fmt = UIGraphicsImageRendererFormat()
+            fmt.scale = image.scale == 0 ? 1 : image.scale
+            fmt.opaque = false
+            return UIGraphicsImageRenderer(size: image.size, format: fmt).image
+            { _ in image.draw(at: .zero) }.cgImage
+        }
+    #endif
+}
+
+// MARK: - Square Enforcement
+extension Customoji {
+    fileprivate static func ensureSquare(_ cg: CGImage, cropIfNeeded: Bool)
+        throws -> CGImage
+    {
+        guard cg.width == cg.height else {
+            guard cropIfNeeded else { throw Error.nonSquare }
+
+            let side = min(cg.width, cg.height)
+            let rect = CGRect(
+                x: (cg.width - side) / 2,
+                y: (cg.height - side) / 2,
+                width: side,
+                height: side
+            )
+
+            if let cropped = cg.cropping(to: rect) { return cropped }
+            if let scaled = cg.scaled(to: side) { return scaled }
+            throw Error.squareCropFailed
+        }
+        return cg
+    }
+}
+
+// MARK: - Tile Size Validation
+extension Customoji {
+    fileprivate static func validatedTileSizes(_ sizes: [Int], max: Int) throws
+        -> [Int]
+    {
+        guard !sizes.isEmpty else { throw Error.invalidTileSizes }
+        for (prev, curr) in zip(sizes, sizes.dropFirst()) where curr <= prev {
+            throw Error.invalidTileSizes
+        }
+        guard sizes.allSatisfy({ $0 > 0 && $0 <= max }) else {
+            throw Error.invalidTileSizes
+        }
+        return sizes
     }
 }

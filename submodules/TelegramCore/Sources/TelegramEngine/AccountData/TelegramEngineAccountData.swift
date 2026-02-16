@@ -90,7 +90,7 @@ public extension TelegramEngine {
             var textColor: Int32?
             for attribute in starGift.attributes {
                 switch attribute {
-                case let .model(_, fileValue, _):
+                case let .model(_, fileValue, _, _):
                     file = fileValue
                 case let .pattern(_, patternFileValue, _):
                     patternFile = patternFileValue
@@ -106,7 +106,7 @@ public extension TelegramEngine {
             let apiEmojiStatus: Api.EmojiStatus
             var emojiStatus: PeerEmojiStatus?
             if let file, let patternFile, let innerColor, let outerColor, let patternColor, let textColor {
-                apiEmojiStatus = .inputEmojiStatusCollectible(flags: flags, collectibleId: starGift.id, until: expirationDate)
+                apiEmojiStatus = .inputEmojiStatusCollectible(.init(flags: flags, collectibleId: starGift.id, until: expirationDate))
                 emojiStatus = PeerEmojiStatus(content: .starGift(id: starGift.id, fileId: file.fileId.id, title: starGift.title, slug: starGift.slug, patternFileId: patternFile.fileId.id, innerColor: innerColor, outerColor: outerColor, patternColor: patternColor, textColor: textColor), expirationDate: expirationDate)
             } else {
                 apiEmojiStatus = .emojiStatusEmpty
@@ -143,7 +143,7 @@ public extension TelegramEngine {
                 if let _ = expirationDate {
                     flags |= (1 << 0)
                 }
-                return Api.EmojiStatus.emojiStatus(flags: flags, documentId: file.fileId.id, until: expirationDate)
+                return Api.EmojiStatus.emojiStatus(.init(flags: flags, documentId: file.fileId.id, until: expirationDate))
             }) ?? Api.EmojiStatus.emojiStatusEmpty))
             |> `catch` { _ -> Signal<Api.Bool, NoError> in
                 return .single(.boolFalse)

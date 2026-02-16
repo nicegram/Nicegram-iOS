@@ -114,11 +114,15 @@ public final class NavigationStackComponent<ChildEnvironment: Equatable>: Compon
         
         override init(frame: CGRect) {
             super.init(frame: frame)
-            
+                        
             self.dimView.alpha = 0.0
             self.dimView.backgroundColor = UIColor.black.withAlphaComponent(0.2)
             self.dimView.isUserInteractionEnabled = false
             self.addSubview(self.dimView)
+            
+            self.clipsToBounds = true
+            self.layer.cornerRadius = 40.0
+            self.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         }
         
         required init?(coder: NSCoder) {

@@ -33,6 +33,7 @@ swift_library(
         "//submodules/Components/MultilineTextComponent",
         "//submodules/UIKitRuntimeUtils",
         "//submodules/TelegramUI/Components/EmojiStatusComponent",
+        "//submodules/TelegramUI/Components/GlassBackgroundComponent",
     ],
     visibility = [
         "//visibility:public",

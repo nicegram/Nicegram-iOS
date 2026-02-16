@@ -206,7 +206,7 @@ final class ChatRestrictedInputPanelNode: ChatInputPanelNode {
         self.tintSubtitleNode.frame = self.subtitleNode.frame
         
         self.backgroundView.frame = combinedFrame
-        self.backgroundView.update(size: combinedFrame.size, cornerRadius: combinedFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), transition: ComponentTransition(transition))
+        self.backgroundView.update(size: combinedFrame.size, cornerRadius: combinedFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: ComponentTransition(transition))
         
         self.buttonNode.frame = combinedFrame
         

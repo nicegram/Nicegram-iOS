@@ -318,7 +318,7 @@ func chatHistoryEntriesForView(
     }
     
     var addBotForumHeader = false
-    if location.threadId == nil, let user = chatPeer as? TelegramUser, user.isForum, !entries.isEmpty, !view.holeEarlier, !view.isLoading {
+    if location.threadId == nil, let user = chatPeer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum), botInfo.flags.contains(.forumManagedByUser), !entries.isEmpty, !view.holeEarlier, !view.isLoading {
         addBotForumHeader = true
         outer: for i in (0 ..< entries.count).reversed() {
             switch entries[i] {

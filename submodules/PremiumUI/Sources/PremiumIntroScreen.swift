@@ -3,6 +3,7 @@ import NGStrings
 import NGTelegramIntegration
 //
 import Foundation
+import Foundation
 import UIKit
 import Display
 import ComponentFlow
@@ -41,6 +42,11 @@ import ScrollComponent
 import PremiumStarComponent
 import PremiumCoinComponent
 import EdgeEffect
+
+public enum PremiumIntroEntryTag {
+    case doNotHideAds
+}
+private let doNotHideAdsTag = GenericComponentViewTag()
 
 public enum PremiumSource: Equatable {
     public static func == (lhs: PremiumSource, rhs: PremiumSource) -> Bool {
@@ -2681,7 +2687,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         let _ = accountContext.engine.accountData.updateAdMessagesEnabled(enabled: value).startStandalone()
                         state?.updated(transition: .immediate)
                     })),
-                    action: nil
+                    action: nil,
+                    tag: doNotHideAdsTag
                 ))))
                 
                 let adsInfoString = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(environment.strings.Business_AdsInfo, attributes: termsMarkdownAttributes, textAlignment: .natural
@@ -3943,6 +3950,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
     }
     private let screenContext: ScreenContext
     fileprivate let mode: Mode
+    private let focusOnItemTag: PremiumIntroEntryTag?
     
     private var didSetReady = false
     private let _ready = Promise<Bool>()
@@ -3957,13 +3965,14 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
     
     private let overNavigationContainer: UIView
     
-    public convenience init(context: AccountContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false) {
-        self.init(screenContext: .accountContext(context), mode: mode, source: source, modal: modal, forceDark: forceDark, forceHasPremium: forceHasPremium)
+    public convenience init(context: AccountContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false, focusOnItemTag: PremiumIntroEntryTag? = nil) {
+        self.init(screenContext: .accountContext(context), mode: mode, source: source, modal: modal, forceDark: forceDark, forceHasPremium: forceHasPremium, focusOnItemTag: focusOnItemTag)
     }
     
-    public init(screenContext: ScreenContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false) {
+    public init(screenContext: ScreenContext, mode: Mode = .premium, source: PremiumSource, modal: Bool = true, forceDark: Bool = false, forceHasPremium: Bool = false, focusOnItemTag: PremiumIntroEntryTag? = nil) {
         self.screenContext = screenContext
         self.mode = mode
+        self.focusOnItemTag = focusOnItemTag
         
         let presentationData = screenContext.presentationData
         
@@ -3974,7 +3983,12 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
         var copyLinkImpl: ((String) -> Void)?
         var shareLinkImpl: ((String) -> Void)?
         
-        self.overNavigationContainer = UIView()
+        self.overNavigationContainer = SparseContainerView()
+        
+        var baseNavigationColors: BaseNavigationColors = .plain
+        if case .emojiStatus = source {
+            baseNavigationColors = .blocks
+        }
         
         super.init(component: PremiumIntroScreenComponent(
             overNavigationContainer: self.overNavigationContainer,
@@ -4001,7 +4015,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
             shareLink: { link in
                 shareLinkImpl?(link)
             }
-        ), navigationBarAppearance: .default, presentationMode: modal ? .modal : .default, theme: forceDark ? .dark : .default, updatedPresentationData: screenContext.updatedPresentationData)
+        ), navigationBarAppearance: .default, presentationMode: modal ? .modal : .default, theme: forceDark ? .dark : .default, updatedPresentationData: screenContext.updatedPresentationData, baseNavigationColors: baseNavigationColors)
         
         self._hasGlassStyle = true
                 
@@ -4081,7 +4095,7 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
         }
         
         if let navigationBar = self.navigationBar {
-            navigationBar.view.insertSubview(self.overNavigationContainer, aboveSubview: navigationBar.backgroundView)
+            navigationBar.customOverBackgroundContentView.addSubview(self.overNavigationContainer)
         }
     }
     
@@ -4091,6 +4105,20 @@ public final class PremiumIntroScreen: ViewControllerComponentContainer {
     
     override public func viewDidLoad() {
         super.viewDidLoad()
+
+        if let focusOnItemTag = self.focusOnItemTag {
+            Queue.mainQueue().after(0.1, {
+                switch focusOnItemTag {
+                case .doNotHideAds:
+                    if let view = self.node.hostView.findTaggedView(tag: doNotHideAdsTag) as? ListActionItemComponent.View {
+                        if let scrollView = findParentScrollView(view: view) {
+                            view.displayHighlight()
+                            scrollView.setContentOffset(CGPoint(x: 0.0, y: scrollView.contentSize.height - scrollView.bounds.height), animated: true)
+                        }
+                    }
+                }
+            })
+        }
     }
     
     public override func viewWillDisappear(_ animated: Bool) {

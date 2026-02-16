@@ -32,27 +32,39 @@ public final class GlassControlPanelComponent: Component {
     }
 
     public let theme: PresentationTheme
+    public let preferClearGlass: Bool
     public let leftItem: Item?
     public let rightItem: Item?
     public let centralItem: Item?
     public let centerAlignmentIfPossible: Bool
+    public let isDark: Bool?
+    public let tag: AnyObject?
 
     public init(
         theme: PresentationTheme,
+        preferClearGlass: Bool = false,
         leftItem: Item?,
         centralItem: Item?,
         rightItem: Item?,
-        centerAlignmentIfPossible: Bool = false
+        centerAlignmentIfPossible: Bool = false,
+        isDark: Bool? = nil,
+        tag: AnyObject? = nil
     ) {
         self.theme = theme
+        self.preferClearGlass = preferClearGlass
         self.leftItem = leftItem
         self.centralItem = centralItem
         self.rightItem = rightItem
         self.centerAlignmentIfPossible = centerAlignmentIfPossible
+        self.isDark = isDark
+        self.tag = tag
     }
 
     public static func ==(lhs: GlassControlPanelComponent, rhs: GlassControlPanelComponent) -> Bool {
         if lhs.theme !== rhs.theme {
+            return false
+        }
+        if lhs.preferClearGlass != rhs.preferClearGlass {
             return false
         }
         if lhs.leftItem != rhs.leftItem {
@@ -67,10 +79,26 @@ public final class GlassControlPanelComponent: Component {
         if lhs.centerAlignmentIfPossible != rhs.centerAlignmentIfPossible {
             return false
         }
+        if lhs.isDark != rhs.isDark {
+            return false
+        }
+        if lhs.tag !== rhs.tag {
+            return false
+        }
         return true
     }
 
-    public final class View: UIView {
+    public final class View: UIView, ComponentTaggedView {
+        public func matches(tag: Any) -> Bool {
+            if let component = self.component, let componentTag = component.tag {
+                let tag = tag as AnyObject
+                if componentTag === tag {
+                    return true
+                }
+            }
+            return false
+        }
+        
         private let glassContainerView: GlassBackgroundContainerView
         
         private var leftItemComponent: ComponentView<Empty>?
@@ -127,6 +155,7 @@ public final class GlassControlPanelComponent: Component {
                     transition: leftItemTransition,
                     component: AnyComponent(GlassControlGroupComponent(
                         theme: component.theme,
+                        preferClearGlass: component.preferClearGlass,
                         background: leftItem.background,
                         items: leftItem.items,
                         minWidth: availableSize.height
@@ -176,6 +205,7 @@ public final class GlassControlPanelComponent: Component {
                     transition: rightItemTransition,
                     component: AnyComponent(GlassControlGroupComponent(
                         theme: component.theme,
+                        preferClearGlass: component.preferClearGlass,
                         background: rightItem.background,
                         items: rightItem.items,
                         minWidth: availableSize.height
@@ -242,6 +272,7 @@ public final class GlassControlPanelComponent: Component {
                     transition: centralItemTransition,
                     component: AnyComponent(GlassControlGroupComponent(
                         theme: component.theme,
+                        preferClearGlass: component.preferClearGlass,
                         background: centralItem.background,
                         items: centralItem.items,
                         minWidth: centralItem.keepWide ? 165.0 : availableSize.height
@@ -282,7 +313,7 @@ public final class GlassControlPanelComponent: Component {
             }
             
             transition.setFrame(view: self.glassContainerView, frame: CGRect(origin: CGPoint(), size: availableSize))
-            self.glassContainerView.update(size: availableSize, isDark: component.theme.overallDarkAppearance, transition: transition)
+            self.glassContainerView.update(size: availableSize, isDark: component.isDark ?? component.theme.overallDarkAppearance, transition: transition)
             
             return availableSize
         }

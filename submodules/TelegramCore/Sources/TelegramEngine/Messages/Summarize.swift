@@ -45,7 +45,8 @@ func _internal_summarizeMessage(account: Account, messageId: EngineMessage.Id, t
         |> mapToSignal { result -> Signal<Void, SummarizeError> in
             return account.postbox.transaction { transaction in
                 switch result {
-                case let .textWithEntities(text, entities):
+                case let .textWithEntities(textWithEntitiesData):
+                    let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
                     transaction.updateMessage(messageId, update: { currentMessage in
                         let storeForwardInfo = currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init)
                         var attributes = currentMessage.attributes

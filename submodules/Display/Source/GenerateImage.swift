@@ -402,7 +402,7 @@ public enum GradientImageDirection {
     case mirroredDiagonal
 }
 
-public func generateGradientImage(size: CGSize, scale: CGFloat = 0.0, colors: [UIColor], locations: [CGFloat], direction: GradientImageDirection = .vertical) -> UIImage? {
+public func generateGradientImage(size: CGSize, scale: CGFloat = 0.0, colors: [UIColor], locations: [CGFloat], direction: GradientImageDirection = .vertical, isInverted: Bool = false) -> UIImage? {
     guard colors.count == locations.count else {
         return nil
     }
@@ -414,7 +414,11 @@ public func generateGradientImage(size: CGSize, scale: CGFloat = 0.0, colors: [U
         var locations = locations
         let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
         
-        context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: direction == .horizontal ? CGPoint(x: size.width, y: 0.0) : CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+        if isInverted {
+            context.drawLinearGradient(gradient, start: direction == .horizontal ? CGPoint(x: size.width, y: 0.0) : CGPoint(x: 0.0, y: size.height), end: CGPoint(x: 0.0, y: 0.0), options: CGGradientDrawingOptions())
+        } else {
+            context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: direction == .horizontal ? CGPoint(x: size.width, y: 0.0) : CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+        }
     }
     
     let image = UIGraphicsGetImageFromCurrentImageContext()!

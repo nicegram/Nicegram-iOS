@@ -116,7 +116,7 @@ final class NotificationItemContainerNode: ASDisplayNode {
             
             let backgroundInset: CGFloat = 8.0
             let backgroundSize = CGSize(width: containerWidth - backgroundInset * 2.0, height: contentHeight)
-            self.backgroundView.update(size: backgroundSize, cornerRadius: 24.0, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), transition: ComponentTransition(transition))
+            self.backgroundView.update(size: backgroundSize, cornerRadius: 24.0, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: ComponentTransition(transition))
             transition.updateFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - backgroundSize.width) / 2.0), y: contentInsets.top), size: backgroundSize))
             
             transition.updateFrame(node: contentNode, frame: CGRect(origin: CGPoint(x: floor((layout.size.width - contentWidth) / 2.0), y: contentInsets.top), size: CGSize(width: contentWidth, height: contentHeight)))

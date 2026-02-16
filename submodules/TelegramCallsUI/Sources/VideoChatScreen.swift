@@ -2289,7 +2289,7 @@ final class VideoChatScreenComponent: Component {
                         size: CGSize(width: 34.0, height: 34.0)
                     )),
                     background: AnyComponent(
-                        GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .custom, color: panelColor))
+                        GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .custom(style: .default, color: panelColor)))
                     ),
                     effectAlignment: .center,
                     minSize: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter),
@@ -2312,7 +2312,7 @@ final class VideoChatScreenComponent: Component {
                         contentMode: .center
                     )),
                     background: AnyComponent(
-                        GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .custom, color: panelColor))
+                        GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .custom(style: .default, color: panelColor)))
                     ),
                     effectAlignment: .center,
                     minSize: CGSize(width: navigationButtonDiameter, height: navigationButtonDiameter),
@@ -2364,7 +2364,7 @@ final class VideoChatScreenComponent: Component {
                             name: "Call/PanelIcon",
                             tintColor: .white
                         )),
-                        background: AnyComponent(GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter + 10.0, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .custom, color: panelColor))),
+                        background: AnyComponent(GlassBackgroundComponent(size: CGSize(width: navigationButtonDiameter + 10.0, height: navigationButtonDiameter), cornerRadius: navigationButtonDiameter * 0.5, isDark: true, tintColor: .init(kind: .custom(style: .default, color: panelColor)))),
                         effectAlignment: .center,
                         minSize: CGSize(width: navigationButtonDiameter + 10.0, height: navigationButtonDiameter),
                         action: { [weak self] in
@@ -3453,6 +3453,7 @@ final class VideoChatScreenComponent: Component {
                     let presentationInterfaceState = ChatPresentationInterfaceState(
                         chatWallpaper: .builtin(WallpaperSettings()),
                         theme: presentationData.theme,
+                        preferredGlassType: .default,
                         strings: presentationData.strings,
                         dateTimeFormat: presentationData.dateTimeFormat,
                         nameDisplayOrder: presentationData.nameDisplayOrder,

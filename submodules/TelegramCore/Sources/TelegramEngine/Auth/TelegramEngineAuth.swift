@@ -116,7 +116,7 @@ public extension TelegramEngine {
                         guard let kdfResult = passwordKDF(encryptionProvider: network.encryptionProvider, password: password, derivation: currentPasswordDerivation, srpSessionData: srpSessionData) else {
                             return .fail(.generic)
                         }
-                        return .single(.inputCheckPasswordSRP(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1)))
+                        return .single(.inputCheckPasswordSRP(.init(srpId: kdfResult.id, A: Buffer(data: kdfResult.A), M1: Buffer(data: kdfResult.M1))))
                     } else {
                         return .single(nil)
                     }

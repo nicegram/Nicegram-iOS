@@ -152,8 +152,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "您的电話号码只会在设置介面中隐藏，要对其他使用者隐藏，请使用隐私设置。";
 "NicegramSettings.Other.showProfileId" = "显示 ID";
 "NicegramSettings.Other.showRegDate" = "显示注册日期";
-"NicegramSettings.Unblock.Header" = "解封";
-"NicegramSettings.Unblock.Button" = "解封指南";
 "NicegramSettings.RoundVideos.DownloadVideos" = "将视频下载到图库";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "忽略语言";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "应用会检测您设备上每条消息使用的语言。这一功能需要很高的性能，可能会影响电池寿命。";

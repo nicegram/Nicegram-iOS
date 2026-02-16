@@ -58,7 +58,7 @@ public struct UploadedPeerPhotoData {
     }
     
     static func withResource(_ resource: MediaResource) -> UploadedPeerPhotoData {
-        return UploadedPeerPhotoData(resource: resource, content: .result(.inputFile(.inputFile(id: 0, parts: 0, name: "", md5Checksum: ""))), local: true)
+        return UploadedPeerPhotoData(resource: resource, content: .result(.inputFile(.inputFile(.init(id: 0, parts: 0, name: "", md5Checksum: "")))), local: true)
     }
 }
 
@@ -109,9 +109,9 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
         if let markup = markup {
             switch markup {
             case let .emoji(fileId, backgroundColors):
-                videoEmojiMarkup = .videoSizeEmojiMarkup(emojiId: fileId, backgroundColors: backgroundColors)
+                videoEmojiMarkup = .videoSizeEmojiMarkup(.init(emojiId: fileId, backgroundColors: backgroundColors))
             case let .sticker(packReference, fileId, backgroundColors):
-                videoEmojiMarkup = .videoSizeStickerMarkup(stickerset: packReference.apiInputStickerSet, stickerId: fileId, backgroundColors: backgroundColors)
+                videoEmojiMarkup = .videoSizeStickerMarkup(.init(stickerset: packReference.apiInputStickerSet, stickerId: fileId, backgroundColors: backgroundColors))
             }
         }
         
@@ -164,8 +164,8 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
                                                 case let .progress(progress):
                                                     let mappedProgress = 0.2 + progress * 0.8
                                                     return .single((.progress(mappedProgress), photoResult.resource, videoResult.resource))
-                                                case let .inputFile(file):
-                                                    videoFile = file
+                                                case let .inputFile(videoInputFile):
+                                                    videoFile = videoInputFile
                                                     break
                                                 default:
                                                     return .fail(.generic)
@@ -235,22 +235,26 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
                                         var videoRepresentations: [TelegramMediaImage.VideoRepresentation] = []
                                         var image: TelegramMediaImage?
                                         switch photo {
-                                        case let .photo(apiPhoto, _):
+                                        case let .photo(photoData):
+                                            let (apiPhoto, _) = (photoData.photo, photoData.users)
                                             image = telegramMediaImageFromApiPhoto(apiPhoto)
                                             switch apiPhoto {
                                                 case .photoEmpty:
                                                     break
-                                                case let .photo(_, id, accessHash, fileReference, _, sizes, videoSizes, dcId):
-                                                    var sizes = sizes
+                                                case let .photo(photoData):
+                                                    let (id, accessHash, fileReference, apiSizes, videoSizes, dcId) = (photoData.id, photoData.accessHash, photoData.fileReference, photoData.sizes, photoData.videoSizes, photoData.dcId)
+                                                    var sizes = apiSizes
                                                     if sizes.count == 3 {
                                                         sizes.remove(at: 1)
                                                     }
                                                     for size in sizes {
                                                         switch size {
-                                                            case let .photoSize(_, w, h, _):
+                                                            case let .photoSize(photoSizeData):
+                                                                let (w, h) = (photoSizeData.w, photoSizeData.h)
                                                                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: CloudPeerPhotoSizeMediaResource(datacenterId: dcId, photoId: id, sizeSpec: w <= 200 ? .small : .fullSize, volumeId: nil, localId: nil), progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
-                                                            case let .photoSizeProgressive(_, w, h, sizes):
-                                                                representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: CloudPeerPhotoSizeMediaResource(datacenterId: dcId, photoId: id, sizeSpec: w <= 200 ? .small : .fullSize, volumeId: nil, localId: nil), progressiveSizes: sizes, immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
+                                                            case let .photoSizeProgressive(photoSizeProgressiveData):
+                                                                let (w, h, progressiveSizes) = (photoSizeProgressiveData.w, photoSizeProgressiveData.h, photoSizeProgressiveData.sizes)
+                                                                representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: CloudPeerPhotoSizeMediaResource(datacenterId: dcId, photoId: id, sizeSpec: w <= 200 ? .small : .fullSize, volumeId: nil, localId: nil), progressiveSizes: progressiveSizes, immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
                                                             default:
                                                                 break
                                                         }
@@ -259,10 +263,11 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
                                                     if let videoSizes = videoSizes {
                                                         for size in videoSizes {
                                                             switch size {
-                                                            case let .videoSize(_, type, w, h, size, videoStartTs):
+                                                            case let .videoSize(videoSizeData):
+                                                                let (_, type, w, h, size, videoStartTs) = (videoSizeData.flags, videoSizeData.type, videoSizeData.w, videoSizeData.h, videoSizeData.size, videoSizeData.videoStartTs)
                                                                 let resource: TelegramMediaResource
                                                                 resource = CloudPhotoSizeMediaResource(datacenterId: dcId, photoId: id, accessHash: accessHash, sizeSpec: type, size: Int64(size), fileReference: fileReference.makeData())
-                                                                
+
                                                                 videoRepresentations.append(TelegramMediaImage.VideoRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: resource, startTimestamp: videoStartTs))
                                                             case .videoSizeEmojiMarkup, .videoSizeStickerMarkup:
                                                                 break
@@ -339,9 +344,9 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
                                                                         
                                     let request: Signal<Api.Updates, MTRpcError>
                                     if let peer = peer as? TelegramGroup {
-                                        request = network.request(Api.functions.messages.editChatPhoto(chatId: peer.id.id._internalGetInt64Value(), photo: .inputChatUploadedPhoto(flags: flags, file: file, video: videoFile, videoStartTs: videoStartTimestamp, videoEmojiMarkup: videoEmojiMarkup)))
+                                        request = network.request(Api.functions.messages.editChatPhoto(chatId: peer.id.id._internalGetInt64Value(), photo: .inputChatUploadedPhoto(.init(flags: flags, file: file, video: videoFile, videoStartTs: videoStartTimestamp, videoEmojiMarkup: videoEmojiMarkup))))
                                     } else if let peer = peer as? TelegramChannel, let inputChannel = apiInputChannel(peer) {
-                                        request = network.request(Api.functions.channels.editPhoto(channel: inputChannel, photo: .inputChatUploadedPhoto(flags: flags, file: file, video: videoFile, videoStartTs: videoStartTimestamp, videoEmojiMarkup: videoEmojiMarkup)))
+                                        request = network.request(Api.functions.channels.editPhoto(channel: inputChannel, photo: .inputChatUploadedPhoto(.init(flags: flags, file: file, video: videoFile, videoStartTs: videoStartTimestamp, videoEmojiMarkup: videoEmojiMarkup))))
                                     } else {
                                         assertionFailure()
                                         request = .complete()
@@ -447,22 +452,26 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
                         var updatedImage: TelegramMediaImage?
                         var representations: [TelegramMediaImageRepresentation] = []
                         switch photo {
-                        case let .photo(apiPhoto, _):
+                        case let .photo(photoData):
+                            let (apiPhoto, _) = (photoData.photo, photoData.users)
                             updatedImage = telegramMediaImageFromApiPhoto(apiPhoto)
                             switch apiPhoto {
                                 case .photoEmpty:
                                     break
-                                case let .photo(_, id, _, _, _, sizes, _, dcId):
-                                    var sizes = sizes
+                                case let .photo(photoData):
+                                    let (id, apiSizes, dcId) = (photoData.id, photoData.sizes, photoData.dcId)
+                                    var sizes = apiSizes
                                     if sizes.count == 3 {
                                         sizes.remove(at: 1)
                                     }
                                     for size in sizes {
                                         switch size {
-                                            case let .photoSize(_, w, h, _):
+                                            case let .photoSize(photoSizeData):
+                                                let (w, h) = (photoSizeData.w, photoSizeData.h)
                                                 representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: CloudPeerPhotoSizeMediaResource(datacenterId: dcId, photoId: id, sizeSpec: w <= 200 ? .small : .fullSize, volumeId: nil, localId: nil), progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
-                                            case let .photoSizeProgressive(_, w, h, sizes):
-                                                representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: CloudPeerPhotoSizeMediaResource(datacenterId: dcId, photoId: id, sizeSpec: w <= 200 ? .small : .fullSize, volumeId: nil, localId: nil), progressiveSizes: sizes, immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
+                                            case let .photoSizeProgressive(photoSizeProgressiveData):
+                                                let (w, h, progressiveSizes) = (photoSizeProgressiveData.w, photoSizeProgressiveData.h, photoSizeProgressiveData.sizes)
+                                                representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: w, height: h), resource: CloudPeerPhotoSizeMediaResource(datacenterId: dcId, photoId: id, sizeSpec: w <= 200 ? .small : .fullSize, volumeId: nil, localId: nil), progressiveSizes: progressiveSizes, immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
                                             default:
                                                 break
                                         }
@@ -495,7 +504,8 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
                     } else {
                         var updatedUsers: [TelegramUser] = []
                         switch photo {
-                        case let .photo(_, apiUsers):
+                        case let .photo(photoData):
+                            let (_, apiUsers) = (photoData.photo, photoData.users)
                             updatedUsers = apiUsers.map { TelegramUser(user: $0) }
                         }
                         return postbox.transaction { transaction -> UpdatePeerPhotoStatus in
@@ -573,12 +583,13 @@ func _internal_updatePeerPhotoInternal(postbox: Postbox, network: Network, state
 func _internal_updatePeerPhotoExisting(network: Network, reference: TelegramMediaImageReference) -> Signal<TelegramMediaImage?, NoError> {
     switch reference {
     case let .cloud(imageId, accessHash, fileReference):
-        return network.request(Api.functions.photos.updateProfilePhoto(flags: 0, bot: nil, id: .inputPhoto(id: imageId, accessHash: accessHash, fileReference: Buffer(data: fileReference))))
+        return network.request(Api.functions.photos.updateProfilePhoto(flags: 0, bot: nil, id: .inputPhoto(.init(id: imageId, accessHash: accessHash, fileReference: Buffer(data: fileReference)))))
         |> `catch` { _ -> Signal<Api.photos.Photo, NoError> in
             return .complete()
         }
         |> mapToSignal { photo -> Signal<TelegramMediaImage?, NoError> in
-            if case let .photo(photo, _) = photo {
+            if case let .photo(photoData) = photo {
+                let (photo, _) = (photoData.photo, photoData.users)
                 return .single(telegramMediaImageFromApiPhoto(photo))
             } else {
                 return .complete()
@@ -592,7 +603,7 @@ func _internal_removeAccountPhoto(account: Account, reference: TelegramMediaImag
         switch reference {
         case let .cloud(imageId, accessHash, fileReference):
             if let fileReference = fileReference {
-                return account.network.request(Api.functions.photos.deletePhotos(id: [.inputPhoto(id: imageId, accessHash: accessHash, fileReference: Buffer(data: fileReference))]))
+                return account.network.request(Api.functions.photos.deletePhotos(id: [.inputPhoto(.init(id: imageId, accessHash: accessHash, fileReference: Buffer(data: fileReference)))]))
                 |> `catch` { _ -> Signal<[Int64], NoError> in
                     return .single([])
                 }

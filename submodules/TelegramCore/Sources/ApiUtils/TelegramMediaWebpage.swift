@@ -6,13 +6,15 @@ import TelegramApi
 
 func telegramMediaWebpageAttributeFromApiWebpageAttribute(_ attribute: Api.WebPageAttribute) -> TelegramMediaWebpageAttribute? {
     switch attribute {
-    case let .webPageAttributeTheme(_, documents, settings):
+    case let .webPageAttributeTheme(webPageAttributeThemeData):
+        let (_, documents, settings) = (webPageAttributeThemeData.flags, webPageAttributeThemeData.documents, webPageAttributeThemeData.settings)
         var files: [TelegramMediaFile] = []
         if let documents = documents {
             files = documents.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
         }
         return .theme(TelegraMediaWebpageThemeAttribute(files: files, settings: settings.flatMap { TelegramThemeSettings(apiThemeSettings: $0) }))
-    case let .webPageAttributeStickerSet(apiFlags, stickers):
+    case let .webPageAttributeStickerSet(webPageAttributeStickerSetData):
+        let (apiFlags, stickers) = (webPageAttributeStickerSetData.flags, webPageAttributeStickerSetData.stickers)
         var flags = TelegramMediaWebpageStickerPackAttribute.Flags()
         if (apiFlags & (1 << 0)) != 0 {
             flags.insert(.isEmoji)
@@ -23,16 +25,19 @@ func telegramMediaWebpageAttributeFromApiWebpageAttribute(_ attribute: Api.WebPa
         var files: [TelegramMediaFile] = []
         files = stickers.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
         return .stickerPack(TelegramMediaWebpageStickerPackAttribute(flags: flags, files: files))
-    case let .webPageAttributeUniqueStarGift(gift):
+    case let .webPageAttributeUniqueStarGift(webPageAttributeUniqueStarGiftData):
+        let gift = webPageAttributeUniqueStarGiftData.gift
         if let starGift = StarGift(apiStarGift: gift) {
             return .starGift(TelegramMediaWebpageStarGiftAttribute(gift: starGift))
         }
         return nil
-    case let .webPageAttributeStarGiftCollection(icons):
+    case let .webPageAttributeStarGiftCollection(webPageAttributeStarGiftCollectionData):
+        let icons = webPageAttributeStarGiftCollectionData.icons
         var files: [TelegramMediaFile] = []
         files = icons.compactMap { telegramMediaFileFromApiDocument($0, altDocuments: []) }
         return .giftCollection(TelegramMediaWebpageGiftCollectionAttribute(files: files))
-    case let .webPageAttributeStarGiftAuction(apiGift, endDate):
+    case let .webPageAttributeStarGiftAuction(webPageAttributeStarGiftAuctionData):
+        let (apiGift, endDate) = (webPageAttributeStarGiftAuctionData.gift, webPageAttributeStarGiftAuctionData.endDate)
         guard let gift = StarGift(apiStarGift: apiGift) else {
             return nil
         }
@@ -46,10 +51,12 @@ func telegramMediaWebpageFromApiWebpage(_ webpage: Api.WebPage) -> TelegramMedia
     switch webpage {
         case .webPageNotModified:
             return nil
-        case let .webPagePending(flags, id, url, date):
+        case let .webPagePending(webPagePendingData):
+            let (flags, id, url, date) = (webPagePendingData.flags, webPagePendingData.id, webPagePendingData.url, webPagePendingData.date)
             let _ = flags
             return TelegramMediaWebpage(webpageId: MediaId(namespace: Namespaces.Media.CloudWebpage, id: id), content: .Pending(date, url))
-        case let .webPage(flags, id, url, displayUrl, hash, type, siteName, title, description, photo, embedUrl, embedType, embedWidth, embedHeight, duration, author, document, cachedPage, attributes):
+        case let .webPage(webPageData):
+            let (flags, id, url, displayUrl, hash, type, siteName, title, description, photo, embedUrl, embedType, embedWidth, embedHeight, duration, author, document, cachedPage, attributes) = (webPageData.flags, webPageData.id, webPageData.url, webPageData.displayUrl, webPageData.hash, webPageData.type, webPageData.siteName, webPageData.title, webPageData.description, webPageData.photo, webPageData.embedUrl, webPageData.embedType, webPageData.embedWidth, webPageData.embedHeight, webPageData.duration, webPageData.author, webPageData.document, webPageData.cachedPage, webPageData.attributes)
             var embedSize: PixelDimensions?
             if let embedWidth = embedWidth, let embedHeight = embedHeight {
                 embedSize = PixelDimensions(width: embedWidth, height: embedHeight)
@@ -71,20 +78,21 @@ func telegramMediaWebpageFromApiWebpage(_ webpage: Api.WebPage) -> TelegramMedia
             if let attributes = attributes {
                 webpageAttributes = attributes.compactMap(telegramMediaWebpageAttributeFromApiWebpageAttribute)
                 for attribute in attributes {
-                    if case let .webPageAttributeStory(_, peerId, id, _) = attribute {
+                    if case let .webPageAttributeStory(webPageAttributeStoryData) = attribute {
+                        let (_, peerId, id, _) = (webPageAttributeStoryData.flags, webPageAttributeStoryData.peer, webPageAttributeStoryData.id, webPageAttributeStoryData.story)
                         story = TelegramMediaStory(storyId: StoryId(peerId: peerId.peerId, id: id), isMention: false)
                     }
                 }
             }
-        
+
             var instantPage: InstantPage?
             if let cachedPage = cachedPage {
                 instantPage = InstantPage(apiPage: cachedPage)
             }
-        
+
             let isMediaLargeByDefault = (flags & (1 << 13)) != 0
             let imageIsVideoCover = (flags & (1 << 14)) != 0
-        
+
             return TelegramMediaWebpage(webpageId: MediaId(namespace: Namespaces.Media.CloudWebpage, id: id), content: .Loaded(TelegramMediaWebpageLoadedContent(url: url, displayUrl: displayUrl, hash: hash, type: type, websiteName: siteName, title: title, text: description, embedUrl: embedUrl, embedType: embedType, embedSize: embedSize, duration: webpageDuration, author: author, isMediaLargeByDefault: isMediaLargeByDefault, imageIsVideoCover: imageIsVideoCover, image: image, file: file, story: story, attributes: webpageAttributes, instantPage: instantPage)))
         case .webPageEmpty:
             return nil

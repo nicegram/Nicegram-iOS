@@ -32,6 +32,8 @@ swift_library(
         "//submodules/UndoUI:UndoUI",
         "//submodules/ActivityIndicator:ActivityIndicator",
         "//submodules/ShimmerEffect:ShimmerEffect",
+        "//submodules/Components/ResizableSheetComponent",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
     ],
     visibility = [
         "//visibility:public",

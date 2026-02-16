@@ -911,15 +911,15 @@ public final class SparseItemGrid: ASDisplayNode {
             return self.scrollView.convert(layer.frame, to: self.view)
         }
 
-        func scrollToItem(at index: Int) {
+        func scrollToItem(at index: Int, force: Bool) {
             guard let layout = self.layout, let _ = self.items else {
                 return
             }
-            if layout.containerLayout.lockScrollingAtTop {
+            if !force && layout.containerLayout.lockScrollingAtTop {
                 return
             }
             let itemFrame = layout.frame(at: index)
-            var contentOffset = itemFrame.minY
+            var contentOffset = floor(itemFrame.midY - self.scrollView.bounds.height / 2.0)
             if contentOffset > self.scrollView.contentSize.height - self.scrollView.bounds.height {
                 contentOffset = self.scrollView.contentSize.height - self.scrollView.bounds.height
             }
@@ -2234,11 +2234,11 @@ public final class SparseItemGrid: ASDisplayNode {
         return currentViewport.visualItem(at: index)
     }
 
-    public func scrollToItem(at index: Int) {
+    public func scrollToItem(at index: Int, force: Bool = false) {
         guard let currentViewport = self.currentViewport else {
             return
         }
-        currentViewport.scrollToItem(at: index)
+        currentViewport.scrollToItem(at: index, force: force)
     }
 
     public func ensureItemVisible(index: Int, anyAmount: Bool = true) {

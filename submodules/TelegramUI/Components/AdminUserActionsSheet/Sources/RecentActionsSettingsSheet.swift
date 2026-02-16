@@ -489,10 +489,10 @@ private final class RecentActionsSettingsSheetComponent: Component {
             let leftButtonSize = self.leftButton.update(
                 transition: transition,
                 component: AnyComponent(GlassBarButtonComponent(
-                    size: CGSize(width: 40.0, height: 40.0),
-                    backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
+                    size: CGSize(width: 44.0, height: 44.0),
+                    backgroundColor: nil,
                     isDark: environment.theme.overallDarkAppearance,
-                    state: .generic,
+                    state: .glass,
                     component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
                         BundleIconComponent(
                             name: "Navigation/Close",
@@ -507,7 +507,7 @@ private final class RecentActionsSettingsSheetComponent: Component {
                     }
                 )),
                 environment: {},
-                containerSize: CGSize(width: 40.0, height: 40.0)
+                containerSize: CGSize(width: 44.0, height: 44.0)
             )
             let leftButtonFrame = CGRect(origin: CGPoint(x: 16.0 + environment.safeInsets.left, y: 16.0), size: leftButtonSize)
             if let leftButtonView = self.leftButton.view {

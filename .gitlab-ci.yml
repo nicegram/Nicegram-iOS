@@ -31,11 +31,6 @@ internal:
     - python3 -u build-system/Make/DeployBuild.py --configuration="$TELEGRAM_PRIVATE_DATA_PATH/deploy-configurations/enterprise-configuration.json" --ipa="build/artifacts/Telegram.ipa" --dsyms="build/artifacts/Telegram.DSYMs.zip"
   environment:
     name: internal
-  artifacts:
-    when: always
-    paths:
-      - build/artifacts
-    expire_in: 1 week
 
 internal_testflight:
   tags:

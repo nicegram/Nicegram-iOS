@@ -370,7 +370,7 @@ open class ItemListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             }
         }
         
-        self.listNode.visibleContentOffsetChanged = { [weak self] offset in
+        self.listNode.visibleContentOffsetChanged = { [weak self] offset, _ in
             guard let strongSelf = self else {
                 return
             }

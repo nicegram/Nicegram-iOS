@@ -23,6 +23,20 @@ public enum CallListControllerMode {
     case navigation
 }
 
+public enum CallListEntryTag: ItemListItemTag, Equatable {
+    case edit
+    case showTab
+    case missed
+
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? CallListEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private final class DeleteAllButtonNode: ASDisplayNode {
     private let pressed: () -> Void
     
@@ -69,6 +83,8 @@ private final class DeleteAllButtonNode: ASDisplayNode {
     }
 }
 
+
+
 public final class CallListController: TelegramBaseController {
     private var controllerNode: CallListControllerNode {
         return self.displayNode as! CallListControllerNode
@@ -81,6 +97,7 @@ public final class CallListController: TelegramBaseController {
     
     private let context: AccountContext
     private let mode: CallListControllerMode
+    private let focusOnItemTag: CallListEntryTag?
     
     private var presentationData: PresentationData
     private var presentationDataDisposable: Disposable?
@@ -96,9 +113,15 @@ public final class CallListController: TelegramBaseController {
     private let clearDisposable = MetaDisposable()
     private var createConferenceCallDisposable: Disposable?
     
-    public init(context: AccountContext, mode: CallListControllerMode) {
+    public init(
+        context: AccountContext,
+        mode: CallListControllerMode,
+        focusOnItemTag: CallListEntryTag? = nil
+    ) {
         self.context = context
         self.mode = mode
+        self.focusOnItemTag = focusOnItemTag
+        
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         self.segmentedTitleView = ItemListControllerSegmentedTitleView(theme: self.presentationData.theme, segments: [self.presentationData.strings.Calls_All, self.presentationData.strings.Calls_Missed], selectedIndex: 0)
@@ -409,7 +432,7 @@ public final class CallListController: TelegramBaseController {
             if let strongSelf = self {
                 strongSelf.callPressed()
             }
-        })
+        }, focusOnItemTag: self.focusOnItemTag)
         
         if case .navigation = self.mode {
             self.controllerNode.navigationBar = self.navigationBar
@@ -421,6 +444,18 @@ public final class CallListController: TelegramBaseController {
         }
         self._ready.set(self.controllerNode.ready)
         self.displayNodeDidLoad()
+        
+        switch self.focusOnItemTag {
+        case .edit:
+            self.editPressed()
+        case .missed:
+            Queue.mainQueue().after(0.1) {
+                self.segmentedTitleView.index = 1
+                self.controllerNode.updateType(.missed)
+            }
+        default:
+            break
+        }
     }
     
     override public var navigationEdgeEffectExtension: CGFloat {
@@ -517,7 +552,7 @@ public final class CallListController: TelegramBaseController {
             }
         }
     
-        let contextController = ContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: self, sourceNode: buttonNode.contentNode, keepInPlace: false, blurBackground: false)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+        let contextController = makeContextController(presentationData: self.presentationData, source: .extracted(ExtractedContentSourceImpl(controller: self, sourceNode: buttonNode.contentNode, keepInPlace: false, blurBackground: false)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
         self.presentInGlobalOverlay(contextController)
     }
     
@@ -782,7 +817,7 @@ public final class CallListController: TelegramBaseController {
             })
         })))
         
-        let controller = ContextController(presentationData: self.presentationData, source: .reference(CallListTabBarContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
+        let controller = makeContextController(presentationData: self.presentationData, source: .reference(CallListTabBarContextReferenceContentSource(controller: self, sourceView: sourceView)), items: .single(ContextController.Items(content: .list(items))), recognizer: nil, gesture: gesture)
         self.context.sharedContext.mainWindow?.presentInGlobalOverlay(controller)
     }
     

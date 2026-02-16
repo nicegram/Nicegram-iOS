@@ -18,7 +18,7 @@ func _internal_translate(network: Network, text: String, toLang: String, entitie
     var flags: Int32 = 0
     flags |= (1 << 1)
 
-    return network.request(Api.functions.messages.translateText(flags: flags, peer: nil, id: nil, text: [.textWithEntities(text: text, entities: apiEntitiesFromMessageTextEntities(entities, associatedPeers: SimpleDictionary()))], toLang: toLang))
+    return network.request(Api.functions.messages.translateText(flags: flags, peer: nil, id: nil, text: [.textWithEntities(.init(text: text, entities: apiEntitiesFromMessageTextEntities(entities, associatedPeers: SimpleDictionary())))], toLang: toLang))
     |> mapError { error -> TranslationError in
         if error.errorDescription.hasPrefix("FLOOD_WAIT") {
             return .limitExceeded
@@ -38,8 +38,10 @@ func _internal_translate(network: Network, text: String, toLang: String, entitie
     }
     |> mapToSignal { result -> Signal<(String, [MessageTextEntity])?, TranslationError> in
         switch result {
-        case let .translateResult(results):
-            if case let .textWithEntities(text, entities) = results.first {
+        case let .translateResult(translateResultData):
+            let results = translateResultData.result
+            if case let .textWithEntities(textWithEntitiesData) = results.first {
+                let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
                 return .single((text, messageTextEntitiesFromApiEntities(entities)))
             } else {
                 return .single(nil)
@@ -54,7 +56,7 @@ func _internal_translateTexts(network: Network, texts: [(String, [MessageTextEnt
     
     var apiTexts: [Api.TextWithEntities] = []
     for text in texts {
-        apiTexts.append(.textWithEntities(text: text.0, entities: apiEntitiesFromMessageTextEntities(text.1, associatedPeers: SimpleDictionary())))
+        apiTexts.append(.textWithEntities(.init(text: text.0, entities: apiEntitiesFromMessageTextEntities(text.1, associatedPeers: SimpleDictionary()))))
     }
 
     return network.request(Api.functions.messages.translateText(flags: flags, peer: nil, id: nil, text: apiTexts, toLang: toLang))
@@ -76,9 +78,11 @@ func _internal_translateTexts(network: Network, texts: [(String, [MessageTextEnt
     |> mapToSignal { result -> Signal<[(String, [MessageTextEntity])], TranslationError> in
         var texts: [(String, [MessageTextEntity])] = []
         switch result {
-        case let .translateResult(results):
+        case let .translateResult(translateResultData):
+            let results = translateResultData.result
             for result in results {
-                if case let .textWithEntities(text, entities) = result {
+                if case let .textWithEntities(textWithEntitiesData) = result {
+                    let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
                     texts.append((text, messageTextEntitiesFromApiEntities(entities)))
                 }
             }
@@ -176,14 +180,14 @@ private func _internal_translateMessagesByPeerId(account: Account, peerId: Engin
                         var result: [Api.TextWithEntities] = []
                         for messageId in messageIds {
                             if let text = resultTexts[AnyHashable(messageId)] {
-                                result.append(.textWithEntities(text: text, entities: []))
+                                result.append(.textWithEntities(.init(text: text, entities: [])))
                             } else if let text = messageTexts[messageId] {
-                                result.append(.textWithEntities(text: text, entities: []))
+                                result.append(.textWithEntities(.init(text: text, entities: [])))
                             } else {
-                                result.append(.textWithEntities(text: "", entities: []))
+                                result.append(.textWithEntities(.init(text: "", entities: [])))
                             }
                         }
-                        return .single(.translateResult(result: result))
+                        return .single(.translateResult(.init(result: result)))
                     }
                 }
             } else {
@@ -210,11 +214,13 @@ private func _internal_translateMessagesByPeerId(account: Account, peerId: Engin
         return combineLatest(msgs, combineLatest(pollSignals), combineLatest(audioTranscriptionsSignals))
         |> mapToSignal { (result, pollResults, audioTranscriptionsResults) -> Signal<Void, TranslationError> in
             return account.postbox.transaction { transaction in
-                if case let .translateResult(results) = result {
+                if case let .translateResult(translateResultData) = result {
+                    let results = translateResultData.result
                     var index = 0
                     for result in results {
                         let messageId = messageIds[index]
-                        if case let .textWithEntities(text, entities) = result {
+                        if case let .textWithEntities(textWithEntitiesData) = result {
+                            let (text, entities) = (textWithEntitiesData.text, textWithEntitiesData.entities)
                             let updatedAttribute: TranslationMessageAttribute = TranslationMessageAttribute(text: text, entities: messageTextEntitiesFromApiEntities(entities), toLang: toLang)
                             transaction.updateMessage(messageId, update: { currentMessage in
                                 let storeForwardInfo = currentMessage.forwardInfo.flatMap(StoreMessageForwardInfo.init)

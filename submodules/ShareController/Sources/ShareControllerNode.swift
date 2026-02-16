@@ -547,7 +547,7 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
                                 if showNamesValue {
                                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
                                 } else {
-                                    return nil
+                                    return UIImage()
                                 }
                             }, action: { _, _ in
                                 self?.showNames.set(true)
@@ -556,7 +556,7 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
                                 if !showNamesValue {
                                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
                                 } else {
-                                    return nil
+                                    return UIImage()
                                 }
                             }, action: { _, _ in
                                 self?.showNames.set(false)
@@ -592,7 +592,7 @@ final class ShareControllerNode: ViewControllerTracingNode, ASScrollViewDelegate
                     ])
                     return ContextController.Items(content: .list(items), animationCache: nil)
                 }
-                let contextController = ContextController(presentationData: presentationData, source: .reference(ShareContextReferenceContentSource(sourceNode: node, customPosition: CGPoint(x: 0.0, y: fromForeignApp ? -116.0 : 0.0))), items: items, gesture: gesture)
+                let contextController = makeContextController(presentationData: presentationData, source: .reference(ShareContextReferenceContentSource(sourceNode: node, customPosition: CGPoint(x: 0.0, y: fromForeignApp ? -116.0 : 0.0))), items: items, gesture: gesture)
                 contextController.immediateItemsTransitionAnimation = true
                 strongSelf.present?(contextController)
             }

@@ -435,7 +435,7 @@ public class LegacyMessageInputPanelNode: ASDisplayNode, TGCaptionPanelView {
             updateTimeout(nil)
         })))
         
-        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(sourceView: sourceView, position: self.currentIsCaptionAbove ? .bottom : .top)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(sourceView: sourceView, position: self.currentIsCaptionAbove ? .bottom : .top)), items: .single(ContextController.Items(content: .list(items))), gesture: gesture)
         self.present(contextController)
     }
         

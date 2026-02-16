@@ -697,7 +697,7 @@ final class VideoChatEncryptionKeyComponent: Component {
 
             let backgroundFrame = CGRect(origin: CGPoint(), size: backgroundSize)
             
-            self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundCornerRadius, isDark: true, tintColor: .init(kind: .custom, color: UIColor(rgb: 0x161616, alpha: 0.6)), transition: transition)
+            self.backgroundView.update(size: backgroundSize, cornerRadius: backgroundCornerRadius, isDark: true, tintColor: .init(kind: .custom(style: .default, color: UIColor(rgb: 0x161616, alpha: 0.6))), transition: transition)
             transition.setFrame(view: self.backgroundView, frame: backgroundFrame)
                         
             var collapsedEmojiLeftOffset = collapsedSideInset

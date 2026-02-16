@@ -540,6 +540,7 @@ final class GiftsListView: UIView {
                     component: AnyComponent(
                         GiftItemComponent(
                             context: self.context,
+                            style: .glass,
                             theme: params.presentationData.theme,
                             strings: params.presentationData.strings,
                             peer: peer,
@@ -605,6 +606,7 @@ final class GiftsListView: UIView {
                                         subject: .profileGift(self.peerId, product),
                                         allSubjects: allSubjects,
                                         index: index,
+                                        profileGiftsContext: self.profileGifts,
                                         updateSavedToProfile: { [weak self] reference, added in
                                             guard let self else {
                                                 return

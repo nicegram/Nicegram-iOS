@@ -294,7 +294,7 @@ final class VideoChatActionButtonComponent: Component {
                 }
             }
 
-            self.background.update(size: size, cornerRadius: size.width * 0.5, isDark: true, tintColor: .init(kind: .custom, color: backgroundColor), transition: tintTransition)
+            self.background.update(size: size, cornerRadius: size.width * 0.5, isDark: true, tintColor: .init(kind: .custom(style: .default, color: backgroundColor)), transition: tintTransition)
             transition.setFrame(view: self.background, frame: CGRect(origin: CGPoint(), size: size))
             
             let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - titleSize.width) * 0.5), y: size.height + 5.0), size: titleSize)

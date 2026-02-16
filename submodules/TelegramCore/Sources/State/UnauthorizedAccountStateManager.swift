@@ -34,11 +34,14 @@ private final class UnauthorizedUpdateMessageService: NSObject, MTMessageService
     
     func addUpdates(_ updates: Api.Updates) {
         switch updates {
-        case let .updates(updates, _, _, _, _):
+        case let .updates(updatesData):
+            let updates = updatesData.updates
             self.putNext(updates)
-        case let .updatesCombined(updates, _, _, _, _, _):
+        case let .updatesCombined(updatesCombinedData):
+            let updates = updatesCombinedData.updates
             self.putNext(updates)
-        case let .updateShort(update, _):
+        case let .updateShort(updateShortData):
+            let update = updateShortData.update
             self.putNext([update])
         case .updateShortChatMessage, .updateShortMessage, .updatesTooLong, .updateShortSentMessage:
                 break
@@ -90,12 +93,14 @@ final class UnauthorizedAccountStateManager {
                         switch update {
                         case .updateLoginToken:
                             updateLoginToken()
-                        case let .updateServiceNotification(flags, _, _, message, _, _):
+                        case let .updateServiceNotification(updateServiceNotificationData):
+                            let (flags, message) = (updateServiceNotificationData.flags, updateServiceNotificationData.message)
                             let popup = (flags & (1 << 0)) != 0
                             if popup {
                                 displayServiceNotification(message)
                             }
-                        case let .updateSentPhoneCode(sentCode):
+                        case let .updateSentPhoneCode(updateSentPhoneCodeData):
+                            let sentCode = updateSentPhoneCodeData.sentCode
                             updateSentCode(sentCode)
                         default:
                             break

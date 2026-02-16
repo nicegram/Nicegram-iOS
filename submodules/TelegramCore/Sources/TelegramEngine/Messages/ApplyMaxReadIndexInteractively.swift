@@ -164,7 +164,7 @@ func _internal_toggleForumThreadUnreadMarkInteractively(transaction: Transaction
         if peer.isForum {
         } else if peer.isMonoForum {
             if let inputPeer = apiInputPeer(peer), let subPeer = transaction.getPeer(PeerId(threadId)).flatMap(apiInputPeer) {
-                let _ = network.request(Api.functions.messages.markDialogUnread(flags: 1 << 0, parentPeer: inputPeer, peer: .inputDialogPeer(peer: subPeer))).start()
+                let _ = network.request(Api.functions.messages.markDialogUnread(flags: 1 << 0, parentPeer: inputPeer, peer: .inputDialogPeer(.init(peer: subPeer)))).start()
             }
         }
     } else {

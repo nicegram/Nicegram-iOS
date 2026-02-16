@@ -4,7 +4,7 @@ import struct Combine.Just
 import EntityKeyboard
 import FeatAiShortcuts
 import FeatAiVoiceAssistant
-import FeatChatBanner
+import FeatSensitiveContentAccess
 import FeatTgChatButton
 import NGAiChatUI
 import NGAppCache
@@ -13,7 +13,6 @@ import NGRemoteConfig
 import NGStrings
 import NGUI
 import NGUtils
-import NGWebUtils
 import NicegramWallet
 import UndoUI
 //
@@ -233,6 +232,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var validEmptyNodeLayout: (CGSize, UIEdgeInsets, CGFloat, CGFloat)?
     var restrictedNode: ChatRecentActionsEmptyNode?
     
+    // Nicegram SensitiveContentAccess
+    let restrictedChatSupplementViewModel: RestrictedChatSupplementViewModel
+    let restrictedChatSupplementView: ASDisplayNode
+    //
+    
     private(set) var validLayout: (ContainerViewLayout, CGFloat)?
     private var visibleAreaInset = UIEdgeInsets()
     private var loadingNodeInsets = UIEdgeInsets()
@@ -311,21 +315,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 self?.setInput(text: text, image: image)
             }
         )
-    }()
-    //
-    
-    // Nicegram ChatBanner
-    private let ngBannerNode = ASDisplayNode()
-    private lazy var ngBannerModel = {
-        if #available(iOS 13.0, *) {
-            BannerViewModel(
-                setBannerVisible: { [weak self] visible in
-                    self?.setNgBanner(hidden: !visible)
-                }
-            )
-        } else {
-            fatalError()
-        }
     }()
     //
     
@@ -510,7 +499,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var displayVideoUnmuteTipDisposable: Disposable?
     
     private var onLayoutCompletions: [(ContainedViewLayoutTransition) -> Void] = []
-    
+
     init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
         self.context = context
         self.chatLocation = chatLocation
@@ -552,6 +541,18 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
         }
         self.aiShortcutsModel = aiShortcutsModel
+        //
+        
+        // Nicegram SensitiveContentAccess
+        let restrictedChatSupplementViewModel = RestrictedChatSupplementViewModel()
+        self.restrictedChatSupplementView = ASDisplayNode {
+            if #available(iOS 16.0, *) {
+                makeRestrictedChatSupplementView(viewModel: restrictedChatSupplementViewModel)
+            } else {
+                UIView()
+            }
+        }
+        self.restrictedChatSupplementViewModel = restrictedChatSupplementViewModel
         //
         
         var source: ChatHistoryListSource
@@ -836,7 +837,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             self.plainInputSeparatorAlpha = nil
         }
         
-        self.navigateButtons = ChatHistoryNavigationButtons(theme: self.chatPresentationInterfaceState.theme, dateTimeFormat: self.chatPresentationInterfaceState.dateTimeFormat, backgroundNode: self.backgroundNode, isChatRotated: historyNodeRotated)
+        self.navigateButtons = ChatHistoryNavigationButtons(theme: self.chatPresentationInterfaceState.theme, preferClearGlass: self.chatPresentationInterfaceState.preferredGlassType == .clear, dateTimeFormat: self.chatPresentationInterfaceState.dateTimeFormat, backgroundNode: self.backgroundNode, isChatRotated: historyNodeRotated)
         self.navigateButtons.accessibilityElementsHidden = true
         
         super.init()
@@ -954,6 +955,16 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
                 .store(in: &cancellables)
         }
+        //
+        
+        // Nicegram SensitiveContentAccess
+        restrictedChatSupplementViewModel.$viewState
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.requestLayout(.immediate)
+            }
+            .store(in: &cancellables)
         //
 
         // Nicegram
@@ -1099,18 +1110,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         
         // Nicegram AiChat
         tgChatAiViewModel.initialize()
-        //
-        
-        // Nicegram ChatBanner
-        if #available(iOS 15.0, *), let controller {
-            self.addSubnode(self.ngBannerNode)
-            ChatBannerTgHelper.show(
-                viewModel: ngBannerModel,
-                containerView: self.ngBannerNode.view,
-                containerController: controller
-            )
-        }
-        self.ngBannerNode.isHidden = true
         //
         
         self.wrappingNode.contentNode.addSubnode(self.messageTransitionNode)
@@ -1303,55 +1302,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    // Nicegram ChatBanner
-    @available(iOS 15.0, *)
-    private func updateNgBannerVisibility() {
-        guard let peer = self.chatPresentationInterfaceState.renderedPeer?.peer else {
-            return
-        }
-        
-        let contentSettings = self.context.currentContentSettings.with { $0 }
-        
-        let isChannel = switch EnginePeer(peer) {
-        case .channel, .legacyGroup:
-            true
-        case .user, .secretChat:
-            false
-        }
-        let isPrivate = (peer.addressName == nil)
-        
-        let isPornChat = peer.hasPornRestriction(
-            contentSettings: contentSettings
-        )
-        
-        ngBannerModel.set(
-            chatData: ChatData(
-                isChannel: isChannel,
-                isPornChat: isPornChat,
-                isPrivate: isPrivate,
-                unblockRequiresAnotherPhoneNumber: peer.unblockRequiresAnotherPhoneNumber(
-                    contentSettings: contentSettings
-                )
-            )
-        )
-    }
-    
-    private func setNgBanner(hidden: Bool) {
-        guard self.ngBannerNode.isHidden != hidden else {
-            return
-        }
-        
-        self.ngBannerNode.isHidden = hidden
-        self.historyNode.showNgBanner = !hidden
-        self.updateLayoutInternal(
-            transition: .animated(
-                duration: 0.3,
-                curve: .linear
-            )
-        )
-    }
-    //
-    
     private func updateIsEmpty(_ emptyType: ChatHistoryNodeLoadState.EmptyType?, wasLoading: Bool, animated: Bool) {
         self.emptyType = emptyType
         if let emptyType = emptyType, self.emptyNode == nil {
@@ -1438,8 +1388,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     statusBar.updateStatusBarStyle(.White, animated: true)
                 } else {
                     let statusBarStyle: StatusBarStyle
-                    if let isDark = self.backgroundNode.isDark {
-                        if isDark {
+                    if let contentStats = self.backgroundNode.contentStats {
+                        if contentStats.isDark {
                             statusBarStyle = .White
                         } else {
                             statusBarStyle = .Black
@@ -1927,6 +1877,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 transition: headerPanelsTransition,
                 component: AnyComponent(HeaderPanelContainerComponent(
                     theme: self.chatPresentationInterfaceState.theme,
+                    preferClearGlass: self.chatPresentationInterfaceState.preferredGlassType == .clear,
                     tabs: nil,
                     panels: headerPanels
                 )),
@@ -1969,6 +1920,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         } else if let floatingTopicsPanel = self.floatingTopicsPanel {
             self.floatingTopicsPanel = nil
             dismissedFloatingTopicsPanel = floatingTopicsPanel
+        }
+        
+        if floatingTopicsPanelInsets.top != 0.0 {
+            floatingTopicsPanelInsets.top += 8.0
         }
         
         var isSidebarOpen = false
@@ -2258,7 +2213,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
 
         updateExtraNavigationBarBackgroundHeight(0.0, 0.0, nil, transition)
         
-        var sidePanelTopInset: CGFloat = insets.top + 4.0
+        var sidePanelTopInset: CGFloat = insets.top - 4.0
         
         let contentBounds = CGRect(x: 0.0, y: 0.0, width: layout.size.width - wrappingInsets.left - wrappingInsets.right, height: layout.size.height - wrappingInsets.top - wrappingInsets.bottom)
         
@@ -2452,7 +2407,35 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             transition.updateFrame(node: loadingPlaceholderNode, frame: contentBounds)
         }
         
+        // Nicegram SensitiveContentAccess
+        let restrictedChatSupplementViewHeight = restrictedChatSupplementViewModel.viewState.height
+        if let restrictedNode, restrictedChatSupplementViewHeight > 0 {
+            if restrictedChatSupplementView.supernode == nil {
+                restrictedNode.supernode?.addSubnode(restrictedChatSupplementView)
+            }
+            
+            transition.updateFrame(
+                node: restrictedChatSupplementView,
+                frame: CGRect(
+                    x: 0,
+                    y: contentBounds.height - restrictedChatSupplementViewHeight,
+                    width: contentBounds.width,
+                    height: restrictedChatSupplementViewHeight
+                )
+            )
+        } else {
+            restrictedChatSupplementView.removeFromSupernode()
+        }
+        
+        nicegramOverlayNode.alpha = (restrictedNode == nil) ? 1 : 0
+        //
+        
         if let restrictedNode = self.restrictedNode {
+            // Nicegram SensitiveContentAccess, adjust restrictedNode bounds
+            var contentBounds = contentBounds
+            contentBounds.size.height -= restrictedChatSupplementViewHeight
+            //
+            
             transition.updateFrame(node: restrictedNode, frame: contentBounds)
             restrictedNode.update(rect: contentBounds, within: contentBounds.size, transition: transition)
             restrictedNode.updateLayout(presentationData: ChatPresentationData(theme: ChatPresentationThemeData(theme: self.chatPresentationInterfaceState.theme, wallpaper: self.chatPresentationInterfaceState.chatWallpaper), fontSize: self.chatPresentationInterfaceState.fontSize, strings: self.chatPresentationInterfaceState.strings, dateTimeFormat: self.chatPresentationInterfaceState.dateTimeFormat, nameDisplayOrder: self.chatPresentationInterfaceState.nameDisplayOrder, disableAnimations: false, largeEmoji: false, chatBubbleCorners: PresentationChatBubbleCorners(mainRadius: 0.0, auxiliaryRadius: 0.0, mergeBubbleCorners: false)), backgroundNode: self.backgroundNode, size: contentBounds.size, transition: transition)
@@ -2568,24 +2551,36 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
         }
         
-        var bottomBackgroundEdgeEffectNode: WallpaperEdgeEffectNode?
-        if let current = self.bottomBackgroundEdgeEffectNode {
-            bottomBackgroundEdgeEffectNode = current
+        let edgeEffectAlpha: CGFloat
+        if case .image = self.chatPresentationInterfaceState.chatWallpaper {
+            edgeEffectAlpha = 0.7
         } else {
-            if let value = self.backgroundNode.makeEdgeEffectNode() {
-                bottomBackgroundEdgeEffectNode = value
-                self.bottomBackgroundEdgeEffectNode = value
-                self.historyNodeContainer.view.superview?.insertSubview(value.view, aboveSubview: self.historyNodeContainer.view)
+            edgeEffectAlpha = self.chatPresentationInterfaceState.chatWallpaper.singleColor != nil ? 0.85 : 0.75
+        }
+        
+        
+        var bottomBackgroundEdgeEffectNode: WallpaperEdgeEffectNode?
+        if self.historyNode.rotated {
+            if let current = self.bottomBackgroundEdgeEffectNode {
+                bottomBackgroundEdgeEffectNode = current
+            } else {
+                if let value = self.backgroundNode.makeEdgeEffectNode() {
+                    bottomBackgroundEdgeEffectNode = value
+                    self.bottomBackgroundEdgeEffectNode = value
+                    value.isUserInteractionEnabled = false
+                    self.historyNodeContainer.view.superview?.insertSubview(value.view, aboveSubview: self.historyNodeContainer.view)
+                }
             }
         }
         if let bottomBackgroundEdgeEffectNode {
             var blurFrame = inputBackgroundFrame
-            blurFrame.origin.y -= 18.0
+            blurFrame.origin.y -= 20.0
             blurFrame.size.height = max(100.0, layout.size.height - blurFrame.origin.y)
             transition.updateFrame(node: bottomBackgroundEdgeEffectNode, frame: blurFrame)
             bottomBackgroundEdgeEffectNode.update(
                 rect: blurFrame,
-                edge: WallpaperEdgeEffectEdge(edge: .bottom, size: 100.0),
+                edge: WallpaperEdgeEffectEdge(edge: .bottom, size: min(60.0, blurFrame.height)),
+                alpha: edgeEffectAlpha,
                 blur: false,
                 containerSize: wallpaperBounds.size,
                 transition: transition
@@ -2602,7 +2597,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             }
         }
         
-        var contentBottomInset: CGFloat = inputPanelsHeight + 11.0 + inputPanelsInset
+        var contentBottomInset: CGFloat = inputPanelsHeight + inputPanelsInset
+        if previewing {
+        } else {
+            contentBottomInset += 11.0
+        }
         
         if let scrollContainerNode = self.scrollContainerNode {
             transition.updateFrame(node: scrollContainerNode, frame: CGRect(origin: CGPoint(), size: layout.size))
@@ -2634,7 +2633,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         if let containerNode = self.containerNode {
-            contentBottomInset += 8.0
             let containerNodeFrame = CGRect(origin: CGPoint(x: wrappingInsets.left, y: wrappingInsets.top), size: CGSize(width: contentBounds.size.width, height: contentBounds.size.height - containerInsets.bottom - inputPanelsHeight - 8.0))
             transition.updateFrame(node: containerNode, frame: containerNodeFrame)
             
@@ -2649,7 +2647,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             overlayNavigationBar.updateLayout(size: barFrame.size, transition: transition)
         }
         
-        var listInsets = UIEdgeInsets(top: containerInsets.bottom + contentBottomInset, left: containerInsets.right, bottom: containerInsets.top + 6.0, right: containerInsets.left)
+        var listInsets = UIEdgeInsets(top: containerInsets.bottom + contentBottomInset, left: containerInsets.right, bottom: containerInsets.top, right: containerInsets.left)
         let listScrollIndicatorInsets = UIEdgeInsets(top: containerInsets.bottom + inputPanelsHeight, left: containerInsets.right, bottom: containerInsets.top, right: containerInsets.left)
         
         var childContentInsets: UIEdgeInsets = containerInsets
@@ -2773,23 +2771,28 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         })
         
         var topBackgroundEdgeEffectNode: WallpaperEdgeEffectNode?
-        if let current = self.topBackgroundEdgeEffectNode {
-            topBackgroundEdgeEffectNode = current
-        } else {
-            if let value = self.backgroundNode.makeEdgeEffectNode() {
-                topBackgroundEdgeEffectNode = value
-                self.topBackgroundEdgeEffectNode = value
-                self.historyNodeContainer.view.superview?.insertSubview(value.view, aboveSubview: self.historyNodeContainer.view)
+        if self.historyNode.rotated {
+            if let current = self.topBackgroundEdgeEffectNode {
+                topBackgroundEdgeEffectNode = current
+            } else {
+                if let value = self.backgroundNode.makeEdgeEffectNode() {
+                    topBackgroundEdgeEffectNode = value
+                    self.topBackgroundEdgeEffectNode = value
+                    value.isUserInteractionEnabled = false
+                    self.historyNodeContainer.view.superview?.insertSubview(value.view, aboveSubview: self.historyNodeContainer.view)
+                }
             }
         }
         if let topBackgroundEdgeEffectNode {
-            var blurFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(100.0, listInsets.bottom + 10.0)))
-            blurFrame.origin.y = listInsets.bottom + 10.0 - blurFrame.height
+            let topExtent: CGFloat = 34.0
+            var blurFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(100.0, listInsets.bottom + topExtent)))
+            blurFrame.origin.y = listInsets.bottom + topExtent - blurFrame.height
             transition.updateFrame(node: topBackgroundEdgeEffectNode, frame: blurFrame)
             topBackgroundEdgeEffectNode.update(
                 rect: blurFrame,
-                edge: WallpaperEdgeEffectEdge(edge: .top, size: 100.0),
-                blur: false,
+                edge: WallpaperEdgeEffectEdge(edge: .top, size: 80.0),
+                alpha: edgeEffectAlpha,
+                blur: true,
                 containerSize: wallpaperBounds.size,
                 transition: transition
             )
@@ -2851,6 +2854,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         transition.updateFrame(node: self.inputPanelBackgroundNode, frame: apparentInputBackgroundFrame, beginWithCurrentState: true)
         
         if let headerPanelsComponentView = self.headerPanelsView?.view, let headerPanelsSize {
+            sidePanelTopInset += 8.0
             let headerPanelsFrame = CGRect(origin: CGPoint(x: layout.safeInsets.left, y: sidePanelTopInset), size: headerPanelsSize)
             var headerPanelsTransition = ComponentTransition(transition)
             if headerPanelsComponentView.superview == nil {
@@ -2929,24 +2933,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 size: CGSize(
                     width: apparentNavigateButtonsFrame.maxX,
                     height: apparentNavigateButtonsFrame.maxY
-                )
-            )
-        )
-        //
-        
-        // Nicegram ChatBanner
-        let bannerHeight = ChatBannerTgHelper.bannerHeight
-        
-        transition.updateFrame(
-            node: self.ngBannerNode,
-            frame: CGRect(
-                origin: CGPoint(
-                    x: 0,
-                    y: apparentNavigateButtonsFrame.maxY - bannerHeight
-                ),
-                size: CGSize(
-                    width: layout.size.width,
-                    height: bannerHeight
                 )
             )
         )
@@ -3833,7 +3819,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             let updateInputTextState = self.chatPresentationInterfaceState.interfaceState.effectiveInputState != chatPresentationInterfaceState.interfaceState.effectiveInputState
             self.chatPresentationInterfaceState = chatPresentationInterfaceState
             
-            self.navigateButtons.update(theme: chatPresentationInterfaceState.theme, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat, backgroundNode: self.backgroundNode)
+            self.navigateButtons.update(theme: chatPresentationInterfaceState.theme, preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat, backgroundNode: self.backgroundNode)
             
             if themeUpdated {
                 if case let .color(color) = self.chatPresentationInterfaceState.chatWallpaper, UIColor(rgb: color).isEqual(self.chatPresentationInterfaceState.theme.chat.inputPanel.panelBackgroundColorNoWallpaper) {
@@ -3879,37 +3865,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             }
             
-            // Nicegram
-            let contentSettings = context.currentContentSettings.with { $0 }
-            var showUnblockButton: Bool = false
-            if (restrictionText != chatPresentationInterfaceState.strings.Channel_ErrorAccessDenied || restrictionText != chatPresentationInterfaceState.strings.Group_ErrorAccessDenied) {
-                let peer = chatPresentationInterfaceState.renderedPeer?.peer
-                if (isAllowedChat(peer: peer, contentSettings: contentSettings)) {
-                    restrictionText = nil
-                } else if restrictionText != nil {
-                    if let peer, !peer.unblockRequiresAnotherPhoneNumber(contentSettings: contentSettings) {
-                        showUnblockButton = true
-                        AppCache.lastSeenBlockedChatId = peer.id.id._internalGetInt64Value()
-                    }
-                }
-            }
-            
-            if restrictionText == nil {
-                if isNGForceBlocked(chatPresentationInterfaceState.renderedPeer?.peer) {
-                    restrictionText = l("NGWeb.Blocked")
-                }
-            }
-            
-            if hideUnblock {
-                showUnblockButton = false
-            }
-            
-            // Nicegram ChatBanner
-            if #available(iOS 15.0, *) {
-                updateNgBannerVisibility()
-            }
-            //
-            
             if let restrictionText = restrictionText {
                 if self.restrictedNode == nil {
                     let restrictedNode = ChatRecentActionsEmptyNode(theme: chatPresentationInterfaceState.theme, chatWallpaper: chatPresentationInterfaceState.chatWallpaper, chatBubbleCorners: chatPresentationInterfaceState.bubbleCorners, hasIcon: false)
@@ -3917,18 +3872,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     self.restrictedNode = restrictedNode
                 }
                 self.restrictedNode?.setup(title: "", text: processedPeerRestrictionText(restrictionText))
-                // Nicegram Unblock
-                if showUnblockButton {
-                    self.restrictedNode?.setupButton(
-                        title: l("NicegramSettings.Unblock.Header"),
-                        handler: {
-                            UIApplication.shared.open(nicegramUnblockUrl)
-                        }
-                    )
-                } else {
-                    self.restrictedNode?.setupButton(title: nil, handler: nil)
-                }
-                //
                 self.historyNodeContainer.isHidden = true
                 self.navigateButtons.isHidden = true
                 self.loadingNode.isHidden = true
@@ -5058,7 +5001,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
                 
                 var targetThreadId: Int64?
-                if self.chatLocation.threadId == nil, let user = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.isForum {
+                if self.chatLocation.threadId == nil, let user = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum), botInfo.flags.contains(.forumManagedByUser) {
                     if let message = messages.first {
                         switch message {
                         case let .message(_, _, _, _, _, replyToMessageId, _, _, _, _):

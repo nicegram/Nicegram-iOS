@@ -1322,6 +1322,8 @@ public final class ChatListNode: ListView {
     }
     
     public var contentOffsetChanged: ((ListViewVisibleContentOffset) -> Void)?
+    public private(set) var pinnedScrollFraction: CGFloat = 0.0
+    public var pinnedHeaderDisplayFractionUpdated: ((ContainedViewLayoutTransition) -> Void)?
     public var contentScrollingEnded: ((ListView) -> Bool)?
     public var didBeginInteractiveDragging: ((ListView) -> Void)?
     
@@ -1834,10 +1836,10 @@ public final class ChatListNode: ListView {
             } else {
                 self.push?(NewSessionInfoScreen(context: self.context, newSessionReview: newSessionReview))
                 
-                //#if DEBUG
-                //#else
+                #if DEBUG
+                #else
                 let _ = self.context.engine.privacy.terminateAnotherSession(id: newSessionReview.id).startStandalone()
-                //#endif
+                #endif
             }
         }, openChatFolderUpdates: { [weak self] in
             guard let self else {
@@ -3095,7 +3097,6 @@ public final class ChatListNode: ListView {
                 return .single(false)
             }
         }
-        var startedScrollingWithCanExpandHiddenItems = false
         
         self.beganInteractiveDragging = { [weak self] _ in
             guard let strongSelf = self else {
@@ -3106,12 +3107,6 @@ public final class ChatListNode: ListView {
                 strongSelf.startedScrollingAtUpperBound = false
             case let .known(value):
                 strongSelf.startedScrollingAtUpperBound = value <= 0.001
-            }
-            
-            if let canExpandHiddenItems = strongSelf.canExpandHiddenItems {
-                startedScrollingWithCanExpandHiddenItems = canExpandHiddenItems()
-            } else {
-                startedScrollingWithCanExpandHiddenItems = true
             }
             
             if strongSelf.currentState.peerIdWithRevealedOptions != nil {
@@ -3157,7 +3152,7 @@ public final class ChatListNode: ListView {
             }
         })
         
-        self.visibleContentOffsetChanged = { [weak self] offset in
+        self.visibleContentOffsetChanged = { [weak self] offset, transition in
             guard let strongSelf = self else {
                 return
             }
@@ -3165,21 +3160,35 @@ public final class ChatListNode: ListView {
                 return
             }
             let atTop: Bool
-            var revealHiddenItems: Bool = false
             switch offset {
-                case .none, .unknown:
-                    atTop = false
-                case let .known(value):
+            case .none, .unknown:
+                atTop = false
+            case let .known(value):
                 atTop = value <= -strongSelf.tempTopInset
-                    if strongSelf.startedScrollingAtUpperBound && startedScrollingWithCanExpandHiddenItems && strongSelf.isTracking {
-                        revealHiddenItems = value <= -strongSelf.tempTopInset - 60.0
-                    }
             }
             strongSelf.scrolledAtTopValue = atTop
-            strongSelf.contentOffsetChanged?(offset)
-            if revealHiddenItems && !strongSelf.currentState.hiddenItemShouldBeTemporaryRevealed {
-                //strongSelf.revealScrollHiddenItem()
+            
+            var maxPinnedOffset: CGFloat = 0.0
+            strongSelf.forEachItemNode { itemNode in
+                if let itemNode = itemNode as? ChatListItemNode, let item = itemNode.item {
+                    if item.isPinned {
+                        maxPinnedOffset = max(maxPinnedOffset, itemNode.frame.maxY)
+                    }
+                }
             }
+            maxPinnedOffset = max(0.0, maxPinnedOffset)
+            var pinnedScrollFraction = 1.0
+            if strongSelf.insets.top == 0.0 {
+                pinnedScrollFraction = 0.0
+            } else {
+                if maxPinnedOffset < strongSelf.insets.top {
+                    pinnedScrollFraction = maxPinnedOffset / strongSelf.insets.top
+                }
+            }
+            
+            strongSelf.contentOffsetChanged?(offset)
+            strongSelf.pinnedScrollFraction = pinnedScrollFraction
+            strongSelf.pinnedHeaderDisplayFractionUpdated?(transition)
         }
         
         self.dynamicVisualInsets = { [weak self] in
@@ -3417,8 +3426,12 @@ public final class ChatListNode: ListView {
                                 default:
                                     continue
                                 }
-                                if case let .index(index) = transition.chatListView.filteredEntries[entryCount - 1 - i].sortIndex, case let .chatList(chatListIndex) = index, chatListIndex.pinningIndex != nil {
-                                    pinnedOverscroll = true
+                                if case let .index(index) = transition.chatListView.filteredEntries[entryCount - 1 - i].sortIndex {
+                                    if case let .chatList(chatListIndex) = index, chatListIndex.pinningIndex != nil {
+                                        pinnedOverscroll = true
+                                    } else if case let .forum(pinnedIndex, _, _, _, _) = index, case .index = pinnedIndex {
+                                        pinnedOverscroll = true
+                                    }
                                 }
                             }
                         }

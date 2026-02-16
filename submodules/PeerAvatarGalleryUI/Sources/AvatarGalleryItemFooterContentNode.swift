@@ -175,7 +175,7 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
         }
     }
     
-    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
+    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> LayoutInfo {
         self.validLayout = (size, metrics, leftInset, rightInset, bottomInset, contentInset)
         
         let width = size.width
@@ -203,7 +203,7 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
         let mainButtonSize = self.setMainButton.measure(constrainedSize)
         self.setMainButton.frame = CGRect(origin: CGPoint(x: floor((width - mainButtonSize.width) / 2.0), y: panelHeight - bottomInset - 44.0 + floor((44.0 - mainButtonSize.height) / 2.0)), size: mainButtonSize)
         
-        return panelHeight
+        return LayoutInfo(height: panelHeight, needsShadow: false)
     }
     
     override func animateIn(fromHeight: CGFloat, previousContentNode: GalleryFooterContentNode, transition: ContainedViewLayoutTransition) {

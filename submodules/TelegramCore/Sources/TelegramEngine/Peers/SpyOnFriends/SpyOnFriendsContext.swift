@@ -123,18 +123,18 @@ private final class SpyOnFriendsContextImpl {
                 
                 if peerId == self.account.peerId {
                     switch inputUser {
-                    case let .inputUser(_, accessHash):
+                    case let .inputUser(inputUser):
                         return fetchChatList(
                             accountPeerId: peerId,
                             postbox: account.postbox,
                             network: account.network,
                             location: .general,
                             upperBound: .absoluteUpperBound(),
-                            hash: accessHash,
+                            hash: inputUser.accessHash,
                             limit: self.limit
                         )
                         |> map { result in
-                            Api.messages.Chats.chats(chats: result?.peers.chats.map { $0.value } ?? [])
+                            Api.messages.Chats.chats(.init(chats: result?.peers.chats.map { $0.value } ?? []))
                         }
                     default:
                         return .single(nil)
@@ -162,9 +162,9 @@ private final class SpyOnFriendsContextImpl {
                     var resultChats: [Api.Chat]
                     switch result {
                     case let .chats(chats):
-                        resultChats = chats
-                    case let .chatsSlice(_, chats):
-                        resultChats = chats
+                        resultChats = chats.chats
+                    case let .chatsSlice(chatsSlice):
+                        resultChats = chatsSlice.chats
                     }
                     self.commonChats.append(contentsOf: resultChats)
 
@@ -235,10 +235,10 @@ private final class SpyOnFriendsContextImpl {
 public extension Api.Chat {
     var title: String? {
         switch self {
-        case let .channel(_, _, _, _, title, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _):
-            return title
-        case let .chat(_, _, title, _, _, _, _, _, _, _):
-            return title
+        case let .channel(channel):
+            return channel.title
+        case let .chat(chat):
+            return chat.title
         default: return nil
         }
     }

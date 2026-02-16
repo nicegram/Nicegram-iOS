@@ -222,7 +222,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                 if let backgroundContainer = self.backgroundContainer {
                     backgroundContainer.contentView.addSubview(titleView)
                 } else {
-                    self.buttonsContainerNode.view.addSubview(titleView)
+                    self.buttonsContainerNode.view.insertSubview(titleView, at: 0)
                 }
             }
             
@@ -550,8 +550,8 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
 
     public let backgroundNode: NavigationBackgroundNode
     
-    private var leftButtonsBackgroundView: (background: GlassBackgroundView, container: UIView)?
-    private var rightButtonsBackgroundView: (background: GlassBackgroundView, container: UIView)?
+    private var leftButtonsBackgroundView: (background: GlassContextExtractableContainer, container: UIView)?
+    private var rightButtonsBackgroundView: (background: GlassContextExtractableContainer, container: UIView)?
     
     private let backButtonNodeImpl: NavigationButtonNodeImpl
     public var backButtonNode: NavigationButtonNode {
@@ -653,6 +653,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         
         if case .glass = presentationData.theme.style {
             let edgeEffectView = EdgeEffectView()
+            edgeEffectView.isUserInteractionEnabled = false
             self.edgeEffectView = edgeEffectView
             self.view.addSubview(edgeEffectView)
             
@@ -662,12 +663,12 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
             
             backgroundContainer.contentView.addSubview(self.customOverBackgroundContentView)
             
-            let leftButtonsBackgroundView: (background: GlassBackgroundView, container: UIView) = (GlassBackgroundView(), UIView())
+            let leftButtonsBackgroundView: (background: GlassContextExtractableContainer, container: UIView) = (GlassContextExtractableContainer(), UIView())
             leftButtonsBackgroundView.background.contentView.addSubview(leftButtonsBackgroundView.container)
             self.leftButtonsBackgroundView = leftButtonsBackgroundView
             backgroundContainer.contentView.addSubview(leftButtonsBackgroundView.background)
             
-            let rightButtonsBackgroundView: (background: GlassBackgroundView, container: UIView) = (GlassBackgroundView(), UIView())
+            let rightButtonsBackgroundView: (background: GlassContextExtractableContainer, container: UIView) = (GlassContextExtractableContainer(), UIView())
             rightButtonsBackgroundView.background.contentView.addSubview(rightButtonsBackgroundView.container)
             self.rightButtonsBackgroundView = rightButtonsBackgroundView
             backgroundContainer.contentView.addSubview(rightButtonsBackgroundView.background)
@@ -814,10 +815,13 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                 edgeEffectView.isHidden = true
             } else {
                 edgeEffectView.isHidden = false
-                let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: -20.0), size: CGSize(width: size.width, height: size.height + additionalBackgroundHeight + 20.0 + 20.0))
+                
+                let edgeEffectHeight: CGFloat = size.height + additionalBackgroundHeight + 24.0
+                
+                let edgeEffectFrame = CGRect(origin: CGPoint(x: 0.0, y: -20.0), size: CGSize(width: size.width, height: 20.0 + edgeEffectHeight))
                 transition.updatePosition(layer: edgeEffectView.layer, position: edgeEffectFrame.center)
                 transition.updateBounds(layer: edgeEffectView.layer, bounds: CGRect(origin: CGPoint(), size: edgeEffectFrame.size))
-                edgeEffectView.update(content: self.presentationData.theme.edgeEffectColor ?? .white, blur: true, rect: CGRect(origin: CGPoint(), size: edgeEffectFrame.size), edge: .top, edgeSize: 50.0, transition: ComponentTransition(transition))
+                edgeEffectView.update(content: self.presentationData.theme.edgeEffectColor ?? .white, blur: true, rect: CGRect(origin: CGPoint(), size: edgeEffectFrame.size), edge: .top, edgeSize: min(64.0, edgeEffectHeight), transition: ComponentTransition(transition))
             }
         }
         
@@ -971,7 +975,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
             leftButtonsBackgroundTransition.setBounds(view: leftButtonsBackgroundView.background, bounds: CGRect(origin: CGPoint(), size: leftButtonsBackgroundFrame.size))
             leftButtonsBackgroundTransition.setFrame(view: leftButtonsBackgroundView.container, frame: CGRect(origin: CGPoint(), size: leftButtonsBackgroundFrame.size))
             ComponentTransition(transition).setAlpha(view: leftButtonsBackgroundView.background, alpha: leftButtonsWidth == 0.0 ? 0.0 : 1.0)
-            leftButtonsBackgroundView.background.update(size: leftButtonsBackgroundFrame.size, cornerRadius: leftButtonsBackgroundFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.presentationData.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, isVisible: leftButtonsWidth != 0.0, transition: leftButtonsBackgroundTransition)
+            leftButtonsBackgroundView.background.update(size: leftButtonsBackgroundFrame.size, cornerRadius: leftButtonsBackgroundFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: self.presentationData.theme.glassStyle == .clear ? .clear : .panel), isInteractive: true, isVisible: leftButtonsWidth != 0.0, transition: leftButtonsBackgroundTransition)
         }
         
         if let rightButtonsBackgroundView = self.rightButtonsBackgroundView {
@@ -998,9 +1002,17 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                 }
                 
                 rightButtonsBackgroundView.background.isHidden = false
-                rightButtonsBackgroundView.background.update(size: rightButtonsBackgroundFrame.size, cornerRadius: rightButtonsBackgroundFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.presentationData.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), isInteractive: true, transition: rightButtonsBackgroundTransition)
+                rightButtonsBackgroundView.background.update(size: rightButtonsBackgroundFrame.size, cornerRadius: rightButtonsBackgroundFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: self.presentationData.theme.glassStyle == .clear ? .clear : .panel), isInteractive: true, transition: rightButtonsBackgroundTransition)
             } else {
                 rightButtonsBackgroundView.background.isHidden = true
+            }
+        }
+        
+        if (leftTitleInset == leftInset) != (rightTitleInset == rightInset) {
+            if rightTitleInset == rightInset {
+                rightTitleInset = leftTitleInset
+            } else if leftTitleInset == leftInset {
+                leftTitleInset = rightTitleInset
             }
         }
         
@@ -1060,6 +1072,16 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         if let edgeEffectView = self.edgeEffectView {
             transition.updateTransform(layer: edgeEffectView.layer, transform: CATransform3DMakeTranslation(0.0, max(0.0, min(20.0, self.edgeEffectExtension)), 0.0))
         }
+    }
+    
+    public func navigationButtonContextContainer(sourceView: UIView) -> ContextExtractableContainer? {
+        if let leftButtonsBackgroundView = self.leftButtonsBackgroundView, sourceView.isDescendant(of: leftButtonsBackgroundView.background) {
+            return leftButtonsBackgroundView.background
+        }
+        if let rightButtonsBackgroundView = self.rightButtonsBackgroundView, sourceView.isDescendant(of: rightButtonsBackgroundView.background) {
+            return rightButtonsBackgroundView.background
+        }
+        return nil
     }
     
     public var intrinsicCanTransitionInline: Bool = true

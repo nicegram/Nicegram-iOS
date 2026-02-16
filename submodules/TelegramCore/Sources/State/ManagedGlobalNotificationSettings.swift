@@ -120,7 +120,8 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
         }
         let chatsSettings: MessageNotificationSettings
         switch chats {
-        case let .peerNotifySettings(_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound):
+        case let .peerNotifySettings(peerNotifySettingsData):
+            let (_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound) = (peerNotifySettingsData.flags, peerNotifySettingsData.showPreviews, peerNotifySettingsData.silent, peerNotifySettingsData.muteUntil, peerNotifySettingsData.iosSound, peerNotifySettingsData.androidSound, peerNotifySettingsData.otherSound, peerNotifySettingsData.storiesMuted, peerNotifySettingsData.storiesHideSender, peerNotifySettingsData.storiesIosSound, peerNotifySettingsData.storiesAndroidSound, peerNotifySettingsData.storiesOtherSound)
             let sound: Api.NotificationSound?
             let storiesSound: Api.NotificationSound?
             #if os(iOS)
@@ -130,7 +131,7 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
             sound = desktopSound
             storiesSound = storiesDesktopSound
             #endif
-            
+
             let enabled: Bool
             if muteUntil != nil && muteUntil != 0 {
                 enabled = false
@@ -143,21 +144,21 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
             } else {
                 displayPreviews = true
             }
-            
+
             let storiesMutedValue: PeerStoryNotificationSettings.Mute
             if let storiesMuted = storiesMuted {
                 storiesMutedValue = storiesMuted == .boolTrue ? .muted : .unmuted
             } else {
                 storiesMutedValue = .default
             }
-            
+
             var storiesHideSenderValue: PeerStoryNotificationSettings.HideSender
             if let storiesHideSender = storiesHideSender {
                 storiesHideSenderValue = storiesHideSender == .boolTrue ? .hide : .show
             } else {
                 storiesHideSenderValue = .default
             }
-            
+
             chatsSettings = MessageNotificationSettings(
                 enabled: enabled,
                 displayPreviews: displayPreviews,
@@ -172,7 +173,8 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
         
         let userSettings: MessageNotificationSettings
         switch users {
-        case let .peerNotifySettings(_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound):
+        case let .peerNotifySettings(peerNotifySettingsData):
+            let (_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound) = (peerNotifySettingsData.flags, peerNotifySettingsData.showPreviews, peerNotifySettingsData.silent, peerNotifySettingsData.muteUntil, peerNotifySettingsData.iosSound, peerNotifySettingsData.androidSound, peerNotifySettingsData.otherSound, peerNotifySettingsData.storiesMuted, peerNotifySettingsData.storiesHideSender, peerNotifySettingsData.storiesIosSound, peerNotifySettingsData.storiesAndroidSound, peerNotifySettingsData.storiesOtherSound)
             let sound: Api.NotificationSound?
             let storiesSound: Api.NotificationSound?
             #if os(iOS)
@@ -182,7 +184,7 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
             sound = desktopSound
             storiesSound = storiesDesktopSound
             #endif
-            
+
             let enabled: Bool
             if muteUntil != nil && muteUntil != 0 {
                 enabled = false
@@ -195,21 +197,21 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
             } else {
                 displayPreviews = true
             }
-            
+
             let storiesMutedValue: PeerStoryNotificationSettings.Mute
             if let storiesMuted = storiesMuted {
                 storiesMutedValue = storiesMuted == .boolTrue ? .muted : .unmuted
             } else {
                 storiesMutedValue = .default
             }
-            
+
             var storiesHideSenderValue: PeerStoryNotificationSettings.HideSender
             if let storiesHideSender = storiesHideSender {
                 storiesHideSenderValue = storiesHideSender == .boolTrue ? .hide : .show
             } else {
                 storiesHideSenderValue = .default
             }
-            
+
             userSettings = MessageNotificationSettings(
                 enabled: enabled,
                 displayPreviews: displayPreviews,
@@ -224,7 +226,8 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
         
         let channelSettings: MessageNotificationSettings
         switch channels {
-        case let .peerNotifySettings(_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound):
+        case let .peerNotifySettings(peerNotifySettingsData):
+            let (_, showPreviews, _, muteUntil, iosSound, _, desktopSound, storiesMuted, storiesHideSender, storiesIosSound, _, storiesDesktopSound) = (peerNotifySettingsData.flags, peerNotifySettingsData.showPreviews, peerNotifySettingsData.silent, peerNotifySettingsData.muteUntil, peerNotifySettingsData.iosSound, peerNotifySettingsData.androidSound, peerNotifySettingsData.otherSound, peerNotifySettingsData.storiesMuted, peerNotifySettingsData.storiesHideSender, peerNotifySettingsData.storiesIosSound, peerNotifySettingsData.storiesAndroidSound, peerNotifySettingsData.storiesOtherSound)
             let sound: Api.NotificationSound?
             let storiesSound: Api.NotificationSound?
             #if os(iOS)
@@ -234,7 +237,7 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
             sound = desktopSound
             storiesSound = storiesDesktopSound
             #endif
-            
+
             let enabled: Bool
             if muteUntil != nil && muteUntil != 0 {
                 enabled = false
@@ -247,21 +250,21 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
             } else {
                 displayPreviews = true
             }
-            
+
             let storiesMutedValue: PeerStoryNotificationSettings.Mute
             if let storiesMuted = storiesMuted {
                 storiesMutedValue = storiesMuted == .boolTrue ? .muted : .unmuted
             } else {
                 storiesMutedValue = .default
             }
-            
+
             var storiesHideSenderValue: PeerStoryNotificationSettings.HideSender
             if let storiesHideSender = storiesHideSender {
                 storiesHideSenderValue = storiesHideSender == .boolTrue ? .hide : .show
             } else {
                 storiesHideSenderValue = .default
             }
-            
+
             channelSettings = MessageNotificationSettings(
                 enabled: enabled,
                 displayPreviews: displayPreviews,
@@ -276,7 +279,8 @@ private func fetchedNotificationSettings(network: Network) -> Signal<GlobalNotif
         
         let reactionSettings: PeerReactionNotificationSettings
         switch reactions {
-        case let .reactionsNotifySettings(_, messagesNotifyFrom, storiesNotifyFrom, sound, showPreviews):
+        case let .reactionsNotifySettings(reactionsNotifySettingsData):
+            let (_, messagesNotifyFrom, storiesNotifyFrom, sound, showPreviews) = (reactionsNotifySettingsData.flags, reactionsNotifySettingsData.messagesNotifyFrom, reactionsNotifySettingsData.storiesNotifyFrom, reactionsNotifySettingsData.sound, reactionsNotifySettingsData.showPreviews)
             let mappedMessages: PeerReactionNotificationSettings.Sources
             if let messagesNotifyFrom {
                 switch messagesNotifyFrom {
@@ -361,7 +365,7 @@ private func apiInputPeerNotifySettings(_ settings: MessageNotificationSettings)
         flags |= (1 << 8)
     }
     
-    return .inputPeerNotifySettings(flags: flags, showPreviews: settings.displayPreviews ? .boolTrue : .boolFalse, silent: nil, muteUntil: muteUntil, sound: sound, storiesMuted: storiesMuted, storiesHideSender: storiesHideSender, storiesSound: storiesSound)
+    return .inputPeerNotifySettings(.init(flags: flags, showPreviews: settings.displayPreviews ? .boolTrue : .boolFalse, silent: nil, muteUntil: muteUntil, sound: sound, storiesMuted: storiesMuted, storiesHideSender: storiesHideSender, storiesSound: storiesSound))
 }
 
 private func pushedNotificationSettings(network: Network, settings: GlobalNotificationSettingsSet) -> Signal<Void, NoError> {
@@ -413,13 +417,13 @@ private func pushedNotificationSettings(network: Network, settings: GlobalNotifi
         reactionFlags |= 1 << 1
     }
     
-    let inputReactionSettings: Api.ReactionsNotifySettings = .reactionsNotifySettings(
+    let inputReactionSettings: Api.ReactionsNotifySettings = .reactionsNotifySettings(.init(
         flags: reactionFlags,
         messagesNotifyFrom: reactionsMessages,
         storiesNotifyFrom: reactionsStories,
         sound: settings.reactionSettings.sound.apiSound,
         showPreviews: settings.reactionSettings.hideSender == .hide ? .boolFalse : .boolTrue
-    )
+    ))
     let pushedReactions = network.request(Api.functions.account.setReactionsNotifySettings(settings: inputReactionSettings))
     |> map(Optional.init)
     |> `catch` { _ -> Signal<Api.ReactionsNotifySettings?, NoError> in

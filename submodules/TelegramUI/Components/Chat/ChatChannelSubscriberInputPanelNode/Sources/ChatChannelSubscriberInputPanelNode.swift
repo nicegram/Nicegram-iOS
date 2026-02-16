@@ -492,6 +492,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             transition: ComponentTransition(transition),
             component: AnyComponent(GlassControlPanelComponent(
                 theme: interfaceState.theme,
+                preferClearGlass: interfaceState.preferredGlassType == .clear,
                 leftItem: leftPanelItems.isEmpty ? nil : GlassControlPanelComponent.Item(
                     items: leftPanelItems,
                     background: .panel
@@ -512,120 +513,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
             transition.updateFrame(view: self.panelContainer, frame: panelFrame)
             transition.updateFrame(view: panelView, frame: CGRect(origin: CGPoint(), size: panelFrame.size))
         }
-        
-        /*if self.presentationInterfaceState != interfaceState || force {
-            let previousState = self.presentationInterfaceState
-            self.presentationInterfaceState = interfaceState
-            
-            if previousState?.theme !== interfaceState.theme {
-                self.helpButtonIconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/Help"), color: .white)?.withRenderingMode(.alwaysTemplate)
-                self.helpButtonIconView.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
-                
-                self.suggestedPostButtonIconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/SuggestPost"), color: .white)?.withRenderingMode(.alwaysTemplate)
-                self.suggestedPostButtonIconView.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
-                
-                self.giftButtonIconView.image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/Gift"), color: .white)?.withRenderingMode(.alwaysTemplate)
-                self.giftButtonIconView.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
-            }
-            
-            if let context = self.context, let peer = interfaceState.renderedPeer?.peer, previousState?.renderedPeer?.peer == nil || !peer.isEqual(previousState!.renderedPeer!.peer!) || previousState?.theme !== interfaceState.theme || previousState?.strings !== interfaceState.strings || previousState?.peerIsMuted != interfaceState.peerIsMuted || previousState?.pinnedMessage != interfaceState.pinnedMessage || force {
-                
-                if let action = actionForPeer(context: context, peer: peer, interfaceState: interfaceState, isJoining: self.isJoining, isMuted: interfaceState.peerIsMuted) {
-                    let previousAction = self.action
-                    self.action = action
-                    let (title, _) = titleAndColorForAction(action, theme: interfaceState.theme, strings: interfaceState.strings)
-                    
-                    let _ = previousAction
-                    
-                    let titleColor: UIColor
-                    if case .join = self.action {
-                        titleColor = interfaceState.theme.chat.inputPanel.actionControlForegroundColor
-                    } else {
-                        titleColor = interfaceState.theme.chat.inputPanel.panelControlColor
-                    }
-                    self.buttonTitle.attributedText = NSAttributedString(string: title, font: Font.semibold(15.0), textColor: titleColor)
-                    self.buttonTintTitle.attributedText = NSAttributedString(string: title, font: Font.semibold(15.0), textColor: .black)
-                    self.button.accessibilityLabel = title
-                } else {
-                    self.action = nil
-                }
-            }
-        }
-        
-        let panelHeight = defaultHeight(metrics: metrics)
-        
-        if let peer = interfaceState.renderedPeer?.peer as? TelegramChannel {
-            if case let .broadcast(broadcastInfo) = peer.info, interfaceState.starGiftsAvailable {
-                if self.giftButton.isHidden && !isFirstTime {
-                    self.giftButton.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-                    self.giftButton.layer.animateScale(from: 0.01, to: 1.0, duration: 0.2)
-                }
-                
-                self.giftButtonBackgroundView.isHidden = false
-                self.helpButtonBackgroundView.isHidden = true
-                self.suggestedPostButtonBackgroundView.isHidden = !broadcastInfo.flags.contains(.hasMonoforum)
-                self.presentGiftOrSuggestTooltip()
-            } else if case let .broadcast(broadcastInfo) = peer.info, broadcastInfo.flags.contains(.hasMonoforum) {
-                self.giftButtonBackgroundView.isHidden = true
-                self.helpButtonBackgroundView.isHidden = true
-                self.suggestedPostButtonBackgroundView.isHidden = false
-                self.presentGiftOrSuggestTooltip()
-            } else if peer.flags.contains(.isGigagroup), self.action == .muteNotifications || self.action == .unmuteNotifications {
-                self.giftButtonBackgroundView.isHidden = true
-                self.helpButtonBackgroundView.isHidden = false
-                self.suggestedPostButtonBackgroundView.isHidden = true
-            } else {
-                self.giftButtonBackgroundView.isHidden = true
-                self.helpButtonBackgroundView.isHidden = true
-                self.suggestedPostButtonBackgroundView.isHidden = true
-            }
-        } else {
-            self.giftButtonBackgroundView.isHidden = true
-            self.helpButtonBackgroundView.isHidden = true
-            self.suggestedPostButtonBackgroundView.isHidden = true
-        }
-        
-        let buttonTitleSize = self.buttonTitle.updateLayout(CGSize(width: width, height: panelHeight))
-        let _ = self.buttonTintTitle.updateLayout(CGSize(width: width, height: panelHeight))
-        let buttonSize = CGSize(width: buttonTitleSize.width + 16.0 * 2.0, height: 40.0)
-        let buttonFrame = CGRect(origin: CGPoint(x: floor((width - buttonSize.width) / 2.0), y: floor((panelHeight - buttonSize.height) * 0.5)), size: buttonSize)
-        transition.updateFrame(view: self.buttonBackgroundView, frame: buttonFrame)
-        transition.updateFrame(view: self.button, frame: CGRect(origin: CGPoint(), size: buttonFrame.size))
-        let buttonTintColor: GlassBackgroundView.TintColor
-        if case .join = self.action {
-            buttonTintColor = .init(kind: .custom, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7), innerColor: interfaceState.theme.chat.inputPanel.actionControlFillColor)
-        } else {
-            buttonTintColor = .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7))
-        }
-        self.buttonBackgroundView.update(size: buttonFrame.size, cornerRadius: buttonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: buttonTintColor, isInteractive: true, transition: ComponentTransition(transition))
-         // Nicegram ATT, buttonTitleWithClaimSize
-        self.buttonTitle.frame = CGRect(origin: CGPoint(x: floor((buttonFrame.width - buttonTitleWithClaimSize.width) * 0.5), y: floor((buttonFrame.height - buttonTitleSize.height) * 0.5)), size: buttonTitleSize)
-        self.buttonTintTitle.frame = self.buttonTitle.frame
-        
-        let giftButtonFrame = CGRect(x: width - rightInset - 40.0 - 8.0, y: floor((panelHeight - 40.0) * 0.5), width: 40.0, height: 40.0)
-        transition.updateFrame(view: self.giftButtonBackgroundView, frame: giftButtonFrame)
-        if let image = self.giftButtonIconView.image {
-            transition.updateFrame(view: self.giftButtonIconView, frame: image.size.centered(in: CGRect(origin: CGPoint(), size: giftButtonFrame.size)))
-        }
-        transition.updateFrame(view: self.giftButton, frame: CGRect(origin: CGPoint(), size: giftButtonFrame.size))
-        self.giftButtonBackgroundView.update(size: giftButtonFrame.size, cornerRadius: giftButtonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: true, transition: ComponentTransition(transition))
-        
-        let helpButtonFrame = CGRect(x: width - rightInset - 8.0 - 40.0, y: floor((panelHeight - 40.0) * 0.5), width: 40.0, height: 40.0)
-        transition.updateFrame(view: self.helpButtonBackgroundView, frame: helpButtonFrame)
-        if let image = self.helpButtonIconView.image {
-            transition.updateFrame(view: self.helpButtonIconView, frame: image.size.centered(in: CGRect(origin: CGPoint(), size: helpButtonFrame.size)))
-        }
-        transition.updateFrame(view: self.helpButton, frame: CGRect(origin: CGPoint(), size: helpButtonFrame.size))
-        self.helpButtonBackgroundView.update(size: helpButtonFrame.size, cornerRadius: helpButtonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: true, transition: ComponentTransition(transition))
-        
-        let suggestedPostButtonFrame = CGRect(x: leftInset + 8.0, y: floor((panelHeight - 40.0) * 0.5), width: 40.0, height: 40.0)
-        transition.updateFrame(view: self.suggestedPostButtonBackgroundView, frame: suggestedPostButtonFrame)
-        if let image = self.suggestedPostButtonIconView.image {
-            transition.updateFrame(view: self.suggestedPostButtonIconView, frame: image.size.centered(in: CGRect(origin: CGPoint(), size: suggestedPostButtonFrame.size)))
-        }
-        transition.updateFrame(view: self.suggestedPostButton, frame: CGRect(origin: CGPoint(), size: suggestedPostButtonFrame.size))
-        self.suggestedPostButtonBackgroundView.update(size: suggestedPostButtonFrame.size, cornerRadius: suggestedPostButtonFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: interfaceState.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: true, transition: ComponentTransition(transition))*/
-        
+         
         return panelHeight
     }
     

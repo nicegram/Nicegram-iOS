@@ -305,6 +305,8 @@ public final class HorizontalTabsComponent: Component {
         private var tabSwitchFraction: CGFloat = 0.0
         private var isDraggingTabs: Bool = false
         private var temporaryLiftTimer: Foundation.Timer?
+        private var didTapOnAnItem: Bool = false
+        private var didTapOnAnItemTimer: Foundation.Timer?
         
         private var tapRecognizer: UITapGestureRecognizer?
         
@@ -531,6 +533,14 @@ public final class HorizontalTabsComponent: Component {
                 for (id, itemView) in self.itemViews {
                     if self.scrollView.convert(itemView.selectionFrame, to: self).contains(point) {
                         if let tab = component.tabs.first(where: { $0.id == id }) {
+                            self.didTapOnAnItem = true
+                            self.didTapOnAnItemTimer?.invalidate()
+                            self.didTapOnAnItemTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false, block: { [weak self] _ in
+                                guard let self else {
+                                    return
+                                }
+                                self.didTapOnAnItem = false
+                            })
                             tab.action()
                         }
                     }
@@ -609,7 +619,7 @@ public final class HorizontalTabsComponent: Component {
                     self.temporaryLiftTimer?.invalidate()
                     self.temporaryLiftTimer = nil
                     
-                    if !transition.animation.isImmediate {
+                    if !transition.animation.isImmediate && self.didTapOnAnItem {
                         self.temporaryLiftTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: { [weak self] _ in
                             guard let self else {
                                 return
@@ -626,6 +636,12 @@ public final class HorizontalTabsComponent: Component {
             
             self.component = component
             self.state = state
+            
+            self.didTapOnAnItem = false
+            if let didTapOnAnItemTimer = self.didTapOnAnItemTimer {
+                self.didTapOnAnItemTimer = nil
+                didTapOnAnItemTimer.invalidate()
+            }
             
             self.reorderingGesture?.isEnabled = component.isEditing
             

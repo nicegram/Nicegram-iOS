@@ -52,7 +52,7 @@ open class GalleryItemNode: ASDisplayNode {
         return .single("")
     }
     
-    open func titleView() -> Signal<UIView?, NoError> {
+    open func titleContent() -> Signal<GalleryTitleView.Content?, NoError> {
         return .single(nil)
     }
     

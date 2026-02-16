@@ -577,7 +577,7 @@ final class BusinessLinksSetupScreenComponent: Component {
                         ))
                         let items = ContextController.Items(content: .list(itemList))
                         
-                        let controller = ContextController(
+                        let controller = makeContextController(
                             presentationData: presentationData,
                             source: .extracted(BusineesLinkListContextExtractedContentSource(contentView: sourceView)), items: .single(items), recognizer: nil, gesture: gesture)
                         

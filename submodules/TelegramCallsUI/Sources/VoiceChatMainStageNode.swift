@@ -904,7 +904,7 @@ final class VoiceChatMainStageNode: ASDisplayNode {
                                 }
                                 strongSelf.setControlsHidden(true, animated: false)
                                 strongSelf.controlsHidden?(true)
-                                let pinchController = PinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
+                                let pinchController = makePinchController(sourceNode: sourceNode, getContentAreaInScreenSpace: {
                                     return UIScreen.main.bounds
                                 })
                                 strongSelf.context.sharedContext.mainWindow?.presentInGlobalOverlay(pinchController)

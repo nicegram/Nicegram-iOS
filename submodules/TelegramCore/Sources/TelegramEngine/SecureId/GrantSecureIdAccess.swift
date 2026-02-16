@@ -329,10 +329,10 @@ public func grantSecureIdAccess(network: Network, peerId: PeerId, publicKey: Str
     
     var valueHashes: [Api.SecureValueHash] = []
     for value in values {
-        valueHashes.append(.secureValueHash(type: apiSecureValueType(value: value.value), hash: Buffer(data: value.opaqueHash)))
+        valueHashes.append(.secureValueHash(.init(type: apiSecureValueType(value: value.value), hash: Buffer(data: value.opaqueHash))))
     }
     
-    return network.request(Api.functions.account.acceptAuthorization(botId: peerId.id._internalGetInt64Value(), scope: scope, publicKey: publicKey, valueHashes: valueHashes, credentials: .secureCredentialsEncrypted(data: Buffer(data: encryptedCredentialsData), hash: Buffer(data: decryptedCredentialsHash), secret: Buffer(data: encryptedSecretData))))
+    return network.request(Api.functions.account.acceptAuthorization(botId: peerId.id._internalGetInt64Value(), scope: scope, publicKey: publicKey, valueHashes: valueHashes, credentials: .secureCredentialsEncrypted(.init(data: Buffer(data: encryptedCredentialsData), hash: Buffer(data: decryptedCredentialsHash), secret: Buffer(data: encryptedSecretData)))))
     |> mapError { error -> GrantSecureIdAccessError in
         return .generic
     }

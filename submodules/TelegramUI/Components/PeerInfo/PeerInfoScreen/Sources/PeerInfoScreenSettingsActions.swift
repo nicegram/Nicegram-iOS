@@ -20,6 +20,7 @@ import PremiumUI
 import TelegramPresentationData
 import PresentationDataUtils
 import PasswordSetupUI
+import InstantPageCache
 
 extension PeerInfoScreenNode {
     func openSettings(section: PeerInfoSettingsSection) {
@@ -340,7 +341,16 @@ extension PeerInfoScreenNode {
     }
     //
 
+    func setupFaqIfNeeded() {
+        if !self.didSetCachedFaq {
+            self.cachedFaq.set(.single(nil) |> then(cachedFaqInstantPage(context: self.context) |> map(Optional.init)))
+            self.didSetCachedFaq = true
+        }
+    }
+    
     func openFaq(anchor: String? = nil) {
+        self.setupFaqIfNeeded()
+        
         let presentationData = self.presentationData
         let progressSignal = Signal<Never, NoError> { [weak self] subscriber in
             let controller = OverlayStatusController(theme: presentationData.theme, type: .loading(cancelled: nil))
@@ -356,6 +366,7 @@ extension PeerInfoScreenNode {
         let progressDisposable = progressSignal.start()
         
         let _ = (self.cachedFaq.get()
+        |> filter { $0 != nil }
         |> take(1)
         |> deliverOnMainQueue).start(next: { [weak self] resolvedUrl in
             progressDisposable.dispose()

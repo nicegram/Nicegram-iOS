@@ -6,8 +6,10 @@ import TelegramApi
 public extension PeerGeoLocation {
     init?(apiLocation: Api.ChannelLocation) {
         switch apiLocation {
-            case let .channelLocation(geopoint, address):
-                if case let .geoPoint(_, longitude, latitude, _, _) = geopoint {
+            case let .channelLocation(channelLocationData):
+                let (geopoint, address) = (channelLocationData.geoPoint, channelLocationData.address)
+                if case let .geoPoint(geoPointData) = geopoint {
+                    let (longitude, latitude) = (geoPointData.long, geoPointData.lat)
                     self.init(latitude: latitude, longitude: longitude, address: address)
                 } else {
                     return nil

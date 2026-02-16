@@ -11,7 +11,7 @@ import TextNodeWithEntities
 
 public protocol ChatInputTextNodeDelegate: AnyObject {
     func chatInputTextNodeDidUpdateText()
-    func chatInputTextNodeShouldReturn() -> Bool
+    func chatInputTextNodeShouldReturn(modifierFlags: UIKeyModifierFlags) -> Bool
     func chatInputTextNodeDidChangeSelection(dueToEditing: Bool)
     func chatInputTextNodeDidBeginEditing()
     func chatInputTextNodeDidFinishEditing()
@@ -1181,11 +1181,11 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
             }
             return self.customDelegate?.chatInputTextNodeShouldPaste() ?? true
         }
-        self.shouldReturn = { [weak self] in
+        self.shouldReturn = { [weak self] modifierFlags in
             guard let self else {
                 return true
             }
-            return self.customDelegate?.chatInputTextNodeShouldReturn() ?? true
+            return self.customDelegate?.chatInputTextNodeShouldReturn(modifierFlags: modifierFlags) ?? true
         }
         self.backspaceWhileEmpty = { [weak self] in
             guard let self else {

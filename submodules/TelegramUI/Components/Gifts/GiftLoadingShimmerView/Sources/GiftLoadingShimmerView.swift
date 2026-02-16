@@ -139,7 +139,7 @@ public final class GiftLoadingShimmerView: UIView {
     
     required init?(coder: NSCoder) { fatalError() }
     
-    public func update(size: CGSize, theme: PresentationTheme, showFilters: Bool = false, isPlain: Bool = false, transition: ContainedViewLayoutTransition) {
+    public func update(size: CGSize, theme: PresentationTheme, itemSize: CGSize? = nil, showFilters: Bool = false, isPlain: Bool = false, transition: ContainedViewLayoutTransition) {
         let backgroundColor = isPlain ? theme.list.itemBlocksBackgroundColor : theme.list.blocksBackgroundColor
         let color = theme.list.itemSecondaryTextColor.mixedWith(theme.list.blocksBackgroundColor, alpha: 0.85)
         
@@ -159,17 +159,17 @@ public final class GiftLoadingShimmerView: UIView {
                     let filterWidth = (size.width - sideInset * 2.0 - filterSpacing * 3.0) / 4.0
                     for i in 0 ..< 4 {
                         let rect = CGRect(origin: CGPoint(x: sideInset + (filterWidth + filterSpacing) * CGFloat(i), y: 0.0),
-                                          size: CGSize(width: filterWidth, height: 28.0))
-                        context.addPath(CGPath(roundedRect: rect, cornerWidth: 14.0, cornerHeight: 14.0, transform: nil))
+                                          size: CGSize(width: filterWidth, height: 36.0))
+                        context.addPath(CGPath(roundedRect: rect, cornerWidth: 36.0 * 0.5, cornerHeight: 36.0 * 0.5, transform: nil))
                     }
                 }
                 
-                var currentY: CGFloat = 52.0 + 7.0
+                var currentY: CGFloat = 52.0 + 16.0
                 var rowIndex: Int = 0
                 
                 let optionSpacing: CGFloat = 10.0
                 let optionWidth = (size.width - sideInset * 2.0 - optionSpacing * 2.0) / 3.0
-                let itemSize = CGSize(width: optionWidth, height: 154.0)
+                let itemSize = itemSize ?? CGSize(width: optionWidth, height: 154.0)
                 
                 context.setBlendMode(.copy)
                 context.setFillColor(UIColor.clear.cgColor)
@@ -178,10 +178,10 @@ public final class GiftLoadingShimmerView: UIView {
                     for i in 0 ..< 3 {
                         let itemOrigin = CGPoint(
                             x: sideInset + CGFloat(i) * (itemSize.width + optionSpacing),
-                            y: 39.0 + 9.0 + CGFloat(rowIndex) * (itemSize.height + optionSpacing)
+                            y: 39.0 + 13.0 + CGFloat(rowIndex) * (itemSize.height + optionSpacing)
                         )
                         context.addPath(CGPath(roundedRect: CGRect(origin: itemOrigin, size: itemSize),
-                                               cornerWidth: 10.0, cornerHeight: 10.0, transform: nil))
+                                               cornerWidth: 16.0, cornerHeight: 16.0, transform: nil))
                     }
                     currentY += itemSize.height
                     rowIndex += 1

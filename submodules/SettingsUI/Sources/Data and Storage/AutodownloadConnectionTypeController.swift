@@ -41,6 +41,23 @@ private enum AutodownloadMediaCategorySection: Int32 {
     case types
 }
 
+public enum AutodownloadMediaCategoryEntryTag: ItemListItemTag, Equatable {
+    case master
+    case usage
+    case photos
+    case stories
+    case videos
+    case files
+    
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? AutodownloadMediaCategoryEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private enum AutodownloadMediaCategoryEntry: ItemListNodeEntry {
     case master(PresentationTheme, String, Bool)
     case dataUsageHeader(PresentationTheme, String)
@@ -155,31 +172,31 @@ private enum AutodownloadMediaCategoryEntry: ItemListNodeEntry {
             case let .master(_, text, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: true, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.toggleMaster(value)
-                })
+                }, tag: AutodownloadMediaCategoryEntryTag.master)
             case let .dataUsageHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .dataUsageItem(theme, strings, value, customPosition, enabled):
                 return AutodownloadDataUsagePickerItem(theme: theme, strings: strings, systemStyle: .glass, value: value, customPosition: customPosition, enabled: enabled, sectionId: self.section, updated: { preset in
                     arguments.changePreset(preset)
-                })
+                }, tag: AutodownloadMediaCategoryEntryTag.usage)
             case let .typesHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .photos(_, text, value, enabled):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Photos")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.photo)
-                })
+                }, tag: AutodownloadMediaCategoryEntryTag.photos)
             case let .stories(_, text, value, enabled):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Stories")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.story)
-                })
+                }, tag: AutodownloadMediaCategoryEntryTag.stories)
             case let .videos(_, text, value, enabled):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Videos")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.video)
-                })
+                }, tag: AutodownloadMediaCategoryEntryTag.videos)
             case let .files(_, text, value, enabled):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Files")?.precomposed(), title: text, enabled: enabled, label: value, labelStyle: .detailText, sectionId: self.section, style: .blocks, action: {
                     arguments.customize(.file)
-                })
+                }, tag: AutodownloadMediaCategoryEntryTag.files)
             case let .voiceMessagesInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
         }
@@ -300,7 +317,7 @@ private func autodownloadMediaConnectionTypeControllerEntries(presentationData: 
     return entries
 }
 
-func autodownloadMediaConnectionTypeController(context: AccountContext, connectionType: AutomaticDownloadConnectionType) -> ViewController {
+func autodownloadMediaConnectionTypeController(context: AccountContext, connectionType: AutomaticDownloadConnectionType, focusOnItemTag: AutodownloadMediaCategoryEntryTag? = nil) -> ViewController {
     var pushControllerImpl: ((ViewController) -> Void)?
     
     let arguments = AutodownloadMediaConnectionTypeControllerArguments(toggleMaster: { value in
@@ -368,7 +385,7 @@ func autodownloadMediaConnectionTypeController(context: AccountContext, connecti
             }
             
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(title), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
-            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: autodownloadMediaConnectionTypeControllerEntries(presentationData: presentationData, connectionType: connectionType, settings: automaticMediaDownloadSettings), style: .blocks, emptyStateItem: nil, animateChanges: false)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: autodownloadMediaConnectionTypeControllerEntries(presentationData: presentationData, connectionType: connectionType, settings: automaticMediaDownloadSettings), style: .blocks, ensureVisibleItemTag: focusOnItemTag, emptyStateItem: nil, animateChanges: false)
             
             return (controllerState, (listState, arguments))
     }
@@ -379,5 +396,20 @@ func autodownloadMediaConnectionTypeController(context: AccountContext, connecti
             (controller.navigationController as? NavigationController)?.pushViewController(c)
         }
     }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
+    }
+    
     return controller
 }

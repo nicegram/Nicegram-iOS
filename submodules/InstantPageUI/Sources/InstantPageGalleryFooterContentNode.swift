@@ -106,7 +106,7 @@ final class InstantPageGalleryFooterContentNode: GalleryFooterContentNode {
         self.actionButton.isHidden = shareMedia == nil
     }
     
-    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> CGFloat {
+    override func updateLayout(size: CGSize, metrics: LayoutMetrics, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, contentInset: CGFloat, transition: ContainedViewLayoutTransition) -> LayoutInfo {
         let width = size.width
         var panelHeight: CGFloat = 44.0 + bottomInset + contentInset
         if !self.textNode.isHidden {
@@ -126,7 +126,7 @@ final class InstantPageGalleryFooterContentNode: GalleryFooterContentNode {
         
         self.actionButton.frame = CGRect(origin: CGPoint(x: leftInset, y: panelHeight - bottomInset - 44.0), size: CGSize(width: 44.0, height: 44.0))
         
-        return panelHeight
+        return LayoutInfo(height: panelHeight, needsShadow: false)
     }
     
     override func animateIn(fromHeight: CGFloat, previousContentNode: GalleryFooterContentNode, transition: ContainedViewLayoutTransition) {

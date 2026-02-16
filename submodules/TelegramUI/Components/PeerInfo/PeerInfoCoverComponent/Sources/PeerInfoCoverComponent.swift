@@ -119,6 +119,7 @@ public final class PeerInfoCoverComponent: Component {
     public let gradientCenter: CGPoint
     public let avatarTransitionFraction: CGFloat
     public let patternTransitionFraction: CGFloat
+    public let patternIconScale: CGFloat
     
     public init(
         context: AccountContext,
@@ -132,7 +133,8 @@ public final class PeerInfoCoverComponent: Component {
         gradientOnTop: Bool = false,
         gradientCenter: CGPoint = CGPoint(x: 0.5, y: 0.5),
         avatarTransitionFraction: CGFloat,
-        patternTransitionFraction: CGFloat
+        patternTransitionFraction: CGFloat,
+        patternIconScale: CGFloat = 1.0
     ) {
         self.context = context
         self.subject = subject
@@ -146,6 +148,7 @@ public final class PeerInfoCoverComponent: Component {
         self.gradientCenter = gradientCenter
         self.avatarTransitionFraction = avatarTransitionFraction
         self.patternTransitionFraction = patternTransitionFraction
+        self.patternIconScale = patternIconScale
     }
     
     public static func ==(lhs: PeerInfoCoverComponent, rhs: PeerInfoCoverComponent) -> Bool {
@@ -183,6 +186,9 @@ public final class PeerInfoCoverComponent: Component {
             return false
         }
         if lhs.patternTransitionFraction != rhs.patternTransitionFraction {
+            return false
+        }
+        if lhs.patternIconScale != rhs.patternIconScale {
             return false
         }
         return true
@@ -533,7 +539,7 @@ public final class PeerInfoCoverComponent: Component {
             
             var baseDistance: CGFloat = component.avatarSize.width / 2.0 + 22.0
             var baseRowDistance: CGFloat = 28.0
-            var baseItemSize: CGFloat = 26.0
+            var baseItemSize: CGFloat = 26.0 * component.patternIconScale
             if availableSize.width <= 60.0 {
                 baseDistance *= 0.35
                 baseRowDistance *= 0.3

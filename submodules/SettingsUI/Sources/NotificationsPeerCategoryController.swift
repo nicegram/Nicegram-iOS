@@ -77,9 +77,12 @@ private enum NotificationsPeerCategorySection: Int32 {
 }
 
 public enum NotificationsPeerCategoryEntryTag: ItemListItemTag {
+    case edit
     case enable
     case previews
     case sound
+    case important
+    case deleteExceptions
     
     public func isEqual(to other: ItemListItemTag) -> Bool {
         if let other = other as? NotificationsPeerCategoryEntryTag, self == other {
@@ -284,7 +287,7 @@ private enum NotificationsPeerCategoryEntry: ItemListNodeEntry {
             case let .enableImportant(_, text, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     arguments.updateEnabledImportant(updatedValue)
-                }, tag: self.tag)
+                }, tag: NotificationsPeerCategoryEntryTag.important)
             case let .importantInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .optionsHeader(_, text):
@@ -314,7 +317,7 @@ private enum NotificationsPeerCategoryEntry: ItemListNodeEntry {
             case let .removeAllExceptions(theme, text):
                 return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.deleteIconImage(theme), title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                     arguments.removeAllExceptions()
-                })
+                }, tag: NotificationsPeerCategoryEntryTag.deleteExceptions)
         }
     }
 }
@@ -615,6 +618,12 @@ public func notificationsPeerCategoryController(context: AccountContext, categor
         let result = stateValue.modify { f($0) }
         statePromise.set(result)
         updatedMode(result.mode)
+    }
+    
+    if focusOnItemTag == .edit {
+        updateState {
+            $0.withUpdatedEditing(true)
+        }
     }
     
     let updatePeerSound: (EnginePeer.Id, PeerMessageSound) -> Signal<Void, NoError> = { peerId, sound in
@@ -1096,5 +1105,20 @@ public func notificationsPeerCategoryController(context: AccountContext, categor
     pushControllerImpl = { [weak controller] c in
         (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
+    }
+    
     return controller
 }

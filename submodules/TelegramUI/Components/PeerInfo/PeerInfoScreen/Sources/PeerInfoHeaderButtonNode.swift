@@ -42,7 +42,6 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
     private let action: (PeerInfoHeaderButtonNode, ContextGesture?) -> Void
     let referenceNode: ContextReferenceContentNode
     let containerNode: ContextControllerSourceNode
-    //private let backgroundNode: NavigationBackgroundNode
     private let contentNode: ASDisplayNode
     private let iconNode: ASImageNode
     private let textNode: ImmediateTextNode

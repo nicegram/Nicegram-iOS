@@ -63,6 +63,8 @@ final class MediaPickerTitleView: UIView {
         didSet {
             self.buttonNode.isUserInteractionEnabled = self.isEnabled
             self.arrowNode.isHidden = !self.isEnabled
+            
+            self.setNeedsLayout()
         }
     }
     

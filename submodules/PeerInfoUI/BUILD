@@ -83,6 +83,7 @@ swift_library(
         "//submodules/TelegramUI/Components/GlassBackgroundComponent",
         "//submodules/ComponentFlow",
         "//submodules/Components/ComponentDisplayAdapters",
+        "//submodules/CounterControllerTitleView",
     ],
     visibility = [
         "//visibility:public",

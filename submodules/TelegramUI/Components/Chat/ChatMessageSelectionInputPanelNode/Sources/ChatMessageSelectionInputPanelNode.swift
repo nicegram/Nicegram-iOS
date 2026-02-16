@@ -67,15 +67,20 @@ private final class ChatMessageSelectionInputPanelNodeViewForOverlayContent: UIV
 private final class GlassButtonView: UIView {
     private struct Params: Equatable {
         let theme: PresentationTheme
+        let preferClearGlass: Bool
         let size: CGSize
         
-        init(theme: PresentationTheme, size: CGSize) {
+        init(theme: PresentationTheme, preferClearGlass: Bool, size: CGSize) {
             self.theme = theme
+            self.preferClearGlass = preferClearGlass
             self.size = size
         }
         
         static func ==(lhs: Params, rhs: Params) -> Bool {
             if lhs.theme !== rhs.theme {
+                return false
+            }
+            if lhs.preferClearGlass != rhs.preferClearGlass {
                 return false
             }
             if lhs.size != rhs.size {
@@ -152,8 +157,8 @@ private final class GlassButtonView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func update(theme: PresentationTheme, size: CGSize, transition: ComponentTransition) {
-        let params = Params(theme: theme, size: size)
+    func update(theme: PresentationTheme, preferClearGlass: Bool, size: CGSize, transition: ComponentTransition) {
+        let params = Params(theme: theme, preferClearGlass: preferClearGlass, size: size)
         if self.params != params {
             self.iconView.tintColor = params.theme.chat.inputPanel.panelControlColor
             self.params = params
@@ -172,7 +177,7 @@ private final class GlassButtonView: UIView {
         transition.setFrame(view: self.button, frame: CGRect(origin: CGPoint(), size: params.size))
         
         transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: params.size))
-        self.backgroundView.update(size: params.size, cornerRadius: min(params.size.width, params.size.height) * 0.5, isDark: params.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: params.theme.chat.inputPanel.inputBackgroundColor.withMultipliedAlpha(0.7)), isInteractive: isEnabled, transition: transition)
+        self.backgroundView.update(size: params.size, cornerRadius: min(params.size.width, params.size.height) * 0.5, isDark: params.theme.overallDarkAppearance, tintColor: .init(kind: params.preferClearGlass ? .clear : .panel), isInteractive: isEnabled, transition: transition)
         
         self.iconView.alpha = isEnabled ? 1.0 : 0.5
         self.iconView.tintMask.alpha = self.iconView.alpha
@@ -706,7 +711,7 @@ public final class ChatMessageSelectionInputPanelNode: ChatInputPanelNode {
                 buttonFrame = CGRect(origin: CGPoint(x: offset, y: 0.0), size: buttonSize)
             }
             transition.updateFrame(view: button, frame: buttonFrame)
-            button.update(theme: interfaceState.theme, size: buttonFrame.size, transition: ComponentTransition(transition))
+            button.update(theme: interfaceState.theme, preferClearGlass: interfaceState.preferredGlassType == .clear, size: buttonFrame.size, transition: ComponentTransition(transition))
             
             offset += buttonSize.width + spacing
         }

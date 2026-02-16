@@ -215,17 +215,17 @@ private func synchronizeChatInputState(transaction: Transaction, postbox: Postbo
                 innerFlags |= 1 << 6
             }
             if !discard {
-                replyTo = .inputReplyToMessage(flags: innerFlags, replyToMsgId: replySubject.messageId.id, topMsgId: topMsgId, replyToPeerId: replyToPeer, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
+                replyTo = .inputReplyToMessage(.init(flags: innerFlags, replyToMsgId: replySubject.messageId.id, topMsgId: topMsgId, replyToPeerId: replyToPeer, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId))
             }
         } else if let topMsgId {
             flags |= 1 << 0
             
             var innerFlags: Int32 = 0
             innerFlags |= 1 << 0
-            replyTo = .inputReplyToMessage(flags: innerFlags, replyToMsgId: topMsgId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+            replyTo = .inputReplyToMessage(.init(flags: innerFlags, replyToMsgId: topMsgId, topMsgId: topMsgId, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
         } else if let monoforumPeerId {
             flags |= 1 << 0
-            replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+            replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
         }
         
         let suggestedPost = inputState?.suggestedPost.flatMap { suggestedPost -> Api.SuggestedPost in
@@ -233,7 +233,7 @@ private func synchronizeChatInputState(transaction: Transaction, postbox: Postbo
             if suggestedPost.timestamp != nil {
                 flags |= 1 << 0
             }
-            return .suggestedPost(flags: flags, price: suggestedPost.price?.apiAmount ?? .starsAmount(amount: 0, nanos: 0), scheduleDate: suggestedPost.timestamp)
+            return .suggestedPost(.init(flags: flags, price: suggestedPost.price?.apiAmount ?? .starsAmount(.init(amount: 0, nanos: 0)), scheduleDate: suggestedPost.timestamp))
         }
         if suggestedPost != nil {
             flags |= 1 << 8

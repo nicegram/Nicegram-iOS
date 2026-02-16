@@ -41,6 +41,9 @@ swift_library(
         "//submodules/Pasteboard:Pasteboard",
         "//submodules/TelegramUI/Components/Stickers/StickerPackEditTitleController",
         "//submodules/TelegramUI/Components/EmojiStatusComponent",
+        "//submodules/TelegramUI/Components/EdgeEffect",
+        "//submodules/TelegramUI/Components/GlassBarButtonComponent",
+        "//submodules/TelegramUI/Components/ButtonComponent",
     ],
     visibility = [
         "//visibility:public",

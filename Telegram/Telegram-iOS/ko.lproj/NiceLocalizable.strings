@@ -154,8 +154,6 @@
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "전화 번호는 UI에서만 숨겨집니다. 다른 사람에게 숨기려면 개인 정보 설정을 사용하세요.";
 "NicegramSettings.Other.showProfileId" = "프로필 ID 표시";
 "NicegramSettings.Other.showRegDate" = "가입 날짜 표시";
-"NicegramSettings.Unblock.Header" = "차단 해제";
-"NicegramSettings.Unblock.Button" = "차단해제 안내";
 "NicegramSettings.RoundVideos.DownloadVideos" = "사진앨범으로 동영상 다운로드";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "언어 무시하기";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "앱은 기기에서 각 메시지의 언어를 감지합니다. 배터리 수명에 영향을 줄 수 있는 고성능 작업입니다.";

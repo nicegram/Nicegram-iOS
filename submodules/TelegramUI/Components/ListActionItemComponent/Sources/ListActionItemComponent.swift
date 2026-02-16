@@ -178,6 +178,7 @@ public final class ListActionItemComponent: Component {
     public let action: ((UIView) -> Void)?
     public let highlighting: Highlighting
     public let updateIsHighlighted: ((UIView, Bool) -> Void)?
+    public let tag: AnyObject?
     
     public init(
         theme: PresentationTheme,
@@ -192,7 +193,8 @@ public final class ListActionItemComponent: Component {
         contextOptions: [ContextOption] = [],
         action: ((UIView) -> Void)?,
         highlighting: Highlighting = .default,
-        updateIsHighlighted: ((UIView, Bool) -> Void)? = nil
+        updateIsHighlighted: ((UIView, Bool) -> Void)? = nil,
+        tag: AnyObject? = nil
     ) {
         self.theme = theme
         self.style = style
@@ -207,6 +209,7 @@ public final class ListActionItemComponent: Component {
         self.action = action
         self.highlighting = highlighting
         self.updateIsHighlighted = updateIsHighlighted
+        self.tag = tag
     }
     
     public static func ==(lhs: ListActionItemComponent, rhs: ListActionItemComponent) -> Bool {
@@ -244,6 +247,9 @@ public final class ListActionItemComponent: Component {
             return false
         }
         if lhs.highlighting != rhs.highlighting {
+            return false
+        }
+        if lhs.tag !== rhs.tag {
             return false
         }
         return true
@@ -322,7 +328,17 @@ public final class ListActionItemComponent: Component {
         }
     }
     
-    public final class View: UIView, ListSectionComponent.ChildView {
+    public final class View: UIView, ListSectionComponent.ChildView, ComponentTaggedView {
+        public func matches(tag: Any) -> Bool {
+            if let component = self.component, let componentTag = component.tag {
+                let tag = tag as AnyObject
+                if componentTag === tag {
+                    return true
+                }
+            }
+            return false
+        }
+        
         private let container: ContentContainer
         private let button: HighlightTrackingButton
         private var background: ComponentView<Empty>?
@@ -411,6 +427,10 @@ public final class ListActionItemComponent: Component {
                 return nil
             }
             return result
+        }
+        
+        public func displayHighlight() {
+            
         }
         
         func update(component: ListActionItemComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {

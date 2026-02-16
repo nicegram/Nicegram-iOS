@@ -201,7 +201,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 }
             }
 
-            let contextController = ContextController(presentationData: presentationData, source: .reference(PeerInfoContextReferenceContentSource(controller: controller, sourceNode: source)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
+            let contextController = makeContextController(presentationData: presentationData, source: .reference(PeerInfoContextReferenceContentSource(controller: controller, sourceNode: source)), items: .single(ContextController.Items(content: .list(items))), gesture: nil)
             contextController.passthroughTouchEvent = { [weak self] sourceView, point in
                 guard let self else {
                     return .ignore
@@ -310,7 +310,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 return
             }
             if let rootController = component.context.sharedContext.mainWindow?.viewController as? TelegramRootControllerInterface {
-                let coordinator = rootController.openStoryCamera(customTarget: nil, resumeLiveStream: false, transitionIn: nil, transitionedIn: {}, transitionOut: { _, _ in return nil })
+                let coordinator = rootController.openStoryCamera(mode: .photo, customTarget: nil, resumeLiveStream: false, transitionIn: nil, transitionedIn: {}, transitionOut: { _, _ in return nil })
                 coordinator?.animateIn()
             }
         }

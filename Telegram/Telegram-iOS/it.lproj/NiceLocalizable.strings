@@ -153,8 +153,6 @@ Il browser selezionato deve essere installato.";
 "NicegramSettings.Other.hidePhoneInSettingsNotice" = "Il tuo numero verrà nascosto solo nell'interfaccia. Per nasconderlo dagli altri, apri le impostazioni della Privacy.";
 "NicegramSettings.Other.showProfileId" = "Mostra l'ID del profilo";
 "NicegramSettings.Other.showRegDate" = "Mostra la data di registrazione";
-"NicegramSettings.Unblock.Header" = "Sblocca";
-"NicegramSettings.Unblock.Button" = "Guida allo sblocco";
 "NicegramSettings.RoundVideos.DownloadVideos" = "Scarica i video nella Galleria";
 "Premium.OnetapTranslate.UseIgnoreLanguages" = "Ignora Lingue";
 "Premium.OnetapTranslate.UseIgnoreLanguages.Note" = "L'app rileva la lingua di ogni messaggio sul tuo dispositivo. È un'attività che consuma tante risorse e che può influire sulla durata della batteria.";

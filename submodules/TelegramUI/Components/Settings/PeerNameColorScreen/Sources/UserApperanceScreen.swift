@@ -40,6 +40,17 @@ import GiftViewScreen
 import BalanceNeededScreen
 
 private let giftListTag = GenericComponentViewTag()
+private let addIconsTag = GenericComponentViewTag()
+private let useGiftTag = GenericComponentViewTag()
+
+public enum UserAppearanceEntryTag {
+    case profile
+    case profileAddIcons
+    case profileUseGift
+    case name
+    case nameAddIcons
+    case nameUseGift
+}
 
 final class UserAppearanceScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -656,6 +667,7 @@ final class UserAppearanceScreenComponent: Component {
                     let alertController = giftPurchaseAlertController(
                         context: component.context,
                         gift: uniqueGift,
+                        showAttributes: true,
                         peer: peer,
                         animateBalanceOverlay: true,
                         navigationController: controller.navigationController as? NavigationController,
@@ -762,9 +774,9 @@ final class UserAppearanceScreenComponent: Component {
                                 slug: slug,
                                 owner: .peerId(component.context.account.peerId),
                                 attributes: [
-                                    .model(name: "", file: file, rarity: 0),
-                                    .pattern(name: "", file: patternFile, rarity: 0),
-                                    .backdrop(name: "", id: 0, innerColor: innerColor, outerColor: outerColor, patternColor: patternColor, textColor: textColor, rarity: 0)
+                                    .model(name: "", file: file, rarity: .rare, crafted: false),
+                                    .pattern(name: "", file: patternFile, rarity: .rare),
+                                    .backdrop(name: "", id: 0, innerColor: innerColor, outerColor: outerColor, patternColor: patternColor, textColor: textColor, rarity: .rare)
                                 ],
                                 availability: StarGift.UniqueGift.Availability(issued: 0, total: 0),
                                 giftAddress: nil,
@@ -778,7 +790,8 @@ final class UserAppearanceScreenComponent: Component {
                                 themePeerId: nil,
                                 peerColor: nil,
                                 hostPeerId: nil,
-                                minOfferStars: nil
+                                minOfferStars: nil,
+                                craftChancePermille: nil
                             )
                             signal = component.context.engine.accountData.setStarGiftStatus(starGift: gift, expirationDate: emojiStatus.expirationDate)
                         } else {
@@ -958,6 +971,32 @@ final class UserAppearanceScreenComponent: Component {
             return false
         }
         
+        func openEmojiSetup() {
+            guard let component = self.component, let environment = self.environment, let resolvedState = self.resolveState() else {
+                return
+            }
+            
+            switch self.currentSection {
+            case .profile:
+                if let view = self.profileColorSection.findTaggedView(tag: addIconsTag) as? ListActionItemComponent.View, let iconView = view.iconView {
+                    self.openEmojiSetup(sourceView: iconView, currentFileId: resolvedState.backgroundFileId, color: resolvedState.profileColor.flatMap {
+                        component.context.peerNameColors.getProfile($0, dark: environment.theme.overallDarkAppearance, subject: .palette).main
+                    } ?? environment.theme.list.itemAccentColor, subject: .profile)
+                }
+            case .name:
+                var replyColor: UIColor
+                switch resolvedState.nameColor {
+                case let .preset(nameColor):
+                    replyColor = component.context.peerNameColors.get(nameColor, dark: environment.theme.overallDarkAppearance).main
+                case let .collectible(collectibleColor):
+                    replyColor = collectibleColor.mainColor(dark: environment.theme.overallDarkAppearance)
+                }
+                if let view = self.nameColorSection.findTaggedView(tag: addIconsTag) as? ListActionItemComponent.View, let iconView = view.iconView {
+                    self.openEmojiSetup(sourceView: iconView, currentFileId: resolvedState.replyFileId, color: replyColor, subject: .reply)
+                }
+            }
+        }
+        
         func update(component: UserAppearanceScreenComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
             self.isUpdating = true
             defer {
@@ -967,7 +1006,32 @@ final class UserAppearanceScreenComponent: Component {
             let environment = environment[EnvironmentType.self].value
             let themeUpdated = self.environment?.theme !== environment.theme
             self.environment = environment
-                        
+                       
+            if self.component == nil {
+                if let controller = environment.controller() as? UserAppearanceScreen, let focusOnItemTag = controller.focusOnItemTag {
+                    switch focusOnItemTag {
+                    case .profile:
+                        self.currentSection = .profile
+                    case .profileAddIcons:
+                        self.currentSection = .profile
+                        Queue.mainQueue().after(0.1) {
+                            self.openEmojiSetup()
+                        }
+                    case .profileUseGift:
+                        self.currentSection = .profile
+                    case .name:
+                        self.currentSection = .name
+                    case .nameAddIcons:
+                        self.currentSection = .name
+                        Queue.mainQueue().after(0.1) {
+                            self.openEmojiSetup()
+                        }
+                    case .nameUseGift:
+                        self.currentSection = .name
+                    }
+                }
+            }
+            
             self.component = component
             self.state = state
             
@@ -1319,7 +1383,8 @@ final class UserAppearanceScreenComponent: Component {
                                     self.openEmojiSetup(sourceView: iconView, currentFileId: resolvedState.backgroundFileId, color: resolvedState.profileColor.flatMap {
                                         component.context.peerNameColors.getProfile($0, dark: environment.theme.overallDarkAppearance, subject: .palette).main
                                     } ?? environment.theme.list.itemAccentColor, subject: .profile)
-                                }
+                                },
+                                tag: addIconsTag
                             )))
                         ],
                         displaySeparators: true,
@@ -1442,7 +1507,7 @@ final class UserAppearanceScreenComponent: Component {
                                         var textColor: Int32?
                                         for attribute in gift.attributes {
                                             switch attribute {
-                                            case let .model(_, file, _):
+                                            case let .model(_, file, _, _):
                                                 fileId = file.fileId.id
                                                 self.cachedIconFiles[file.fileId.id] = file
                                             case let .pattern(_, file, _):
@@ -1648,7 +1713,8 @@ final class UserAppearanceScreenComponent: Component {
                                     }
                                     
                                     self.openEmojiSetup(sourceView: iconView, currentFileId: resolvedState.replyFileId, color: replyColor, subject: .reply)
-                                }
+                                },
+                                tag: addIconsTag
                             )))
                         ],
                         displaySeparators: true,
@@ -1931,6 +1997,7 @@ final class UserAppearanceScreenComponent: Component {
 
 public class UserAppearanceScreen: ViewControllerComponentContainer {
     private let context: AccountContext
+    fileprivate let focusOnItemTag: UserAppearanceEntryTag?
     
     private let overNavigationContainer: UIView
     
@@ -1938,9 +2005,11 @@ public class UserAppearanceScreen: ViewControllerComponentContainer {
     
     public init(
         context: AccountContext,
-        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil
+        updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil,
+        focusOnItemTag: UserAppearanceEntryTag? = nil
     ) {
         self.context = context
+        self.focusOnItemTag = focusOnItemTag
         
         self.overNavigationContainer = SparseContainerView()
         

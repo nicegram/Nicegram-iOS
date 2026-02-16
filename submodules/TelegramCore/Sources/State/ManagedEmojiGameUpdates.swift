@@ -50,7 +50,8 @@ public enum EmojiGameInfo: Codable, Equatable {
 extension EmojiGameInfo {
     init(apiEmojiGameInfo: Api.messages.EmojiGameInfo) {
         switch apiEmojiGameInfo {
-        case let .emojiGameDiceInfo(_, gameHash, prevStake, currentStreak, params, playsLeft):
+        case let .emojiGameDiceInfo(emojiGameDiceInfoData):
+            let (gameHash, prevStake, currentStreak, params, playsLeft) = (emojiGameDiceInfoData.gameHash, emojiGameDiceInfoData.prevStake, emojiGameDiceInfoData.currentStreak, emojiGameDiceInfoData.params, emojiGameDiceInfoData.playsLeft)
             self = .available(Info(gameHash: gameHash, previousStake: prevStake, currentStreak: currentStreak, parameters: params, playsLeft: playsLeft))
         case .emojiGameUnavailable:
             self = .unavailable

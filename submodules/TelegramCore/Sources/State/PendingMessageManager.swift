@@ -1105,9 +1105,9 @@ public final class PendingMessageManager {
                     var quickReplyShortcut: Api.InputQuickReplyShortcut?
                     if let quickReply {
                         if let threadId = messages[0].0.threadId {
-                            quickReplyShortcut = .inputQuickReplyShortcutId(shortcutId: Int32(clamping: threadId))
+                            quickReplyShortcut = .inputQuickReplyShortcutId(.init(shortcutId: Int32(clamping: threadId)))
                         } else {
-                            quickReplyShortcut = .inputQuickReplyShortcut(shortcut: quickReply.shortcut)
+                            quickReplyShortcut = .inputQuickReplyShortcut(.init(shortcut: quickReply.shortcut))
                         }
                         flags |= 1 << 17
                     }
@@ -1118,7 +1118,7 @@ public final class PendingMessageManager {
                     
                     var replyTo: Api.InputReplyTo?
                     if let monoforumPeerId {
-                        replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                        replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                         flags |= 1 << 22
                     }
                     
@@ -1176,7 +1176,7 @@ public final class PendingMessageManager {
                                         singleFlags |= 1 << 0
                                     }
                                     
-                                    singleMedias.append(.inputSingleMedia(flags: singleFlags, media: inputMedia, randomId: uniqueId, message: text, entities: messageEntities))
+                                    singleMedias.append(.inputSingleMedia(.init(flags: singleFlags, media: inputMedia, randomId: uniqueId, message: text, entities: messageEntities)))
                                 default:
                                     return failMessages(postbox: postbox, ids: group.map { $0.0 })
                             }
@@ -1253,23 +1253,23 @@ public final class PendingMessageManager {
                             replyFlags |= 1 << 6
                         }
                         
-                        replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
+                        replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId))
                     } else if let replyToStoryId {
                         if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                            replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                         }
                     } else if let monoforumPeerId {
                         flags |= 1 << 0
-                        replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                        replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                     }
                     
                     var quickReplyShortcut: Api.InputQuickReplyShortcut?
                     if let quickReply {
                         if let threadId = messages[0].0.threadId {
-                            quickReplyShortcut = .inputQuickReplyShortcutId(shortcutId: Int32(clamping: threadId))
+                            quickReplyShortcut = .inputQuickReplyShortcutId(.init(shortcutId: Int32(clamping: threadId)))
                         } else {
-                            quickReplyShortcut = .inputQuickReplyShortcut(shortcut: quickReply.shortcut)
+                            quickReplyShortcut = .inputQuickReplyShortcut(.init(shortcut: quickReply.shortcut))
                         }
                         flags |= 1 << 17
                     }
@@ -1645,15 +1645,15 @@ public final class PendingMessageManager {
                             if let _ = replyTodoItemId {
                                 replyFlags |= 1 << 6
                             }
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
+                            replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId))
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                             }
                         } else if let monoforumPeerId {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                            replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                         }
                         if let attribute = message.webpagePreviewAttribute {
                             if attribute.leadingPreview {
@@ -1667,9 +1667,9 @@ public final class PendingMessageManager {
                         var quickReplyShortcut: Api.InputQuickReplyShortcut?
                         if let quickReply {
                             if let threadId = message.threadId {
-                                quickReplyShortcut = .inputQuickReplyShortcutId(shortcutId: Int32(clamping: threadId))
+                                quickReplyShortcut = .inputQuickReplyShortcutId(.init(shortcutId: Int32(clamping: threadId)))
                             } else {
-                                quickReplyShortcut = .inputQuickReplyShortcut(shortcut: quickReply.shortcut)
+                                quickReplyShortcut = .inputQuickReplyShortcut(.init(shortcut: quickReply.shortcut))
                             }
                             flags |= 1 << 17
                         }
@@ -1743,17 +1743,17 @@ public final class PendingMessageManager {
                             if let _ = replyTodoItemId {
                                 replyFlags |= 1 << 6
                             }
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
+                            replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: topMsgId, replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId))
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                             }
                         } else if let monoforumPeerId {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                            replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                         }
-                    
+
                         if let attribute = message.webpagePreviewAttribute {
                             if attribute.leadingPreview {
                                 flags |= 1 << 16
@@ -1766,9 +1766,9 @@ public final class PendingMessageManager {
                         var quickReplyShortcut: Api.InputQuickReplyShortcut?
                         if let quickReply {
                             if let threadId = message.threadId {
-                                quickReplyShortcut = .inputQuickReplyShortcutId(shortcutId: Int32(clamping: threadId))
+                                quickReplyShortcut = .inputQuickReplyShortcutId(.init(shortcutId: Int32(clamping: threadId)))
                             } else {
-                                quickReplyShortcut = .inputQuickReplyShortcut(shortcut: quickReply.shortcut)
+                                quickReplyShortcut = .inputQuickReplyShortcut(.init(shortcut: quickReply.shortcut))
                             }
                             flags |= 1 << 17
                         }
@@ -1805,9 +1805,9 @@ public final class PendingMessageManager {
                         var quickReplyShortcut: Api.InputQuickReplyShortcut?
                         if let quickReply {
                             if let threadId = message.threadId {
-                                quickReplyShortcut = .inputQuickReplyShortcutId(shortcutId: Int32(clamping: threadId))
+                                quickReplyShortcut = .inputQuickReplyShortcutId(.init(shortcutId: Int32(clamping: threadId)))
                             } else {
-                                quickReplyShortcut = .inputQuickReplyShortcut(shortcut: quickReply.shortcut)
+                                quickReplyShortcut = .inputQuickReplyShortcut(.init(shortcut: quickReply.shortcut))
                             }
                             flags |= 1 << 17
                         }
@@ -1822,7 +1822,7 @@ public final class PendingMessageManager {
                     
                         var replyTo: Api.InputReplyTo?
                         if let monoforumPeerId {
-                            replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                            replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                             flags |= 1 << 22
                         }
                     
@@ -1891,23 +1891,23 @@ public final class PendingMessageManager {
                             if let _ = replyTodoItemId {
                                 replyFlags |= 1 << 6
                             }
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: message.threadId.flatMap(Int32.init(clamping:)), replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId)
+                            replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: message.threadId.flatMap(Int32.init(clamping:)), replyToPeerId: replyToPeerId, quoteText: quoteText, quoteEntities: quoteEntities, quoteOffset: quoteOffset, monoforumPeerId: monoforumPeerId, todoItemId: replyTodoItemId))
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                             }
                         } else if let monoforumPeerId {
                             flags |= 1 << 0
-                            replyTo = .inputReplyToMonoForum(monoforumPeerId: monoforumPeerId)
+                            replyTo = .inputReplyToMonoForum(.init(monoforumPeerId: monoforumPeerId))
                         }
                     
                         var quickReplyShortcut: Api.InputQuickReplyShortcut?
                         if let quickReply {
                             if let threadId = message.threadId {
-                                quickReplyShortcut = .inputQuickReplyShortcutId(shortcutId: Int32(clamping: threadId))
+                                quickReplyShortcut = .inputQuickReplyShortcutId(.init(shortcutId: Int32(clamping: threadId)))
                             } else {
-                                quickReplyShortcut = .inputQuickReplyShortcut(shortcut: quickReply.shortcut)
+                                quickReplyShortcut = .inputQuickReplyShortcut(.init(shortcut: quickReply.shortcut))
                             }
                             flags |= 1 << 17
                         }
@@ -1923,18 +1923,18 @@ public final class PendingMessageManager {
                     
                         if let replyMessageId = replyMessageId {
                             let replyFlags: Int32 = 0
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil)
+                            replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: replyMessageId, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: nil, todoItemId: nil))
                         } else if let replyToStoryId = replyToStoryId {
                             if let inputPeer = transaction.getPeer(replyToStoryId.peerId).flatMap(apiInputPeer) {
                                 flags |= 1 << 0
-                                replyTo = .inputReplyToStory(peer: inputPeer, storyId: replyToStoryId.id)
+                                replyTo = .inputReplyToStory(.init(peer: inputPeer, storyId: replyToStoryId.id))
                             } else {
                                 let replyFlags: Int32 = 0
-                                replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil)
+                                replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil))
                             }
                         } else {
                             let replyFlags: Int32 = 0
-                            replyTo = .inputReplyToMessage(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil)
+                            replyTo = .inputReplyToMessage(.init(flags: replyFlags, replyToMsgId: 0, topMsgId: nil, replyToPeerId: nil, quoteText: nil, quoteEntities: nil, quoteOffset: nil, monoforumPeerId: monoforumPeerId, todoItemId: nil))
                         }
                     
                         sendMessageRequest = network.request(Api.functions.messages.sendScreenshotNotification(peer: inputPeer, replyTo: replyTo, randomId: uniqueId))
@@ -2042,7 +2042,7 @@ public final class PendingMessageManager {
     }
     
     private func applySentMessage(postbox: Postbox, stateManager: AccountStateManager, message: Message, content: PendingMessageUploadedContentAndReuploadInfo, result: Api.Updates) -> Signal<Void, NoError> {
-        if let channel = message.peers[message.id.peerId] as? TelegramChannel, channel.isMonoForum {
+        if let _ = message.peers[message.id.peerId] as? TelegramChannel {
             for attribute in message.attributes {
                 if let attribute = attribute as? PaidStarsMessageAttribute {
                     stateManager.starsContext?.add(balance: StarsAmount(value: -attribute.stars.value, nanos: (attribute.stars.value == 0 && attribute.stars.nanos != 0 ? -1 : 1) * attribute.stars.nanos))
@@ -2076,7 +2076,8 @@ public final class PendingMessageManager {
             if message.scheduleTime != nil && message.scheduleTime == apiMessage.timestamp {
                 isScheduled = true
             }
-            if case let .message(_, flags2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = apiMessage {
+            if case let .message(messageData) = apiMessage {
+                let flags2 = messageData.flags2
                 if (flags2 & (1 << 4)) != 0 {
                     isScheduled = true
                 }
@@ -2120,7 +2121,7 @@ public final class PendingMessageManager {
                 namespace = Namespaces.Message.QuickReplyCloud
             } else if let apiMessage = result.messages.first, message.scheduleTime != nil && message.scheduleTime == apiMessage.timestamp {
                 namespace = Namespaces.Message.ScheduledCloud
-            } else if let apiMessage = result.messages.first, case let .message(_, flags2, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) = apiMessage, (flags2 & (1 << 4)) != 0 {
+            } else if let apiMessage = result.messages.first, case let .message(messageData) = apiMessage, (messageData.flags2 & (1 << 4)) != 0 {
                 namespace = Namespaces.Message.ScheduledCloud
             }
         }

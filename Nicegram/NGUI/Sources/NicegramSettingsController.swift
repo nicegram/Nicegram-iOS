@@ -32,7 +32,6 @@ import TelegramUIPreferences
 import UIKit
 import class NGCoreUI.SharedLoadingView
 import NGEnv
-import NGWebUtils
 import NGAppCache
 import NGCore
 import var NGCoreUI.strings
@@ -67,7 +66,6 @@ private final class NicegramSettingsControllerArguments {
 // MARK: Sections
 
 private enum NicegramSettingsControllerSection: Int32 {
-    case Unblock
     case Tabs
     case Folders
     case RoundVideos
@@ -127,9 +125,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
     
     case recomendedPrivacySettings(String)
     
-    case unblockHeader(String)
-    case unblock(String, URL)
-    
     case callRecorderReceiverId
     
     case quickReplies(String)
@@ -164,8 +159,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return NicegramSettingsControllerSection.CallRecorder.rawValue
         case .quickReplies:
             return NicegramSettingsControllerSection.QuickReplies.rawValue
-        case .unblockHeader, .unblock:
-            return NicegramSettingsControllerSection.Unblock.rawValue
         case .Account, .recomendedPrivacySettings, .doubleBottom, .nicegramCalls:
             return NicegramSettingsControllerSection.Account.rawValue
         case .shareBotsData, .shareChannelsData, .shareStickersData, .shareDataNote:
@@ -192,12 +185,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
             return 702
         case .nicegramCalls:
             return 703
-            
-        case .unblockHeader:
-            return 800
-            
-        case .unblock:
-            return 900
             
         case .TabsHeader:
             return 1300
@@ -372,14 +359,6 @@ private enum NicegramSettingsControllerEntry: ItemListNodeEntry {
                     }
                 }
             }
-        case let .unblockHeader(text):
-            return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
-        case let .unblock(text, url):
-            return ItemListActionItem(presentationData: presentationData, title: text, kind: .neutral, alignment: .natural, sectionId: section, style: .blocks) {
-                Task { @MainActor in
-                    CoreContainer.shared.urlOpener().open(url)
-                }
-            }
         case let .Account(text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: section)
         case let .doubleBottom(text):
@@ -536,11 +515,6 @@ private func nicegramSettingsControllerEntries(presentationData: PresentationDat
     if #available(iOS 15.0, *),
        isNicegramCallsEnabled() {
         entries.append(.nicegramCalls)
-    }
-    
-    if !hideUnblock {
-        entries.append(.unblockHeader(l("NicegramSettings.Unblock.Header").uppercased()))
-        entries.append(.unblock(l("NicegramSettings.Unblock.Button"), nicegramUnblockUrl))
     }
 
     entries.append(.TabsHeader(l("NiceFeatures.Tabs.Header")))

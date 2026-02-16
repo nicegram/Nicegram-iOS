@@ -172,10 +172,10 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
                         particleColor: statusParticleColor,
                         isVisibleForAnimations: true,
                         action: { [weak self] in
-                            guard let strongSelf = self, let titleCredibilityIconView = strongSelf.titleCredibilityIconView else {
+                            guard let self else {
                                 return
                             }
-                            strongSelf.openStatusSetup?(titleCredibilityIconView)
+                            self.openEmojiStatusSetup()
                         }
                     )),
                     environment: {},
@@ -327,6 +327,13 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
         }
     }
     
+    public func openEmojiStatusSetup() {
+        guard let titleCredibilityIconView = self.titleCredibilityIconView else {
+            return
+        }
+        self.openStatusSetup?(titleCredibilityIconView)
+    }
+    
     public func updateLayout(availableSize: CGSize, transition: ContainedViewLayoutTransition) -> CGSize {
         let _ = self.updateLayoutInternal(size: availableSize, transition: transition)
         return availableSize
@@ -414,10 +421,10 @@ public final class ChatListTitleView: UIView, NavigationBarTitleView, Navigation
                     content: statusContent,
                     isVisibleForAnimations: true,
                     action: { [weak self] in
-                        guard let strongSelf = self, let titleCredibilityIconView = strongSelf.titleCredibilityIconView else {
+                        guard let self else {
                             return
                         }
-                        strongSelf.openStatusSetup?(titleCredibilityIconView)
+                        self.openEmojiStatusSetup()
                     }
                 )),
                 environment: {},

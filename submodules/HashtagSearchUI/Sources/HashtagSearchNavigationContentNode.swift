@@ -212,7 +212,7 @@ final class HashtagSearchNavigationContentNode: NavigationBarContentNode {
             self.tabsBackgroundContainer.update(size: tabSelectorFrame.size, isDark: self.theme.overallDarkAppearance, transition: ComponentTransition(transition))
             
             transition.updateFrame(view: self.tabsBackgroundView, frame: CGRect(origin: CGPoint(), size: tabSelectorFrame.size))
-            self.tabsBackgroundView.update(size: tabSelectorFrame.size, cornerRadius: tabSelectorFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel, color: UIColor(white: self.theme.overallDarkAppearance ? 0.0 : 1.0, alpha: 0.6)), transition: ComponentTransition(transition))
+            self.tabsBackgroundView.update(size: tabSelectorFrame.size, cornerRadius: tabSelectorFrame.height * 0.5, isDark: self.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: ComponentTransition(transition))
             
             if let tabSelectorView = self.tabSelector.view as? HorizontalTabsComponent.View {
                 if tabSelectorView.superview == nil {

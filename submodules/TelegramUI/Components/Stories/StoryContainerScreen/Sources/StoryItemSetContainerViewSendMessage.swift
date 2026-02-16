@@ -345,6 +345,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
             let presentationInterfaceState = ChatPresentationInterfaceState(
                 chatWallpaper: .builtin(WallpaperSettings()),
                 theme: presentationData.theme,
+                preferredGlassType: .default,
                 strings: presentationData.strings,
                 dateTimeFormat: presentationData.dateTimeFormat,
                 nameDisplayOrder: presentationData.nameDisplayOrder,
@@ -538,7 +539,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
         
         let contextItems = ContextController.Items(content: .list(items))
         
-        let contextController = ContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .top)), items: .single(contextItems), gesture: gesture)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(HeaderContextReferenceContentSource(controller: controller, sourceView: sourceView, position: .top)), items: .single(contextItems), gesture: gesture)
         contextController.dismissed = { [weak view] in
             guard let view else {
                 return
@@ -4397,7 +4398,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
         }
         
         let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkColorPresentationTheme)
-        let contextController = ContextController(presentationData: presentationData, source: .reference(ReferenceSource(controller: controller, sourceView: sourceView, insets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 0.0), contentInsets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 0.0))), items: .single(ContextController.Items(content: .list(items))), gesture: gesture, workaroundUseLegacyImplementation: false)
+        let contextController = makeContextController(presentationData: presentationData, source: .reference(ReferenceSource(controller: controller, sourceView: sourceView, insets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 0.0), contentInsets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 0.0))), items: .single(ContextController.Items(content: .list(items))), gesture: gesture, workaroundUseLegacyImplementation: false)
         contextController.dismissed = { [weak self, weak view] in
             guard let self, let view else {
                 return

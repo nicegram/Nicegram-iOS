@@ -136,6 +136,30 @@ private func stringForUserCount(_ peers: [EnginePeer.Id: SelectivePrivacyPeer], 
     }
 }
 
+public enum SelectivePrivacyEntryTag: ItemListItemTag, Equatable {
+    case neverAllow
+    case alwaysAllow
+    case lastSeenHideReadTime
+    case birthdaySetup
+    case giftsShowButton
+    case giftsAcceptedTypes
+    case photoSetPublic
+    case photoUpdatePublic
+    case photoRemovePublic
+    case callsP2PNeverAllow
+    case callsP2PAlwaysAllow
+    case callsP2P
+    case callsIntegration
+    
+    public func isEqual(to other: ItemListItemTag) -> Bool {
+        if let other = other as? SelectivePrivacyEntryTag, self == other {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
 private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
     case forwardsPreviewHeader(PresentationTheme, String)
     case forwardsPreview(PresentationTheme, TelegramWallpaper, PresentationFontSize, PresentationChatBubbleCorners, PresentationStrings, PresentationDateTimeFormat, PresentationPersonNameOrder, String, Bool, String)
@@ -606,11 +630,11 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .disableFor(_, title, value, isEnabled):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, enabled: isEnabled, label: value, sectionId: self.section, style: .blocks, action: {
                         arguments.openSelective(.main, false)
-                    })
+                }, tag: SelectivePrivacyEntryTag.neverAllow)
             case let .enableFor(_, title, value, isEnabled):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, enabled: isEnabled, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openSelective(.main, true)
-                })
+                }, tag: SelectivePrivacyEntryTag.alwaysAllow)
             case let .peersInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .callsP2PHeader(_, text):
@@ -632,17 +656,17 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .callsP2PDisableFor(_, title, value):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openSelective(.callP2P, false)
-                })
+                }, tag: SelectivePrivacyEntryTag.callsP2PNeverAllow)
             case let .callsP2PEnableFor(_, title, value):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: title, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openSelective(.callP2P, true)
-                })
+                }, tag: SelectivePrivacyEntryTag.callsP2PAlwaysAllow)
             case let .callsP2PPeersInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .callsIntegrationEnabled(_, text, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateCallIntegrationEnabled?(value)
-                })
+                }, tag: SelectivePrivacyEntryTag.callsIntegration)
             case let .callsIntegrationInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .phoneDiscoveryHeader(_, text):
@@ -662,18 +686,18 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .setPublicPhoto(theme, text):
                 return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesItemList.addPhotoIcon(theme), title: text, sectionId: self.section, height: .generic, color: .accent, editing: false, action: {
                     arguments.setPublicPhoto?()
-                })
+                }, tag: SelectivePrivacyEntryTag.photoSetPublic)
             case let .removePublicPhoto(_, text, peer, image, completeImage):
                 return ItemListPeerActionItem(presentationData: presentationData, systemStyle: .glass, icon: completeImage, iconSignal: completeImage == nil ? peerAvatarCompleteImage(account: arguments.context.account, peer: peer, forceProvidedRepresentation: true, representation: image?.representationForDisplayAtSize(PixelDimensions(width: 28, height: 28)), size: CGSize(width: 28.0, height: 28.0)) : nil, title: text, sectionId: self.section, height: .generic, color: .destructive, editing: false, action: {
                     arguments.removePublicPhoto?()
-                })
+                }, tag: SelectivePrivacyEntryTag.photoRemovePublic)
             case let .publicPhotoInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .markdown(text), sectionId: self.section, linkAction: { _ in
                 })
             case let .hideReadTime(_, text, enabled, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enabled: enabled, sectionId: self.section, style: .blocks, updated: { value in
                     arguments.updateHideReadTime?(value)
-                })
+                }, tag: SelectivePrivacyEntryTag.lastSeenHideReadTime)
             case let .hideReadTimeInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .subscribeToPremium(_, text):
@@ -683,7 +707,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
             case let .subscribeToPremiumInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .disallowedGiftsHeader(_, text):
-                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
+                return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section, tag: SelectivePrivacyEntryTag.giftsAcceptedTypes)
             case let .disallowedGiftsUnlimited(_, text, isLocked, value):
                 return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: !isLocked, enabled: true, displayLocked: isLocked, sectionId: self.section, style: .blocks, updated: { updatedValue in
                     if !isLocked {
@@ -747,7 +771,7 @@ private enum SelectivePrivacySettingsEntry: ItemListNodeEntry {
                     if available {
                         arguments.displayLockedGiftsInfo()
                     }
-                })
+                }, tag: SelectivePrivacyEntryTag.giftsShowButton)
             case let .showGiftButtonInfo(_, text):
                 let attributedString = NSMutableAttributedString(string: text, font: Font.regular(presentationData.fontSize.itemListBaseHeaderFontSize), textColor: presentationData.theme.list.freeTextColor)
                 if let range = attributedString.string.range(of: "#") {
@@ -1216,6 +1240,7 @@ public func selectivePrivacySettingsController(
     requestPublicPhotoSetup: ((@escaping (UIImage?) -> Void) -> Void)? = nil,
     requestPublicPhotoRemove: ((@escaping () -> Void) -> Void)? = nil,
     openedFromBirthdayScreen: Bool = false,
+    focusOnItemTag: SelectivePrivacyEntryTag? = nil,
     updated: @escaping (SelectivePrivacySettings, (SelectivePrivacySettings, VoiceCallSettings)?, Bool?, GlobalPrivacySettings?) -> Void
 ) -> ViewController {
     let strings = context.sharedContext.currentPresentationData.with { $0 }.strings
@@ -1910,5 +1935,20 @@ public func selectivePrivacySettingsController(
     dismissImpl = { [weak controller] in
         controller?.dismiss()
     }
+    
+    if let focusOnItemTag {
+        var didFocusOnItem = false
+        controller.afterTransactionCompleted = { [weak controller] in
+            if !didFocusOnItem, let controller {
+                controller.forEachItemNode { itemNode in
+                    if let itemNode = itemNode as? ItemListItemNode, let tag = itemNode.tag, tag.isEqual(to: focusOnItemTag) {
+                        didFocusOnItem = true
+                        itemNode.displayHighlight()
+                    }
+                }
+            }
+        }
+    }
+    
     return controller
 }

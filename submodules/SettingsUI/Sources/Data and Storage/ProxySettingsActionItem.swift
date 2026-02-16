@@ -20,8 +20,9 @@ final class ProxySettingsActionItem: ListViewItem, ItemListItem {
     let editing: Bool
     let sectionId: ItemListSectionId
     let action: () -> Void
+    let tag: ItemListItemTag?
     
-    init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, title: String, icon: ProxySettingsActionIcon = .none, sectionId: ItemListSectionId, editing: Bool, action: @escaping () -> Void) {
+    init(presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .legacy, title: String, icon: ProxySettingsActionIcon = .none, sectionId: ItemListSectionId, editing: Bool, action: @escaping () -> Void, tag: ItemListItemTag? = nil) {
         self.presentationData = presentationData
         self.systemStyle = systemStyle
         self.title = title
@@ -29,6 +30,7 @@ final class ProxySettingsActionItem: ListViewItem, ItemListItem {
         self.editing = editing
         self.sectionId = sectionId
         self.action = action
+        self.tag = tag
     }
     
     func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -77,7 +79,7 @@ final class ProxySettingsActionItem: ListViewItem, ItemListItem {
     }
 }
 
-private final class ProxySettingsActionItemNode: ListViewItemNode {
+private final class ProxySettingsActionItemNode: ListViewItemNode, ItemListItemNode {
     private let backgroundNode: ASDisplayNode
     private let topStripeNode: ASDisplayNode
     private let bottomStripeNode: ASDisplayNode
@@ -88,6 +90,10 @@ private final class ProxySettingsActionItemNode: ListViewItemNode {
     private let titleNode: TextNode
     
     private var item: ProxySettingsActionItem?
+    
+    public var tag: ItemListItemTag? {
+        return self.item?.tag
+    }
     
     init() {
         self.backgroundNode = ASDisplayNode()

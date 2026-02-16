@@ -326,7 +326,7 @@ private func pushDeviceContactData(accountPeerId: PeerId, postbox: Postbox, netw
         batches = batches
         |> mapToSignal { intermediateResult -> Signal<PushDeviceContactsResult, NoError> in
             return network.request(Api.functions.contacts.importContacts(contacts: zip(0 ..< batch.count, batch).map { index, item -> Api.InputContact in
-                return .inputPhoneContact(flags: 0, clientId: Int64(index), phone: item.0.rawValue, firstName: item.1.firstName, lastName: item.1.lastName, note: nil)
+                return .inputPhoneContact(.init(flags: 0, clientId: Int64(index), phone: item.0.rawValue, firstName: item.1.firstName, lastName: item.1.lastName, note: nil))
             }))
             |> map(Optional.init)
             |> `catch` { _ -> Signal<Api.contacts.ImportedContacts?, NoError> in
@@ -341,12 +341,14 @@ private func pushDeviceContactData(accountPeerId: PeerId, postbox: Postbox, netw
                         var importedCounts: [Int: Int32] = [:]
                         var peerIdByClientId: [Int64: PeerId] = [:]
                         switch result {
-                            case let .importedContacts(imported, popularInvites, retryContacts, users):
-                            updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(users: users))
+                            case let .importedContacts(importedContactsData):
+                                let (imported, popularInvites, retryContacts, users) = (importedContactsData.imported, importedContactsData.popularInvites, importedContactsData.retryContacts, importedContactsData.users)
+                                updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: AccumulatedPeers(users: users))
                             
                                 for item in imported {
                                     switch item {
-                                    case let .importedContact(userId, clientId):
+                                    case let .importedContact(importedContactData):
+                                        let (userId, clientId) = (importedContactData.userId, importedContactData.clientId)
                                         let peerId = PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))
                                         addedContactPeerIds.insert(peerId)
                                         peerIdByClientId[clientId] = peerId
@@ -357,7 +359,8 @@ private func pushDeviceContactData(accountPeerId: PeerId, postbox: Postbox, netw
                                 }
                                 for item in popularInvites {
                                     switch item {
-                                        case let .popularContact(clientId, importers):
+                                        case let .popularContact(popularContactData):
+                                            let (clientId, importers) = (popularContactData.clientId, popularContactData.importers)
                                             importedCounts[Int(clientId)] = importers
                                     }
                                 }
@@ -405,7 +408,8 @@ private func updateContactPresences(postbox: Postbox, network: Network, accountP
             var peerPresences: [PeerId: PeerPresence] = [:]
             for status in statuses {
                 switch status {
-                    case let .contactStatus(userId, status):
+                    case let .contactStatus(contactStatusData):
+                        let (userId, status) = (contactStatusData.userId, contactStatusData.status)
                         peerPresences[PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId))] = TelegramUserPresence(apiStatus: status)
                 }
             }
