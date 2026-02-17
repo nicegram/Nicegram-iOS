@@ -3,6 +3,7 @@ import Display
 import MemberwiseInit
 import NGUtils
 import Postbox
+import SwiftSignalKit
 import TelegramBridge
 import TelegramCore
 
@@ -13,29 +14,27 @@ class TelegramWebAppOpenerImpl {
 
 extension TelegramWebAppOpenerImpl: TelegramWebAppOpener {
     func open(
-        appBotId: TelegramId,
+        appBotName: String,
         appShortName: String,
         customization: TelegramWebAppCustomization
     ) async throws {
         let context = try contextProvider.context().unwrap()
         
-        let appBotId = PeerId(appBotId)
-
-        async let botApp = getBotApp(
+        let botPeer = try await getPeer(
             context: context,
-            appBotId: appBotId,
-            appShortName: appShortName
+            username: appBotName
         )
-        
-        async let botPeer = getPeer(
+
+        let botApp = try await getBotApp(
             context: context,
-            id: appBotId
+            appBotId: botPeer.id,
+            appShortName: appShortName
         )
         
         let mode = getMode(customization: customization)
         let topController = try getTopController(context: context)
         
-        try await ChatControllerImpl.presentBotApp(
+        ChatControllerImpl.presentBotApp(
             context: context,
             parentController: topController,
             botApp: botApp,
@@ -61,11 +60,16 @@ private extension TelegramWebAppOpenerImpl {
     
     func getPeer(
         context: AccountContext,
-        id: PeerId
+        username: String
     ) async throws -> EnginePeer {
-        try await context.engine.data.get(
-            TelegramEngine.EngineData.Item.Peer.Peer(id: id)
-        ).awaitForFirstValue().unwrap()
+        let peerSignal = context.engine.peers.resolvePeerByName(name: username, referrer: nil)
+        |> mapToSignal { result -> Signal<EnginePeer?, NoError> in
+            guard case let .result(result) = result else {
+                return .complete()
+            }
+            return .single(result)
+        }
+        return try await peerSignal.awaitForFirstValue().unwrap()
     }
     
     func getMode(

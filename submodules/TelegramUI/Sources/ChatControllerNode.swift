@@ -2408,34 +2408,25 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         // Nicegram SensitiveContentAccess
-        let restrictedChatSupplementViewHeight = restrictedChatSupplementViewModel.viewState.height
-        if let restrictedNode, restrictedChatSupplementViewHeight > 0 {
+        let showRestrictedChatSupplementView = restrictedChatSupplementViewModel.viewState.show
+        if let restrictedNode, showRestrictedChatSupplementView {
             if restrictedChatSupplementView.supernode == nil {
                 restrictedNode.supernode?.addSubnode(restrictedChatSupplementView)
             }
             
             transition.updateFrame(
                 node: restrictedChatSupplementView,
-                frame: CGRect(
-                    x: 0,
-                    y: contentBounds.height - restrictedChatSupplementViewHeight,
-                    width: contentBounds.width,
-                    height: restrictedChatSupplementViewHeight
-                )
+                frame: contentBounds.inset(by: .top(insets.top))
             )
         } else {
             restrictedChatSupplementView.removeFromSupernode()
         }
         
         nicegramOverlayNode.alpha = (restrictedNode == nil) ? 1 : 0
+        restrictedNode?.alpha = showRestrictedChatSupplementView ? 0 : 1
         //
         
         if let restrictedNode = self.restrictedNode {
-            // Nicegram SensitiveContentAccess, adjust restrictedNode bounds
-            var contentBounds = contentBounds
-            contentBounds.size.height -= restrictedChatSupplementViewHeight
-            //
-            
             transition.updateFrame(node: restrictedNode, frame: contentBounds)
             restrictedNode.update(rect: contentBounds, within: contentBounds.size, transition: transition)
             restrictedNode.updateLayout(presentationData: ChatPresentationData(theme: ChatPresentationThemeData(theme: self.chatPresentationInterfaceState.theme, wallpaper: self.chatPresentationInterfaceState.chatWallpaper), fontSize: self.chatPresentationInterfaceState.fontSize, strings: self.chatPresentationInterfaceState.strings, dateTimeFormat: self.chatPresentationInterfaceState.dateTimeFormat, nameDisplayOrder: self.chatPresentationInterfaceState.nameDisplayOrder, disableAnimations: false, largeEmoji: false, chatBubbleCorners: PresentationChatBubbleCorners(mainRadius: 0.0, auxiliaryRadius: 0.0, mergeBubbleCorners: false)), backgroundNode: self.backgroundNode, size: contentBounds.size, transition: transition)

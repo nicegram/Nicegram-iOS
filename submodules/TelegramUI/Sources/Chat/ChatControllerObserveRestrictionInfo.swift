@@ -19,7 +19,8 @@ private extension ChatControllerImpl {
             .sink { [weak self] rules in
                 self?.chatDisplayNode.restrictedChatSupplementViewModel.update(
                     chatInfo: RestrictedChatInfo(
-                        restrictionReasons: rules.map(\.reason)
+                        restrictionReasons: rules.map(\.reason),
+                        restrictionText: rules.first?.text
                     )
                 )
             }
