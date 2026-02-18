@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/redesign-unblock",
-        "revision" : "859b7be36eb1a4cc761c7f1eca0ac3c7ae56f1ce"
+        "branch" : "develop",
+        "revision" : "1ad5bc7e7671d1d17b76a7d67ae3ca5bfa5d8f61"
       }
     },
     {
