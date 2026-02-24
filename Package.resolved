@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "1ad5bc7e7671d1d17b76a7d67ae3ca5bfa5d8f61"
+        "branch" : "feat/user-archetype",
+        "revision" : "37c010282419b124b185fa73c8bb1925ab7c9ad2"
       }
     },
     {
@@ -311,8 +311,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "388cebf85b8fc2258b93f86dd3e26a30fb070fd0",
-        "version" : "6.15.1"
+        "revision" : "08298e976a954bc15ea95bc9cf8d8a8ffe7a9cc3",
+        "version" : "6.15.2"
       }
     },
     {
@@ -599,8 +599,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "34e463e98ab8541c604af706c99bed7160f5ec70",
-        "version" : "1.8.1"
+        "revision" : "dfd70507def84cb5fb821278448a262c6ff2bbad",
+        "version" : "1.9.0"
       }
     },
     {

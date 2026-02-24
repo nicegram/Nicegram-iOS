@@ -508,6 +508,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramWebAppOpener: {
                 TelegramWebAppOpenerImpl(contextProvider: contextProvider)
             },
+            userMessagesHistoryProvider: {
+                UserMessagesHistoryProviderImpl(contextProvider: contextProvider)
+            },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
             },
