@@ -28,7 +28,9 @@ public final class SharedCallAudioContext {
     private var audioOutputStateValue: ([AudioSessionOutput], AudioSessionOutput?) = ([], nil)
     public private(set) var currentAudioOutputValue: AudioSessionOutput = .builtin
     private var didSetCurrentAudioOutputValue: Bool = false
-    var audioOutputState: Signal<([AudioSessionOutput], AudioSessionOutput?), NoError> {
+    
+    // Nicegram Calls, added 'public'
+    public var audioOutputState: Signal<([AudioSessionOutput], AudioSessionOutput?), NoError> {
         return self.audioOutputStatePromise.get()
     }
     
@@ -213,7 +215,8 @@ public final class SharedCallAudioContext {
         }
     }
     
-    func setCurrentAudioOutput(_ output: AudioSessionOutput) {
+    // Nicegram Calls, added 'public'
+    public func setCurrentAudioOutput(_ output: AudioSessionOutput) {
         self.initialSetupTimer?.invalidate()
         self.initialSetupTimer = nil
         

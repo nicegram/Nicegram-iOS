@@ -508,19 +508,19 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramWebAppOpener: {
                 TelegramWebAppOpenerImpl(contextProvider: contextProvider)
             },
-            userMessagesHistoryProvider: {
-                UserMessagesHistoryProviderImpl(contextProvider: contextProvider)
-            },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)
             },
             webRtcBridge: {
                 WebRtcBridgeImpl(
                     sharedCallAudioContext: {
-                        SharedCallAudioContext.get(
-                            audioSession: sharedAudioSession,
-                            callKitIntegration: .shared,
-                            defaultToSpeaker: false
+                        NicegramCallsAudioContextImpl(
+                            sharedContext:
+                                SharedCallAudioContext.get(
+                                    audioSession: sharedAudioSession,
+                                    callKitIntegration: .shared,
+                                    defaultToSpeaker: false
+                                )
                         )
                     }
                 )

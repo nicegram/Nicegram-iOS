@@ -6,7 +6,6 @@ import AccountContext
 import Display
 import FeatOnboarding
 import FeatPremiumUI
-import FeatUserArchetype
 import NGAiChatUI
 import NGAnalytics
 import NGEntryPoint
@@ -82,8 +81,6 @@ class NGDeeplinkHandler {
                 AssistantTgHelper.routeToAssistant(source: .generic)
             }
             return true
-        case "userArchetype":
-            return handleUserArchetype(url: url)
         default:
             return false
         }
@@ -159,23 +156,6 @@ private extension NGDeeplinkHandler {
             id: url.queryItems["id"]
         )
         return true
-    }
-    
-    func handleUserArchetype(url: URL) -> Bool {
-        guard #available(iOS 15.0, *) else {
-            return false
-        }
-        
-        switch url.lastPathComponent {
-        case "bot":
-            UserArchetypePresenter().presentBot()
-            return true
-        case "flow":
-            UserArchetypePresenter().presentFlow()
-            return true
-        default:
-            return false
-        }
     }
 }
 
