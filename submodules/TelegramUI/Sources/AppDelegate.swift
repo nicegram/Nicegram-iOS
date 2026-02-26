@@ -514,13 +514,10 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             webRtcBridge: {
                 WebRtcBridgeImpl(
                     sharedCallAudioContext: {
-                        NicegramCallsAudioContextImpl(
-                            sharedContext:
-                                SharedCallAudioContext.get(
-                                    audioSession: sharedAudioSession,
-                                    callKitIntegration: .shared,
-                                    defaultToSpeaker: false
-                                )
+                        SharedCallAudioContext.get(
+                            audioSession: sharedAudioSession,
+                            callKitIntegration: .shared,
+                            defaultToSpeaker: false
                         )
                     }
                 )

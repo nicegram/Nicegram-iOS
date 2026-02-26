@@ -4,7 +4,7 @@ import webrtc_objc
 
 @MemberwiseInit(.public)
 public class WebRtcBridgeImpl {
-    @Init(.public) private let sharedCallAudioContext: () -> NicegramCallsAudioContext
+    @Init(.public) private let sharedCallAudioContext: () -> Any?
 }
 
 extension WebRtcBridgeImpl: WebRtcBridge {

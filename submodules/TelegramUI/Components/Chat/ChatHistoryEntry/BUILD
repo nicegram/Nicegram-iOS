@@ -1,7 +1,7 @@
 load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
 NGDEPS = [
-    "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
+    "@swiftpkg_nicegram_assistant_ios//:FeatAdsgram",
 ]
 
 swift_library(

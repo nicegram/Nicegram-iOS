@@ -1,4 +1,3 @@
-import Combine
 import FeatCalls
 import webrtc_objc
 
@@ -8,7 +7,7 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
     
     private let factory: RTCPeerConnectionFactory
     private let peerConnection: RTCPeerConnection?
-    private let sharedCallAudioContext: NicegramCallsAudioContext
+    private let sharedCallAudioContext: Any?
     
     weak var delegate: WebRtcServiceDelegate?
     
@@ -22,7 +21,7 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
     
     init(
         callConfiguration: CallConfiguration,
-        sharedCallAudioContext: NicegramCallsAudioContext
+        sharedCallAudioContext: Any?
     ) {
         let config = RTCConfiguration()
         config.iceServers = callConfiguration.iceServers.map { .init($0) }
@@ -58,10 +57,6 @@ class WebRtcServiceImpl: NSObject, WebRtcService {
 //  MARK: - WebRtcService
 
 extension WebRtcServiceImpl {
-    var routeStatePublisher: AnyPublisher<NGAudioRouteState, Never> {
-        sharedCallAudioContext.routeStatePublisher
-    }
-    
     func initialize() {
         createMediaSenders()
     }
@@ -117,8 +112,10 @@ extension WebRtcServiceImpl {
         setTrack(RTCAudioTrack.self, enabled: !muted)
     }
     
-    func selectAudioOutput(_ output: NGAudioSessionOutput) {
-        sharedCallAudioContext.selectAudioOutput(output)
+    func setSpeaker(enabled: Bool) {
+        try? AVAudioSession.sharedInstance().overrideOutputAudioPort(
+            enabled ? .speaker : .none
+        )
     }
 }
 
@@ -157,7 +154,23 @@ extension WebRtcServiceImpl: RTCPeerConnectionDelegate {
 //  MARK: - Private Functions
 
 private extension WebRtcServiceImpl {
+    func configureAudioSession() {
+        let session = RTCAudioSession.sharedInstance()
+        
+        session.lockForConfiguration()
+        do {
+            try session.setCategory(
+                .playAndRecord,
+                with: [.allowBluetoothA2DP, .mixWithOthers]
+            )
+            try session.setMode(.voiceChat)
+        } catch {}
+        session.unlockForConfiguration()
+    }
+    
     func createMediaSenders() {
+        configureAudioSession()
+        
         let streamId = "stream"
         
         let audioTrack = createAudioTrack()
