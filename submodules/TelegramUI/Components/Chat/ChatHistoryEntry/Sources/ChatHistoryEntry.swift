@@ -1,6 +1,4 @@
-// Nicegram
-import FeatAdsgram
-import MemberwiseInit
+// Nicegram Wallet
 import NicegramWallet
 //
 import Postbox
@@ -64,23 +62,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
     case UnreadEntry(MessageIndex, ChatPresentationData)
     case ReplyCountEntry(MessageIndex, Bool, Int, ChatPresentationData)
     case ChatInfoEntry(ChatInfoData, ChatPresentationData)
-
-    // Nicegram Ads
-    case nicegramAd(NicegramAd)
-
-    @MemberwiseInit(.public)
-    public struct NicegramAd: Equatable {
-        public let presentationData: ChatPresentationData
-        public let viewModel: ChatMessageAdViewModel
-        public let viewState: PlacementViewState
-        
-        public static func ==(lhs: NicegramAd, rhs: NicegramAd) -> Bool {
-            lhs.presentationData === rhs.presentationData &&
-            lhs.viewModel === rhs.viewModel &&
-            lhs.viewState == rhs.viewState
-        }
-    }
-    //
     
     public var stableId: UInt64 {
         switch self {
@@ -107,11 +88,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return UInt64(7) << 40
             default:
                 return UInt64(6) << 40
-            }
-        // Nicegram Ads
-        case let .nicegramAd:
-            return UInt64(8) << 40
-        //
+            }   
         }
     }
     
@@ -132,10 +109,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
             default:
                 return MessageIndex.absoluteLowerBound()
             }
-        // Nicegram Ads
-        case let .nicegramAd:
-            return MessageIndex.absoluteLowerBound()
-        //
         }
     }
     
@@ -156,10 +129,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 default:
                     return MessageIndex.absoluteLowerBound()
                 }
-            // Nicegram Ads
-            case let .nicegramAd:
-                return MessageIndex.absoluteLowerBound()
-            //
         }
     }
     
@@ -332,14 +301,6 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 } else {
                     return false
                 }
-            // Nicegram Ads
-            case let .nicegramAd(lhsValue):
-                if case let .nicegramAd(rhsValue) = rhs, lhsValue == rhsValue {
-                    return true
-                } else {
-                    return false
-                }
-            //
         }
     }
     

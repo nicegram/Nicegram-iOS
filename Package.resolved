@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/ad-in-chat",
-        "revision" : "9c61b3a6ee5cb4fa5ef7365da434f112c5128343"
+        "branch" : "feat/user-archetype",
+        "revision" : "07d1873e293534576862a8b0d57dbec75b7cdb4c"
       }
     },
     {

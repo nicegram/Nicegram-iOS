@@ -282,8 +282,7 @@ public func navigateToChatControllerImpl(_ params: NavigateToChatControllerParam
                 if params.navigationController.viewControllers.contains(where: { $0 is StoryContainerScreen }) {
                     resolvedKeepStack = true
                 } else {
-                    // Nicegram Ads, keep navigation stack by default
-                    resolvedKeepStack = true
+                    resolvedKeepStack = params.context.sharedContext.immediateExperimentalUISettings.keepChatNavigationStack
                 }
             case .always:
                 resolvedKeepStack = true

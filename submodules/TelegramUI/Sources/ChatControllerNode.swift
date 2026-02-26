@@ -231,10 +231,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var didDisplayEmptyGreeting = false
     private var validEmptyNodeLayout: (CGSize, UIEdgeInsets, CGFloat, CGFloat)?
     var restrictedNode: ChatRecentActionsEmptyNode?
-
-    // Nicegram
-    let nicegramContext: ChatNicegramContext
-    //
     
     // Nicegram SensitiveContentAccess
     let restrictedChatSupplementViewModel: RestrictedChatSupplementViewModel
@@ -504,11 +500,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     private var onLayoutCompletions: [(ContainedViewLayoutTransition) -> Void] = []
 
-    // Nicegram, add nicegramContext
-    init(nicegramContext: ChatNicegramContext, context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
-        // Nicegram
-        self.nicegramContext = nicegramContext
-        //
+    init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
         self.context = context
         self.chatLocation = chatLocation
         self.chatLocationContextHolder = chatLocationContextHolder
@@ -814,8 +806,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
 
         var getMessageTransitionNode: (() -> ChatMessageTransitionNodeImpl?)?
-        // Nicegram, add nicegramContext
-        self.historyNode = ChatHistoryListNodeImpl(nicegramContext: nicegramContext, context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, adMessagesContext: self.adMessagesContext, tag: nil, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), rotated: historyNodeRotated, isChatPreview: isChatPreview, messageTransitionNode: {
+        self.historyNode = ChatHistoryListNodeImpl(context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, adMessagesContext: self.adMessagesContext, tag: nil, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), rotated: historyNodeRotated, isChatPreview: isChatPreview, messageTransitionNode: {
             return getMessageTransitionNode?()
         })
 
@@ -966,21 +957,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         //
         
-        // Nicegram Ads
         // Nicegram SensitiveContentAccess
-        let ngHeaderAdViewModel = nicegramContext.ads.headerAdViewModel
-        let headerAdHeightPublisher = ngHeaderAdViewModel.$viewState
-            .map { [ngHeaderAdViewModel] state in
-                ngHeaderAdViewModel.viewHeight(state)
-            }
-        
         restrictedChatSupplementViewModel.$viewState
-            .combineLatestThreadSafe(
-                headerAdHeightPublisher
-            )
-            .removeDuplicates(by: ==)
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
+            .sink { [weak self] state in
                 self?.requestLayout(.immediate)
             }
             .store(in: &cancellables)
@@ -1749,28 +1730,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             }
         }
-        // Nicegram
-        self.nicegramContext.update(hasTelegramHeaderAd: displayAdPanel)
-
-        let ngHeaderAdViewModel = nicegramContext.ads.headerAdViewModel
-        let ngHeaderAdHeight = ngHeaderAdViewModel.viewHeight(ngHeaderAdViewModel.viewState)
-        let showNgHeaderAd = ngHeaderAdHeight > 0
-        if #available(iOS 16.0, *), showNgHeaderAd, !displayAdPanel {
-            headerPanels.append(
-                HeaderPanelContainerComponent.Panel(
-                    key: "nicegram-ad",
-                    orderIndex: 2,
-                    component: AnyComponent(
-                        NicegramChatHeaderAdComponent(
-                            viewModel: ngHeaderAdViewModel,
-                            height: ngHeaderAdHeight
-                        )
-                    )
-                )
-            )
-        }
-        //
-
         if displayAdPanel, let adMessage = self.chatPresentationInterfaceState.adMessage {
             headerPanels.append(HeaderPanelContainerComponent.Panel(
                 key: "ad",
@@ -5445,9 +5404,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     func createHistoryNodeForChatLocation(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>) -> ChatHistoryListNodeImpl {
         let historyNode = ChatHistoryListNodeImpl(
-            // Nicegram
-            nicegramContext: self.nicegramContext,
-            //
             context: self.context,
             updatedPresentationData: self.controller?.updatedPresentationData ?? (self.context.sharedContext.currentPresentationData.with({ $0 }), self.context.sharedContext.presentationData),
             chatLocation: chatLocation,
