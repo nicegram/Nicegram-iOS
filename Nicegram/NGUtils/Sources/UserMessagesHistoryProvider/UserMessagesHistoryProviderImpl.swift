@@ -7,6 +7,7 @@ import TelegramApi
 import TelegramBridge
 import TelegramCore
 import FeatUserArchetype
+import NGCore
 
 private extension UserMessagesHistoryProviderImpl {
     struct TelegramDialog {
@@ -70,6 +71,8 @@ extension UserMessagesHistoryProviderImpl: UserMessagesHistoryProvider {
         let dialogs = try await fetchUserDialogs()
         var result: [UserMessagesHistory.Dialog] = []
         
+        let userContacts: Set<Int64> = try await fetchUserContacts()
+        
         for dialog in dialogs {
             let messages = try await fetchUserMessagesFor(dialog, fromDate: formDate)
             
@@ -77,9 +80,19 @@ extension UserMessagesHistoryProviderImpl: UserMessagesHistoryProvider {
                 continue
             }
             
+            let dialogType: UserMessagesHistory.DialogType = {
+                switch dialog.peer {
+                case .user(let id, _):
+                    return userContacts.contains(id) ? .contact : .user
+                case .chat, .channel:
+                    return .group
+                }
+            }()
+            
             result.append(
                 .init(
                     name: dialog.name,
+                    type: dialogType,
                     messages: messages.map {
                         UserMessagesHistory.Message(
                             date: $0.date,
@@ -198,6 +211,26 @@ private extension UserMessagesHistoryProviderImpl {
             }
         }
         return result
+    }
+    
+    func fetchUserContacts() async throws -> Set<Int64> {
+        let context = try contextProvider.context().unwrap()
+        let result: Api.contacts.Contacts = try await context.account.network.request(
+            Api.functions.contacts.getContacts(hash: 0)
+        ).awaitForFirstValue()
+        
+        let contactIds: Set<Int64>
+        
+        guard case let .contacts(data) = result else {
+            throw UnexpectedError()
+        }
+        
+        contactIds = Set(data.users.compactMap { user in
+            if case let .user(u) = user { return u.id }
+            return nil
+        })
+        
+        return contactIds
     }
     
     func fetchDialogsPage(

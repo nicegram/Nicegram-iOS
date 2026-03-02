@@ -484,7 +484,12 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             let messagesCount = 100
                             items.append(.action(ContextMenuActionItem(
                                 text: FeatAiChatAnalysis.strings.copyLastMessages(messagesCount),
-                                icon: { _ in nil },
+                                icon: { theme in
+                                    generateTintedImage(
+                                        image: UIImage(bundleImageName: "Chat/Context Menu/Copy"),
+                                        color: theme.contextMenu.primaryColor
+                                    )
+                                },
                                 action: { _, f in
                                     copySourceMessages(messagesCount)
                                     f(.default)
@@ -495,7 +500,12 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             if unreadCount > 0 {
                                 items.append(.action(ContextMenuActionItem(
                                     text: FeatAiChatAnalysis.strings.copyUnreadMessages(),
-                                    icon: { _ in nil },
+                                    icon: { theme in
+                                        generateTintedImage(
+                                            image: UIImage(bundleImageName: "Chat/Context Menu/Copy"),
+                                            color: theme.contextMenu.primaryColor
+                                        )
+                                    },
                                     action: { _, f in
                                         copySourceMessages(unreadCount)
                                         f(.default)

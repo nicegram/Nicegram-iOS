@@ -60,10 +60,17 @@ public enum AudioSessionPortType {
     case wired
 }
 
+// Nicegram Calls, make 'uid' field and init public
 public struct AudioSessionPort: Equatable {
-    fileprivate let uid: String
+    public let uid: String
     public let name: String
     public let type: AudioSessionPortType
+    
+    public init(uid: String, name: String, type: AudioSessionPortType) {
+        self.uid = uid
+        self.name = name
+        self.type = type
+    }
 }
 
 public enum AudioSessionOutput: Equatable {
