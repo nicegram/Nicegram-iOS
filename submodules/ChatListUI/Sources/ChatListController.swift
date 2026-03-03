@@ -4,18 +4,17 @@ import Postbox
 // Nicegram Imports
 import class Combine.AnyCancellable
 import class Combine.CurrentValueSubject
+import CoreAnalytics
 import Factory
 import FeatAssistant
 import FeatChatListWidget
 import FeatPinnedChats
 import NGAiChatUI
-import NGAnalytics
 import NGData
 import NGAppCache
 import NGCore
 import FeatAuth
 import NGModels
-import NGRemoteConfig
 import NGRepoUser
 import NGSpecialOffer
 import NGTranslate

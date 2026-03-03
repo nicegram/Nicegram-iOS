@@ -30,7 +30,6 @@ swift_library(
         "//Nicegram/NGEnv:NGEnv",
         "//Nicegram/NGDoubleBottom:NGDoubleBottom",
         "//Nicegram/NGQuickReplies:NGQuickReplies",
-        "//Nicegram/NGRemoteConfig:NGRemoteConfig",
         "@swiftpkg_nicegram_assistant_ios//:NGAiChatUI",
         "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
         "@swiftpkg_nicegram_assistant_ios//:FeatAdsgram",

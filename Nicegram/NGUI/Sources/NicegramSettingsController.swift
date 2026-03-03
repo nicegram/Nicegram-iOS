@@ -38,7 +38,6 @@ import var NGCoreUI.strings
 import NGDataSharing
 import NGDoubleBottom
 import NGQuickReplies
-import NGRemoteConfig
 import NGUtils
 
 fileprivate let LOGTAG = extractNameFromPath(#file)

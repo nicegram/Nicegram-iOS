@@ -1,9 +1,9 @@
 // Nicegram imports
+import CoreAnalytics
 import FeatAccountBackup
 import FeatCalls
 import FeatOnboarding
 import NGAiChat
-import NGAnalytics
 import NGAppCache
 import NGCore
 import NGData
@@ -11,7 +11,6 @@ import NGDataSharing
 import NGEntryPoint
 import NGEnv
 import NGLogging
-import NGRemoteConfig
 import NGRepoUser
 import NGStrings
 import NGUtils
@@ -70,7 +69,6 @@ import AppCenter
 import AppCenterCrashes
 #endif
 
-import FirebaseCore
 private let handleVoipNotifications = false
 
 private var testIsLaunched = false
@@ -377,10 +375,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         let _ = notificationTokenPromise.get().start(next: { token in
             self.regularDeviceToken.set(.single(token))
         })
-
-        if #available(iOS 12.0, *) {
-            FirebaseApp.configure()
-        }
         
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
         
@@ -444,6 +438,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 premiumProductId: NGENV.premium_bundle,
                 privacyUrl: URL(string: "https://nicegram.app/privacy-policy")!,
                 referralBot: NGENV.referral_bot,
+                remoteConfigCacheDurationSeconds: NGENV.remote_config_cache_duration_seconds,
                 telegramAuthBot: NGENV.telegram_auth_bot,
                 termsUrl: URL(string: "https://nicegram.app/terms-of-use")!,
                 webSocketUrl: NGENV.websocket_url
@@ -457,17 +452,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             chatListPeersProvider: {
                 ChatListPeersProviderImpl(contextProvider: contextProvider)
             },
-            firebaseAnalyticsSender: {
-                FirebaseAnalyticsSender()
-            },
             idleTimerManager: {
                 IdleTimerManagerImpl(contextProvider: contextProvider)
             },
             keywordsBridge: {
                 KeywordsBridgeImpl(contextProvider: contextProvider)
-            },
-            remoteConfig: {
-                RemoteConfigServiceImpl.shared
             },
             telegramChatHistoryProvider: {
                 TelegramChatHistoryProviderImpl(contextProvider: contextProvider)
@@ -507,9 +496,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             telegramWebAppOpener: {
                 TelegramWebAppOpenerImpl(contextProvider: contextProvider)
-            },
-            userMessagesHistoryProvider: {
-                UserMessagesHistoryProviderImpl(contextProvider: contextProvider)
             },
             urlOpener: {
                 UrlOpenerImpl(contextProvider: contextProvider)

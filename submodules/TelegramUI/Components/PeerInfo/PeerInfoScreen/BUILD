@@ -7,6 +7,7 @@ NGDEPS = [
     "//Nicegram/NGStrings:NGStrings",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGUtils:NGUtils",
+    "@swiftpkg_nicegram_assistant_ios//:CoreRemoteConfig",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
     "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
     "@swiftpkg_nicegram_assistant_ios//:FeatGodsEye",

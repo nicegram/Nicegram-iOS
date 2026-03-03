@@ -1,7 +1,6 @@
 // Nicegram Onboarding
 import FeatOnboardingCore
 import FeatPhoneEntryBanner
-import _NGRemoteConfig
 //
 import Foundation
 import UIKit

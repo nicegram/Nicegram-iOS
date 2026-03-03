@@ -1,5 +1,5 @@
+import CoreAnalytics
 import Foundation
-import NGAnalytics
 
 public enum UserSettingsAnalyticsEvent: String {
     case recordAllCallsOn = "user_settings_record_all_calls_on"

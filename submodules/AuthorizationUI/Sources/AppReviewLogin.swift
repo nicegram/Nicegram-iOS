@@ -1,6 +1,6 @@
+import CoreRemoteConfig
 import Foundation
 import NGEnv
-import _NGRemoteConfig
 
 struct AppReviewLogin {
     static var phone : String {

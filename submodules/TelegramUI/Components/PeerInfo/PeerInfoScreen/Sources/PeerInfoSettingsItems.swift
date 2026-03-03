@@ -1,11 +1,11 @@
 // Nicegram
+import CoreRemoteConfig
 import FeatTgAppsCenter
 import FeatWallet
 import NGAiChatUI
 import class NGCore.CoreContainer
 import NGData
 import NGEnv
-import _NGRemoteConfig
 import NGStrings
 import NicegramWallet
 //

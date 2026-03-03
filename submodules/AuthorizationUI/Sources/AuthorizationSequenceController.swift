@@ -1,5 +1,5 @@
 // Nicegram Analytics
-import NGAnalytics
+import CoreAnalytics
 //
 import Foundation
 import UIKit
@@ -1253,7 +1253,14 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
         if otherAccountPhoneNumbers.1.isEmpty {
             switch state {
             case .authorized:
-                analyticsManager.trackEvent("nicegram_tgauth_success")
+                analyticsManager.trackEvent(
+                    AnalyticsEvent(
+                        "nicegram_tgauth_success",
+                        providers: .init(
+                            adjust: .init(token: "392g3r")
+                        )
+                    )
+                )
             case let .state(state):
                 switch state {
                 case .phoneEntry, .empty:

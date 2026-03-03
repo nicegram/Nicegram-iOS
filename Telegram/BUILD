@@ -2050,6 +2050,8 @@ plist_fragment(
     <string>You can use Siri to send messages.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>We need this to transcribe audio messages on your request.</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>We would like to access your advertising ID in order to accurately identify the source of app installation and provide you with a high quality service</string>
     <key>NSUserActivityTypes</key>
     <array>
         <string>INSendMessageIntent</string>
@@ -2167,6 +2169,17 @@ xcode_provisioning_profile(
    provisioning_profile = ":Telegram_local_profile",
 )
 
+# Nicegram, required for Adjust SDK
+objc_library(
+    name = "OptionalSystemFrameworks",
+    weak_sdk_frameworks = [
+        "AdServices",
+        "AdSupport",
+        "AppTrackingTransparency",
+        "StoreKit",
+    ]
+)
+
 ios_application(
     name = "Telegram",
     bundle_id = "{telegram_bundle_id}".format(
@@ -2218,6 +2231,8 @@ ios_application(
     deps = [
         ":Main",
         ":Lib",
+        # Nicegram
+        ":OptionalSystemFrameworks",
     ],
     visibility = ["//visibility:public"],
 )

@@ -48,6 +48,7 @@ import TelegramNotices
 import SaveToCameraRoll
 import PeerInfoUI
 // Nicegram Imports
+import CoreAnalytics
 import FeatAssistant
 import FeatCalls
 import FeatGodsEye
@@ -56,13 +57,11 @@ import FeatTgAppsCenter
 import FeatTgUserNotes
 import FeatWallet
 import NGAiChatUI
-import NGAnalytics
 import NGCore
 import NGCoreUI
 import NGData
 import NGEnv
 import NGLab
-import _NGRemoteConfig
 import NGRepoUser
 import NGStrings
 import NGUI

@@ -10,12 +10,11 @@ swift_library(
         "//submodules/AccountContext",
         "//submodules/ItemListUI",
         "//third-party/webrtc:webrtc_objc",
-        "@swiftpkg_firebase_ios_sdk//:FirebaseAnalytics",
+        "@swiftpkg_nicegram_assistant_ios//:CoreAnalytics",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
         "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
         "@swiftpkg_nicegram_assistant_ios//:FeatSensitiveContentAccess",
-        "@swiftpkg_nicegram_assistant_ios//:NGAnalytics",
         "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
     ],
     visibility = [

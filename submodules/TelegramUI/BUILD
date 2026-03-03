@@ -10,12 +10,10 @@ NGDEPS = [
     "//Nicegram/NGAppCache:NGAppCache",
     "//Nicegram/NGEnv:NGEnv",
     "//Nicegram/NGQuickReplies:NGQuickReplies",
-    "//Nicegram/NGRemoteConfig:NGRemoteConfig",
     "//Nicegram/NGDataSharing:NGDataSharing",
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGWrap:NGWrap",
     "//Nicegram/NGKeywords:NGKeywords",
-    "@swiftpkg_firebase_ios_sdk//:FirebaseCrashlytics",
     "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiVoiceAssistant",
@@ -30,7 +28,6 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton",
     "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint",
-    "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig",
 ]
 
 load(

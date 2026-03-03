@@ -1,6 +1,6 @@
 import AccountContext
+import CoreAnalytics
 import FirebaseAnalytics
-import NGAnalytics
 import Postbox
 import SwiftSignalKit
 import TelegramCore
