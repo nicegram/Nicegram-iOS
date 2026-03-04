@@ -84,12 +84,8 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
             let horizontalInset = 10.0
             self?.widgetViewModel.set(
                 layoutParams: .init(
-                    insets: .init(
-                        top: 0,
-                        leading: params.leftInset + horizontalInset,
-                        bottom: 0,
-                        trailing: params.rightInset + horizontalInset
-                    )
+                    leadingInset: params.leftInset + horizontalInset,
+                    trailingInset: params.rightInset + horizontalInset
                 )
             )
             
