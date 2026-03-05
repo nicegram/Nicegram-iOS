@@ -15,6 +15,7 @@ swift_library(
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
         "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
         "@swiftpkg_nicegram_assistant_ios//:FeatSensitiveContentAccess",
+        "@swiftpkg_nicegram_assistant_ios//:FeatUserArchetype",
         "@swiftpkg_nicegram_wallet_ios//:NicegramWallet",
     ],
     visibility = [
