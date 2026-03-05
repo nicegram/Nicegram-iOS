@@ -86,8 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LottieFiles/dotlottie-ios.git",
       "state" : {
-        "revision" : "3fabffa142035db79f020cc8978767b4931fa1b9",
-        "version" : "0.13.0"
+        "revision" : "1f46c4786abe02a0a2f70c79d97e08105f363964",
+        "version" : "0.12.1"
       }
     },
     {
@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "build/640",
-        "revision" : "be7988a4fe12a8bf1d5005721a7906955194e035"
+        "branch" : "develop",
+        "revision" : "04536f2ea7c92b0ca55127a8993c0ee4975a4f87"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "08298e976a954bc15ea95bc9cf8d8a8ffe7a9cc3",
-        "version" : "6.15.2"
+        "revision" : "af1c45b2926ae0bdd84a3556909769a6573bb97a",
+        "version" : "6.16.0"
       }
     },
     {
