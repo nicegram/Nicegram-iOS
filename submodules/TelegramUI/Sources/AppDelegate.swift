@@ -849,8 +849,19 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             LoggingSettings.defaultSettings = LoggingSettings(logToFile: false, logToConsole: false, redactSensitiveData: true)
         }
         
-        let rootPath = rootPathForBasePath(appGroupUrl.path)
-        performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
+        let isUITest = CommandLine.arguments.contains("--ui-test")
+
+        let rootPath: String
+        if isUITest {
+            let testDataPath = appGroupUrl.path + "/telegram-ui-tests-data"
+            let _ = try? FileManager.default.removeItem(atPath: testDataPath)
+            rootPath = rootPathForBasePath(testDataPath)
+        } else {
+            rootPath = rootPathForBasePath(appGroupUrl.path)
+        }
+        if !isUITest {
+            performAppGroupUpgrades(appGroupPath: appGroupUrl.path, rootPath: rootPath)
+        }
         
         let deviceSpecificEncryptionParameters = BuildConfig.deviceSpecificEncryptionParameters(rootPath, baseAppBundleId: baseAppBundleId)
         let encryptionParameters = ValueBoxEncryptionParameters(forceEncryptionIfNoSet: false, key: ValueBoxEncryptionParameters.Key(data: deviceSpecificEncryptionParameters.key)!, salt: ValueBoxEncryptionParameters.Salt(data: deviceSpecificEncryptionParameters.salt)!)
@@ -1209,7 +1220,43 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
 
         telegramUIDeclareEncodables()
         initializeAccountManagement()
-        
+
+        if isUITest,
+           let deleteIdx = CommandLine.arguments.firstIndex(of: "--delete-test-account"),
+           deleteIdx + 1 < CommandLine.arguments.count
+        {
+            let phone = CommandLine.arguments[deleteIdx + 1]
+            let digits = phone.hasPrefix("+") ? String(phone.dropFirst()) : phone
+            guard digits.count == 10, digits.hasPrefix("99966") else {
+                preconditionFailure("--delete-test-account phone must match 99966XYYYY")
+            }
+            let dcDigit = digits[digits.index(digits.startIndex, offsetBy: 5)]
+            let phoneCode = String(repeating: dcDigit, count: 5)
+
+            let window = self.window!
+            window.makeKeyAndVisible()
+
+            NSLog("[DeleteAccount] starting for +\(digits)")
+            let _ = test_loginAndDeleteAccount(
+                rootPath: rootPath,
+                accountManager: accountManager,
+                networkArguments: networkArguments,
+                encryptionParameters: encryptionParameters,
+                phoneNumber: "+\(digits)",
+                phoneCode: phoneCode
+            ).start(error: { error in
+                NSLog("[DeleteAccount] error: \(error)")
+                preconditionFailure("test_loginAndDeleteAccount failed")
+            }, completed: {
+                NSLog("[DeleteAccount] completed")
+                DispatchQueue.main.async {
+                    window.accessibilityIdentifier = "DeleteAccount.Success"
+                }
+            })
+
+            return true
+        }
+
         let pushRegistry = PKPushRegistry(queue: .main)
         if #available(iOS 9.0, *) {
             pushRegistry.desiredPushTypes = Set([.voIP])
@@ -1279,7 +1326,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 // Nicegram DB Changes
             }, openDoubleBottomFlow: { [weak self] selectedAccount in
                 self?.openDoubleBottomFlow(selectedAccount: selectedAccount)
-            }, appDelegate: self)
+            }, appDelegate: self, testingEnvironment: isUITest)
             
             presentationDataPromise.set(sharedContext.presentationData)
             
@@ -1358,6 +1405,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 return applicationBindings.pushIdleTimerExtension()
             }, activeAccounts: sharedContext.activeAccountContexts |> map { ($0.0?.account, $0.1.map { ($0.0, $0.1.account) }) }, liveLocationPolling: liveLocationPolling, watchTasks: .single(nil), inForeground: applicationBindings.applicationInForeground, hasActiveAudioSession: self.hasActiveAudioSession.get(), notificationManager: notificationManager, mediaManager: sharedContext.mediaManager, callManager: sharedContext.callManager, accountUserInterfaceInUse: { id in
                 return sharedContext.accountUserInterfaceInUse(id)
+            }, presentationData: {
+                return sharedContext.currentPresentationData.with({ $0 })
             })
             let sharedApplicationContext = SharedApplicationContext(sharedContext: sharedContext, notificationManager: notificationManager, wakeupManager: wakeupManager)
             sharedApplicationContext.sharedContext.mediaManager.overlayMediaManager.attachOverlayMediaController(sharedApplicationContext.overlayMediaController)
@@ -1860,9 +1909,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         
         if let url = launchOptions?[.url] {
             if let url = url as? URL, url.scheme == "tg" || url.scheme == buildConfig.appSpecificUrlScheme {
-                self.openUrlWhenReady(url: url)
+                self.openUrlWhenReady(url: url, external: true)
             } else if let urlString = url as? String, urlString.lowercased().hasPrefix("tg:") || urlString.lowercased().hasPrefix("\(buildConfig.appSpecificUrlScheme):"), let url = URL(string: urlString) {
-                self.openUrlWhenReady(url: url)
+                self.openUrlWhenReady(url: url, external: true)
             }
         }
         
@@ -1884,31 +1933,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         
-        /*if UIApplication.shared.isStatusBarHidden {
-            UIApplication.shared.internalSetStatusBarHidden(false, animation: .none)
-        }*/
-        
-        /*if #available(iOS 13.0, *) {
-            BGTaskScheduler.shared.register(forTaskWithIdentifier: baseAppBundleId + ".refresh", using: nil, launchHandler: { task in
-                let _ = (self.sharedContextPromise.get()
-                |> take(1)
-                |> deliverOnMainQueue).start(next: { sharedApplicationContext in
-                    
-                    sharedApplicationContext.wakeupManager.replaceCurrentExtensionWithExternalTime(completion: {
-                        task.setTaskCompleted(success: true)
-                    }, timeout: 29.0)
-                    let _ = (self.context.get()
-                    |> take(1)
-                    |> deliverOnMainQueue).start(next: { context in
-                        guard let context = context else {
-                            return
-                        }
-                        sharedApplicationContext.notificationManager.beginPollingState(account: context.context.account)
-                    })
-                })
-            })
-        }*/
-        
         self.maybeCheckForUpdates()
 
         #if canImport(AppCenter)
@@ -1920,9 +1944,9 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         #endif
         
         if #available(iOS 13.0, *) {
-            let taskId = "\(baseAppBundleId).cleanup"
+            let cleanupTaskId = "\(baseAppBundleId).cleanup"
             
-            BGTaskScheduler.shared.register(forTaskWithIdentifier: taskId, using: DispatchQueue.main) { task in
+            BGTaskScheduler.shared.register(forTaskWithIdentifier: cleanupTaskId, using: DispatchQueue.main) { task in
                 Logger.shared.log("App \(self.episodeId)", "Executing cleanup task")
                 
                 let disposable = self.runCacheReindexTasks(lowImpact: true, completion: {
@@ -1938,11 +1962,11 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
             
             BGTaskScheduler.shared.getPendingTaskRequests(completionHandler: { tasks in
-                if tasks.contains(where: { $0.identifier == taskId }) {
+                if tasks.contains(where: { $0.identifier == cleanupTaskId }) {
                     Logger.shared.log("App \(self.episodeId)", "Already have a cleanup task pending")
                     return
                 }
-                let request = BGProcessingTaskRequest(identifier: taskId)
+                let request = BGProcessingTaskRequest(identifier: cleanupTaskId)
                 request.requiresExternalPower = true
                 request.requiresNetworkConnectivity = false
                 
@@ -2929,7 +2953,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if let authContext = authContext, let confirmationCode = parseConfirmationCodeUrl(sharedContext: sharedContext, url: url) {
                 authContext.rootController.applyConfirmationCode(confirmationCode)
             } else if let context = context {
-                context.openUrl(url)
+                context.openUrl(url, external: true)
             } else if let authContext = authContext {
                 if let proxyData = parseProxyUrl(sharedContext: sharedContext, url: url) {
                     authContext.rootController.view.endEditing(true)
@@ -3235,13 +3259,28 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     }
     
     private var openUrlInProgress: URL?
-    private func openUrlWhenReady(url: URL) {
+    private func openUrlWhenReady(accountId: AccountRecordId? = nil, url: URL, external: Bool = false) {
         self.openUrlInProgress = url
         
-        self.openUrlWhenReadyDisposable.set((self.authorizedContext()
+        let signal = self.sharedContextPromise.get()
         |> take(1)
+        |> deliverOnMainQueue
+        |> mapToSignal { sharedApplicationContext -> Signal<AuthorizedApplicationContext, NoError> in
+            if let accountId = accountId {
+                sharedApplicationContext.sharedContext.switchToAccount(id: accountId)
+                return self.authorizedContext()
+                |> filter { context in
+                    context.context.account.id == accountId
+                }
+                |> take(1)
+            } else {
+                return self.authorizedContext()
+                |> take(1)
+            }
+        }
+        self.openUrlWhenReadyDisposable.set((signal
         |> deliverOnMainQueue).start(next: { [weak self] context in
-            context.openUrl(url)
+            context.openUrl(url, external: external)
             
             Queue.mainQueue().after(1.0, {
                 self?.openUrlInProgress = nil
@@ -3288,22 +3327,26 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             
             let _ = combineLatest(queue: .mainQueue(), accountIdFromNotification(response.notification, sharedContext: self.sharedContextPromise.get()), hiddenIdsAndPasscodeSettings, self.sharedContextPromise.get(), primaryAccount).start(next: { accountId, hiddenIdsAndPasscodeSettings, context, primary in
             if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
-                if let (peerId, threadId) = peerIdFromNotification(response.notification) {
-                    var messageId: MessageId? = nil
-                    if response.notification.request.content.categoryIdentifier == "c" || response.notification.request.content.categoryIdentifier == "t" {
-                        messageId = messageIdFromNotification(peerId: peerId, notification: response.notification)
-                    }
-                    // Nicegram DB Changes
-                    if let accountId = accountId, hiddenIdsAndPasscodeSettings.hiddenIds.contains(accountId) {
-                        if hiddenIdsAndPasscodeSettings.hasMasterPasscode {
-                            context.sharedContext.appLockContext.lock()
-                        }
-                    } else if let primary = primary,
-                              primary.account.id != accountId,
-                              VarSystemNGSettings.isDoubleBottomOn,
-                              VarSystemNGSettings.inDoubleBottom {
+                // Nicegram DB Changes
+                if let accountId = accountId, hiddenIdsAndPasscodeSettings.hiddenIds.contains(accountId) {
+                    if hiddenIdsAndPasscodeSettings.hasMasterPasscode {
                         context.sharedContext.appLockContext.lock()
-                    } else {
+                    }
+                } else if let primary = primary,
+                          primary.account.id != accountId,
+                          VarSystemNGSettings.isDoubleBottomOn,
+                          VarSystemNGSettings.inDoubleBottom {
+                    context.sharedContext.appLockContext.lock()
+                } else if let dataUrl = response.notification.request.content.userInfo["url"] as? String {
+                    if let url = URL(string: dataUrl) {
+                        self.openUrlWhenReady(accountId: accountId, url: url, external: true)
+                    }
+                } else {
+                    if let (peerId, threadId) = peerIdFromNotification(response.notification) {
+                        var messageId: MessageId? = nil
+                        if response.notification.request.content.categoryIdentifier == "c" || response.notification.request.content.categoryIdentifier == "t" {
+                            messageId = messageIdFromNotification(peerId: peerId, notification: response.notification)
+                        }
                         let storyId = storyIdFromNotification(peerId: peerId, notification: response.notification)
                         self.openChatWhenReady(accountId: accountId, peerId: peerId, threadId: threadId, messageId: messageId, storyId: storyId)
                     }
@@ -3481,14 +3524,16 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let _ = (accountIdFromNotification(notification, sharedContext: self.sharedContextPromise.get())
         |> deliverOnMainQueue).start(next: { accountId in
-            // Nicegram DB Changes
-            if let context = self.contextValue, let accountId = accountId, context.context.account.id != accountId {
-                let _ = context.context.sharedContext.accountManager.transaction { transaction in
-                    if let record = transaction.getRecords().first(where: { $0.id == accountId }),
-                       !record.attributes.contains(where: { $0.isHiddenAccountAttribute }) {
-                        completionHandler([.alert])
-                    }
-                }.start()
+            if let context = self.contextValue {
+                if let accountId = accountId, context.context.account.id != accountId || notification.request.content.userInfo["url"] != nil {
+                    // Nicegram DB Changes
+                    let _ = context.context.sharedContext.accountManager.transaction { transaction in
+                        if let record = transaction.getRecords().first(where: { $0.id == accountId }),
+                           !record.attributes.contains(where: { $0.isHiddenAccountAttribute }) {
+                            completionHandler([.alert])
+                        }
+                    }.start()
+                }
             }
         })
     }

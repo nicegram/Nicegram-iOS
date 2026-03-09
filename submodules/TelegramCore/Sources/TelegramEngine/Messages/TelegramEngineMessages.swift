@@ -99,8 +99,16 @@ public extension TelegramEngine {
             return _internal_requestMessageActionUrlAuth(account: self.account, subject: subject)
         }
 
-        public func acceptMessageActionUrlAuth(subject: MessageActionUrlSubject, allowWriteAccess: Bool, sharePhoneNumber: Bool) -> Signal<MessageActionUrlAuthResult, MessageActionUrlAuthError> {
-            return _internal_acceptMessageActionUrlAuth(account: self.account, subject: subject, allowWriteAccess: allowWriteAccess, sharePhoneNumber: sharePhoneNumber)
+        public func acceptMessageActionUrlAuth(subject: MessageActionUrlSubject, allowWriteAccess: Bool, sharePhoneNumber: Bool, matchCode: String? = nil) -> Signal<MessageActionUrlAuthResult, MessageActionUrlAuthError> {
+            return _internal_acceptMessageActionUrlAuth(account: self.account, subject: subject, allowWriteAccess: allowWriteAccess, sharePhoneNumber: sharePhoneNumber, matchCode: matchCode)
+        }
+        
+        public func declineUrlAuth(url: String) -> Signal<Never, NoError> {
+            return _internal_declineUrlAuth(account: self.account, url: url)
+        }
+        
+        public func checkUrlAuthMatchCode(url: String, matchCode: String) -> Signal<Bool, NoError> {
+            return _internal_checkUrlAuthMatchCode(account: self.account, url: url, matchCode: matchCode)
         }
 
         public func searchMessages(location: SearchMessagesLocation, query: String, state: SearchMessagesState?, centerId: MessageId? = nil, limit: Int32 = 100) -> Signal<(SearchMessagesResult, SearchMessagesState), NoError> {
@@ -1458,6 +1466,20 @@ public extension TelegramEngine {
                 return .single([:])
             }
             return pendingStoryManager.allStoriesUploadProgress
+        }
+        
+        public func pendingStoryUploads() -> Signal<[Int32: Float], NoError> {
+            guard let pendingStoryManager = self.account.pendingStoryManager else {
+                return .single([:])
+            }
+            return pendingStoryManager.pendingStoryUploads
+        }
+        
+        public func pendingStoryUploadStatuses() -> Signal<[Int32: PendingStoryUploadStatus], NoError> {
+            guard let pendingStoryManager = self.account.pendingStoryManager else {
+                return .single([:])
+            }
+            return pendingStoryManager.pendingStoryUploadStatuses
         }
         
         public func storyUploadProgress(stableId: Int32) -> Signal<Float, NoError> {

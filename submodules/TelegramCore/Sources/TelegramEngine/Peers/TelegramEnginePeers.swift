@@ -486,12 +486,12 @@ public extension TelegramEngine {
             return _internal_channelMembers(postbox: self.account.postbox, network: self.account.network, accountPeerId: self.account.peerId, peerId: peerId, category: category, offset: offset, limit: limit, hash: hash)
         }
 
-        public func checkOwnershipTranfserAvailability(memberId: PeerId) -> Signal<Never, ChannelOwnershipTransferError> {
+        public func checkOwnershipTranfserAvailability(memberId: PeerId) -> Signal<Never, ChatOwnershipTransferError> {
             return _internal_checkOwnershipTranfserAvailability(postbox: self.account.postbox, network: self.account.network, accountStateManager: self.account.stateManager, memberId: memberId)
         }
 
-        public func updateChannelOwnership(channelId: PeerId, memberId: PeerId, password: String) -> Signal<[(ChannelParticipant?, RenderedChannelParticipant)], ChannelOwnershipTransferError> {
-            return _internal_updateChannelOwnership(account: self.account, channelId: channelId, memberId: memberId, password: password)
+        public func updateChatOwnership(peerId: PeerId, memberId: PeerId, password: String) -> Signal<[(ChannelParticipant?, RenderedChannelParticipant)], ChatOwnershipTransferError> {
+            return _internal_updateChatOwnership(account: self.account, peerId: peerId, memberId: memberId, password: password)
         }
 
         public func searchGroupMembers(peerId: PeerId, query: String) -> Signal<[EnginePeer], NoError> {
@@ -505,8 +505,8 @@ public extension TelegramEngine {
             return _internal_toggleShouldChannelMessagesSignatures(account: self.account, peerId: peerId, signaturesEnabled: signaturesEnabled, profilesEnabled: profilesEnabled)
         }
 
-        public func toggleMessageCopyProtection(peerId: PeerId, enabled: Bool) -> Signal<Void, NoError> {
-            return _internal_toggleMessageCopyProtection(account: self.account, peerId: peerId, enabled: enabled)
+        public func toggleMessageCopyProtection(peerId: PeerId, enabled: Bool, requestMessageId: EngineMessage.Id? = nil) -> Signal<CopyProtectionResult, NoError> {
+            return _internal_toggleMessageCopyProtection(account: self.account, peerId: peerId, enabled: enabled, requestMessageId: requestMessageId)
         }
         
         public func toggleChannelJoinToSend(peerId: PeerId, enabled: Bool) -> Signal<Never, UpdateChannelJoinToSendError> {
@@ -615,6 +615,10 @@ public extension TelegramEngine {
         
         public func getFutureCreatorAfterLeave(peerId: EnginePeer.Id) -> Signal<EnginePeer?, NoError> {
             return _internal_getFutureCreatorAfterLeave(account: self.account, peerId: peerId)
+        }
+                
+        public func updateChatRank(peerId: PeerId, userId: PeerId, rank: String?) -> Signal<(ChannelParticipant?, RenderedChannelParticipant)?, UpdateChatRankError> {
+            return _internal_updateChatRank(account: account, peerId: peerId, userId: userId, rank: rank)
         }
 
         public func terminateSecretChat(peerId: PeerId, requestRemoteHistoryRemoval: Bool) -> Signal<Never, NoError> {

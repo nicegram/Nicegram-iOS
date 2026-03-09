@@ -62,6 +62,8 @@ swift_library(
         "//submodules/TelegramUI/Components/GlassBarButtonComponent",
         "//submodules/TelegramUI/Components/SearchInputPanelComponent",
         "//submodules/TelegramUI/Components/GlassControls",
+        "//submodules/UIKitRuntimeUtils",
+        "//submodules/TelegramUI/Components/AuthConfirmationScreen",
     ],
     visibility = [
         "//visibility:public",

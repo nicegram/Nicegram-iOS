@@ -32,6 +32,7 @@ final class SelectGiftPageContent: Component {
     let gift: StarGift.UniqueGift
     let genericGift: StarGift.Gift
     let selectedGiftIds: Set<Int64>
+    let selectingMainGift: Bool
     let starsTopUpOptions: Signal<[StarsTopUpOption]?, NoError>
     let selectGift: (GiftItem) -> Void
     let dismiss: () -> Void
@@ -44,6 +45,7 @@ final class SelectGiftPageContent: Component {
         gift: StarGift.UniqueGift,
         genericGift: StarGift.Gift,
         selectedGiftIds: Set<Int64>,
+        selectingMainGift: Bool,
         starsTopUpOptions: Signal<[StarsTopUpOption]?, NoError>,
         selectGift: @escaping (GiftItem) -> Void,
         dismiss: @escaping () -> Void,
@@ -55,6 +57,7 @@ final class SelectGiftPageContent: Component {
         self.gift = gift
         self.genericGift = genericGift
         self.selectedGiftIds = selectedGiftIds
+        self.selectingMainGift = selectingMainGift
         self.starsTopUpOptions = starsTopUpOptions
         self.selectGift = selectGift
         self.dismiss = dismiss
@@ -153,6 +156,8 @@ final class SelectGiftPageContent: Component {
             }
             transition.setFrame(view: self.loadingView, frame: CGRect(origin: CGPoint(x: 0.0, y: contentHeight - 170.0), size: loadingSize))
             
+            let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+            
             var itemFrame = CGRect(origin: CGPoint(x: itemSideInset, y: contentHeight), size: itemSize)
             var itemsHeight: CGFloat = 0.0
             var validIds: [AnyHashable] = []
@@ -245,6 +250,12 @@ final class SelectGiftPageContent: Component {
                             }
                         }
                         itemTransition.setFrame(view: itemView, frame: itemFrame)
+                        
+                        var canCraft = true
+                        if let profileGift = self.giftMap[gift.gift.id], let canCraftDate = profileGift.canCraftAt, currentTime < canCraftDate {
+                            canCraft = false
+                        }
+                        transition.setAlpha(view: itemView, alpha: canCraft ? 1.0 : 0.5)
                     }
                 }
                 
@@ -362,6 +373,10 @@ final class SelectGiftPageContent: Component {
                         }
                         existingIds.insert(uniqueGift.id)
                         
+                        if component.selectingMainGift && uniqueGift.giftAddress != nil {
+                            continue
+                        }
+                        
                         let giftItem = GiftItem(
                             gift: uniqueGift,
                             reference: reference
@@ -414,6 +429,7 @@ final class SelectGiftPageContent: Component {
             contentHeight += 32.0
                         
             contentHeight = self.updateScrolling(interactive: false, transition: transition)
+            let originalContentHeight = contentHeight
             
             let resaleCount = component.genericGift.availability?.resale ?? 0
             let saleTitle = environment.strings.Gift_Craft_Select_SaleGiftsCount(Int32(clamping: resaleCount)).uppercased()
@@ -483,7 +499,11 @@ final class SelectGiftPageContent: Component {
                 }
                 transition.setFrame(view: storeGiftsView, frame: storeGiftsFrame)
                 
-                storeGiftsView.updateScrolling(bounds: CGRect(origin: .zero, size: availableSize), transition: .immediate)
+                var effectiveBounds = CGRect(origin: .zero, size: CGSize(width: availableSize.width, height: 1000.0))
+                if let bounds = self.currentBounds {
+                    effectiveBounds = bounds.offsetBy(dx: 0.0, dy: -originalContentHeight)
+                }
+                storeGiftsView.updateScrolling(bounds: effectiveBounds, transition: .immediate)
             }
             contentHeight += storeGiftsSize.height
             contentHeight += 90.0
@@ -510,6 +530,7 @@ private final class SheetContainerComponent: CombinedComponent {
     let gift: StarGift.UniqueGift
     let genericGift: StarGift.Gift
     let selectedGiftIds: Set<Int64>
+    let selectingMainGift: Bool
     let starsTopUpOptions: Signal<[StarsTopUpOption]?, NoError>
     let selectGift: (GiftItem) -> Void
     
@@ -520,6 +541,7 @@ private final class SheetContainerComponent: CombinedComponent {
         gift: StarGift.UniqueGift,
         genericGift: StarGift.Gift,
         selectedGiftIds: Set<Int64>,
+        selectingMainGift: Bool,
         starsTopUpOptions: Signal<[StarsTopUpOption]?, NoError>,
         selectGift: @escaping (GiftItem) -> Void
     ) {
@@ -529,6 +551,7 @@ private final class SheetContainerComponent: CombinedComponent {
         self.gift = gift
         self.genericGift = genericGift
         self.selectedGiftIds = selectedGiftIds
+        self.selectingMainGift = selectingMainGift
         self.starsTopUpOptions = starsTopUpOptions
         self.selectGift = selectGift
     }
@@ -590,6 +613,7 @@ private final class SheetContainerComponent: CombinedComponent {
                             gift: component.gift,
                             genericGift: component.genericGift,
                             selectedGiftIds: component.selectedGiftIds,
+                            selectingMainGift: component.selectingMainGift,
                             starsTopUpOptions: component.starsTopUpOptions,
                             selectGift: component.selectGift,
                             dismiss: {
@@ -663,6 +687,7 @@ final class SelectCraftGiftScreen: ViewControllerComponentContainer {
         gift: StarGift.UniqueGift,
         genericGift: StarGift.Gift,
         selectedGiftIds: Set<Int64>,
+        selectingMainGift: Bool,
         starsTopUpOptions: Signal<[StarsTopUpOption]?, NoError>,
         selectGift: @escaping (GiftItem) -> Void
     ) {
@@ -675,6 +700,7 @@ final class SelectCraftGiftScreen: ViewControllerComponentContainer {
                 gift: gift,
                 genericGift: genericGift,
                 selectedGiftIds: selectedGiftIds,
+                selectingMainGift: selectingMainGift,
                 starsTopUpOptions: starsTopUpOptions,
                 selectGift: selectGift
             ),

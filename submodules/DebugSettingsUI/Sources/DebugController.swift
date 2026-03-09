@@ -113,6 +113,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case experimentalCompatibility(Bool)
     case enableDebugDataDisplay(Bool)
     case fakeGlass(Bool)
+    case forceClearGlass(Bool)
+    case debugRipple(Bool)
     case browserExperiment(Bool)
     case allForumsHaveTabs(Bool)
     case enableReactionOverrides(Bool)
@@ -126,7 +128,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case playerV2(Bool)
     case devRequests(Bool)
     case enableUpdates(Bool)
-    case fakeAds(Bool)
+    case pwa(Bool)
     case enableLocalTranslation(Bool)
     case preferredVideoCodec(Int, String, String?, Bool)
     case disableVideoAspectScaling(Bool)
@@ -159,7 +161,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.web.rawValue
         case .keepChatNavigationStack, .skipReadHistory, .alwaysDisplayTyping, .debugRatingLayout, .crashOnSlowQueries, .crashOnMemoryPressure:
             return DebugControllerSection.experiments.rawValue
-        case .clearTips, .resetNotifications, .crash, .fillLocalSavedMessageCache, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .resetTagHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .compressedEmojiCache, .storiesJpegExperiment, .checkSerializedData, .enableQuickReactionSwitch, .experimentalCompatibility, .enableDebugDataDisplay, .fakeGlass, .browserExperiment, .allForumsHaveTabs, .enableReactionOverrides, .restorePurchases, .disableReloginTokens, .liveStreamV2, .experimentalCallMute, .playerV2, .devRequests, .enableUpdates, .fakeAds, .enableLocalTranslation:
+        case .clearTips, .resetNotifications, .crash, .fillLocalSavedMessageCache, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .resetTagHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .compressedEmojiCache, .storiesJpegExperiment, .checkSerializedData, .enableQuickReactionSwitch, .experimentalCompatibility, .enableDebugDataDisplay, .fakeGlass, .forceClearGlass, .debugRipple, .browserExperiment, .allForumsHaveTabs, .enableReactionOverrides, .restorePurchases, .disableReloginTokens, .liveStreamV2, .experimentalCallMute, .playerV2, .devRequests, .enableUpdates, .pwa, .enableLocalTranslation:
             return DebugControllerSection.experiments.rawValue
         case .logTranslationRecognition, .resetTranslationStates:
             return DebugControllerSection.translation.rawValue
@@ -264,44 +266,48 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 38
         case .fakeGlass:
             return 39
-        case .browserExperiment:
+        case .forceClearGlass:
             return 40
-        case .allForumsHaveTabs:
+        case .debugRipple:
             return 41
-        case .enableReactionOverrides:
+        case .browserExperiment:
             return 42
-        case .restorePurchases:
+        case .allForumsHaveTabs:
             return 43
-        case .logTranslationRecognition:
+        case .enableReactionOverrides:
             return 44
-        case .resetTranslationStates:
+        case .restorePurchases:
             return 45
-        case .compressedEmojiCache:
+        case .logTranslationRecognition:
             return 46
-        case .storiesJpegExperiment:
+        case .resetTranslationStates:
             return 47
-        case .disableReloginTokens:
+        case .compressedEmojiCache:
             return 48
-        case .checkSerializedData:
+        case .storiesJpegExperiment:
+            return 49
+        case .disableReloginTokens:
             return 50
-        case .enableQuickReactionSwitch:
+        case .checkSerializedData:
             return 51
-        case .liveStreamV2:
+        case .enableQuickReactionSwitch:
             return 52
-        case .experimentalCallMute:
+        case .liveStreamV2:
             return 53
-        case .playerV2:
+        case .experimentalCallMute:
             return 54
-        case .devRequests:
+        case .playerV2:
             return 55
-        case .fakeAds:
+        case .devRequests:
             return 56
-        case .enableLocalTranslation:
+        case .pwa:
             return 57
-        case .enableUpdates:
+        case .enableLocalTranslation:
             return 58
+        case .enableUpdates:
+            return 59
         case let .preferredVideoCodec(index, _, _, _):
-            return 59 + index
+            return 60 + index
         case .disableVideoAspectScaling:
             return 100
         case .enableNetworkFramework:
@@ -1328,7 +1334,18 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             })
         case .resetWebViewCache:
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Clear Web View Cache", kind: .destructive, alignment: .natural, sectionId: self.section, style: .blocks, action: {
-                WKWebsiteDataStore.default().removeData(ofTypes: [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache], modifiedSince: Date(timeIntervalSince1970: 0), completionHandler:{ })
+                WKWebsiteDataStore.default().removeData(ofTypes: [
+                    WKWebsiteDataTypeDiskCache,
+                    WKWebsiteDataTypeOfflineWebApplicationCache,
+                    WKWebsiteDataTypeMemoryCache,
+                    WKWebsiteDataTypeLocalStorage,
+                    WKWebsiteDataTypeCookies,
+                    WKWebsiteDataTypeSessionStorage,
+                    WKWebsiteDataTypeIndexedDBDatabases,
+                    WKWebsiteDataTypeWebSQLDatabases,
+                    WKWebsiteDataTypeFetchCache,
+                    WKWebsiteDataTypeServiceWorkerRegistrations
+                ], modifiedSince: Date(timeIntervalSince1970: 0), completionHandler:{ })
             })
         case .optimizeDatabase:
             return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Optimize Database", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
@@ -1392,6 +1409,26 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
                         settings.fakeGlass = value
+                        return PreferencesEntry(settings)
+                    })
+                }).start()
+            })
+        case let .forceClearGlass(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Force clear glass", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
+                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
+                        var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
+                        settings.forceClearGlass = value
+                        return PreferencesEntry(settings)
+                    })
+                }).start()
+            })
+        case let .debugRipple(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Debug Ripple", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
+                    transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
+                        var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
+                        settings.debugRipple = value
                         return PreferencesEntry(settings)
                     })
                 }).start()
@@ -1520,12 +1557,12 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     })
                 }).start()
             })
-        case let .fakeAds(value):
-            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Fake Ads", value: value, sectionId: self.section, style: .blocks, updated: { value in
+        case let .pwa(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Test1", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = arguments.sharedContext.accountManager.transaction ({ transaction in
                     transaction.updateSharedData(ApplicationSpecificSharedDataKeys.experimentalUISettings, { settings in
                         var settings = settings?.get(ExperimentalUISettings.self) ?? ExperimentalUISettings.defaultSettings
-                        settings.fakeAds = value
+                        settings.enablePWA = value
                         return PreferencesEntry(settings)
                     })
                 }).start()
@@ -1635,7 +1672,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
 }
 
 // Nicegram Wallet, added multichainEnabled
-private func debugControllerEntries(sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool, multichainEnabled: Bool) -> [DebugControllerEntry] {
+private func debugControllerEntries(context: AccountContext?, sharedContext: SharedAccountContext, presentationData: PresentationData, loggingSettings: LoggingSettings, mediaInputSettings: MediaInputSettings, experimentalSettings: ExperimentalUISettings, networkSettings: NetworkSettings?, hasLegacyAppData: Bool, useBetaFeatures: Bool, multichainEnabled: Bool) -> [DebugControllerEntry] {
     var entries: [DebugControllerEntry] = []
     // Nicegram DebugMenu
     entries.append(.showOnboarding(!AppCache.wasOnboardingShown))
@@ -1699,6 +1736,8 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.experimentalCompatibility(experimentalSettings.experimentalCompatibility))
         entries.append(.enableDebugDataDisplay(experimentalSettings.enableDebugDataDisplay))
         entries.append(.fakeGlass(experimentalSettings.fakeGlass))
+        entries.append(.forceClearGlass(experimentalSettings.forceClearGlass))
+        entries.append(.debugRipple(experimentalSettings.debugRipple))
         #if DEBUG
         entries.append(.browserExperiment(experimentalSettings.browserExperiment))
         #else
@@ -1727,7 +1766,18 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.playerV2(experimentalSettings.playerV2))
         
         entries.append(.devRequests(experimentalSettings.devRequests))
-        entries.append(.fakeAds(experimentalSettings.fakeAds))
+        
+        if let data = context?.currentAppConfiguration.with({ $0 }).data {
+            var displayPwa = false
+            if let _ = data["ios_display_pwa"] {
+                displayPwa = true
+            } else if let isDev = data["dev"] as? Double, isDev == 1.0 {
+                displayPwa = true
+            }
+            if displayPwa {
+                entries.append(.pwa(experimentalSettings.enablePWA))
+            }
+        }
         entries.append(.enableLocalTranslation(experimentalSettings.enableLocalTranslation))
         entries.append(.enableUpdates(experimentalSettings.enableUpdates))
     }
@@ -1823,7 +1873,7 @@ public func debugController(sharedContext: SharedAccountContext, context: Accoun
         
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text("Debug"), leftNavigationButton: leftNavigationButton, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
         // Nicegram Wallet, added multichainEnabled
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures, multichainEnabled: multichainEnabled), style: .blocks)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: debugControllerEntries(context: context, sharedContext: sharedContext, presentationData: presentationData, loggingSettings: loggingSettings, mediaInputSettings: mediaInputSettings, experimentalSettings: experimentalSettings, networkSettings: networkSettings, hasLegacyAppData: hasLegacyAppData, useBetaFeatures: useBetaFeatures, multichainEnabled: multichainEnabled), style: .blocks)
         
         return (controllerState, (listState, arguments))
     }

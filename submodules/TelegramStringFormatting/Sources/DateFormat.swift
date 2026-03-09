@@ -1,54 +1,8 @@
 import Foundation
+import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
-
-public func stringForShortTimestamp(hours: Int32, minutes: Int32, dateTimeFormat: PresentationDateTimeFormat, formatAsPlainText: Bool = false) -> String {
-    switch dateTimeFormat.timeFormat {
-    case .regular:
-        let hourString: String
-        if hours == 0 {
-            hourString = "12"
-        } else if hours > 12 {
-            hourString = "\(hours - 12)"
-        } else {
-            hourString = "\(hours)"
-        }
-        
-        let periodString: String
-        if hours >= 12 {
-            periodString = "PM"
-        } else {
-            periodString = "AM"
-        }
-        
-        let spaceCharacter: String
-        if formatAsPlainText {
-            spaceCharacter = " "
-        } else {
-            spaceCharacter = "\u{00a0}"
-        }
-        
-        if minutes >= 10 {
-            return "\(hourString):\(minutes)\(spaceCharacter)\(periodString)"
-        } else {
-            return "\(hourString):0\(minutes)\(spaceCharacter)\(periodString)"
-        }
-    case .military:
-        return String(format: "%02d:%02d", arguments: [Int(hours), Int(minutes)])
-    }
-}
-
-public func stringForMessageTimestamp(timestamp: Int32, dateTimeFormat: PresentationDateTimeFormat, local: Bool = true) -> String {
-    var t = Int(timestamp)
-    var timeinfo = tm()
-    if local {
-        localtime_r(&t, &timeinfo)
-    } else {
-        gmtime_r(&t, &timeinfo)
-    }
-    
-    return stringForShortTimestamp(hours: timeinfo.tm_hour, minutes: timeinfo.tm_min, dateTimeFormat: dateTimeFormat)
-}
+import TextFormat
 
 public func getDateTimeComponents(timestamp: Int32) -> (day: Int32, month: Int32, year: Int32, hour: Int32, minutes: Int32) {
     var t: time_t = Int(timestamp)

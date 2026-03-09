@@ -5,6 +5,7 @@ import TelegramCore
 import Display
 import libprisma
 import SwiftSignalKit
+import TelegramPresentationData
 
 public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [MessageTextEntity]) -> NSAttributedString {
     var nsString: NSString?
@@ -38,6 +39,8 @@ public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [M
             string.addAttribute(ChatTextInputAttributes.textMention, value: ChatTextInputTextMentionAttribute(peerId: peerId), range: range)
         case let .TextUrl(url):
             string.addAttribute(ChatTextInputAttributes.textUrl, value: ChatTextInputTextUrlAttribute(url: url), range: range)
+        case let .FormattedDate(_, date):
+            string.addAttribute(ChatTextInputAttributes.date, value: ChatTextInputTextDateAttribute(date: date), range: range)
         case .Code:
             string.addAttribute(ChatTextInputAttributes.monospace, value: true as NSNumber, range: range)
         case .Strikethrough:
@@ -80,15 +83,48 @@ public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [M
 
 private let syntaxHighlighter = Syntaxer()
 
-public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], baseColor: UIColor, linkColor: UIColor, baseQuoteTintColor: UIColor? = nil, baseQuoteSecondaryTintColor: UIColor? = nil, baseQuoteTertiaryTintColor: UIColor? = nil, codeBlockTitleColor: UIColor? = nil, codeBlockAccentColor: UIColor? = nil, codeBlockBackgroundColor: UIColor? = nil, baseFont: UIFont, linkFont: UIFont, boldFont: UIFont, italicFont: UIFont, boldItalicFont: UIFont, fixedFont: UIFont, blockQuoteFont: UIFont, underlineLinks: Bool = true, external: Bool = false, message: Message?, entityFiles: [MediaId: TelegramMediaFile] = [:], adjustQuoteFontSize: Bool = false, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, paragraphAlignment: NSTextAlignment? = nil) -> NSAttributedString {
+public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], strings: PresentationStrings? = nil, dateTimeFormat: PresentationDateTimeFormat? = nil, baseColor: UIColor, linkColor: UIColor, baseQuoteTintColor: UIColor? = nil, baseQuoteSecondaryTintColor: UIColor? = nil, baseQuoteTertiaryTintColor: UIColor? = nil, codeBlockTitleColor: UIColor? = nil, codeBlockAccentColor: UIColor? = nil, codeBlockBackgroundColor: UIColor? = nil, baseFont: UIFont, linkFont: UIFont, boldFont: UIFont, italicFont: UIFont, boldItalicFont: UIFont, fixedFont: UIFont, blockQuoteFont: UIFont, underlineLinks: Bool = true, external: Bool = false, message: Message?, entityFiles: [MediaId: TelegramMediaFile] = [:], adjustQuoteFontSize: Bool = false, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, paragraphAlignment: NSTextAlignment? = nil) -> NSAttributedString {
     let baseQuoteTintColor = baseQuoteTintColor ?? baseColor
     
     var nsString: NSString?
-    let string = NSMutableAttributedString(string: text, attributes: [NSAttributedString.Key.font: baseFont, NSAttributedString.Key.foregroundColor: baseColor])
+    let baseAttributes: [NSAttributedString.Key: Any] = [NSAttributedString.Key.font: baseFont, NSAttributedString.Key.foregroundColor: baseColor]
+    let string = NSMutableAttributedString(string: text, attributes: baseAttributes)
     var skipEntity = false
     var underlineAllLinks = false
     if linkColor.argb == baseColor.argb {
         underlineAllLinks = true
+    }
+    
+    var adjustedRanges: [NSRange?] = []
+    adjustedRanges.reserveCapacity(entities.count)
+    var rangeDelta = 0
+    for entity in entities {
+        let originalRange = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
+        var range = NSRange(location: originalRange.location + rangeDelta, length: originalRange.length)
+        let stringLength = string.length
+        if range.location > stringLength {
+            adjustedRanges.append(nil)
+            continue
+        } else if range.location + range.length > stringLength {
+            range.length = stringLength - range.location
+        }
+        
+        switch entity.type {
+        case let .FormattedDate(format, date):
+            if let format, let strings, let dateTimeFormat {
+                let replacement = stringForEntityFormattedDate(timestamp: date, format: format, strings: strings, dateTimeFormat: dateTimeFormat)
+                
+                let replacementString = NSAttributedString(string: replacement, attributes: baseAttributes)
+                string.replaceCharacters(in: range, with: replacementString)
+                let newRange = NSRange(location: range.location, length: (replacement as NSString).length)
+                adjustedRanges.append(newRange)
+                rangeDelta += newRange.length - range.length
+            } else {
+                adjustedRanges.append(range)
+            }
+        default:
+            adjustedRanges.append(range)
+        }
     }
     
     var fontAttributeMask: [ChatTextFontAttributes] = Array(repeating: [], count: string.length)
@@ -103,12 +139,11 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
             skipEntity = false
             continue
         }
-        let stringLength = string.length
         let entity = entities[i]
-        var range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
-        if nsString == nil {
-            nsString = text as NSString
+        guard var range = adjustedRanges[i] else {
+            continue
         }
+        let stringLength = string.length
         if range.location > stringLength {
             continue
         } else if range.location + range.length > stringLength {
@@ -121,13 +156,13 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                 }
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.URL), value: nsString!.substring(with: range), range: range)
             case .Email:
                 string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 if underlineLinks && underlineAllLinks {
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
@@ -136,7 +171,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
             case .PhoneNumber:
                 string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 if underlineLinks && underlineAllLinks {
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
@@ -145,7 +180,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
             case let .TextUrl(url):
                 string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 if underlineLinks && underlineAllLinks {
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
@@ -168,7 +203,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.font, value: linkFont, range: range)
                 }
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerTextMention), value: nsString!.substring(with: range), range: range)
             case .Strikethrough:
@@ -183,16 +218,21 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                 if linkFont !== baseFont {
                     string.addAttribute(NSAttributedString.Key.font, value: linkFont, range: range)
                 }
+                if nsString == nil {
+                    nsString = string.string as NSString
+                }
                 let mention = nsString!.substring(with: range)
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.PeerMention), value: TelegramPeerMention(peerId: peerId, mention: mention), range: range)
             case .Hashtag:
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 let hashtag = nsString!.substring(with: range)
                 if i + 1 != entities.count {
                     if case .Mention = entities[i + 1].type {
-                        let nextRange = NSRange(location: entities[i + 1].range.lowerBound, length: entities[i + 1].range.upperBound - entities[i + 1].range.lowerBound)
+                        guard let nextRange = adjustedRanges[i + 1] else {
+                            break
+                        }
                         if nextRange.location == range.location + range.length + 1 && nsString!.character(at: range.location + range.length) == 43 {
                             skipEntity = true
                             if nextRange.length > 0 {
@@ -231,17 +271,20 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                 }
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BotCommand), value: nsString!.substring(with: range), range: range)
             case .Code:
                 addFontAttributes(range, .monospace)
+                if nsString == nil {
+                    nsString = string.string as NSString
+                }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Code), value: nsString!.substring(with: range), range: range)
             case let .Pre(language):
                 addFontAttributes(range, .monospace)
                 addFontAttributes(range, .blockQuote)
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 if let codeBlockTitleColor, let codeBlockAccentColor, let codeBlockBackgroundColor {
                     var title: NSAttributedString?
@@ -260,7 +303,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                     string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                 }
                 if nsString == nil {
-                    nsString = text as NSString
+                    nsString = string.string as NSString
                 }
                 string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.BankCard), value: nsString!.substring(with: range), range: range)
             case .Spoiler:
@@ -269,6 +312,12 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                 } else {
                     string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Spoiler), value: true as NSNumber, range: range)
                 }
+            case let .FormattedDate(_, date):
+                string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
+                if underlineLinks && underlineAllLinks {
+                    string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
+                }
+                string.addAttribute(NSAttributedString.Key(rawValue: TelegramTextAttributes.Date), value: date, range: range)
             case let .Custom(type):
                 if type == ApplicationSpecificEntityType.Timecode {
                     string.addAttribute(NSAttributedString.Key.foregroundColor, value: linkColor, range: range)
@@ -276,7 +325,7 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
                         string.addAttribute(NSAttributedString.Key.underlineStyle, value: NSUnderlineStyle.single.rawValue as NSNumber, range: range)
                     }
                     if nsString == nil {
-                        nsString = text as NSString
+                        nsString = string.string as NSString
                     }
                     let text = nsString!.substring(with: range)
                     if let time = parseTimecodeString(text) {

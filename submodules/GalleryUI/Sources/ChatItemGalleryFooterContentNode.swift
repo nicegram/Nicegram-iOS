@@ -37,6 +37,7 @@ import ComponentDisplayAdapters
 import EdgeEffect
 import RasterizedCompositionComponent
 import BadgeComponent
+import UIKitRuntimeUtils
 
 private let deleteImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionTrash"), color: .white)
 private let actionImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Accessory Panels/MessageSelectionForward"), color: .white)
@@ -1340,13 +1341,14 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                         isOpen: false
                     ))),
                     action: { [weak self] in
-                        guard let self, let buttonPanelView = self.buttonPanel.view as? GlassControlPanelComponent.View, let centerItemView = buttonPanelView.centerItemView else {
+                        guard let self, let buttonPanelView = self.buttonPanel.view as? GlassControlPanelComponent.View else {
                             return
                         }
-                        guard let itemView = centerItemView.itemView(id: AnyHashable("settings")) else {
-                            return
+                        if let centerItemView = buttonPanelView.centerItemView, let itemView = centerItemView.itemView(id: AnyHashable("settings")) {
+                            self.settingsButtonPressed(sourceView: itemView)
+                        } else if let rightItemView = buttonPanelView.rightItemView, let itemView = rightItemView.itemView(id: AnyHashable("settings")) {
+                            self.settingsButtonPressed(sourceView: itemView)
                         }
-                        self.settingsButtonPressed(sourceView: itemView)
                     }
                 ))
             }
@@ -1505,7 +1507,9 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
                 transition.animatePositionAdditive(layer: scrubberView.layer, offset: CGPoint(x: 0.0, y: self.bounds.height - fromHeight))
             }
             scrubberView.alpha = 1.0
-            scrubberView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
+            if transition.isAnimated {
+                scrubberView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
+            }
         }
         transition.animatePositionAdditive(node: self.scrollWrapperNode, offset: CGPoint(x: 0.0, y: self.bounds.height - fromHeight))
         self.scrollNode.alpha = 0.0
@@ -2214,7 +2218,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
         }
     }
     
-    func setFramePreviewImage(image: UIImage?) {
+    func setFramePreviewImage(image: UIImage?, isSecret: Bool) {
         if let image = image {
             let videoFramePreviewNode: ASImageNode
             let videoFrameTextNode: ImmediateTextNode
@@ -2251,6 +2255,7 @@ final class ChatItemGalleryFooterContentNode: GalleryFooterContentNode, ASScroll
             videoFramePreviewNode.subnodes?.first?.alpha = 0.0
             let updateLayout = videoFramePreviewNode.image?.size != image.size
             videoFramePreviewNode.image = image
+            setLayerDisableScreenshots(videoFramePreviewNode.layer, isSecret)
             if updateLayout, let validLayout = self.validLayout {
                 let _ = self.updateLayout(size: validLayout.0, metrics: validLayout.1, leftInset: validLayout.2, rightInset: validLayout.3, bottomInset: validLayout.4, contentInset: validLayout.5, transition: .immediate)
             }

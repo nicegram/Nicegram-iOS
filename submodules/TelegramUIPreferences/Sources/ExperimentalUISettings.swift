@@ -69,6 +69,9 @@ public struct ExperimentalUISettings: Codable, Equatable {
     public var allForumsHaveTabs: Bool
     public var debugRatingLayout: Bool
     public var enableUpdates: Bool
+    public var enablePWA: Bool
+    public var forceClearGlass: Bool
+    public var debugRipple: Bool
     
     public static var defaultSettings: ExperimentalUISettings {
         return ExperimentalUISettings(
@@ -115,7 +118,10 @@ public struct ExperimentalUISettings: Codable, Equatable {
             checkSerializedData: false,
             allForumsHaveTabs: false,
             debugRatingLayout: false,
-            enableUpdates: false
+            enableUpdates: false,
+            enablePWA: false,
+            forceClearGlass: false,
+            debugRipple: false
         )
     }
     
@@ -163,7 +169,10 @@ public struct ExperimentalUISettings: Codable, Equatable {
         checkSerializedData: Bool,
         allForumsHaveTabs: Bool,
         debugRatingLayout: Bool,
-        enableUpdates: Bool
+        enableUpdates: Bool,
+        enablePWA: Bool,
+        forceClearGlass: Bool,
+        debugRipple: Bool
     ) {
         self.keepChatNavigationStack = keepChatNavigationStack
         self.skipReadHistory = skipReadHistory
@@ -209,6 +218,9 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.allForumsHaveTabs = allForumsHaveTabs
         self.debugRatingLayout = debugRatingLayout
         self.enableUpdates = enableUpdates
+        self.enablePWA = enablePWA
+        self.forceClearGlass = forceClearGlass
+        self.debugRipple = debugRipple
     }
     
     public init(from decoder: Decoder) throws {
@@ -258,6 +270,9 @@ public struct ExperimentalUISettings: Codable, Equatable {
         self.allForumsHaveTabs = try container.decodeIfPresent(Bool.self, forKey: "allForumsHaveTabs") ?? false
         self.debugRatingLayout = try container.decodeIfPresent(Bool.self, forKey: "debugRatingLayout") ?? false
         self.enableUpdates = try container.decodeIfPresent(Bool.self, forKey: "enableUpdates") ?? false
+        self.enablePWA = try container.decodeIfPresent(Bool.self, forKey: "enablePWA") ?? false
+        self.forceClearGlass = try container.decodeIfPresent(Bool.self, forKey: "forceClearGlass") ?? false
+        self.debugRipple = try container.decodeIfPresent(Bool.self, forKey: "debugRipple") ?? false
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -307,6 +322,9 @@ public struct ExperimentalUISettings: Codable, Equatable {
         try container.encodeIfPresent(self.allForumsHaveTabs, forKey: "allForumsHaveTabs")
         try container.encodeIfPresent(self.debugRatingLayout, forKey: "debugRatingLayout")
         try container.encodeIfPresent(self.enableUpdates, forKey: "enableUpdates")
+        try container.encodeIfPresent(self.enablePWA, forKey: "enablePWA")
+        try container.encodeIfPresent(self.forceClearGlass, forKey: "forceClearGlass")
+        try container.encodeIfPresent(self.debugRipple, forKey: "debugRipple")
     }
 }
 

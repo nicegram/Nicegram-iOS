@@ -482,7 +482,7 @@ func infoItems(data: PeerInfoScreenData?, context: AccountContext, presentationD
                     if canManageEmojiStatus || data.webAppPermissions?.emojiStatus?.isRequested == true {
                         items[.permissions]!.append(PeerInfoScreenSwitchItem(id: ItemBotPermissionsEmojiStatus, text: presentationData.strings.PeerInfo_Permissions_EmojiStatus, value: canManageEmojiStatus, icon: UIImage(bundleImageName: "Chat/Info/Status"), isLocked: false, toggled: { value in
                             let _ = (context.engine.peers.toggleBotEmojiStatusAccess(peerId: user.id, enabled: value)
-                                     |> deliverOnMainQueue).startStandalone()
+                            |> deliverOnMainQueue).startStandalone()
                             
                             let _ = updateWebAppPermissionsStateInteractively(context: context, peerId: user.id) { current in
                                 return WebAppPermissionsState(location: current?.location, emojiStatus: WebAppPermissionsState.EmojiStatus(isRequested: true))
@@ -868,7 +868,12 @@ func infoItems(data: PeerInfoScreenData?, context: AccountContext, presentationD
         
         for member in memberList {
             let isAccountPeer = member.id == context.account.peerId
-            items[.peerMembers]!.append(PeerInfoScreenMemberItem(id: member.id, context: .account(context), enclosingPeer: peer, member: member, isAccount: false, action: isAccountPeer ? nil : { action in
+            items[.peerMembers]!.append(PeerInfoScreenMemberItem(id: member.id, context: .account(context), enclosingPeer: peer, member: member, isAccount: false, action: isAccountPeer ? { _ in
+                let actions = availableActionsForMemberOfPeer(accountPeerId: context.account.peerId, peer: peer, member: member)
+                if actions.contains(.editRank) {
+                    interaction.performMemberAction(member, .editRank)
+                }
+            } : { action in
                 switch action {
                 case .open:
                     interaction.openPeerInfo(member.peer, true)
@@ -879,6 +884,8 @@ func infoItems(data: PeerInfoScreenData?, context: AccountContext, presentationD
                 case .remove:
                     interaction.performMemberAction(member, .remove)
                 }
+            }, contextAction: { node, gesture in
+                interaction.openMemberContextMenu(member, node, gesture)
             }, openStories: { sourceView in
                 interaction.performMemberAction(member, .openStories(sourceView: sourceView))
             }))
@@ -1011,6 +1018,7 @@ func editingItems(data: PeerInfoScreenData?, boostStatus: ChannelBoostStatus?, s
         case peerNote
         case peerDataSettings
         case peerVerifySettings
+        case peerPrivacySettings
         case peerSettings
         case linkedMonoforum
         case peerAdditionalSettings

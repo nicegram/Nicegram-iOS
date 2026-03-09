@@ -22,6 +22,7 @@ swift_library(
         "//submodules/TelegramPresentationData",
         "//submodules/AccountContext",
         "//submodules/TelegramUI/Components/ButtonComponent",
+        "//submodules/TelegramUI/Components/PlainButtonComponent",
         "//submodules/TelegramUI/Components/GlassBarButtonComponent",
         "//submodules/Components/SheetComponent",
         "//submodules/PresentationDataUtils",
@@ -33,7 +34,10 @@ swift_library(
         "//submodules/PhoneNumberFormat",
         "//submodules/ContextUI",
         "//submodules/AccountUtils",
+        "//submodules/ActivityIndicator",
         "//submodules/TelegramUI/Components/PeerInfo/AccountPeerContextItem",
+        "//submodules/TelegramUI/Components/LottieComponent",
+        "//submodules/TelegramUI/Components/LottieComponentResourceContent",
     ],
     visibility = [
         "//visibility:public",

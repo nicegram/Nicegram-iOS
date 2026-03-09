@@ -2169,12 +2169,18 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 var isCopyProtectionEnabled: Bool = data.initialData?.peer?.isCopyProtectionEnabled ?? false
                 for entry in view.additionalData {
                     if case let .peer(_, maybePeer) = entry, let peer = maybePeer {
-                        isCopyProtectionEnabled = peer.isCopyProtectionEnabled
+                        if !isCopyProtectionEnabled {
+                            isCopyProtectionEnabled = peer.isCopyProtectionEnabled
+                        }
                         if let channel = peer as? TelegramChannel {
                             autoTranslate = channel.flags.contains(.autoTranslateEnabled)
                             if let boostLevel = channel.approximateBoostLevel, boostLevel >= premiumConfiguration.minGroupAudioTranscriptionLevel {
                                 audioTranscriptionProvidedByBoost = true
                             }
+                        }
+                    } else if case let .cachedPeerData(_, cachedData) = entry, let cachedUserData = cachedData as? CachedUserData {
+                        if !isCopyProtectionEnabled {
+                            isCopyProtectionEnabled = cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled)
                         }
                     }
                 }
@@ -2454,8 +2460,12 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 }
                 
                 var keyboardButtonsMessage = view.topTaggedMessages.first
-                if keyboardButtonsMessage != nil && keyboardButtonsMessage?.threadId != chatLocation.threadId {
-                    keyboardButtonsMessage = nil
+                if let keyboardButtonsMessageValue = keyboardButtonsMessage {
+                    if keyboardButtonsMessageValue.threadId != chatLocation.threadId {
+                        if chatLocation.threadId != nil {
+                            keyboardButtonsMessage = nil
+                        }
+                    }
                 }
                 if let keyboardButtonsMessageValue = keyboardButtonsMessage, keyboardButtonsMessageValue.isRestricted(platform: "ios", contentSettings: context.currentContentSettings.with({ $0 })) {
                     keyboardButtonsMessage = nil
@@ -4034,7 +4044,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     loadState = .messages
                 } else if let historyView = strongSelf.historyView {
                     if historyView.filteredEntries.isEmpty {
-                        if let firstEntry = historyView.originalView.entries.first {
+                        if historyView.originalView.isLoading {
+                            loadState = .loading(false)
+                        } else if let firstEntry = historyView.originalView.entries.first {
                             var emptyType = ChatHistoryNodeLoadState.EmptyType.generic
                             for media in firstEntry.message.media {
                                 if let action = media as? TelegramMediaAction {

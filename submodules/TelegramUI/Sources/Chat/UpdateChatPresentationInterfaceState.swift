@@ -82,7 +82,7 @@ func updateChatPresentationInterfaceStateImpl(
         }
     }
     
-    let inputTextPanelState = inputTextPanelStateForChatPresentationInterfaceState(temporaryChatPresentationInterfaceState, context: selfController.context)
+    let inputTextPanelState = inputTextPanelStateForChatPresentationInterfaceState(temporaryChatPresentationInterfaceState, context: selfController.context, controller: selfController)
     var updatedChatPresentationInterfaceState = temporaryChatPresentationInterfaceState.updatedInputTextPanelState({ _ in return inputTextPanelState })
     
     let contextQueryUpdates = contextQueryResultStateForChatInterfacePresentationState(updatedChatPresentationInterfaceState, context: selfController.context, currentQueryStates: &selfController.contextQueryStates, requestBotLocationStatus: { [weak selfController] peerId in
@@ -456,12 +456,14 @@ func updateChatPresentationInterfaceStateImpl(
     
     selfController.tempHideAccessoryPanels = selfController.presentationInterfaceState.search != nil
     
-    if let chatTitleContent = selfController.contentData?.state.chatTitleContent {
+    var forceLayout = false
+    
+    if let chatTitleContent = selfController.contentData?.state.chatTitleContent, let chatTitleView = selfController.chatTitleView {
         var titleTransition = ComponentTransition(transition)
         if case .messageOptions = selfController.subject {
             titleTransition = titleTransition.withAnimation(.none)
         }
-        selfController.chatTitleView?.update(
+        let isChatTitleViewUpdated = chatTitleView.update(
             context: selfController.context,
             theme: selfController.presentationData.theme,
             preferClearGlass: selfController.presentationInterfaceState.preferredGlassType == .clear,
@@ -473,10 +475,13 @@ func updateChatPresentationInterfaceStateImpl(
             transition: titleTransition,
             ignoreParentTransitionRequests: true
         )
+        if isChatTitleViewUpdated {
+            forceLayout = true
+        }
     }
     
     if selfController.isNodeLoaded {
-        selfController.chatDisplayNode.updateChatPresentationInterfaceState(updatedChatPresentationInterfaceState, transition: transition, interactive: interactive, completion: completion)
+        selfController.chatDisplayNode.updateChatPresentationInterfaceState(updatedChatPresentationInterfaceState, transition: transition, interactive: interactive, forceLayout: forceLayout, completion: completion)
     } else {
         completion(.immediate)
     }
@@ -627,6 +632,5 @@ func updateChatPresentationInterfaceStateImpl(
             selfController.customNavigationPanelNode = nil
         }
     }
-    
     selfController.stateUpdated?(transition)
 }

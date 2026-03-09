@@ -30,6 +30,8 @@ import DeviceModel
 import LegacyMediaPickerUI
 import PassKit
 import AlertComponent
+import UIKitRuntimeUtils
+import AuthConfirmationScreen
 
 private final class TonSchemeHandler: NSObject, WKURLSchemeHandler {
     private final class PendingTask {
@@ -156,6 +158,24 @@ final class WebView: WKWebView {
         }
         return result
     }
+    
+    func sendEvent(name: String, data: String?) {
+        let script = "window.Telegram.TelegramGameProxy && window.Telegram.TelegramGameProxy.receiveEvent && window.Telegram.TelegramGameProxy.receiveEvent(\"\(name)\", \(data ?? "null"))"
+        self.evaluateJavaScript(script, completionHandler: { _, _ in
+        })
+    }
+    
+    var origin: String? {
+        guard let url = self.url, let scheme = url.scheme, let host = url.host else {
+            return nil
+        }
+        let port = url.port
+        var origin = "\(scheme)://\(host)"
+        if let port {
+            origin += ":\(port)"
+        }
+        return origin
+    }
 }
 
 private class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
@@ -223,6 +243,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     var cancelInteractiveTransitionGestures: () -> Void = {}
     
     private var tempFile: TempBoxFile?
+    private var disposeTrustedDomain: (() -> Void)?
     
     // Nicegram Wallet
     private let nicegramWalletJsInjector = WalletJsInjector()
@@ -274,6 +295,30 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             configuration.userContentController = contentController
             configuration.applicationNameForUserAgent = computedUserAgent()
         }
+        
+        if context.sharedContext.immediateExperimentalUISettings.enablePWA {
+            if #available(iOS 17.0, *) {
+                if let parsedUrl = URL(string: url), let host = parsedUrl.host {
+                    let rootPath = context.sharedContext.applicationBindings.containerPath + "/telegram-data"
+                    let pwaPath = rootPath + "/pwa"
+                    let uuidPath = pwaPath + "/uuid_\(host)"
+                    let uuid: UUID
+                    if let value = try? String(contentsOf: URL(fileURLWithPath: uuidPath), encoding: .utf8) {
+                        uuid = UUID(uuidString: value)!
+                    } else {
+                        uuid = UUID()
+                        let _ = try? FileManager.default.createDirectory(at: URL(fileURLWithPath: pwaPath), withIntermediateDirectories: true)
+                        let _ = try? uuid.uuidString.write(to: URL(fileURLWithPath: uuidPath), atomically: true, encoding: .utf8)
+                    }
+                    
+                    configuration.websiteDataStore = WKWebsiteDataStore(forIdentifier: uuid)
+                    
+                    configuration.limitsNavigationsToAppBoundDomains = true
+                    disposeTrustedDomain = WebHelpers.addTrustedDomain(host)
+                    WebHelpers.forceRefreshTrustedDomains(configuration.websiteDataStore)
+                }
+            }
+        }
                 
         self.webView = WebView(frame: CGRect(), configuration: configuration)
         self.webView.allowsLinkPreview = true
@@ -283,18 +328,16 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         }
         
         var title: String = ""
+        var request: URLRequest?
         if url.hasPrefix("file://") {
             var updatedPath = url
             let tempFile = TempBox.shared.file(path: url.replacingOccurrences(of: "file://", with: ""), fileName: "file.xlsx")
             updatedPath = tempFile.path
             self.tempFile = tempFile
             
-            let request = URLRequest(url: URL(fileURLWithPath: updatedPath))
-            self.webView.load(request)
+            request = URLRequest(url: URL(fileURLWithPath: updatedPath))
         } else if let parsedUrl = URL(string: url) {
-            let request = URLRequest(url: parsedUrl)
-            self.webView.load(request)
-            
+            request = URLRequest(url: parsedUrl)
             title = getDisplayUrl(url, hostOnly: true)
         }
         
@@ -308,6 +351,10 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         self.backgroundColor = presentationData.theme.list.plainBackgroundColor
         self.webView.backgroundColor = presentationData.theme.list.plainBackgroundColor
         self.webView.alpha = 0.0
+        
+        if let request {
+            self.webView.load(request)
+        }
         
         self.webView.allowsBackForwardNavigationGestures = true
         self.webView.scrollView.delegate = self
@@ -379,15 +426,127 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         
         self.faviconDisposable.dispose()
         self.instantPageDisposable.dispose()
+        
+        self.disposeTrustedDomain?()
     }
     
     private func handleScriptMessage(_ message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let eventName = body["eventName"] as? String else {
             return
         }
+        let eventData = (body["eventData"] as? String)?.data(using: .utf8)
+        let json = try? JSONSerialization.jsonObject(with: eventData ?? Data(), options: []) as? [String: Any]
         switch eventName {
         case "cancellingTouch":
             self.cancelInteractiveTransitionGestures()
+        case "oauth_request":
+            let url = json?["url"] as? String
+            if let url {
+                let securityOrigin = message.frameInfo.securityOrigin
+                var origin = ""
+                origin.append(securityOrigin.protocol)
+                origin.append("://")
+                origin.append(securityOrigin.host)
+                if securityOrigin.port != 0 {
+                    origin.append(":")
+                    origin.append("\(securityOrigin.port)")
+                }
+                                
+                let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+                let subject: MessageActionUrlSubject = .url(url: url, inAppOrigin: origin)
+                let _ = (self.context.engine.messages.requestMessageActionUrlAuth(subject: subject)
+                |> deliverOnMainQueue).start(next: { [weak self] result in
+                    guard let self, case .request = result else {
+                        return
+                    }
+                    var dismissImpl: (() -> Void)?
+                    let controller = AuthConfirmationScreen(context: self.context, requestSubject: subject, subject: result, completion: { [weak self] accountContext, accountPeer, authResult in
+                        guard let self else {
+                            return
+                        }
+                        switch authResult {
+                        case let .accept(allowWriteAccess, sharePhoneNumber, matchCode):
+                            let signal: Signal<MessageActionUrlAuthResult, MessageActionUrlAuthError>
+                            if accountContext === context {
+                                signal = accountContext.engine.messages.acceptMessageActionUrlAuth(subject: subject, allowWriteAccess: allowWriteAccess, sharePhoneNumber: sharePhoneNumber, matchCode: matchCode)
+                            } else {
+                                accountContext.account.shouldBeServiceTaskMaster.set(.single(.now))
+                                signal = accountContext.engine.messages.requestMessageActionUrlAuth(subject: subject)
+                                |> castError(MessageActionUrlAuthError.self)
+                                |> mapToSignal { result in
+                                    return accountContext.engine.messages.acceptMessageActionUrlAuth(subject: subject, allowWriteAccess: allowWriteAccess, sharePhoneNumber: sharePhoneNumber, matchCode: matchCode)
+                                } |> afterDisposed {
+                                    accountContext.account.shouldBeServiceTaskMaster.set(.single(.never))
+                                }
+                            }
+                            
+                            let _ = (signal
+                            |> deliverOnMainQueue).start(next: { authResult in
+                                dismissImpl?()
+                                
+                                Queue.mainQueue().after(0.3) {
+                                    let text: String
+                                    if case let .request(domain, _, _, flags, _, _) = result {
+                                        if flags.contains(.requestPhoneNumber) && !sharePhoneNumber {
+                                            text = presentationData.strings.AuthConfirmation_LoginSuccess_TextNoNumber(domain).string
+                                        } else {
+                                            text = presentationData.strings.AuthConfirmation_LoginSuccess_Text(domain).string
+                                        }
+                                        let controller = UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: presentationData.strings.AuthConfirmation_LoginSuccess_Title, text: text, cancel: nil, destructive: false), action: { _ in return true })
+                                        if let navigationController = self.getNavigationController() {
+                                            (navigationController.topViewController as? ViewController)?.present(controller, in: .window(.root))
+                                        }
+                                    }
+                                    
+                                    if case let .accepted(url) = authResult, let url, let currentOrigin = self.webView.origin, currentOrigin == origin {
+                                        let data: JSON = ["result_url": url]
+                                        self.webView.sendEvent(name: "oauth_result_confirmed", data: data.string)
+                                    } else {
+                                        self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                                    }
+                                }
+                            }, error: { _ in
+                                guard case let .request(domain, _, _, _, _, _) = result else {
+                                    return
+                                }
+                                let controller = UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: presentationData.strings.AuthConfirmation_LoginFail_Title, text: presentationData.strings.AuthConfirmation_LoginFail_Text(domain).string, cancel: nil, destructive: false), action: { _ in return true })
+                                if let navigationController = self.getNavigationController() {
+                                    (navigationController.topViewController as? ViewController)?.present(controller, in: .window(.root))
+                                }
+                                
+                                let _ = self.context.engine.messages.declineUrlAuth(url: url).start()
+                                self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                                
+                                HapticFeedback().error()
+                            })
+                        case .decline:
+                            let _ = self.context.engine.messages.declineUrlAuth(url: url).start()
+                            self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                        case .failed:
+                            guard case let .request(domain, _, _, _, _, _) = result else {
+                                return
+                            }
+                            let controller = UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: presentationData.strings.AuthConfirmation_LoginFail_Title, text: presentationData.strings.AuthConfirmation_LoginFail_Text(domain).string, cancel: nil, destructive: false), action: { _ in return true })
+                            if let navigationController = self.getNavigationController() {
+                                (navigationController.topViewController as? ViewController)?.present(controller, in: .window(.root))
+                            }
+                            
+                            let _ = self.context.engine.messages.declineUrlAuth(url: url).start()
+                            self.webView.sendEvent(name: "oauth_result_failed", data: nil)
+                            
+                            HapticFeedback().error()
+                        }
+                    })
+                    dismissImpl = { [weak controller] in
+                        controller?.dismissAnimated()
+                    }
+                    if let navigationController = self.getNavigationController() {
+                        navigationController.pushViewController(controller)
+                    }
+                })
+            } else {
+                self.webView.sendEvent(name: "oauth_supported", data: nil)
+            }
         default:
             break
         }

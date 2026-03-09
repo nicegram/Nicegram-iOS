@@ -164,6 +164,7 @@ enum PeerInfoMemberAction {
     case restrict
     case remove
     case openStories(sourceView: UIView)
+    case editRank
 }
 
 enum PeerInfoContextSubject {
@@ -707,7 +708,13 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     return
                 }
                 self.openBirthdayContextMenu(node: node, gesture: gesture)
-            }, editingOpenAffiliateProgram: { [weak self] in
+            }, openMemberContextMenu: { [weak self] member, node, gesture in
+                guard let self else {
+                    return
+                }
+                self.openMemberContextMenu(member: member, node: node, gesture: gesture)
+            },
+            editingOpenAffiliateProgram: { [weak self] in
                 guard let self else {
                     return
                 }
@@ -768,8 +775,12 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     return
                 }
                 
-                var items: [ContextMenuItem] = []
+                var isCopyProtected = false
+                if let cachedUserData = strongSelf.data?.cachedData as? CachedUserData, cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled) {
+                    isCopyProtected = true
+                }
                 
+                var items: [ContextMenuItem] = []
                 items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.SharedMedia_ViewInChat, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/GoToMessage"), color: theme.contextMenu.primaryColor) }, action: { c, _ in
                     c?.dismiss(completion: {
                         if let strongSelf = self, let currentPeer = strongSelf.data?.peer, let navigationController = strongSelf.controller?.navigationController as? NavigationController {
@@ -821,7 +832,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     })))
                 }
                 
-                if message.isCopyProtected() {
+                if message.isCopyProtected() || isCopyProtected {
                     
                 } else if message.id.peerId.namespace != Namespaces.Peer.SecretChat && message.minAutoremoveOrClearTimeout == nil {
                     items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.Conversation_ContextMenuForward, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.contextMenu.primaryColor) }, action: { c, _ in
@@ -926,6 +937,11 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     return
                 }
                 if let previewData = previewData {
+                    var isCopyProtected = false
+                    if let cachedUserData = strongSelf.data?.cachedData as? CachedUserData, cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled) {
+                        isCopyProtected = true
+                    }
+                    
                     let context = strongSelf.context
                     let strings = strongSelf.presentationData.strings
                     let items = strongSelf.context.sharedContext.chatAvailableMessageActions(engine: strongSelf.context.engine, accountPeerId: strongSelf.context.account.peerId, messageIds: [message.id], keepUpdated: false)
@@ -973,7 +989,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                             })
                         })))
                         
-                        if message.isCopyProtected() {
+                        if message.isCopyProtected() || isCopyProtected {
                             
                         } else if message.id.peerId.namespace != Namespaces.Peer.SecretChat {
                             items.append(.action(ContextMenuActionItem(text: strings.Conversation_ContextMenuForward, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Forward"), color: theme.contextMenu.primaryColor) }, action: { c, f in
@@ -1104,6 +1120,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             return false
         }, sendBotContextResultAsGif: { _, _, _, _, _, _ in
             return false
+        }, editGif: { _, _ in
         }, requestMessageActionCallback: { _, _, _, _, _ in
         }, requestMessageActionUrlAuth: { _, _ in
         }, activateSwitchInline: { _, _, _ in
@@ -1283,7 +1300,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, requestToggleTodoMessageItem: { _, _, _ in
         }, displayTodoToggleUnavailable: { _ in
         }, openStarsPurchase: { _ in
-        }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
+        }, openRankInfo: { _, _, _ in }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
         pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
         self.hiddenMediaDisposable = context.sharedContext.mediaManager.galleryHiddenMediaManager.hiddenIds().startStrict(next: { [weak self] ids in
             guard let strongSelf = self else {
@@ -1491,6 +1508,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 strongSelf.performMemberAction(member: member, action: .remove)
             case let .openStories(sourceView):
                 strongSelf.performMemberAction(member: member, action: .openStories(sourceView: sourceView))
+            case let .openContextMenu(sourceNode, gesture):
+                strongSelf.openMemberContextMenu(member: member, node: sourceNode, gesture: gesture)
             }
         }
         
@@ -2852,11 +2871,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             }
         }
         
-        if let peer = data.peer, peer.isCopyProtectionEnabled {
-            setLayerDisableScreenshots(self.layer, true)
-        } else {
-            setLayerDisableScreenshots(self.layer, false)
-        }
+        setLayerDisableScreenshots(self.layer, peerInfoIsCopyProtected(data: data))
     }
     
     func scrollToTop() {
@@ -4308,11 +4323,39 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }
     }
     
-    private func performMemberAction(member: PeerInfoMember, action: PeerInfoMemberAction) {
+    func performMemberAction(member: PeerInfoMember, action: PeerInfoMemberAction) {
         guard let data = self.data, let peer = data.peer else {
             return
         }
         switch action {
+        case .editRank:
+            let rank: String?
+            let role: ChatRankInfoScreenRole
+            switch member {
+            case let .channelMember(participant, _):
+                rank = participant.participant.rank
+                switch participant.participant {
+                case .creator:
+                    role = .creator
+                case let .member(_, _, adminInfo, _, _, _):
+                    role = adminInfo != nil ? .admin : .member
+                }
+            case let .legacyGroupMember(_, roleValue, _, _, _, rankValue):
+                rank = rankValue
+                switch roleValue {
+                case .creator:
+                    role = .creator
+                case .admin:
+                    role = .admin
+                case .member:
+                    role = .member
+                }
+            default:
+                rank = nil
+                role = .member
+            }
+            let controller = self.context.sharedContext.makeChatCustomRankSetupScreen(context: self.context, peerId: peer.id, participantId: member.id, rank: rank, role: role)
+            self.controller?.push(controller)
         case .promote:
             if case let .channelMember(channelMember, _) = member {
                 var upgradedToSupergroupImpl: (() -> Void)?
@@ -7041,6 +7084,20 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
         self.validLayout = (layout, navigationHeight)
         
         self.controllerNode.containerLayoutUpdated(layout: layout, navigationHeight: navigationHeight, transition: transition)
+    }
+    
+    override public func tabBarItemHasDoubleTapAction() -> Bool {
+        return false
+    }
+    
+    override public func tabBarItemPerformDoubleTapAction() {
+        guard let (maybePrimary, other) = self.accountsAndPeersValue, let _ = maybePrimary else {
+            return
+        }
+        for account in other {
+            self.controllerNode.switchToAccount(id: account.0.account.id)
+            break
+        }
     }
     
     override public func tabBarItemContextAction(sourceView: ContextExtractedContentContainingView, gesture: ContextGesture) {

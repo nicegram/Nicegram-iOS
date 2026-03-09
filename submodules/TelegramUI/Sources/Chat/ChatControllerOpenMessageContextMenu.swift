@@ -91,14 +91,22 @@ extension ChatControllerImpl {
                             break
                         }
                     }
-                    if self.presentationInterfaceState.copyProtectionEnabled && !isAction && !isAd {
+                    if self.presentationInterfaceState.myCopyProtectionEnabled && !isAction && !isAd {
+                        tip = .messageCopyProtection(text: self.presentationData.strings.Conversation_CopyProtectionInfoPrivateYou)
+                    } else if self.presentationInterfaceState.copyProtectionEnabled && !isAction && !isAd {
                         if case .scheduledMessages = self.subject {
                         } else {
-                            var isChannel = false
-                            if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, case .broadcast = channel.info {
-                                isChannel = true
+                            if let peer = self.presentationInterfaceState.renderedPeer?.peer {
+                                if peer is TelegramUser {
+                                    tip = .messageCopyProtection(text: self.presentationData.strings.Conversation_CopyProtectionInfoPrivate(EnginePeer(peer).compactDisplayTitle).string)
+                                } else {
+                                    var isChannel = false
+                                    if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, case .broadcast = channel.info {
+                                        isChannel = true
+                                    }
+                                    tip = .messageCopyProtection(text: isChannel ? self.presentationData.strings.Conversation_CopyProtectionInfoChannel : self.presentationData.strings.Conversation_CopyProtectionInfoGroup)
+                                }
                             }
-                            tip = .messageCopyProtection(isChannel: isChannel)
                         }
                     } else {
                         let numberOfComponents = message.text.components(separatedBy: CharacterSet.whitespacesAndNewlines).count
@@ -328,7 +336,7 @@ extension ChatControllerImpl {
                     }
                 }
                 
-                let isSecret = self.presentationInterfaceState.copyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat
+                let isSecret = self.presentationInterfaceState.copyProtectionEnabled || self.presentationInterfaceState.myCopyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat
                 let controller = makeContextController(presentationData: self.presentationData, source: source, items: actionsSignal, recognizer: recognizer, gesture: gesture, disableScreenshots: isSecret, hideReactionPanelTail: hideReactionPanelTail)
                 controller.dismissed = { [weak self] in
                     self?.canReadHistory.set(true)

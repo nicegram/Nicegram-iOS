@@ -16,6 +16,8 @@ import NotificationPeerExceptionController
 import NotificationExceptionsScreen
 import ShareController
 import TranslateUI
+import TelegramNotices
+import AlertComponent
 
 extension PeerInfoScreenNode {
     func performButtonAction(key: PeerInfoHeaderButtonKey, buttonNode: PeerInfoHeaderButtonNode?, gesture: ContextGesture?) {
@@ -772,6 +774,83 @@ extension PeerInfoScreenNode {
                             }, action: nil as ((ContextControllerProtocol?, @escaping (ContextMenuActionResult) -> Void) -> Void)?)))
                             
                             c?.pushItems(items: .single(ContextController.Items(content: .list(subItems))))
+                        })))
+                    }
+                    
+                    if let user = data.peer as? TelegramUser, let cachedData = data.cachedData as? CachedUserData, user.botInfo == nil && !user.flags.contains(.isSupport) && user.id != strongSelf.context.account.peerId && strongSelf.peerId.namespace != Namespaces.Peer.SecretChat {
+                        let copyProtectionEnabled = cachedData.flags.contains(.myCopyProtectionEnabled) || cachedData.flags.contains(.copyProtectionEnabled)
+                        items.append(.action(ContextMenuActionItem(text: !copyProtectionEnabled ? strongSelf.presentationData.strings.PeerInfo_DisableSharing : strongSelf.presentationData.strings.PeerInfo_EnableSharing, icon: { theme in
+                            generateTintedImage(image: UIImage(bundleImageName: !copyProtectionEnabled ? "Chat/Context Menu/ForwardDisable" : "Chat/Context Menu/ForwardEnable"), color: theme.contextMenu.primaryColor)
+                        }, action: { [weak self] _, f in
+                            f(.default)
+                            
+                            guard let self, let peer = self.data?.peer, let navigationController = self.controller?.navigationController as? NavigationController else {
+                                return
+                            }
+                            
+                            if !copyProtectionEnabled {
+                                if !self.context.isPremium {
+                                    let context = self.context
+                                    var replaceImpl: ((ViewController) -> Void)?
+                                    let demoController = context.sharedContext.makePremiumDemoController(context: context, subject: .copyProtection, forceDark: false, action: {
+                                        let controller = context.sharedContext.makePremiumIntroController(context: context, source: .copyProtection, forceDark: false, dismissed: nil)
+                                        replaceImpl?(controller)
+                                    }, dismissed: nil)
+                                    replaceImpl = { [weak demoController] c in
+                                        demoController?.replace(with: c)
+                                    }
+                                    self.controller?.push(demoController)
+                                } else {
+                                    let action = { [weak self] in
+                                        guard let self else {
+                                            return
+                                        }
+                                        let _ = self.context.engine.peers.toggleMessageCopyProtection(peerId: user.id, enabled: true).start()
+                                        
+                                        self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(EnginePeer(peer)), keepStack: .default, peerNearbyData: nil, completion: { _ in }))
+                                    }
+                                    let _ = (ApplicationSpecificNotice.getCopyProtectionTips(accountManager: self.context.sharedContext.accountManager)
+                                    |> deliverOnMainQueue).start(next: { [weak self] count in
+                                        guard let self else {
+                                            return
+                                        }
+                                        if count > 3 {
+                                            action()
+                                        } else {
+                                            let infoController = self.context.sharedContext.makePeerCopyProtectionInfoScreen(context: self.context, completion: { [weak self] in
+                                                guard let self else {
+                                                    return
+                                                }
+                                                action()
+                                                
+                                                let _ = ApplicationSpecificNotice.incrementCopyProtectionTips(accountManager: self.context.sharedContext.accountManager)
+                                            })
+                                            self.controller?.push(infoController)
+                                        }
+                                    })
+                                }
+                            } else {
+                                let action = {
+                                    let _ = self.context.engine.peers.toggleMessageCopyProtection(peerId: user.id, enabled: false).start()
+                                    
+                                    self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(EnginePeer(peer)), keepStack: .default, scrollToEndIfExists: true, completion: { _ in }))
+                                }
+                                
+                                let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                                let timeout: Int32 = self.context.account.testingEnvironment ? 300 : 86400
+                                if let cachedUserData = self.data?.cachedData as? CachedUserData, !cachedUserData.flags.contains(.copyProtectionEnabled), let date = cachedUserData.myCopyProtectionEnableDate, currentTime < date + timeout {
+                                    action()
+                                } else {
+                                    let peerName = self.data?.peer.flatMap(EnginePeer.init)?.compactDisplayTitle ?? ""
+                                    let alertController = AlertScreen(context: self.context, configuration: .init(actionAlignment: .vertical), title: self.presentationData.strings.EnableSharing_Title, text: self.presentationData.strings.EnableSharing_Text(peerName).string, actions: [
+                                        .init(title: self.presentationData.strings.EnableSharing_SendRequest, type: .default, action: {
+                                            action()
+                                        }),
+                                        .init(title: self.presentationData.strings.Common_Cancel)
+                                    ])
+                                    self.controller?.present(alertController, in: .window(.root))
+                                }
+                            }
                         })))
                     }
                     

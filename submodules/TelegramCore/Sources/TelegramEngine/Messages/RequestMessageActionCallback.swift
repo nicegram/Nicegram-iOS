@@ -178,6 +178,7 @@ public enum MessageActionUrlAuthResult {
         
         public static let requestWriteAccess = Flags(rawValue: 1 << 0)
         public static let requestPhoneNumber = Flags(rawValue: 1 << 1)
+        public static let showMatchCodesFirst = Flags(rawValue: 1 << 2)
     }
     
     public struct ClientData  : Equatable {
@@ -196,7 +197,7 @@ public enum MessageActionUrlAuthResult {
     
     case `default`
     case accepted(url: String?)
-    case request(domain: String, bot: Peer, clientData: ClientData?, flags: Flags)
+    case request(domain: String, bot: Peer, clientData: ClientData?, flags: Flags, matchCodes: [String]?, userIdHint: EnginePeer.Id?)
 }
 
 public enum MessageActionUrlAuthError {
@@ -206,30 +207,33 @@ public enum MessageActionUrlAuthError {
 
 public enum MessageActionUrlSubject {
     case message(id: MessageId, buttonId: Int32)
-    case url(String)
+    case url(url: String, inAppOrigin: String?)
 }
 
 func _internal_requestMessageActionUrlAuth(account: Account, subject: MessageActionUrlSubject) -> Signal<MessageActionUrlAuthResult, NoError> {
     let request: Signal<Api.UrlAuthResult?, MTRpcError>
     var flags: Int32 = 0
     switch subject {
-        case let .message(messageId, buttonId):
-            flags |= (1 << 1)
-            request = account.postbox.loadedPeerWithId(messageId.peerId)
-            |> take(1)
-            |> castError(MTRpcError.self)
-            |> mapToSignal { peer -> Signal<Api.UrlAuthResult?, MTRpcError> in
-                if let inputPeer = apiInputPeer(peer) {
-                    return account.network.request(Api.functions.messages.requestUrlAuth(flags: flags, peer: inputPeer, msgId: messageId.id, buttonId: buttonId, url: nil))
-                    |> map(Optional.init)
-                } else {
-                    return .single(nil)
-                }
+    case let .message(messageId, buttonId):
+        flags |= (1 << 1)
+        request = account.postbox.loadedPeerWithId(messageId.peerId)
+        |> take(1)
+        |> castError(MTRpcError.self)
+        |> mapToSignal { peer -> Signal<Api.UrlAuthResult?, MTRpcError> in
+            if let inputPeer = apiInputPeer(peer) {
+                return account.network.request(Api.functions.messages.requestUrlAuth(flags: flags, peer: inputPeer, msgId: messageId.id, buttonId: buttonId, url: nil, inAppOrigin: nil))
+                |> map(Optional.init)
+            } else {
+                return .single(nil)
             }
-        case let .url(url):
-            flags |= (1 << 2)
-            request = account.network.request(Api.functions.messages.requestUrlAuth(flags: flags, peer: nil, msgId: nil, buttonId: nil, url: url))
-            |> map(Optional.init)
+        }
+    case let .url(url, inAppOrigin):
+        flags |= (1 << 2)
+        if let _ = inAppOrigin {
+            flags |= (1 << 3)
+        }
+        request = account.network.request(Api.functions.messages.requestUrlAuth(flags: flags, peer: nil, msgId: nil, buttonId: nil, url: url, inAppOrigin: inAppOrigin))
+        |> map(Optional.init)
     }
     
     return request
@@ -241,30 +245,42 @@ func _internal_requestMessageActionUrlAuth(account: Account, subject: MessageAct
             return .default
         }
         switch result {
-            case .urlAuthResultDefault:
-                return .default
-            case let .urlAuthResultAccepted(urlAuthResultAcceptedData):
-                let url = urlAuthResultAcceptedData.url
-                return .accepted(url: url)
-            case let .urlAuthResultRequest(urlAuthResultRequestData):
-                let (apiFlags, bot, domain) = (urlAuthResultRequestData.flags, urlAuthResultRequestData.bot, urlAuthResultRequestData.domain)
-                var clientData: MessageActionUrlAuthResult.ClientData?
-                if let browser = urlAuthResultRequestData.browser, let platform = urlAuthResultRequestData.platform, let ip = urlAuthResultRequestData.ip, let region = urlAuthResultRequestData.region {
-                    clientData = MessageActionUrlAuthResult.ClientData(browser: browser, platform: platform, ip: ip, region: region)
-                }
-                var flags: MessageActionUrlAuthResult.Flags = []
-                if (apiFlags & (1 << 0)) != 0 {
-                    flags.insert(.requestWriteAccess)
-                }
-                if (apiFlags & (1 << 1)) != 0 {
-                    flags.insert(.requestPhoneNumber)
-                }
-                return .request(domain: domain, bot: TelegramUser(user: bot), clientData: clientData, flags: flags)
+        case .urlAuthResultDefault:
+            return .default
+        case let .urlAuthResultAccepted(urlAuthResultAcceptedData):
+            let url = urlAuthResultAcceptedData.url
+            return .accepted(url: url)
+        case let .urlAuthResultRequest(urlAuthResultRequestData):
+            let (apiFlags, bot, domain) = (urlAuthResultRequestData.flags, urlAuthResultRequestData.bot, urlAuthResultRequestData.domain)
+            var clientData: MessageActionUrlAuthResult.ClientData?
+            if let browser = urlAuthResultRequestData.browser, let platform = urlAuthResultRequestData.platform, let ip = urlAuthResultRequestData.ip, let region = urlAuthResultRequestData.region {
+                clientData = MessageActionUrlAuthResult.ClientData(browser: browser, platform: platform, ip: ip, region: region)
+            }
+            var flags: MessageActionUrlAuthResult.Flags = []
+            if (apiFlags & (1 << 0)) != 0 {
+                flags.insert(.requestWriteAccess)
+            }
+            if (apiFlags & (1 << 1)) != 0 {
+                flags.insert(.requestPhoneNumber)
+            }
+        
+            if (apiFlags & (1 << 5)) != 0 {
+                flags.insert(.showMatchCodesFirst)
+            }
+            return .request(domain: domain, bot: TelegramUser(user: bot), clientData: clientData, flags: flags, matchCodes: urlAuthResultRequestData.matchCodes, userIdHint: urlAuthResultRequestData.userIdHint.flatMap { EnginePeer.Id(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value($0)) })
         }
     }
 }
 
-func _internal_acceptMessageActionUrlAuth(account: Account, subject: MessageActionUrlSubject, allowWriteAccess: Bool, sharePhoneNumber: Bool) -> Signal<MessageActionUrlAuthResult, MessageActionUrlAuthError> {
+func _internal_declineUrlAuth(account: Account, url: String) -> Signal<Never, NoError> {
+    return account.network.request(Api.functions.messages.declineUrlAuth(url: url))
+    |> `catch` { _ -> Signal<Api.Bool, NoError> in
+        return .single(.boolFalse)
+    }
+    |> ignoreValues
+}
+
+func _internal_acceptMessageActionUrlAuth(account: Account, subject: MessageActionUrlSubject, allowWriteAccess: Bool, sharePhoneNumber: Bool, matchCode: String? = nil) -> Signal<MessageActionUrlAuthResult, MessageActionUrlAuthError> {
     var flags: Int32 = 0
     if allowWriteAccess {
         flags |= Int32(1 << 0)
@@ -272,7 +288,10 @@ func _internal_acceptMessageActionUrlAuth(account: Account, subject: MessageActi
     if sharePhoneNumber {
         flags |= Int32(1 << 3)
     }
-    
+    if matchCode != nil {
+        flags |= Int32(1 << 4)
+    }
+
     let request: Signal<Api.UrlAuthResult?, MTRpcError>
     switch subject {
         case let .message(messageId, buttonId):
@@ -282,16 +301,19 @@ func _internal_acceptMessageActionUrlAuth(account: Account, subject: MessageActi
             |> castError(MTRpcError.self)
             |> mapToSignal { peer -> Signal<Api.UrlAuthResult?, MTRpcError> in
                 if let inputPeer = apiInputPeer(peer) {
-                    let flags: Int32 = 1 << 1
-                    return account.network.request(Api.functions.messages.acceptUrlAuth(flags: flags, peer: inputPeer, msgId: messageId.id, buttonId: buttonId, url: nil))
+                    var msgFlags: Int32 = 1 << 1
+                    if matchCode != nil {
+                        msgFlags |= Int32(1 << 4)
+                    }
+                    return account.network.request(Api.functions.messages.acceptUrlAuth(flags: msgFlags, peer: inputPeer, msgId: messageId.id, buttonId: buttonId, url: nil, matchCode: matchCode))
                     |> map(Optional.init)
                 } else {
                     return .single(nil)
                 }
             }
-        case let .url(url):
+        case let .url(url, _):
             flags |= (1 << 2)
-            request = account.network.request(Api.functions.messages.acceptUrlAuth(flags: flags, peer: nil, msgId: nil, buttonId: nil, url: url))
+            request = account.network.request(Api.functions.messages.acceptUrlAuth(flags: flags, peer: nil, msgId: nil, buttonId: nil, url: url, matchCode: matchCode))
             |> map(Optional.init)
     }
     
@@ -308,5 +330,15 @@ func _internal_acceptMessageActionUrlAuth(account: Account, subject: MessageActi
             default:
                 return .default
         }
+    }
+}
+
+func _internal_checkUrlAuthMatchCode(account: Account, url: String, matchCode: String) -> Signal<Bool, NoError> {
+    return account.network.request(Api.functions.messages.checkUrlAuthMatchCode(url: url, matchCode: matchCode))
+    |> `catch` { _ -> Signal<Api.Bool, NoError> in
+        return .single(.boolFalse)
+    }
+    |> map { result in
+        return result == .boolTrue
     }
 }

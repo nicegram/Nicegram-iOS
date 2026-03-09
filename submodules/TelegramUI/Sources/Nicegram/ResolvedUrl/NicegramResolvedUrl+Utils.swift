@@ -15,7 +15,7 @@ struct OpenResolvedUrlParams {
     let forceUpdate: Bool
     let openPeer: (EnginePeer, ChatControllerInteractionNavigateToPeer) -> Void
     let sendFile: ((FileMediaReference) -> Void)?
-    let sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?
+    let sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?
     let sendEmoji: ((String, ChatTextInputTextCustomEmojiAttribute) -> Void)?
     let requestMessageActionUrlAuth: ((MessageActionUrlSubject) -> Void)?
     let joinVoiceChat: ((PeerId, String?, CachedChannelData.ActiveCall) -> Void)?

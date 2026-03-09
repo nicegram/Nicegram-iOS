@@ -12,6 +12,7 @@ import SheetComponent
 import MultilineTextComponent
 import GlassBarButtonComponent
 import ButtonComponent
+import PlainButtonComponent
 import PresentationDataUtils
 import BundleIconComponent
 import ListSectionComponent
@@ -23,22 +24,28 @@ import ContextUI
 import AccountUtils
 import GlassBackgroundComponent
 import AccountPeerContextItem
+import ActivityIndicator
+import LottieComponent
+import LottieComponentResourceContent
 
 private final class AuthConfirmationSheetContent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let context: AccountContext
+    let requestSubject: MessageActionUrlSubject
     let subject: MessageActionUrlAuthResult
-    let completion: (AccountContext, EnginePeer, Bool, Bool) -> Void
+    let completion: (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void
     let cancel: (Bool) -> Void
     
     init(
         context: AccountContext,
+        requestSubject: MessageActionUrlSubject,
         subject: MessageActionUrlAuthResult,
-        completion: @escaping (AccountContext, EnginePeer, Bool, Bool) -> Void,
+        completion: @escaping (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void,
         cancel: @escaping  (Bool) -> Void
     ) {
         self.context = context
+        self.requestSubject = requestSubject
         self.subject = subject
         self.completion = completion
         self.cancel = cancel
@@ -53,7 +60,11 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
     
     final class State: ComponentState {
         private let context: AccountContext
+        private let requestSubject: MessageActionUrlSubject
         private let subject: MessageActionUrlAuthResult
+        private let completion: (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void
+        
+        private let disposables = DisposableSet()
         
         var peer: EnginePeer?
         var forcedAccount: (AccountContext, EnginePeer)?
@@ -62,9 +73,15 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
         var allowWrite = true
         weak var controller: ViewController?
         
-        init(context: AccountContext, subject: MessageActionUrlAuthResult) {
+        var displayEmoji = false
+        var matchCodes: [String]?
+        var selectedMatchCode: String?
+        
+        init(context: AccountContext, requestSubject: MessageActionUrlSubject, subject: MessageActionUrlAuthResult, completion: @escaping (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void) {
             self.context = context
+            self.requestSubject = requestSubject
             self.subject = subject
+            self.completion = completion
                         
             super.init()
             
@@ -76,10 +93,85 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                 self.peer = peer
                 self.updated()
             })
+            
+            if case let .request(_, _, _, flags, matchCodes, _) = self.subject, let matchCodes {
+                if flags.contains(.showMatchCodesFirst) {
+                    self.displayEmoji = true
+                    self.matchCodes = matchCodes.shuffled()
+                } else {
+                    for code in matchCodes {
+                        var file: TelegramMediaFile?
+                        if let item = context.animatedEmojiStickersValue[code] {
+                            file = item.first?.file._parse()
+                        } else if let item = context.animatedEmojiStickersValue[code.strippedEmoji] {
+                            file = item.first?.file._parse()
+                        }
+                        if let file {
+                            self.disposables.add(freeMediaFileResourceInteractiveFetched(account: context.account, userLocation: .other, fileReference: .standalone(media: file), resource: file.resource).start())
+                        }
+                    }
+                }
+            }
+            
+            if case let .request(_, _, _, _, _, userIdHint) = self.subject, let userIdHint, userIdHint != context.account.peerId {
+                let _ = (activeAccountsAndPeers(context: self.context, includePrimary: true)
+                |> take(1)
+                |> deliverOnMainQueue).start(next: { [weak self] primary, other in
+                    guard let self else {
+                        return
+                    }
+                    for (accountContext, peer, _) in other {
+                        if peer.id == userIdHint {
+                            self.forcedAccount = (accountContext, peer)
+                            self.updated()
+                            
+                            accountContext.account.shouldBeServiceTaskMaster.set(.single(.now))
+                            let _ = accountContext.engine.messages.requestMessageActionUrlAuth(subject: requestSubject).start()
+                            break
+                        }
+                    }
+                })
+            }
+        }
+        
+        deinit {
+            self.disposables.dispose()
+            
+            if !self.inProgress {
+                if let (context, _) = self.forcedAccount, context !== self.context {
+                    context.account.shouldBeServiceTaskMaster.set(.single(.never))
+                }
+            }
+        }
+        
+        func checkMatchCode(_ matchCode: String) {
+            guard case let .url(url, _) = self.requestSubject else {
+                return
+            }
+            self.selectedMatchCode = matchCode
+            self.updated(transition: .easeInOut(duration: 0.2))
+            
+            let _ = (self.context.engine.messages.checkUrlAuthMatchCode(url: url, matchCode: matchCode)
+            |> deliverOnMainQueue).start(next: { [weak self] result in
+                guard let self else {
+                    return
+                }
+                if result {
+                    self.displayEmoji = false
+                    self.updated(transition: .spring(duration: 0.4))
+                } else {
+                    let accountContext = self.forcedAccount?.0 ?? self.context
+                    guard let accountPeer = self.forcedAccount?.1 ?? self.peer else {
+                        return
+                    }
+                    
+                    self.completion(accountContext, accountPeer, .failed)
+                }
+            })
         }
         
         func displayPhoneNumberConfirmation(commit: @escaping (Bool) -> Void) {
-            guard case let .request(domain, _, _, _) = self.subject else {
+            guard case let .request(domain, _, _, _, _, _) = self.subject else {
                 return
             }
             let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
@@ -126,6 +218,10 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                         guard let self else {
                             return
                         }
+                        if let (context, _) = self.forcedAccount, context !== self.context {
+                            context.account.shouldBeServiceTaskMaster.set(.single(.never))
+                        }
+                        
                         self.forcedAccount = nil
                         self.updated()
                     }), true))
@@ -141,6 +237,12 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                         guard let self else {
                             return
                         }
+                        if let (context, _) = self.forcedAccount, context !== self.context {
+                            context.account.shouldBeServiceTaskMaster.set(.single(.never))
+                        }
+                        
+                        accountContext.account.shouldBeServiceTaskMaster.set(.single(.now))
+                        
                         self.forcedAccount = (accountContext, peer)
                         self.updated()
                     }), true))
@@ -155,7 +257,7 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
     }
     
     func makeState() -> State {
-        return State(context: self.context, subject: self.subject)
+        return State(context: self.context, requestSubject: self.requestSubject, subject: self.subject, completion: self.completion)
     }
     
     static var body: Body {
@@ -164,6 +266,11 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
         let avatar = Child(AvatarComponent.self)
         let title = Child(MultilineTextComponent.self)
         let description = Child(MultilineTextComponent.self)
+        
+        let emojiTitle = Child(MultilineTextComponent.self)
+        let emojiDescription = Child(MultilineTextComponent.self)
+        let emojis = ChildMap(environment: Empty.self, keyedBy: AnyHashable.self)
+        
         let clientSection = Child(ListSectionComponent.self)
         let optionsSection = Child(ListSectionComponent.self)
         let cancelButton = Child(ButtonComponent.self)
@@ -180,9 +287,8 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
             }
             
             let presentationData = context.component.context.sharedContext.currentPresentationData.with { $0 }
-            let _ = strings
             
-            guard case let .request(domain, bot, clientData, flags) = component.subject else {
+            guard case let .request(domain, bot, clientData, flags, matchCodes, _) = component.subject else {
                 fatalError()
             }
 
@@ -218,6 +324,7 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                         theme: environment.theme,
                         peer: state.forcedAccount?.1 ?? peer,
                         canSwitch: true,
+                        isVisible: true,
                         action: { [weak state] sourceView in
                             state?.presentAccountSwitchMenu(sourceView: sourceView)
                         }
@@ -230,231 +337,400 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                 )
             }
             
-            var contentHeight: CGFloat = 32.0
-            let avatar = avatar.update(
-                component: AvatarComponent(
-                    context: component.context,
-                    theme: environment.theme,
-                    peer: EnginePeer(bot),
-                    clipStyle: .roundedRect
-                ),
-                availableSize: CGSize(width: 92.0, height: 92.0),
-                transition: .immediate
-            )
-            context.add(avatar
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + avatar.size.height / 2.0))
-            )
-            contentHeight += avatar.size.height
-            contentHeight += 18.0
-                        
             let titleFont = Font.bold(24.0)
-            let title = title.update(
-                component: MultilineTextComponent(
-                    text: .markdown(text: strings.AuthConfirmation_Title(domain).string, attributes: MarkdownAttributes(body: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.primaryTextColor), bold: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.controlAccentColor), link: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.primaryTextColor), linkAttribute: { _ in return nil })),
-                    horizontalAlignment: .center,
-                    maximumNumberOfLines: 2
-                ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - 60.0, height: CGFloat.greatestFiniteMagnitude),
-                transition: .immediate
-            )
-            context.add(title
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + title.size.height / 2.0))
-            )
-            contentHeight += title.size.height
-            contentHeight += 16.0
-            
             let textFont = Font.regular(15.0)
             let boldTextFont = Font.semibold(15.0)
-            let description = description.update(
-                component: MultilineTextComponent(
-                    text: .markdown(text: strings.AuthConfirmation_Description, attributes: MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: theme.actionSheet.primaryTextColor), bold: MarkdownAttributeSet(font: boldTextFont, textColor: theme.actionSheet.primaryTextColor), link: MarkdownAttributeSet(font: textFont, textColor: theme.actionSheet.primaryTextColor), linkAttribute: { _ in return nil })),
-                    horizontalAlignment: .center,
-                    maximumNumberOfLines: 3,
-                    lineSpacing: 0.2
-                ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - 60.0, height: CGFloat.greatestFiniteMagnitude),
-                transition: .immediate
-            )
-            context.add(description
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + description.size.height / 2.0))
-            )
-            contentHeight += description.size.height
-            contentHeight += 16.0
             
-            var clientSectionItems: [AnyComponentWithIdentity<Empty>] = []
-            clientSectionItems.append(
-                AnyComponentWithIdentity(id: "device", component: AnyComponent(
-                    ListActionItemComponent(
-                        theme: theme,
-                        style: .glass,
-                        title: AnyComponent(MultilineTextComponent(
-                            text: .plain(NSAttributedString(
-                                string: strings.AuthConfirmation_Device,
-                                font: Font.regular(17.0),
-                                textColor: theme.list.itemPrimaryTextColor
-                            )),
-                            maximumNumberOfLines: 1
-                        )),
-                        contentInsets: UIEdgeInsets(top: 19.0, left: 0.0, bottom: 19.0, right: 0.0),
-                        accessory: .custom(ListActionItemComponent.CustomAccessory(
-                            component: AnyComponentWithIdentity(
-                                id: "info",
-                                component: AnyComponent(
-                                    VStack([
-                                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                                            text: .plain(NSAttributedString(
-                                                string: clientData?.platform ?? "",
-                                                font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize),
-                                                textColor: theme.list.itemPrimaryTextColor
-                                            )),
-                                            maximumNumberOfLines: 1
-                                        ))),
-                                        AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
-                                            text: .plain(NSAttributedString(
-                                                string: clientData?.browser ?? "",
-                                                font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize / 17.0 * 15.0),
-                                                textColor: theme.list.itemSecondaryTextColor
-                                            )),
-                                            horizontalAlignment: .left,
-                                            truncationType: .middle,
-                                            maximumNumberOfLines: 1
-                                        )))
-                                    ], alignment: .right, spacing: 3.0)
-                                )
-                            ),
-                            insets: UIEdgeInsets(top: 0.0, left: 8.0, bottom: 0.0, right: 14.0),
-                            isInteractive: true
-                        )),
-                        action: nil
-                    )
-                ))
-            )
-            
-            clientSectionItems.append(
-                AnyComponentWithIdentity(id: "region", component: AnyComponent(
-                    ListActionItemComponent(
-                        theme: theme,
-                        style: .glass,
-                        title: AnyComponent(MultilineTextComponent(
-                            text: .plain(NSAttributedString(
-                                string: strings.AuthConfirmation_IpAddress,
-                                font: Font.regular(17.0),
-                                textColor: theme.list.itemPrimaryTextColor
-                            )),
-                            maximumNumberOfLines: 1
-                        )),
-                        contentInsets: UIEdgeInsets(top: 19.0, left: 0.0, bottom: 19.0, right: 0.0),
-                        accessory: .custom(ListActionItemComponent.CustomAccessory(
-                            component: AnyComponentWithIdentity(
-                                id: "info",
-                                component: AnyComponent(
-                                    VStack([
-                                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                                            text: .plain(NSAttributedString(
-                                                string: clientData?.ip ?? "",
-                                                font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize),
-                                                textColor: theme.list.itemPrimaryTextColor
-                                            )),
-                                            maximumNumberOfLines: 1
-                                        ))),
-                                        AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
-                                            text: .plain(NSAttributedString(
-                                                string: clientData?.region ?? "",
-                                                font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize / 17.0 * 15.0),
-                                                textColor: theme.list.itemSecondaryTextColor
-                                            )),
-                                            horizontalAlignment: .left,
-                                            truncationType: .middle,
-                                            maximumNumberOfLines: 1
-                                        )))
-                                    ], alignment: .right, spacing: 3.0)
-                                )
-                            ),
-                            insets: UIEdgeInsets(top: 0.0, left: 8.0, bottom: 0.0, right: 14.0),
-                            isInteractive: true
-                        )),
-                        action: nil
-                    )
-                ))
-            )
-            
-            let clientSection = clientSection.update(
-                component: ListSectionComponent(
-                    theme: theme,
-                    style: .glass,
-                    header: nil,
-                    footer: AnyComponent(MultilineTextComponent(
-                        text: .plain(NSAttributedString(
-                            string: strings.AuthConfirmation_Info,
-                            font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
-                            textColor: environment.theme.list.freeTextColor
-                        )),
-                        maximumNumberOfLines: 0
-                    )),
-                    items: clientSectionItems
-                ),
-                availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: context.availableSize.height),
-                transition: context.transition
-            )
-            context.add(clientSection
-                .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + clientSection.size.height / 2.0))
-            )
-            contentHeight += clientSection.size.height
-            
-            if flags.contains(.requestWriteAccess) {
-                contentHeight += 38.0
+            let complete: (String?) -> Void = { [weak state] matchCode in
+                guard let state else {
+                    return
+                }
+                var allowWrite = false
+                if flags.contains(.requestWriteAccess) && state.allowWrite {
+                    allowWrite = true
+                }
                 
-                var optionsSectionItems: [AnyComponentWithIdentity<Empty>] = []
-                optionsSectionItems.append(AnyComponentWithIdentity(id: "allowWrite", component: AnyComponent(ListActionItemComponent(
-                    theme: theme,
-                    style: .glass,
-                    title: AnyComponent(VStack([
-                        AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
-                            text: .plain(NSAttributedString(
-                                string: strings.AuthConfirmation_AllowMessages,
-                                font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize),
-                                textColor: theme.list.itemPrimaryTextColor
-                            )),
-                            maximumNumberOfLines: 1
-                        ))),
-                    ], alignment: .left, spacing: 2.0)),
-                    accessory: .toggle(ListActionItemComponent.Toggle(style: .regular, isOn: state.allowWrite, action: { [weak state] _ in
-                        guard let state else {
-                            return
-                        }
-                        state.allowWrite = !state.allowWrite
+                let accountContext = state.forcedAccount?.0 ?? component.context
+                guard let accountPeer = state.forcedAccount?.1 ?? state.peer else {
+                    return
+                }
+                
+                if flags.contains(.requestPhoneNumber) {
+                    state.displayPhoneNumberConfirmation(commit: { sharePhoneNumber in
+                        component.completion(accountContext, accountPeer, .accept(allowWriteAccess: allowWrite, sharePhoneNumber: sharePhoneNumber, matchCode: matchCode))
+                        state.inProgress = true
+                        state.selectedMatchCode = matchCode
                         state.updated()
-                    })),
-                    action: nil
-                ))))
-                let optionsSection = optionsSection.update(
+                    })
+                } else {
+                    component.completion(accountContext, accountPeer, .accept(allowWriteAccess: allowWrite, sharePhoneNumber: false, matchCode: matchCode))
+                    state.inProgress = true
+                    state.selectedMatchCode = matchCode
+                    state.updated()
+                }
+            }
+            
+            var contentHeight: CGFloat = 32.0
+            
+            if state.displayEmoji, let matchCodes = state.matchCodes {
+                contentHeight += 36.0
+                
+                let emojiTitle = emojiTitle.update(
+                    component: MultilineTextComponent(
+                        text: .markdown(text: strings.AuthConfirmation_Emoji_Title, attributes: MarkdownAttributes(body: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.primaryTextColor), bold: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.controlAccentColor), link: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.primaryTextColor), linkAttribute: { _ in return nil })),
+                        horizontalAlignment: .center,
+                        maximumNumberOfLines: 2,
+                        lineSpacing: 0.2
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - 60.0, height: CGFloat.greatestFiniteMagnitude),
+                    transition: .immediate
+                )
+                context.add(emojiTitle
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + emojiTitle.size.height / 2.0))
+                    .appear(.default(scale: false, alpha: true))
+                    .disappear(.default(scale: false, alpha: true))
+                )
+                contentHeight += emojiTitle.size.height
+                contentHeight += 16.0
+                
+                let emojiDescription = emojiDescription.update(
+                    component: MultilineTextComponent(
+                        text: .markdown(text: strings.AuthConfirmation_Emoji_Description, attributes: MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: theme.actionSheet.primaryTextColor), bold: MarkdownAttributeSet(font: boldTextFont, textColor: theme.actionSheet.primaryTextColor), link: MarkdownAttributeSet(font: textFont, textColor: theme.actionSheet.primaryTextColor), linkAttribute: { _ in return nil })),
+                        horizontalAlignment: .center,
+                        maximumNumberOfLines: 3,
+                        lineSpacing: 0.2
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - 60.0, height: CGFloat.greatestFiniteMagnitude),
+                    transition: .immediate
+                )
+                context.add(emojiDescription
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + emojiDescription.size.height / 2.0))
+                    .appear(.default(scale: false, alpha: true))
+                    .disappear(.default(scale: false, alpha: true))
+                )
+                contentHeight += emojiDescription.size.height
+                contentHeight += 48.0
+                
+                var emojiDelay: Double = 0.0
+                let emojiSize = CGSize(width: 64.0, height: 64.0)
+                let emojiSpacing: CGFloat = 36.0
+                let totalWidth = CGFloat(matchCodes.count) * emojiSize.width + CGFloat(matchCodes.count - 1) * emojiSpacing
+                var emojiOriginX = context.availableSize.width / 2.0 - totalWidth / 2.0
+                for code in matchCodes {
+                    var items: [AnyComponentWithIdentity<Empty>] = []
+                    items.append(
+                        AnyComponentWithIdentity(id: "background", component: AnyComponent(
+                            FilledRoundedRectangleComponent(color: theme.list.itemBlocksBackgroundColor, cornerRadius: .minEdge, smoothCorners: false)
+                        ))
+                    )
+                    if state.selectedMatchCode == code {
+                        items.append(
+                            AnyComponentWithIdentity(id: "progress", component: AnyComponent(
+                                ActivityIndicatorComponent(color: theme.list.itemAccentColor)
+                            ))
+                        )
+                    }
+                    
+                    var file: TelegramMediaFile?
+                    if let item = component.context.animatedEmojiStickersValue[code] {
+                        file = item.first?.file._parse()
+                    } else if let item = component.context.animatedEmojiStickersValue[code.strippedEmoji] {
+                        file = item.first?.file._parse()
+                    }
+                    if let file {
+                        items.append(
+                            AnyComponentWithIdentity(id: "animatedIcon", component: AnyComponent(
+                                LottieComponent(content: LottieComponent.ResourceContent(context: component.context, file: file, attemptSynchronously: true, providesPlaceholder: true), placeholderColor: theme.list.mediaPlaceholderColor, startingPosition: .begin, size: CGSize(width: 32.0, height: 32.0), loop: true, playOnce: nil)
+                            ))
+                        )
+                    } else {
+                        items.append(
+                            AnyComponentWithIdentity(id: "staticIcon", component: AnyComponent(
+                                Text(text: code, font: Font.regular(32.0), color: .black)
+                            ))
+                        )
+                    }
+                    
+                    let subject = component.subject
+                    let emoji = emojis[code].update(
+                        component: AnyComponent(
+                            PlainButtonComponent(
+                                content: AnyComponent(
+                                    ZStack(items)
+                                ),
+                                minSize: emojiSize,
+                                action: { [weak state] in
+                                    guard let state else {
+                                        return
+                                    }
+                                    if case let .request(_, _, _, flags, _, _) = subject, flags.contains(.showMatchCodesFirst) {
+                                        state.checkMatchCode(code)
+                                    } else {
+                                        complete(code)
+                                    }
+                                },
+                                isEnabled: state.selectedMatchCode == nil,
+                                animateAlpha: false,
+                                animateScale: true
+                            )
+                        ),
+                        environment: {},
+                        availableSize: emojiSize,
+                        transition: context.transition
+                    )
+                    context.add(emoji
+                        .position(CGPoint(x: emojiOriginX + emojiSize.width / 2.0, y: contentHeight + emojiSize.height / 2.0))
+                        .opacity(state.selectedMatchCode != nil && state.selectedMatchCode != code ? 0.6 : 1.0)
+                        .appear(ComponentTransition.Appear({ _, view, transition in
+                            if !transition.animation.isImmediate {
+                                transition.animateAlpha(view: view, from: 0.0, to: 1.0, delay: emojiDelay)
+                                transition.animateScale(view: view, from: 0.01, to: 1.0, delay: emojiDelay)
+                            }
+                        }))
+                        .disappear(.default(scale: true, alpha: true))
+                    )
+                    emojiOriginX += emojiSize.width + emojiSpacing
+                    emojiDelay += 0.08
+                }
+                
+                contentHeight += emojiSize.height
+                contentHeight += 48.0
+            } else {
+                let avatar = avatar.update(
+                    component: AvatarComponent(
+                        context: component.context,
+                        theme: environment.theme,
+                        peer: EnginePeer(bot),
+                        clipStyle: .roundedRect
+                    ),
+                    availableSize: CGSize(width: 92.0, height: 92.0),
+                    transition: .immediate
+                )
+                context.add(avatar
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + avatar.size.height / 2.0))
+                    .appear(.default(scale: false, alpha: true))
+                    .disappear(.default(scale: false, alpha: true))
+                )
+                contentHeight += avatar.size.height
+                contentHeight += 18.0
+                
+                let title = title.update(
+                    component: MultilineTextComponent(
+                        text: .markdown(text: strings.AuthConfirmation_Title(domain).string, attributes: MarkdownAttributes(body: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.primaryTextColor), bold: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.controlAccentColor), link: MarkdownAttributeSet(font: titleFont, textColor: theme.actionSheet.primaryTextColor), linkAttribute: { _ in return nil })),
+                        horizontalAlignment: .center,
+                        maximumNumberOfLines: 2
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - 60.0, height: CGFloat.greatestFiniteMagnitude),
+                    transition: .immediate
+                )
+                context.add(title
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + title.size.height / 2.0))
+                    .appear(.default(scale: false, alpha: true))
+                    .disappear(.default(scale: false, alpha: true))
+                )
+                contentHeight += title.size.height
+                contentHeight += 16.0
+                
+                let description = description.update(
+                    component: MultilineTextComponent(
+                        text: .markdown(text: strings.AuthConfirmation_Description, attributes: MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: theme.actionSheet.primaryTextColor), bold: MarkdownAttributeSet(font: boldTextFont, textColor: theme.actionSheet.primaryTextColor), link: MarkdownAttributeSet(font: textFont, textColor: theme.actionSheet.primaryTextColor), linkAttribute: { _ in return nil })),
+                        horizontalAlignment: .center,
+                        maximumNumberOfLines: 3,
+                        lineSpacing: 0.2
+                    ),
+                    availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0 - 60.0, height: CGFloat.greatestFiniteMagnitude),
+                    transition: .immediate
+                )
+                context.add(description
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + description.size.height / 2.0))
+                    .appear(.default(scale: false, alpha: true))
+                    .disappear(.default(scale: false, alpha: true))
+                )
+                contentHeight += description.size.height
+                contentHeight += 16.0
+                
+                var clientSectionItems: [AnyComponentWithIdentity<Empty>] = []
+                clientSectionItems.append(
+                    AnyComponentWithIdentity(id: "device", component: AnyComponent(
+                        ListActionItemComponent(
+                            theme: theme,
+                            style: .glass,
+                            title: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(
+                                    string: strings.AuthConfirmation_Device,
+                                    font: Font.regular(17.0),
+                                    textColor: theme.list.itemPrimaryTextColor
+                                )),
+                                maximumNumberOfLines: 1
+                            )),
+                            contentInsets: UIEdgeInsets(top: 19.0, left: 0.0, bottom: 19.0, right: 0.0),
+                            accessory: .custom(ListActionItemComponent.CustomAccessory(
+                                component: AnyComponentWithIdentity(
+                                    id: "info",
+                                    component: AnyComponent(
+                                        VStack([
+                                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                                                text: .plain(NSAttributedString(
+                                                    string: clientData?.platform ?? "",
+                                                    font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize),
+                                                    textColor: theme.list.itemPrimaryTextColor
+                                                )),
+                                                maximumNumberOfLines: 1
+                                            ))),
+                                            AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
+                                                text: .plain(NSAttributedString(
+                                                    string: clientData?.browser ?? "",
+                                                    font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize / 17.0 * 15.0),
+                                                    textColor: theme.list.itemSecondaryTextColor
+                                                )),
+                                                horizontalAlignment: .left,
+                                                truncationType: .middle,
+                                                maximumNumberOfLines: 1
+                                            )))
+                                        ], alignment: .right, spacing: 3.0)
+                                    )
+                                ),
+                                insets: UIEdgeInsets(top: 0.0, left: 8.0, bottom: 0.0, right: 14.0),
+                                isInteractive: true
+                            )),
+                            action: nil
+                        )
+                    ))
+                )
+                
+                clientSectionItems.append(
+                    AnyComponentWithIdentity(id: "region", component: AnyComponent(
+                        ListActionItemComponent(
+                            theme: theme,
+                            style: .glass,
+                            title: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(
+                                    string: strings.AuthConfirmation_IpAddress,
+                                    font: Font.regular(17.0),
+                                    textColor: theme.list.itemPrimaryTextColor
+                                )),
+                                maximumNumberOfLines: 1
+                            )),
+                            contentInsets: UIEdgeInsets(top: 19.0, left: 0.0, bottom: 19.0, right: 0.0),
+                            accessory: .custom(ListActionItemComponent.CustomAccessory(
+                                component: AnyComponentWithIdentity(
+                                    id: "info",
+                                    component: AnyComponent(
+                                        VStack([
+                                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                                                text: .plain(NSAttributedString(
+                                                    string: clientData?.ip ?? "",
+                                                    font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize),
+                                                    textColor: theme.list.itemPrimaryTextColor
+                                                )),
+                                                maximumNumberOfLines: 1
+                                            ))),
+                                            AnyComponentWithIdentity(id: AnyHashable(1), component: AnyComponent(MultilineTextComponent(
+                                                text: .plain(NSAttributedString(
+                                                    string: clientData?.region ?? "",
+                                                    font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize / 17.0 * 15.0),
+                                                    textColor: theme.list.itemSecondaryTextColor
+                                                )),
+                                                horizontalAlignment: .left,
+                                                truncationType: .middle,
+                                                maximumNumberOfLines: 1
+                                            )))
+                                        ], alignment: .right, spacing: 3.0)
+                                    )
+                                ),
+                                insets: UIEdgeInsets(top: 0.0, left: 8.0, bottom: 0.0, right: 14.0),
+                                isInteractive: true
+                            )),
+                            action: nil
+                        )
+                    ))
+                )
+                
+                let clientSection = clientSection.update(
                     component: ListSectionComponent(
                         theme: theme,
                         style: .glass,
                         header: nil,
                         footer: AnyComponent(MultilineTextComponent(
                             text: .plain(NSAttributedString(
-                                string: strings.AuthConfirmation_AllowMessagesInfo(EnginePeer(bot).compactDisplayTitle).string,
+                                string: strings.AuthConfirmation_Info,
                                 font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
                                 textColor: environment.theme.list.freeTextColor
                             )),
                             maximumNumberOfLines: 0
                         )),
-                        items: optionsSectionItems
+                        items: clientSectionItems
                     ),
                     availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: context.availableSize.height),
                     transition: context.transition
                 )
-                context.add(optionsSection
-                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + optionsSection.size.height / 2.0))
+                context.add(clientSection
+                    .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + clientSection.size.height / 2.0))
+                    .appear(.default(scale: false, alpha: true))
+                    .disappear(.default(scale: false, alpha: true))
                 )
-                contentHeight += optionsSection.size.height
+                contentHeight += clientSection.size.height
+                
+                if flags.contains(.requestWriteAccess) {
+                    contentHeight += 38.0
+                    
+                    var optionsSectionItems: [AnyComponentWithIdentity<Empty>] = []
+                    optionsSectionItems.append(AnyComponentWithIdentity(id: "allowWrite", component: AnyComponent(ListActionItemComponent(
+                        theme: theme,
+                        style: .glass,
+                        title: AnyComponent(VStack([
+                            AnyComponentWithIdentity(id: AnyHashable(0), component: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(
+                                    string: strings.AuthConfirmation_AllowMessages,
+                                    font: Font.regular(presentationData.listsFontSize.itemListBaseFontSize),
+                                    textColor: theme.list.itemPrimaryTextColor
+                                )),
+                                maximumNumberOfLines: 1
+                            ))),
+                        ], alignment: .left, spacing: 2.0)),
+                        accessory: .toggle(ListActionItemComponent.Toggle(style: .regular, isOn: state.allowWrite, action: { [weak state] _ in
+                            guard let state else {
+                                return
+                            }
+                            state.allowWrite = !state.allowWrite
+                            state.updated()
+                        })),
+                        action: nil
+                    ))))
+                    let optionsSection = optionsSection.update(
+                        component: ListSectionComponent(
+                            theme: theme,
+                            style: .glass,
+                            header: nil,
+                            footer: AnyComponent(MultilineTextComponent(
+                                text: .plain(NSAttributedString(
+                                    string: strings.AuthConfirmation_AllowMessagesInfo(EnginePeer(bot).compactDisplayTitle).string,
+                                    font: Font.regular(presentationData.listsFontSize.itemListBaseHeaderFontSize),
+                                    textColor: environment.theme.list.freeTextColor
+                                )),
+                                maximumNumberOfLines: 0
+                            )),
+                            items: optionsSectionItems
+                        ),
+                        availableSize: CGSize(width: context.availableSize.width - sideInset * 2.0, height: context.availableSize.height),
+                        transition: context.transition
+                    )
+                    context.add(optionsSection
+                        .position(CGPoint(x: context.availableSize.width / 2.0, y: contentHeight + optionsSection.size.height / 2.0))
+                        .appear(.default(scale: false, alpha: true))
+                        .disappear(.default(scale: false, alpha: true))
+                    )
+                    contentHeight += optionsSection.size.height
+                }
+                contentHeight += 32.0
             }
-            contentHeight += 32.0
     
             let buttonSpacing: CGFloat = 10.0
             let buttonInsets = ContainerViewLayout.concentricInsets(bottomInset: environment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
-            let buttonWidth = (context.availableSize.width - buttonInsets.left - buttonInsets.right - buttonSpacing) / 2.0
+            var buttonWidth = context.availableSize.width - buttonInsets.left - buttonInsets.right
+            if !state.displayEmoji {
+                buttonWidth = (buttonWidth - buttonSpacing) / 2.0
+            }
             
             let cancelButton = cancelButton.update(
                 component: ButtonComponent(
@@ -468,15 +744,23 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                         id: AnyHashable(0),
                         component: AnyComponent(MultilineTextComponent(text: .plain(NSMutableAttributedString(string: strings.AuthConfirmation_Cancel, font: Font.semibold(17.0), textColor: theme.list.itemPrimaryTextColor, paragraphAlignment: .center))))
                     ),
-                    action: {
+                    action: { [weak state] in
+                        guard let state else {
+                            return
+                        }
+                        let accountContext = state.forcedAccount?.0 ?? component.context
+                        guard let accountPeer = state.forcedAccount?.1 ?? state.peer else {
+                            return
+                        }
+                        component.completion(accountContext, accountPeer, .decline)
                         component.cancel(true)
                     }
                 ),
                 availableSize: CGSize(width: buttonWidth, height: 52.0),
-                transition: .immediate
+                transition: context.transition
             )
             context.add(cancelButton
-                .position(CGPoint(x: context.availableSize.width / 2.0 - buttonSpacing / 2.0 - cancelButton.size.width / 2.0, y: contentHeight + cancelButton.size.height / 2.0))
+                .position(CGPoint(x: state.displayEmoji ? context.availableSize.width / 2.0 : context.availableSize.width / 2.0 - buttonSpacing / 2.0 - cancelButton.size.width / 2.0, y: contentHeight + cancelButton.size.height / 2.0))
             )
             
             let doneButton = doneButton.update(
@@ -497,36 +781,25 @@ private final class AuthConfirmationSheetContent: CombinedComponent {
                         guard let state else {
                             return
                         }
-                        var allowWrite = false
-                        if flags.contains(.requestWriteAccess) && state.allowWrite {
-                            allowWrite = true
-                        }
-                        
-                        let accountContext = state.forcedAccount?.0 ?? component.context
-                        guard let accountPeer = state.forcedAccount?.1 ?? state.peer else {
-                            return
-                        }
-                        
-                        if flags.contains(.requestPhoneNumber) {
-                            state.displayPhoneNumberConfirmation(commit: { sharePhoneNumber in
-                                component.completion(accountContext, accountPeer, allowWrite, sharePhoneNumber)
-                                state.inProgress = true
-                                state.updated()
-                            })
+                        if !flags.contains(.showMatchCodesFirst), let matchCodes, !matchCodes.isEmpty {
+                            state.displayEmoji = true
+                            state.matchCodes = matchCodes.shuffled()
+                            state.updated(transition: .spring(duration: 0.4))
                         } else {
-                            component.completion(accountContext, accountPeer, allowWrite, false)
-                            state.inProgress = true
-                            state.updated()
+                            complete(state.selectedMatchCode)
                         }
                     }
                 ),
                 availableSize: CGSize(width: buttonWidth, height: 52.0),
-                transition: .immediate
+                transition: context.transition
             )
             context.add(doneButton
                 .position(CGPoint(x: context.availableSize.width / 2.0 + buttonSpacing / 2.0 + doneButton.size.width / 2.0, y: contentHeight + doneButton.size.height / 2.0))
+                .opacity(state.displayEmoji ? 0.0 : 1.0)
+                .scale(state.displayEmoji ? 0.01 : 1.0)
             )
-            contentHeight += doneButton.size.height
+            
+            contentHeight += cancelButton.size.height
             contentHeight += buttonInsets.bottom
           
             return CGSize(width: context.availableSize.width, height: contentHeight)
@@ -538,15 +811,18 @@ private final class AuthConfirmationSheetComponent: CombinedComponent {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
     
     let context: AccountContext
+    let requestSubject: MessageActionUrlSubject
     let subject: MessageActionUrlAuthResult
-    let completion: (AccountContext, EnginePeer, Bool, Bool) -> Void
+    let completion: (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void
     
     init(
         context: AccountContext,
+        requestSubject: MessageActionUrlSubject,
         subject: MessageActionUrlAuthResult,
-        completion: @escaping (AccountContext, EnginePeer, Bool, Bool) -> Void
+        completion: @escaping (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void
     ) {
         self.context = context
+        self.requestSubject = requestSubject
         self.subject = subject
         self.completion = completion
     }
@@ -570,6 +846,7 @@ private final class AuthConfirmationSheetComponent: CombinedComponent {
                 component: SheetComponent<EnvironmentType>(
                     content: AnyComponent<EnvironmentType>(AuthConfirmationSheetContent(
                         context: context.component.context,
+                        requestSubject: context.component.requestSubject,
                         subject: context.component.subject,
                         completion: context.component.completion,
                         cancel: { animate in
@@ -628,16 +905,25 @@ private final class AuthConfirmationSheetComponent: CombinedComponent {
 }
 
 public class AuthConfirmationScreen: ViewControllerComponentContainer {
+    public enum Result {
+        case accept(allowWriteAccess: Bool, sharePhoneNumber: Bool, matchCode: String?)
+        case decline
+        case failed
+    }
+    
     private let context: AccountContext
+    private let requestSubject: MessageActionUrlSubject
     private let subject: MessageActionUrlAuthResult
-    fileprivate let completion: (AccountContext, EnginePeer, Bool, Bool) -> Void
+    fileprivate let completion: (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void
     
     public init(
         context: AccountContext,
+        requestSubject: MessageActionUrlSubject,
         subject: MessageActionUrlAuthResult,
-        completion: @escaping (AccountContext, EnginePeer, Bool, Bool) -> Void
+        completion: @escaping (AccountContext, EnginePeer, AuthConfirmationScreen.Result) -> Void
     ) {
         self.context = context
+        self.requestSubject = requestSubject
         self.subject = subject
         self.completion = completion
         
@@ -645,6 +931,7 @@ public class AuthConfirmationScreen: ViewControllerComponentContainer {
             context: context,
             component: AuthConfirmationSheetComponent(
                 context: context,
+                requestSubject: requestSubject,
                 subject: subject,
                 completion: completion
             ),
@@ -686,5 +973,70 @@ private final class AuthConfirmationReferenceContentSource: ContextReferenceCont
     
     func transitionInfo() -> ContextControllerReferenceViewInfo? {
         return ContextControllerReferenceViewInfo(referenceView: self.sourceView, contentAreaInScreenSpace: UIScreen.main.bounds)
+    }
+}
+
+private final class ActivityIndicatorComponent: Component {
+    let color: UIColor
+    
+    init(
+        color: UIColor
+    ) {
+        self.color = color
+    }
+
+    static func ==(lhs: ActivityIndicatorComponent, rhs: ActivityIndicatorComponent) -> Bool {
+        if lhs.color != rhs.color {
+            return false
+        }
+        return true
+    }
+    
+    final class View: UIView {
+        private let background = UIView()
+        private let activityIndicator: ActivityIndicator
+        
+        private var component: ActivityIndicatorComponent?
+        
+        override init(frame: CGRect) {
+            self.activityIndicator = ActivityIndicator(type: .custom(.white, 64.0, 2.0, true))
+            
+            super.init(frame: frame)
+            
+            
+            self.addSubview(self.background)
+            self.addSubview(self.activityIndicator.view)
+        }
+        
+        required public init(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+        
+        func update(component: ActivityIndicatorComponent, availableSize: CGSize, transition: ComponentTransition) -> CGSize {
+            let size = CGSize(width: 64.0, height: 64.0)
+            
+            self.background.backgroundColor = component.color.withMultipliedAlpha(0.1)
+            self.background.layer.cornerRadius = 32.0
+            self.background.clipsToBounds = true
+            
+            if self.component == nil {
+                self.activityIndicator.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
+            }
+            self.component = component
+            
+            self.background.frame = CGRect(origin: .zero, size: size)
+            self.activityIndicator.frame = CGRect(origin: .zero, size: size)
+            self.activityIndicator.type = .custom(component.color, 64.0, 2.0, true)
+            
+            return size
+        }
+    }
+    
+    public func makeView() -> View {
+        return View()
+    }
+    
+    public func update(view: View, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
+        return view.update(component: self, availableSize: availableSize, transition: transition)
     }
 }

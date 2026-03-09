@@ -436,6 +436,8 @@ final class MediaEditorScreenComponent: Component {
                     sendBotContextResultAsGif: { _, _, _, _, _, _ in
                         return false
                     },
+                    editGif: { _, _ in
+                    },
                     updateChoosingSticker: { _ in },
                     switchToTextInput: { [weak self] in
                         if let self {
@@ -2859,7 +2861,7 @@ let avatarMaxVideoDuration: Double = 10.0
 public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UIDropInteractionDelegate {
     public enum Mode {
         public enum StickerEditorMode {
-            case generic
+            case generic(canSend: Bool)
             case addingToPack
             case editing
             case businessIntro
@@ -6740,6 +6742,16 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
     fileprivate let customTarget: EnginePeer.Id?
     let forwardSource: (EnginePeer, EngineStoryItem)?
     
+    public weak var customNavigationController: UINavigationController?
+    
+    var effectiveNavigationController: UINavigationController? {
+        if let navigationController = self.navigationController {
+            return navigationController
+        } else {
+            return self.customNavigationController
+        }
+    }
+    
     let initialCaption: NSAttributedString?
     let initialPrivacy: EngineStoryPrivacy?
     let initialMediaAreas: [MediaArea]?
@@ -6756,7 +6768,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
     public var completion: ([MediaEditorScreenImpl.Result], @escaping (@escaping () -> Void) -> Void) -> Void
     public var dismissed: () -> Void = { }
     public var willDismiss: () -> Void = { }
-    public var sendSticker: ((FileMediaReference, UIView, CGRect) -> Bool)?
+    public var sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)?
     
     private var adminedChannels = Promise<[EnginePeer]>()
     private var closeFriends = Promise<[EnginePeer]>()
@@ -7286,7 +7298,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             color: theme.contextMenu.primaryColor
                         )
                     } else {
-                        return nil
+                        return UIImage()
                     }
                 },
                 action: { [weak self] _, a in
@@ -7719,47 +7731,49 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         var hasEmojiSelection = true
         if case let .stickerEditor(mode) = self.mode {
             switch mode {
-            case .generic:
-                menuItems.append(.action(ContextMenuActionItem(text: presentationData.strings.StickerPack_Send, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Resend"), color: theme.contextMenu.primaryColor) }, action: { [weak self] _, f in
-                    guard let self else {
-                        return
-                    }
-                    
-                    if !isVideo {
-                        self.stickerResultController?.disappeared = nil
-                    }
-                    
-                    let _ = (imagesReady.get()
-                    |> filter { $0 }
-                    |> take(1)
-                    |> deliverOnMainQueue).start(next: { [weak self] _ in
+            case let .generic(canSend):
+                if canSend {
+                    menuItems.append(.action(ContextMenuActionItem(text: presentationData.strings.StickerPack_Send, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Resend"), color: theme.contextMenu.primaryColor) }, action: { [weak self] _, f in
                         guard let self else {
                             return
                         }
-                        if isVideo {
-                            self.uploadSticker(file, action: .send)
-                        } else {
-                            self.completion([MediaEditorScreenImpl.Result(
-                                media: .sticker(file: file, emoji: self.effectiveStickerEmoji()),
-                                mediaAreas: [],
-                                caption: NSAttributedString(),
-                                coverTimestamp: nil,
-                                options: MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: []),
-                                stickers: [],
-                                randomId: 0
-                            )], { [weak self] finished in
-                                self?.node.animateOut(finished: true, saveDraft: false, completion: { [weak self] in
-                                    self?.dismiss()
-                                    Queue.mainQueue().justDispatch {
-                                        finished()
-                                    }
-                                })
-                            })
+                        
+                        if !isVideo {
+                            self.stickerResultController?.disappeared = nil
                         }
-                    })
-                    
-                    f(.default)
-                })))
+                        
+                        let _ = (imagesReady.get()
+                        |> filter { $0 }
+                        |> take(1)
+                        |> deliverOnMainQueue).start(next: { [weak self] _ in
+                            guard let self else {
+                                return
+                            }
+                            if isVideo {
+                                self.uploadSticker(file, action: .send)
+                            } else {
+                                self.completion([MediaEditorScreenImpl.Result(
+                                    media: .sticker(file: file, emoji: self.effectiveStickerEmoji()),
+                                    mediaAreas: [],
+                                    caption: NSAttributedString(),
+                                    coverTimestamp: nil,
+                                    options: MediaEditorResultPrivacy(sendAsPeerId: nil, privacy: EngineStoryPrivacy(base: .everyone, additionallyIncludePeers: []), timeout: 0, isForwardingDisabled: false, pin: false, folderIds: []),
+                                    stickers: [],
+                                    randomId: 0
+                                )], { [weak self] finished in
+                                    self?.node.animateOut(finished: true, saveDraft: false, completion: { [weak self] in
+                                        self?.dismiss()
+                                        Queue.mainQueue().justDispatch {
+                                            finished()
+                                        }
+                                    })
+                                })
+                            }
+                        })
+                        
+                        f(.default)
+                    })))
+                }
                 menuItems.append(.action(ContextMenuActionItem(text: presentationData.strings.Stickers_AddToFavorites, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Fave"), color: theme.contextMenu.primaryColor) }, action: { [weak self] _, f in
                     f(.default)
                     guard let self else {
@@ -7802,13 +7816,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                             return true
                         }
                         if pack.count >= 120 {
-                            let controller = UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.MediaEditor_StickersTooMuch, timeout: nil, customUndoText: nil), elevatedLayout: false, position: .top, animateInAsReplacement: false, action: { [weak self] action in
-                                if case .info = action, let self {
-                                    let controller = context.sharedContext.makePremiumIntroController(context: context, source: .stories, forceDark: true, dismissed: {
-                                        
-                                    })
-                                    self.push(controller)
-                                }
+                            let controller = UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.MediaEditor_StickersTooMuch, timeout: nil, customUndoText: nil), elevatedLayout: false, position: .top, animateInAsReplacement: false, action: { _ in
                                 return false
                             })
                             self.hapticFeedback.error()
@@ -8147,7 +8155,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     self?.stickerUploadDisposable.set(nil)
                 })
             case let .complete(resource, _):
-                let navigationController = self.navigationController as? NavigationController
+                let navigationController = self.effectiveNavigationController as? NavigationController
                 
                 let result: MediaEditorScreenImpl.Result
                 switch action {
@@ -8176,7 +8184,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                                     parentController.present(UndoOverlayController(presentationData: presentationData, content: .sticker(context: self.context, file: file, loop: true, title: nil, text: presentationData.strings.Conversation_StickerAddedToFavorites, undoText: nil, customAction: nil), elevatedLayout: false, action: { _ in return false }), in: .current)
                                 }
                             case .addToStickerPack, .createStickerPack:
-                                if let (packReference, packTitle) = packReferenceAndTitle, let navigationController = self.navigationController as? NavigationController {
+                                if let (packReference, packTitle) = packReferenceAndTitle, let navigationController {
                                     Queue.mainQueue().after(0.2) {
                                         let controller = self.context.sharedContext.makeStickerPackScreen(context: self.context, updatedPresentationData: nil, mainStickerPack: packReference, stickerPacks: [packReference], loadedStickerPacks: [], actionTitle: nil, isEditing: false, expandIfNeeded: true, parentNavigationController: navigationController, sendSticker: self.sendSticker, actionPerformed: nil)
                                         (navigationController.viewControllers.last as? ViewController)?.present(controller, in: .window(.root))

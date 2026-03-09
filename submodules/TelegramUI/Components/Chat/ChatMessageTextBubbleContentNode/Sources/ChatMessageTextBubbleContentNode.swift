@@ -147,6 +147,8 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
     private var textRevealLink: SharedDisplayLinkDriver.Link?
     private var textRevealAnimationState: TextRevealAnimationState?
     
+    private var relativeDateTimer: (timer: SwiftSignalKit.Timer, period: Int32)?
+    
     override public var visibility: ListViewItemNodeVisibility {
         didSet {
             if oldValue != self.visibility {
@@ -232,6 +234,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
         self.linkPreviewOptionsDisposable?.dispose()
         self.linkProgressDisposable?.dispose()
         self.codeHighlightState?.disposable.dispose()
+        self.relativeDateTimer?.timer.invalidate()
     }
     
     override public func asyncLayoutContent() -> (_ item: ChatMessageBubbleContentItem, _ layoutConstants: ChatMessageItemLayoutConstants, _ preparePosition: ChatMessageBubblePreparePosition, _ messageSelection: Bool?, _ constrainedSize: CGSize, _ avatarInset: CGFloat) -> (ChatMessageBubbleContentProperties, CGSize?, CGFloat, (CGSize, ChatMessageBubbleContentPosition) -> (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation, Bool, ListViewItemApply?) -> Void))) {
@@ -484,6 +487,23 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     }
                 }
                 
+                var formattedDateUpdatePeriod: Int32?
+                if let messageEntities {
+                    for entity in messageEntities {
+                        if case let .FormattedDate(format, timestamp) = entity.type, case .relative = format {
+                            let currentTimestamp = Int32(CFAbsoluteTimeGetCurrent() + NSTimeIntervalSince1970)
+                            let value = abs(currentTimestamp - timestamp)
+                            if value < 120 {
+                                formattedDateUpdatePeriod = 1
+                            } else if value <= 60 * 60 {
+                                formattedDateUpdatePeriod = 60
+                            } else {
+                                formattedDateUpdatePeriod = 30 * 60
+                            }
+                        }
+                    }
+                }
+                
                 var entities: [MessageTextEntity]?
                 var updatedCachedChatMessageText: CachedChatMessageText?
                 if let cached = currentCachedChatMessageText, cached.matches(text: rawText, inputEntities: messageEntities) {
@@ -616,7 +636,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         }
                     }
                     
-                    attributedText = stringWithAppliedEntities(rawText, entities: entities, baseColor: messageTheme.primaryTextColor, linkColor: messageTheme.linkTextColor, baseQuoteTintColor: mainColor, baseQuoteSecondaryTintColor: secondaryColor, baseQuoteTertiaryTintColor: tertiaryColor, codeBlockTitleColor: codeBlockTitleColor, codeBlockAccentColor: codeBlockAccentColor, codeBlockBackgroundColor: codeBlockBackgroundColor, baseFont: textFont, linkFont: textFont, boldFont: item.presentationData.messageBoldFont, italicFont: item.presentationData.messageItalicFont, boldItalicFont: item.presentationData.messageBoldItalicFont, fixedFont: item.presentationData.messageFixedFont, blockQuoteFont: item.presentationData.messageBlockQuoteFont, underlineLinks: underlineLinks, message: item.message, adjustQuoteFontSize: true, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight)
+                    attributedText = stringWithAppliedEntities(rawText, entities: entities, strings: item.presentationData.strings, dateTimeFormat: item.presentationData.dateTimeFormat, baseColor: messageTheme.primaryTextColor, linkColor: messageTheme.linkTextColor, baseQuoteTintColor: mainColor, baseQuoteSecondaryTintColor: secondaryColor, baseQuoteTertiaryTintColor: tertiaryColor, codeBlockTitleColor: codeBlockTitleColor, codeBlockAccentColor: codeBlockAccentColor, codeBlockBackgroundColor: codeBlockBackgroundColor, baseFont: textFont, linkFont: textFont, boldFont: item.presentationData.messageBoldFont, italicFont: item.presentationData.messageItalicFont, boldItalicFont: item.presentationData.messageBoldItalicFont, fixedFont: item.presentationData.messageFixedFont, blockQuoteFont: item.presentationData.messageBlockQuoteFont, underlineLinks: underlineLinks, message: item.message, adjustQuoteFontSize: true, cachedMessageSyntaxHighlight: cachedMessageSyntaxHighlight)
                 } else if !rawText.isEmpty {
                     attributedText = NSAttributedString(string: rawText, font: textFont, textColor: messageTheme.primaryTextColor)
                 } else {
@@ -694,6 +714,24 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     customTruncationToken: customTruncationToken,
                     expandedBlocks: expandedBlockIds
                 ))
+                
+                var hasDraft = false
+                if item.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
+                    hasDraft = true
+                }
+                var hadDraft = false
+                if let previousItem, previousItem.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
+                    hadDraft = true
+                }
+                
+                var maxGlyphCount = currentMaxGlyphCount
+                if maxGlyphCount == nil && (hasDraft || hadDraft) {
+                    maxGlyphCount = previousGlyphCount
+                }
+                var clippedGlyphCountLayout: TextNodeLayout.LayoutInfo?
+                if let maxGlyphCount {
+                    clippedGlyphCountLayout = textLayout.layoutForGlyphCount(glyphCount: maxGlyphCount)
+                }
             
                 var statusSuggestedWidthAndContinue: (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation) -> ChatMessageDateAndStatusNode))?
                 if let statusType = statusType {
@@ -708,7 +746,11 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     } else if let lastSegment = textLayout.segments.last, lastSegment.hasBlockQuote {
                         trailingWidthToMeasure = textLayout.size.width
                     } else {
-                        trailingWidthToMeasure = textLayout.trailingLineWidth
+                        if let clippedGlyphCountLayout {
+                            trailingWidthToMeasure = clippedGlyphCountLayout.trailingLineWidth
+                        } else {
+                            trailingWidthToMeasure = textLayout.trailingLineWidth
+                        }
                     }
                     
                     let dateLayoutInput: ChatMessageDateAndStatusNode.LayoutInput
@@ -748,22 +790,8 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 textFrame = textFrame.offsetBy(dx: layoutConstants.text.bubbleInsets.left, dy: topInset)
                 let realTextFrame = textFrame
                 
-                var hasDraft = false
-                if item.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
-                    hasDraft = true
-                }
-                var hadDraft = false
-                if let previousItem, previousItem.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
-                    hadDraft = true
-                }
-                
-                var maxGlyphCount = currentMaxGlyphCount
-                if maxGlyphCount == nil && (hasDraft || hadDraft) {
-                    maxGlyphCount = previousGlyphCount
-                }
-                
-                if let maxGlyphCount {
-                    textFrame.size = textLayout.sizeForGlyphCount(glyphCount: maxGlyphCount)
+                if let clippedGlyphCountLayout {
+                    textFrame.size = clippedGlyphCountLayout.size
                     //print("currentMaxGlyphCount: \(currentMaxGlyphCount), size: \(textFrame.size.height)")
                     textFrameWithoutInsets.size = CGSize(width: textFrame.width - textInsets.left - textInsets.right, height: textFrame.height - textInsets.top - textInsets.bottom)
                 }
@@ -806,6 +834,20 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                             strongSelf.textNode.textNode.displaysAsynchronously = !item.presentationData.isPreview
                             animation.animator.updateFrame(layer: strongSelf.containerNode.layer, frame: CGRect(origin: CGPoint(), size: boundingSize), completion: nil)
                             
+                            
+                            if let formattedDateUpdatePeriod {
+                                if strongSelf.relativeDateTimer?.period != formattedDateUpdatePeriod {
+                                    strongSelf.relativeDateTimer?.timer.invalidate()
+                                    strongSelf.relativeDateTimer = nil
+                                }
+                                strongSelf.relativeDateTimer = (SwiftSignalKit.Timer(timeout: Double(formattedDateUpdatePeriod), repeat: true, completion: { [weak self] in
+                                    self?.requestFullUpdate?()
+                                }, queue: Queue.mainQueue()), formattedDateUpdatePeriod)
+                                strongSelf.relativeDateTimer?.timer.start()
+                            } else if let (timer, _) = strongSelf.relativeDateTimer {
+                                strongSelf.relativeDateTimer = nil
+                                timer.invalidate()
+                            }
                             
                             if strongSelf.isSummaryApplied != isSummaryApplied {
                                 strongSelf.isSummaryApplied = isSummaryApplied
@@ -897,7 +939,11 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                             }
                             strongSelf.textAccessibilityOverlayNode.frame = textFrame
                     
-                            strongSelf.updateIsTranslating(isTranslating)
+                            let showTextAsPlaceholder = item.associatedData.showTextAsPlaceholder
+                            if showTextAsPlaceholder {
+                                isTranslating = true
+                            }
+                            strongSelf.updateIsTranslating(isTranslating, showTextAsPlaceholder: showTextAsPlaceholder)
                             
                             if let statusSizeAndApply {
                                 let statusNode = statusSizeAndApply.1(strongSelf.statusNode == nil ? .None : animation)
@@ -1069,7 +1115,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     let glyphCount = textRevealAnimationState.glyphCount(timestamp: timestamp)
                     if let revealGlyphCount = self.textNode.textNode.revealGlyphCount, let cachedLayout = self.textNode.textNode.cachedLayout {
                         if cachedLayout.sizeForGlyphCount(glyphCount: revealGlyphCount).height != cachedLayout.sizeForGlyphCount(glyphCount: glyphCount).height {
-                            if lineUpdateTimeout >= 0.1 {
+                            if lineUpdateTimeout >= 0.0 {
                                 lastLineUpdateTimestamp = timestamp
                                 requestUpdate = true
                             }
@@ -1149,7 +1195,8 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 TelegramTextAttributes.BotCommand,
                 TelegramTextAttributes.Hashtag,
                 TelegramTextAttributes.Timecode,
-                TelegramTextAttributes.BankCard
+                TelegramTextAttributes.BankCard,
+                TelegramTextAttributes.Date
             ]
             for name in possibleNames {
                 if let _ = attributes[NSAttributedString.Key(rawValue: name)] {
@@ -1202,6 +1249,12 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 return ChatMessageBubbleContentTapAction(content: .copy(pre))
             } else if let code = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.Code)] as? String {
                 return ChatMessageBubbleContentTapAction(content: .copy(code))
+            } else if let date = attributes[NSAttributedString.Key(rawValue: TelegramTextAttributes.Date)] as? Int32 {
+                var string = ""
+                if let (_, text, _) = self.textNode.textNode.attributeSubstringWithRange(name: TelegramTextAttributes.Date, index: index) {
+                    string = text
+                }
+                return ChatMessageBubbleContentTapAction(content: .date(date, string), rects: rects)
             } else if let _ = attributes[NSAttributedString.Key(rawValue: "Attribute__Blockquote")] {
                 if let _ = self.textNode.textNode.collapsibleBlockAtPoint(textLocalPoint) {
                     return ChatMessageBubbleContentTapAction(content: .none)
@@ -1248,24 +1301,37 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
         return super.hitTest(point, with: event)
     }
     
-    private func updateIsTranslating(_ isTranslating: Bool) {
+    private func updateIsTranslating(_ isTranslating: Bool, showTextAsPlaceholder: Bool) {
         guard let item = self.item else {
             return
         }
-        let rects = self.textNode.textNode.rangeRects(in: NSRange(location: 0, length: self.textNode.textNode.cachedLayout?.attributedString?.length ?? 0))?.rects ?? [] 
+        var rects = self.textNode.textNode.rangeRects(in: NSRange(location: 0, length: self.textNode.textNode.cachedLayout?.attributedString?.length ?? 0))?.rects ?? []
         if isTranslating, !rects.isEmpty {
+            if showTextAsPlaceholder {
+                self.textNode.textNode.isHidden = true
+            }
             let shimmeringNode: ShimmeringLinkNode
             if let current = self.shimmeringNode {
                 shimmeringNode = current
             } else {
                 let color: UIColor
                 let isIncoming = item.message.effectivelyIncoming(item.context.account.peerId)
-                if item.presentationData.theme.theme.overallDarkAppearance {
-                    color = isIncoming ? item.presentationData.theme.theme.chat.message.incoming.primaryTextColor.withAlphaComponent(0.1) : item.presentationData.theme.theme.chat.message.outgoing.primaryTextColor.withAlphaComponent(0.1)
+                let messageTheme = item.presentationData.theme.theme.chat.message
+                if showTextAsPlaceholder {
+                    rects = rects.map { $0.insetBy(dx: 0.0, dy: 6.0 + UIScreenPixel) }
+                    if rects.count == 2 {
+                        rects[0].origin.y += 1.0
+                        rects[1].origin.y -= 1.0
+                    }
+                    color = isIncoming ? messageTheme.incoming.secondaryTextColor.withMultipliedAlpha(0.25) : messageTheme.outgoing.secondaryTextColor.withMultipliedAlpha(0.25)
                 } else {
-                    color = isIncoming ? item.presentationData.theme.theme.chat.message.incoming.accentTextColor.withAlphaComponent(0.1) : item.presentationData.theme.theme.chat.message.outgoing.secondaryTextColor.withAlphaComponent(0.1)
+                    if item.presentationData.theme.theme.overallDarkAppearance {
+                        color = isIncoming ? messageTheme.incoming.primaryTextColor.withAlphaComponent(0.1) : messageTheme.outgoing.primaryTextColor.withAlphaComponent(0.1)
+                    } else {
+                        color = isIncoming ? messageTheme.incoming.accentTextColor.withAlphaComponent(0.1) : messageTheme.outgoing.secondaryTextColor.withAlphaComponent(0.1)
+                    }
                 }
-                shimmeringNode = ShimmeringLinkNode(color: color)
+                shimmeringNode = ShimmeringLinkNode(color: color, isSkeleton: showTextAsPlaceholder)
                 shimmeringNode.updateRects(rects)
                 shimmeringNode.frame = self.textNode.textNode.frame
                 shimmeringNode.updateLayout(self.textNode.textNode.frame.size)
@@ -1296,7 +1362,8 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                         TelegramTextAttributes.BotCommand,
                         TelegramTextAttributes.Hashtag,
                         TelegramTextAttributes.Timecode,
-                        TelegramTextAttributes.BankCard
+                        TelegramTextAttributes.BankCard,
+                        TelegramTextAttributes.Date
                     ]
                     for name in possibleNames {
                         if let _ = attributes[NSAttributedString.Key(rawValue: name)] {

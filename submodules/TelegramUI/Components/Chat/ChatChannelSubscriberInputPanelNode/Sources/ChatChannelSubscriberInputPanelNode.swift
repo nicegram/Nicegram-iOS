@@ -256,7 +256,11 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                     }
                 }
                 strongSelf.interfaceInteraction?.presentController(textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationInterfaceState.strings.Common_OK, action: {})]), nil)
-            },  completed: {
+            }, completed: { [weak self] in
+                guard let self else {
+                    return
+                }
+                
                 // Nicegram ATT
                 Task {
                     await AttCoreModule.shared.claimOngoingActionUseCase()
@@ -266,6 +270,28 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
                         )
                 }
                 //
+                
+                Queue.mainQueue().after(0.5) {
+                    if let presentationInterfaceState = self.presentationInterfaceState, let peer = presentationInterfaceState.renderedPeer?.peer {
+                        var canEditRank = false
+                        if let channel = peer as? TelegramChannel, channel.hasPermission(.editRank) {
+                            canEditRank = true
+                        } else if let group = peer as? TelegramGroup, !group.hasBannedPermission(.banEditRank) {
+                            canEditRank = true
+                        }
+                        if canEditRank {
+                            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+                            let controller = UndoOverlayController(presentationData: presentationData, content: .actionSucceeded(title: nil, text: presentationData.strings.Chat_JoinedGroup_Text, cancel: presentationData.strings.Chat_JoinedGroup_AddTag, destructive: false), elevatedLayout: true, action: { action in
+                                if case .undo = action {
+                                    let tagController = context.sharedContext.makeChatCustomRankSetupScreen(context: context, peerId: peer.id, participantId: context.account.peerId, rank: nil, role: .member)
+                                    self.interfaceInteraction?.getNavigationController()?.pushViewController(tagController)
+                                }
+                                return true
+                            })
+                            self.interfaceInteraction?.presentController(controller, nil)
+                        }
+                    }
+                }
             }))
         case .kicked:
             break

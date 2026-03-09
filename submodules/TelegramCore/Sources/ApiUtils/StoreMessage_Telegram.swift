@@ -240,7 +240,7 @@ func apiMessagePeerIds(_ message: Api.Message) -> [PeerId] {
             }
             
             switch action {
-            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund, .messageActionSuggestBirthday, .messageActionStarGiftPurchaseOffer, .messageActionStarGiftPurchaseOfferDeclined:
+            case .messageActionChannelCreate, .messageActionChatDeletePhoto, .messageActionChatEditPhoto, .messageActionChatEditTitle, .messageActionEmpty, .messageActionPinMessage, .messageActionHistoryClear, .messageActionGameScore, .messageActionPaymentSent, .messageActionPaymentSentMe, .messageActionPhoneCall, .messageActionScreenshotTaken, .messageActionCustomAction, .messageActionBotAllowed, .messageActionSecureValuesSent, .messageActionSecureValuesSentMe, .messageActionContactSignUp, .messageActionGroupCall, .messageActionSetMessagesTTL, .messageActionGroupCallScheduled, .messageActionSetChatTheme, .messageActionChatJoinedByRequest, .messageActionWebViewDataSent, .messageActionWebViewDataSentMe, .messageActionGiftPremium, .messageActionGiftStars, .messageActionTopicCreate, .messageActionTopicEdit, .messageActionSuggestProfilePhoto, .messageActionSetChatWallPaper, .messageActionGiveawayLaunch, .messageActionGiveawayResults, .messageActionBoostApply, .messageActionRequestedPeerSentMe, .messageActionStarGift, .messageActionStarGiftUnique, .messageActionPaidMessagesRefunded, .messageActionPaidMessagesPrice, .messageActionTodoCompletions, .messageActionTodoAppendTasks, .messageActionSuggestedPostApproval, .messageActionGiftTon, .messageActionSuggestedPostSuccess, .messageActionSuggestedPostRefund, .messageActionSuggestBirthday, .messageActionStarGiftPurchaseOffer, .messageActionStarGiftPurchaseOfferDeclined, .messageActionNoForwardsToggle, .messageActionNoForwardsRequest:
                     break
                 case let .messageActionChannelMigrateFrom(messageActionChannelMigrateFromData):
                     let chatId = messageActionChannelMigrateFromData.chatId
@@ -398,7 +398,7 @@ func textMediaAndExpirationTimerFromApiMedia(_ media: Api.MessageMedia?, _ peerI
         case let .messageMediaDocument(messageMediaDocumentData):
             let (flags, document, altDocuments, coverPhoto, videoTimestamp, ttlSeconds) = (messageMediaDocumentData.flags, messageMediaDocumentData.document, messageMediaDocumentData.altDocuments, messageMediaDocumentData.videoCover, messageMediaDocumentData.videoTimestamp, messageMediaDocumentData.ttlSeconds)
             if let document = document {
-                if let mediaFile = telegramMediaFileFromApiDocument(document, altDocuments: altDocuments, videoCover: coverPhoto) {
+                if let mediaFile = telegramMediaFileFromApiDocument(document, altDocuments: altDocuments, videoCover: coverPhoto, isLivePhoto: (flags & (1 << 11)) != 0) {
                     return (mediaFile, ttlSeconds, (flags & (1 << 3)) != 0, (flags & (1 << 4)) != 0, nil, videoTimestamp)
                 }
             } else {
@@ -794,6 +794,33 @@ func messageTextEntitiesFromApiEntities(_ entities: [Api.MessageEntity]) -> [Mes
         case let .messageEntityCustomEmoji(messageEntityCustomEmojiData):
             let (offset, length, documentId) = (messageEntityCustomEmojiData.offset, messageEntityCustomEmojiData.length, messageEntityCustomEmojiData.documentId)
             result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .CustomEmoji(stickerPack: nil, fileId: documentId)))
+        case let .messageEntityFormattedDate(messageEntityFormattedDateData):
+            let (flags, offset, length, date) = (messageEntityFormattedDateData.flags, messageEntityFormattedDateData.offset, messageEntityFormattedDateData.length, messageEntityFormattedDateData.date)
+            let format: MessageTextEntityType.DateTimeFormat?
+            if flags == 0 {
+                format = nil
+            } else if (flags & (1 << 0)) != 0 {
+                format = .relative
+            } else {
+                let timeFormat: MessageTextEntityType.DateTimeFormat.TimeFormat?
+                if (flags & (1 << 1)) != 0 {
+                    timeFormat = .short
+                } else if (flags & (1 << 2)) != 0 {
+                    timeFormat = .long
+                } else {
+                    timeFormat = nil
+                }
+                let dateFormat: MessageTextEntityType.DateTimeFormat.DateFormat?
+                if (flags & (1 << 3)) != 0 {
+                    dateFormat = .short
+                } else if (flags & (1 << 4)) != 0 {
+                    dateFormat = .long
+                } else {
+                    dateFormat = nil
+                }
+                format = .full(timeFormat: timeFormat, dateFormat: dateFormat, dayOfWeek: (flags & (1 << 5)) != 0)
+            }
+            result.append(MessageTextEntity(range: Int(offset) ..< Int(offset + length), type: .FormattedDate(format: format, date: date)))
         }
     }
     return result
@@ -803,7 +830,7 @@ extension StoreMessage {
     convenience init?(apiMessage: Api.Message, accountPeerId: PeerId, peerIsForum: Bool, namespace: MessageId.Namespace = Namespaces.Message.Cloud) {
         switch apiMessage {
             case let .message(messageData):
-                let (flags, flags2, id, fromId, boosts, chatPeerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupingId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, messageEffectId, factCheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost, scheduledRepeatPeriod, summaryFromLanguage) = (messageData.flags, messageData.flags2, messageData.id, messageData.fromId, messageData.fromBoostsApplied, messageData.peerId, messageData.savedPeerId, messageData.fwdFrom, messageData.viaBotId, messageData.viaBusinessBotId, messageData.replyTo, messageData.date, messageData.message, messageData.media, messageData.replyMarkup, messageData.entities, messageData.views, messageData.forwards, messageData.replies, messageData.editDate, messageData.postAuthor, messageData.groupedId, messageData.reactions, messageData.restrictionReason, messageData.ttlPeriod, messageData.quickReplyShortcutId, messageData.effect, messageData.factcheck, messageData.reportDeliveryUntilDate, messageData.paidMessageStars, messageData.suggestedPost, messageData.scheduleRepeatPeriod, messageData.summaryFromLanguage)
+                let (flags, flags2, id, fromId, boosts, rank, chatPeerId, savedPeerId, fwdFrom, viaBotId, viaBusinessBotId, replyTo, date, message, media, replyMarkup, entities, views, forwards, replies, editDate, postAuthor, groupingId, reactions, restrictionReason, ttlPeriod, quickReplyShortcutId, messageEffectId, factCheck, reportDeliveryUntilDate, paidMessageStars, suggestedPost, scheduledRepeatPeriod, summaryFromLanguage) = (messageData.flags, messageData.flags2, messageData.id, messageData.fromId, messageData.fromBoostsApplied, messageData.fromRank, messageData.peerId, messageData.savedPeerId, messageData.fwdFrom, messageData.viaBotId, messageData.viaBusinessBotId, messageData.replyTo, messageData.date, messageData.message, messageData.media, messageData.replyMarkup, messageData.entities, messageData.views, messageData.forwards, messageData.replies, messageData.editDate, messageData.postAuthor, messageData.groupedId, messageData.reactions, messageData.restrictionReason, messageData.ttlPeriod, messageData.quickReplyShortcutId, messageData.effect, messageData.factcheck, messageData.reportDeliveryUntilDate, messageData.paidMessageStars, messageData.suggestedPost, messageData.scheduleRepeatPeriod, messageData.summaryFromLanguage)
                 var attributes: [MessageAttribute] = []
 
                 if (flags2 & (1 << 4)) != 0 {
@@ -1053,6 +1080,10 @@ extension StoreMessage {
                     }
                 }
                 
+                if let rank {
+                    attributes.append(ParticipantRankMessageAttribute(rank: rank))
+                }
+            
                 if let editDate = editDate {
                     attributes.append(EditedMessageAttribute(date: editDate, isHidden: (flags & (1 << 21)) != 0))
                 }

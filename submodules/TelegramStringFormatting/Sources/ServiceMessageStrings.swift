@@ -1716,7 +1716,7 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                             priceString = formatTonAmountText(amount.amount.value, dateTimeFormat: dateTimeFormat) + " TON"
                         }
                         
-                        let timeString = "[TODO]"
+                        let timeString = ""
                         
                         var attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
                         attributes[1] = boldAttributes
@@ -1753,6 +1753,32 @@ public func universalServiceMessageString(presentationData: (PresentationTheme, 
                     attributedString = addAttributesToStringWithRanges(strings.Notification_GroupCreatorChangePending(authorName, targetName)._tuple, body: bodyAttributes, argumentAttributes: peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: [(0, message.author?.id), (1, groupCreatorChange.targetPeerId)]))
                 case .applied:
                     attributedString = addAttributesToStringWithRanges(strings.Notification_GroupCreatorChangeApplied(authorName, targetName)._tuple, body: bodyAttributes, argumentAttributes: peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: [(0, message.author?.id), (1, groupCreatorChange.targetPeerId)]))
+                }
+            case let .copyProtectionToggle(previousValue, newValue):
+                if previousValue == newValue && newValue {
+                    attributedString = NSAttributedString(string: strings.Notification_CopyProtection_StillEnabled, font: titleFont, textColor: primaryTextColor)
+                } else if message.author?.id == accountPeerId {
+                    if newValue {
+                        attributedString = NSAttributedString(string: strings.Notification_CopyProtection_EnabledYou, font: titleFont, textColor: primaryTextColor)
+                    } else {
+                        attributedString = NSAttributedString(string: strings.Notification_CopyProtection_DisabledYou, font: titleFont, textColor: primaryTextColor)
+                    }
+                } else {
+                    let peerName = message.peers[message.id.peerId].flatMap { EnginePeer($0) }?.compactDisplayTitle ?? ""
+                    let peerIds: [(Int, EnginePeer.Id?)] = [(0, message.id.peerId)]
+                    let attributes = peerMentionsAttributes(primaryTextColor: primaryTextColor, peerIds: peerIds)
+                    if newValue {
+                        attributedString = addAttributesToStringWithRanges(strings.Notification_CopyProtection_Enabled(peerName)._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                    } else {
+                        attributedString = addAttributesToStringWithRanges(strings.Notification_CopyProtection_Disabled(peerName)._tuple, body: bodyAttributes, argumentAttributes: attributes)
+                    }
+                }
+            case .copyProtectionRequest:
+                let peerName = message.peers[message.id.peerId].flatMap { EnginePeer($0) }?.compactDisplayTitle ?? ""
+                if message.author?.id == accountPeerId {
+                    attributedString = NSAttributedString(string: strings.Notification_CopyProtection_RequestYou, font: titleFont, textColor: primaryTextColor)
+                } else {
+                    attributedString = NSAttributedString(string: strings.Notification_CopyProtection_Request(peerName).string, font: titleFont, textColor: primaryTextColor)
                 }
             case .unknown:
                 attributedString = nil

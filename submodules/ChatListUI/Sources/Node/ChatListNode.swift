@@ -3172,7 +3172,10 @@ public final class ChatListNode: ListView {
             strongSelf.forEachItemNode { itemNode in
                 if let itemNode = itemNode as? ChatListItemNode, let item = itemNode.item {
                     if item.isPinned {
-                        maxPinnedOffset = max(maxPinnedOffset, itemNode.frame.maxY)
+                        if case let .groupReference(groupReference) = item.content, groupReference.hiddenByDefault {
+                        } else {
+                            maxPinnedOffset = max(maxPinnedOffset, itemNode.frame.maxY)
+                        }
                     }
                 }
             }
@@ -3416,7 +3419,7 @@ public final class ChatListNode: ListView {
                     if case .chatList = strongSelf.mode {
                         let entryCount = transition.chatListView.filteredEntries.count
                         if entryCount >= 1 {
-                            for i in 0 ..< 2 {
+                            for i in 0 ..< 3 {
                                 if entryCount - 1 - i < 0 {
                                     continue
                                 }
@@ -3428,7 +3431,10 @@ public final class ChatListNode: ListView {
                                 }
                                 if case let .index(index) = transition.chatListView.filteredEntries[entryCount - 1 - i].sortIndex {
                                     if case let .chatList(chatListIndex) = index, chatListIndex.pinningIndex != nil {
-                                        pinnedOverscroll = true
+                                        if case let .GroupReferenceEntry(data) = transition.chatListView.filteredEntries[entryCount - 1 - i], data.hiddenByDefault {
+                                        } else {
+                                            pinnedOverscroll = true
+                                        }
                                     } else if case let .forum(pinnedIndex, _, _, _, _) = index, case .index = pinnedIndex {
                                         pinnedOverscroll = true
                                     }

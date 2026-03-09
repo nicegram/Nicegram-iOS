@@ -587,6 +587,12 @@ store_signin_fragment = """
 """
 signin_fragment = store_signin_fragment if telegram_bundle_id in store_bundle_ids else ""
 
+official_background_gpu_fragment = """
+<key>com.apple.developer.background-tasks.continued-processing.gpu</key>
+<true/>
+"""
+background_gpu_fragment = official_background_gpu_fragment if telegram_bundle_id == "ph.telegra.Telegraph" else ""
+
 # Nicegram, keychain_access_groups_fragment
 keychain_access_groups_fragment = """
     <key>keychain-access-groups</key>
@@ -613,6 +619,7 @@ plist_fragment(
         communication_notifications_fragment,
         notification_filtering_fragment,
         signin_fragment,
+        background_gpu_fragment,
         # Nicegram, keychain_access_groups_fragment
         keychain_access_groups_fragment
     ])
@@ -1966,6 +1973,7 @@ plist_fragment(
     <array>
         <string>{telegram_bundle_id}.refresh</string>
         <string>{telegram_bundle_id}.cleanup</string>
+        <string>{telegram_bundle_id}.upload.*</string>
     </array>
     <key>CFBundleAllowMixedLocalizations</key>
     <true/>

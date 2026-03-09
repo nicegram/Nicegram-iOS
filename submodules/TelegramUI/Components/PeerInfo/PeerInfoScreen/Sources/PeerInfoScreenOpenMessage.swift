@@ -123,7 +123,7 @@ extension PeerInfoScreenNode {
                             strongSelf.enqueueMediaMessageDisposable.set((legacyAssetPickerEnqueueMessages(context: strongSelf.context, account: strongSelf.context.account, signals: signals!)
                             |> deliverOnMainQueue).startStrict(next: { [weak self] messages in
                                 if let strongSelf = self {
-                                    let _ = enqueueMessages(account: strongSelf.context.account, peerId: strongSelf.peerId, messages: messages.map { $0.message }).startStandalone()
+                                    let _ = enqueueMessages(account: strongSelf.context.account, peerId: strongSelf.peerId, messages: messages.map { $0.message.withUpdatedReplyToMessageId(.init(messageId: message.id, quote: nil, todoItemId: nil)) }).startStandalone()
                                 }
                             }))
                         }
@@ -133,7 +133,7 @@ extension PeerInfoScreenNode {
                 }
             })
         }, updateCanReadHistory: { _ in
-        }), centralItemUpdated: { [weak self] messageId in
+        }, sendSticker: nil), centralItemUpdated: { [weak self] messageId in
             let _ = self?.paneContainerNode.requestExpandTabs?()
             self?.paneContainerNode.currentPane?.node.ensureMessageIsVisible(id: messageId)
         }))

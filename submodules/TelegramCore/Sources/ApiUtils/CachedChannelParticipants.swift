@@ -92,6 +92,15 @@ public enum ChannelParticipant: PostboxCoding, Equatable {
         }
     }
     
+    public func withUpdated(rank: String?) -> ChannelParticipant {
+        switch self {
+        case let .creator(id, adminInfo, _):
+            return .creator(id: id, adminInfo: adminInfo, rank: rank)
+        case let .member(id, invitedAt, adminInfo, banInfo, _, subscriptionUntilDate):
+            return .member(id: id, invitedAt: invitedAt, adminInfo: adminInfo, banInfo: banInfo, rank: rank, subscriptionUntilDate: subscriptionUntilDate)
+        }
+    }
+    
     public static func ==(lhs: ChannelParticipant, rhs: ChannelParticipant) -> Bool {
         switch lhs {
             case let .member(lhsId, lhsInvitedAt, lhsAdminInfo, lhsBanInfo, lhsRank, lhsSubscriptionUntilDate):
@@ -206,8 +215,8 @@ extension ChannelParticipant {
     init(apiParticipant: Api.ChannelParticipant) {
         switch apiParticipant {
             case let .channelParticipant(channelParticipantData):
-                let (_, userId, date, subscriptionUntilDate) = (channelParticipantData.flags, channelParticipantData.userId, channelParticipantData.date, channelParticipantData.subscriptionUntilDate)
-                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: subscriptionUntilDate)
+            let (_, userId, date, subscriptionUntilDate, rank) = (channelParticipantData.flags, channelParticipantData.userId, channelParticipantData.date, channelParticipantData.subscriptionUntilDate, channelParticipantData.rank)
+                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: rank, subscriptionUntilDate: subscriptionUntilDate)
             case let .channelParticipantCreator(channelParticipantCreatorData):
                 let (_, userId, adminRights, rank) = (channelParticipantCreatorData.flags, channelParticipantCreatorData.userId, channelParticipantCreatorData.adminRights, channelParticipantCreatorData.rank)
                 self = .creator(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), adminInfo: ChannelParticipantAdminInfo(rights: TelegramChatAdminRights(apiAdminRights: adminRights) ?? TelegramChatAdminRights(rights: []), promotedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), canBeEditedByAccountPeer: true), rank: rank)
@@ -215,13 +224,13 @@ extension ChannelParticipant {
                 let (flags, userId, restrictedBy, date, bannedRights) = (channelParticipantBannedData.flags, channelParticipantBannedData.peer, channelParticipantBannedData.kickedBy, channelParticipantBannedData.date, channelParticipantBannedData.bannedRights)
                 let hasLeft = (flags & (1 << 0)) != 0
                 let banInfo = ChannelParticipantBannedInfo(rights: TelegramChatBannedRights(apiBannedRights: bannedRights), restrictedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(restrictedBy)), timestamp: date, isMember: !hasLeft)
-                self = .member(id: userId.peerId, invitedAt: date, adminInfo: nil, banInfo: banInfo, rank: nil, subscriptionUntilDate: nil)
+                self = .member(id: userId.peerId, invitedAt: date, adminInfo: nil, banInfo: banInfo, rank: channelParticipantBannedData.rank, subscriptionUntilDate: nil)
             case let .channelParticipantAdmin(channelParticipantAdminData):
                 let (flags, userId, _, promotedBy, date, adminRights, rank) = (channelParticipantAdminData.flags, channelParticipantAdminData.userId, channelParticipantAdminData.inviterId, channelParticipantAdminData.promotedBy, channelParticipantAdminData.date, channelParticipantAdminData.adminRights, channelParticipantAdminData.rank)
                 self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: ChannelParticipantAdminInfo(rights: TelegramChatAdminRights(apiAdminRights: adminRights) ?? TelegramChatAdminRights(rights: []), promotedBy: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(promotedBy)), canBeEditedByAccountPeer: (flags & (1 << 0)) != 0), banInfo: nil, rank: rank, subscriptionUntilDate: nil)
             case let .channelParticipantSelf(channelParticipantSelfData):
-                let (_, userId, _, date, subscriptionUntilDate) = (channelParticipantSelfData.flags, channelParticipantSelfData.userId, channelParticipantSelfData.inviterId, channelParticipantSelfData.date, channelParticipantSelfData.subscriptionUntilDate)
-                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: subscriptionUntilDate)
+                let (_, userId, _, date, subscriptionUntilDate, rank) = (channelParticipantSelfData.flags, channelParticipantSelfData.userId, channelParticipantSelfData.inviterId, channelParticipantSelfData.date, channelParticipantSelfData.subscriptionUntilDate, channelParticipantSelfData.rank)
+                self = .member(id: PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(userId)), invitedAt: date, adminInfo: nil, banInfo: nil, rank: rank, subscriptionUntilDate: subscriptionUntilDate)
             case let .channelParticipantLeft(channelParticipantLeftData):
                 let (userId) = (channelParticipantLeftData.peer)
                 self = .member(id: userId.peerId, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil)

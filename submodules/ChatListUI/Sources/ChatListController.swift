@@ -71,7 +71,6 @@ import ChatListTitleView
 import InviteLinksUI
 import ChatFolderLinkPreviewScreen
 import StoryContainerScreen
-import FullScreenEffectView
 import PeerInfoStoryGridScreen
 import ArchiveInfoScreen
 import BirthdayPickerScreen
@@ -260,8 +259,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
     private var sharedOpenStoryProgressDisposable = MetaDisposable()
     
     var currentTooltipUpdateTimer: Foundation.Timer?
-    
-    private var fullScreenEffectView: RippleEffectView?
     
     let globalControlPanelsContext: GlobalControlPanelsContext
     private(set) var globalControlPanelsContextState: GlobalControlPanelsContext.State?
@@ -2895,11 +2892,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         
         self.chatListDisplayNode.clearHighlightAnimated(true)
         
-        if let fullScreenEffectView = self.fullScreenEffectView {
-            self.fullScreenEffectView = nil
-            fullScreenEffectView.removeFromSuperview()
-        }
-        
         self.sharedOpenStoryProgressDisposable.set(nil)
         
         if let storyPeerListView = self.chatListHeaderView()?.storyPeerListView() {
@@ -3568,37 +3560,6 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
         return nil
     }
     
-    public func animateStoryUploadRipple() {
-        if let componentView = self.chatListHeaderView() {
-            if let (transitionView, _) = componentView.storyPeerListView()?.transitionViewForItem(peerId: self.context.account.peerId) {
-                let localRect = transitionView.convert(transitionView.bounds, to: self.view)
-                self.animateRipple(centerLocation: localRect.center)
-            }
-        }
-    }
-    
-    public func animateRipple(centerLocation: CGPoint) {
-        if let fullScreenEffectView = self.fullScreenEffectView {
-            self.fullScreenEffectView = nil
-            fullScreenEffectView.removeFromSuperview()
-        }
-
-        if let value = RippleEffectView(centerLocation: centerLocation, completion: { [weak self] in
-            guard let self else {
-                return
-            }
-            if let fullScreenEffectView = self.fullScreenEffectView {
-                self.fullScreenEffectView = nil
-                fullScreenEffectView.removeFromSuperview()
-            }
-        }) {
-            self.fullScreenEffectView = value
-            value.sourceView = self.view
-            self.view.addSubview(value)
-            value.frame = CGRect(origin: CGPoint(), size: self.view.bounds.size)
-        }
-    }
-    
     private(set) var storyUploadProgress: [PeerId: Float] = [:]
     private func updateStoryUploadProgress(_ progress: [PeerId: Float]) {
         self.storyUploadProgress = progress.mapValues {
@@ -3869,7 +3830,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             
             items.append(.action(ContextMenuActionItem(text: strings.Chat_ContextViewAsTopics, icon: { theme in
                 if !isViewingAsTopics {
-                    return nil
+                    return UIImage()
                 }
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
             }, action: { [weak sourceController] _, a in
@@ -3905,7 +3866,7 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
             })))
             items.append(.action(ContextMenuActionItem(text: strings.Chat_ContextViewAsMessages, icon: { theme in
                 if isViewingAsTopics {
-                    return nil
+                    return UIImage()
                 }
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Check"), color: theme.contextMenu.primaryColor)
             }, action: { [weak sourceController] _, a in
@@ -5456,6 +5417,35 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                             }
                         }
                         strongSelf.present(textAlertController(context: strongSelf.context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                    }, completed: { [weak self] in
+                        guard let self else {
+                            return
+                        }
+                        Queue.mainQueue().after(0.5) {
+                            let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                            |> deliverOnMainQueue).startStandalone(next: { [weak self] peer in
+                                guard let self, let peer = peer?._asPeer() else {
+                                    return
+                                }
+                                var canEditRank = false
+                                if let channel = peer as? TelegramChannel, channel.hasPermission(.editRank) {
+                                    canEditRank = true
+                                } else if let group = peer as? TelegramGroup, !group.hasBannedPermission(.banEditRank) {
+                                    canEditRank = true
+                                }
+                                if canEditRank {
+                                    let context = self.context
+                                    let controller = UndoOverlayController(presentationData: self.presentationData, content: .actionSucceeded(title: nil, text: self.presentationData.strings.Chat_JoinedGroup_Text, cancel: self.presentationData.strings.Chat_JoinedGroup_AddTag, destructive: false), elevatedLayout: true, action: { [weak self] action in
+                                        if let self, case .undo = action {
+                                            let tagController = context.sharedContext.makeChatCustomRankSetupScreen(context: context, peerId: peerId, participantId: context.account.peerId, rank: nil, role: .member)
+                                            self.push(tagController)
+                                        }
+                                        return true
+                                    })
+                                    self.present(controller, in: .current)
+                                }
+                            })
+                        }
                     })
                 }))
             case .savedMessagesChats:
@@ -5614,14 +5604,23 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                             })
                         }
                         
-                        if let self, case let .channel(channel) = peer.peer, channel.flags.contains(.isCreator) {
-                            let _ = (self.context.engine.peers.getFutureCreatorAfterLeave(peerId: channel.id)
+                        let shouldCheckFutureCreator: Bool
+                        if case let .channel(channel) = peer.peer, channel.flags.contains(.isCreator) {
+                            shouldCheckFutureCreator = true
+                        } else if case let .legacyGroup(group) = peer.peer, case .creator = group.role {
+                            shouldCheckFutureCreator = true
+                        } else {
+                            shouldCheckFutureCreator = false
+                        }
+                                    
+                        if let self, shouldCheckFutureCreator {
+                            let _ = (self.context.engine.peers.getFutureCreatorAfterLeave(peerId: peer.peerId)
                             |> deliverOnMainQueue).start(next: { [weak self] nextCreator in
                                 guard let self else {
                                     return
                                 }
                                 if let nextCreator, let peer = peer.peer {
-                                    self.presentLeaveChannelConfirmation(peer: peer, nextCreator: nextCreator, completion: { commit in
+                                    self.presentLeaveChatConfirmation(peer: peer, nextCreator: nextCreator, completion: { commit in
                                         if commit {
                                             proceed()
                                         }
@@ -6088,14 +6087,24 @@ public class ChatListControllerImpl: TelegramBaseController, ChatListController 
                     removed()
                 })
             }
+            
+            let shouldCheckFutureCreator: Bool
             if case let .channel(channel) = peer.peer, channel.flags.contains(.isCreator) {
-                let _ = (self.context.engine.peers.getFutureCreatorAfterLeave(peerId: channel.id)
+                shouldCheckFutureCreator = true
+            } else if case let .legacyGroup(group) = peer.peer, case .creator = group.role {
+                shouldCheckFutureCreator = true
+            } else {
+                shouldCheckFutureCreator = false
+            }
+            
+            if shouldCheckFutureCreator {
+                let _ = (self.context.engine.peers.getFutureCreatorAfterLeave(peerId: peer.peerId)
                 |> deliverOnMainQueue).start(next: { [weak self] nextCreator in
                     guard let self else {
                         return
                     }
                     if let nextCreator, let peer = peer.peer {
-                        self.presentLeaveChannelConfirmation(peer: peer, nextCreator: nextCreator, completion: { commit in
+                        self.presentLeaveChatConfirmation(peer: peer, nextCreator: nextCreator, completion: { commit in
                             if commit {
                                 proceed()
                             } else {

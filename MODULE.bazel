@@ -62,7 +62,7 @@ local_path_override(
     path = "./build-input/configuration-repository",
 )
 
-bazel_dep(name = "sourcekit_bazel_bsp", version = "0.3.0")
+bazel_dep(name = "sourcekit_bazel_bsp", version = "0.7.1")
 local_path_override(
     module_name = "sourcekit_bazel_bsp",
     path = "build-system/bazel-rules/sourcekit-bazel-bsp",
@@ -71,11 +71,11 @@ local_path_override(
 # Nicegram, rules_swift_package_manager
 bazel_dep(
     name = "rules_swift_package_manager",
-    version = "1.12.0",
+    version = "1.13.0",
 )
 git_override(
     module_name = "rules_swift_package_manager",
-    commit = "4d79caf25c0e1ecdc62ec731ee96f0ad1e1f0d46",
+    commit = "fb1172a831024072a29bb00d2b7b9eb121de299b",
     remote = "https://github.com/denis15yo/rules_swift_package_manager",
 )
 

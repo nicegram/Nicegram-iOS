@@ -19,6 +19,7 @@ import GlassBackgroundComponent
 import LottieComponent
 import TextNodeWithEntities
 import ContextUI
+import LensTransition
 
 public protocol ContextControllerActionsListItemNode: ASDisplayNode {
     func update(presentationData: PresentationData, constrainedSize: CGSize) -> (minSize: CGSize, apply: (_ size: CGSize, _ transition: ContainedViewLayoutTransition) -> Void)
@@ -827,6 +828,17 @@ public final class ContextControllerActionsListStackItem: ContextControllerActio
                 self.addSubnode(item.node)
             }
             
+            if let tipSignal = tipSignal {
+                self.tipDisposable = (tipSignal
+                |> deliverOnMainQueue).start(next: { [weak self] tip in
+                    guard let strongSelf = self else {
+                        return
+                    }
+                    strongSelf.tip = tip
+                    requestUpdate(.immediate)
+                }).strict()
+            }
+            
             requestUpdateAction = { [weak self] id, action in
                 guard let self else {
                     return
@@ -981,16 +993,25 @@ public final class ContextControllerActionsListStackItem: ContextControllerActio
             if let tip = self.tip {
                 let tipNode: InnerTextSelectionTipContainerNode
                 var tipTransition = transition
-                if let current = self.tipNode {
+                if let current = self.tipNode, current.tip == tip {
                     tipNode = current
                 } else {
                     tipTransition = .immediate
+                    
+                    let previousTipNode = self.tipNode
                     tipNode = InnerTextSelectionTipContainerNode(presentationData: presentationData, tip: tip, isInline: true)
-                    self.addSubnode(tipNode)
-                    self.tipNode = tipNode
                     let getController = self.getController
                     tipNode.requestDismiss = { completion in
                         getController()?.dismiss(completion: completion)
+                    }
+                    self.addSubnode(tipNode)
+                    self.tipNode = tipNode
+                    
+                    if let previousTipNode = previousTipNode {
+                        previousTipNode.animateTransitionInside(other: tipNode)
+                        previousTipNode.removeFromSupernode()
+                        
+                        tipNode.animateContentIn()
                     }
                 }
                 
@@ -1004,12 +1025,15 @@ public final class ContextControllerActionsListStackItem: ContextControllerActio
                 }
                 
                 let (tipSeparatorMinSize, tipSeparatorApply) = tipSeparatorNode.update(presentationData: presentationData, constrainedSize: CGSize(width: combinedSize.width, height: 10.0))
+                tipSeparatorNode.isHidden = self.itemNodes.isEmpty
                 let tipSeparatorSize = CGSize(width: combinedSize.width, height: tipSeparatorMinSize.height)
                 tipSeparatorApply(tipSeparatorSize, tipTransition)
                 let tipSeparatorFrame = CGRect(origin: nextItemOrigin, size: tipSeparatorSize)
                 tipTransition.updateFrame(node: tipSeparatorNode, frame: tipSeparatorFrame)
-                nextItemOrigin.y += tipSeparatorSize.height
-                combinedSize.height += tipSeparatorSize.height
+                if !tipSeparatorNode.isHidden {
+                    nextItemOrigin.y += tipSeparatorSize.height
+                    combinedSize.height += tipSeparatorSize.height
+                }
                 
                 let tipSize = tipNode.updateLayout(widthClass: .compact, presentation: .inline, width: combinedSize.width, transition: tipTransition)
                 let tipFrame = CGRect(origin: nextItemOrigin, size: tipSize)
@@ -1388,7 +1412,7 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
         let backgroundContainerInset: CGFloat
         let backgroundView: GlassBackgroundView
         var sourceExtractableContainer: ContextExtractableContainer?
-        let contentContainer: UIView
+        let contentContainer: LensTransitionContainer
         
         var requestUpdate: ((ContainedViewLayoutTransition) -> Void)?
         var requestPop: (() -> Void)?
@@ -1407,7 +1431,7 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
             self.backgroundView = GlassBackgroundView()
             self.backgroundContainer.contentView.addSubview(self.backgroundView)
             
-            self.contentContainer = UIView()
+            self.contentContainer = LensTransitionContainer()
             self.contentContainer.clipsToBounds = true
             self.backgroundView.contentView.addSubview(self.contentContainer)
             
@@ -1488,14 +1512,13 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
                 }
             }
             
-            self.sourceExtractableContainer = nil
             self.contentContainer.frame = CGRect(origin: CGPoint(), size: sourceSize)
-            self.contentContainer.layer.cornerRadius = normalCornerRadius
+            self.contentContainer.update(size: sourceSize, cornerRadius: min(sourceSize.width, sourceSize.height) * 0.5, state: .animatedOut, transition: .immediate)
             
             extractableContainer.extractableContentView.frame = CGRect(origin: CGPoint(x: (currentSize.width - sourceSize.width) * 0.5, y: (currentSize.height - sourceSize.height) * 0.5), size: sourceSize).offsetBy(dx: self.backgroundContainerInset, dy: self.backgroundContainerInset)
             transition.setFrame(view: extractableContainer.extractableContentView, frame: CGRect(origin: CGPoint(x: self.backgroundContainerInset, y: self.backgroundContainerInset), size: currentSize))
             transition.setFrame(view: self.contentContainer, frame: CGRect(origin: CGPoint(), size: currentSize))
-            transition.setCornerRadius(layer: self.contentContainer.layer, cornerRadius: 30.0)
+            self.contentContainer.update(size: currentSize, cornerRadius: 30.0, state: .animatedIn, transition: transition)
             self.contentContainer.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.15)
             
             extractableContainer.updateState(state: .extracted(size: sourceSize, cornerRadius: normalCornerRadius, state: .animatedOut), transition: .transition(.immediate), completion: nil)
@@ -1518,6 +1541,8 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
             transition.setFrame(view: extractableContainer.extractableContentView, frame: CGRect(origin: CGPoint(x: self.backgroundContainerInset, y: self.backgroundContainerInset), size: normalSize).offsetBy(dx: (currentSize.width - normalSize.width) * 0.5, dy: (currentSize.height - normalSize.height) * 0.5))
             
             transition.setFrame(view: self.contentContainer, frame: CGRect(origin: CGPoint(), size: normalSize))
+            self.contentContainer.update(size: normalSize, cornerRadius: normalCornerRadius, state: .animatedOut, transition: transition)
+            
             transition.setCornerRadius(layer: self.contentContainer.layer, cornerRadius: normalCornerRadius)
             transition.setAlpha(view: self.contentContainer, alpha: 0.0)
             
@@ -1539,6 +1564,7 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
             let transition = ComponentTransition(transition)
             
             transition.setFrame(view: self.contentContainer, frame: CGRect(origin: CGPoint(), size: size))
+            transition.setCornerRadius(layer: self.contentContainer.layer, cornerRadius: min(30.0, size.height * 0.5))
             
             let backgroundContainerFrame = CGRect(origin: CGPoint(), size: size).insetBy(dx: -self.backgroundContainerInset, dy: -self.backgroundContainerInset)
             
@@ -1547,13 +1573,11 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
                 transition.setFrame(view: self.backgroundContainer, frame: backgroundContainerFrame)
             }
             
-            transition.setCornerRadius(layer: self.contentContainer.layer, cornerRadius: min(30.0, size.height * 0.5))
-            
             transition.setFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(x: self.backgroundContainerInset, y: self.backgroundContainerInset), size: size))
             self.backgroundView.update(size: size, cornerRadius: min(30.0, size.height * 0.5), isDark: presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: transition)
             
             if let sourceExtractableContainer = self.sourceExtractableContainer {
-                transition.setFrame(view: sourceExtractableContainer.extractableContentView, frame: CGRect(origin: CGPoint(), size: size))
+                transition.setFrame(view: sourceExtractableContainer.extractableContentView, frame: CGRect(origin: CGPoint(x: self.backgroundContainerInset, y: self.backgroundContainerInset), size: size))
                 sourceExtractableContainer.updateState(state: .extracted(size: size, cornerRadius: min(30.0, size.height * 0.5), state: .animatedIn), transition: .transition(transition.containedViewLayoutTransition), completion: nil)
             }
         }
@@ -1815,6 +1839,13 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
         selectionPanGesture.isEnabled = false
     }
     
+    override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard let result = super.hitTest(point, with: event) else {
+            return nil
+        }
+        return result
+    }
+    
     @objc private func panGesture(_ recognizer: UIPanGestureRecognizer) {
         switch recognizer.state {
         case .began, .changed:
@@ -1910,7 +1941,7 @@ public final class ContextControllerActionsStackNodeImpl: ASDisplayNode, Context
             positionLock: positionLock
         )
         self.itemContainers.append(itemContainer)
-        self.navigationContainer.contentContainer.addSubview(itemContainer.view)
+        self.navigationContainer.contentContainer.contentsView.addSubview(itemContainer.view)
         self.navigationContainer.isNavigationEnabled = self.itemContainers.count > 1
         
         let transition: ContainedViewLayoutTransition
