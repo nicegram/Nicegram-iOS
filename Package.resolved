@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "build/643",
-        "revision" : "1eba576d555727677f4b7440a5e129246ffcd488"
+        "branch" : "feat/short-onboarding",
+        "revision" : "3fe5b458dc3cf17618a13432a9612f1e8bc81b87"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/qonversion/qonversion-ios-sdk.git",
       "state" : {
-        "revision" : "a9d617092ff25210d5cccb2423de80262a1512fa",
-        "version" : "6.6.1"
+        "revision" : "e1ddf3d962d11b76753d5e8f941ef613c9c4a645",
+        "version" : "6.7.0"
       }
     },
     {
@@ -446,8 +446,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections.git",
       "state" : {
-        "revision" : "7b847a3b7008b2dc2f47ca3110d8c782fb2e5c7e",
-        "version" : "1.3.0"
+        "revision" : "8d9834a6189db730f6264db7556a7ffb751e99ee",
+        "version" : "1.4.0"
       }
     },
     {
@@ -509,8 +509,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",
       "state" : {
-        "revision" : "5596511fce902e649c403cd4d6d5da1254f142b7",
-        "version" : "1.35.1"
+        "revision" : "86970144a0b86068c81ff48ee29b3f97cae0b879",
+        "version" : "1.36.0"
       }
     },
     {
