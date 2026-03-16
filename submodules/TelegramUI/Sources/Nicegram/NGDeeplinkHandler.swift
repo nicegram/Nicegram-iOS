@@ -6,7 +6,7 @@ import Foundation
 import AccountContext
 import Display
 import FeatOnboarding
-import FeatPremiumUI
+import FeatPaywall
 import FeatUserArchetype
 import NGAiChatUI
 import NGEntryPoint
