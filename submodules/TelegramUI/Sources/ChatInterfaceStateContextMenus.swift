@@ -31,7 +31,7 @@ import ReactionListContextMenuContent
 import TelegramUIPreferences
 // Nicegram Imports
 import ConvertOpusToAAC
-import FeatPremiumUI
+import FeatPaywall
 import NGAiChatUI
 import NGStrings
 import NGTranslate

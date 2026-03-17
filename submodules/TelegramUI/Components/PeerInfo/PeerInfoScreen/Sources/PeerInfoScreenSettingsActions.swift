@@ -1,5 +1,5 @@
 // Nicegram
-import FeatPremiumUI
+import FeatPaywall
 import NGData
 import NGUI
 //
