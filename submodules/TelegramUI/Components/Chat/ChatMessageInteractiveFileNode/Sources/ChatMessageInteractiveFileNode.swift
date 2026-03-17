@@ -1,5 +1,5 @@
 // Nicegram Imports
-import FeatPaywall
+import FeatPremiumUI
 import FeatSpeechToText
 import NGData
 import NGStrings

@@ -3,7 +3,6 @@ import CoreAnalytics
 import FeatAccountBackup
 import FeatCalls
 import FeatOnboarding
-import FeatPaywall
 import NGAiChat
 import NGAppCache
 import NGCore
@@ -1776,10 +1775,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         //
-        
-        if #available(iOS 15.0, *) {
-            PremiumSpecialOfferPresenter().presentPremiumSpecialOfferIfNeeded()
-        }
         
         // Nicegram, new account privacy settings
         let loginDataSignal: Signal<[any AccountContext], NoError> =

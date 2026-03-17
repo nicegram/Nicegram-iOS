@@ -1,6 +1,6 @@
 import AccountContext
 import Display
-import FeatPaywall
+import FeatPremiumUI
 import Foundation
 import NGCore
 import NGData
