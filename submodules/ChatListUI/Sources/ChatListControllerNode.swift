@@ -1529,7 +1529,15 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         var navigationHeaderPanels: AnyComponent<Empty>?
         if self.controller?.tabContainerData != nil || !panels.isEmpty {
             var tabs: AnyComponent<Empty>?
-            if let tabContainerData = self.controller?.tabContainerData, tabContainerData.0.count > 1 {
+            
+            // Nicegram FolderForKeywords
+            let showFolderForKeywords = getNicegramSettings().keywords.show[
+                self.context.account.peerId.toInt64()
+            ] ?? true
+            //
+            
+            // Nicegram FolderForKeywords, showFolderForKeywords condition
+            if let tabContainerData = self.controller?.tabContainerData, (tabContainerData.0.count > 1 || showFolderForKeywords) {
                 let selectedTab: HorizontalTabsComponent.Tab.Id
                 switch self.effectiveContainerNode.currentItemFilter {
                 case .all:
@@ -1539,13 +1547,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                 }
                 
                 let isEditing = self.isReorderingFilters || (self.mainContainerNode.currentItemNode.currentState.editing && !self.didBeginSelectingChatsWhileEditing)
-
+                
                 // Nicegram FolderForKeywords
                 var nicegramTabs: [HorizontalTabsComponent.Tab] = []
-                
-                let showFolderForKeywords = getNicegramSettings().keywords.show[
-                    self.context.account.peerId.toInt64()
-                ] ?? true
                 if #available(iOS 15.0, *),
                    showFolderForKeywords,
                    let navigationController = self.controller?.navigationController as? NavigationController {
