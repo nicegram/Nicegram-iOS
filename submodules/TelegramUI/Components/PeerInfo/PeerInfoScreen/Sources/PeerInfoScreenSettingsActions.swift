@@ -2,6 +2,7 @@
 import FeatPaywall
 import NGData
 import NGUI
+import NGUtils
 //
 import Foundation
 import UIKit
@@ -182,18 +183,18 @@ extension PeerInfoScreenNode {
             let supportPeer = Promise<PeerId?>()
             supportPeer.set(context.engine.peers.supportPeerId())
             
-            self.controller?.present(textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: self.presentationData.strings.Settings_FAQ_Intro, actions: [
+            self.controller?.present(textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: self.presentationData.strings.Settings_FAQ_Intro.replacingTelegramWithNicrgram, actions: [
                 TextAlertAction(type: .genericAction, title: presentationData.strings.Settings_FAQ_Button, action: { [weak self] in
-                    self?.openFaq()
+                    // Nicegram, open nicegram FAQ
+                    self?.openNicegramFaq()
+                    //
                 }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: { [weak self] in
                     guard let self else {
                         return
                     }
-                    self.supportPeerDisposable.set((supportPeer.get() |> take(1) |> deliverOnMainQueue).startStrict(next: { [weak self] peerId in
-                        if let strongSelf = self, let peerId = peerId {
-                            push(strongSelf.context.sharedContext.makeChatController(context: strongSelf.context, chatLocation: .peer(id: peerId), subject: nil, botStart: nil, mode: .standard(.default), params: nil))
-                        }
-                    }))
+                    // Nicegram, open nicegram support bot
+                    push(self.context.sharedContext.makeChatController(context: self.context, chatLocation: .peer(id: .nicegramSupportBot), subject: nil, botStart: nil, mode: .standard(.default), params: nil))
+                    //
                 })]), in: .window(.root))
         case .faq:
             self.openFaq()
@@ -347,6 +348,16 @@ extension PeerInfoScreenNode {
             self.didSetCachedFaq = true
         }
     }
+    
+    // Nicegram
+    func openNicegramFaq() {
+        let nicegramFAQUrl = ResolvedUrl.externalUrl("https://nicegram.app/faq")
+        self.context.sharedContext.openResolvedUrl(nicegramFAQUrl, context: self.context, urlContext: .generic, navigationController: self.controller?.navigationController as? NavigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigation in
+        }, sendFile: nil, sendSticker: nil, sendEmoji: nil, requestMessageActionUrlAuth: nil, joinVoiceChat: nil, present: { [weak self] controller, arguments in
+            self?.controller?.push(controller)
+        }, dismissInput: {}, contentContext: nil, progress: nil, completion: nil)
+    }
+    //
     
     func openFaq(anchor: String? = nil) {
         self.setupFaqIfNeeded()
