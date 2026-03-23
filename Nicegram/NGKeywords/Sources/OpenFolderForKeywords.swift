@@ -8,6 +8,7 @@ import Postbox
 import SwiftSignalKit
 import TelegramCore
 import TelegramStringFormatting
+import UIKit
 
 //  MARK: - Public
 
@@ -25,7 +26,7 @@ public func openFolderForKeywords(
     let accentColor = presentationData.theme.list.itemAccentColor
     let overallDarkAppearance = presentationData.theme.overallDarkAppearance
     
-    KeywordsPresenter().present(
+    let keywordsController = KeywordsPresenter().makeController(
         with: context.account.peerId.toInt64(),
         theme: KeywordsPresenter.Theme(
             primaryColor: primaryColor,
@@ -50,6 +51,13 @@ public func openFolderForKeywords(
             )
         }
     )
+    
+    let wrapper = NativeControllerWrapper(
+        controller: keywordsController,
+        accountContext: context
+    )
+    
+    navigationController.pushViewController(wrapper, animated: true)
 }
 
 //  MARK: - Private

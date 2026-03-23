@@ -52,7 +52,7 @@ import CoreAnalytics
 import FeatAssistant
 import FeatCalls
 import FeatGodsEye
-import struct FeatPaywall.PremiumUITgHelper
+import struct FeatPremiumUI.PremiumUITgHelper
 import FeatTgAppsCenter
 import FeatTgUserNotes
 import FeatWallet

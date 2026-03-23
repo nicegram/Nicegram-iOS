@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "feat/new-special-offers",
-        "revision" : "32c78a3df924b969b37f7d6dc9e6f6d2117a86c9"
+        "branch" : "fix/keywords-navigation",
+        "revision" : "be65d260b608e80f140fa4a7debbfb04e2c5cb7e"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/qonversion/qonversion-ios-sdk.git",
       "state" : {
-        "revision" : "e1ddf3d962d11b76753d5e8f941ef613c9c4a645",
-        "version" : "6.7.0"
+        "revision" : "c039c9cdf6e05732281d893e70caf4c921b43eab",
+        "version" : "6.8.0"
       }
     },
     {
@@ -410,8 +410,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
-        "version" : "1.7.0"
+        "revision" : "626b5b7b2f45e1b0b1c6f4a309296d1d21d7311b",
+        "version" : "1.7.1"
       }
     },
     {

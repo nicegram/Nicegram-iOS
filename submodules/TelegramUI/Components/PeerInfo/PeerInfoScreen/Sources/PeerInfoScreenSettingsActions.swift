@@ -1,5 +1,5 @@
 // Nicegram
-import FeatPaywall
+import FeatPremiumUI
 import NGData
 import NGUI
 import NGUtils
@@ -189,11 +189,8 @@ extension PeerInfoScreenNode {
                     self?.openNicegramFaq()
                     //
                 }), TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: { [weak self] in
-                    guard let self else {
-                        return
-                    }
                     // Nicegram, open nicegram support bot
-                    push(self.context.sharedContext.makeChatController(context: self.context, chatLocation: .peer(id: .nicegramSupportBot), subject: nil, botStart: nil, mode: .standard(.default), params: nil))
+                    self?.openNicegramSupportBot()
                     //
                 })]), in: .window(.root))
         case .faq:
@@ -349,10 +346,19 @@ extension PeerInfoScreenNode {
         }
     }
     
-    // Nicegram
-    func openNicegramFaq() {
+    // Nicegram, support URLs
+    private func openNicegramSupportBot() {
+        let nicegramSupportBotUrl = ResolvedUrl.externalUrl("https://t.me/NicegramHelperBot")
+        openURL(nicegramSupportBotUrl)
+    }
+    
+    private func openNicegramFaq() {
         let nicegramFAQUrl = ResolvedUrl.externalUrl("https://nicegram.app/faq")
-        self.context.sharedContext.openResolvedUrl(nicegramFAQUrl, context: self.context, urlContext: .generic, navigationController: self.controller?.navigationController as? NavigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigation in
+        openURL(nicegramFAQUrl)
+    }
+    
+    private func openURL(_ url: ResolvedUrl) {
+        self.context.sharedContext.openResolvedUrl(url, context: self.context, urlContext: .generic, navigationController: self.controller?.navigationController as? NavigationController, forceExternal: false, forceUpdate: false, openPeer: { peer, navigation in
         }, sendFile: nil, sendSticker: nil, sendEmoji: nil, requestMessageActionUrlAuth: nil, joinVoiceChat: nil, present: { [weak self] controller, arguments in
             self?.controller?.push(controller)
         }, dismissInput: {}, contentContext: nil, progress: nil, completion: nil)
