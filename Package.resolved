@@ -212,8 +212,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/adjust/ios_sdk.git",
       "state" : {
-        "revision" : "63e0eb021d56db331e34d239e7c294ffe5ca1a71",
-        "version" : "5.5.3"
+        "revision" : "883fe7f68227a1470cdb5b19a789e155e44f88fb",
+        "version" : "5.5.4"
       }
     },
     {
@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "fix/keywords-navigation",
-        "revision" : "be65d260b608e80f140fa4a7debbfb04e2c5cb7e"
+        "branch" : "develop",
+        "revision" : "c11adb681939615fc45d6629d41e5a41562d6e48"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "51cedcaae851ea5145acbfa8b9868737c5a38d58",
-        "version" : "6.17.0"
+        "revision" : "61252a2f5a4120776f96e6b181680f966de66c34",
+        "version" : "6.18.0"
       }
     },
     {
