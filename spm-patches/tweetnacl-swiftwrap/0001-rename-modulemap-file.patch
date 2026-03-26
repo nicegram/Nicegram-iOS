@@ -1,0 +1,4 @@
+diff --git a/Sources/module.map b/Sources/module.modulemap
+similarity index 100%
+rename from Sources/module.map
+rename to Sources/module.modulemap

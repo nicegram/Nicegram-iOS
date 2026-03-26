@@ -88,6 +88,15 @@ swift_deps.from_package(
     resolved = "//:Package.resolved",
     swift = "//:Package.swift",
 )
+
+swift_deps.configure_package(
+    name = "tweetnacl-swiftwrap",
+    patch_args = ["-p1"],
+    patches = [
+        "//spm-patches/tweetnacl-swiftwrap:0001-rename-modulemap-file.patch",
+    ],
+)
+
 use_repo(
     swift_deps,
     "swiftpkg_firebase_ios_sdk",
