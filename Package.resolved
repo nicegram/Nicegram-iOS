@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "c11adb681939615fc45d6629d41e5a41562d6e48"
+        "revision" : "538ab0bfbca578ccff169ba40dc8e443f3d0b004"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/qonversion/qonversion-ios-sdk.git",
       "state" : {
-        "revision" : "c039c9cdf6e05732281d893e70caf4c921b43eab",
-        "version" : "6.8.0"
+        "revision" : "652384094c43ce67d652454a5b477fe4a40b48ff",
+        "version" : "6.8.1"
       }
     },
     {
