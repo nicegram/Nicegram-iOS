@@ -252,3 +252,8 @@
 "NicegramSettings.AccountPrivacy.Alert.Body" = "Hesabınıza önerilen gizlilik ve güvenlik ayarlarını uygulayın. Daha sonra Ayarlar → Gizlilik ve Güvenlik üzerinden değiştirebilirsiniz";
 "NicegramSettings.AccountPrivacy.Alert.Apply" = "Uygula";
 "NicegramSettings.AccountPrivacy.Alert.Cancel" = "İptal";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "Çevrimiçi bulunan herkese açık bilgilerin yapılandırılmış bir özetini alın — profiller, geçmiş, sosyal etkinlik ve daha fazlası!";
+"whitebridge.chats.quick.action" = "WhiteBridge Raporunu Görüntüle";

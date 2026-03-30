@@ -6,6 +6,7 @@ import FeatAiShortcuts
 import FeatAiVoiceAssistant
 import FeatSensitiveContentAccess
 import FeatTgChatButton
+import FeatWhitebridge
 import NGAiChatUI
 import NGAppCache
 import NGData
@@ -271,6 +272,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     private let titleAccessoryPanelContainer: ChatControllerTitlePanelNodeContainer
     private var currentTitleAccessoryPanelNode: ChatTitleAccessoryPanelNode?
+    private var currentWhitebridgeBannerPanelNode: ChatTitleAccessoryPanelNode?
     
     private var floatingTopicsPanelContainer: ChatControllerTitlePanelNodeContainer
     private var floatingTopicsPanel: (view: ComponentView<ChatSidePanelEnvironment>, component: ChatFloatingTopicsPanel)?
@@ -1819,8 +1821,72 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             )
         }
         
+        // Nicegram, Whitebridge
+        if #available(iOS 16.0, *) {
+            let isWhitebridgeEnabled = WhitebridgeModule.shared.getWhitebridgeConfigUseCase()().enabled
+            let isSelfChat: Bool
+            if case .peer(self.context.account.peerId) = self.chatPresentationInterfaceState.chatLocation {
+                isSelfChat = true
+            } else {
+                isSelfChat = false
+            }
+            
+            let shouldShowWhitebridgeBanner: Bool
+            var targetUsername: String? = nil
+            if let user = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser {
+                shouldShowWhitebridgeBanner = isWhitebridgeEnabled && user.botInfo == nil && !isSelfChat && !AppCache.whitebridgeChatBannerDismissed
+                targetUsername = user.displayedName
+            } else {
+                shouldShowWhitebridgeBanner = false
+            }
+            
+            if shouldShowWhitebridgeBanner {
+                let whitebridgeBannerPanelNode: ChatTitleAccessoryPanelNode
+                if let currentWhitebridgeBannerPanelNode = self.currentWhitebridgeBannerPanelNode {
+                    whitebridgeBannerPanelNode = currentWhitebridgeBannerPanelNode
+                } else {
+                    sendWhitebridgeAnalytics(with: .show(source: .chatBanner))
+                    whitebridgeBannerPanelNode = ChatWhitebridgeBannerTitlePanelNode(
+                        onClose: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            AppCache.whitebridgeChatBannerDismissed = true
+                            self.currentWhitebridgeBannerPanelNode = nil
+                            self.requestLayout(.animated(duration: 0.2, curve: .easeInOut))
+                        },
+                        onGetReport: {
+                            Task { @MainActor in
+                                WhitebridgePresenter().presentFlow(
+                                    reportType: .userReport(userName: targetUsername),
+                                    source: .chatBanner
+                                )
+                            }
+                        }
+                    )
+                    whitebridgeBannerPanelNode.interfaceInteraction = self.interfaceInteraction
+                    self.currentWhitebridgeBannerPanelNode = whitebridgeBannerPanelNode
+                }
+                
+                headerPanels.append(HeaderPanelContainerComponent.Panel(
+                    key: "whitebridge-feature-banner-panel",
+                    orderIndex: 2,
+                    component: AnyComponent(LegacyChatHeaderPanelComponent(
+                        panelNode: whitebridgeBannerPanelNode,
+                        interfaceState: self.chatPresentationInterfaceState
+                    )))
+                )
+            } else {
+                self.currentWhitebridgeBannerPanelNode = nil
+            }
+        } else {
+            self.currentWhitebridgeBannerPanelNode = nil
+        }
+        //
+        
         if let titleAccessoryPanelNode = titlePanelForChatPresentationInterfaceState(self.chatPresentationInterfaceState, context: self.context, currentPanel: self.currentTitleAccessoryPanelNode, controllerInteraction: self.controllerInteraction, interfaceInteraction: self.interfaceInteraction, force: false) {
             self.currentTitleAccessoryPanelNode = titleAccessoryPanelNode
+            
             let panelKey = "\(type(of: titleAccessoryPanelNode))"
             headerPanels.append(HeaderPanelContainerComponent.Panel(
                 key: panelKey,

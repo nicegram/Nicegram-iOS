@@ -251,3 +251,8 @@
 "NicegramSettings.AccountPrivacy.Alert.Body" = "Áp dụng cài đặt quyền riêng tư và bảo mật được khuyến nghị cho tài khoản của bạn. Bạn có thể thay đổi chúng sau tại Cài Đặt → Quyền Riêng Tư & Bảo Mật";
 "NicegramSettings.AccountPrivacy.Alert.Apply" = "Áp Dụng";
 "NicegramSettings.AccountPrivacy.Alert.Cancel" = "Hủy";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "Nhận tổng quan có cấu trúc về thông tin công khai được tìm thấy trực tuyến — hồ sơ, lý lịch, hoạt động xã hội và hơn thế nữa!";
+"whitebridge.chats.quick.action" = "Xem Báo Cáo WhiteBridge";

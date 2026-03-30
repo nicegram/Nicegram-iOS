@@ -253,3 +253,8 @@
 "NicegramSettings.AccountPrivacy.Alert.Body" = "계정에 추천된 개인정보 및 보안 설정을 적용하세요. 나중에 설정 → 개인정보 보호 및 보안에서 변경할 수 있습니다";
 "NicegramSettings.AccountPrivacy.Alert.Apply" = "적용";
 "NicegramSettings.AccountPrivacy.Alert.Cancel" = "Cancel";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "온라인에서 찾은 공개 정보를 구조적으로 확인하세요 — 프로필, 배경, 소셜 활동 등!";
+"whitebridge.chats.quick.action" = "WhiteBridge 보고서 보기";

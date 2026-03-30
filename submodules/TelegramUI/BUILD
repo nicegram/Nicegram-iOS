@@ -27,6 +27,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatSensitiveContentAccess",
     "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton",
+    "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge",
     "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint",
 ]
 

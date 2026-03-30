@@ -11,6 +11,7 @@ swift_library(
         "//submodules/ItemListUI",
         "//third-party/webrtc:webrtc_objc",
         "@swiftpkg_nicegram_assistant_ios//:CoreAnalytics",
+        "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
         "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
