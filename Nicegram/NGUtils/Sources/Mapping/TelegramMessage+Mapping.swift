@@ -27,6 +27,10 @@ public extension TelegramBridge.TelegramMessage {
 }
 
 public extension [TelegramBridge.TelegramMessage] {
+    init(_ messages: [Postbox.Message]) {
+        self = messages.map { .init($0) }
+    }
+    
     init(
         apiMessages: Api.messages.Messages,
         context: AccountContext

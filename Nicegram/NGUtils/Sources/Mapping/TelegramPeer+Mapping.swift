@@ -5,19 +5,44 @@ import TelegramApi
 import TelegramBridge
 import TelegramCore
 
-private struct TelegramPeerImpl: TelegramBridge.TelegramPeer {
-    let displayName: String
-    let id: TelegramId
-    let username: String?
-}
-
 public extension Postbox.Peer {
     func toTelegramBridgePeer() -> TelegramBridge.TelegramPeer {
-        TelegramPeerImpl(
-            displayName: debugDisplayTitle,
-            id: .init(id),
-            username: addressName
-        )
+        let displayName = debugDisplayTitle
+        let id = TelegramBridge.TelegramId(id)
+        let username = addressName
+        
+        switch EnginePeer(self) {
+        case let .channel(channel):
+            let info: TelegramBridge.TelegramChannelInfo = switch channel.info {
+            case .broadcast: .broadcast
+            case .group: .group
+            }
+            
+            return TelegramBridge.TelegramChannel(
+                displayName: displayName,
+                id: id,
+                info: info,
+                username: username
+            )
+        case .legacyGroup:
+            return TelegramBridge.TelegramGroup(
+                displayName: displayName,
+                id: id,
+                username: username
+            )
+        case .secretChat:
+            return TelegramBridge.TelegramSecretChat(
+                id: id
+            )
+        case let .user(user):
+            return TelegramBridge.TelegramUser(
+                botInfo: user.botInfo.flatMap { _ in .init() },
+                displayName: displayName,
+                id: id,
+                isPremium: user.flags.contains(.isPremium),
+                username: username
+            )
+        }
     }
 }
 

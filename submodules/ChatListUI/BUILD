@@ -19,8 +19,7 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:NGRepoUser",
     "@swiftpkg_nicegram_assistant_ios//:NGSpecialOffer",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
-    "@swiftpkg_nicegram_assistant_ios//:FeatKeywords",
-    "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge"
+    "@swiftpkg_nicegram_assistant_ios//:FeatKeywords"
 ]
 
 swift_library(

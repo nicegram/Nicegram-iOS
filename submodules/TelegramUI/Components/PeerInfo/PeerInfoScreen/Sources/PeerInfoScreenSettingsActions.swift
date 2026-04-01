@@ -183,7 +183,7 @@ extension PeerInfoScreenNode {
             let supportPeer = Promise<PeerId?>()
             supportPeer.set(context.engine.peers.supportPeerId())
             
-            self.controller?.present(textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: self.presentationData.strings.Settings_FAQ_Intro.replacingTelegramWithNicrgram, actions: [
+            self.controller?.present(textAlertController(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, title: nil, text: self.presentationData.strings.Settings_FAQ_Intro.replacingTelegramWithNicegram, actions: [
                 TextAlertAction(type: .genericAction, title: presentationData.strings.Settings_FAQ_Button, action: { [weak self] in
                     // Nicegram, open nicegram FAQ
                     self?.openNicegramFaq()

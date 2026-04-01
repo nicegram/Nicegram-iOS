@@ -485,8 +485,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             telegramPeerImageProvider: {
                 TelegramPeerImageProviderImpl(contextProvider: contextProvider)
             },
-            telegramPeerInfoProvider: {
-                TelegramPeerInfoProviderImpl(contextProvider: contextProvider)
+            telegramPeerProvider: {
+                TelegramPeerProviderImpl(contextProvider: contextProvider)
             },
             telegramStoryPoster: {
                 TelegramStoryPosterImpl(contextProvider: contextProvider)
@@ -1759,7 +1759,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if #available(iOS 15.0, *),
                let rootController = window.rootViewController {
                 let controller = OnboardingRoot().makeController(
-                    launchOnboardingBridge: LaunchOnboardingBridgeImpl(),
                     onFinish: { [weak rootController] in
                         AppCache.wasOnboardingShown = true
                         

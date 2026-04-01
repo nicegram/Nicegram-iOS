@@ -166,6 +166,27 @@ public final class Transaction {
         self.postbox?.removeAllMessagesWithAuthor(peerId, authorId: authorId, namespace: namespace, forEachMedia: forEachMedia)
     }
     
+    // Nicegram
+    public func getMessages(
+        peerId: PeerId,
+        namespace: MessageId.Namespace,
+        tag: MessageTags? = nil,
+        customTag: MemoryBuffer? = nil,
+        threadId: Int64? = nil,
+        from fromIndex: MessageIndex,
+        includeFrom: Bool = false,
+        to toIndex: MessageIndex,
+        ignoreMessagesInTimestampRange: ClosedRange<Int32>? = nil,
+        ignoreMessageIds: Set<MessageId> = [],
+        limit: Int
+    ) -> [Message] {
+        guard let postbox else { return [] }
+        return postbox.messageHistoryTable
+            .fetch(peerId: peerId, namespace: namespace, tag: tag, customTag: customTag, threadId: threadId, from: fromIndex, includeFrom: includeFrom, to: toIndex, ignoreMessagesInTimestampRange: ignoreMessagesInTimestampRange, ignoreMessageIds: ignoreMessageIds, limit: limit)
+            .map { postbox.renderIntermediateMessage($0) }
+    }
+    //
+    
     // Nicegram SelectAllMessagesWithAuthor
     public func allMessageIdsWithAuthor(_ peerId: PeerId, authorId: PeerId, namespace: MessageId.Namespace) -> [MessageId] {
         return self.postbox?.allMessageIdsWithAuthor(peerId, authorId: authorId, namespace: namespace) ?? []
