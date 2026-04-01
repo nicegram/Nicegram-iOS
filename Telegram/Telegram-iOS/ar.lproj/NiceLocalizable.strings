@@ -253,3 +253,8 @@
 "NicegramSettings.AccountPrivacy.Alert.Body" = "قم بتطبيق إعدادات الخصوصية والأمان الموصى بها على حسابك. يمكنك تغييرها لاحقًا في الإعدادات ← الخصوصية والأمان";
 "NicegramSettings.AccountPrivacy.Alert.Apply" = "تطبيق";
 "NicegramSettings.AccountPrivacy.Alert.Cancel" = "إلغاء الأمر";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "احصل على نظرة عامة منظّمة على المعلومات العامة المتاحة على الإنترنت — الملفات الشخصية والخلفية والنشاط الاجتماعي والمزيد!";
+"whitebridge.chats.quick.action" = "عرض تقرير WhiteBridge";

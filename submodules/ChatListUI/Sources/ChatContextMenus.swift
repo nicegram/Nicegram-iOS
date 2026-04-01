@@ -2,6 +2,7 @@
 import FeatAiChatAnalysis
 import FeatChatExport
 import FeatHiddenChats
+import FeatWhitebridge
 import NGCoreUI
 import NGData
 import NGStrings
@@ -272,6 +273,44 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                     break
                                 }
                             }
+                            
+                            // Nicegram WhiteBridge
+                            let getConfigUseCase = WhitebridgeModule.shared.getWhitebridgeConfigUseCase()
+                            let isWhitebridgeEnabled = getConfigUseCase().enabled
+                            if #available(iOS 15.0, *),
+                               isWhitebridgeEnabled,
+                               !isSavedMessages,
+                               case let .user(userPeer) = peer,
+                               !userPeer.flags.contains(.isSupport),
+                               userPeer.botInfo == nil,
+                               !userPeer.isDeleted {
+                                let targetUsername = userPeer.displayedName
+                                sendWhitebridgeAnalytics(with: .show(source: .quickAction))
+                                items.append(
+                                    .action(
+                                        ContextMenuActionItem(
+                                            text: l("whitebridge.chats.quick.action"),
+                                            icon: { theme in
+                                                generateTintedImage(
+                                                    image: UIImage(bundleImageName: "profile_analysis"),
+                                                    color: theme.contextMenu.primaryColor,
+                                                    customSize: .init(width: 22, height: 22)
+                                                )
+                                            },
+                                            action: { _, f in
+                                                f(.default)
+                                                Task { @MainActor in
+                                                    WhitebridgePresenter().presentFlow(
+                                                        reportType: .userReport(userName: targetUsername),
+                                                        source: .quickAction
+                                                    )
+                                                }
+                                            }
+                                        )
+                                    )
+                                )
+                            }
+                            //
                             
                             if hasFolders {
                                 items.append(.action(ContextMenuActionItem(text: strings.ChatList_Context_AddToFolder, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Folder"), color: theme.contextMenu.primaryColor) }, action: { c, _ in

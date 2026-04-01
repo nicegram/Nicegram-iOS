@@ -252,3 +252,8 @@ Il browser selezionato deve essere installato.";
 "NicegramSettings.AccountPrivacy.Alert.Body" = "Applica le impostazioni di privacy e sicurezza consigliate al tuo account. Puoi modificarle in seguito in Impostazioni → Privacy e Sicurezza";
 "NicegramSettings.AccountPrivacy.Alert.Apply" = "Applica";
 "NicegramSettings.AccountPrivacy.Alert.Cancel" = "Cancella";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "Ottieni una panoramica strutturata delle informazioni pubbliche trovate online — profili, background, attività social e molto altro!";
+"whitebridge.chats.quick.action" = "Visualizza report WhiteBridge";

@@ -48,15 +48,16 @@ import TelegramNotices
 import SaveToCameraRoll
 import PeerInfoUI
 // Nicegram Imports
-import CoreAnalytics
 import FeatAssistant
 import FeatCalls
 import FeatGodsEye
+import FeatWhitebridge
 import struct FeatPaywall.PremiumUITgHelper
 import FeatTgAppsCenter
 import FeatTgUserNotes
 import FeatWallet
 import NGAiChatUI
+import NGAppCache
 import NGCore
 import NGCoreUI
 import NGData
@@ -349,6 +350,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
     
     weak var copyProtectionTooltipController: TooltipController?
     weak var emojiStatusSelectionController: ViewController?
+    private var didShowWitebridgeTooltip = false
     
     var forumTopicNotificationExceptions: [EngineMessageHistoryThread.NotificationException] = []
     var forumTopicNotificationExceptionsDisposable: Disposable?
@@ -5162,7 +5164,51 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             return .dismiss(consume: false)
         }), in: .current)
     }
-
+    
+    // Nicegram, Whitebridge tooltip
+    private func maybeDisplayWitebridgeTooltip() {
+        guard !self.didShowWitebridgeTooltip, !AppCache.whitebridgeProfileTooltipShown, let controller = self.controller else {
+            return
+        }
+        
+        let buttonNode = self.headerNode.witebridgeButtonNode
+        guard !buttonNode.isHidden, buttonNode.alpha > 0.0 else {
+            return
+        }
+        
+        let sourceRect = buttonNode.view.convert(buttonNode.bounds, to: controller.view)
+        guard !sourceRect.isEmpty, sourceRect.minY > 44.0 else {
+            return
+        }
+        
+        let source: WhitebridgeSource = self.isMyProfile ? .selfProfile : .userProfile
+        sendWhitebridgeAnalytics(with: .show(source: source))
+        
+        self.didShowWitebridgeTooltip = true
+        AppCache.whitebridgeProfileTooltipShown = true
+        let tooltipController = TooltipScreen(
+            account: self.context.account,
+            sharedContext: self.context.sharedContext,
+            text: .attributedString(
+                text: NSAttributedString(
+                    string: l("whitebridge.profile.hint"),
+                    font: Font.regular(14.0),
+                    textColor: presentationData.theme.list.blocksBackgroundColor
+                )
+            ),
+            style: .customBlur(presentationData.theme.list.itemAccentColor, -4.0),
+            arrowStyle: .small,
+            icon: .none,
+            location: .point(sourceRect.insetBy(dx: 0.0, dy: 4.0), .top),
+            displayDuration: .infinite,
+            shouldDismissOnTouch: { _, _ in
+                return .dismiss(consume: false)
+            }
+        )
+        controller.present(tooltipController, in: .current)
+    }
+    //
+    
     func openMediaCalendar() {
         var initialTimestamp = Int32(Date().timeIntervalSince1970)
 
@@ -5421,6 +5467,11 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         } else {
             transition.updateFrame(node: self.headerNode, frame: headerFrame)
         }
+
+        // Nicegram, Whitebridge
+        self.maybeDisplayWitebridgeTooltip()
+        //
+        
         if self.isMediaOnly {
             contentHeight += navigationHeight
         }
@@ -7313,6 +7364,25 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
                     ),
                     locale: localeWithStrings(presentationData.strings),
                     overallDarkAppearance: overallDarkAppearance
+                )
+            }
+        }
+    }
+    //
+    
+    // Nicegram Whitebridge
+    public func openWhitebridge() {
+        if #available(iOS 15.0, *) {
+            let user = (self.controllerNode.data?.peer as? TelegramUser)
+            let displayedName = user?.displayedName
+            Task { @MainActor in
+                let reportType: ReportType = self.isMyProfile
+                ? .selfReport
+                    : .userReport(userName: displayedName)
+                let source: WhitebridgeSource = self.isMyProfile ? .selfProfile : .userProfile
+                WhitebridgePresenter().presentFlow(
+                    reportType: reportType,
+                    source: source
                 )
             }
         }

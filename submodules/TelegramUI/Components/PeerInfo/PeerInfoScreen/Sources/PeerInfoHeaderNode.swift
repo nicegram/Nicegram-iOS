@@ -2,6 +2,7 @@
 import NGData
 import NGStrings
 import FeatGodsEye
+import FeatWhitebridge
 //
 import Foundation
 import UIKit
@@ -168,7 +169,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
     let editingEdgeEffectView: EdgeEffectView
     
     // Nicegram NCG-7704 God's eye
+    let rightActionButtonsNode: ASDisplayNode
     let godsEyeButtonNode: ASButtonNode
+    let witebridgeButtonNode: ASButtonNode
     //
     
     var musicBackground: UIView?
@@ -314,10 +317,19 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.animationRenderer = context.animationRenderer
         
         // Nicegram NCG-7704 God's eye
+        self.rightActionButtonsNode = ASDisplayNode()
+        self.rightActionButtonsNode.clipsToBounds = false
         self.godsEyeButtonNode = ASButtonNode()
         self.godsEyeButtonNode.displaysAsynchronously = false
         self.godsEyeButtonNode.isHidden = true
         self.godsEyeButtonNode.accessibilityIdentifier = "button_gods_eye"
+        //
+        
+        // Nicegram Witebridge
+        self.witebridgeButtonNode = ASButtonNode()
+        self.witebridgeButtonNode.displaysAsynchronously = false
+        self.witebridgeButtonNode.isHidden = true
+        self.witebridgeButtonNode.accessibilityIdentifier = "button_witebridge"
         //
         super.init()
                 
@@ -356,22 +368,31 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         self.addSubnode(self.searchBarContainer)
         
         // Nicegram NCG-7704 God's eye
-        self.addSubnode(self.godsEyeButtonNode)
+        self.addSubnode(self.rightActionButtonsNode)
+        self.rightActionButtonsNode.addSubnode(self.godsEyeButtonNode)
+        self.rightActionButtonsNode.addSubnode(self.witebridgeButtonNode)
         self.godsEyeButtonNode.addTarget(self, action: #selector(self.godsEyePressed), forControlEvents: .touchUpInside)
+        self.witebridgeButtonNode.addTarget(self, action: #selector(self.whitebridgePressed), forControlEvents: .touchUpInside)
         
         let godsEyeConfigUseCase = GodsEyeModule.shared.getGodsEyeConfigUseCase()
         let godsEyeConfig = godsEyeConfigUseCase()
-                
+        let whitebridgeConfigUseCase = WhitebridgeModule.shared.getWhitebridgeConfigUseCase()
+        let whitebridgeConfig = whitebridgeConfigUseCase()
+        
         if (isMyProfile ||
             controller.peerId.namespace == Namespaces.Peer.CloudUser) &&
             controller.peerId.toInt64() != 777000 &&
             !isBot &&
-            !isSettings &&
-            godsEyeConfig.enabled {
-            self.godsEyeButtonNode.isHidden = false
+            !isSettings {
+            if godsEyeConfig.enabled {
+                self.godsEyeButtonNode.isHidden = false
+            }
+            if whitebridgeConfig.enabled {
+                self.witebridgeButtonNode.isHidden = false
+            }
         }
         //
-
+        
         self.avatarListNode.avatarContainerNode.tapped = { [weak self] in
             self?.initiateAvatarExpansion(gallery: false, first: false)
         }
@@ -2763,31 +2784,54 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         // Nicegram NCG-7704 God's eye
         let maxFadeDistance: CGFloat = 65
-        let font = UIFont.mainFont(ofSize: 13, weight: .semibold)
+        let sideInset: CGFloat = 15
+        let interButtonSpacing: CGFloat = 8
+        let font = UIFont.mainFont(ofSize: 11, weight: .regular)
+        let horizontalContentInset: CGFloat = 8
         var godsEyeButtonSize = CGSize(width: 48, height: 48)
-        var title = ""
-        var godsEyeYInset: CGFloat = isMyProfile ? 125 : 205
+        let godsEyeTitle = l("GodsEye.Title")
+        var rightButtonsYInset: CGFloat = isMyProfile ? 125 : 205
+        var witebridgeButtonSize = CGSize(width: 48, height: 48)
+        let witebridgeTitle = l("whitebridge.profile.button")
         
         godsEyeButtonNode.contentHorizontalAlignment = .middle
         godsEyeButtonNode.contentEdgeInsets = .zero
         godsEyeButtonNode.contentSpacing = 0
+        godsEyeButtonNode.laysOutHorizontally = false
+        
+        witebridgeButtonNode.contentHorizontalAlignment = .middle
+        witebridgeButtonNode.contentEdgeInsets = .zero
+        witebridgeButtonNode.contentSpacing = 0
+        witebridgeButtonNode.laysOutHorizontally = false
 
         if self.isAvatarExpanded {
-            title = l("GodsEye.Title")
-            let titleRect = title.boundingRect(
+            let godsEyeTitleRect = godsEyeTitle.boundingRect(
                 with: CGSize(width: 120, height: CGFloat.greatestFiniteMagnitude),
                 options: .usesLineFragmentOrigin,
                 attributes: [.font: font],
                 context: nil
             )
-            godsEyeButtonNode.contentEdgeInsets = .right(12)
             godsEyeButtonNode.contentSpacing = 4
-            godsEyeButtonNode.contentHorizontalAlignment = .right
-            godsEyeButtonSize = CGSize(width: titleRect.width + (36 + 14), height: 48)
-            godsEyeYInset = isMyProfile ? 62 : 138
+            godsEyeButtonSize = CGSize(width: max(48, ceil(godsEyeTitleRect.width) + horizontalContentInset * 2), height: 48)
+            rightButtonsYInset = isMyProfile ? 62 : 138
+            
+            witebridgeButtonNode.contentSpacing = 4
+            let witebridgeTitleRect = witebridgeTitle.boundingRect(
+                with: CGSize(width: 120, height: CGFloat.greatestFiniteMagnitude),
+                options: .usesLineFragmentOrigin,
+                attributes: [.font: font],
+                context: nil
+            )
+            witebridgeButtonSize = CGSize(width: max(48, ceil(witebridgeTitleRect.width) + horizontalContentInset * 2), height: 48)
+        } else {
+            godsEyeButtonNode.contentSpacing = 0
+            godsEyeButtonSize = CGSize(width: 48, height: 48)
+            
+            witebridgeButtonNode.contentSpacing = 0
+            witebridgeButtonSize = CGSize(width: 48, height: 48)
         }
         
-        godsEyeYInset += bottomInset
+        rightButtonsYInset += bottomInset
         
         let godsEyeBackgroundImage = generateFilledRoundedRectImage(
             size: godsEyeButtonSize,
@@ -2797,19 +2841,62 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         
         godsEyeButtonNode.setBackgroundImage(godsEyeBackgroundImage, for: .normal)
         godsEyeButtonNode.setImage(UIImage(bundleImageName: "gods_eye"), for: .normal)
-        godsEyeButtonNode.setTitle(title, with: font, with: presentationData.theme.list.itemPrimaryTextColor, for: .normal)
-
-        let godsEyeButtonFrame = CGRect(
-            origin: CGPoint(x: width - (godsEyeButtonSize.width + 15), y: apparentHeight - godsEyeYInset),
-            size: godsEyeButtonSize
+        godsEyeButtonNode.setTitle(self.isAvatarExpanded ? godsEyeTitle : "", with: font, with: presentationData.theme.list.itemAccentColor, for: .normal)
+        
+        let witebridgeBackgroundImage = generateFilledRoundedRectImage(
+            size: witebridgeButtonSize,
+            cornerRadius: 12,
+            color: presentationData.theme.list.itemBlocksBackgroundColor
+        )
+        
+        witebridgeButtonNode.setBackgroundImage(witebridgeBackgroundImage, for: .normal)
+        witebridgeButtonNode.setImage(UIImage(bundleImageName: "profile_analysis"), for: .normal)
+        witebridgeButtonNode.setTitle(self.isAvatarExpanded ? witebridgeTitle : "", with: font, with: presentationData.theme.list.itemAccentColor, for: .normal)
+        
+        let isGodsEyeVisible = !self.godsEyeButtonNode.isHidden
+        let isWitebridgeVisible = !self.witebridgeButtonNode.isHidden
+        
+        var rightButtons: [(node: ASButtonNode, size: CGSize)] = []
+        if isGodsEyeVisible {
+            rightButtons.append((self.godsEyeButtonNode, godsEyeButtonSize))
+        }
+        if isWitebridgeVisible {
+            rightButtons.append((self.witebridgeButtonNode, witebridgeButtonSize))
+        }
+        
+        let rightButtonsHeight: CGFloat = rightButtons.map(\.size.height).max() ?? 0.0
+        let rightButtonsWidth: CGFloat = rightButtons.reduce(0.0, { partial, item in
+            partial + item.size.width
+        }) + max(0.0, CGFloat(max(0, rightButtons.count - 1))) * interButtonSpacing
+        
+        let rightActionButtonsFrame = CGRect(
+            origin: CGPoint(x: width - sideInset - rightButtonsWidth, y: apparentHeight - rightButtonsYInset),
+            size: CGSize(width: rightButtonsWidth, height: rightButtonsHeight)
         )
         
         if additive {
-            transition.updateFrameAdditive(node: godsEyeButtonNode, frame: godsEyeButtonFrame)
+            transition.updateFrameAdditive(node: self.rightActionButtonsNode, frame: rightActionButtonsFrame)
         } else {
-            transition.updateFrame(node: godsEyeButtonNode, frame: godsEyeButtonFrame)
+            transition.updateFrame(node: self.rightActionButtonsNode, frame: rightActionButtonsFrame)
         }
+        
+        var nextX: CGFloat = 0.0
+        for (index, item) in rightButtons.enumerated() {
+            let itemFrame = CGRect(origin: CGPoint(x: nextX, y: 0.0), size: item.size)
+            if additive {
+                transition.updateFrameAdditive(node: item.node, frame: itemFrame)
+            } else {
+                transition.updateFrame(node: item.node, frame: itemFrame)
+            }
+            nextX += item.size.width
+            if index != rightButtons.count - 1 {
+                nextX += interButtonSpacing
+            }
+        }
+        
+        transition.updateAlpha(node: witebridgeButtonNode, alpha: max(0, (maxFadeDistance - contentOffset) / maxFadeDistance))
         transition.updateAlpha(node: godsEyeButtonNode, alpha: max(0, (maxFadeDistance - contentOffset) / maxFadeDistance))
+        transition.updateAlpha(node: self.rightActionButtonsNode, alpha: rightButtons.isEmpty ? 0.0 : 1.0)
         //
         
         return resolvedHeight
@@ -2956,10 +3043,18 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         let maskAnchorPoint = CGPoint(x: 0.5, y: self.isAvatarExpanded ? 0.37 : 0.5)
         transition.updateAnchorPoint(layer: self.avatarListNode.maskNode.layer, anchorPoint: maskAnchorPoint)
     }
+    
     // Nicegram NCG-7704 God's eye
     @objc func godsEyePressed() {
         self.controller?.openGodsEye()
     }
     //
+    
+    // Nicegram, Whitebridge anlysis
+    @objc func whitebridgePressed() {
+        self.controller?.openWhitebridge()
+    }
+    //
+
 }
 

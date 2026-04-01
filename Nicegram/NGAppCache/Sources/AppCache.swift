@@ -20,6 +20,12 @@ public final class AppCache {
     @UserDefaultsBacked(key: "wasOnboardingShown", storage: .standard, defaultValue: false)
     public static var wasOnboardingShown: Bool
 
+    @UserDefaultsBacked(key: "whitebridgeProfileTooltipShown", storage: .standard, defaultValue: false)
+    public static var whitebridgeProfileTooltipShown: Bool
+
+    @UserDefaultsBacked(key: "whitebridgeChatBannerDismissed", storage: .standard, defaultValue: false)
+    public static var whitebridgeChatBannerDismissed: Bool
+
     public static var wasLauchedBefore: Bool {
         get {
             return _wasLauchedBefore

@@ -251,3 +251,8 @@
 "NicegramSettings.AccountPrivacy.Alert.Body" = "将推荐的隐私和安全设置应用到您的账户。您可以稍后在 设置 → 隐私与安全 中更改";
 "NicegramSettings.AccountPrivacy.Alert.Apply" = "应用";
 "NicegramSettings.AccountPrivacy.Alert.Cancel" = "取消";
+
+/*WhiteBridge*/
+"whitebridge.profile.button" = "WhiteBridge";
+"whitebridge.profile.hint" = "获取结构化概览：来自网络的公开信息——个人资料、背景、社交动态等一应俱全！";
+"whitebridge.chats.quick.action" = "查看 WhiteBridge 报告";
