@@ -149,6 +149,8 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
     var hasSeparateCommentsButton = false
     
     var addedPriceInfo = false
+    var addedPollMedia = false
+    var addedQuizAnswer = false
     
     outer: for (message, itemAttributes) in item.content {
         for attribute in message.attributes {
@@ -301,7 +303,27 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                 result.removeAll()
                 result.append((message, ChatMessageActionBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 return (result, false, true)
-            } else if let _ = media as? TelegramMediaPoll {
+            } else if let poll = media as? TelegramMediaPoll {
+                if item.controllerInteraction.currentPollMessageWithTooltip == item.message.id, let _ = poll.results.solution {
+                    result.append((message, ChatMessageQuizAnswerBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .media, neighborSpacing: .default)))
+                    addedQuizAnswer = true
+                }
+                
+                if let attachedMedia = poll.attachedMedia {
+                    if let _ = attachedMedia as? TelegramMediaImage {
+                        result.append((message, ChatMessageMediaBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .media, neighborSpacing: .default)))
+                    } else if let file = attachedMedia as? TelegramMediaFile {
+                        let isVideo = file.isVideo || (file.isAnimated && file.dimensions != nil)
+                        if isVideo {
+                            result.append((message, ChatMessageMediaBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .media, neighborSpacing: .default)))
+                        } else {
+                            result.append((message, ChatMessageFileBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
+                        }
+                    } else if let _ =  attachedMedia as? TelegramMediaMap {
+                        result.append((message, ChatMessageMapBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .media, neighborSpacing: .default)))
+                    }
+                    addedPollMedia = true
+                }
                 result.append((message, ChatMessagePollBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: .default)))
                 needReactions = false
             } else if let _ = media as? TelegramMediaTodo {
@@ -336,10 +358,19 @@ private func contentNodeMessagesAndClassesForItem(_ item: ChatMessageItem) -> ([
                         isMediaInverted = updatingMedia.invertMediaAttribute != nil
                     } else if let _ = message.attributes.first(where: { $0 is InvertMediaMessageAttribute }) {
                         isMediaInverted = true
+                    } else if let _ = message.media.first(where: { $0 is TelegramMediaPoll }) {
+                        isMediaInverted = true
                     }
                     
                     if isMediaInverted {
-                        result.insert((message, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: isFile ? .condensed : .default)), at: addedPriceInfo ? 1 : 0)
+                        var targetIndex = 0
+                        if addedPriceInfo || addedPollMedia {
+                            targetIndex += 1
+                        }
+                        if addedQuizAnswer {
+                            targetIndex += 1
+                        }
+                        result.insert((message, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: isFile ? .condensed : .default)), at: targetIndex)
                     } else {
                         result.append((message, ChatMessageTextBubbleContentNode.self, itemAttributes, BubbleItemAttributes(isAttachment: false, neighborType: .text, neighborSpacing: isFile ? .condensed : .default)))
                         needReactions = false
@@ -725,7 +756,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     
     private struct HighlightedState: Equatable {
         var quote: ChatInterfaceHighlightedState.Quote?
-        var todoTaskId: Int32?
+        var subject: EngineMessageReplyInnerSubject?
     }
     private var highlightedState: HighlightedState?
     
@@ -741,6 +772,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
     private var didChangeFromPendingToSent: Bool = false
     
     private var authorNameColor: UIColor?
+    private var authorRank: CachedChannelAdminRank?
     
     private var tapRecognizer: TapLongTapOrDoubleTapGestureRecognizer?
     
@@ -809,6 +841,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 return .none
             }
             if strongSelf.selectionNode != nil {
+                return .none
+            }
+            if let item = strongSelf.item, item.controllerInteraction.focusedPollAddOptionMessageId != nil {
                 return .none
             }
             if let action = strongSelf.gestureRecognized(gesture: .tap, location: location, recognizer: nil) {
@@ -2054,7 +2089,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         var replyMessage: Message?
         var replyForward: QuotedReplyMessageAttribute?
         var replyQuote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
-        var replyTodoItemId: Int32?
+        var replyInnerSubject: EngineMessageReplyInnerSubject?
         var replyStory: StoryId?
         var replyMarkup: ReplyMarkupMessageAttribute?
         var authorNameColor: UIColor?
@@ -2072,7 +2107,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     replyMessage = firstMessage.associatedMessages[attribute.messageId]
                 }
                 replyQuote = attribute.quote.flatMap { ($0, attribute.isQuote) }
-                replyTodoItemId = attribute.todoItemId
+                replyInnerSubject = attribute.innerSubject
             } else if let attribute = attribute as? QuotedReplyMessageAttribute {
                 replyForward = attribute
             } else if let attribute = attribute as? ReplyStoryAttribute {
@@ -2236,7 +2271,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                             switch selection {
                                 case .none:
                                     break
-                                case let .selectable(selected):
+                                case let .selectable(selected, _):
                                     itemSelection = selected
                             }
                             break
@@ -2883,7 +2918,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     message: replyMessage,
                     replyForward: replyForward,
                     quote: replyQuote,
-                    todoItemId: replyTodoItemId,
+                    innerSubject: replyInnerSubject,
                     story: replyStory,
                     isSummarized: isSummarized,
                     parentMessage: item.message,
@@ -3699,7 +3734,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 disablesComments: disablesComments,
                 suggestedPostInfoNodeLayout: suggestedPostInfoNodeLayout,
                 alignment: alignment,
-                isSidePanelOpen: isSidePanelOpen
+                isSidePanelOpen: isSidePanelOpen,
+                authorRank: authorRank
             )
         })
     }
@@ -3766,7 +3802,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         disablesComments: Bool,
         suggestedPostInfoNodeLayout: (CGSize, () -> ChatMessageSuggestedPostInfoNode)?,
         alignment: ChatMessageBubbleContentAlignment,
-        isSidePanelOpen: Bool
+        isSidePanelOpen: Bool,
+        authorRank: CachedChannelAdminRank?
     ) -> Void {
         guard let strongSelf = selfReference.value else {
             return
@@ -3802,6 +3839,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         strongSelf.disablesComments = disablesComments
         
         strongSelf.authorNameColor = authorNameColor
+        strongSelf.authorRank = authorRank
         
         strongSelf.replyRecognizer?.allowBothDirections = false//!item.context.sharedContext.immediateExperimentalUISettings.unidirectionalSwipeToReply
         strongSelf.view.disablesInteractiveTransitionGestureRecognizer = false//!item.context.sharedContext.immediateExperimentalUISettings.unidirectionalSwipeToReply
@@ -5768,7 +5806,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                     if let replyInfoNode = self.replyInfoNode {
                                         progress = replyInfoNode.makeProgress()
                                     }
-                                    item.controllerInteraction.navigateToMessage(item.message.id, attribute.messageId, NavigateToMessageParams(timestamp: nil, quote: attribute.isQuote ? attribute.quote.flatMap { quote in NavigateToMessageParams.Quote(string: quote.text, offset: quote.offset) } : nil, todoTaskId: attribute.todoItemId, progress: progress))
+                                    item.controllerInteraction.navigateToMessage(item.message.id, attribute.messageId, NavigateToMessageParams(timestamp: nil, quote: attribute.isQuote ? attribute.quote.flatMap { quote in NavigateToMessageParams.Quote(string: quote.text, offset: quote.offset) } : nil, subject: attribute.innerSubject, progress: progress))
                                 }, contextMenuOnLongPress: true))
                             } else if let attribute = attribute as? ReplyStoryAttribute {
                                 return .action(InternalBubbleTapAction.Action({
@@ -6596,7 +6634,7 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         if let highlightedStateValue = item.controllerInteraction.highlightedState {
             for (message, _) in item.content {
                 if highlightedStateValue.messageStableId == message.stableId {
-                    highlightedState = HighlightedState(quote: highlightedStateValue.quote, todoTaskId: highlightedStateValue.todoTaskId)
+                    highlightedState = HighlightedState(quote: highlightedStateValue.quote, subject: highlightedStateValue.subject)
                     break
                 }
             }
@@ -6610,6 +6648,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                     contentNode.updateQuoteTextHighlightState(text: nil, offset: nil, color: .clear, animated: true)
                 } else if let contentNode = contentNode as? ChatMessageTodoBubbleContentNode {
                     contentNode.updateTaskHighlightState(id: nil, color: .clear, animated: true)
+                } else if let contentNode = contentNode as? ChatMessagePollBubbleContentNode {
+                    contentNode.updateOptionHighlightState(id: nil, color: .clear, animated: true)
                 }
             }
             
@@ -6693,43 +6733,56 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                                     }
                                 }
                             })
-                        } else if highlightedState?.todoTaskId != nil {
+                        } else if let replySubject = highlightedState?.subject {
                             Queue.mainQueue().after(0.3, { [weak self] in
                                 guard let self, let _ = self.item, let backgroundHighlightNode = self.backgroundHighlightNode else {
                                     return
                                 }
+                                let transition: ContainedViewLayoutTransition = .animated(duration: 0.4, curve: .spring)
                                 
-                                if let highlightedState = self.highlightedState, let todoTaskId = highlightedState.todoTaskId {
-                                    let transition: ContainedViewLayoutTransition = .animated(duration: 0.4, curve: .spring)
-                                    
-                                    var taskFrame: CGRect?
-                                    for contentNode in self.contentNodes {
-                                        if let contentNode = contentNode as? ChatMessageTodoBubbleContentNode {
-                                            contentNode.updateTaskHighlightState(id: todoTaskId, color: highlightColor, animated: false)
-                                            var sourceFrame = backgroundHighlightNode.view.convert(backgroundHighlightNode.bounds, to: contentNode.view)
-                                            if item.message.effectivelyIncoming(item.context.account.peerId) {
-                                                sourceFrame.origin.x += 6.0
-                                                sourceFrame.size.width -= 6.0
-                                            } else {
-                                                sourceFrame.size.width -= 6.0
-                                            }
-                                            
-                                            if let localFrame = contentNode.animateTaskItemHighlightIn(id: todoTaskId, sourceFrame: sourceFrame, transition: transition) {
-                                                taskFrame = contentNode.view.convert(localFrame, to: backgroundHighlightNode.view.superview).insetBy(dx: -3.0, dy: 0.0)
-                                            }
-                                            break
+                                var itemFrame: CGRect?
+                                
+                                switch replySubject {
+                                case let .todoItem(todoItemId):
+                                    if let contentNode = self.contentNodes.first(where: { $0 is ChatMessageTodoBubbleContentNode }) as? ChatMessageTodoBubbleContentNode {
+                                        contentNode.updateTaskHighlightState(id: todoItemId, color: highlightColor, animated: false)
+                                        var sourceFrame = backgroundHighlightNode.view.convert(backgroundHighlightNode.bounds, to: contentNode.view)
+                                        if item.message.effectivelyIncoming(item.context.account.peerId) {
+                                            sourceFrame.origin.x += 6.0
+                                            sourceFrame.size.width -= 6.0
+                                        } else {
+                                            sourceFrame.size.width -= 6.0
+                                        }
+                                        
+                                        if let localFrame = contentNode.animateTaskItemHighlightIn(id: todoItemId, sourceFrame: sourceFrame, transition: transition) {
+                                            itemFrame = contentNode.view.convert(localFrame, to: backgroundHighlightNode.view.superview).insetBy(dx: -3.0, dy: 0.0)
                                         }
                                     }
-                                    
-                                    if let taskFrame {
-                                        self.backgroundHighlightNode = nil
+                                case let .pollOption(pollOption):
+                                    if let contentNode = self.contentNodes.first(where: { $0 is ChatMessagePollBubbleContentNode }) as? ChatMessagePollBubbleContentNode {
+                                        contentNode.updateOptionHighlightState(id: pollOption, color: highlightColor, animated: false)
+                                        var sourceFrame = backgroundHighlightNode.view.convert(backgroundHighlightNode.bounds, to: contentNode.view)
+                                        if item.message.effectivelyIncoming(item.context.account.peerId) {
+                                            sourceFrame.origin.x += 6.0
+                                            sourceFrame.size.width -= 6.0
+                                        } else {
+                                            sourceFrame.size.width -= 6.0
+                                        }
                                         
-                                        backgroundHighlightNode.updateLayout(size: taskFrame.size, transition: transition)
-                                        transition.updateFrame(node: backgroundHighlightNode, frame: taskFrame)
-                                        backgroundHighlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.1, delay: 0.05, removeOnCompletion: false, completion: { [weak backgroundHighlightNode] _ in
-                                            backgroundHighlightNode?.removeFromSupernode()
-                                        })
+                                        if let localFrame = contentNode.animateOptionItemHighlightIn(id: pollOption, sourceFrame: sourceFrame, transition: transition) {
+                                            itemFrame = contentNode.view.convert(localFrame, to: backgroundHighlightNode.view.superview).insetBy(dx: -3.0, dy: 0.0)
+                                        }
                                     }
+                                }
+
+                                if let itemFrame {
+                                    self.backgroundHighlightNode = nil
+                                    
+                                    backgroundHighlightNode.updateLayout(size: itemFrame.size, transition: transition)
+                                    transition.updateFrame(node: backgroundHighlightNode, frame: itemFrame)
+                                    backgroundHighlightNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.1, delay: 0.05, removeOnCompletion: false, completion: { [weak backgroundHighlightNode] _ in
+                                        backgroundHighlightNode?.removeFromSupernode()
+                                    })
                                 }
                             })
                         }
@@ -6872,30 +6925,21 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         item.controllerInteraction.openGroupBoostInfo(peer.id, boostCount)
     }
     @objc private func rankButtonPressed() {
-        guard let item = self.item, let peer = item.message.author else {
+        guard let item = self.item, let peer = item.message.author, let authorRank = self.authorRank else {
             return
         }
-        
-        var role: ChatRankInfoScreenRole = .member
         var rank: String = ""
-        if case let .message(message, _, _, attributes, _) = item.content {
-            switch attributes.rank {
-            case let .creator(rankValue):
-                role = .creator
-                rank = rankValue ?? ""
-            case let .admin(rankValue):
-                role = .admin
-                rank = rankValue ?? ""
-            case let .member(rankValue):
-                role = .member
-                rank = rankValue ?? ""
-            default:
-                break
-            }
-            
-            if rank.isEmpty, let attribute = message.attributes.first(where: { $0 is ParticipantRankMessageAttribute }) as? ParticipantRankMessageAttribute, !attribute.rank.isEmpty {
-                rank = attribute.rank
-            }
+        var role: ChatRankInfoScreenRole = .member
+        switch authorRank {
+        case let .creator(rankValue):
+            role = .creator
+            rank = rankValue ?? ""
+        case let .admin(rankValue):
+            role = .admin
+            rank = rankValue ?? ""
+        case let .member(rankValue):
+            role = .member
+            rank = rankValue ?? ""
         }
         item.controllerInteraction.openRankInfo(EnginePeer(peer), role, rank)
     }
@@ -7293,12 +7337,15 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         return nil
     }
     
-    public func getTodoTaskRect(id: Int32) -> CGRect? {
-        for contentNode in self.contentNodes {
-            if let contentNode = contentNode as? ChatMessageTodoBubbleContentNode {
-                if let result = contentNode.getTaskRect(id: id) {
-                    return contentNode.view.convert(result, to: self.view)
-                }
+    public func getInnerReplySubjectRect(innerSubject: EngineMessageReplyInnerSubject) -> CGRect? {
+        switch innerSubject {
+        case let .todoItem(todoItemId):
+            if let contentNode = self.contentNodes.first(where: { $0 is ChatMessageTodoBubbleContentNode }) as? ChatMessageTodoBubbleContentNode, let result = contentNode.getTaskRect(id: todoItemId) {
+                return contentNode.view.convert(result, to: self.view)
+            }
+        case let .pollOption(pollOption):
+            if let contentNode = self.contentNodes.first(where: { $0 is ChatMessagePollBubbleContentNode }) as? ChatMessagePollBubbleContentNode, let result = contentNode.getOptionRect(id: pollOption) {
+                return contentNode.view.convert(result, to: self.view)
             }
         }
         return nil

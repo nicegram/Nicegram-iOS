@@ -431,6 +431,7 @@ final class PeerInfoScreenData {
     let webAppPermissions: WebAppPermissionsState?
     let savedMusicContext: ProfileSavedMusicContext?
     let savedMusicState: ProfileSavedMusicContext.State?
+    let managedByBot: EnginePeer?
     
     // Nicegram TgUserNotes
     var note: String
@@ -494,6 +495,7 @@ final class PeerInfoScreenData {
         webAppPermissions: WebAppPermissionsState?,
         savedMusicContext: ProfileSavedMusicContext?,
         savedMusicState: ProfileSavedMusicContext.State?,
+        managedByBot: EnginePeer?,
         // Nicegram TgUserNotes
         note: String = "",
         // Nicegram NCG-7303 Spy on friends
@@ -542,6 +544,7 @@ final class PeerInfoScreenData {
         self.webAppPermissions = webAppPermissions
         self.savedMusicContext = savedMusicContext
         self.savedMusicState = savedMusicState
+        self.managedByBot = managedByBot
         // Nicegram TgUserNotes
         self.note = note
         // Nicegram NCG-7303 Spy on friends
@@ -624,7 +627,8 @@ private func peerInfoAvailableMediaPanes(context: AccountContext, peerId: PeerId
             (.music, .music),
             (.voiceOrInstantVideo, .voice),
             (.webPage, .links),
-            (.gif, .gifs)
+            (.gif, .gifs),
+            (.polls, .polls)
         ]
     }
     enum PaneState {
@@ -907,7 +911,6 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
     let botsKey = ValueBoxKey(length: 8)
     botsKey.setInt64(0, value: 0)
     
-    //let iconLoaded = Atomic<[EnginePeer.Id: Bool]>(value: [:])
     let bots = context.engine.data.subscribe(TelegramEngine.EngineData.Item.ItemCache.Item(collectionId: Namespaces.CachedItemCollection.attachMenuBots, id: botsKey))
     |> mapToSignal { entry -> Signal<[AttachMenuBot], NoError> in
         let bots: [AttachMenuBots.Bot] = entry?.get(AttachMenuBots.self)?.bots ?? []
@@ -1069,7 +1072,8 @@ func peerInfoScreenSettingsData(context: AccountContext, peerId: EnginePeer.Id, 
             premiumGiftOptions: [],
             webAppPermissions: nil,
             savedMusicContext: nil,
-            savedMusicState: nil
+            savedMusicState: nil,
+            managedByBot: nil
         )
     }
 }
@@ -1144,7 +1148,8 @@ func peerInfoScreenData(
                 premiumGiftOptions: [],
                 webAppPermissions: nil,
                 savedMusicContext: nil,
-                savedMusicState: nil
+                savedMusicState: nil,
+                managedByBot: nil
             ))
         case let .user(userPeerId, secretChatId, kind):
             let groupsInCommon: GroupsInCommonContext?
@@ -1601,6 +1606,13 @@ func peerInfoScreenData(
                 
                 let peer = peerView.peers[userPeerId]
                 
+                var managedByBot: EnginePeer?
+                if let cachedData = peerView.cachedData as? CachedUserData, let botManagerId = cachedData.botManagerId {
+                    if let peer = peerView.peers[botManagerId] {
+                        managedByBot = EnginePeer(peer)
+                    }
+                }
+                
                 var globalSettings: TelegramGlobalSettings?
                 if let privacySettings {
                     globalSettings = TelegramGlobalSettings(
@@ -1670,6 +1682,7 @@ func peerInfoScreenData(
                     webAppPermissions: webAppPermissions,
                     savedMusicContext: savedMusicContext,
                     savedMusicState: savedMusicState,
+                    managedByBot: managedByBot,
                     // Nicegram NCG-7303 Spy on friends
                     spyOnFriends: spyOnFriends
                     //
@@ -1917,7 +1930,8 @@ func peerInfoScreenData(
                     premiumGiftOptions: [],
                     webAppPermissions: nil,
                     savedMusicContext: nil,
-                    savedMusicState: nil
+                    savedMusicState: nil,
+                    managedByBot: nil
                 )
             }
         case let .group(groupId):
@@ -2253,7 +2267,8 @@ func peerInfoScreenData(
                     premiumGiftOptions: [],
                     webAppPermissions: nil,
                     savedMusicContext: nil,
-                    savedMusicState: nil
+                    savedMusicState: nil,
+                    managedByBot: nil
                 ))
             }
         }

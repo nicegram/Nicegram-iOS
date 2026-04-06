@@ -143,7 +143,7 @@ swift_library(
         "//submodules/AnimatedStickerNode:AnimatedStickerNode",
         "//submodules/TelegramAnimatedStickerNode:TelegramAnimatedStickerNode",
         "//submodules/ActionSheetPeerItem:ActionSheetPeerItem",
-        "//submodules/ComposePollUI:ComposePollUI",
+        "//submodules/TelegramUI/Components/ComposePollScreen",
         "//submodules/AlertUI:AlertUI",
         "//submodules/PresentationDataUtils:PresentationDataUtils",
         "//submodules/TouchDownGesture:TouchDownGesture",
@@ -552,6 +552,8 @@ swift_library(
         "//submodules/TelegramUI/Components/PeerInfo/PeerCopyProtectionInfoScreen",
         "//submodules/TelegramUI/Components/Chat/ChatRankInfoScreen",
         "//submodules/TelegramUI/Components/RankChatPreviewItem",
+        "//submodules/TelegramUI/Components/TextProcessingScreen",
+        "//submodules/TelegramUI/Components/CreateBotScreen",
     ] + select({
         "@build_bazel_rules_apple//apple:ios_arm64": appcenter_targets,
         "//build-system:ios_sim_arm64": [],

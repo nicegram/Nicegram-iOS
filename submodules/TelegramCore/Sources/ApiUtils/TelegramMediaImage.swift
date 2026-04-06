@@ -34,7 +34,7 @@ func telegramMediaImageRepresentationsFromApiSizes(datacenterId: Int32, photoId:
     return (immediateThumbnailData, representations)
 }
 
-func telegramMediaImageFromApiPhoto(_ photo: Api.Photo) -> TelegramMediaImage? {
+func telegramMediaImageFromApiPhoto(_ photo: Api.Photo, video: Api.Document? = nil) -> TelegramMediaImage? {
     switch photo {
         case let .photo(photoData):
             let (flags, id, accessHash, fileReference, sizes, videoSizes, dcId) = (photoData.flags, photoData.id, photoData.accessHash, photoData.fileReference, photoData.sizes, photoData.videoSizes, photoData.dcId)
@@ -43,6 +43,9 @@ func telegramMediaImageFromApiPhoto(_ photo: Api.Photo) -> TelegramMediaImage? {
             let hasStickers = (flags & (1 << 0)) != 0
             if hasStickers {
                 imageFlags.insert(.hasStickers)
+            }
+            if video != nil {
+                imageFlags.insert(.isLivePhoto)
             }
             
             var videoRepresentations: [TelegramMediaImage.VideoRepresentation] = []
@@ -67,8 +70,7 @@ func telegramMediaImageFromApiPhoto(_ photo: Api.Photo) -> TelegramMediaImage? {
                     }
                 }
             }
-            
-            return TelegramMediaImage(imageId: MediaId(namespace: Namespaces.Media.CloudImage, id: id), representations: representations, videoRepresentations: videoRepresentations, immediateThumbnailData: immediateThumbnailData, emojiMarkup: emojiMarkup, reference: .cloud(imageId: id, accessHash: accessHash, fileReference: fileReference.makeData()), partialReference: nil, flags: imageFlags)
+            return TelegramMediaImage(imageId: MediaId(namespace: Namespaces.Media.CloudImage, id: id), representations: representations, videoRepresentations: videoRepresentations, immediateThumbnailData: immediateThumbnailData, emojiMarkup: emojiMarkup, reference: .cloud(imageId: id, accessHash: accessHash, fileReference: fileReference.makeData()), partialReference: nil, flags: imageFlags, video: video.flatMap { telegramMediaFileFromApiDocument($0, altDocuments: nil) })
         case .photoEmpty:
             return nil
     }

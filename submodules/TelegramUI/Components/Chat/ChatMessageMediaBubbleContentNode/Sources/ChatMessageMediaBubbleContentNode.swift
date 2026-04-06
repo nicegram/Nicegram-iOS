@@ -59,7 +59,15 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
             }
             
             if !item.controllerInteraction.isOpeningMedia {
-                let params = OpenMessageParams(mode: openChatMessageMode, mediaIndex: self.mediaIndex, progress: self.itemNode?.makeProgress())
+                let mediaSubject: GalleryMediaSubject?
+                if self.media is TelegramMediaPaidContent {
+                    mediaSubject = .paidMediaIndex(self.mediaIndex ?? 0)
+                } else if let _ = item.message.media.first(where: { $0 is TelegramMediaPoll }) {
+                    mediaSubject = .pollDescription
+                } else {
+                    mediaSubject = nil
+                }
+                let params = OpenMessageParams(mode: openChatMessageMode, mediaSubject: mediaSubject, progress: self.itemNode?.makeProgress())
                 let _ = item.controllerInteraction.openMessage(item.message, params)
             }
         }
@@ -114,6 +122,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
             var automaticDownload: InteractiveMediaNodeAutodownloadMode = .none
             var automaticPlayback: Bool = false
             var contentMode: InteractiveMediaNodeContentMode = .aspectFit
+            var isLivePhoto = false
             
             if let updatingMedia = item.attributes.updatingMedia, case let .update(mediaReference) = updatingMedia.media {
                 selectedMedia = mediaReference.media
@@ -124,6 +133,11 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                         selectedMedia = telegramImage
                         if shouldDownloadMediaAutomatically(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, authorPeerId: item.message.author?.id, contactsPeerIds: item.associatedData.contactsPeerIds, media: telegramImage) {
                             automaticDownload = .full
+                        }
+                        
+                        if let _ = telegramImage.video {
+                            automaticPlayback = true
+                            isLivePhoto = true
                         }
                     } else if let telegramStory = media as? TelegramMediaStory {
                         selectedMedia = telegramStory
@@ -200,6 +214,35 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                         selectedMedia = webFile
                         if item.presentationData.isPreview {
                             automaticDownload = .full
+                        }
+                    } else if let poll = media as? TelegramMediaPoll {
+                        if let telegramImage = poll.attachedMedia as? TelegramMediaImage {
+                            selectedMedia = telegramImage
+                            if shouldDownloadMediaAutomatically(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, authorPeerId: item.message.author?.id, contactsPeerIds: item.associatedData.contactsPeerIds, media: telegramImage) {
+                                automaticDownload = .full
+                            }
+                            
+                            if let _ = telegramImage.video {
+                                automaticPlayback = true
+                            }
+                        } else if let telegramFile = poll.attachedMedia as? TelegramMediaFile {
+                            selectedMedia = telegramFile
+                            if shouldDownloadMediaAutomatically(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, authorPeerId: item.message.author?.id, contactsPeerIds: item.associatedData.contactsPeerIds, media: telegramFile) {
+                                automaticDownload = .full
+                            } else if shouldPredownloadMedia(settings: item.controllerInteraction.automaticMediaDownloadSettings, peerType: item.associatedData.automaticDownloadPeerType, networkType: item.associatedData.automaticDownloadNetworkType, media: telegramFile) {
+                                automaticDownload = .prefetch
+                            }
+                            if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
+                                if let _ = telegramFile.videoCover {
+                                    automaticPlayback = false
+                                } else if NativeVideoContent.isHLSVideo(file: telegramFile) {
+                                    automaticPlayback = true
+                                } else if case .full = automaticDownload {
+                                    automaticPlayback = true
+                                } else {
+                                    automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
+                                }
+                            }
                         }
                     }
                 }
@@ -391,7 +434,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                 var wideLayout = true
                 if case let .mosaic(_, wide) = position {
                     wideLayout = wide
-                    automaticPlayback = automaticPlayback && wide
+                    automaticPlayback = automaticPlayback && (wide || isLivePhoto)
                 }
                 
                 var updatedPosition: ChatMessageBubbleContentPosition = position
@@ -553,7 +596,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
         guard let item = self.item else {
             return false
         }
-        let highlighted = item.controllerInteraction.highlightedState?.messageStableId == item.message.stableId
+        let highlighted = item.controllerInteraction.highlightedState?.messageStableId == item.message.stableId && item.controllerInteraction.highlightedState?.subject == nil
         
         if self.highlightedState != highlighted {
             self.highlightedState = highlighted

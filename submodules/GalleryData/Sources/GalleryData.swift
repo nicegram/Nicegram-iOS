@@ -93,7 +93,21 @@ public func instantPageGalleryMedia(webpageId: MediaId, page: InstantPage.Access
     return result
 }
 
-public func chatMessageGalleryControllerData(context: AccountContext, chatLocation: ChatLocation?, chatFilterTag: MemoryBuffer?, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>?, message: Message, mediaIndex: Int? = nil, navigationController: NavigationController?, standalone: Bool, reverseMessageGalleryOrder: Bool, mode: ChatControllerInteractionOpenMessageMode, source: GalleryControllerItemSource?, synchronousLoad: Bool, actionInteraction: GalleryControllerActionInteraction?) -> ChatMessageGalleryControllerData? {
+public func chatMessageGalleryControllerData(
+    context: AccountContext,
+    chatLocation: ChatLocation?,
+    chatFilterTag: MemoryBuffer?,
+    chatLocationContextHolder: Atomic<ChatLocationContextHolder?>?,
+    message: Message,
+    mediaSubject: GalleryMediaSubject? = nil,
+    navigationController: NavigationController?,
+    standalone: Bool,
+    reverseMessageGalleryOrder: Bool,
+    mode: ChatControllerInteractionOpenMessageMode,
+    source: GalleryControllerItemSource?,
+    synchronousLoad: Bool,
+    actionInteraction: GalleryControllerActionInteraction?
+) -> ChatMessageGalleryControllerData? {
     var standalone = standalone
     if message.id.peerId.namespace == Namespaces.Peer.CloudUser && message.id.namespace != Namespaces.Message.Cloud {
         standalone = true
@@ -113,7 +127,14 @@ public func chatMessageGalleryControllerData(context: AccountContext, chatLocati
         }
     }
     for media in message.media {
-        if let paidContent = media as? TelegramMediaPaidContent, let extendedMedia = paidContent.extendedMedia.first, case .full = extendedMedia {
+        if let poll = media as? TelegramMediaPoll {
+            standalone = true
+            if let attachedMedia = poll.attachedMedia as? TelegramMediaMap {
+                galleryMedia = attachedMedia
+            } else {
+                galleryMedia = poll
+            }
+        } else if let paidContent = media as? TelegramMediaPaidContent, let extendedMedia = paidContent.extendedMedia.first, case .full = extendedMedia {
             standalone = true
             galleryMedia = paidContent
         } else if let invoice = media as? TelegramMediaInvoice, let extendedMedia = invoice.extendedMedia, case let .full(fullMedia) = extendedMedia {
@@ -259,7 +280,7 @@ public func chatMessageGalleryControllerData(context: AccountContext, chatLocati
             }
             
             if let adAttribute = message.adAttribute, adAttribute.hasContentMedia {
-                let gallery = GalleryController(context: context, source: .standaloneMessage(message, mediaIndex), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: nil, playbackRate: 1.0, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
+                let gallery = GalleryController(context: context, source: .standaloneMessage(message, mediaSubject), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: nil, playbackRate: 1.0, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
                     navigationController?.replaceTopController(controller, animated: false, ready: ready)
                 }, baseNavigationController: navigationController, actionInteraction: actionInteraction)
                 gallery.temporaryDoNotWaitForReady = autoplayingVideo
@@ -288,7 +309,7 @@ public func chatMessageGalleryControllerData(context: AccountContext, chatLocati
                 return .gallery(startState
                 |> deliverOnMainQueue
                 |> map { startState in
-                    let gallery = GalleryController(context: context, source: source ?? (standalone ? .standaloneMessage(message, mediaIndex) : .peerMessagesAtId(messageId: message.id, chatLocation: openChatLocation, customTag: chatFilterTag, chatLocationContextHolder: openChatLocationContextHolder)), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: startState.timecode, playbackRate: startState.rate, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
+                    let gallery = GalleryController(context: context, source: source ?? (standalone ? .standaloneMessage(message, mediaSubject) : .peerMessagesAtId(messageId: message.id, chatLocation: openChatLocation, customTag: chatFilterTag, chatLocationContextHolder: openChatLocationContextHolder)), invertItemOrder: reverseMessageGalleryOrder, streamSingleVideo: stream, fromPlayingVideo: autoplayingVideo, landscape: landscape, timecode: startState.timecode, playbackRate: startState.rate, synchronousLoad: synchronousLoad, replaceRootController: { [weak navigationController] controller, ready in
                         navigationController?.replaceTopController(controller, animated: false, ready: ready)
                     }, baseNavigationController: navigationController, actionInteraction: actionInteraction)
                     gallery.temporaryDoNotWaitForReady = autoplayingVideo

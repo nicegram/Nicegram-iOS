@@ -207,25 +207,38 @@ public struct PresentationResourcesChatList {
     
     public static func badgeBackgroundMention(_ theme: PresentationTheme, diameter: CGFloat) -> UIImage? {
         return theme.image(PresentationResourceParameterKey.chatListBadgeBackgroundMention(diameter), { theme in
-            return generateBadgeBackgroundImage(theme: theme, diameter: diameter, active: true, reaction: false, provisional: false, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat List/MentionBadgeIcon"), color: theme.chatList.unreadBadgeActiveTextColor))
+            //return generateScaledImage(image: generateTintedImage(image: UIImage(bundleImageName: "Chat List/MentionBadgeIcon"), color: theme.chatList.unreadBadgeActiveBackgroundColor), size: CGSize(width: diameter, height: diameter))
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/MentionBadgeIcon"), color: theme.chatList.unreadBadgeActiveBackgroundColor)
         })
     }
     
     public static func badgeBackgroundInactiveMention(_ theme: PresentationTheme, diameter: CGFloat) -> UIImage? {
         return theme.image(PresentationResourceParameterKey.chatListBadgeBackgroundInactiveMention(diameter), { theme in
-            return generateBadgeBackgroundImage(theme: theme, diameter: diameter, active: false, reaction: false, provisional: false, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat List/MentionBadgeIcon"), color: theme.chatList.unreadBadgeInactiveTextColor))
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/MentionBadgeIcon"), color: theme.chatList.unreadBadgeInactiveBackgroundColor)
         })
     }
     
     public static func badgeBackgroundReactions(_ theme: PresentationTheme, diameter: CGFloat) -> UIImage? {
         return theme.image(PresentationResourceParameterKey.badgeBackgroundReactions(diameter), { theme in
-            return generateBadgeBackgroundImage(theme: theme, diameter: diameter, active: true, reaction: true, provisional: false, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat List/ReactionsBadgeIcon"), color: theme.chatList.unreadBadgeActiveTextColor))
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/ReactionsBadgeIcon"), color: theme.chatList.reactionBadgeActiveBackgroundColor)
         })
     }
     
     public static func badgeBackgroundInactiveReactions(_ theme: PresentationTheme, diameter: CGFloat) -> UIImage? {
         return theme.image(PresentationResourceParameterKey.badgeBackgroundInactiveReactions(diameter), { theme in
-            return generateBadgeBackgroundImage(theme: theme, diameter: diameter, active: false, reaction: false, provisional: false, icon: generateTintedImage(image: UIImage(bundleImageName: "Chat List/ReactionsBadgeIcon"), color: theme.chatList.unreadBadgeInactiveTextColor))
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/ReactionsBadgeIcon"), color: theme.chatList.unreadBadgeInactiveBackgroundColor)
+        })
+    }
+    
+    public static func badgeBackgroundPollVotes(_ theme: PresentationTheme, diameter: CGFloat) -> UIImage? {
+        return theme.image(PresentationResourceParameterKey.badgeBackgroundPollVotes(diameter), { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/PollVotesBadgeIcon"), color: theme.chatList.unreadBadgeActiveBackgroundColor)
+        })
+    }
+    
+    public static func badgeBackgroundInactivePollVotes(_ theme: PresentationTheme, diameter: CGFloat) -> UIImage? {
+        return theme.image(PresentationResourceParameterKey.badgeBackgroundInactivePollVotes(diameter), { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/PollVotesBadgeIcon"), color: theme.chatList.unreadBadgeInactiveBackgroundColor)
         })
     }
     
@@ -273,6 +286,24 @@ public struct PresentationResourcesChatList {
                         context.clear(CGRect(origin: CGPoint(), size: size))
                        
                         context.clip(to: CGRect(origin: .zero, size: size), mask: cgImage)
+                        context.setFillColor(theme.chatList.muteIconColor.cgColor)
+                        context.fill(CGRect(origin: CGPoint(), size: size))
+                    }
+                })
+            } else {
+                return nil
+            }
+        })
+    }
+    
+    public static func pollIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.chatListPollIcon.rawValue, { theme in
+            if let image =  UIImage(bundleImageName: "Chat List/PollBadgeIcon") {
+                return generateImage(CGSize(width: 20.0, height: 20.0), contextGenerator: { size, context in
+                    if let cgImage = image.cgImage {
+                        context.clear(CGRect(origin: CGPoint(), size: size))
+                       
+                        context.clip(to: CGRect(origin: .zero, size: size).insetBy(dx: 2.0, dy: 2.0), mask: cgImage)
                         context.setFillColor(theme.chatList.muteIconColor.cgColor)
                         context.fill(CGRect(origin: CGPoint(), size: size))
                     }

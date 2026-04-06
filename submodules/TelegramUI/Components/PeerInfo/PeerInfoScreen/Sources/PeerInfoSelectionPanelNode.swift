@@ -172,7 +172,10 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         }, dismissForwardMessages: {
         }, dismissSuggestPost: {
         }, displayUndo: { _ in
+        }, presentInputTextTranslation: { _, _ in
         }, sendEmoji: { _, _, _ in
+        }, openAICompose: {
+        }, openSetPeerAvatar: {
         }, updateHistoryFilter: { _ in
         }, updateChatLocationThread: { _, _ in
         }, toggleChatSidebarMode: {
@@ -186,8 +189,8 @@ final class PeerInfoSelectionPanelNode: ASDisplayNode {
         
         super.init()
         
-        self.addSubnode(self.backgroundNode)
-        self.addSubnode(self.separatorNode)
+        //self.addSubnode(self.backgroundNode)
+        //self.addSubnode(self.separatorNode)
         self.addSubnode(self.selectionPanel)
     }
     

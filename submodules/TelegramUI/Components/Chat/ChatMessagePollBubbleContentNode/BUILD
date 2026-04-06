@@ -11,6 +11,7 @@ swift_library(
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
+        "//submodules/Crc32",
         "//submodules/Display",
         "//submodules/TelegramCore",
         "//submodules/Postbox",
@@ -26,8 +27,15 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatMessageItemCommon",
         "//submodules/TelegramUI/Components/Chat/PollBubbleTimerNode",
         "//submodules/TelegramUI/Components/Chat/MergedAvatarsNode",
+        "//submodules/TelegramUI/Components/Chat/ChatMessageAttachedContentNode",
         "//submodules/TelegramUI/Components/TextNodeWithEntities",
         "//submodules/TelegramUI/Components/Chat/ShimmeringLinkNode",
+        "//submodules/TelegramUI/Components/EmojiTextAttachmentView",
+        "//submodules/PhotoResources",
+        "//submodules/LocationResources",
+        "//submodules/TelegramUI/Components/ChatControllerInteraction",
+        "//submodules/RadialStatusNode",
+        "//submodules/TelegramUI/Components/ComposePollScreen",
     ],
     visibility = [
         "//visibility:public",

@@ -142,6 +142,14 @@ func titlePanelForChatPresentationInterfaceState(_ chatPresentationInterfaceStat
                 }
             }
         }
+    } else if chatPresentationInterfaceState.isManagedBot, let user = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, user.profileImageRepresentations.isEmpty {
+        if let currentPanel = currentPanel as? ChatReportPeerTitlePanelNode {
+            return currentPanel
+        } else if let controllerInteraction = controllerInteraction {
+            let panel = ChatReportPeerTitlePanelNode(context: context, animationCache: controllerInteraction.presentationContext.animationCache, animationRenderer: controllerInteraction.presentationContext.animationRenderer)
+            panel.interfaceInteraction = interfaceInteraction
+            return panel
+        }
     }
     
     var displayActionsPanel = false
@@ -252,7 +260,7 @@ func headerTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInterf
     }
     
     if let channel = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = chatPresentationInterfaceState.renderedPeer?.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect), chatPresentationInterfaceState.search == nil {
-        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
+        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation == .side
         if !topicListDisplayModeOnTheSide {
             return AnyComponent(ChatTopicsHeaderPanelComponent(
                 context: context,
@@ -260,6 +268,7 @@ func headerTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInterf
                 strings: chatPresentationInterfaceState.strings,
                 peerId: peerId,
                 kind: .monoforum,
+                location: chatPresentationInterfaceState.persistentData.topicListPanelLocation == .top ? .top : .bottom,
                 topicId: chatPresentationInterfaceState.chatLocation.threadId,
                 controller: { [weak interfaceInteraction] in
                     return interfaceInteraction?.chatController()
@@ -282,7 +291,7 @@ func headerTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInterf
         if !chatPresentationInterfaceState.viewForumAsMessages {
             return nil
         }
-        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
+        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation == .side
         if !topicListDisplayModeOnTheSide {
             return AnyComponent(ChatTopicsHeaderPanelComponent(
                 context: context,
@@ -290,6 +299,7 @@ func headerTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInterf
                 strings: chatPresentationInterfaceState.strings,
                 peerId: peerId,
                 kind: .forum,
+                location: chatPresentationInterfaceState.persistentData.topicListPanelLocation == .top ? .top : .bottom,
                 topicId: chatPresentationInterfaceState.chatLocation.threadId,
                 controller: { [weak interfaceInteraction] in
                     return interfaceInteraction?.chatController()
@@ -314,7 +324,7 @@ func headerTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInterf
                 return nil
             }
         }
-        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
+        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation == .side
         if !topicListDisplayModeOnTheSide {
             return AnyComponent(ChatTopicsHeaderPanelComponent(
                 context: context,
@@ -322,6 +332,7 @@ func headerTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInterf
                 strings: chatPresentationInterfaceState.strings,
                 peerId: peerId,
                 kind: .botForum(forumManagedByUser: botInfo.flags.contains(.forumManagedByUser)),
+                location: chatPresentationInterfaceState.persistentData.topicListPanelLocation == .top ? .top : .bottom,
                 topicId: chatPresentationInterfaceState.chatLocation.threadId,
                 controller: { [weak interfaceInteraction] in
                     return interfaceInteraction?.chatController()
@@ -367,14 +378,14 @@ func floatingTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInte
     }
     
     if let channel = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isMonoForum, let linkedMonoforumId = channel.linkedMonoforumId, let mainChannel = chatPresentationInterfaceState.renderedPeer?.peers[linkedMonoforumId] as? TelegramChannel, mainChannel.hasPermission(.manageDirect), chatPresentationInterfaceState.search == nil {
-        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
+        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation == .side
         if topicListDisplayModeOnTheSide {
             return ChatFloatingTopicsPanel(
                 context: context,
                 theme: chatPresentationInterfaceState.theme,
                 preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear,
                 strings: chatPresentationInterfaceState.strings,
-                location: topicListDisplayModeOnTheSide ? .side : .top,
+                location: .side,
                 peerId: peerId,
                 kind: .monoforum,
                 topicId: chatPresentationInterfaceState.chatLocation.threadId,
@@ -399,14 +410,14 @@ func floatingTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInte
         if !chatPresentationInterfaceState.viewForumAsMessages {
             return nil
         }
-        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
+        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation == .side
         if topicListDisplayModeOnTheSide {
             return ChatFloatingTopicsPanel(
                 context: context,
                 theme: chatPresentationInterfaceState.theme,
                 preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear,
                 strings: chatPresentationInterfaceState.strings,
-                location: topicListDisplayModeOnTheSide ? .side : .top,
+                location: .side,
                 peerId: peerId,
                 kind: .forum,
                 topicId: chatPresentationInterfaceState.chatLocation.threadId,
@@ -433,14 +444,14 @@ func floatingTopicsPanelForChatPresentationInterfaceState(_ chatPresentationInte
                 return nil
             }
         }
-        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation
+        let topicListDisplayModeOnTheSide = chatPresentationInterfaceState.persistentData.topicListPanelLocation == .side
         if topicListDisplayModeOnTheSide {
             return ChatFloatingTopicsPanel(
                 context: context,
                 theme: chatPresentationInterfaceState.theme,
                 preferClearGlass: chatPresentationInterfaceState.preferredGlassType == .clear,
                 strings: chatPresentationInterfaceState.strings,
-                location: topicListDisplayModeOnTheSide ? .side : .top,
+                location: .side,
                 peerId: peerId,
                 kind: .botForum(forumManagedByUser: botInfo.flags.contains(.forumManagedByUser)),
                 topicId: chatPresentationInterfaceState.chatLocation.threadId,

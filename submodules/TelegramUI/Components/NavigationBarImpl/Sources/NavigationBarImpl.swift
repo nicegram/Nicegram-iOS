@@ -1010,7 +1010,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         
         if (leftTitleInset == leftInset) != (rightTitleInset == rightInset) {
             if rightTitleInset == rightInset {
-                rightTitleInset = leftTitleInset
+                rightTitleInset = max(rightInset, 16.0)
             } else if leftTitleInset == leftInset {
                 leftTitleInset = rightTitleInset
             }
@@ -1038,9 +1038,12 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                     titleViewTransition = .immediate
                 }
                 
-                let titleSize = titleView.updateLayout(availableSize: CGSize(width: size.width - leftTitleInset - rightTitleInset, height: nominalHeight), transition: titleViewTransition)
+                let titleSize = titleView.updateLayout(availableSize: CGSize(width: size.width - max(leftTitleInset, rightTitleInset) * 2.0, height: nominalHeight), transition: titleViewTransition)
                 
                 var titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - titleSize.width) * 0.5), y: contentVerticalOrigin + floorToScreenPixels((nominalHeight - titleSize.height) / 2.0)), size: titleSize)
+                if titleFrame.origin.x + titleFrame.width > size.width - rightTitleInset {
+                    titleFrame.origin.x = size.width - rightTitleInset - titleFrame.width
+                }
                 if titleFrame.origin.x < leftTitleInset {
                     titleFrame.origin.x = leftTitleInset + floorToScreenPixels((size.width - leftTitleInset - rightTitleInset - titleFrame.width) * 0.5)
                 }

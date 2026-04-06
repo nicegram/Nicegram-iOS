@@ -513,6 +513,10 @@ public final class ChatMessageWebpageBubbleContentNode: ChatMessageBubbleContent
                                 actionTitle = hasEnded ? item.presentationData.strings.Chat_Auction_ViewResults : item.presentationData.strings.Chat_Auction_Join
                                 actionIcon = !hasEnded ? .bid : nil
                             }
+                        case "telegram_channel_direct":
+                            actionTitle = item.presentationData.strings.Chat_ContactChannel
+                        case "telegram_newbot":
+                            actionTitle = item.presentationData.strings.Chat_CreateBotLink
                         default:
                             break
                     }

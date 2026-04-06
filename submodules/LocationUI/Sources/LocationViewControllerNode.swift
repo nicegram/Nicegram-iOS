@@ -19,7 +19,11 @@ import DeviceAccess
 import TooltipUI
 
 func getLocation(from message: EngineMessage) -> TelegramMediaMap? {
-    return message.media.first(where: { $0 is TelegramMediaMap } ) as? TelegramMediaMap
+    if let poll = message.media.first(where: { $0 is TelegramMediaPoll } ) as? TelegramMediaPoll, let map = poll.attachedMedia as? TelegramMediaMap {
+        return map
+    } else {
+        return message.media.first(where: { $0 is TelegramMediaMap } ) as? TelegramMediaMap
+    }
 }
 
 private func areMessagesEqual(_ lhsMessage: EngineMessage, _ rhsMessage: EngineMessage) -> Bool {
@@ -270,6 +274,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
     private let interaction: LocationViewInteraction
     private let locationManager: LocationManager
     private let isStoryLocation: Bool
+    private let isPreview: Bool
     
     private let listNode: ListView
     let headerNode: LocationMapHeaderNode
@@ -297,7 +302,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
     }
     private let travelTimesPromise = Promise<[EngineMessage.Id: (Double, ExpectedTravelTime, ExpectedTravelTime, ExpectedTravelTime)]>([:])
 
-    init(context: AccountContext, presentationData: PresentationData, subject: EngineMessage, interaction: LocationViewInteraction, locationManager: LocationManager, isStoryLocation: Bool) {
+    init(context: AccountContext, presentationData: PresentationData, subject: EngineMessage, interaction: LocationViewInteraction, locationManager: LocationManager, isStoryLocation: Bool, isPreview: Bool) {
         self.context = context
         self.presentationData = presentationData
         self.presentationDataPromise = Promise(presentationData)
@@ -305,11 +310,12 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         self.interaction = interaction
         self.locationManager = locationManager
         self.isStoryLocation = isStoryLocation
+        self.isPreview = isPreview
         
         self.state = LocationViewState()
         self.statePromise = Promise(self.state)
         
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         self.listNode.verticalScrollIndicatorColor = UIColor(white: 0.0, alpha: 0.3)
         self.listNode.verticalScrollIndicatorFollowsOverscroll = true
@@ -321,6 +327,7 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         self.headerNode = LocationMapHeaderNode(
             presentationData: presentationData,
             glass: false,
+            isPreview: true,
             toggleMapModeSelection: interaction.toggleMapModeSelection,
             updateMapMode: interaction.updateMapMode,
             goToUserLocation: interaction.toggleTrackingMode,
@@ -335,9 +342,13 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         
         self.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         
-        self.addSubnode(self.listNode)
+        if !self.isPreview {
+            self.addSubnode(self.listNode)
+        }
         self.addSubnode(self.headerNode)
-        self.addSubnode(self.optionsNode)
+        if !self.isPreview {
+            self.addSubnode(self.optionsNode)
+        }
         
         let userLocation: Signal<CLLocation?, NoError> = .single(nil)
         |> then(
@@ -712,15 +723,17 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
             }
         })
         
-        self.listNode.updateFloatingHeaderOffset = { [weak self] offset, listTransition in
-            guard let strongSelf = self, let (layout, navigationBarHeight) = strongSelf.validLayout, strongSelf.listNode.scrollEnabled else {
-                return
+        if !isPreview {
+            self.listNode.updateFloatingHeaderOffset = { [weak self] offset, listTransition in
+                guard let strongSelf = self, let (layout, navigationBarHeight) = strongSelf.validLayout, strongSelf.listNode.scrollEnabled else {
+                    return
+                }
+                let overlap: CGFloat = 0.0
+                strongSelf.listOffset = max(0.0, offset)
+                let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(0.0, offset + overlap)))
+                listTransition.updateFrame(node: strongSelf.headerNode, frame: headerFrame)
+                strongSelf.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsBottomPadding: 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
             }
-            let overlap: CGFloat = 0.0
-            strongSelf.listOffset = max(0.0, offset)
-            let headerFrame = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: max(0.0, offset + overlap)))
-            listTransition.updateFrame(node: strongSelf.headerNode, frame: headerFrame)
-            strongSelf.headerNode.updateLayout(layout: layout, navigationBarHeight: navigationBarHeight, topPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsTopPadding: strongSelf.state.displayingMapModeOptions ? 38.0 : 0.0, controlsBottomPadding: 0.0, offset: 0.0, size: headerFrame.size, transition: listTransition)
         }
         
         self.listNode.beganInteractiveDragging = { [weak self] _ in
@@ -950,7 +963,9 @@ final class LocationViewControllerNode: ViewControllerTracingNode, CLLocationMan
         }
         
         let headerHeight: CGFloat
-        if let listOffset = self.listOffset {
+        if self.isPreview {
+            headerHeight = layout.size.height
+        } else if let listOffset = self.listOffset {
             headerHeight = max(0.0, listOffset + overlap)
         } else {
             headerHeight = topInset + overlap

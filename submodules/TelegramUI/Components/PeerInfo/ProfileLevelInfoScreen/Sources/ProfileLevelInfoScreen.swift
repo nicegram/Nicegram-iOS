@@ -479,10 +479,8 @@ private final class SheetContent: Component {
                 contentHeight += itemSize.height
             }
             
-            contentHeight += 31.0
-            
-            contentHeight += 82.0
-                        
+            contentHeight += 113.0
+        
             return CGSize(width: availableSize.width, height: contentHeight)
         }
     }
@@ -621,6 +619,7 @@ private final class ProfileLevelInfoSheetComponent: CombinedComponent {
                         theme: theme,
                         statusBarHeight: environment.statusBarHeight,
                         safeInsets: environment.safeInsets,
+                        inputHeight: 0.0,
                         metrics: environment.metrics,
                         deviceMetrics: environment.deviceMetrics,
                         isDisplaying: environment.value.isVisible,

@@ -20,7 +20,7 @@ private extension ListMessageItemInteraction {
             return controllerInteraction.openMessage(message, OpenMessageParams(mode: mode))
         }, openMessageContextMenu: { message, bool, node, rect, gesture in
             controllerInteraction.openMessageContextMenu(message, bool, node, rect, gesture, nil)
-        }, toggleMessagesSelection: { messageId, selected in
+        }, toggleMediaPlayback: nil, toggleMessagesSelection: { messageId, selected in
             controllerInteraction.toggleMessagesSelection(messageId, selected)
         }, openUrl: { url, param1, param2, message in
             controllerInteraction.openUrl(ChatControllerInteraction.OpenUrl(url: url, concealed: param1, external: param2, message: message))
@@ -159,7 +159,7 @@ public final class ChatHistorySearchContainerNode: SearchDisplayControllerConten
         
         self.dimNode = ASDisplayNode()
         self.dimNode.backgroundColor = .clear
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }

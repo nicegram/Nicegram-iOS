@@ -69,6 +69,8 @@ func _internal_addressNameAvailability(account: Account, domain: AddressNameDoma
             |> `catch` { error -> Signal<AddressNameAvailability, NoError> in
                 if error.errorDescription == "USERNAME_PURCHASE_AVAILABLE" {
                     return .single(.purchaseAvailable)
+                } else if error.errorDescription == "USERNAME_OCCUPIED" {
+                    return .single(.taken)
                 } else {
                     return .single(.invalid)
                 }
@@ -87,6 +89,8 @@ func _internal_addressNameAvailability(account: Account, domain: AddressNameDoma
                 |> `catch` { error -> Signal<AddressNameAvailability, NoError> in
                     if error.errorDescription == "USERNAME_PURCHASE_AVAILABLE" {
                         return .single(.purchaseAvailable)
+                    } else if error.errorDescription == "USERNAME_OCCUPIED" {
+                        return .single(.taken)
                     } else {
                         return .single(.invalid)
                     }
@@ -104,6 +108,8 @@ func _internal_addressNameAvailability(account: Account, domain: AddressNameDoma
                 |> `catch` { error -> Signal<AddressNameAvailability, NoError> in
                     if error.errorDescription == "USERNAME_PURCHASE_AVAILABLE" {
                         return .single(.purchaseAvailable)
+                    } else if error.errorDescription == "USERNAME_OCCUPIED" {
+                        return .single(.taken)
                     } else {
                         return .single(.invalid)
                     }
@@ -112,7 +118,24 @@ func _internal_addressNameAvailability(account: Account, domain: AddressNameDoma
                 return .single(.invalid)
             }
         case .bot:
-            return .single(.invalid)
+            return account.network.request(Api.functions.bots.checkUsername(username: name))
+            |> map { result -> AddressNameAvailability in
+                switch result {
+                    case .boolTrue:
+                        return .available
+                    case .boolFalse:
+                        return .taken
+                }
+            }
+            |> `catch` { error -> Signal<AddressNameAvailability, NoError> in
+                if error.errorDescription == "USERNAME_PURCHASE_AVAILABLE" {
+                    return .single(.purchaseAvailable)
+                } else if error.errorDescription == "USERNAME_OCCUPIED" {
+                    return .single(.taken)
+                } else {
+                    return .single(.invalid)
+                }
+            }
         case .theme:
             return account.network.request(Api.functions.account.createTheme(flags: 0, slug: name, title: "", document: .inputDocumentEmpty, settings: nil))
             |> map { _ -> AddressNameAvailability in

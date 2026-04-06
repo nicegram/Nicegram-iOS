@@ -345,6 +345,13 @@ final class VideoChatScreenComponent: Component {
         
         var maxVideoQuality: Int = Int.max
         
+        private var isPinchToZoomActive: Bool {
+            if let participantsView = self.participants.view as? VideoChatParticipantsComponent.View {
+                return participantsView.isPinchToZoomActive
+            }
+            return false
+        }
+        
         override init(frame: CGRect) {
             self.containerView = UIView()
             self.containerView.clipsToBounds = true
@@ -1617,7 +1624,7 @@ final class VideoChatScreenComponent: Component {
                             }
                             
                             if let expandedParticipantsVideoState = self.expandedParticipantsVideoState, let members {
-                                if CFAbsoluteTimeGetCurrent() > self.focusedSpeakerAutoSwitchDeadline, !expandedParticipantsVideoState.isMainParticipantPinned, let participant = members.participants.first(where: { participant in
+                                if CFAbsoluteTimeGetCurrent() > self.focusedSpeakerAutoSwitchDeadline, !expandedParticipantsVideoState.isMainParticipantPinned, !self.isPinchToZoomActive, let participant = members.participants.first(where: { participant in
                                     if let callState = self.callState, participant.id == .peer(callState.myPeerId) {
                                         return false
                                     }
@@ -1974,7 +1981,7 @@ final class VideoChatScreenComponent: Component {
                             }
                             
                             if let expandedParticipantsVideoState = self.expandedParticipantsVideoState {
-                                if CFAbsoluteTimeGetCurrent() > self.focusedSpeakerAutoSwitchDeadline, !expandedParticipantsVideoState.isMainParticipantPinned, let participant = members.participants.first(where: { participant in
+                                if CFAbsoluteTimeGetCurrent() > self.focusedSpeakerAutoSwitchDeadline, !expandedParticipantsVideoState.isMainParticipantPinned, !self.isPinchToZoomActive, let participant = members.participants.first(where: { participant in
                                     if let callState = self.callState, participant.id == .peer(callState.myPeerId) {
                                         return false
                                     }

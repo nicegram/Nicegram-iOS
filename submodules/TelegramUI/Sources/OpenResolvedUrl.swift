@@ -45,6 +45,7 @@ import DeviceAccess
 import ProxyServerPreviewScreen
 import AuthConfirmationScreen
 import OpenInExternalAppUI
+import CreateBotScreen
 
 private func defaultNavigationForPeerId(_ peerId: PeerId?, navigation: ChatControllerInteractionNavigateToPeer) -> ChatControllerInteractionNavigateToPeer {
     if case .default = navigation {
@@ -1848,14 +1849,12 @@ func openResolvedUrlImpl(
             |> deliverOnMainQueue).start(next: { result in
                 if case .request = result {
                     var dismissImpl: (() -> Void)?
-                    let controller = AuthConfirmationScreen(context: context, requestSubject: subject, subject: result, completion: { accountContext, accountPeer, authResult in
+                    let controller = AuthConfirmationScreen(context: context, requestSubject: subject, subject: result, completion: { accountContext, accountPeer, authResult, disposable in
                         switch authResult {
                         case let .accept(allowWriteAccess, sharePhoneNumber, matchCode):
                             let signal = accountContext.engine.messages.acceptMessageActionUrlAuth(subject: subject, allowWriteAccess: allowWriteAccess, sharePhoneNumber: sharePhoneNumber, matchCode: matchCode)
                             |> afterDisposed {
-                                if accountContext !== context {
-                                    accountContext.account.shouldBeServiceTaskMaster.set(.single(.never))
-                                }
+                                disposable.dispose()
                             }
                             
                             let _ = (signal
@@ -1965,5 +1964,38 @@ func openResolvedUrlImpl(
                     }
                 }
             })
+        case let .createBot(parentBotId, username, title):
+            Task { @MainActor in
+                guard let parentBot = await context.engine.data.get(
+                    TelegramEngine.EngineData.Item.Peer.Peer(id: parentBotId)
+                ).get() else {
+                    return
+                }
+                guard case let .user(user) = parentBot, let botInfo = user.botInfo, botInfo.flags.contains(.canManageBots) else {
+                    let alertController = textAlertController(
+                        context: context,
+                        title: nil,
+                        text: presentationData.strings.Bot_AlertCanNotCreateBots(parentBot.debugDisplayTitle).string,
+                        actions: [
+                            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_OK, action: {})
+                        ]
+                    )
+                    present(alertController, nil)
+                    return
+                }
+                
+                guard let controller = await CreateBotScreen(
+                    context: context,
+                    parentBot: parentBot.id,
+                    initialUsername: username,
+                    initialTitle: title,
+                    openAutomatically: true,
+                    completion: { _ in
+                    }
+                ) else {
+                    return
+                }
+                navigationController?.pushViewController(controller)
+            }
     }
 }

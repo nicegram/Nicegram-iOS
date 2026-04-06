@@ -17,6 +17,7 @@ public final class ResizableSheetComponentEnvironment: Equatable {
     public let theme: PresentationTheme
     public let statusBarHeight: CGFloat
     public let safeInsets: UIEdgeInsets
+    public let inputHeight: CGFloat
     public let metrics: LayoutMetrics
     public let deviceMetrics: DeviceMetrics
     public let isDisplaying: Bool
@@ -30,6 +31,7 @@ public final class ResizableSheetComponentEnvironment: Equatable {
         theme: PresentationTheme,
         statusBarHeight: CGFloat,
         safeInsets: UIEdgeInsets,
+        inputHeight: CGFloat,
         metrics: LayoutMetrics,
         deviceMetrics: DeviceMetrics,
         isDisplaying: Bool,
@@ -42,6 +44,7 @@ public final class ResizableSheetComponentEnvironment: Equatable {
         self.theme = theme
         self.statusBarHeight = statusBarHeight
         self.safeInsets = safeInsets
+        self.inputHeight = inputHeight
         self.metrics = metrics
         self.deviceMetrics = deviceMetrics
         self.isDisplaying = isDisplaying
@@ -60,6 +63,9 @@ public final class ResizableSheetComponentEnvironment: Equatable {
             return false
         }
         if lhs.safeInsets != rhs.safeInsets {
+            return false
+        }
+        if lhs.inputHeight != rhs.inputHeight {
             return false
         }
         if lhs.metrics != rhs.metrics {
@@ -205,7 +211,7 @@ public final class ResizableSheetComponent<ChildEnvironmentType: Sendable & Equa
         }
         
         private let dimView: UIView
-        private let containerView: UIView
+        public let containerView: UIView
         private let backgroundLayer: SimpleLayer
         private let navigationBarContainer: SparseContainerView
         private let bottomContainer: SparseContainerView
@@ -460,6 +466,12 @@ public final class ResizableSheetComponent<ChildEnvironmentType: Sendable & Equa
                 topOffsetFraction = 1.0
             }
             
+            #if DEBUG// && false
+            if "".isEmpty {
+                topOffsetFraction = 1.0
+            }
+            #endif
+            
             let minScale: CGFloat = itemLayout.isTablet ? 1.0 : (itemLayout.containerSize.width - 6.0 * 2.0) / itemLayout.containerSize.width
             let minScaledTranslation: CGFloat = itemLayout.isTablet ? 0.0 : (itemLayout.containerSize.height - itemLayout.containerSize.height * minScale) * 0.5 - 6.0
             let minScaledCornerRadius: CGFloat = itemLayout.containerCornerRadius
@@ -493,10 +505,7 @@ public final class ResizableSheetComponent<ChildEnvironmentType: Sendable & Equa
             
             self.dimView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.3)
             let animateOffset: CGFloat = self.bounds.height - self.backgroundLayer.frame.minY
-            self.scrollContentClippingView.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-            self.backgroundLayer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-            self.navigationBarContainer.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
-            self.bottomContainer.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
+            self.containerView.layer.animatePosition(from: CGPoint(x: 0.0, y: animateOffset), to: CGPoint(), duration: 0.5, timingFunction: kCAMediaTimingFunctionSpring, additive: true)
         }
         
         func animateOut(initialVelocity: CGFloat? = nil, completion: @escaping () -> Void) {
@@ -506,20 +515,14 @@ public final class ResizableSheetComponent<ChildEnvironmentType: Sendable & Equa
             if let initialVelocity = initialVelocity {
                 let transition = ContainedViewLayoutTransition.animated(duration: 0.35, curve: .customSpring(damping: 124.0, initialVelocity: initialVelocity))
                 
-                transition.updatePosition(layer: self.scrollContentClippingView.layer, position: CGPoint(x: self.scrollContentClippingView.layer.position.x, y: self.scrollContentClippingView.layer.position.y + animateOffset), completion: { _ in
+                transition.updatePosition(layer: self.containerView.layer, position: CGPoint(x: self.containerView.layer.position.x, y: self.containerView.layer.position.y + animateOffset), completion: { _ in
                     completion()
                 })
-                transition.updatePosition(layer: self.backgroundLayer, position: CGPoint(x: self.backgroundLayer.position.x, y: self.backgroundLayer.position.y + animateOffset))
-                transition.updatePosition(layer: self.navigationBarContainer.layer, position: CGPoint(x: self.navigationBarContainer.layer.position.x, y: self.navigationBarContainer.layer.position.y + animateOffset))
-                transition.updatePosition(layer: self.bottomContainer.layer, position: CGPoint(x: self.bottomContainer.layer.position.x, y: self.bottomContainer.layer.position.y + animateOffset))
             } else {
                 let duration: Double = 0.25
-                self.scrollContentClippingView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: duration, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true, completion: { _ in
+                self.containerView.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: duration, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true, completion: { _ in
                     completion()
                 })
-                self.backgroundLayer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: duration, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
-                self.navigationBarContainer.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: duration, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
-                self.bottomContainer.layer.animatePosition(from: CGPoint(), to: CGPoint(x: 0.0, y: animateOffset), duration: duration, timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, removeOnCompletion: false, additive: true)
             }
         }
       
@@ -722,6 +725,13 @@ public final class ResizableSheetComponent<ChildEnvironmentType: Sendable & Equa
                 }
             }
             
+            var bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: sheetEnvironment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
+            if sheetEnvironment.inputHeight > 0.0 {
+                bottomInsets.left = 16.0
+                bottomInsets.right = 16.0
+                bottomInsets.bottom = sheetEnvironment.inputHeight + 8.0
+            }
+            
             if let bottomItem = component.bottomItem {
                 var bottomItemTransition = transition
                 let bottomItemView: ComponentView<Empty>
@@ -733,7 +743,6 @@ public final class ResizableSheetComponent<ChildEnvironmentType: Sendable & Equa
                     self.bottomItemView = bottomItemView
                 }
                 
-                let bottomInsets = ContainerViewLayout.concentricInsets(bottomInset: sheetEnvironment.safeInsets.bottom, innerDiameter: 52.0, sideInset: 30.0)
                 let bottomItemSize = bottomItemView.update(
                     transition: bottomItemTransition,
                     component: bottomItem,
@@ -764,9 +773,9 @@ public final class ResizableSheetComponent<ChildEnvironmentType: Sendable & Equa
                 }
             }
             
-            let bottomEdgeEffectFrame = CGRect(origin: CGPoint(x: rawSideInset, y: availableSize.height - edgeEffectHeight), size: CGSize(width: fillingSize, height: edgeEffectHeight))
+            let bottomEdgeEffectFrame = CGRect(origin: CGPoint(x: rawSideInset, y: availableSize.height - bottomInsets.bottom - edgeEffectHeight), size: CGSize(width: fillingSize, height: edgeEffectHeight + bottomInsets.bottom))
             transition.setFrame(view: self.bottomEdgeEffectView, frame: bottomEdgeEffectFrame)
-            self.bottomEdgeEffectView.update(content: .clear, blur: true, alpha: 1.0, rect: bottomEdgeEffectFrame, edge: .bottom, edgeSize: bottomEdgeEffectFrame.height, transition: transition)
+            self.bottomEdgeEffectView.update(content: .clear, blur: true, alpha: 1.0, rect: bottomEdgeEffectFrame, edge: .bottom, edgeSize: edgeEffectHeight, transition: transition)
             if self.bottomEdgeEffectView.superview == nil {
                 self.bottomContainer.insertSubview(self.bottomEdgeEffectView, at: 0)
             }

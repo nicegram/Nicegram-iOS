@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import AsyncDisplayKit
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -276,7 +277,7 @@ private enum PollResultsEntry: ItemListNodeEntry {
             if let timestamp {
                 let (timeString, dateString) = formatTimeAndDate(timestamp: timestamp, strings: presentationData.strings, dateTimeFormat: presentationData.dateTimeFormat)
                 let labelString = NSMutableAttributedString()
-                if let dateString {
+                if let dateString, !dateString.isEmpty {
                     labelString.append(NSAttributedString(string: "\(dateString)\n", font: Font.regular(presentationData.fontSize.itemListBaseFontSize * 13.0 / 17.0), textColor: presentationData.theme.list.itemSecondaryTextColor))
                 }
                 labelString.append(NSAttributedString(string: "\(timeString)", font: Font.regular(presentationData.fontSize.itemListBaseFontSize * 13.0 / 17.0), textColor: presentationData.theme.list.itemPrimaryTextColor))
@@ -364,7 +365,7 @@ private func pollResultsControllerEntries(presentationData: PresentationData, me
                 let optionExpandedAtCount = state.expandedOptions[option.opaqueIdentifier]
                 
                 let peers = optionState.peers
-                let count = optionState.count
+                let count = optionState.count ?? 0
                 
                 let displayCount: Int
                 if peers.count > collapsedInitialLimit {
@@ -456,13 +457,17 @@ public func pollResultsController(context: AccountContext, messageId: EngineMess
     })
     
     let previousWasEmpty = Atomic<Bool?>(value: nil)
-    
+        
     let signal = combineLatest(queue: .mainQueue(),
         context.sharedContext.presentationData,
         statePromise.get(),
         resultsContext.state
     )
     |> map { presentationData, state, resultsState -> (ItemListControllerState, (ItemListNodeState, Any)) in
+        var presentationData = presentationData
+        let updatedTheme = presentationData.theme.withModalBlocksBackground()
+        presentationData = presentationData.withUpdated(theme: updatedTheme)
+        
         var isEmpty = false
         for (_, optionState) in resultsState.options {
             if !optionState.hasLoadedOnce {
@@ -498,7 +503,7 @@ public func pollResultsController(context: AccountContext, messageId: EngineMess
                 }
             }
         }
-        
+                
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .textWithSubtitle(presentationData.strings.PollResults_Title, presentationData.strings.MessagePoll_VotedCount(totalVoters)), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: false)
         let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, focusItemTag: nil, emptyStateItem: nil, initialScrollToItem: initialScrollToItem, crossfadeState: previousWasEmptyValue != nil && previousWasEmptyValue == true && isEmpty == false, animateChanges: false)
         
@@ -534,7 +539,7 @@ private func formatTimeAndDate(timestamp: Int32, strings: PresentationStrings, d
     
     let dayDifference = timeinfo.tm_yday - timeinfoNow.tm_yday
     if dayDifference == 0 {
-        dateString = ""
+        dateString = nil
     } else if dayDifference == -1 {
         dateString = strings.Weekday_Yesterday.lowercased()
     } else {

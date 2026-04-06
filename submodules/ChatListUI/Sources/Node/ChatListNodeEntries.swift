@@ -105,6 +105,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
         var presence: EnginePeer.Presence?
         var hasUnseenMentions: Bool
         var hasUnseenReactions: Bool
+        var hasUnseenPollVotes: Bool
         var editing: Bool
         var hasActiveRevealControls: Bool
         var selected: Bool
@@ -136,6 +137,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
             presence: EnginePeer.Presence?,
             hasUnseenMentions: Bool,
             hasUnseenReactions: Bool,
+            hasUnseenPollVotes: Bool,
             editing: Bool,
             hasActiveRevealControls: Bool,
             selected: Bool,
@@ -166,6 +168,7 @@ enum ChatListNodeEntry: Comparable, Identifiable {
             self.presence = presence
             self.hasUnseenMentions = hasUnseenMentions
             self.hasUnseenReactions = hasUnseenReactions
+            self.hasUnseenPollVotes = hasUnseenPollVotes
             self.editing = editing
             self.hasActiveRevealControls = hasActiveRevealControls
             self.selected = selected
@@ -259,6 +262,9 @@ enum ChatListNodeEntry: Comparable, Identifiable {
                 return false
             }
             if lhs.hasUnseenReactions != rhs.hasUnseenReactions {
+                return false
+            }
+            if lhs.hasUnseenPollVotes != rhs.hasUnseenPollVotes {
                 return false
             }
             if let lhsInputActivities = lhs.inputActivities, let rhsInputActivities = rhs.inputActivities {
@@ -766,6 +772,7 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
             presence: entry.presence,
             hasUnseenMentions: entry.hasUnseenMentions,
             hasUnseenReactions: entry.hasUnseenReactions,
+            hasUnseenPollVotes: entry.hasUnseenPollVotes,
             editing: state.editing,
             hasActiveRevealControls: hasActiveRevealControls,
             selected: isSelected,
@@ -824,6 +831,7 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                         presence: nil,
                         hasUnseenMentions: false,
                         hasUnseenReactions: false,
+                        hasUnseenPollVotes: false,
                         editing: state.editing,
                         hasActiveRevealControls: false,
                         selected: state.selectedPeerIds.contains(peer.0.id),
@@ -859,6 +867,7 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                 presence: nil,
                 hasUnseenMentions: false,
                 hasUnseenReactions: false,
+                hasUnseenPollVotes: false,
                 editing: state.editing,
                 hasActiveRevealControls: false,
                 selected: state.selectedPeerIds.contains(savedMessagesPeer.id),
@@ -915,6 +924,7 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                         presence: item.item.presence,
                         hasUnseenMentions: item.item.hasUnseenMentions,
                         hasUnseenReactions: item.item.hasUnseenReactions,
+                        hasUnseenPollVotes: item.item.hasUnseenPollVotes,
                         editing: state.editing,
                         hasActiveRevealControls: ChatListNodeState.ItemId(peerId: peerId, threadId: threadId) == state.peerIdWithRevealedOptions,
                         selected: isSelected,
@@ -967,6 +977,7 @@ func chatListNodeEntriesForView(view: EngineChatList, state: ChatListNodeState, 
                 presence: nil,
                 hasUnseenMentions: false,
                 hasUnseenReactions: false,
+                hasUnseenPollVotes: false,
                 editing: state.editing,
                 hasActiveRevealControls: false,
                 selected: false,

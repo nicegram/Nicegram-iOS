@@ -43,6 +43,29 @@
 
 #import <LegacyComponents/TGPhotoCaptionInputMixin.h>
 
+static TGMediaAsset *TGMediaPickerGalleryLivePhotoAsset(id<TGMediaEditableItem> editableMediaItem)
+{
+    if ([editableMediaItem isKindOfClass:[TGCameraCapturedVideo class]])
+        return ((TGCameraCapturedVideo *)editableMediaItem).originalAsset;
+
+    if ([editableMediaItem isKindOfClass:[TGMediaAsset class]])
+        return (TGMediaAsset *)editableMediaItem;
+
+    return nil;
+}
+
+static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *livePhotoMode, bool forceLivePhotoEnabled, id<TGMediaEditableItem> editableMediaItem)
+{
+    if (livePhotoMode != nil)
+        return (TGMediaLivePhotoMode)[livePhotoMode unsignedIntegerValue];
+
+    TGMediaAsset *asset = TGMediaPickerGalleryLivePhotoAsset(editableMediaItem);
+    if ((asset.subtypes & TGMediaAssetSubtypePhotoLive) == 0)
+        return TGMediaLivePhotoModeOff;
+
+    return forceLivePhotoEnabled ? TGMediaLivePhotoModeLive : TGMediaLivePhotoModeOff;
+}
+
 @interface TGMediaPickerGalleryWrapperView: UIView
 {
     
@@ -341,6 +364,11 @@
                 TGMediaPickerGalleryVideoItemView *videoItemView = (TGMediaPickerGalleryVideoItemView *)strongSelf->_currentItemView;
                 [videoItemView returnFromEditing];
             }
+            else if ([currentItemView isKindOfClass:[TGMediaPickerGalleryPhotoItemView class]])
+            {
+                TGMediaPickerGalleryPhotoItemView *photoItemView = (TGMediaPickerGalleryPhotoItemView *)strongSelf->_currentItemView;
+                [photoItemView returnFromEditing];
+            }
             
             [strongSelf setSelectionInterfaceHidden:false delay:0.25 animated:true];
             [strongSelf setItemHeaderViewHidden:false animated:true];
@@ -406,6 +434,8 @@
             
             id<TGModernGalleryEditableItem> galleryEditableItem = (id<TGModernGalleryEditableItem>)strongSelf->_currentItem;
             [strongSelf->_editingContext setLivePhotoMode:(TGMediaLivePhotoMode)mode forItem:galleryEditableItem.editableMediaItem];
+            
+            [strongSelf->_selectionContext setItem:(id<TGMediaSelectableItem>)galleryEditableItem.editableMediaItem selected:true animated:true sender:nil];
         };
         
         _captionMixin.stickersContext = stickersContext;
@@ -747,14 +777,18 @@
                 hasLivePhotoButton = true;
             }
         }
+    } else if ([item isKindOfClass:[TGMediaPickerGalleryPhotoItem class]]) {
+        TGMediaPickerGalleryPhotoItem *photoGalleryItem = (TGMediaPickerGalleryPhotoItem *)item;
+        if ([photoGalleryItem.asset isKindOfClass:[TGMediaAsset class]]) {
+            TGMediaAsset *asset = (TGMediaAsset *)photoGalleryItem.asset;
+            if (asset.subtypes & TGMediaAssetSubtypePhotoLive) {
+                hasLivePhotoButton = true;
+            }
+        }
     }
     [_muteButton setImage:muteIcon forState:UIControlStateNormal];
     [_muteButton setImage:muteActiveIcon forState:UIControlStateSelected];
     [_muteButton setImage:muteActiveIcon forState:UIControlStateSelected | UIControlStateHighlighted];
-    
-    if (@"".length == 0) {
-        hasLivePhotoButton = false;
-    }
     
     [_captionMixin setLivePhotoHidden:!hasLivePhotoButton];
     
@@ -1077,15 +1111,16 @@
             __strong id<TGModernGalleryEditableItem> strongGalleryEditableItem = weakGalleryEditableItem;
             if (strongGalleryEditableItem != nil) {
                 return [[strongGalleryEditableItem.editingContext timerSignalForItem:editableMediaItem] mapToSignal:^id(id timer) {
-                    return [[strongGalleryEditableItem.editingContext livePhotoModeSignalForItem:editableMediaItem] map:^id(id livePhotoMode) {
-                        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                        if (adjustments != nil)
-                            dict[@"adjustments"] = adjustments;
-                        if (timer != nil)
-                            dict[@"timer"] = timer;
-                        if (livePhotoMode != nil)
-                            dict[@"livePhotoMode"] = livePhotoMode;
-                        return dict;
+                    return [[strongGalleryEditableItem.editingContext forceLivePhotoEnabled] mapToSignal:^SSignal *(NSNumber *forceLivePhotoEnabled) {
+                        return [[strongGalleryEditableItem.editingContext livePhotoModeSignalForItem:editableMediaItem] map:^id(id livePhotoMode) {
+                            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                            if (adjustments != nil)
+                                dict[@"adjustments"] = adjustments;
+                            if (timer != nil)
+                                dict[@"timer"] = timer;
+                            dict[@"livePhotoMode"] = @(TGMediaPickerGalleryResolvedLivePhotoMode(livePhotoMode, [forceLivePhotoEnabled boolValue], editableMediaItem));
+                            return dict;
+                        }];
                     }];
                 }];
             } else {

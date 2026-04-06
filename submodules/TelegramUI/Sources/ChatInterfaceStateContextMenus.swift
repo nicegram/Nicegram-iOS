@@ -1443,7 +1443,14 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_ContextMenuTranslate, icon: { theme in
                         return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Translate"), color: theme.actionSheet.primaryTextColor)
                     }, action: { _, f in
-                        controllerInteraction.performTextSelectionAction(message, !isCopyProtected, NSAttributedString(string: messageText), .translate)
+                        var messageEntities: [MessageTextEntity]?
+                        for attribute in message.attributes {
+                            if let attribute = attribute as? TextEntitiesMessageAttribute {
+                                messageEntities = attribute.entities
+                            }
+                        }
+                        
+                        controllerInteraction.performTextSelectionAction(message, !isCopyProtected, NSAttributedString(string: messageText), messageEntities, .translate)
                         f(.default)
                     })))
                 }
@@ -1464,7 +1471,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                             text = translation.text
                         }
                         
-                        controllerInteraction.performTextSelectionAction(message, !isCopyProtected, NSAttributedString(string: text), .speak)
+                        controllerInteraction.performTextSelectionAction(message, !isCopyProtected, NSAttributedString(string: text), nil, .speak)
                         f(.default)
                     })))
                 }
@@ -1786,7 +1793,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     hasSelected = true
                 }
             }
-            if hasSelected, case .poll = activePoll.kind {
+            if hasSelected, !activePoll.revotingDisabled {
                 actions.append(.action(ContextMenuActionItem(text: chatPresentationInterfaceState.strings.Conversation_UnvotePoll, icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Unvote"), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in

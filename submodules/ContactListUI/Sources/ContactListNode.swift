@@ -1233,7 +1233,7 @@ public final class ContactListNode: ASDisplayNode {
         let presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
         self.presentationData = presentationData
         
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
@@ -2084,8 +2084,12 @@ public final class ContactListNode: ASDisplayNode {
                 strongSelf.presentationData = presentationData
                 
                 if previousTheme !== presentationData.theme || previousStrings !== presentationData.strings {
-                    strongSelf.backgroundColor = presentationData.theme.chatList.backgroundColor
-                    strongSelf.listNode.verticalScrollIndicatorColor = presentationData.theme.list.scrollIndicatorColor
+                    strongSelf.backgroundColor = listStyle == .blocks ? strongSelf.presentationData.theme.list.blocksBackgroundColor : strongSelf.presentationData.theme.chatList.backgroundColor
+                    if listStyle == .blocks {
+                        strongSelf.listNode.verticalScrollIndicatorColor = .clear
+                    } else {
+                        strongSelf.listNode.verticalScrollIndicatorColor = strongSelf.presentationData.theme.list.scrollIndicatorColor
+                    }
                     strongSelf.presentationDataPromise.set(.single(presentationData))
                     
                     let authorizationPreviousHidden = strongSelf.authorizationNode.isHidden

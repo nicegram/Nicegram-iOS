@@ -263,7 +263,7 @@ public enum ChatControllerInteractionLongTapAction {
 
 public enum ChatHistoryMessageSelection: Equatable {
     case none
-    case selectable(selected: Bool)
+    case selectable(selected: Bool, num: Int?)
     
     public static func ==(lhs: ChatHistoryMessageSelection, rhs: ChatHistoryMessageSelection) -> Bool {
         switch lhs {
@@ -273,8 +273,8 @@ public enum ChatHistoryMessageSelection: Equatable {
                 } else {
                     return false
                 }
-            case let .selectable(selected):
-                if case .selectable(selected) = rhs {
+            case let .selectable(selected, num):
+                if case .selectable(selected, num) = rhs {
                     return true
                 } else {
                     return false
@@ -791,14 +791,15 @@ public enum ChatControllerSubject: Equatable {
         }
         
         public var quote: Quote?
-        public var todoTaskId: Int32?
+        public var subject: EngineMessageReplyInnerSubject?
         
-        public init(quote: Quote? = nil, todoTaskId: Int32? = nil) {
+        public init(quote: Quote? = nil, subject: EngineMessageReplyInnerSubject? = nil) {
             self.quote = quote
-            self.todoTaskId = todoTaskId
+            self.subject = subject
         }
     }
     
+    case tag(MessageTags)
     case message(id: MessageSubject, highlight: MessageHighlight?, timecode: Double?, setupReply: Bool)
     case scheduledMessages
     case pinnedMessages(id: EngineMessage.Id?)
@@ -807,6 +808,12 @@ public enum ChatControllerSubject: Equatable {
     
     public static func ==(lhs: ChatControllerSubject, rhs: ChatControllerSubject) -> Bool {
         switch lhs {
+        case let .tag(lhsTag):
+            if case let .tag(rhsTag) = rhs, lhsTag == rhsTag {
+                return true
+            } else {
+                return false
+            }
         case let .message(lhsId, lhsHighlight, lhsTimecode, lhsSetupReply):
             if case let .message(rhsId, rhsHighlight, rhsTimecode, rhsSetupReply) = rhs, lhsId == rhsId && lhsHighlight == rhsHighlight && lhsTimecode == rhsTimecode && lhsSetupReply == rhsSetupReply {
                 return true
@@ -992,6 +999,7 @@ public protocol PeerInfoScreen: ViewController {
     var peerId: PeerId { get }
     var privacySettings: Promise<AccountPrivacySettings?> { get }
     var twoStepAuthData: Promise<TwoStepAuthData?> { get }
+    var notificationExceptions: Promise<NotificationExceptionsList?> { get }
     
     func activateEdit()
     func openEmojiStatusSetup()
@@ -1146,6 +1154,7 @@ public protocol ChatMessageItemNodeProtocol: ListViewItemNode {
     func matchesMessage(id: MessageId) -> Bool
     func cancelInsertionAnimations()
     func messages() -> [Message]
+    func updateHiddenMedia()
 }
 
 public final class ChatControllerNavigationData: CustomViewControllerNavigationData {
@@ -1237,7 +1246,7 @@ public enum ChatHistoryListDisplayHeaders {
 
 public enum ChatHistoryListMode: Equatable {
     case bubbles
-    case list(reversed: Bool, reverseGroups: Bool, displayHeaders: ChatHistoryListDisplayHeaders, hintLinks: Bool, isGlobalSearch: Bool)
+    case list(reversed: Bool, reverseGroups: Bool, displayHeaders: ChatHistoryListDisplayHeaders, hintLinks: Bool, isGlobalSearch: Bool, isMusicPlaylist: Bool)
 }
 
 public protocol ChatControllerInteractionProtocol: AnyObject {

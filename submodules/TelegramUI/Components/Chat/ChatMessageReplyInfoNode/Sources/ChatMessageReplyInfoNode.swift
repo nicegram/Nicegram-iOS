@@ -83,7 +83,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
         public let message: Message?
         public let replyForward: QuotedReplyMessageAttribute?
         public let quote: (quote: EngineMessageReplyQuote, isQuote: Bool)?
-        public let todoItemId: Int32?
+        public let innerSubject: EngineMessageReplyInnerSubject?
         public let story: StoryId?
         public let isSummarized: Bool
         public let parentMessage: Message
@@ -100,7 +100,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             message: Message?,
             replyForward: QuotedReplyMessageAttribute?,
             quote: (quote: EngineMessageReplyQuote, isQuote: Bool)?,
-            todoItemId: Int32?,
+            innerSubject: EngineMessageReplyInnerSubject?,
             story: StoryId?,
             isSummarized: Bool,
             parentMessage: Message,
@@ -116,7 +116,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             self.message = message
             self.replyForward = replyForward
             self.quote = quote
-            self.todoItemId = todoItemId
+            self.innerSubject = innerSubject
             self.story = story
             self.isSummarized = isSummarized
             self.parentMessage = parentMessage
@@ -203,6 +203,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             let isText: Bool
             var isExpiredStory: Bool = false
             var isStory: Bool = false
+            var isPoll: Bool = false
             
             let titleColor: UIColor
             let mainColor: UIColor
@@ -429,6 +430,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             }
             
             let textColor: UIColor
+            let iconColor: UIColor
             
             switch arguments.type {
                 case let .bubble(incoming):
@@ -439,14 +441,24 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                     } else {
                         textColor = incoming ? arguments.presentationData.theme.theme.chat.message.incoming.primaryTextColor : arguments.presentationData.theme.theme.chat.message.outgoing.primaryTextColor
                     }
+                    iconColor = incoming ? arguments.presentationData.theme.theme.chat.message.incoming.accentTextColor : arguments.presentationData.theme.theme.chat.message.outgoing.accentTextColor
                 case .standalone:
                     textColor = titleColor
+                    iconColor = titleColor
             }
             
             var textLeftInset: CGFloat = 0.0
             var messageText: NSAttributedString
             var todoItemCompleted: Bool?
-            if let todoItemId = arguments.todoItemId, let todo = arguments.message?.media.first(where: { $0 is TelegramMediaTodo }) as? TelegramMediaTodo, let todoItem = todo.items.first(where: { $0.id == todoItemId }) {
+            var checkIsRectangle = false
+            
+            if case let .pollOption(optionId) = arguments.innerSubject, let poll = arguments.message?.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll, let pollOption = poll.options.first(where: { $0.opaqueIdentifier == optionId }) {
+                messageText = stringWithAppliedEntities(pollOption.text, entities: pollOption.entities, baseColor: textColor, linkColor: textColor, baseFont: textFont, linkFont: textFont, boldFont: textFont, italicFont: textFont, boldItalicFont: textFont, fixedFont: textFont, blockQuoteFont: textFont, underlineLinks: false, message: nil)
+                textLeftInset += 16.0
+                
+                todoItemCompleted = true
+                checkIsRectangle = poll.kind.multipleAnswers
+            } else if case let .todoItem(todoItemId) = arguments.innerSubject, let todo = arguments.message?.media.first(where: { $0 is TelegramMediaTodo }) as? TelegramMediaTodo, let todoItem = todo.items.first(where: { $0.id == todoItemId }) {
                 messageText = stringWithAppliedEntities(todoItem.text, entities: todoItem.entities, baseColor: textColor, linkColor: textColor, baseFont: textFont, linkFont: textFont, boldFont: textFont, italicFont: textFont, boldItalicFont: textFont, fixedFont: textFont, blockQuoteFont: textFont, underlineLinks: false, message: nil)
                 textLeftInset += 16.0
                 
@@ -508,6 +520,10 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                 }
             } else {
                 messageText = NSAttributedString(string: textString.string, font: textFont, textColor: textColor)
+                
+                if let _ = arguments.message?.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll {
+                    isPoll = true
+                }
             }
             
             var leftInset: CGFloat = 11.0
@@ -516,7 +532,25 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             var updatedMediaReference: AnyMediaReference?
             var imageDimensions: CGSize?
             var hasRoundImage = false
-            if let message = arguments.message, !message.containsSecretMedia {
+            if case let .pollOption(optionId) = arguments.innerSubject, let poll = arguments.message?.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll, let pollOption = poll.options.first(where: { $0.opaqueIdentifier == optionId }), let media = pollOption.media {
+                if let image = media as? TelegramMediaImage {
+                    updatedMediaReference = .message(message: MessageReference(arguments.parentMessage), media: image)
+                    if let representation = largestRepresentationForPhoto(image) {
+                        imageDimensions = representation.dimensions.cgSize
+                    }
+                } else if let file = media as? TelegramMediaFile, file.isVideo && !file.isVideoSticker {
+                    updatedMediaReference = .message(message: MessageReference(arguments.parentMessage), media: file)
+                    
+                    if let dimensions = file.dimensions {
+                        imageDimensions = dimensions.cgSize
+                    } else if let representation = largestImageRepresentation(file.previewRepresentations), !file.isSticker {
+                        imageDimensions = representation.dimensions.cgSize
+                    }
+                    if file.isInstantVideo {
+                        hasRoundImage = true
+                    }
+                }
+            } else if let message = arguments.message, !message.containsSecretMedia {
                 for media in message.media {
                     if let image = media as? TelegramMediaImage {
                         updatedMediaReference = .message(message: MessageReference(message), media: image)
@@ -536,6 +570,26 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                             hasRoundImage = true
                         }
                         break
+                    } else if let poll = media as? TelegramMediaPoll, let media = poll.attachedMedia {
+                        if let image = media as? TelegramMediaImage {
+                            updatedMediaReference = .message(message: MessageReference(message), media: image)
+                            if let representation = largestRepresentationForPhoto(image) {
+                                imageDimensions = representation.dimensions.cgSize
+                            }
+                            break
+                        } else if let file = media as? TelegramMediaFile, !file.isVideoSticker {
+                            updatedMediaReference = .message(message: MessageReference(message), media: file)
+                            
+                            if let dimensions = file.dimensions {
+                                imageDimensions = dimensions.cgSize
+                            } else if let representation = largestImageRepresentation(file.previewRepresentations), !file.isSticker {
+                                imageDimensions = representation.dimensions.cgSize
+                            }
+                            if file.isInstantVideo {
+                                hasRoundImage = true
+                            }
+                            break
+                        }
                     }
                 }
             } else if let story = arguments.story, let storyPeer = arguments.parentMessage.peers[story.peerId], let storyItem = arguments.parentMessage.associatedStories[story] {
@@ -620,7 +674,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             }
             
             let (titleLayout, titleApply) = titleNodeLayout(TextNodeLayoutArguments(attributedString: titleString, backgroundColor: nil, maximumNumberOfLines: maxTitleNumberOfLines, truncationType: .end, constrainedSize: CGSize(width: contrainedTextSize.width - additionalTitleWidth, height: contrainedTextSize.height), alignment: .natural, cutout: nil, insets: textInsets))
-            if isExpiredStory || isStory {
+            if isExpiredStory || isStory || isPoll {
                 contrainedTextSize.width -= 26.0
             }
             
@@ -687,7 +741,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             size.width = max(titleLayout.size.width + additionalTitleWidth - textInsets.left - textInsets.right, textLeftInset + textLayout.size.width - textInsets.left - textInsets.right - textCutoutWidth) + leftInset + 6.0
             size.height = titleLayout.size.height + textLayout.size.height - 2 * (textInsets.top + textInsets.bottom) + 2 * spacing
             size.height += 2.0
-            if isExpiredStory || isStory {
+            if isExpiredStory || isStory || isPoll {
                 size.width += 16.0
             }
             
@@ -760,7 +814,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                 titleNode.frame = CGRect(origin: CGPoint(x: leftInset - textInsets.left - 2.0, y: spacing - textInsets.top + 1.0), size: titleLayout.size)
                 
                 let textFrame = CGRect(origin: CGPoint(x: textLeftInset + leftInset - textInsets.left - 2.0 - textCutoutWidth, y: titleNode.frame.maxY - textInsets.bottom + spacing - textInsets.top - 2.0), size: textLayout.size)
-                let effectiveTextFrame = textFrame.offsetBy(dx: (isExpiredStory || isStory) ? 18.0 : 0.0, dy: 0.0)
+                let effectiveTextFrame = textFrame.offsetBy(dx: (isExpiredStory || isStory || isPoll) ? 18.0 : 0.0, dy: 0.0)
                 
                 if textNode.textNode.bounds.isEmpty || !animation.isAnimated || textNode.textNode.bounds.height == effectiveTextFrame.height {
                     textNode.textNode.frame = effectiveTextFrame
@@ -783,7 +837,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                     }
                 }
                 
-                if isExpiredStory || isStory {
+                if isExpiredStory || isStory || isPoll {
                     let expiredStoryIconView: UIImageView
                     if let current = node.expiredStoryIconView {
                         expiredStoryIconView = current
@@ -801,7 +855,9 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                         imageType = incoming ? .incoming : .outgoing
                     }
                     
-                    if isExpiredStory {
+                    if isPoll {
+                        expiredStoryIconView.image = PresentationResourcesChat.chatReplyPollIndicatorIcon(arguments.presentationData.theme.theme, type: imageType)
+                    } else if isExpiredStory {
                         expiredStoryIconView.image = PresentationResourcesChat.chatExpiredStoryIndicatorIcon(arguments.presentationData.theme.theme, type: imageType)
                     } else {
                         expiredStoryIconView.image = PresentationResourcesChat.chatReplyStoryIndicatorIcon(arguments.presentationData.theme.theme, type: imageType)
@@ -895,7 +951,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                 
                 if let todoItemCompleted {
                     let checkLayerFrame = CGRect(origin: CGPoint(x: textFrame.minX - 16.0, y: textFrame.minY + 5.0), size: CGSize(width: 12.0, height: 12.0))
-                    let checkTheme = CheckNodeTheme(backgroundColor: titleColor, strokeColor: .clear, borderColor: titleColor, overlayBorder: false, hasInset: true, hasShadow: false, borderWidth: 1.0)
+                    let checkTheme = CheckNodeTheme(backgroundColor: iconColor, strokeColor: .clear, borderColor: iconColor, overlayBorder: false, hasInset: true, hasShadow: false, borderWidth: 1.0)
                     
                     let checkLayer: CheckLayer
                     if let current = node.checkLayer {
@@ -904,7 +960,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                         checkLayer.setSelected(todoItemCompleted, animated: true)
                         animation.animator.updateFrame(layer: checkLayer, frame: checkLayerFrame, completion: nil)
                     } else {
-                        checkLayer = CheckLayer(theme: checkTheme)
+                        checkLayer = CheckLayer(theme: checkTheme, content: .check(isRectangle: checkIsRectangle))
                         node.checkLayer = checkLayer
                         node.contentNode.layer.addSublayer(checkLayer)
                         

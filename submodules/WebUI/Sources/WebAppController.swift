@@ -1964,6 +1964,10 @@ public final class WebAppController: ViewController, AttachmentContainable {
                         self.controller?.verifyAgeCompletion?(Int(ageValue))
                     }
                 }
+            case "web_app_request_chat":
+                if let json, let requestId = json["req_id"] as? String {
+                    self.requestChat(requestId: requestId)
+                }
             default:
                 break
             }
@@ -2330,6 +2334,70 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     }
                 }
                 controller.present(alertController, in: .window(.root))
+            })
+        }
+        
+        fileprivate func requestChat(requestId: String) {
+            guard let controller = self.controller, !self.dismissed else {
+                return
+            }
+            let _ = (self.context.engine.messages.requestMiniAppButton(peerId: controller.botId, requestId: requestId)
+            |> deliverOnMainQueue).startStandalone(next: { [weak self] button in
+                guard let self, let button else {
+                    return
+                }
+                switch button.action {
+                case let .requestPeer(peerType, buttonId, maxQuantity):
+                    let _ = maxQuantity
+                    
+                    switch peerType {
+                    case let .createBot(createBot):
+                        Task { @MainActor [weak self] in
+                            guard let self, let controller = self.controller else {
+                                return
+                            }
+                            let createBotScreen = await self.context.sharedContext.makeCreateBotScreen(
+                                context: self.context,
+                                parentBot: controller.botId,
+                                initialUsername: createBot.suggestedUsername,
+                                initialTitle: createBot.suggestedName,
+                                openAutomatically: false,
+                                completion: { [weak self] resultId in
+                                    guard let self, let controller = self.controller else {
+                                        return
+                                    }
+                                    if let resultId {
+                                        let _ = self.context.engine.peers.sendBotRequestedPeer(peerId: controller.botId, requestId: requestId, buttonId: buttonId, requestedPeerIds: [resultId]
+                                        ).startStandalone(error: { [weak self] _ in
+                                            guard let self else {
+                                                return
+                                            }
+                                            self.webView?.sendEvent(name: "requested_chat_failed", data: nil)
+                                        }, completed: { [weak self] in
+                                            guard let self else {
+                                                return
+                                            }
+                                            self.webView?.sendEvent(name: "requested_chat_sent", data: nil)
+                                        })
+                                    } else {
+                                        self.webView?.sendEvent(name: "requested_chat_failed", data: nil)
+                                    }
+                                }
+                            )
+                            if let createBotScreen, let navigationController = controller.getNavigationController() {
+                                navigationController.pushViewController(createBotScreen)
+                            }
+                        }
+                    case let .channel(channel):
+                        if channel.isCreator {
+                            
+                        }
+                    default:
+                        break
+                    }
+                default:
+                    break
+                }
             })
         }
         
@@ -3704,14 +3772,14 @@ public final class WebAppController: ViewController, AttachmentContainable {
                 self.navigationItem.leftBarButtonItem = UIBarButtonItem(customDisplayNode: cancelButtonNode)
             }
             
-            let morehButtonNode: BarComponentHostNode
+            let moreButtonNode: BarComponentHostNode
             if let current = self.moreBarButtonNode {
-                morehButtonNode = current
-                morehButtonNode.component = moreComponent
+                moreButtonNode = current
+                moreButtonNode.component = moreComponent
             } else {
-                morehButtonNode = BarComponentHostNode(component: moreComponent, size: barButtonSize)
-                self.moreBarButtonNode = morehButtonNode
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: morehButtonNode)
+                moreButtonNode = BarComponentHostNode(component: moreComponent, size: barButtonSize)
+                self.moreBarButtonNode = moreButtonNode
+                self.navigationItem.rightBarButtonItem = UIBarButtonItem(customDisplayNode: moreButtonNode)
             }
         }
             
@@ -4237,7 +4305,16 @@ public func standaloneWebAppController(
     getSourceRect: (() -> CGRect?)? = nil,
     verifyAgeCompletion: ((Int) -> Void)? = nil
 ) -> ViewController {
-    let controller = AttachmentController(context: context, updatedPresentationData: updatedPresentationData, chatLocation: .peer(id: params.peerId), buttons: [.standalone], initialButton: .standalone, fromMenu: params.source == .menu, hasTextInput: false, isFullSize: params.fullSize, makeEntityInputView: {
+    let controller = AttachmentController(
+        context: context,
+        updatedPresentationData: updatedPresentationData,
+        chatLocation: .peer(id: params.peerId),
+        buttons: [.standalone],
+        initialButton: .standalone,
+        fromMenu: params.source == .menu,
+        hasTextInput: false,
+        isFullSize: params.fullSize,
+        makeEntityInputView: {
         return nil
     })
     controller.requestController = { _, present in
@@ -4249,6 +4326,7 @@ public func standaloneWebAppController(
         webAppController.requestSwitchInline = requestSwitchInline
         webAppController.verifyAgeCompletion = verifyAgeCompletion
         present(webAppController, webAppController.mediaPickerContext)
+        return true
     }
     controller.willDismiss = willDismiss
     controller.didDismiss = didDismiss

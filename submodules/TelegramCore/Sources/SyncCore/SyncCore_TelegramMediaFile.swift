@@ -311,7 +311,6 @@ public struct TelegramMediaVideoFlags: OptionSet {
     public static let instantRoundVideo = TelegramMediaVideoFlags(rawValue: 1 << 0)
     public static let supportsStreaming = TelegramMediaVideoFlags(rawValue: 1 << 1)
     public static let isSilent = TelegramMediaVideoFlags(rawValue: 1 << 3)
-    public static let isLivePhoto = TelegramMediaVideoFlags(rawValue: 1 << 4)
 }
 
 public struct StickerMaskCoords: PostboxCoding, Equatable {
@@ -1060,16 +1059,7 @@ public final class TelegramMediaFile: Media, Equatable, Codable {
         }
         return false
     }
-    
-    public var isLivePhoto: Bool {
-        for attribute in self.attributes {
-            if case .Video(_, _, let flags, _, _, _) = attribute {
-                return flags.contains(.isLivePhoto)
-            }
-        }
-        return false
-    }
-    
+        
     public var preloadSize: Int32? {
         for attribute in self.attributes {
             if case .Video(_, _, _, let preloadSize, _, _) = attribute {
@@ -1352,6 +1342,10 @@ public final class TelegramMediaFile: Media, Equatable, Codable {
     
     public func withUpdatedVideoCover(_ videoCover: TelegramMediaImage?) -> TelegramMediaFile {
         return TelegramMediaFile(fileId: self.fileId, partialReference: self.partialReference, resource: self.resource, previewRepresentations: self.previewRepresentations, videoThumbnails: self.videoThumbnails, videoCover: videoCover, immediateThumbnailData: self.immediateThumbnailData, mimeType: self.mimeType, size: self.size, attributes: self.attributes, alternativeRepresentations: self.alternativeRepresentations)
+    }
+    
+    public func withUpdatedImmediateThumnailData(_ immediateThumbnailData: Data?) -> TelegramMediaFile {
+        return TelegramMediaFile(fileId: self.fileId, partialReference: self.partialReference, resource: self.resource, previewRepresentations: self.previewRepresentations, videoThumbnails: self.videoThumbnails, videoCover: self.videoCover, immediateThumbnailData: immediateThumbnailData, mimeType: self.mimeType, size: self.size, attributes: self.attributes, alternativeRepresentations: self.alternativeRepresentations)
     }
 }
 

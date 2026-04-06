@@ -617,8 +617,8 @@ public extension TelegramEngine {
             return _internal_getFutureCreatorAfterLeave(account: self.account, peerId: peerId)
         }
                 
-        public func updateChatRank(peerId: PeerId, userId: PeerId, rank: String?) -> Signal<(ChannelParticipant?, RenderedChannelParticipant)?, UpdateChatRankError> {
-            return _internal_updateChatRank(account: account, peerId: peerId, userId: userId, rank: rank)
+        public func updateChatRank(peerId: PeerId, userId: PeerId, messageId: MessageId? = nil, rank: String?) -> Signal<(ChannelParticipant?, RenderedChannelParticipant)?, UpdateChatRankError> {
+            return _internal_updateChatRank(account: account, peerId: peerId, userId: userId, messageId: messageId, rank: rank)
         }
 
         public func terminateSecretChat(peerId: PeerId, requestRemoteHistoryRemoval: Bool) -> Signal<Never, NoError> {
@@ -637,7 +637,19 @@ public extension TelegramEngine {
         }
         
         public func sendBotRequestedPeer(messageId: MessageId, buttonId: Int32, requestedPeerIds: [PeerId]) -> Signal<Void, SendBotRequestedPeerError> {
-            return _internal_sendBotRequestedPeer(account: self.account, peerId: messageId.peerId, messageId: messageId, buttonId: buttonId, requestedPeerIds: requestedPeerIds)
+            return _internal_sendBotRequestedPeer(account: self.account, peerId: messageId.peerId, messageId: messageId, requestId: nil, buttonId: buttonId, requestedPeerIds: requestedPeerIds)
+        }
+
+        public func sendBotRequestedPeer(peerId: PeerId, requestId: String, buttonId: Int32, requestedPeerIds: [PeerId]) -> Signal<Void, SendBotRequestedPeerError> {
+            return _internal_sendBotRequestedPeer(account: self.account, peerId: peerId, messageId: nil, requestId: requestId, buttonId: buttonId, requestedPeerIds: requestedPeerIds)
+        }
+
+        public func createBot(name: String, username: String, managerPeerId: PeerId, viaDeeplink: Bool) -> Signal<EnginePeer, CreateBotError> {
+            return _internal_createBot(account: self.account, name: name, username: username, managerPeerId: managerPeerId, viaDeeplink: viaDeeplink)
+        }
+
+        public func getRequestedWebViewButton(botId: PeerId, requestId: String) -> Signal<ReplyMarkupButton, GetRequestedWebViewButtonError> {
+            return _internal_getRequestedWebViewButton(account: self.account, botId: botId, requestId: requestId)
         }
 
         public func addChannelMembers(peerId: PeerId, memberIds: [PeerId]) -> Signal<TelegramInvitePeersResult, AddChannelMemberError> {

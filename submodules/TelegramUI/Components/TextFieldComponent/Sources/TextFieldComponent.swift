@@ -39,6 +39,8 @@ public final class TextFieldComponent: Component {
         public var currentEmojiSearch: EmojiSearch?
         public var dismissedEmojiSearchPosition: EmojiSearch.Position?
         
+        public var updated: (() -> Void)?
+        
         public init() {
         }
     }
@@ -151,6 +153,9 @@ public final class TextFieldComponent: Component {
     public let hideKeyboard: Bool
     public let customInputView: UIView?
     public let placeholder: NSAttributedString?
+    public let placeholderVerticalOffset: CGFloat
+    public let prefix: NSAttributedString?
+    public let suffix: NSAttributedString?
     public let resetText: NSAttributedString?
     public let assumeIsEditing: Bool
     public let isOneLineWhenUnfocused: Bool
@@ -181,6 +186,9 @@ public final class TextFieldComponent: Component {
         hideKeyboard: Bool,
         customInputView: UIView?,
         placeholder: NSAttributedString? = nil,
+        placeholderVerticalOffset: CGFloat = 0.0,
+        prefix: NSAttributedString? = nil,
+        suffix: NSAttributedString? = nil,
         resetText: NSAttributedString?,
         assumeIsEditing: Bool = false,
         isOneLineWhenUnfocused: Bool,
@@ -210,6 +218,9 @@ public final class TextFieldComponent: Component {
         self.hideKeyboard = hideKeyboard
         self.customInputView = customInputView
         self.placeholder = placeholder
+        self.placeholderVerticalOffset = placeholderVerticalOffset
+        self.prefix = prefix
+        self.suffix = suffix
         self.resetText = resetText
         self.assumeIsEditing = assumeIsEditing
         self.isOneLineWhenUnfocused = isOneLineWhenUnfocused
@@ -261,6 +272,15 @@ public final class TextFieldComponent: Component {
             return false
         }
         if lhs.placeholder != rhs.placeholder {
+            return false
+        }
+        if lhs.placeholderVerticalOffset != rhs.placeholderVerticalOffset {
+            return false
+        }
+        if lhs.prefix != rhs.prefix {
+            return false
+        }
+        if lhs.suffix != rhs.suffix {
             return false
         }
         if lhs.resetText != rhs.resetText {
@@ -320,6 +340,8 @@ public final class TextFieldComponent: Component {
     
     public final class View: UIView, UIScrollViewDelegate, ChatInputTextNodeDelegate {
         private var placeholder: ComponentView<Empty>?
+        private var prefix: ComponentView<Empty>?
+        private var suffix: ComponentView<Empty>?
         private let textView: ChatInputTextView
         private let inputMenu: TextInputMenu
         
@@ -334,6 +356,10 @@ public final class TextFieldComponent: Component {
             return InputState(inputText: stateAttributedStringForText(self.textView.attributedText ?? NSAttributedString()), selectionRange: selectionRange)
         }
         
+        public var inputTextView: UITextView {
+            return self.textView
+        }
+        
         private var component: TextFieldComponent?
         private weak var state: EmptyComponentState?
         private var isUpdating: Bool = false
@@ -345,6 +371,7 @@ public final class TextFieldComponent: Component {
             self.textView.layer.isOpaque = false
             self.textView.indicatorStyle = .white
             self.textView.scrollIndicatorInsets = UIEdgeInsets(top: 9.0, left: 0.0, bottom: 9.0, right: 0.0)
+            self.textView.showsHorizontalScrollIndicator = false
             
             self.inputMenu = TextInputMenu(hasSpoilers: true, hasQuotes: true)
             
@@ -582,6 +609,11 @@ public final class TextFieldComponent: Component {
                 self.spoilerIsDisappearing = false
                 self.updateInternalSpoilersRevealed(false, animated: false)
             }
+            
+            component.externalState.hasText = self.textView.textStorage.length != 0
+            component.externalState.textLength = self.textView.textStorage.string.count
+            component.externalState.text = NSAttributedString(attributedString: self.textView.textStorage)
+            component.externalState.updated?()
             
             self.updateEntities()
             if !self.isUpdating {
@@ -1415,6 +1447,30 @@ public final class TextFieldComponent: Component {
                 self.textView.autocorrectionType = component.autocorrectionType
             }
             
+            var prefixSize: CGSize?
+            if let prefixValue = component.prefix {
+                let prefix: ComponentView<Empty>
+                if let current = self.prefix {
+                    prefix = current
+                } else {
+                    prefix = ComponentView()
+                    self.prefix = prefix
+                }
+                prefixSize = prefix.update(
+                    transition: .immediate,
+                    component: AnyComponent(MultilineTextComponent(
+                        text: .plain(prefixValue)
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width, height: 1000.0)
+                )
+            } else {
+                if let prefix = self.prefix {
+                    self.prefix = nil
+                    prefix.view?.removeFromSuperview()
+                }
+            }
+            
             if let initialText = component.externalState.initialText {
                 component.externalState.initialText = nil
                 self.updateInputState { _ in
@@ -1446,7 +1502,9 @@ public final class TextFieldComponent: Component {
             var innerTextInsets = component.insets
             innerTextInsets.left = 0.0
             
-            let textLeftInset = component.insets.left + 8.0
+            var textLeftInset = component.insets.left + 8.0
+            let prefixWidth = prefixSize?.width ?? 0.0
+            textLeftInset += prefixWidth
             
             if self.textView.defaultTextContainerInset != innerTextInsets {
                 self.textView.defaultTextContainerInset = innerTextInsets
@@ -1457,10 +1515,45 @@ public final class TextFieldComponent: Component {
                 availableSize.width += 32.0
             }
             
-            let textHeight = self.textView.textHeightForWidth(availableSize.width - component.insets.left, rightInset: innerTextInsets.right)
+            let textHeight = self.textView.textHeightForWidth(availableSize.width - component.insets.left - prefixWidth, rightInset: innerTextInsets.right)
             let size = CGSize(width: availableSize.width, height: min(textHeight, availableSize.height))
             
-            let textFrame = CGRect(origin: CGPoint(x: textLeftInset, y: 0.0), size: CGSize(width: size.width - component.insets.left, height: size.height))
+            let textFrame = CGRect(origin: CGPoint(x: textLeftInset, y: 0.0), size: CGSize(width: size.width - component.insets.left - prefixWidth, height: size.height))
+            
+            if let suffixValue = component.suffix {
+                let suffix: ComponentView<Empty>
+                if let current = self.suffix {
+                    suffix = current
+                } else {
+                    suffix = ComponentView()
+                    self.suffix = suffix
+                }
+                let suffixString = NSMutableAttributedString(attributedString: self.textView.textStorage)
+                suffixString.addAttribute(.foregroundColor, value: UIColor.clear, range: NSRange(location: 0, length: suffixString.length))
+                suffixString.append(suffixValue)
+                let suffixSize = suffix.update(
+                    transition: .immediate,
+                    component: AnyComponent(MultilineTextComponent(
+                        text: .plain(suffixString)
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: textFrame.width, height: 1000.0)
+                )
+                let suffixFrame = CGRect(origin: CGPoint(x: textFrame.minX, y: textFrame.minY + 16.0 + UIScreenPixel), size: suffixSize)
+                if let suffixView = suffix.view {
+                    if suffixView.superview == nil {
+                        suffixView.layer.anchorPoint = CGPoint(x: 1.0, y: 0.0)
+                        self.insertSubview(suffixView, belowSubview: self.textView)
+                    }
+                    ComponentTransition.immediate.setPosition(view: suffixView, position: CGPoint(x: suffixFrame.maxX, y: suffixFrame.minY))
+                    suffixView.bounds = CGRect(origin: CGPoint(), size: suffixFrame.size)
+                }
+            } else {
+                if let suffix = self.suffix {
+                    self.suffix = nil
+                    suffix.view?.removeFromSuperview()
+                }
+            }
             
             var refreshScrolling = self.textView.bounds.size != textFrame.size
             if component.isOneLineWhenUnfocused && !isEditing && isEditing != wasEditing {
@@ -1481,6 +1574,14 @@ public final class TextFieldComponent: Component {
             self.textView.updateLayout(size: textFrame.size)
             self.textView.panGestureRecognizer.isEnabled = isEditing
             
+            if let prefixView = self.prefix?.view, let prefixSize {
+                if prefixView.superview == nil {
+                    self.insertSubview(prefixView, belowSubview: self.textView)
+                }
+                let prefixFrame = CGRect(origin: CGPoint(x: textFrame.minX - prefixSize.width, y: textFrame.minY + 16.0 + UIScreenPixel), size: prefixSize)
+                prefixView.frame = prefixFrame
+            }
+            
             if let placeholderValue = component.placeholder {
                 var placeholderTransition = transition
                 let placeholder: ComponentView<Empty>
@@ -1493,26 +1594,28 @@ public final class TextFieldComponent: Component {
                 }
                 let placeholderSize = placeholder.update(
                     transition: .immediate,
-                    component: AnyComponent(MultilineTextComponent(
-                        text: .plain(placeholderValue)
-                    )),
+                    component: AnyComponent(
+                        Text(attributedString: placeholderValue)                        
+                    ),
                     environment: {},
                     containerSize: textFrame.size
                 )
-                let placeholderFrame = CGRect(origin: CGPoint(x: textFrame.minX, y: textFrame.minY + floor((textFrame.height - placeholderSize.height) * 0.5) - 1.0), size: placeholderSize)
+                let placeholderFrame = CGRect(origin: CGPoint(x: 0.0, y: floor((textFrame.height - placeholderSize.height) * 0.5) - 1.0 + component.placeholderVerticalOffset), size: placeholderSize)
                 if let placeholderView = placeholder.view {
                     if placeholderView.superview == nil {
-                        placeholderView.layer.anchorPoint = CGPoint()
-                        self.insertSubview(placeholderView, belowSubview: self.textView)
+                        placeholderView.isUserInteractionEnabled = false
+                        self.textView.insertSubview(placeholderView, at: 0)
                     }
-                    placeholderTransition.setPosition(view: placeholderView, position: placeholderFrame.origin)
+                    placeholderTransition.setPosition(view: placeholderView, position: placeholderFrame.center)
                     placeholderView.bounds = CGRect(origin: CGPoint(), size: placeholderFrame.size)
                     
                     placeholderView.isHidden = self.textView.textStorage.length != 0
                 }
-            } else if let placeholder = self.placeholder {
-                self.placeholder = nil
-                placeholder.view?.removeFromSuperview()
+            } else {
+                if let placeholder = self.placeholder {
+                    self.placeholder = nil
+                    placeholder.view?.removeFromSuperview()
+                }
             }
             
             self.updateEmojiSuggestion(transition: .immediate)

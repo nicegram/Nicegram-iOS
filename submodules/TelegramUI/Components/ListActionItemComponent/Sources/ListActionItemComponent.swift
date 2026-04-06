@@ -13,7 +13,7 @@ public final class ListActionItemComponent: Component {
         case legacy
     }
     
-    public enum ToggleStyle {
+    public enum ToggleStyle: Equatable {
         case regular
         case icons
         case lock
@@ -138,6 +138,11 @@ public final class ListActionItemComponent: Component {
         case center
     }
     
+    public enum VerticalAlignment {
+        case `default`
+        case middle
+    }
+    
     public final class ContextOption: Equatable {
         public let id: AnyHashable
         public let title: String
@@ -170,6 +175,7 @@ public final class ListActionItemComponent: Component {
     public let background: AnyComponent<Empty>?
     public let title: AnyComponent<Empty>
     public let titleAlignment: Alignment
+    public let verticalAlignment: VerticalAlignment
     public let contentInsets: UIEdgeInsets
     public let leftIcon: LeftIcon?
     public let icon: Icon?
@@ -186,6 +192,7 @@ public final class ListActionItemComponent: Component {
         background: AnyComponent<Empty>? = nil,
         title: AnyComponent<Empty>,
         titleAlignment: Alignment = .default,
+        verticalAlignment: VerticalAlignment = .default,
         contentInsets: UIEdgeInsets = UIEdgeInsets(top: 12.0, left: 0.0, bottom: 12.0, right: 0.0),
         leftIcon: LeftIcon? = nil,
         icon: Icon? = nil,
@@ -201,6 +208,7 @@ public final class ListActionItemComponent: Component {
         self.background = background
         self.title = title
         self.titleAlignment = titleAlignment
+        self.verticalAlignment = verticalAlignment
         self.contentInsets = contentInsets
         self.leftIcon = leftIcon
         self.icon = icon
@@ -226,6 +234,9 @@ public final class ListActionItemComponent: Component {
             return false
         }
         if lhs.titleAlignment != rhs.titleAlignment {
+            return false
+        }
+        if lhs.verticalAlignment != rhs.verticalAlignment {
             return false
         }
         if lhs.contentInsets != rhs.contentInsets {
@@ -312,7 +323,7 @@ public final class ListActionItemComponent: Component {
             if let current = self.checkLayer {
                 checkLayer = current
             } else {
-                checkLayer = CheckLayer(theme: CheckNodeTheme(theme: theme, style: .plain), content: .check)
+                checkLayer = CheckLayer(theme: CheckNodeTheme(theme: theme, style: .plain), content: .check(isRectangle: false))
                 self.checkLayer = checkLayer
                 self.layer.addSublayer(checkLayer)
             }
@@ -349,6 +360,7 @@ public final class ListActionItemComponent: Component {
         
         private var arrowView: UIImageView?
         private var switchNode: SwitchNode?
+        private var lockView: UIImageView?
         private var iconSwitchNode: IconSwitchNode?
         private var activityIndicatorView: UIActivityIndicatorView?
         private var customAccessoryView: ComponentView<Empty>?
@@ -456,7 +468,7 @@ public final class ListActionItemComponent: Component {
             case .expandArrows:
                 contentRightInset = 36.0
             case .toggle:
-                contentRightInset = 76.0
+                contentRightInset = 82.0
             case .activity:
                 contentRightInset = 76.0
             case let .custom(customAccessory):
@@ -484,17 +496,8 @@ public final class ListActionItemComponent: Component {
                 contentRightInset = customAccessorySizeValue.width + customAccessory.insets.left + customAccessory.insets.right
             }
             
-            var contentInsets = component.contentInsets
-            switch component.style {
-            case .glass:
-                if contentInsets.top == 12.0 && contentInsets.bottom == 12.0 {
-                    contentInsets.top = 16.0
-                    contentInsets.bottom = 16.0
-                }
-            case .legacy:
-                break
-            }
-            
+            let contentInsets = component.contentInsets
+         
             var contentHeight: CGFloat = 0.0
             contentHeight += contentInsets.top
             
@@ -519,10 +522,14 @@ public final class ListActionItemComponent: Component {
                 contentLeftInset = floor((availableSize.width - titleSize.width) / 2.0)
             }
                        
-            let titleY = contentHeight
             contentHeight += titleSize.height
-            
             contentHeight += contentInsets.bottom
+            
+            if case .glass = component.style, contentHeight < 52.0 {
+                contentHeight = 52.0
+            }
+            
+            let titleY = floorToScreenPixels((contentHeight - titleSize.height) / 2.0)
             
             if let iconValue = component.icon {
                 if previousComponent?.icon?.component.id != iconValue.component.id, let icon = self.icon {
@@ -667,12 +674,19 @@ public final class ListActionItemComponent: Component {
                         containerSize: CGSize(width: availableSize.width, height: availableSize.height)
                     )
                     let leftIconX: CGFloat
+                    let leftIconY: CGFloat
                     if adjustLeftInset {
                         leftIconX = 15.0
                     } else {
                         leftIconX = floor((contentLeftInset - leftIconSize.width) * 0.5)
                     }
-                    let leftIconFrame = CGRect(origin: CGPoint(x: leftIconX, y: floor((min(60.0, contentHeight) - leftIconSize.height) * 0.5)), size: leftIconSize)
+                    switch component.verticalAlignment {
+                    case .default:
+                        leftIconY = floor((min(60.0, contentHeight) - leftIconSize.height) * 0.5)
+                    case .middle:
+                        leftIconY = floor((contentHeight - leftIconSize.height) * 0.5)
+                    }
+                    let leftIconFrame = CGRect(origin: CGPoint(x: leftIconX, y: leftIconY), size: leftIconSize)
                     if let leftIconView = leftIcon.view {
                         if leftIconView.superview == nil {
                             leftIconView.isUserInteractionEnabled = false
@@ -756,7 +770,7 @@ public final class ListActionItemComponent: Component {
             
             if case let .toggle(toggle) = component.accessory {
                 switch toggle.style {
-                case .regular:
+                case .regular, .lock:
                     let switchNode: SwitchNode
                     var switchTransition = transition
                     var updateSwitchTheme = themeUpdated
@@ -800,15 +814,68 @@ public final class ListActionItemComponent: Component {
                         }
                         switchSize = switchView.bounds.size
                     }
-                    let switchFrame = CGRect(origin: CGPoint(x: availableSize.width - 16.0 - switchSize.width, y: floor((min(60.0, contentHeight) - switchSize.height) * 0.5)), size: switchSize)
+                    let switchY: CGFloat
+                    switch component.verticalAlignment {
+                    case .default:
+                        switchY = floor((min(60.0, contentHeight) - switchSize.height) * 0.5)
+                    case .middle:
+                        switchY = floor((contentHeight - switchSize.height) * 0.5)
+                    }
+                    let switchFrame = CGRect(origin: CGPoint(x: availableSize.width - 16.0 - switchSize.width, y: switchY), size: switchSize)
                     switchTransition.setFrame(view: switchNode.view, frame: switchFrame)
-                case .icons, .lock:
+                          
+                    if case .lock = toggle.style {
+                        let lockView: UIImageView
+                        var lockTransition = transition
+                        if let current = self.lockView {
+                            lockView = current
+                            if themeUpdated {
+                                lockView.image = PresentationResourcesItemList.disclosureSwitchLockImage(component.theme)
+                            }
+                        } else {
+                            lockTransition = lockTransition.withAnimation(.none)
+                            lockView = UIImageView(image: PresentationResourcesItemList.disclosureSwitchLockImage(component.theme))
+                            self.lockView = lockView
+                            self.button.addSubview(lockView)
+                            
+                            if !transition.animation.isImmediate {
+                                transition.animateAlpha(view: lockView, from: 0.0, to: 1.0)
+                                transition.animateScale(view: lockView, from: 0.01, to: 1.0)
+                            }
+                        }
+                        
+                        if let image = lockView.image {
+                            let originX: CGFloat
+                            if #available(iOS 26.0, *) {
+                                originX = switchFrame.minX + 14.0 - UIScreenPixel
+                            } else {
+                                originX = switchFrame.minX + 8.0 + UIScreenPixel
+                            }
+                            let lockFrame = CGRect(origin: CGPoint(x: originX, y: switchFrame.midY - image.size.height * 0.5), size: image.size)
+                            lockTransition.setFrame(view: lockView, frame: lockFrame)
+                        }
+                    } else {
+                        if let lockView = self.lockView {
+                            self.lockView = nil
+                            if transition.animation.isImmediate {
+                                lockView.removeFromSuperview()
+                            } else {
+                                transition.setScale(view: lockView, scale: 0.01)
+                                transition.setAlpha(view: lockView, alpha: 0.0, completion: { [weak lockView] _ in
+                                    lockView?.removeFromSuperview()
+                                })
+                            }
+                        }
+                    }
+                case .icons:
                     let switchNode: IconSwitchNode
                     var switchTransition = transition
                     var updateSwitchTheme = themeUpdated
+                    if case let .toggle(previousToggle) = previousComponent?.accessory, previousToggle.style != toggle.style {
+                        updateSwitchTheme = true
+                    }
                     if let current = self.iconSwitchNode {
                         switchNode = current
-                        switchNode.updateIsLocked(toggle.style == .lock)
                         if switchNode.isOn != toggle.isOn {
                             switchNode.setOn(toggle.isOn, animated: !transition.animation.isImmediate)
                         }
@@ -816,7 +883,6 @@ public final class ListActionItemComponent: Component {
                         switchTransition = switchTransition.withAnimation(.none)
                         updateSwitchTheme = true
                         switchNode = IconSwitchNode()
-                        switchNode.updateIsLocked(toggle.style == .lock)
                         switchNode.setOn(toggle.isOn, animated: false)
                         self.iconSwitchNode = switchNode
                         self.button.addSubview(switchNode.view)
@@ -838,8 +904,13 @@ public final class ListActionItemComponent: Component {
                         switchNode.frameColor = component.theme.list.itemSwitchColors.frameColor
                         switchNode.contentColor = component.theme.list.itemSwitchColors.contentColor
                         switchNode.handleColor = component.theme.list.itemSwitchColors.handleColor
-                        switchNode.positiveContentColor = component.theme.list.itemSwitchColors.positiveColor
-                        switchNode.negativeContentColor = component.theme.list.itemSwitchColors.negativeColor
+                        if case .icons = toggle.style {
+                            switchNode.positiveContentColor = component.theme.list.itemSwitchColors.positiveColor
+                            switchNode.negativeContentColor = component.theme.list.itemSwitchColors.negativeColor
+                        } else {
+                            switchNode.positiveContentColor = .clear
+                            switchNode.negativeContentColor = component.theme.list.itemSecondaryTextColor
+                        }
                     }
                     
                     var switchSize = CGSize(width: 51.0, height: 31.0)

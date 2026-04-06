@@ -426,7 +426,7 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
         }, toggleMessagesSelection: { _, _ in }, sendCurrentMessage: { _, _ in }, sendMessage: { _ in }, sendSticker: { _, _, _, _, _, _, _, _, _ in return false }, sendEmoji: { _, _, _ in }, sendGif: { _, _, _, _, _ in return false }, sendBotContextResultAsGif: { _, _, _, _, _, _ in
             return false
         }, editGif: { _, _ in
-        }, requestMessageActionCallback: { _, _, _, _, _ in }, requestMessageActionUrlAuth: { _, _ in }, activateSwitchInline: { _, _, _ in }, openUrl: { _ in }, shareCurrentLocation: {}, shareAccountContact: {}, sendBotCommand: { _, _ in }, openInstantPage: { _, _ in  }, openWallpaper: { _ in  }, openTheme: { _ in  }, openHashtag: { _, _ in }, updateInputState: { _ in }, updateInputMode: { _ in }, openMessageShareMenu: { _ in
+        }, requestMessageActionCallback: { _, _, _, _, _ in }, requestMessageActionUrlAuth: { _, _ in }, activateSwitchInline: { _, _, _ in }, openUrl: { _ in }, shareCurrentLocation: {}, shareAccountContact: {}, sendBotCommand: { _, _ in }, openInstantPage: { _, _ in  }, openWallpaper: { _ in  }, openTheme: { _ in  }, openHashtag: { _, _ in }, updateInputState: { _ in }, updateInputMode: { _ in }, updatePresentationState: { _ in }, openMessageShareMenu: { _ in
         }, presentController: { _, _ in
         }, presentControllerInCurrent: { _, _ in
         }, navigationController: {
@@ -434,7 +434,8 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
         }, chatControllerNode: {
             return nil
         }, presentGlobalOverlayController: { _, _ in }, callPeer: { _, _ in }, openConferenceCall: { _ in
-        }, longTap: { _, _ in }, todoItemLongTap: { _, _ in }, openCheckoutOrReceipt: { _, _ in }, openSearch: { }, setupReply: { _ in
+        }, longTap: { _, _ in }, todoItemLongTap: { _, _ in }, pollOptionLongTap: { _, _ in
+        }, openCheckoutOrReceipt: { _, _ in }, openSearch: { }, setupReply: { _ in
         }, canSetupReply: { _ in
             return .none
         }, canSendMessages: {
@@ -444,6 +445,7 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
         }, addContact: { _ in
         }, rateCall: { _, _, _ in
         }, requestSelectMessagePollOptions: { _, _ in
+        }, requestAddMessagePollOption: { _, _, _, _, _ in
         }, requestOpenMessagePollResults: { _, _ in
         }, openAppStorePage: {
         }, displayMessageTooltip: { _, _, _, _, _ in
@@ -451,12 +453,13 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
         }, scheduleCurrentMessage: { _ in
         }, sendScheduledMessagesNow: { _ in
         }, editScheduledMessagesTime: { _ in
-        }, performTextSelectionAction: { _, _, _, _ in
+        }, performTextSelectionAction: { _, _, _, _, _ in
         }, displayImportedMessageTooltip: { _ in
         }, displaySwipeToReplyHint: {
         }, dismissReplyMarkupMessage: { _ in
         }, openMessagePollResults: { _, _ in
         }, openPollCreation: { _ in
+        }, openPollMedia: { _, _ in
         }, displayPollSolution: { _, _ in
         }, displayPsa: { _, _ in
         }, displayDiceTooltip: { _ in
@@ -510,7 +513,7 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
         }, requestToggleTodoMessageItem: { _, _, _ in
         }, displayTodoToggleUnavailable: { _ in
         }, openStarsPurchase: { _ in
-        }, openRankInfo: { _, _, _ in }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
+        }, openRankInfo: { _, _, _ in }, openSetPeerAvatar: {}, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
         pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: self.context, backgroundNode: self.wallpaperBackgroundNode))
         
         let associatedData = ChatMessageItemAssociatedData(

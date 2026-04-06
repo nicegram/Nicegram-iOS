@@ -21,7 +21,7 @@ extension SettingsSearchableItemIcon {
     func image() -> UIImage? {
         switch self {
             case .profile:
-                return PresentationResourcesSettings.editProfile
+                return PresentationResourcesSettings.privateChats
             case .proxy:
                 return PresentationResourcesSettings.proxy
             case .savedMessages:
@@ -53,7 +53,7 @@ extension SettingsSearchableItemIcon {
             case .chatFolders:
                 return PresentationResourcesSettings.chatFolders
             case .deleteAccount:
-                return PresentationResourcesSettings.deleteAccount
+                return PresentationResourcesSettings.block
             case .devices:
                 return PresentationResourcesSettings.devices
             case .premium:
@@ -285,14 +285,14 @@ public final class SettingsSearchContainerNode: SearchDisplayControllerContentNo
         self.presentationData = presentationData
         self.presentationDataPromise = Promise(self.presentationData)
         
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         self.listNode.isHidden = true
         self.listNode.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }
         
-        self.recentListNode = ListView()
+        self.recentListNode = ListViewImpl()
         self.recentListNode.backgroundColor = self.presentationData.theme.chatList.backgroundColor
         self.recentListNode.verticalScrollIndicatorColor = self.presentationData.theme.list.scrollIndicatorColor
         self.recentListNode.accessibilityPageScrolledString = { row, count in

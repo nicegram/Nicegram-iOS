@@ -9,6 +9,7 @@ import TextFormat
 public enum MessageContentKindKey {
     case text
     case image
+    case livePhoto
     case video
     case videoMessage
     case audioMessage
@@ -36,6 +37,7 @@ public enum MessageContentKindKey {
 public enum MessageContentKind: Equatable {
     case text(NSAttributedString)
     case image
+    case livePhoto
     case video
     case videoMessage
     case audioMessage
@@ -68,6 +70,12 @@ public enum MessageContentKind: Equatable {
             }
         case .image:
             if case .image = other {
+                return true
+            } else {
+                return false
+            }
+        case .livePhoto:
+            if case .livePhoto = other {
                 return true
             } else {
                 return false
@@ -207,6 +215,8 @@ public enum MessageContentKind: Equatable {
             return .text
         case .image:
             return .image
+        case .livePhoto:
+            return .livePhoto
         case .video:
             return .video
         case .videoMessage:
@@ -316,8 +326,12 @@ public func mediaContentKind(_ media: EngineMedia, message: EngineMessage? = nil
         case .videoMessage:
             return .expiredVideoMessage
         }
-    case .image:
-        return .image
+    case let .image(image):
+        if let _ = image.video {
+            return .livePhoto
+        } else {
+            return .image
+        }
     case let .file(file):
         var fileName: String = ""
         
@@ -429,6 +443,8 @@ public func stringForMediaKind(_ kind: MessageContentKind, strings: Presentation
         return (foldLineBreaks(text), false)
     case .image:
         return (NSAttributedString(string: strings.Message_Photo), true)
+    case .livePhoto:
+        return (NSAttributedString(string: strings.Message_LivePhoto), true)
     case .video:
         return (NSAttributedString(string: strings.Message_Video), true)
     case .videoMessage:
@@ -466,7 +482,7 @@ public func stringForMediaKind(_ kind: MessageContentKind, strings: Presentation
     case .expiredVideoMessage:
         return (NSAttributedString(string: strings.Message_VideoMessageExpired), true)
     case let .poll(text):
-        return (NSAttributedString(string: "📊 \(text)"), false)
+        return (NSAttributedString(string: text), false)
     case let .todo(text):
         return (NSAttributedString(string: "☑️ \(text)"), false)
     case let .restricted(text):
@@ -484,7 +500,7 @@ public func stringForMediaKind(_ kind: MessageContentKind, strings: Presentation
 
 public func descriptionStringForMessage(contentSettings: ContentSettings, message: EngineMessage, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder, dateTimeFormat: PresentationDateTimeFormat, accountPeerId: EnginePeer.Id) -> (NSAttributedString, Bool, Bool) {
     let contentKind = messageContentKind(contentSettings: contentSettings, message: message, strings: strings, nameDisplayOrder: nameDisplayOrder, dateTimeFormat: dateTimeFormat, accountPeerId: accountPeerId)
-    if !message.text.isEmpty && ![.expiredImage, .expiredVideo].contains(contentKind.key) {
+    if !message.text.isEmpty && ![.expiredImage, .expiredVideo, .poll].contains(contentKind.key) {
         return (foldLineBreaks(messageTextWithAttributes(message: message)), false, true)
     }
     let result = stringForMediaKind(contentKind, strings: strings)

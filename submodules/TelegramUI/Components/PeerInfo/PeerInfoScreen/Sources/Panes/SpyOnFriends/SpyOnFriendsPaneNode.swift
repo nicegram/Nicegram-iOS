@@ -218,7 +218,7 @@ final class SpyOnFriendsPaneNode: ASDisplayNode, PeerInfoPaneNode {
         self.spyOnFriendsContext = spyOnFriendsContext
     
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.accessibilityPageScrolledString = { row, count in
             presentationData.strings.VoiceOver_ScrollStatus(row, count).string
         }

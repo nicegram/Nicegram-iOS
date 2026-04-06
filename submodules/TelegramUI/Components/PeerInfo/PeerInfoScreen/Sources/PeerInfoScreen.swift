@@ -1159,6 +1159,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, openHashtag: { _, _ in
         }, updateInputState: { _ in
         }, updateInputMode: { _ in
+        }, updatePresentationState: { _ in
         }, openMessageShareMenu: { _ in
         }, presentController: { [weak self] c, a in
             self?.controller?.present(c, in: .window(.root), with: a)
@@ -1220,6 +1221,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 break
             }
         }, todoItemLongTap: { _, _ in
+        }, pollOptionLongTap: { _, _ in
         }, openCheckoutOrReceipt: { _, _ in
         }, openSearch: {
         }, setupReply: { _ in
@@ -1232,6 +1234,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, addContact: { _ in
         }, rateCall: { _, _, _ in
         }, requestSelectMessagePollOptions: { _, _ in
+        }, requestAddMessagePollOption: { _, _, _, _, _ in
         }, requestOpenMessagePollResults: { _, _ in
         }, openAppStorePage: {
         }, displayMessageTooltip: { _, _, _, _, _ in
@@ -1239,12 +1242,13 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, scheduleCurrentMessage: { _ in
         }, sendScheduledMessagesNow: { _ in
         }, editScheduledMessagesTime: { _ in
-        }, performTextSelectionAction: { _, _, _, _ in
+        }, performTextSelectionAction: { _, _, _, _, _ in
         }, displayImportedMessageTooltip: { _ in
         }, displaySwipeToReplyHint: {
         }, dismissReplyMarkupMessage: { _ in
         }, openMessagePollResults: { _, _ in
         }, openPollCreation: { _ in
+        }, openPollMedia: { _, _ in
         }, displayPollSolution: { _, _ in
         }, displayPsa: { _, _ in
         }, displayDiceTooltip: { _ in
@@ -1302,7 +1306,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
         }, requestToggleTodoMessageItem: { _, _, _ in
         }, displayTodoToggleUnavailable: { _ in
         }, openStarsPurchase: { _ in
-        }, openRankInfo: { _, _, _ in }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
+        }, openRankInfo: { _, _, _ in }, openSetPeerAvatar: {}, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
         pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
         self.hiddenMediaDisposable = context.sharedContext.mediaManager.galleryHiddenMediaManager.hiddenIds().startStrict(next: { [weak self] ids in
             guard let strongSelf = self else {
@@ -1506,6 +1510,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 strongSelf.performMemberAction(member: member, action: .promote)
             case .restrict:
                 strongSelf.performMemberAction(member: member, action: .restrict)
+            case .editRank:
+                strongSelf.performMemberAction(member: member, action: .editRank)
             case .remove:
                 strongSelf.performMemberAction(member: member, action: .remove)
             case let .openStories(sourceView):
@@ -2545,7 +2551,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             }
         })
 
-        self.refreshMessageTagStatsDisposable = context.engine.messages.refreshMessageTagStats(peerId: peerId, threadId: chatLocation.threadId, tags: [.video, .photo, .gif, .music, .voiceOrInstantVideo, .webPage, .file]).startStrict()
+        self.refreshMessageTagStatsDisposable = context.engine.messages.refreshMessageTagStats(peerId: peerId, threadId: chatLocation.threadId, tags: [.video, .photo, .gif, .music, .voiceOrInstantVideo, .webPage, .file, .polls]).startStrict()
         
         if peerId.namespace == Namespaces.Peer.CloudChannel {
             self.translationStateDisposable = (chatTranslationState(context: context, peerId: peerId, threadId: nil)
@@ -3081,7 +3087,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                     playlistLocation: playlistLocation,
                     parentNavigationController: self.controller?.navigationController as? NavigationController
                 )
-                self.controller?.present(musicController, in: .window(.root))
+                musicController.navigationPresentation = .flatModal
+                self.controller?.push(musicController)
             }
         })
     }
@@ -6446,6 +6453,10 @@ public final class PeerInfoScreenImpl: ViewController, PeerInfoScreen, KeyShortc
     
     public var twoStepAuthData: Promise<TwoStepAuthData?> {
         return self.controllerNode.twoStepAuthData
+    }
+    
+    public var notificationExceptions: Promise<NotificationExceptionsList?> {
+        return self.controllerNode.notificationExceptions
     }
     
     override public var customNavigationData: CustomViewControllerNavigationData? {

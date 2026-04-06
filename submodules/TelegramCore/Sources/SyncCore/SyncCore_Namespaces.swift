@@ -179,8 +179,10 @@ public extension MessageTags {
     static let unseenReaction = MessageTags(rawValue: 1 << 11)
     static let voice = MessageTags(rawValue: 1 << 12)
     static let roundVideo = MessageTags(rawValue: 1 << 13)
+    static let polls = MessageTags(rawValue: 1 << 14)
+    static let unseenPollVote = MessageTags(rawValue: 1 << 15)
     
-    static let all: MessageTags = [.photoOrVideo, .file, .music, .webPage, .voiceOrInstantVideo, .unseenPersonalMessage, .liveLocation, .gif, .photo, .video, .pinned, .unseenReaction, .voice, .roundVideo]
+    static let all: MessageTags = [.photoOrVideo, .file, .music, .webPage, .voiceOrInstantVideo, .unseenPersonalMessage, .liveLocation, .gif, .photo, .video, .pinned, .unseenReaction, .voice, .roundVideo, .polls, .unseenPollVote]
 }
 
 public extension GlobalMessageTags {
@@ -199,7 +201,7 @@ public extension PendingMessageActionType {
     static let consumeUnseenPersonalMessage = PendingMessageActionType(rawValue: 0)
     static let updateReaction = PendingMessageActionType(rawValue: 1)
     static let sendScheduledMessageImmediately = PendingMessageActionType(rawValue: 2)
-    static let readReaction = PendingMessageActionType(rawValue: 3)
+    static let readReactionOrPollVote = PendingMessageActionType(rawValue: 3)
     static let sendStarsReaction = PendingMessageActionType(rawValue: 4)
     static let sendPostponedPaidMessage = PendingMessageActionType(rawValue: 5)
 }
@@ -234,6 +236,7 @@ public struct OperationLogTags {
     public static let SynchronizeViewStories = PeerOperationLogTag(value: 24)
     public static let SynchronizePeerStories = PeerOperationLogTag(value: 25)
     public static let SynchronizePinnedSavedChats = PeerOperationLogTag(value: 26)
+    public static let SynchronizeMarkAllUnseenPollVotes = PeerOperationLogTag(value: 27)
 }
 
 public struct LegacyPeerSummaryCounterTags: OptionSet, Sequence, Hashable {

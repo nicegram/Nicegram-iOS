@@ -18,6 +18,10 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
     if chatPresentationInterfaceState.isNotAccessible {
         return (nil, nil)
     }
+
+    if chatPresentationInterfaceState.focusedPollAddOptionMessageId != nil {
+        return (nil, nil)
+    }
     
     if case .messageOptions = chatPresentationInterfaceState.subject {
         return (nil, nil)
@@ -462,6 +466,10 @@ func inputPanelForChatPresentationIntefaceState(_ chatPresentationInterfaceState
                     interfaceInteraction?.presentController(controller, nil)
                 }, sendWithKb: NGSettings.sendWithEnter)
                 
+                if let data = context.currentAppConfiguration.with({ $0 }).data, let value = data["ios_disable_ai_chat"] as? Double, value == 1.0 {
+                } else {
+                    panel.isAIEnabled = true
+                }
                 panel.textInputAccessoryPanel = textInputAccessoryPanel
                 panel.textInputContextPanel = textInputContextPanel
                 panel.chatControllerInteraction = chatControllerInteraction

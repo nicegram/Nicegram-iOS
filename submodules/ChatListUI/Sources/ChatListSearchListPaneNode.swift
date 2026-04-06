@@ -1148,7 +1148,7 @@ public enum ChatListSearchEntry: Comparable, Identifiable {
                         })
                     }
                 }
-                let selection: ChatHistoryMessageSelection = selected.flatMap { .selectable(selected: $0) } ?? .none
+                let selection: ChatHistoryMessageSelection = selected.flatMap { .selectable(selected: $0, num: nil) } ?? .none
                 var isMedia = false
                 if let tagMask, tagMask != .photoOrVideo {
                     isMedia = true
@@ -1191,6 +1191,7 @@ public enum ChatListSearchEntry: Comparable, Identifiable {
                         presence: nil,
                         hasUnseenMentions: false,
                         hasUnseenReactions: false,
+                        hasUnseenPollVotes: false,
                         draftState: nil,
                         mediaDraftContentType: nil,
                         inputActivities: nil,
@@ -1788,7 +1789,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
         self.selectedMessages = interaction.getSelectedMessageIds()
         self.selectedMessagesPromise.set(.single(self.selectedMessages))
         
-        self.recentListNode = ListView()
+        self.recentListNode = ListViewImpl()
         self.recentListNode.preloadPages = false
         self.recentListNode.verticalScrollIndicatorColor = self.presentationData.theme.list.scrollIndicatorColor
         self.recentListNode.accessibilityPageScrolledString = { row, count in
@@ -1799,7 +1800,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
         self.shimmerNode.isUserInteractionEnabled = false
         self.shimmerNode.allowsGroupOpacity = true
             
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode?.verticalScrollIndicatorColor = self.presentationData.theme.list.scrollIndicatorColor
         self.listNode?.accessibilityPageScrolledString = { row, count in
             return presentationData.strings.VoiceOver_ScrollStatus(row, count).string
@@ -3001,6 +3002,8 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
                                 } else {
                                     match = false
                                 }
+                            case .createBot:
+                                break
                             }
                             if match {
                                 return true
@@ -3532,7 +3535,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
                     return (message.map { $0._asMessage() }, a, b)
                 }, canReorder: false, at: message.id, loadMore: {
                     loadMore()
-                })
+                }, hidePanel: false)
             }
             
             return context.sharedContext.openChatMessage(OpenChatMessageParams(context: context, chatLocation: .peer(id: message.id.peerId), chatFilterTag: nil, chatLocationContextHolder: nil, message: message, standalone: false, reverseMessageGalleryOrder: true, mode: mode, navigationController: navigationController, dismissInput: {
@@ -3578,7 +3581,7 @@ final class ChatListSearchListPaneNode: ASDisplayNode, ChatListSearchPaneNode {
             }
             
             interaction.messageContextAction(EngineMessage(message), node, rect, gesture, key, fetchResourceId)
-        }, toggleMessagesSelection: { messageId, selected in
+        }, toggleMediaPlayback: nil, toggleMessagesSelection: { messageId, selected in
             if let messageId = messageId.first {
                 interaction.toggleMessageSelection(messageId, selected)
             }
@@ -5836,6 +5839,7 @@ public final class ChatListSearchShimmerNode: ASDisplayNode {
                             presence: nil,
                             hasUnseenMentions: false,
                             hasUnseenReactions: false,
+                            hasUnseenPollVotes: false,
                             draftState: nil,
                             mediaDraftContentType: nil,
                             inputActivities: nil,
@@ -5883,7 +5887,7 @@ public final class ChatListSearchShimmerNode: ASDisplayNode {
                             associatedStories: [:]
                         )
                         
-                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false) : .none, displayHeader: false, customHeader: nil, hintIsLink: true, isGlobalSearchResult: true)
+                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false, num: nil) : .none, displayHeader: false, customHeader: nil, hintIsLink: true, isGlobalSearchResult: true)
                     case .files:
                         var media: [EngineMedia] = []
                         media.append(.file(TelegramMediaFile(fileId: EngineMedia.Id(namespace: 0, id: 0), partialReference: nil, resource: LocalFileMediaResource(fileId: 0), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: 0, attributes: [.FileName(fileName: "Text.txt")], alternativeRepresentations: [])))
@@ -5914,7 +5918,7 @@ public final class ChatListSearchShimmerNode: ASDisplayNode {
                             associatedStories: [:]
                         )
                         
-                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false) : .none, displayHeader: false, customHeader: nil, hintIsLink: false, isGlobalSearchResult: true)
+                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false, num: nil) : .none, displayHeader: false, customHeader: nil, hintIsLink: false, isGlobalSearchResult: true)
                     case .music:
                         var media: [EngineMedia] = []
                         media.append(.file(TelegramMediaFile(fileId: EngineMedia.Id(namespace: 0, id: 0), partialReference: nil, resource: LocalFileMediaResource(fileId: 0), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: 0, attributes: [.Audio(isVoice: false, duration: 0, title: nil, performer: nil, waveform: Data())], alternativeRepresentations: [])))
@@ -5945,7 +5949,7 @@ public final class ChatListSearchShimmerNode: ASDisplayNode {
                             associatedStories: [:]
                         )
                         
-                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false) : .none, displayHeader: false, customHeader: nil, hintIsLink: false, isGlobalSearchResult: true)
+                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false, num: nil) : .none, displayHeader: false, customHeader: nil, hintIsLink: false, isGlobalSearchResult: true)
                     case .voice, .instantVideo:
                         var media: [EngineMedia] = []
                         media.append(.file(TelegramMediaFile(fileId: EngineMedia.Id(namespace: 0, id: 0), partialReference: nil, resource: LocalFileMediaResource(fileId: 0), previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "audio/ogg", size: 0, attributes: [.Audio(isVoice: true, duration: 0, title: nil, performer: nil, waveform: Data())], alternativeRepresentations: [])))
@@ -5976,7 +5980,7 @@ public final class ChatListSearchShimmerNode: ASDisplayNode {
                             associatedStories: [:]
                         )
                         
-                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false) : .none, displayHeader: false, customHeader: nil, hintIsLink: false, isGlobalSearchResult: true)
+                        return ListMessageItem(presentationData: ChatPresentationData(presentationData: presentationData), context: context, chatLocation: .peer(id: peer1.id), interaction: ListMessageItemInteraction.default, message: message._asMessage(), selection: hasSelection ? .selectable(selected: false, num: nil) : .none, displayHeader: false, customHeader: nil, hintIsLink: false, isGlobalSearchResult: true)
                 }
             }
             

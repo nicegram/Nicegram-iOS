@@ -34,7 +34,7 @@ import MediaEditorScreen
 import CameraScreen
 import ShareController
 import ComposeTodoScreen
-import ComposePollUI
+import ComposePollScreen
 import Photos
 import AttachmentFileController
 
@@ -132,6 +132,10 @@ extension ChatControllerImpl {
             availableButtons.insert(.todo, at: max(0, availableButtons.count - 1))
         }
         
+        if "".isEmpty {
+            availableButtons.insert(.audio, at: max(0, availableButtons.count - 1))
+        }
+        
         let presentationData = self.presentationData
         
         var isScheduledMessages = false
@@ -184,27 +188,27 @@ extension ChatControllerImpl {
                     break
                 }
                 
-                if !isPaidMessages {
-                    for bot in attachMenuBots.reversed() {
-                        var peerType = peerType
-                        if bot.peer.id == peer.id {
-                            peerType.insert(.sameBot)
-                            peerType.remove(.bot)
-                        }
-                        let button: AttachmentButtonType = .app(bot)
-                        if !bot.peerTypes.intersection(peerType).isEmpty {
-                            buttons.insert(button, at: 1)
-                            
-                            if case let .bot(botId, _, _) = subject {
-                                if initialButton == nil && bot.peer.id == botId {
-                                    initialButton = button
-                                }
+                for bot in attachMenuBots.reversed() {
+                    var peerType = peerType
+                    if bot.peer.id == peer.id {
+                        peerType.insert(.sameBot)
+                        peerType.remove(.bot)
+                    }
+                    let button: AttachmentButtonType = .app(bot)
+                    if !bot.peerTypes.intersection(peerType).isEmpty {
+                        buttons.insert(button, at: 1)
+                        
+                        if case let .bot(botId, _, _) = subject {
+                            if initialButton == nil && bot.peer.id == botId {
+                                initialButton = button
                             }
                         }
-                        allButtons.insert(button, at: 1)
                     }
+                    allButtons.insert(button, at: 1)
+                }
                 
-                    if let user = peer as? TelegramUser, user.botInfo == nil {
+                if !isPaidMessages {
+                    if context.isPremium, shortcutMessageList.items.count > 0, let user = peer as? TelegramUser, user.botInfo == nil {
                         if let index = buttons.firstIndex(where: { $0 == .location }) {
                             buttons.insert(.quickReply, at: index + 1)
                         } else {
@@ -303,6 +307,7 @@ extension ChatControllerImpl {
             
             let currentMediaController = Atomic<MediaPickerScreenImpl?>(value: nil)
             let currentFilesController = Atomic<AttachmentFileControllerImpl?>(value: nil)
+            let currentAudioController = Atomic<AttachmentFileControllerImpl?>(value: nil)
             let currentLocationController = Atomic<LocationPickerController?>(value: nil)
             
             strongSelf.canReadHistory.set(false)
@@ -334,7 +339,7 @@ extension ChatControllerImpl {
             }
             attachmentController.requestController = { [weak self, weak attachmentController] type, completion in
                 guard let strongSelf = self else {
-                    return
+                    return true
                 }
                 switch type {
                 case .gallery:
@@ -343,7 +348,7 @@ extension ChatControllerImpl {
                     if let controller = existingController {
                         completion(controller, controller.mediaPickerContext)
                         controller.prepareForReuse()
-                        return
+                        return true
                     }
                     strongSelf.presentMediaPicker(saveEditedPhotos: dataSettings.storeEditedPhotos, bannedSendPhotos: bannedSendPhotos, bannedSendVideos: bannedSendVideos, enableMultiselection: enableMultiselection, present: { controller, mediaPickerContext in
                         let _ = currentMediaController.swap(controller)
@@ -359,15 +364,16 @@ extension ChatControllerImpl {
                         }
                         self?.enqueueMediaMessages(fromGallery: fromGallery, signals: signals, silentPosting: silentPosting, scheduleTime: scheduleTime, parameters: parameters, getAnimatedTransitionSource: getAnimatedTransitionSource, completion: completion)
                     })
+                    return true
                 case .file:
                     strongSelf.controllerNavigationDisposable.set(nil)
                     let existingController = currentFilesController.with { $0 }
                     if let controller = existingController {
                         completion(controller, controller.mediaPickerContext)
                         controller.prepareForReuse()
-                        return
+                        return true
                     }
-                    let controller = strongSelf.context.sharedContext.makeAttachmentFileController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, bannedSendMedia: bannedSendFiles, presentGallery: { [weak self, weak attachmentController] in
+                    let controller = strongSelf.context.sharedContext.makeAttachmentFileController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, audio: false, bannedSendMedia: bannedSendFiles, presentGallery: { [weak self, weak attachmentController] in
                         attachmentController?.dismiss(animated: true)
                         self?.presentFileGallery()
                     }, presentFiles: { [weak self, weak attachmentController] in
@@ -375,26 +381,101 @@ extension ChatControllerImpl {
                         self?.presentICloudFileGallery()
                     }, presentDocumentScanner: { [weak self] in
                         self?.presentDocumentScanner()
-                    }, send: { [weak self] mediaReference in
+                    }, send: { [weak self] mediaReferences, silentPosting, scheduleTime, caption in
                         guard let self else {
                             return
                         }
-                        let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: mediaReference, threadId: strongSelf.chatLocation.threadId, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                        var messages: [EnqueueMessage] = []
+                        var groupingKey: Int64?
+                        if mediaReferences.count > 1 {
+                            groupingKey = Int64.random(in: .min ..< .max)
+                        }
+                        
+                        var attributes: [MessageAttribute] = []
+                        var text = ""
+                        if let caption {
+                            text = caption.string
+                            let entities = generateTextEntities(text, enabledTypes: .all, currentEntities: generateChatInputTextEntities(caption))
+                            if !entities.isEmpty {
+                                attributes.append(TextEntitiesMessageAttribute(entities: entities))
+                            }
+                        }
+                        
+                        for mediaReference in mediaReferences {
+                            if messages.count == 10 {
+                                groupingKey = Int64.random(in: .min ..< .max)
+                            }
+                            let isLast = mediaReference == mediaReferences.last
+                            
+                            messages.append(.message(text: isLast ? text : "", attributes: isLast ? attributes : [], inlineStickers: [:], mediaReference: mediaReference, threadId: strongSelf.chatLocation.threadId, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: groupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        }
+                        messages = self.transformEnqueueMessages(messages, silentPosting: silentPosting, scheduleTime: scheduleTime, repeatPeriod: nil, postpone: false)
                         self.presentPaidMessageAlertIfNeeded(completion: { [weak self] postpone in
-                            self?.sendMessages([message], media: true, postpone: postpone)
+                            self?.sendMessages(messages, media: true, postpone: postpone)
                         })
                     })
                     if let controller = controller as? AttachmentFileControllerImpl {
                         let _ = currentFilesController.swap(controller)
                         completion(controller, controller.mediaPickerContext)
                     }
+                    return true
+                case .audio:
+                    strongSelf.controllerNavigationDisposable.set(nil)
+                    let existingController = currentAudioController.with { $0 }
+                    if let controller = existingController {
+                        completion(controller, controller.mediaPickerContext)
+                        controller.prepareForReuse()
+                        return true
+                    }
+                    let controller = strongSelf.context.sharedContext.makeAttachmentFileController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, audio: true, bannedSendMedia: bannedSendFiles, presentGallery: {
+                    }, presentFiles: { [weak self, weak attachmentController] in
+                        attachmentController?.dismiss(animated: true)
+                        self?.presentICloudFileGallery(documentTypes: ["public.mp3", "public.mpeg-4-audio", "public.aac-audio", "org.xiph.flac"])
+                    }, presentDocumentScanner: nil, send: { [weak self] mediaReferences, silentPosting, scheduleTime, caption in
+                        guard let self else {
+                            return
+                        }
+                        var messages: [EnqueueMessage] = []
+                        var groupingKey: Int64?
+                        if mediaReferences.count > 1 {
+                            groupingKey = Int64.random(in: .min ..< .max)
+                        }
+                        
+                        var attributes: [MessageAttribute] = []
+                        var text = ""
+                        if let caption {
+                            text = caption.string
+                            let entities = generateTextEntities(text, enabledTypes: .all, currentEntities: generateChatInputTextEntities(caption))
+                            if !entities.isEmpty {
+                                attributes.append(TextEntitiesMessageAttribute(entities: entities))
+                            }
+                        }
+                        
+                        for mediaReference in mediaReferences {
+                            if messages.count == 10 {
+                                groupingKey = Int64.random(in: .min ..< .max)
+                            }
+                            let isLast = mediaReference == mediaReferences.last
+                            
+                            messages.append(.message(text: isLast ? text : "", attributes: isLast ? attributes : [], inlineStickers: [:], mediaReference: mediaReference, threadId: strongSelf.chatLocation.threadId, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: groupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: []))
+                        }
+                        messages = self.transformEnqueueMessages(messages, silentPosting: silentPosting, scheduleTime: scheduleTime, repeatPeriod: nil, postpone: false)
+                        self.presentPaidMessageAlertIfNeeded(completion: { [weak self] postpone in
+                            self?.sendMessages(messages, media: true, postpone: postpone)
+                        })
+                    })
+                    if let controller = controller as? AttachmentFileControllerImpl {
+                        let _ = currentAudioController.swap(controller)
+                        completion(controller, controller.mediaPickerContext)
+                    }
+                    return true
                 case .location:
                     strongSelf.controllerNavigationDisposable.set(nil)
                     let existingController = currentLocationController.with { $0 }
                     if let controller = existingController {
                         completion(controller, controller.mediaPickerContext)
                         controller.prepareForReuse()
-                        return
+                        return true
                     }
                     let selfPeerId: PeerId
                     if let peer = strongSelf.presentationInterfaceState.renderedPeer?.peer {
@@ -408,7 +489,7 @@ extension ChatControllerImpl {
                     } else {
                         selfPeerId = strongSelf.context.account.peerId
                     }
-                    ;let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: selfPeerId))
+                    let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: selfPeerId))
                     |> deliverOnMainQueue).startStandalone(next: { selfPeer in
                         guard let strongSelf = self, let selfPeer = selfPeer else {
                             return
@@ -447,6 +528,7 @@ extension ChatControllerImpl {
                         
                         let _ = currentLocationController.swap(controller)
                     })
+                    return true
                 case .contact:
                     let contactsController = ContactSelectionControllerImpl(ContactSelectionControllerParams(context: strongSelf.context, style: .glass, updatedPresentationData: strongSelf.updatedPresentationData, title: { $0.Contacts_Title }, displayDeviceContacts: true, multipleSelection: .always, requirePhoneNumbers: true))
                     contactsController.presentScheduleTimePicker = { [weak self] completion in
@@ -639,30 +721,34 @@ extension ChatControllerImpl {
                             }
                         }
                     }))
+                    return true
                 case .poll:
                     if let controller = strongSelf.configurePollCreation() as? AttachmentContainable {
                         completion(controller, controller.mediaPickerContext)
                         strongSelf.controllerNavigationDisposable.set(nil)
                     }
+                    return true
                 case .todo:
                     if strongSelf.context.isPremium {
                         if let controller = strongSelf.configureTodoCreation() as? AttachmentContainable {
                             completion(controller, controller.mediaPickerContext)
                             strongSelf.controllerNavigationDisposable.set(nil)
                         }
+                        return true
                     } else {
                         var replaceImpl: ((ViewController) -> Void)?
                         let demoController = strongSelf.context.sharedContext.makePremiumDemoController(context: strongSelf.context, subject: .todo, forceDark: false, action: {
                             let controller = context.sharedContext.makePremiumIntroController(context: context, source: .todo, forceDark: false, dismissed: nil)
                             replaceImpl?(controller)
                         }, dismissed: nil)
-                        replaceImpl = { [weak demoController] c in
+                        replaceImpl = { [weak self, weak demoController] c in
+                            Queue.mainQueue().after(0.4) {
+                                self?.attachmentController?.dismiss(animated: false)
+                            }
                             demoController?.replace(with: c)
                         }
                         strongSelf.push(demoController)
-                        Queue.mainQueue().after(0.4) {
-                            strongSelf.attachmentController?.dismiss(animated: false)
-                        }
+                        return false
                     }
                 case .gift:
                     if let peer = strongSelf.presentationInterfaceState.renderedPeer?.peer, let starsContext = context.starsContext {
@@ -681,6 +767,7 @@ extension ChatControllerImpl {
                             let _ = ApplicationSpecificNotice.incrementDismissedPremiumGiftSuggestion(accountManager: context.sharedContext.accountManager, peerId: peer.id, timestamp: Int32(Date().timeIntervalSince1970)).startStandalone()
                         }
                     }
+                    return true
                 case let .app(bot):
                     if let peer = strongSelf.presentationInterfaceState.renderedPeer?.peer {
                         var payload: String?
@@ -729,6 +816,7 @@ extension ChatControllerImpl {
                             strongSelf.present(alertController, in: .window(.root))
                         }
                     }
+                    return true
                 case .quickReply:
                     let _ = (strongSelf.context.sharedContext.makeQuickReplySetupScreenInitialData(context: strongSelf.context)
                     |> take(1)
@@ -747,9 +835,11 @@ extension ChatControllerImpl {
                         completion(controller, controller.mediaPickerContext)
                         strongSelf.controllerNavigationDisposable.set(nil)
                     })
+                    return true
                 default:
                     break
                 }
+                return true
             }
             let present = {
                 attachmentController.navigationPresentation = .flatModal
@@ -1098,7 +1188,7 @@ extension ChatControllerImpl {
         })
     }
     
-    func presentICloudFileGallery(editingMessage: Bool = false) {
+    func presentICloudFileGallery(editingMessage: Bool = false, documentTypes: [String] = ["public.item"]) {
         let _ = (self.context.engine.data.get(
             TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId),
             TelegramEngine.EngineData.Item.Configuration.UserLimits(isPremium: false),
@@ -1111,7 +1201,7 @@ extension ChatControllerImpl {
             let (accountPeer, limits, premiumLimits) = result
             let isPremium = accountPeer?.isPremium ?? false
             
-            strongSelf.present(legacyICloudFilePicker(theme: strongSelf.presentationData.theme, completion: { [weak self] urls in
+            strongSelf.present(legacyICloudFilePicker(theme: strongSelf.presentationData.theme, hasMultiselection: true, documentTypes: documentTypes, completion: { [weak self] urls in
                 if let strongSelf = self, !urls.isEmpty {
                     var signals: [Signal<ICloudFileDescription?, NoError>] = []
                     for url in urls {
@@ -1279,26 +1369,6 @@ extension ChatControllerImpl {
             } else {
                 self?.openCamera(cameraView: nil)
             }
-        }
-        controller.presentWebSearch = { [weak self, weak controller] mediaGroups, activateOnDisplay in
-            self?.presentWebSearch(editingMessage: false, attachment: true, activateOnDisplay: activateOnDisplay, present: { [weak controller] c, a in
-                controller?.present(c, in: .current)
-                if let webSearchController = c as? WebSearchController {
-                    webSearchController.searchingUpdated = { [weak mediaGroups] searching in
-                        if let mediaGroups = mediaGroups, mediaGroups.isNodeLoaded {
-                            let transition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .easeInOut)
-                            transition.updateAlpha(node: mediaGroups.displayNode, alpha: searching ? 0.0 : 1.0)
-                            mediaGroups.displayNode.isUserInteractionEnabled = !searching
-                        }
-                    }
-                    webSearchController.present(mediaGroups, in: .current)
-                    webSearchController.dismissed = {
-                        updateMediaPickerContext(mediaPickerContext)
-                    }
-                    controller?.webSearchController = webSearchController
-                    updateMediaPickerContext(webSearchController.mediaPickerContext)
-                }
-            })
         }
         controller.presentSchedulePicker = { [weak self] media, done in
             if let strongSelf = self {
@@ -1820,7 +1890,9 @@ extension ChatControllerImpl {
         if case .scheduledMessages = self.presentationInterfaceState.subject {
             isScheduledMessages = true
         }
-        return self.context.sharedContext.makeGalleryCaptionPanelView(context: self.context, chatLocation: self.presentationInterfaceState.chatLocation, isScheduledMessages: isScheduledMessages, isFile: isFile, hasTimer: hasTimer, customEmojiAvailable: self.presentationInterfaceState.customEmojiAvailable, present: { [weak self] c in
+        return self.context.sharedContext.makeGalleryCaptionPanelView(context: self.context, chatLocation: self.presentationInterfaceState.chatLocation, isScheduledMessages: isScheduledMessages, isFile: isFile, hasTimer: hasTimer, customEmojiAvailable: self.presentationInterfaceState.customEmojiAvailable, pushViewController: { [weak self] c in
+            self?.push(c)
+        }, present: { [weak self] c in
             self?.present(c, in: .window(.root))
         }, presentInGlobalOverlay: { [weak self] c in
             guard let self else {
@@ -2038,9 +2110,15 @@ extension ChatControllerImpl {
                             })
                         }
                     }, nil)
+                    
+                    var attributes: [MessageAttribute] = []
+                    if !poll.description.entities.isEmpty {
+                        attributes.append(TextEntitiesMessageAttribute(entities: poll.description.entities))
+                    }
+                    
                     let message: EnqueueMessage = .message(
-                        text: "",
-                        attributes: [],
+                        text: poll.description.string,
+                        attributes: attributes,
                         inlineStickers: [:],
                         mediaReference: .standalone(media: TelegramMediaPoll(
                             pollId: MediaId(namespace: Namespaces.Media.LocalPoll, id: Int64.random(in: Int64.min...Int64.max)),
@@ -2052,7 +2130,14 @@ extension ChatControllerImpl {
                             correctAnswers: poll.correctAnswers,
                             results: poll.results,
                             isClosed: false,
-                            deadlineTimeout: poll.deadlineTimeout
+                            deadlineTimeout: poll.deadlineTimeout,
+                            deadlineDate: poll.deadlineDate,
+                            pollHash: 0,
+                            openAnswers: poll.openAnswers,
+                            revotingDisabled: poll.revotingDisabled,
+                            shuffleAnswers: poll.shuffleAnswers,
+                            hideResultsUntilClose: poll.hideResultsUntilClose,
+                            attachedMedia: poll.media?.media
                         )),
                         threadId: self.chatLocation.threadId,
                         replyToMessageId: nil,

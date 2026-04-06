@@ -108,7 +108,7 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
     case groupPrivacy(PresentationTheme, String, String)
     case groupPrivacyFooter
     case voiceMessagePrivacy(PresentationTheme, String, String, Bool)
-    case messagePrivacy(PresentationTheme, GlobalPrivacySettings.NonContactChatsPrivacy, Bool)
+    case messagePrivacy(PresentationTheme, String, Bool)
     case bioPrivacy(PresentationTheme, String, String)
     case birthdayPrivacy(PresentationTheme, String, String)
     case savedMusicPrivacy(PresentationTheme, String, String)
@@ -424,7 +424,7 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
             case let .privacyHeader(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .blockedPeers(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Blocked")?.precomposed(), title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.block, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openBlockedUsers()
                 })
             case let .phoneNumberPrivacy(_, text, value):
@@ -454,20 +454,7 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
                     arguments.openVoiceMessagePrivacy()
                 })
             case let .messagePrivacy(theme, value, hasPremium):
-                let label: String
-                var effectiveValue = value
-                if !hasPremium {
-                    effectiveValue = .everybody
-                }
-                switch effectiveValue {
-                case .everybody:
-                    label = presentationData.strings.Settings_Privacy_Messages_ValueEveryone
-                case .requirePremium:
-                    label = presentationData.strings.Settings_Privacy_Messages_ValueContactsAndPremium
-                case .paidMessages:
-                    label = presentationData.strings.Settings_Privacy_Messages_ValuePaid
-                }
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: presentationData.strings.Settings_Privacy_Messages, titleIcon: hasPremium ? PresentationResourcesItemList.premiumIcon(theme) : nil, label: label, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, title: presentationData.strings.Settings_Privacy_Messages, titleIcon: hasPremium ? PresentationResourcesItemList.premiumIcon(theme) : nil, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openMessagePrivacy()
                 })
             case let .bioPrivacy(_, text, value):
@@ -493,31 +480,32 @@ private enum PrivacyAndSecurityEntry: ItemListNodeEntry {
                     arguments.openVoiceCallPrivacy()
                 })
             case let .passcode(_, text, hasFaceId, value):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: hasFaceId ? "Settings/Menu/FaceId" : "Settings/Menu/TouchId")?.precomposed(), title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                let _ = hasFaceId
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.faceId, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openPasscode()
                 })
             case let .twoStepVerification(_, text, value, data):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/TwoStepAuth")?.precomposed(), title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.lockOrange, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openTwoStepVerification(data)
                 })
             case let .passkeys(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Passkeys")?.precomposed(), title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.passkeys, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openPasskeys()
                 })
             case let .messageAutoremoveTimeout(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Timer")?.precomposed(), title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.timer, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.setupMessageAutoremove()
                 }, tag: PrivacyAndSecurityEntryTag.messageAutoremoveTimeout)
             case let .messageAutoremoveInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
-            case let .loginEmail(_, text, emailPattern):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/LoginEmail")?.precomposed(), title: text, label: "", sectionId: self.section, style: .blocks, action: {
+            case let .loginEmail(_, text, emailPattern):            
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.email, title: text, label: "", sectionId: self.section, style: .blocks, action: {
                     arguments.openEmailSettings(emailPattern)
                 })
             case let .loginEmailInfo(_, text):
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: self.section)
             case let .activeSessions(_, text, value):
-                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: UIImage(bundleImageName: "Settings/Menu/Websites")?.precomposed(), title: text, label: value, sectionId: self.section, style: .blocks, action: {
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: PresentationResourcesSettings.activeSessions, title: text, label: value, sectionId: self.section, style: .blocks, action: {
                     arguments.openActiveSessions()
                 })
             case let .autoArchiveHeader(text):
@@ -639,7 +627,8 @@ private func privacyAndSecurityControllerEntries(
     isPremiumDisabled: Bool,
     isPremium: Bool,
     loginEmail: String?,
-    accountPeer: EnginePeer?
+    accountPeer: EnginePeer?,
+    appConfiguration: AppConfiguration
 ) -> [PrivacyAndSecurityEntry] {
     var entries: [PrivacyAndSecurityEntry] = []
     
@@ -729,7 +718,21 @@ private func privacyAndSecurityControllerEntries(
         entries.append(.voiceCallPrivacy(presentationData.theme, presentationData.strings.Privacy_Calls, stringForSelectiveSettings(strings: presentationData.strings, settings: privacySettings.voiceCalls)))
         if !isPremiumDisabled || isPremium {
             entries.append(.voiceMessagePrivacy(presentationData.theme, presentationData.strings.Privacy_VoiceMessages, stringForSelectiveSettings(strings: presentationData.strings, settings: isPremium ? privacySettings.voiceMessages : .enableEveryone(disableFor: [:])), isPremium))
-            entries.append(.messagePrivacy(presentationData.theme, privacySettings.globalSettings.nonContactChatsPrivacy, isPremium))
+            var effectiveValue = privacySettings.globalSettings.nonContactChatsPrivacy
+            if let data = appConfiguration.data, let setting = data["new_noncontact_peers_require_premium_without_ownpremium"] as? Bool, setting {
+            } else if !isPremium {
+                effectiveValue = .everybody
+            }
+            let label: String
+            switch effectiveValue {
+            case .everybody:
+                label = presentationData.strings.Settings_Privacy_Messages_ValueEveryone
+            case .requirePremium:
+                label = presentationData.strings.Settings_Privacy_Messages_ValueContactsAndPremium
+            case .paidMessages:
+                label = presentationData.strings.Settings_Privacy_Messages_ValuePaid
+            }
+            entries.append(.messagePrivacy(presentationData.theme, label, isPremium))
         }
         entries.append(.groupPrivacy(presentationData.theme, presentationData.strings.PrivacySettings_InviteItem, stringForSelectiveSettings(strings: presentationData.strings, settings: privacySettings.groupInvitations)))
         entries.append(.groupPrivacyFooter)
@@ -745,6 +748,7 @@ private func privacyAndSecurityControllerEntries(
         entries.append(.voiceCallPrivacy(presentationData.theme, presentationData.strings.Privacy_Calls, presentationData.strings.Channel_NotificationLoading))
         if !isPremiumDisabled || isPremium {
             entries.append(.voiceMessagePrivacy(presentationData.theme, presentationData.strings.Privacy_VoiceMessages, presentationData.strings.Channel_NotificationLoading, isPremium))
+            entries.append(.messagePrivacy(presentationData.theme, presentationData.strings.Channel_NotificationLoading, isPremium))
         }
         entries.append(.groupPrivacy(presentationData.theme, presentationData.strings.Privacy_GroupsAndChannels, presentationData.strings.Channel_NotificationLoading))
         entries.append(.groupPrivacyFooter)
@@ -1556,7 +1560,7 @@ public func privacyAndSecurityController(
         let isPremium = accountPeer?.isPremium ?? false
         let isPremiumDisabled = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 }).isPremiumDisabled
         
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: privacyAndSecurityControllerEntries(presentationData: presentationData, state: state, privacySettings: privacySettings, accessChallengeData: accessChallengeData.data, blockedPeerCount: blockedPeersState.totalCount, activeWebsitesCount: activeWebsitesState.sessions.count, hasTwoStepAuth: twoStepAuth.0, twoStepAuthData: twoStepAuth.1, hasPasskeys: passkeys.0, displayPasskeys: displayPasskeys, canAutoarchive: canAutoarchive, isPremiumDisabled: isPremiumDisabled, isPremium: isPremium, loginEmail: loginEmail, accountPeer: accountPeer), style: .blocks, ensureVisibleItemTag: focusOnItemTag, animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: privacyAndSecurityControllerEntries(presentationData: presentationData, state: state, privacySettings: privacySettings, accessChallengeData: accessChallengeData.data, blockedPeerCount: blockedPeersState.totalCount, activeWebsitesCount: activeWebsitesState.sessions.count, hasTwoStepAuth: twoStepAuth.0, twoStepAuthData: twoStepAuth.1, hasPasskeys: passkeys.0, displayPasskeys: displayPasskeys, canAutoarchive: canAutoarchive, isPremiumDisabled: isPremiumDisabled, isPremium: isPremium, loginEmail: loginEmail, accountPeer: accountPeer, appConfiguration: appConfiguration), style: .blocks, ensureVisibleItemTag: focusOnItemTag, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }

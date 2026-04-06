@@ -7,6 +7,7 @@ import SwiftSignalKit
 import Postbox
 import TelegramCore
 import TelegramPresentationData
+import TelegramUIPreferences
 import AccountContext
 import AttachmentTextInputPanelNode
 import ChatPresentationInterfaceState
@@ -25,6 +26,10 @@ import ReactionSelectionNode
 import TopMessageReactions
 import GlassBackgroundComponent
 import LiquidLens
+import UniversalMediaPlayer
+import TelegramBaseController
+import OverlayStatusController
+import UndoUI
 import TabSelectionRecognizer
 import EmojiTextAttachmentView
 
@@ -34,6 +39,7 @@ private let smallGlassButtonSize = CGSize(width: 72.0, height: 62.0)
 private let smallButtonWidth: CGFloat = 69.0
 private let iconSize = CGSize(width: 30.0, height: 30.0)
 private let glassPanelSideInset: CGFloat = 20.0
+private let smallPanelWidth: CGFloat = 240.0
 
 private final class IconComponent: Component {
     public let account: Account
@@ -229,6 +235,15 @@ private final class AttachButtonComponent: CombinedComponent {
             case .gift:
                 name = strings.Attachment_Gift
                 imageName = "Chat/Attach Menu/Gift"
+            case .sticker:
+                name = strings.Attachment_Sticker
+                imageName = "Chat/Attach Menu/Sticker"
+            case .emoji:
+                name = "Emoji"
+                imageName = "Chat/Attach Menu/Emoji"
+            case .audio:
+                name = strings.Attachment_Audio
+                imageName = "Chat/Attach Menu/Audio"
             case let .app(bot):
                 botPeer = bot.peer
                 name = bot.shortName
@@ -956,8 +971,14 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
     private var updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)?
     private var presentationDataDisposable: Disposable?
     private var peerDisposable: Disposable?
+    private var mediaStatusDisposable: Disposable?
+    private var playlistPreloadDisposable: Disposable?
     
     private var iconDisposables: [MediaId: Disposable] = [:]
+    private var playlistStateAndType: (SharedMediaPlaylistItem, SharedMediaPlaylistItem?, SharedMediaPlaylistItem?, MusicPlaybackSettingsOrder, MediaManagerPlayerType, Account)?
+    private var playlistLocation: SharedMediaPlaylistLocation?
+    private var mediaAccessoryPanel: (MediaNavigationAccessoryPanel, MediaManagerPlayerType)?
+    private var dismissingMediaAccessoryPanel: ASDisplayNode?
     
     private var presentationInterfaceState: ChatPresentationInterfaceState
     private var interfaceInteraction: ChatPanelInterfaceInteraction?
@@ -993,15 +1014,42 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
     private var secondaryButtonState: AttachmentMainButtonState = .initial
     private var customBottomPanelBackgroundColor: UIColor?
     
+    private var hideButtons: Bool = false
     private var elevateProgress: Bool = false
     private var buttons: [AttachmentButtonType] = []
     private var selectedIndex: Int = 0
+    private var selectionOverrideIndex: Int?
     private(set) var isSelecting: Bool = false
     private var selectionCount: Int = 0
     
     private var _isButtonVisible: Bool = false
     var isButtonVisible: Bool {
         return self.mainButtonState.isVisible || self.secondaryButtonState.isVisible
+    }
+    private var peerMessagesPlaylistLocation: PeerMessagesPlaylistLocation? {
+        return self.playlistLocation as? PeerMessagesPlaylistLocation
+    }
+    private var currentButtonType: AttachmentButtonType? {
+        let selectedIndex = self.selectionOverrideIndex ?? self.selectedIndex
+        guard selectedIndex >= 0 && selectedIndex < self.buttons.count else {
+            return nil
+        }
+        return self.buttons[selectedIndex]
+    }
+    private var shouldDisplayMediaAccessoryPanel: Bool {
+        guard case .glass = self.panelStyle, self.playlistStateAndType != nil else {
+            return false
+        }
+        guard let playlistLocation = self.peerMessagesPlaylistLocation, case .custom = playlistLocation else {
+            return false
+        }
+        guard let currentButtonType = self.currentButtonType, case .audio = currentButtonType else {
+            return false
+        }
+        return true
+    }
+    var hasMediaAccessoryPanel: Bool {
+        return self.shouldDisplayMediaAccessoryPanel
     }
     
     private var validLayout: ContainerViewLayout?
@@ -1016,6 +1064,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
     var beganTextEditing: () -> Void = {}
     var textUpdated: (NSAttributedString) -> Void = { _ in }
     var sendMessagePressed: (AttachmentTextInputPanelSendMode, ChatSendMessageActionSheetController.SendParameters?) -> Void = { _, _ in }
+    var invokeAICompose: () -> Void = {}
     var requestLayout: () -> Void = {}
     var present: (ViewController) -> Void = { _ in }
     var presentInGlobalOverlay: (ViewController) -> Void = { _ in }
@@ -1333,7 +1382,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                         )),
                         hasEntityKeyboard: hasEntityKeyboard,
                         gesture: gesture,
-                        sourceSendButton: node,
+                        sourceSendButton: node.view,
                         textInputView: textInputNode.textView,
                         emojiViewProvider: textInputPanelNode.emojiViewProvider,
                         completion: {
@@ -1410,7 +1459,10 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         }, dismissForwardMessages: {
         }, dismissSuggestPost: {
         }, displayUndo: { _ in
+        }, presentInputTextTranslation: { _, _ in
         }, sendEmoji: { _, _, _ in
+        }, openAICompose: {
+        }, openSetPeerAvatar: {
         }, updateHistoryFilter: { _ in
         }, updateChatLocationThread: { _, _ in
         }, toggleChatSidebarMode: {
@@ -1420,6 +1472,64 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             return nil
         }, statuses: nil)
         
+        if case .glass = style {
+            self.mediaStatusDisposable = (context.sharedContext.mediaManager.globalMediaPlayerState
+            |> mapToSignal { playlistStateAndType -> Signal<(Account, SharedMediaPlayerItemPlaybackState, MediaManagerPlayerType)?, NoError> in
+                guard let (account, stateOrLoading, type) = playlistStateAndType, type == .music else {
+                    return .single(nil) |> delay(0.2, queue: .mainQueue())
+                }
+                switch stateOrLoading {
+                case let .state(state):
+                    return .single((account, state, type))
+                case .loading:
+                    return .single(nil) |> delay(0.2, queue: .mainQueue())
+                }
+            }
+            |> deliverOnMainQueue).startStrict(next: { [weak self] playlistStateAndType in
+                guard let strongSelf = self else {
+                    return
+                }
+                let hadMediaAccessoryPanel = strongSelf.hasMediaAccessoryPanel
+                let updatedPeerMessagesPlaylistLocation = playlistStateAndType?.1.playlistLocation as? PeerMessagesPlaylistLocation
+                if !arePlaylistItemsEqual(strongSelf.playlistStateAndType?.0, playlistStateAndType?.1.item) ||
+                    !arePlaylistItemsEqual(strongSelf.playlistStateAndType?.1, playlistStateAndType?.1.previousItem) ||
+                    !arePlaylistItemsEqual(strongSelf.playlistStateAndType?.2, playlistStateAndType?.1.nextItem) ||
+                    strongSelf.playlistStateAndType?.3 != playlistStateAndType?.1.order ||
+                    strongSelf.playlistStateAndType?.4 != playlistStateAndType?.2 ||
+                    strongSelf.peerMessagesPlaylistLocation != updatedPeerMessagesPlaylistLocation {
+                    
+                    if let playlistStateAndType {
+                        strongSelf.playlistStateAndType = (
+                            playlistStateAndType.1.item,
+                            playlistStateAndType.1.previousItem,
+                            playlistStateAndType.1.nextItem,
+                            playlistStateAndType.1.order,
+                            playlistStateAndType.2,
+                            playlistStateAndType.0
+                        )
+                        strongSelf.playlistLocation = playlistStateAndType.1.playlistLocation
+                    } else {
+                        strongSelf.playlistStateAndType = nil
+                        strongSelf.playlistLocation = nil
+                    }
+                    
+                    if hadMediaAccessoryPanel != strongSelf.hasMediaAccessoryPanel {
+                        strongSelf.requestLayout()
+                    } else if let layout = strongSelf.validLayout {
+                        let _ = strongSelf.update(
+                            layout: layout,
+                            buttons: strongSelf.buttons,
+                            isSelecting: strongSelf.isSelecting,
+                            selectionCount: strongSelf.selectionCount,
+                            elevateProgress: strongSelf.elevateProgress,
+                            hideButtons: strongSelf.hideButtons,
+                            transition: .animated(duration: 0.4, curve: .spring)
+                        )
+                    }
+                }
+            })
+        }
+        
         self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
         |> deliverOnMainQueue).startStrict(next: { [weak self] presentationData in
             if let strongSelf = self {
@@ -1428,11 +1538,19 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 strongSelf.backgroundNode.updateColor(color: strongSelf.customBottomPanelBackgroundColor ?? presentationData.theme.rootController.tabBar.backgroundColor, transition: .immediate)
                 strongSelf.separatorNode.backgroundColor = presentationData.theme.rootController.tabBar.separatorColor
                 strongSelf.selectionNode.backgroundColor = presentationData.theme.list.itemPrimaryTextColor.withMultipliedAlpha(0.05)
+                if let (mediaAccessoryPanel, _) = strongSelf.mediaAccessoryPanel {
+                    strongSelf.mediaAccessoryPanel = nil
+                    mediaAccessoryPanel.removeFromSupernode()
+                }
+                if let dismissingMediaAccessoryPanel = strongSelf.dismissingMediaAccessoryPanel {
+                    strongSelf.dismissingMediaAccessoryPanel = nil
+                    dismissingMediaAccessoryPanel.removeFromSupernode()
+                }
                 
                 strongSelf.updateChatPresentationInterfaceState({ $0.updatedTheme(presentationData.theme) })
             
                 if let layout = strongSelf.validLayout {
-                    let _ = strongSelf.update(layout: layout, buttons: strongSelf.buttons, isSelecting: strongSelf.isSelecting, selectionCount: strongSelf.selectionCount, elevateProgress: strongSelf.elevateProgress, transition: .immediate)
+                    let _ = strongSelf.update(layout: layout, buttons: strongSelf.buttons, isSelecting: strongSelf.isSelecting, selectionCount: strongSelf.selectionCount, elevateProgress: strongSelf.elevateProgress, hideButtons: strongSelf.hideButtons, transition: .immediate)
                 }
             }
         }).strict()
@@ -1467,6 +1585,8 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
     deinit {
         self.presentationDataDisposable?.dispose()
         self.peerDisposable?.dispose()
+        self.mediaStatusDisposable?.dispose()
+        self.playlistPreloadDisposable?.dispose()
         for (_, disposable) in self.iconDisposables {
             disposable.dispose()
         }
@@ -1487,7 +1607,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
     
     func requestLayout(transition: ContainedViewLayoutTransition) {
         if let layout = self.validLayout {
-            let _ = self.update(layout: layout, buttons: self.buttons, isSelecting: self.isSelecting, selectionCount: self.selectionCount, elevateProgress: self.elevateProgress, transition: transition)
+            let _ = self.update(layout: layout, buttons: self.buttons, isSelecting: self.isSelecting, selectionCount: self.selectionCount, elevateProgress: self.elevateProgress, hideButtons: self.hideButtons, transition: transition)
         }
     }
     
@@ -1497,6 +1617,213 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
     
     @objc private func secondaryButtonPressed() {
         self.onSecondaryButtonPressed()
+    }
+    
+    private func mediaPlaybackStatusSignal() -> Signal<MediaPlayerStatus, NoError> {
+        let delayedStatus = self.context.sharedContext.mediaManager.globalMediaPlayerState
+        |> mapToSignal { value -> Signal<(Account, SharedMediaPlayerItemPlaybackStateOrLoading, MediaManagerPlayerType)?, NoError> in
+            guard let value, value.2 == .music else {
+                return .single(nil)
+            }
+            switch value.1 {
+            case .state:
+                return .single(value)
+            case .loading:
+                return .single(value) |> delay(0.1, queue: .mainQueue())
+            }
+        }
+        
+        return delayedStatus
+        |> map { state -> MediaPlayerStatus in
+            if let stateOrLoading = state?.1, case let .state(state) = stateOrLoading {
+                return state.status
+            } else {
+                return MediaPlayerStatus(generationTimestamp: 0.0, duration: 0.0, dimensions: CGSize(), timestamp: 0.0, baseRate: 1.0, seekId: 0, status: .paused, soundEnabled: true)
+            }
+        }
+    }
+    
+    private func dismissMediaAccessoryPanel(transition: ContainedViewLayoutTransition) {
+        guard let (mediaAccessoryPanel, _) = self.mediaAccessoryPanel else {
+            return
+        }
+        self.mediaAccessoryPanel = nil
+        self.dismissingMediaAccessoryPanel = mediaAccessoryPanel
+        mediaAccessoryPanel.animateOut(transition: transition, completion: { [weak self, weak mediaAccessoryPanel] in
+            mediaAccessoryPanel?.removeFromSupernode()
+            if let self, self.dismissingMediaAccessoryPanel === mediaAccessoryPanel {
+                self.dismissingMediaAccessoryPanel = nil
+            }
+        })
+    }
+    
+    private func presentAudioRateTooltip(baseRate: AudioPlaybackRate, changeType: MediaNavigationAccessoryPanel.ChangeType) {
+        guard let controller = self.controller else {
+            return
+        }
+        
+        var hasTooltip = false
+        controller.forEachController({ controller in
+            if let controller = controller as? UndoOverlayController {
+                hasTooltip = true
+                controller.dismissWithCommitAction()
+            }
+            return true
+        })
+        
+        let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
+        let text: String?
+        let rate: CGFloat?
+        if case let .sliderCommit(previousValue, newValue) = changeType {
+            let value = String(format: "%0.1f", baseRate.doubleValue)
+            if baseRate == .x1 {
+                text = presentationData.strings.Conversation_AudioRateTooltipNormal
+            } else {
+                text = presentationData.strings.Conversation_AudioRateTooltipCustom(value).string
+            }
+            if newValue > previousValue {
+                rate = .infinity
+            } else if newValue < previousValue {
+                rate = -.infinity
+            } else {
+                rate = nil
+            }
+        } else if baseRate == .x1 {
+            text = presentationData.strings.Conversation_AudioRateTooltipNormal
+            rate = 1.0
+        } else if baseRate == .x1_5 {
+            text = presentationData.strings.Conversation_AudioRateTooltip15X
+            rate = 1.5
+        } else if baseRate == .x2 {
+            text = presentationData.strings.Conversation_AudioRateTooltipSpeedUp
+            rate = 2.0
+        } else {
+            text = nil
+            rate = nil
+        }
+        
+        var showTooltip = true
+        if case .sliderChange = changeType {
+            showTooltip = false
+        }
+        
+        if let rate, let text, showTooltip {
+            controller.present(
+                UndoOverlayController(
+                    presentationData: presentationData,
+                    content: .audioRate(
+                        rate: rate,
+                        text: text
+                    ),
+                    elevatedLayout: false,
+                    animateInAsReplacement: hasTooltip,
+                    action: { _ in
+                        return true
+                    }
+                ),
+                in: .current
+            )
+        }
+    }
+        
+    private func makeMediaAccessoryPanel() -> MediaNavigationAccessoryPanel {
+        let mediaAccessoryPanel = MediaNavigationAccessoryPanel(context: self.context, presentationData: self.presentationData, displayBackground: false, customTintColor: self.presentationData.theme.rootController.tabBar.textColor)
+        mediaAccessoryPanel.getController = { [weak self] in
+            return self?.controller
+        }
+        mediaAccessoryPanel.presentInGlobalOverlay = { [weak self] controller in
+            self?.presentInGlobalOverlay(controller)
+        }
+        mediaAccessoryPanel.close = { [weak self] in
+            if let self, let (_, _, _, _, type, _) = self.playlistStateAndType {
+                self.context.sharedContext.mediaManager.setPlaylist(nil, type: type, control: SharedMediaPlayerControlAction.playback(.pause))
+            }
+        }
+        mediaAccessoryPanel.setRate = { [weak self] rate, changeType in
+            guard let self else {
+                return
+            }
+            let _ = (self.context.sharedContext.accountManager.transaction { transaction -> AudioPlaybackRate in
+                let settings = transaction.getSharedData(ApplicationSpecificSharedDataKeys.musicPlaybackSettings)?.get(MusicPlaybackSettings.self) ?? MusicPlaybackSettings.defaultSettings
+                
+                transaction.updateSharedData(ApplicationSpecificSharedDataKeys.musicPlaybackSettings, { _ in
+                    return PreferencesEntry(settings.withUpdatedVoicePlaybackRate(rate))
+                })
+                return rate
+            }
+            |> deliverOnMainQueue).startStandalone(next: { [weak self] baseRate in
+                guard let self, let (_, _, _, _, type, _) = self.playlistStateAndType else {
+                    return
+                }
+                self.context.sharedContext.mediaManager.playlistControl(.setBaseRate(baseRate), type: type)
+                self.presentAudioRateTooltip(baseRate: baseRate, changeType: changeType)
+            })
+        }
+        mediaAccessoryPanel.togglePlayPause = { [weak self] in
+            if let self, let (_, _, _, _, type, _) = self.playlistStateAndType {
+                self.context.sharedContext.mediaManager.playlistControl(.playback(.togglePlayPause), type: type)
+            }
+        }
+        mediaAccessoryPanel.playPrevious = { [weak self] in
+            if let self, let (_, _, _, _, type, _) = self.playlistStateAndType {
+                self.context.sharedContext.mediaManager.playlistControl(.next, type: type)
+            }
+        }
+        mediaAccessoryPanel.playNext = { [weak self] in
+            if let self, let (_, _, _, _, type, _) = self.playlistStateAndType {
+                self.context.sharedContext.mediaManager.playlistControl(.previous, type: type)
+            }
+        }
+        mediaAccessoryPanel.tapAction = {
+        }
+        return mediaAccessoryPanel
+    }
+    
+    private func updateMediaAccessoryPanel(frame: CGRect?, transition: ContainedViewLayoutTransition) {
+        guard case .glass = self.panelStyle, self.hasMediaAccessoryPanel, let frame, let (item, previousItem, nextItem, order, type, _) = self.playlistStateAndType else {
+            self.dismissMediaAccessoryPanel(transition: transition)
+            return
+        }
+        
+        let mediaAccessoryPanel: MediaNavigationAccessoryPanel
+        let isNewPanel: Bool
+        if let (currentPanel, currentType) = self.mediaAccessoryPanel, currentType == type {
+            mediaAccessoryPanel = currentPanel
+            isNewPanel = false
+        } else {
+            self.dismissMediaAccessoryPanel(transition: transition)
+            mediaAccessoryPanel = self.makeMediaAccessoryPanel()
+            mediaAccessoryPanel.frame = frame
+            if let dismissingMediaAccessoryPanel = self.dismissingMediaAccessoryPanel {
+                self.containerNode.insertSubnode(mediaAccessoryPanel, aboveSubnode: dismissingMediaAccessoryPanel)
+            } else {
+                self.containerNode.addSubnode(mediaAccessoryPanel)
+            }
+            self.mediaAccessoryPanel = (mediaAccessoryPanel, type)
+            isNewPanel = true
+        }
+        
+        mediaAccessoryPanel.containerNode.headerNode.displayScrubber = item.playbackData?.type != .instantVideo
+        mediaAccessoryPanel.containerNode.headerNode.playbackStatus = self.mediaPlaybackStatusSignal()
+        switch order {
+        case .regular:
+            mediaAccessoryPanel.containerNode.headerNode.playbackItems = (item, previousItem, nextItem)
+        case .reversed:
+            mediaAccessoryPanel.containerNode.headerNode.playbackItems = (item, nextItem, previousItem)
+        case .random:
+            mediaAccessoryPanel.containerNode.headerNode.playbackItems = (item, nil, nil)
+        }
+        
+        let inset: CGFloat = self.hideButtons ? 19.0 : 0.0
+        if isNewPanel {
+            mediaAccessoryPanel.updateLayout(size: frame.size, leftInset: inset, rightInset: inset, isHidden: false, transition: .immediate)
+            mediaAccessoryPanel.animateIn(transition: transition)
+        } else {
+            transition.updateFrame(node: mediaAccessoryPanel, frame: frame)
+            mediaAccessoryPanel.updateLayout(size: frame.size, leftInset: inset, rightInset: inset, isHidden: false, transition: transition)
+        }
+        
+        transition.updateAlpha(node: mediaAccessoryPanel.containerNode.headerNode.separatorNode, alpha: self.hideButtons ? 0.0 : 1.0)
     }
     
     func updateBackgroundAlpha(_ alpha: CGFloat, transition: ContainedViewLayoutTransition) {
@@ -1532,8 +1859,12 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
     }
     
     func updateSelectedIndex(_ index: Int) {
+        let hadMediaAccessoryPanel = self.hasMediaAccessoryPanel
         self.selectedIndex = index
         self.updateViews(transition: .init(animation: .curve(duration: 0.2, curve: .spring)))
+        if hadMediaAccessoryPanel != self.hasMediaAccessoryPanel {
+            self.requestLayout(transition: .immediate)
+        }
     }
     
     var buttonSize: CGSize {
@@ -1612,6 +1943,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                     }
                     let button = self.buttons[index]
                     self.skipLensUpdate = true
+                    self.selectionOverrideIndex = index
                     if self.selectionChanged(button) {
                         self.selectedIndex = index
                         if self.buttons.count > 5, let button = self.itemViews[button.key] {
@@ -1635,6 +1967,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                             self.updateItemContainers(contentOffset: newBounds.minX, transition: transition)
                         }
                     }
+                    self.selectionOverrideIndex = nil
                     self.skipLensUpdate = false
                 }
                 self.requestLayout(transition: .animated(duration: 0.4, curve: .spring))
@@ -1649,7 +1982,16 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             return
         }
         
-        let width = layout.size.width
+        var buttons = self.buttons
+        if buttons.count == 1 {
+            buttons.removeAll()
+        }
+        
+        var width = layout.size.width
+        if buttons.count == 3 {
+            width = smallPanelWidth
+        }
+        
         var panelSideInset: CGFloat
         switch self.panelStyle {
         case .glass:
@@ -1658,8 +2000,11 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             panelSideInset = 3.0
         }
                 
-        var distanceBetweenNodes = floorToScreenPixels((width - panelSideInset * 2.0 - self.buttonSize.width) / CGFloat(max(1, self.buttons.count - 1)))
-        let internalWidth = distanceBetweenNodes * CGFloat(self.buttons.count - 1)
+        var distanceBetweenNodes = floorToScreenPixels((width - panelSideInset * 2.0 - self.buttonSize.width) / CGFloat(max(1, buttons.count - 1)))
+        if buttons.count == 3 {
+            distanceBetweenNodes = floorToScreenPixels((width - panelSideInset * 2.0 - 32.0) / CGFloat(max(1, buttons.count - 1)))
+        }
+        let internalWidth = distanceBetweenNodes * CGFloat(max(0, buttons.count - 1))
         var buttonWidth = self.buttonSize.width
         var leftNodeOriginX: CGFloat
         var maxButtonsToFit = 5
@@ -1672,8 +2017,11 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         case .legacy:
             leftNodeOriginX = (width - internalWidth) / 2.0
         }
+        if buttons.count == 3 {
+            leftNodeOriginX = floor((layout.size.width - width) / 2.0) + 16.0
+        }
                 
-        if self.buttons.count > maxButtonsToFit && layout.size.width < layout.size.height {
+        if buttons.count > maxButtonsToFit && layout.size.width < layout.size.height {
             switch self.panelStyle {
             case .glass:
                 buttonWidth = smallGlassButtonSize.width
@@ -1689,12 +2037,12 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         
         var selectionFrame = CGRect()
         var mostRightX = 0.0
-        for i in 0 ..< self.buttons.count {
+        for i in 0 ..< buttons.count {
             let originX = floorToScreenPixels(leftNodeOriginX + CGFloat(i) * distanceBetweenNodes - buttonWidth / 2.0)
             let buttonFrame = CGRect(origin: CGPoint(x: originX, y: -3.0), size: CGSize(width: buttonWidth, height: self.buttonSize.height))
             mostRightX = buttonFrame.maxX
             
-            let type = self.buttons[i]
+            let type = buttons[i]
             let _ = validIds.insert(type.key)
             
             var buttonTransition = transition
@@ -1749,20 +2097,22 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                     context: self.context,
                     style: self.panelStyle == .glass ? .glass : .legacy,
                     type: type,
-                    isFirstOrLast: i == 0 || i == self.buttons.count - 1,
+                    isFirstOrLast: i == 0 || i == buttons.count - 1,
                     isSelected: false,
                     strings: self.presentationData.strings,
                     theme: self.presentationData.theme,
                     action: { [weak self] in
                         if let strongSelf = self {
+                            strongSelf.selectionOverrideIndex = i
                             if strongSelf.selectionChanged(type) {
                                 strongSelf.selectedIndex = i
                                 strongSelf.updateViews(transition: .init(animation: .curve(duration: 0.2, curve: .spring)))
                                 
-                                if strongSelf.buttons.count > 5, let button = strongSelf.itemViews[type.key] {
+                                if buttons.count > 5, let button = strongSelf.itemViews[type.key] {
                                     strongSelf.scrollNode.view.scrollRectToVisible(button.frame.insetBy(dx: -35.0, dy: 0.0), animated: true)
                                 }
                             }
+                            strongSelf.selectionOverrideIndex = nil
                         }
                     }, longPressAction: { [weak self] in
                         if let strongSelf = self, i == strongSelf.selectedIndex {
@@ -1781,7 +2131,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                     context: self.context,
                     style: self.panelStyle == .glass ? .glass : .legacy,
                     type: type,
-                    isFirstOrLast: i == 0 || i == self.buttons.count - 1,
+                    isFirstOrLast: i == 0 || i == buttons.count - 1,
                     isSelected: true,
                     strings: self.presentationData.strings,
                     theme: self.presentationData.theme,
@@ -1815,6 +2165,12 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 accessibilityTitle = self.presentationData.strings.Attachment_Poll
             case .gift:
                 accessibilityTitle = self.presentationData.strings.Attachment_Gift
+            case .sticker:
+                accessibilityTitle = self.presentationData.strings.Attachment_Sticker
+            case .emoji:
+                accessibilityTitle = "Emoji"
+            case .audio:
+                accessibilityTitle = self.presentationData.strings.Attachment_Audio
             case let .app(bot):
                 accessibilityTitle = bot.shortName
             case .standalone:
@@ -1849,6 +2205,16 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             self.scrollNode.view.isScrollEnabled = contentSize.width - self.scrollNode.view.bounds.width > 1.0
             self.liquidLensView?.clipsToBounds = self.scrollNode.view.isScrollEnabled
         }
+        
+        if !self.hideButtons && self.itemsContainer.isHidden {
+            Queue.mainQueue().after(0.3, {
+                self.itemsContainer.isHidden = false
+                self.selectedItemsContainer.isHidden = false
+            })
+        } else {
+            self.itemsContainer.isHidden = self.hideButtons
+            self.selectedItemsContainer.isHidden = self.hideButtons
+        }
     }
     
     private func loadTextNodeIfNeeded() {
@@ -1859,10 +2225,19 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                     strongSelf.present(c)
                 }
             }, makeEntityInputView: self.makeEntityInputView)
+            if let data = self.context.currentAppConfiguration.with({ $0 }).data, let value = data["ios_disable_ai_chat"] as? Double, value == 1.0 {
+            } else {
+                textInputPanelNode.isAIEnabled = true
+            }
             textInputPanelNode.interfaceInteraction = self.interfaceInteraction
             textInputPanelNode.sendMessage = { [weak self] mode, messageEffect in
                 if let strongSelf = self {
                     strongSelf.sendMessagePressed(mode, messageEffect)
+                }
+            }
+            textInputPanelNode.invokeAICompose = { [weak self] in
+                if let strongSelf = self {
+                    strongSelf.invokeAICompose()
                 }
             }
             textInputPanelNode.focusUpdated = { [weak self] focus in
@@ -2039,10 +2414,11 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         }
     }
     
-    func update(layout: ContainerViewLayout, buttons: [AttachmentButtonType], isSelecting: Bool, selectionCount: Int, elevateProgress: Bool, transition: ContainedViewLayoutTransition) -> CGFloat {
+    func update(layout: ContainerViewLayout, buttons: [AttachmentButtonType], isSelecting: Bool, selectionCount: Int, elevateProgress: Bool, hideButtons: Bool, transition: ContainedViewLayoutTransition) -> CGFloat {
         self.validLayout = layout
         self.buttons = buttons
         self.elevateProgress = elevateProgress
+        self.hideButtons = hideButtons
         
         if selectionCount != self.selectionCount {
             self.selectionCount = selectionCount
@@ -2078,6 +2454,13 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             insets.bottom = layout.intrinsicInsets.bottom
         }
         
+        let topAccessoryHeight: CGFloat
+        if self.hasMediaAccessoryPanel {
+            topAccessoryHeight = MediaNavigationAccessoryHeaderNode.minimizedHeight
+        } else {
+            topAccessoryHeight = 0.0
+        }
+        
         if isSelecting {
             self.loadTextNodeIfNeeded()
         } else {
@@ -2097,7 +2480,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 panelTransition = .immediate
             }
             let panelHeight = textInputPanelNode.updateLayout(width: layout.size.width, leftInset: insets.left + layout.safeInsets.left, rightInset: insets.right + layout.safeInsets.right, bottomInset: 0.0, additionalSideInsets: UIEdgeInsets(), maxHeight: layout.size.height / 2.0, isSecondary: false, transition: panelTransition, interfaceState: self.presentationInterfaceState, metrics: layout.metrics, isMediaInputExpanded: false)
-            let panelFrame = CGRect(x: 0.0, y: 0.0, width: layout.size.width, height: panelHeight)
+            let panelFrame = CGRect(x: 0.0, y: topAccessoryHeight, width: layout.size.width, height: panelHeight)
             if textInputPanelNode.frame.width.isZero {
                 textInputPanelNode.frame = panelFrame
             }
@@ -2113,7 +2496,11 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         self.updateViews(transition: .immediate)
                 
         let glassPanelHeight: CGFloat = 62.0
-        let bounds = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: self.buttonSize.height + insets.bottom))
+        var bounds = CGRect(origin: CGPoint(), size: CGSize(width: layout.size.width, height: topAccessoryHeight + self.buttonSize.height + insets.bottom))
+        if (buttons.count == 1 || hideButtons) && topAccessoryHeight > 0.0 {
+            bounds.size.height -= self.buttonSize.height
+        }
+        var mediaAccessoryPanelFrame: CGRect?
         if case .glass = self.panelStyle {
             let backgroundView: GlassBackgroundView
             let liquidLensView: LiquidLensView
@@ -2146,9 +2533,28 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
                 self.tabSelectionRecognizer = tabSelectionRecognizer
                 self.scrollNode.view.addGestureRecognizer(tabSelectionRecognizer)
             }
-            let panelSize = CGSize(width: isSelecting ? textPanelWidth : layout.size.width - layout.safeInsets.left - layout.safeInsets.right - panelSideInset * 2.0, height: isSelecting ? textPanelHeight - 11.0 : glassPanelHeight)
             
-            let cornerRadius: CGFloat = isSelecting ? min(20.0, panelSize.height * 0.5) : panelSize.height * 0.5
+            let buttonsPanelWidth: CGFloat
+            if buttons.count == 3 {
+                buttonsPanelWidth = smallPanelWidth
+            } else {
+                buttonsPanelWidth = layout.size.width - layout.safeInsets.left - layout.safeInsets.right - panelSideInset * 2.0
+            }
+            
+            let basePanelHeight = isSelecting ? max(0.0, textPanelHeight - 11.0) : glassPanelHeight
+            var panelSize = CGSize(width: isSelecting ? textPanelWidth : buttonsPanelWidth, height: basePanelHeight + topAccessoryHeight)
+            if !isSelecting && (buttons.count == 1 || hideButtons) && topAccessoryHeight > 0.0 {
+                panelSize.height = topAccessoryHeight
+            }
+            
+            let cornerRadius: CGFloat
+            if isSelecting {
+                cornerRadius = min(20.0, basePanelHeight * 0.5)
+            } else if self.hasMediaAccessoryPanel {
+                cornerRadius = 18.5
+            } else {
+                cornerRadius = glassPanelHeight * 0.5
+            }
             let backgroundOriginX: CGFloat = isSelecting ? panelSideInset : floorToScreenPixels((layout.size.width - panelSize.width) / 2.0)
             
             backgroundView.update(size: panelSize, cornerRadius: cornerRadius, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: ComponentTransition(transition))
@@ -2158,7 +2564,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             self.lensParams = (lensPanelSize, cornerRadius)
             self.updateLiquidLens(transition: ComponentTransition(transition))
             
-            transition.updatePosition(layer: liquidLensView.layer, position: CGPoint(x: backgroundOriginX + panelSize.width * 0.5, y: panelSize.height * 0.5))
+            transition.updatePosition(layer: liquidLensView.layer, position: CGPoint(x: backgroundOriginX + panelSize.width * 0.5, y: topAccessoryHeight + lensPanelSize.height * 0.5))
             transition.updateBounds(layer: liquidLensView.layer, bounds: CGRect(origin: .zero, size: CGSize(width: lensPanelSize.width - 3.0 * 2.0, height: lensPanelSize.height - 3.0 * 2.0)))
             
             transition.updatePosition(layer: backgroundView.layer, position: CGPoint(x: backgroundOriginX + panelSize.width * 0.5, y: panelSize.height * 0.5))
@@ -2169,7 +2575,12 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             transition.updateBounds(layer: self.selectedItemsContainer.layer, bounds: CGRect(origin: .zero, size: itemsContainerFrame.size))
             transition.updatePosition(layer: self.itemsContainer.layer, position: itemsContainerFrame.center)
             transition.updatePosition(layer: self.selectedItemsContainer.layer, position: itemsContainerFrame.center)
+            
+            if topAccessoryHeight > 0.0 {
+                mediaAccessoryPanelFrame = CGRect(origin: CGPoint(x: backgroundOriginX, y: 0.0), size: CGSize(width: panelSize.width, height: topAccessoryHeight))
+            }
         }
+        self.updateMediaAccessoryPanel(frame: mediaAccessoryPanelFrame, transition: transition)
         
         var containerTransition: ContainedViewLayoutTransition
         var containerFrame: CGRect
@@ -2180,10 +2591,14 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         switch self.panelStyle {
         case .glass:
             buttonHeight = 52.0
-            buttonSideInset = 22.0
+            buttonSideInset = 25.0
         case .legacy:
             buttonHeight = 50.0
             buttonSideInset = 16.0
+        }
+        
+        if self.mainButtonState.hidesPanelBackground {
+            self.backgroundView?.isHidden = true
         }
         
         if isAnyButtonVisible {
@@ -2213,7 +2628,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             }
             containerFrame = CGRect(origin: CGPoint(), size: CGSize(width: bounds.width, height: height))
         } else if isSelecting {
-            containerFrame = CGRect(origin: CGPoint(), size: CGSize(width: bounds.width, height: textPanelHeight + insets.bottom))
+            containerFrame = CGRect(origin: CGPoint(), size: CGSize(width: bounds.width, height: textPanelHeight + insets.bottom + topAccessoryHeight))
         } else {
             containerFrame = bounds
         }
@@ -2325,7 +2740,9 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         containerTransition.updateFrame(node: self.separatorNode, frame: CGRect(origin: CGPoint(), size: CGSize(width: bounds.width, height: UIScreenPixel)))
                 
         if case .glass = self.panelStyle {
-            transition.updateFrameAsPositionAndBounds(node: self.scrollNode, frame: CGRect(origin: CGPoint(x: self.isSelecting ? panelSideInset - defaultPanelSideInset : panelSideInset, y: self.isSelecting ? -11.0 : 0.0), size: CGSize(width: layout.size.width - panelSideInset * 2.0, height: self.buttonSize.height)))
+            let scrollFrame = CGRect(origin: CGPoint(x: self.isSelecting ? panelSideInset - defaultPanelSideInset : panelSideInset, y: topAccessoryHeight + (self.isSelecting ? -11.0 : 0.0)), size: CGSize(width: layout.size.width - panelSideInset * 2.0, height: self.buttonSize.height))
+            transition.updatePosition(node: self.scrollNode, position: scrollFrame.center)
+            transition.updateBounds(node: self.scrollNode, bounds: CGRect(origin: CGPoint(x: self.scrollNode.view.contentOffset.x, y: 0.0), size: scrollFrame.size))
         }
 
         if let progress = self.loadingProgress {
@@ -2361,10 +2778,9 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
             buttonTopInset = isNarrowButton ? 2.0 : 8.0
         }
         
-                
         if !self.animatingTransition {
             let buttonOriginX = layout.safeInsets.left + buttonSideInset
-            let buttonOriginY = isAnyButtonVisible || self.fromMenu ? buttonTopInset : containerFrame.height
+            let buttonOriginY = isAnyButtonVisible || self.fromMenu ? topAccessoryHeight + buttonTopInset : containerFrame.height
             var mainButtonFrame: CGRect?
             var secondaryButtonFrame: CGRect?
             if self.secondaryButtonState.isVisible && self.mainButtonState.isVisible, let position = self.secondaryButtonState.position {
@@ -2472,7 +2888,7 @@ final class AttachmentPanel: ASDisplayNode, ASScrollViewDelegate, ASGestureRecog
         }
         
         let inset: CGFloat = 3.0
-        liquidLensView.update(size: CGSize(width: panelSize.width - inset * 2.0, height: panelSize.height - inset * 2.0), cornerRadius: 28.0, selectionOrigin: CGPoint(x: lensSelection.x, y: 0.0), selectionSize: CGSize(width: lensSelection.width, height: panelSize.height - inset * 2.0), inset: 0.0, isDark: self.presentationData.theme.overallDarkAppearance, isLifted: isLifted, isCollapsed: self.isSelecting || self.buttons.count < 2, transition: transition)
+        liquidLensView.update(size: CGSize(width: panelSize.width - inset * 2.0, height: panelSize.height - inset * 2.0), cornerRadius: 28.0, selectionOrigin: CGPoint(x: lensSelection.x, y: 0.0), selectionSize: CGSize(width: lensSelection.width, height: panelSize.height - inset * 2.0), inset: 0.0, isDark: self.presentationData.theme.overallDarkAppearance, isLifted: isLifted, isCollapsed: self.isSelecting || self.buttons.count < 2 || self.hideButtons, transition: transition)
     }
     
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {

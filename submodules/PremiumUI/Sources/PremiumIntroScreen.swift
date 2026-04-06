@@ -327,6 +327,12 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
+        case .aiTools:
+            if case .aiTools = rhs {
+                return true
+            } else {
+                return false
+            }
         case let .auth(lhsPrice):
             if case let .auth(rhsPrice) = rhs, lhsPrice == rhsPrice {
                 return true
@@ -388,6 +394,7 @@ public enum PremiumSource: Equatable {
     case messageEffects
     case todo
     case copyProtection
+    case aiTools
     case auth(String)
     case premiumGift(TelegramMediaFile)
     
@@ -487,6 +494,8 @@ public enum PremiumSource: Equatable {
             return "todo"
         case .copyProtection:
             return "pm_noforwards"
+        case .aiTools:
+            return "ai_compose"
         case .auth:
             return "auth"
         case .premiumGift:
@@ -521,6 +530,7 @@ public enum PremiumPerk: CaseIterable {
     case messageEffects
     case todo
     case copyProtection
+    case aiTools
     
     case businessLocation
     case businessHours
@@ -557,7 +567,8 @@ public enum PremiumPerk: CaseIterable {
             .business,
             .messageEffects,
             .todo,
-            .copyProtection
+            .copyProtection,
+            .aiTools
         ]
     }
     
@@ -635,6 +646,8 @@ public enum PremiumPerk: CaseIterable {
             return "todo"
         case .copyProtection:
             return "pm_noforwards"
+        case .aiTools:
+            return "ai_compose"
         case .business:
             return "business"
         case .businessLocation:
@@ -708,6 +721,8 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_Todo
         case .copyProtection:
             return strings.Premium_CopyProtection
+        case .aiTools:
+            return strings.Premium_AiTools
         case .businessLocation:
             return strings.Business_Location
         case .businessHours:
@@ -779,6 +794,8 @@ public enum PremiumPerk: CaseIterable {
             return strings.Premium_TodoInfo
         case .copyProtection:
             return strings.Premium_CopyProtectionInfo
+        case .aiTools:
+            return strings.Premium_AiToolsInfo
         case .businessLocation:
             return strings.Business_LocationInfo
         case .businessHours:
@@ -801,71 +818,73 @@ public enum PremiumPerk: CaseIterable {
     var iconName: String {
         switch self {
         case .doubleLimits:
-            return "Premium/Perk/Limits"
+            return "Item List/Icons/X2"
         case .moreUpload:
-            return "Premium/Perk/Upload"
+            return "Item List/Icons/File"
         case .fasterDownload:
-            return "Premium/Perk/Speed"
+            return "Item List/Icons/Speed"
         case .voiceToText:
-            return "Premium/Perk/Voice"
+            return "Item List/Icons/Microphone"
         case .noAds:
-            return "Premium/Perk/NoAds"
+            return "Item List/Icons/NoAds"
         case .uniqueReactions:
-            return "Premium/Perk/Reactions"
+            return "Item List/Icons/Reactions"
         case .premiumStickers:
-            return "Premium/Perk/Stickers"
+            return "Item List/Icons/Sticker"
         case .advancedChatManagement:
-            return "Premium/Perk/Chat"
+            return "Item List/Icons/Chat"
         case .profileBadge:
-            return "Premium/Perk/Badge"
+            return "Item List/Icons/Premium"
         case .animatedUserpics:
-            return "Premium/Perk/Avatar"
+            return "Item List/Icons/Play"
         case .appIcons:
-            return "Premium/Perk/AppIcon"
+            return "Item List/Icons/Icons"
         case .animatedEmoji:
-            return "Premium/Perk/Emoji"
+            return "Item List/Icons/Emoji"
         case .emojiStatus:
-            return "Premium/Perk/Status"
+            return "Item List/Icons/Hand"
         case .translation:
-            return "Premium/Perk/Translation"
+            return "Item List/Icons/Translation"
         case .stories:
-            return "Premium/Perk/Stories"
+            return "Item List/Icons/Stories"
         case .colors:
-            return "Premium/Perk/Colors"
+            return "Item List/Icons/Brush"
         case .wallpapers:
-            return "Premium/Perk/Wallpapers"
+            return "Item List/Icons/Wallpaper"
         case .messageTags:
-            return "Premium/Perk/MessageTags"
+            return "Item List/Icons/Tag"
         case .lastSeen:
-            return "Premium/Perk/LastSeen"
+            return "Item List/Icons/LastSeen"
         case .messagePrivacy:
-            return "Premium/Perk/MessagePrivacy"
+            return "Item List/Icons/LockBubble"
         case .folderTags:
             return "Premium/Perk/MessageTags"
         case .business:
             return "Premium/Perk/Business"
         case .messageEffects:
-            return "Premium/Perk/MessageEffects"
+            return "Item List/Icons/MessageEffect"
         case .todo:
-            return "Premium/Perk/Todo"
+            return "Item List/Icons/Checkbox"
         case .copyProtection:
-            return "Premium/Perk/NoForward"
+            return "Item List/Icons/NoForward"
+        case .aiTools:
+            return "Item List/Icons/AITools"
         case .businessLocation:
-            return "Premium/BusinessPerk/Location"
+            return "Item List/Icons/Location"
         case .businessHours:
-            return "Premium/BusinessPerk/Hours"
+            return "Item List/Icons/Clock"
         case .businessQuickReplies:
-            return "Premium/BusinessPerk/Replies"
+            return "Item List/Icons/Share"
         case .businessGreetingMessage:
-            return "Premium/BusinessPerk/Greetings"
+            return "Item List/Icons/Hand"
         case .businessAwayMessage:
-            return "Premium/BusinessPerk/Away"
+            return "Item List/Icons/Away"
         case .businessChatBots:
-            return "Premium/BusinessPerk/Chatbots"
+            return "Item List/Icons/Chatbot"
         case .businessIntro:
-            return "Premium/BusinessPerk/Intro"
+            return "Item List/Icons/Intro"
         case .businessLinks:
-            return "Premium/BusinessPerk/Links"
+            return "Item List/Icons/BusinessLink"
         }
     }
 }
@@ -874,6 +893,7 @@ struct PremiumIntroConfiguration {
     static var defaultValue: PremiumIntroConfiguration {
         return PremiumIntroConfiguration(perks: [
             .stories,
+            .aiTools,
             .moreUpload,
             .doubleLimits,
             .lastSeen,
@@ -936,6 +956,12 @@ struct PremiumIntroConfiguration {
             if perks.count < 4 {
                 perks = PremiumIntroConfiguration.defaultValue.perks
             }
+            
+            #if DEBUG
+            if !perks.contains(.aiTools) {
+                perks.insert(.aiTools, at: 1)
+            }
+            #endif
                         
             var businessPerks: [PremiumPerk] = []
             if let values = data["business_promo_order"] as? [String] {
@@ -1020,24 +1046,18 @@ private struct PremiumProduct: Equatable {
 
 final class PerkIconComponent: CombinedComponent {
     let backgroundColor: UIColor
-    let foregroundColor: UIColor
     let iconName: String
     
     init(
         backgroundColor: UIColor,
-        foregroundColor: UIColor,
         iconName: String
     ) {
         self.backgroundColor = backgroundColor
-        self.foregroundColor = foregroundColor
         self.iconName = iconName
     }
     
     static func ==(lhs: PerkIconComponent, rhs: PerkIconComponent) -> Bool {
         if lhs.backgroundColor != rhs.backgroundColor {
-            return false
-        }
-        if lhs.foregroundColor != rhs.foregroundColor {
             return false
         }
         if lhs.iconName != rhs.iconName {
@@ -1047,38 +1067,19 @@ final class PerkIconComponent: CombinedComponent {
     }
     
     static var body: Body {
-        let background = Child(RoundedRectangle.self)
-        let icon = Child(BundleIconComponent.self)
-
+        let image = Child(Image.self)
         return { context in
             let component = context.component
-        
             let iconSize = CGSize(width: 30.0, height: 30.0)
-            
-            let background = background.update(
-                component: RoundedRectangle(
-                    color: component.backgroundColor,
-                    cornerRadius: 7.0
+            let image = image.update(
+                component: Image(image:
+                    renderSettingsIcon(name: component.iconName, backgroundColors: [component.backgroundColor])
                 ),
                 availableSize: iconSize,
                 transition: context.transition
             )
-            
-            let icon = icon.update(
-                component: BundleIconComponent(
-                    name: component.iconName,
-                    tintColor: .white
-                ),
-                availableSize: iconSize,
-                transition: context.transition
-            )
-            
-            let iconPosition = CGPoint(x: background.size.width / 2.0, y: background.size.height / 2.0)
-            context.add(background
-                .position(iconPosition)
-            )
-            context.add(icon
-                .position(iconPosition)
+            context.add(image
+                .position(CGPoint(x: iconSize.width / 2.0, y: iconSize.height / 2.0))
             )
             return iconSize
         }
@@ -1639,6 +1640,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
             
             super.init()
             
+            self.newPerks = [PremiumPerk.aiTools.identifier, PremiumPerk.copyProtection.identifier]
+            
             let premiumIntroConfiguration: Signal<PremiumIntroConfiguration, NoError>
             let accountPeer: Signal<EnginePeer?, NoError>
             switch screenContext {
@@ -1972,6 +1975,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                 UIColor(rgb: 0x676bff),
                 UIColor(rgb: 0x6172ff),
                 UIColor(rgb: 0x5b79ff),
+                UIColor(rgb: 0x5b79ff),
                 UIColor(rgb: 0x4492ff),
                 UIColor(rgb: 0x429bd5),
                 UIColor(rgb: 0x41a6a5),
@@ -2166,7 +2170,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         ], alignment: .left, spacing: 2.0)),
                         leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: gradientColors[i],
-                            foregroundColor: .white,
                             iconName: perk.iconName
                         ))), false),
                         accessory: accountContext != nil ? .arrow : nil,
@@ -2222,6 +2225,8 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                                 demoSubject = .todo
                             case .copyProtection:
                                 demoSubject = .copyProtection
+                            case .aiTools:
+                                demoSubject = .aiTools
                             case .business:
                                 demoSubject = .business
                             default:
@@ -2355,7 +2360,6 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         ], alignment: .left, spacing: 2.0)),
                         leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: gradientColors[min(i, gradientColors.count - 1)],
-                            foregroundColor: .white,
                             iconName: perk.iconName
                         ))), false),
                         action: { [weak state] _ in
@@ -2553,8 +2557,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                         ], alignment: .left, spacing: 2.0)),
                         leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                             backgroundColor: UIColor(rgb: 0x676bff),
-                            foregroundColor: .white,
-                            iconName: "Premium/BusinessPerk/Status"
+                            iconName: "Item List/Icons/Case"
                         ))), false),
                         icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(EmojiActionIconComponent(
                             context: accountContext,
@@ -2596,8 +2599,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     ], alignment: .left, spacing: 2.0)),
                     leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                         backgroundColor: UIColor(rgb: 0x4492ff),
-                        foregroundColor: .white,
-                        iconName: "Premium/BusinessPerk/Tag"
+                        iconName: "Item List/Icons/Tag"
                     ))), false),
                     action: { _ in
                         guard let accountContext else {
@@ -2631,8 +2633,7 @@ private final class PremiumIntroScreenContentComponent: CombinedComponent {
                     ], alignment: .left, spacing: 2.0)),
                     leftIcon: .custom(AnyComponentWithIdentity(id: 0, component: AnyComponent(PerkIconComponent(
                         backgroundColor: UIColor(rgb: 0x41a6a5),
-                        foregroundColor: .white,
-                        iconName: "Premium/Perk/Stories"
+                        iconName: "Item List/Icons/Stories"
                     ))), false),
                     action: {  _ in
                         guard let accountContext else {

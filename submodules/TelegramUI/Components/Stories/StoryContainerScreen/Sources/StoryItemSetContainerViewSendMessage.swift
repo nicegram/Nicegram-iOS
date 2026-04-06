@@ -15,7 +15,6 @@ import ChatEntityKeyboardInputNode
 import ChatScheduleTimeController
 import TextFormat
 import PhoneNumberFormat
-import ComposePollUI
 import TelegramIntents
 import LegacyUI
 import WebSearchUI
@@ -1888,7 +1887,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                 }
                 attachmentController.requestController = { [weak self, weak view, weak attachmentController] type, completion in
                     guard let self, let view, let component = view.component else {
-                        return
+                        return true
                     }
                     switch type {
                     case .gallery:
@@ -1897,7 +1896,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                         if let controller = existingController {
                             completion(controller, controller.mediaPickerContext)
                             controller.prepareForReuse()
-                            return
+                            return true
                         }
                         self.presentMediaPicker(
                             view: view,
@@ -1925,18 +1924,19 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                                 self.enqueueMediaMessages(view: view, peer: peer, replyToMessageId: nil, replyToStoryId: focusedStoryId, signals: signals, silentPosting: silentPosting, scheduleTime: scheduleTime, parameters: parameters, getAnimatedTransitionSource: getAnimatedTransitionSource, completion: completion)
                             }
                         )
+                        return true
                     case .file:
                         self.controllerNavigationDisposable.set(nil)
                         let existingController = currentFilesController.with { $0 }
                         if let controller = existingController as? AttachmentContainable, let mediaPickerContext = controller.mediaPickerContext {
                             completion(controller, mediaPickerContext)
                             controller.prepareForReuse()
-                            return
+                            return true
                         }
                         let theme = component.theme
                         let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
                         
-                        let controller = component.context.sharedContext.makeAttachmentFileController(context: component.context, updatedPresentationData: updatedPresentationData, bannedSendMedia: bannedSendFiles, presentGallery: { [weak self, weak view, weak attachmentController] in
+                        let controller = component.context.sharedContext.makeAttachmentFileController(context: component.context, updatedPresentationData: updatedPresentationData, audio: false, bannedSendMedia: bannedSendFiles, presentGallery: { [weak self, weak view, weak attachmentController] in
                             guard let self, let view else {
                                 return
                             }
@@ -1948,7 +1948,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                             }
                             attachmentController?.dismiss(animated: true)
                             self.presentICloudFileGallery(view: view, peer: peer, replyMessageId: nil, replyToStoryId: focusedStoryId)
-                        }, presentDocumentScanner: nil, send: { [weak view] mediaReference in
+                        }, presentDocumentScanner: nil, send: { [weak view] mediaReferences, _, _, _ in
                             guard let view, let component = view.component else {
                                 return
                             }
@@ -1956,7 +1956,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                             if let sendPaidMessageStars = component.slice.additionalPeerData.sendPaidMessageStars {
                                 messageAttributes.append(PaidStarsMessageAttribute(stars: sendPaidMessageStars, postponeSending: false))
                             }
-                            let message: EnqueueMessage = .message(text: "", attributes: messageAttributes, inlineStickers: [:], mediaReference: mediaReference, threadId: nil, replyToMessageId: nil, replyToStoryId: focusedStoryId, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                            let message: EnqueueMessage = .message(text: "", attributes: messageAttributes, inlineStickers: [:], mediaReference: mediaReferences.first!, threadId: nil, replyToMessageId: nil, replyToStoryId: focusedStoryId, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                             let _ = (enqueueMessages(account: component.context.account, peerId: peer.id, messages: [message.withUpdatedReplyToMessageId(nil)])
                             |> deliverOnMainQueue).start(next: { [weak self, weak view] messageIds in
                                 if let self, let view {
@@ -1970,13 +1970,14 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                         if let controller = controller as? AttachmentContainable, let mediaPickerContext = controller.mediaPickerContext {
                             completion(controller, mediaPickerContext)
                         }
+                        return true
                     case .location:
                         self.controllerNavigationDisposable.set(nil)
                         let existingController = currentLocationController.with { $0 }
                         if let controller = existingController {
                             completion(controller, controller.mediaPickerContext)
                             controller.prepareForReuse()
-                            return
+                            return true
                         }
                         let selfPeerId: EnginePeer.Id
                         if case let .channel(peer) = peer, case .broadcast = peer.info {
@@ -2010,6 +2011,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                             
                             let _ = currentLocationController.swap(controller)
                         })
+                        return true
                     case .contact:
                         let theme = component.theme
                         let updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>) = (component.context.sharedContext.currentPresentationData.with({ $0 }).withUpdated(theme: theme), component.context.sharedContext.presentationData |> map { $0.withUpdated(theme: theme) })
@@ -2170,6 +2172,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                                 }))
                             }
                         }))
+                        return true
                     case .gift:
                         /*let premiumGiftOptions = strongSelf.presentationInterfaceState.premiumGiftOptions
                         if !premiumGiftOptions.isEmpty {
@@ -2226,6 +2229,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                     default:
                         break
                     }
+                    return true
                 }
                 let present = { [weak self, weak view] in
                     guard let self, let view, let controller = view.component?.controller() else {
@@ -2492,7 +2496,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
             
             let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }
             
-            component.controller()?.present(legacyICloudFilePicker(theme: presentationData.theme, completion: { [weak self, weak view] urls in
+            component.controller()?.present(legacyICloudFilePicker(theme: presentationData.theme, hasMultiselection: true, completion: { [weak self, weak view] urls in
                 if let strongSelf = self, let view, !urls.isEmpty {
                     var signals: [Signal<ICloudFileDescription?, NoError>] = []
                     for url in urls {
@@ -2559,7 +2563,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                                     }
                                     
                                     let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: fileId), partialReference: nil, resource: ICloudFileResource(urlData: item.urlData, thumbnail: false), previewRepresentations: previewRepresentations, videoThumbnails: [], immediateThumbnailData: nil, mimeType: mimeType, size: Int64(item.fileSize), attributes: attributes, alternativeRepresentations: [])
-                                    let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: replyToStoryId, localGroupingKey: groupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: [])
+                                    let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, innerSubject: nil) }, replyToStoryId: replyToStoryId, localGroupingKey: groupingKey, correlationId: nil, bubbleUpEmojiOrStickersets: [])
                                     messages.append(message)
                                 }
                                 if let _ = groupingKey, messages.count % 10 == 0 {
@@ -2664,7 +2668,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                 threadId: nil,
                 botId: results.botId,
                 result: result,
-                replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) },
+                replyToMessageId: replyMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, innerSubject: nil) },
                 replyToStoryId: storyId,
                 hideVia: hideVia,
                 silentPosting: silentPosting,
@@ -2724,7 +2728,12 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
             return nil
         }
         //TODO:self.presentationInterfaceState.customEmojiAvailable
-        return component.context.sharedContext.makeGalleryCaptionPanelView(context: component.context, chatLocation: .peer(id: peer.id), isScheduledMessages: false, isFile: false, hasTimer: true, customEmojiAvailable: true, present: { [weak view] c in
+        return component.context.sharedContext.makeGalleryCaptionPanelView(context: component.context, chatLocation: .peer(id: peer.id), isScheduledMessages: false, isFile: false, hasTimer: true, customEmojiAvailable: true, pushViewController: { [weak view] c in
+            guard let view else {
+                return
+            }
+            view.component?.controller()?.push(c)
+        }, present: { [weak view] c in
             guard let view else {
                 return
             }
@@ -3052,7 +3061,7 @@ final class StoryItemSetContainerSendMessage: @unchecked(Sendable) {
                     mappedMessages.append(message)
                 }
 
-                strongSelf.sendMessages(view: view, peer: peer, messages: mappedMessages.map { $0.withUpdatedReplyToMessageId(replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }).withUpdatedReplyToStoryId(replyToStoryId) }, silentPosting: silentPosting, scheduleTime: scheduleTime)
+                strongSelf.sendMessages(view: view, peer: peer, messages: mappedMessages.map { $0.withUpdatedReplyToMessageId(replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, innerSubject: nil) }).withUpdatedReplyToStoryId(replyToStoryId) }, silentPosting: silentPosting, scheduleTime: scheduleTime)
                 
                 completion()
             }

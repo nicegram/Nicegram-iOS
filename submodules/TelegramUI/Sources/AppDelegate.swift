@@ -761,80 +761,94 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             }
         }
         
-        let networkArguments = NetworkInitializationArguments(apiId: apiId, apiHash: apiHash, languagesCategory: languagesCategory, appVersion: appVersion, voipMaxLayer: PresentationCallManagerImpl.voipMaxLayer, voipVersions: PresentationCallManagerImpl.voipVersions(includeExperimental: true, includeReference: false).map { version, supportsVideo -> CallSessionManagerImplementationVersion in
-            CallSessionManagerImplementationVersion(version: version, supportsVideo: supportsVideo)
-        }, appData: self.regularDeviceToken.get()
-        |> map { token in
-            let tokenEnvironment: String
-            #if DEBUG
-            tokenEnvironment = "sandbox"
-            #else
-            tokenEnvironment = "production"
-            #endif
-            
-            let data = buildConfig.bundleData(withAppToken: token, tokenType: "apns", tokenEnvironment: tokenEnvironment, signatureDict: signatureDict)
-            if let data = data, let _ = String(data: data, encoding: .utf8) {
-            } else {
-                Logger.shared.log("data", "can't deserialize")
-            }
-            return data
-        }, externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(), externalRecaptchaRequestVerification: { method, siteKey in
-            return Signal { subscriber in
-                let recaptchaClient: Promise<RecaptchaClient>
-                if let current = self.recaptchaClientsBySiteKey[siteKey] {
-                    recaptchaClient = current
-                } else {
-                    recaptchaClient = Promise<RecaptchaClient>()
-                    self.recaptchaClientsBySiteKey[siteKey] = recaptchaClient
-                    
-                    Recaptcha.fetchClient(withSiteKey: siteKey) { client, error in
-                        Queue.mainQueue().async {
-                            guard let client else {
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient creation error: \(String(describing: error)).")
-                                return
-                            }
-                            recaptchaClient.set(.single(client))
-                        }
-                    }
-                }
+        let networkArguments = NetworkInitializationArguments(
+            apiId: apiId,
+            apiHash: apiHash,
+            languagesCategory: languagesCategory,
+            appVersion: appVersion,
+            voipMaxLayer: PresentationCallManagerImpl.voipMaxLayer,
+            voipVersions: PresentationCallManagerImpl.voipVersions(includeExperimental: true, includeReference: false).map { version, supportsVideo -> CallSessionManagerImplementationVersion in
+                CallSessionManagerImplementationVersion(version: version, supportsVideo: supportsVideo)
+            },
+            appData: self.regularDeviceToken.get() |> map { token in
+                let tokenEnvironment: String
+                #if DEBUG
+                tokenEnvironment = "sandbox"
+                #else
+                tokenEnvironment = "production"
+                #endif
                 
-                return (recaptchaClient.get()
-                |> take(1)
-                |> mapToSignal { recaptchaClient -> Signal<String?, NoError> in
-                    return Signal { subscriber in
-                        var recaptchaAction: RecaptchaAction?
-                        switch method {
-                        case "signup":
-                            recaptchaAction = RecaptchaAction.signup
-                        default:
-                            break
-                        }
+                let data = buildConfig.bundleData(withAppToken: token, tokenType: "apns", tokenEnvironment: tokenEnvironment, signatureDict: signatureDict)
+                if let data = data, let _ = String(data: data, encoding: .utf8) {
+                } else {
+                    Logger.shared.log("data", "can't deserialize")
+                }
+                return data
+            },
+            externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(),
+            externalRecaptchaRequestVerification: { method, siteKey in
+                return Signal<String?, NoError> { subscriber in
+                    let recaptchaClient: Promise<RecaptchaClient>
+                    if let current = self.recaptchaClientsBySiteKey[siteKey] {
+                        recaptchaClient = current
+                    } else {
+                        recaptchaClient = Promise<RecaptchaClient>()
+                        self.recaptchaClientsBySiteKey[siteKey] = recaptchaClient
                         
-                        guard let recaptchaAction else {
-                            subscriber.putNext(nil)
-                            subscriber.putCompletion()
-                            
-                            return EmptyDisposable
-                        }
-                        recaptchaClient.execute(withAction: recaptchaAction) { token, error in
-                            if let token {
-                                subscriber.putNext(token)
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient executed successfully")
-                            } else {
-                                subscriber.putNext(nil)
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient execute error: \(String(describing: error))")
+                        Recaptcha.fetchClient(withSiteKey: siteKey) { client, error in
+                            Queue.mainQueue().async {
+                                guard let client else {
+                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient creation error: \(String(describing: error)).")
+                                    return
+                                }
+                                recaptchaClient.set(.single(client))
                             }
-                            subscriber.putCompletion()
-                        }
-                        
-                        return ActionDisposable {
                         }
                     }
-                    |> runOn(Queue.mainQueue())
-                }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
-            }
-            |> runOn(Queue.mainQueue())
-        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
+                    
+                    return (recaptchaClient.get()
+                    |> take(1)
+                    |> mapToSignal { recaptchaClient -> Signal<String?, NoError> in
+                        return Signal { subscriber in
+                            var recaptchaAction: RecaptchaAction?
+                            switch method {
+                            case "signup":
+                                recaptchaAction = RecaptchaAction.signup
+                            default:
+                                break
+                            }
+                            
+                            guard let recaptchaAction else {
+                                subscriber.putNext(nil)
+                                subscriber.putCompletion()
+                                
+                                return EmptyDisposable
+                            }
+                            recaptchaClient.execute(withAction: recaptchaAction) { token, error in
+                                if let token {
+                                    subscriber.putNext(token)
+                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient executed successfully")
+                                } else {
+                                    subscriber.putNext(nil)
+                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient execute error: \(String(describing: error))")
+                                }
+                                subscriber.putCompletion()
+                            }
+                            
+                            return ActionDisposable {
+                            }
+                        }
+                        |> runOn(Queue.mainQueue())
+                    }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
+                }
+                |> runOn(Queue.mainQueue())
+            },
+            autolockDeadine: autolockDeadine,
+            encryptionProvider: OpenSSLEncryptionProvider(),
+            deviceModelName: nil,
+            useBetaFeatures: !buildConfig.isAppStoreBuild,
+            isICloudEnabled: buildConfig.isICloudEnabled
+        )
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
@@ -3381,7 +3395,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                         if let threadId {
                             replyToMessageId = MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: Int32(clamping: threadId))
                         }
-                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, todoItemId: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
+                        return enqueueMessages(account: account, peerId: peerId, messages: [EnqueueMessage.message(text: text, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: replyToMessageId.flatMap { EngineMessageReplySubject(messageId: $0, quote: nil, innerSubject: nil) }, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])])
                         |> map { messageIds -> MessageId? in
                             if messageIds.isEmpty {
                                 return nil

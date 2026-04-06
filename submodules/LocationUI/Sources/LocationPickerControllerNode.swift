@@ -354,6 +354,7 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
     private let cancelButton = ComponentView<Empty>()
     private let searchButton = ComponentView<Empty>()
     private let title = ComponentView<Empty>()
+    private let subtitle = ComponentView<Empty>()
     
     fileprivate let topEdgeEffectView: EdgeEffectView
     fileprivate let bottomEdgeEffectView: EdgeEffectView
@@ -399,7 +400,7 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
         self.state = LocationPickerState()
         self.statePromise = Promise(self.state)
         
-        self.listNode = ListView()
+        self.listNode = ListViewImpl()
         self.listNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
         self.listNode.verticalScrollIndicatorColor = UIColor(white: 0.0, alpha: 0.3)
         self.listNode.verticalScrollIndicatorFollowsOverscroll = true
@@ -670,15 +671,18 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                         var coordinate = userLocation?.coordinate
                         switch strongSelf.mode {
                         case .share:
-                            if source == .story {
+                            switch source {
+                            case .generic:
+                                title = presentationData.strings.Map_SendMyCurrentLocation
+                            case .story:
                                 if let initialLocation = strongSelf.controller?.initialLocation {
                                     title = presentationData.strings.Location_AddThisLocation
                                     coordinate = initialLocation
                                 } else {
                                     title = presentationData.strings.Location_AddMyLocation
                                 }
-                            } else {
-                                title = presentationData.strings.Map_SendMyCurrentLocation
+                            case .poll:
+                                title = presentationData.strings.Location_AddThisLocation
                             }
                         case .pick:
                             title = presentationData.strings.Map_SetThisLocation
@@ -1358,6 +1362,26 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                 self.view.addSubview(self.topEdgeEffectView)
             }
             
+            let titleSpacing: CGFloat = 1.0
+            var combinedTitleHeight: CGFloat = 0.0
+            
+            var subtitle: String = ""
+            if let source = self.controller?.source {
+                switch source {
+                case let .poll(pollMode):
+                    switch pollMode {
+                    case .description:
+                        subtitle = self.presentationData.strings.Location_PollSubtitle_Description
+                    case .quizAnswer:
+                        subtitle = self.presentationData.strings.Location_PollSubtitle_Explanation
+                    case .option:
+                        subtitle = self.presentationData.strings.Location_PollSubtitle_PollOption
+                    }
+                default:
+                    break
+                }
+            }
+            
             let titleSize = self.title.update(
                 transition: ComponentTransition(transition),
                 component: AnyComponent(
@@ -1374,7 +1398,37 @@ final class LocationPickerControllerNode: ViewControllerTracingNode, CLLocationM
                 environment: {},
                 containerSize: CGSize(width: 200.0, height: 40.0)
             )
-            let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - titleSize.width) / 2.0), y: floorToScreenPixels((navigationHeight - titleSize.height) / 2.0) + 3.0), size: titleSize)
+            combinedTitleHeight += titleSize.height
+        
+            if !subtitle.isEmpty {
+                let subtitleSize = self.subtitle.update(
+                    transition: ComponentTransition(transition),
+                    component: AnyComponent(
+                        MultilineTextComponent(
+                            text: .plain(
+                                NSAttributedString(
+                                    string: subtitle,
+                                    font: Font.regular(12.0),
+                                    textColor: self.headerNode.mapNode.mapMode == .map ? self.presentationData.theme.rootController.navigationBar.primaryTextColor.withMultipliedAlpha(0.5) : .white.withAlphaComponent(0.5)
+                                )
+                            )
+                        )
+                    ),
+                    environment: {},
+                    containerSize: CGSize(width: 230.0, height: 40.0)
+                )
+                combinedTitleHeight += subtitleSize.height + titleSpacing
+                
+                let subtitleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - subtitleSize.width) / 2.0), y: floorToScreenPixels((navigationHeight + combinedTitleHeight) / 2.0) + 3.0 - subtitleSize.height), size: subtitleSize)
+                if let subtitleView = self.subtitle.view {
+                    if subtitleView.superview == nil {
+                        self.view.addSubview(subtitleView)
+                    }
+                    transition.updateFrame(view: subtitleView, frame: subtitleFrame)
+                }
+            }
+            
+            let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - titleSize.width) / 2.0), y: floorToScreenPixels((navigationHeight - combinedTitleHeight) / 2.0) + 3.0), size: titleSize)
             if let titleView = self.title.view {
                 if titleView.superview == nil {
                     self.view.addSubview(titleView)

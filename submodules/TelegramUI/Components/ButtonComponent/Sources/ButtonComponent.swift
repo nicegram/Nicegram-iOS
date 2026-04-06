@@ -382,31 +382,37 @@ public final class ButtonComponent: Component {
 
     public let background: Background
     public let content: AnyComponentWithIdentity<Empty>
+    public let contentInsets: UIEdgeInsets?
     public let fitToContentWidth: Bool
     public let isEnabled: Bool
     public let tintWhenDisabled: Bool
     public let allowActionWhenDisabled: Bool
     public let displaysProgress: Bool
     public let action: () -> Void
-    
+    public let longPressAction: (() -> Void)?
+
     public init(
         background: Background,
         content: AnyComponentWithIdentity<Empty>,
+        contentInsets: UIEdgeInsets? = nil,
         fitToContentWidth: Bool = false,
         isEnabled: Bool = true,
         tintWhenDisabled: Bool = true,
         allowActionWhenDisabled: Bool = false,
         displaysProgress: Bool = false,
-        action: @escaping () -> Void
+        action: @escaping () -> Void,
+        longPressAction: (() -> Void)? = nil
     ) {
         self.background = background
         self.content = content
+        self.contentInsets = contentInsets
         self.fitToContentWidth = fitToContentWidth
         self.isEnabled = isEnabled
         self.tintWhenDisabled = tintWhenDisabled
         self.allowActionWhenDisabled = allowActionWhenDisabled
         self.displaysProgress = displaysProgress
         self.action = action
+        self.longPressAction = longPressAction
     }
 
     public static func ==(lhs: ButtonComponent, rhs: ButtonComponent) -> Bool {
@@ -414,6 +420,9 @@ public final class ButtonComponent: Component {
             return false
         }
         if lhs.content != rhs.content {
+            return false
+        }
+        if lhs.contentInsets != rhs.contentInsets {
             return false
         }
         if lhs.fitToContentWidth != rhs.fitToContentWidth {
@@ -429,6 +438,9 @@ public final class ButtonComponent: Component {
             return false
         }
         if lhs.displaysProgress != rhs.displaysProgress {
+            return false
+        }
+        if (lhs.longPressAction == nil) != (rhs.longPressAction == nil) {
             return false
         }
         return true
@@ -456,6 +468,7 @@ public final class ButtonComponent: Component {
         private var contentItem: ContentItem?
         
         private var activityIndicator: ActivityIndicator?
+        private var longPressGesture: UILongPressGestureRecognizer?
         
         override init(frame: CGRect) {
             self.containerView = UIView()
@@ -473,7 +486,12 @@ public final class ButtonComponent: Component {
             self.addSubview(self.button)
             
             self.button.addTarget(self, action: #selector(self.pressed), for: .touchUpInside)
-            
+
+            let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(self.longPressed(_:)))
+            longPressGesture.isEnabled = false
+            self.longPressGesture = longPressGesture
+            self.button.addGestureRecognizer(longPressGesture)
+
             self.button.highligthedChanged = { [weak self] highlighted in
                 if let self, let component = self.component, component.isEnabled {
                     switch component.background.style {
@@ -524,6 +542,13 @@ public final class ButtonComponent: Component {
             }
             component.action()
         }
+
+        @objc private func longPressed(_ gesture: UILongPressGestureRecognizer) {
+            guard gesture.state == .began, let component = self.component else {
+                return
+            }
+            component.longPressAction?()
+        }
         
         override public func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
             return super.hitTest(point, with: event)
@@ -532,6 +557,8 @@ public final class ButtonComponent: Component {
         func update(component: ButtonComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             self.component = component
             self.componentState = state
+
+            self.longPressGesture?.isEnabled = component.longPressAction != nil
             
             self.button.isEnabled = (component.isEnabled || component.allowActionWhenDisabled) && !component.displaysProgress
                         
@@ -558,12 +585,19 @@ public final class ButtonComponent: Component {
             if [.glass, .actualGlass].contains(component.background.style), component.background.cornerRadius == 10.0 {
                 cornerRadius = availableSize.height * 0.5
             }
+            
+            var maxContentWidth = availableSize.width - cornerRadius
+            if let contentInsets = component.contentInsets {
+                if contentInsets.left == 0.0 && contentInsets.right == 0.0 {
+                    maxContentWidth = availableSize.width
+                }
+            }
 
             let contentSize = contentItem.view.update(
                 transition: contentItemTransition,
                 component: component.content.component,
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - cornerRadius, height: availableSize.height)
+                containerSize: CGSize(width: maxContentWidth, height: availableSize.height)
             )
             
             var size = availableSize

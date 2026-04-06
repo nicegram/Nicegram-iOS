@@ -100,9 +100,15 @@ public enum ParsedInternalUrl {
         case id(PeerId)
     }
     
+    public enum UrlMessageSubject {
+        case timecode(Double)
+        case todoItem(Int32)
+        case pollOption(String)
+    }
+    
     case peer(UrlPeerReference, ParsedInternalPeerUrlParameter?)
     case peerId(PeerId)
-    case privateMessage(messageId: MessageId, threadId: Int32?, timecode: Double?, taskId: Int32?)
+    case privateMessage(messageId: MessageId, threadId: Int32?, subject: UrlMessageSubject?)
     case stickerPack(name: String, type: StickerPackUrlType)
     case invoice(String)
     case join(String)
@@ -123,6 +129,8 @@ public enum ParsedInternalUrl {
     case messageLink(slug: String)
     case collectible(slug: String)
     case auction(slug: String)
+    case oauth(url: String)
+    case createBot(parentBot: String, username: String?, title: String?)
     case externalUrl(url: String)
 }
 
@@ -259,7 +267,7 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                 if queryItem.name == "url" {
                                     url = value
                                 } else if queryItem.name == "text" {
-                                    text = value
+                                    text = value.replacingOccurrences(of: "+", with: " ")
                                 } else if queryItem.name == "to" && peerName != "share" {
                                     to = value
                                 }
@@ -282,8 +290,8 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                 }
                             }
                         }
-                        if let token {
-                            return .externalUrl(url: "tg://oauth?token=\(token)")
+                        if let _ = token {
+                            return .oauth(url: "https://t.me/\(query)")
                         }
                     } else {
                         for queryItem in queryItems {
@@ -595,13 +603,24 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                     return .peer(.name(pathComponents[1]), .boost)
                 } else if pathComponents[0] == "giftcode", pathComponents.count == 2 {
                     return .premiumGiftCode(slug: pathComponents[1])
+                } else if pathComponents.count >= 3 && pathComponents[0] == "newbot" {
+                    let parentBot = pathComponents[1]
+                    let username = pathComponents[2]
+                    var title: String?
+                    for queryItem in components.queryItems ?? [] {
+                        if let value = queryItem.value {
+                            if queryItem.name == "name" {
+                                title = value.replacingOccurrences(of: "+", with: " ")
+                            }
+                        }
+                    }
+                    return .createBot(parentBot: parentBot, username: username, title: title)
                 } else if pathComponents[0] == "m" {
                     return .messageLink(slug: pathComponents[1])
                 } else if pathComponents.count == 3 && pathComponents[0] == "c" {
                     if let channelId = Int64(pathComponents[1]), let messageId = Int32(pathComponents[2]), channelId > 0 {
                         var threadId: Int32?
-                        var timecode: Double?
-                        var taskId: Int32?
+                        var subject: ParsedInternalUrl.UrlMessageSubject?
                         if let queryItems = components.queryItems {
                             for queryItem in queryItems {
                                 if let value = queryItem.value {
@@ -612,17 +631,19 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                                     } else if queryItem.name == "t" {
                                         let timestampValue = hTmeParseDuration(value)
                                         if timestampValue != 0 {
-                                            timecode = Double(timestampValue)
+                                            subject = .timecode(Double(timestampValue))
                                         }
                                     } else if queryItem.name == "task" {
                                         if let intValue = Int32(value) {
-                                            taskId = intValue
+                                            subject = .todoItem(intValue)
                                         }
+                                    } else if queryItem.name == "option" {
+                                        subject = .pollOption(value)
                                     }
                                 }
                             }
                         }
-                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, timecode: timecode, taskId: taskId)
+                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, subject: subject)
                     } else {
                         return nil
                     }
@@ -642,25 +663,26 @@ public func parseInternalUrl(sharedContext: SharedAccountContext, context: Accou
                     }
                 } else if pathComponents.count == 4 && pathComponents[0] == "c" {
                     if let channelId = Int64(pathComponents[1]),  let threadId = Int32(pathComponents[2]), let messageId = Int32(pathComponents[3]), channelId > 0 {
-                        var timecode: Double?
-                        var taskId: Int32?
+                        var subject: ParsedInternalUrl.UrlMessageSubject?
                         if let queryItems = components.queryItems {
                             for queryItem in queryItems {
                                 if let value = queryItem.value {
                                     if queryItem.name == "t" {
                                         let timestampValue = hTmeParseDuration(value)
                                         if timestampValue != 0 {
-                                            timecode = Double(timestampValue)
+                                            subject = .timecode(Double(timestampValue))
                                         }
                                     } else if queryItem.name == "task" {
                                         if let intValue = Int32(value) {
-                                            taskId = intValue
+                                            subject = .todoItem(intValue)
                                         }
+                                    } else if queryItem.name == "option" {
+                                        subject = .pollOption(value)
                                     }
                                 }
                             }
                         }
-                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, timecode: timecode, taskId: taskId)
+                        return .privateMessage(messageId: MessageId(peerId: PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(channelId)), namespace: Namespaces.Message.Cloud, id: messageId), threadId: threadId, subject: subject)
                     } else {
                         return nil
                     }
@@ -1062,7 +1084,7 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                     return .single(.result(.peer(nil, .info(nil))))
                 }
             })
-        case let .privateMessage(messageId, threadId, timecode, taskId):
+        case let .privateMessage(messageId, threadId, subject):
             return context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: messageId.peerId))
             |> mapToSignal { peer -> Signal<ResolveInternalUrlResult, NoError> in
                 let foundPeer: Signal<EnginePeer?, NoError>
@@ -1140,12 +1162,39 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
                             }
                             |> map { result -> ResolveInternalUrlResult in
                                 guard let result = result else {
+                                    var timecode: Double?
+                                    if case let .timecode(timecodeValue) = subject {
+                                        timecode = timecodeValue
+                                    }
                                     return .result(.channelMessage(peer: foundPeer._asPeer(), messageId: replyThreadMessageId, timecode: timecode))
                                 }
                                 return .result(.replyThreadMessage(replyThreadMessage: result, messageId: messageId))
                             })
                         } else {
-                            return .single(.result(.peer(foundPeer._asPeer(), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil, todoTaskId: taskId), timecode: timecode, setupReply: false), peekData: nil))))
+                            var timecode: Double?
+                            if case let .timecode(timecodeValue) = subject {
+                                timecode = timecodeValue
+                            }
+                            var highlightSubject: EngineMessageReplyInnerSubject?
+                            switch subject {
+                            case let .todoItem(todoItemId):
+                                highlightSubject = .todoItem(todoItemId)
+                            case let .pollOption(pollOption):
+                                let decodeBase64: (String) -> Data? = { string in
+                                    var string = string.replacingOccurrences(of: "-", with: "+")
+                                        .replacingOccurrences(of: "_", with: "/")
+                                    while string.count % 4 != 0 {
+                                        string.append("=")
+                                    }
+                                    return Data(base64Encoded: string)
+                                }
+                                if let opaqueIdentifier = decodeBase64(pollOption) {
+                                    highlightSubject = .pollOption(opaqueIdentifier)
+                                }
+                            default:
+                                break
+                            }
+                            return .single(.result(.peer(foundPeer._asPeer(), .chat(textInputState: nil, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil, subject: highlightSubject), timecode: timecode, setupReply: false), peekData: nil))))
                         }
                     } else {
                         return .single(.result(.inaccessiblePeer))
@@ -1273,6 +1322,22 @@ private func resolveInternalUrl(context: AccountContext, url: ParsedInternalUrl)
             })
         case let .externalUrl(url):
             return .single(.result(.externalUrl(url)))
+        case let .oauth(url):
+            return .single(.result(.oauth(url: url)))
+        case let .createBot(parentBotName, username, title):
+            return context.engine.peers.resolvePeerByName(name: parentBotName, referrer: nil)
+            |> mapToSignal { result -> Signal<ResolveInternalUrlResult, NoError> in
+                switch result {
+                case .progress:
+                    return .single(.progress)
+                case let .result(peer):
+                    if let peer {
+                        return .single(.result(.createBot(parentBot: peer.id, username: username, title: title)))
+                    } else {
+                        return .single(.result(.inaccessiblePeer))
+                    }
+                }
+            }
     }
 }
 

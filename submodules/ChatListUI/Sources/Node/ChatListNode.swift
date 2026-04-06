@@ -445,6 +445,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                 let presence = peerEntry.presence
                 let hasUnseenMentions = peerEntry.hasUnseenMentions
                 let hasUnseenReactions = peerEntry.hasUnseenReactions
+                let hasUnseenPollVotes = peerEntry.hasUnseenPollVotes
                 let editing = peerEntry.editing
                 let hasActiveRevealControls = peerEntry.hasActiveRevealControls
                 let selected = peerEntry.selected
@@ -476,6 +477,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                                 presence: presence,
                                 hasUnseenMentions: hasUnseenMentions,
                                 hasUnseenReactions: hasUnseenReactions,
+                                hasUnseenPollVotes: hasUnseenPollVotes,
                                 draftState: draftState,
                                 mediaDraftContentType: peerEntry.mediaDraftContentType,
                                 inputActivities: inputActivities,
@@ -815,6 +817,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                 let presence = peerEntry.presence
                 let hasUnseenMentions = peerEntry.hasUnseenMentions
                 let hasUnseenReactions = peerEntry.hasUnseenReactions
+                let hasUnseenPollVotes = peerEntry.hasUnseenPollVotes
                 let editing = peerEntry.editing
                 let hasActiveRevealControls = peerEntry.hasActiveRevealControls
                 let selected = peerEntry.selected
@@ -846,6 +849,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                                 presence: presence,
                                 hasUnseenMentions: hasUnseenMentions,
                                 hasUnseenReactions: hasUnseenReactions,
+                                hasUnseenPollVotes: hasUnseenPollVotes,
                                 draftState: draftState,
                                 mediaDraftContentType: peerEntry.mediaDraftContentType,
                                 inputActivities: inputActivities,
@@ -1180,7 +1184,7 @@ public struct ChatListNicegramData {
 }
 //
 
-public final class ChatListNode: ListView {
+public final class ChatListNode: ListViewImpl {
     public enum OpenStoriesSubject {
         case peer(EnginePeer.Id)
         case archive
@@ -2486,6 +2490,8 @@ public final class ChatListNode: ListView {
                                     } else {
                                         match = false
                                     }
+                                case .createBot:
+                                    break
                                 }
                                 if match {
                                     return true

@@ -11,8 +11,8 @@ public extension Api {
                 self.lastName = lastName
                 self.vcard = vcard
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaContact", [("phoneNumber", self.phoneNumber as Any), ("firstName", self.firstName as Any), ("lastName", self.lastName as Any), ("vcard", self.vcard as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaContact", [("phoneNumber", ConstructorParameterDescription(self.phoneNumber)), ("firstName", ConstructorParameterDescription(self.firstName)), ("lastName", ConstructorParameterDescription(self.lastName)), ("vcard", ConstructorParameterDescription(self.vcard))])
             }
         }
         public class Cons_inputMediaDice: TypeConstructorDescription {
@@ -20,8 +20,8 @@ public extension Api {
             public init(emoticon: String) {
                 self.emoticon = emoticon
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaDice", [("emoticon", self.emoticon as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaDice", [("emoticon", ConstructorParameterDescription(self.emoticon))])
             }
         }
         public class Cons_inputMediaDocument: TypeConstructorDescription {
@@ -39,8 +39,8 @@ public extension Api {
                 self.ttlSeconds = ttlSeconds
                 self.query = query
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaDocument", [("flags", self.flags as Any), ("id", self.id as Any), ("videoCover", self.videoCover as Any), ("videoTimestamp", self.videoTimestamp as Any), ("ttlSeconds", self.ttlSeconds as Any), ("query", self.query as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaDocument", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("videoCover", ConstructorParameterDescription(self.videoCover)), ("videoTimestamp", ConstructorParameterDescription(self.videoTimestamp)), ("ttlSeconds", ConstructorParameterDescription(self.ttlSeconds)), ("query", ConstructorParameterDescription(self.query))])
             }
         }
         public class Cons_inputMediaDocumentExternal: TypeConstructorDescription {
@@ -56,8 +56,8 @@ public extension Api {
                 self.videoCover = videoCover
                 self.videoTimestamp = videoTimestamp
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaDocumentExternal", [("flags", self.flags as Any), ("url", self.url as Any), ("ttlSeconds", self.ttlSeconds as Any), ("videoCover", self.videoCover as Any), ("videoTimestamp", self.videoTimestamp as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaDocumentExternal", [("flags", ConstructorParameterDescription(self.flags)), ("url", ConstructorParameterDescription(self.url)), ("ttlSeconds", ConstructorParameterDescription(self.ttlSeconds)), ("videoCover", ConstructorParameterDescription(self.videoCover)), ("videoTimestamp", ConstructorParameterDescription(self.videoTimestamp))])
             }
         }
         public class Cons_inputMediaGame: TypeConstructorDescription {
@@ -65,8 +65,8 @@ public extension Api {
             public init(id: Api.InputGame) {
                 self.id = id
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaGame", [("id", self.id as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaGame", [("id", ConstructorParameterDescription(self.id))])
             }
         }
         public class Cons_inputMediaGeoLive: TypeConstructorDescription {
@@ -82,8 +82,8 @@ public extension Api {
                 self.period = period
                 self.proximityNotificationRadius = proximityNotificationRadius
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaGeoLive", [("flags", self.flags as Any), ("geoPoint", self.geoPoint as Any), ("heading", self.heading as Any), ("period", self.period as Any), ("proximityNotificationRadius", self.proximityNotificationRadius as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaGeoLive", [("flags", ConstructorParameterDescription(self.flags)), ("geoPoint", ConstructorParameterDescription(self.geoPoint)), ("heading", ConstructorParameterDescription(self.heading)), ("period", ConstructorParameterDescription(self.period)), ("proximityNotificationRadius", ConstructorParameterDescription(self.proximityNotificationRadius))])
             }
         }
         public class Cons_inputMediaGeoPoint: TypeConstructorDescription {
@@ -91,8 +91,8 @@ public extension Api {
             public init(geoPoint: Api.InputGeoPoint) {
                 self.geoPoint = geoPoint
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaGeoPoint", [("geoPoint", self.geoPoint as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaGeoPoint", [("geoPoint", ConstructorParameterDescription(self.geoPoint))])
             }
         }
         public class Cons_inputMediaInvoice: TypeConstructorDescription {
@@ -118,8 +118,8 @@ public extension Api {
                 self.startParam = startParam
                 self.extendedMedia = extendedMedia
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaInvoice", [("flags", self.flags as Any), ("title", self.title as Any), ("description", self.description as Any), ("photo", self.photo as Any), ("invoice", self.invoice as Any), ("payload", self.payload as Any), ("provider", self.provider as Any), ("providerData", self.providerData as Any), ("startParam", self.startParam as Any), ("extendedMedia", self.extendedMedia as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaInvoice", [("flags", ConstructorParameterDescription(self.flags)), ("title", ConstructorParameterDescription(self.title)), ("description", ConstructorParameterDescription(self.description)), ("photo", ConstructorParameterDescription(self.photo)), ("invoice", ConstructorParameterDescription(self.invoice)), ("payload", ConstructorParameterDescription(self.payload)), ("provider", ConstructorParameterDescription(self.provider)), ("providerData", ConstructorParameterDescription(self.providerData)), ("startParam", ConstructorParameterDescription(self.startParam)), ("extendedMedia", ConstructorParameterDescription(self.extendedMedia))])
             }
         }
         public class Cons_inputMediaPaidMedia: TypeConstructorDescription {
@@ -133,21 +133,23 @@ public extension Api {
                 self.extendedMedia = extendedMedia
                 self.payload = payload
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaPaidMedia", [("flags", self.flags as Any), ("starsAmount", self.starsAmount as Any), ("extendedMedia", self.extendedMedia as Any), ("payload", self.payload as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaPaidMedia", [("flags", ConstructorParameterDescription(self.flags)), ("starsAmount", ConstructorParameterDescription(self.starsAmount)), ("extendedMedia", ConstructorParameterDescription(self.extendedMedia)), ("payload", ConstructorParameterDescription(self.payload))])
             }
         }
         public class Cons_inputMediaPhoto: TypeConstructorDescription {
             public var flags: Int32
             public var id: Api.InputPhoto
             public var ttlSeconds: Int32?
-            public init(flags: Int32, id: Api.InputPhoto, ttlSeconds: Int32?) {
+            public var video: Api.InputDocument?
+            public init(flags: Int32, id: Api.InputPhoto, ttlSeconds: Int32?, video: Api.InputDocument?) {
                 self.flags = flags
                 self.id = id
                 self.ttlSeconds = ttlSeconds
+                self.video = video
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaPhoto", [("flags", self.flags as Any), ("id", self.id as Any), ("ttlSeconds", self.ttlSeconds as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaPhoto", [("flags", ConstructorParameterDescription(self.flags)), ("id", ConstructorParameterDescription(self.id)), ("ttlSeconds", ConstructorParameterDescription(self.ttlSeconds)), ("video", ConstructorParameterDescription(self.video))])
             }
         }
         public class Cons_inputMediaPhotoExternal: TypeConstructorDescription {
@@ -159,25 +161,29 @@ public extension Api {
                 self.url = url
                 self.ttlSeconds = ttlSeconds
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaPhotoExternal", [("flags", self.flags as Any), ("url", self.url as Any), ("ttlSeconds", self.ttlSeconds as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaPhotoExternal", [("flags", ConstructorParameterDescription(self.flags)), ("url", ConstructorParameterDescription(self.url)), ("ttlSeconds", ConstructorParameterDescription(self.ttlSeconds))])
             }
         }
         public class Cons_inputMediaPoll: TypeConstructorDescription {
             public var flags: Int32
             public var poll: Api.Poll
-            public var correctAnswers: [Buffer]?
+            public var correctAnswers: [Int32]?
+            public var attachedMedia: Api.InputMedia?
             public var solution: String?
             public var solutionEntities: [Api.MessageEntity]?
-            public init(flags: Int32, poll: Api.Poll, correctAnswers: [Buffer]?, solution: String?, solutionEntities: [Api.MessageEntity]?) {
+            public var solutionMedia: Api.InputMedia?
+            public init(flags: Int32, poll: Api.Poll, correctAnswers: [Int32]?, attachedMedia: Api.InputMedia?, solution: String?, solutionEntities: [Api.MessageEntity]?, solutionMedia: Api.InputMedia?) {
                 self.flags = flags
                 self.poll = poll
                 self.correctAnswers = correctAnswers
+                self.attachedMedia = attachedMedia
                 self.solution = solution
                 self.solutionEntities = solutionEntities
+                self.solutionMedia = solutionMedia
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaPoll", [("flags", self.flags as Any), ("poll", self.poll as Any), ("correctAnswers", self.correctAnswers as Any), ("solution", self.solution as Any), ("solutionEntities", self.solutionEntities as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaPoll", [("flags", ConstructorParameterDescription(self.flags)), ("poll", ConstructorParameterDescription(self.poll)), ("correctAnswers", ConstructorParameterDescription(self.correctAnswers)), ("attachedMedia", ConstructorParameterDescription(self.attachedMedia)), ("solution", ConstructorParameterDescription(self.solution)), ("solutionEntities", ConstructorParameterDescription(self.solutionEntities)), ("solutionMedia", ConstructorParameterDescription(self.solutionMedia))])
             }
         }
         public class Cons_inputMediaStakeDice: TypeConstructorDescription {
@@ -189,8 +195,8 @@ public extension Api {
                 self.tonAmount = tonAmount
                 self.clientSeed = clientSeed
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaStakeDice", [("gameHash", self.gameHash as Any), ("tonAmount", self.tonAmount as Any), ("clientSeed", self.clientSeed as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaStakeDice", [("gameHash", ConstructorParameterDescription(self.gameHash)), ("tonAmount", ConstructorParameterDescription(self.tonAmount)), ("clientSeed", ConstructorParameterDescription(self.clientSeed))])
             }
         }
         public class Cons_inputMediaStory: TypeConstructorDescription {
@@ -200,8 +206,8 @@ public extension Api {
                 self.peer = peer
                 self.id = id
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaStory", [("peer", self.peer as Any), ("id", self.id as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaStory", [("peer", ConstructorParameterDescription(self.peer)), ("id", ConstructorParameterDescription(self.id))])
             }
         }
         public class Cons_inputMediaTodo: TypeConstructorDescription {
@@ -209,8 +215,8 @@ public extension Api {
             public init(todo: Api.TodoList) {
                 self.todo = todo
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaTodo", [("todo", self.todo as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaTodo", [("todo", ConstructorParameterDescription(self.todo))])
             }
         }
         public class Cons_inputMediaUploadedDocument: TypeConstructorDescription {
@@ -234,8 +240,8 @@ public extension Api {
                 self.videoTimestamp = videoTimestamp
                 self.ttlSeconds = ttlSeconds
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaUploadedDocument", [("flags", self.flags as Any), ("file", self.file as Any), ("thumb", self.thumb as Any), ("mimeType", self.mimeType as Any), ("attributes", self.attributes as Any), ("stickers", self.stickers as Any), ("videoCover", self.videoCover as Any), ("videoTimestamp", self.videoTimestamp as Any), ("ttlSeconds", self.ttlSeconds as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaUploadedDocument", [("flags", ConstructorParameterDescription(self.flags)), ("file", ConstructorParameterDescription(self.file)), ("thumb", ConstructorParameterDescription(self.thumb)), ("mimeType", ConstructorParameterDescription(self.mimeType)), ("attributes", ConstructorParameterDescription(self.attributes)), ("stickers", ConstructorParameterDescription(self.stickers)), ("videoCover", ConstructorParameterDescription(self.videoCover)), ("videoTimestamp", ConstructorParameterDescription(self.videoTimestamp)), ("ttlSeconds", ConstructorParameterDescription(self.ttlSeconds))])
             }
         }
         public class Cons_inputMediaUploadedPhoto: TypeConstructorDescription {
@@ -243,14 +249,16 @@ public extension Api {
             public var file: Api.InputFile
             public var stickers: [Api.InputDocument]?
             public var ttlSeconds: Int32?
-            public init(flags: Int32, file: Api.InputFile, stickers: [Api.InputDocument]?, ttlSeconds: Int32?) {
+            public var video: Api.InputDocument?
+            public init(flags: Int32, file: Api.InputFile, stickers: [Api.InputDocument]?, ttlSeconds: Int32?, video: Api.InputDocument?) {
                 self.flags = flags
                 self.file = file
                 self.stickers = stickers
                 self.ttlSeconds = ttlSeconds
+                self.video = video
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaUploadedPhoto", [("flags", self.flags as Any), ("file", self.file as Any), ("stickers", self.stickers as Any), ("ttlSeconds", self.ttlSeconds as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaUploadedPhoto", [("flags", ConstructorParameterDescription(self.flags)), ("file", ConstructorParameterDescription(self.file)), ("stickers", ConstructorParameterDescription(self.stickers)), ("ttlSeconds", ConstructorParameterDescription(self.ttlSeconds)), ("video", ConstructorParameterDescription(self.video))])
             }
         }
         public class Cons_inputMediaVenue: TypeConstructorDescription {
@@ -268,8 +276,8 @@ public extension Api {
                 self.venueId = venueId
                 self.venueType = venueType
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaVenue", [("geoPoint", self.geoPoint as Any), ("title", self.title as Any), ("address", self.address as Any), ("provider", self.provider as Any), ("venueId", self.venueId as Any), ("venueType", self.venueType as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaVenue", [("geoPoint", ConstructorParameterDescription(self.geoPoint)), ("title", ConstructorParameterDescription(self.title)), ("address", ConstructorParameterDescription(self.address)), ("provider", ConstructorParameterDescription(self.provider)), ("venueId", ConstructorParameterDescription(self.venueId)), ("venueType", ConstructorParameterDescription(self.venueType))])
             }
         }
         public class Cons_inputMediaWebPage: TypeConstructorDescription {
@@ -279,8 +287,8 @@ public extension Api {
                 self.flags = flags
                 self.url = url
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMediaWebPage", [("flags", self.flags as Any), ("url", self.url as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMediaWebPage", [("flags", ConstructorParameterDescription(self.flags)), ("url", ConstructorParameterDescription(self.url))])
             }
         }
         case inputMediaContact(Cons_inputMediaContact)
@@ -429,12 +437,15 @@ public extension Api {
                 break
             case .inputMediaPhoto(let _data):
                 if boxed {
-                    buffer.appendInt32(-1279654347)
+                    buffer.appendInt32(-475053004)
                 }
                 serializeInt32(_data.flags, buffer: buffer, boxed: false)
                 _data.id.serialize(buffer, true)
                 if Int(_data.flags) & Int(1 << 0) != 0 {
                     serializeInt32(_data.ttlSeconds!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 2) != 0 {
+                    _data.video!.serialize(buffer, true)
                 }
                 break
             case .inputMediaPhotoExternal(let _data):
@@ -449,7 +460,7 @@ public extension Api {
                 break
             case .inputMediaPoll(let _data):
                 if boxed {
-                    buffer.appendInt32(261416433)
+                    buffer.appendInt32(-2009448184)
                 }
                 serializeInt32(_data.flags, buffer: buffer, boxed: false)
                 _data.poll.serialize(buffer, true)
@@ -457,8 +468,11 @@ public extension Api {
                     buffer.appendInt32(481674261)
                     buffer.appendInt32(Int32(_data.correctAnswers!.count))
                     for item in _data.correctAnswers! {
-                        serializeBytes(item, buffer: buffer, boxed: false)
+                        serializeInt32(item, buffer: buffer, boxed: false)
                     }
+                }
+                if Int(_data.flags) & Int(1 << 3) != 0 {
+                    _data.attachedMedia!.serialize(buffer, true)
                 }
                 if Int(_data.flags) & Int(1 << 1) != 0 {
                     serializeString(_data.solution!, buffer: buffer, boxed: false)
@@ -469,6 +483,9 @@ public extension Api {
                     for item in _data.solutionEntities! {
                         item.serialize(buffer, true)
                     }
+                }
+                if Int(_data.flags) & Int(1 << 2) != 0 {
+                    _data.solutionMedia!.serialize(buffer, true)
                 }
                 break
             case .inputMediaStakeDice(let _data):
@@ -526,7 +543,7 @@ public extension Api {
                 break
             case .inputMediaUploadedPhoto(let _data):
                 if boxed {
-                    buffer.appendInt32(505969924)
+                    buffer.appendInt32(2105767386)
                 }
                 serializeInt32(_data.flags, buffer: buffer, boxed: false)
                 _data.file.serialize(buffer, true)
@@ -539,6 +556,9 @@ public extension Api {
                 }
                 if Int(_data.flags) & Int(1 << 1) != 0 {
                     serializeInt32(_data.ttlSeconds!, buffer: buffer, boxed: false)
+                }
+                if Int(_data.flags) & Int(1 << 3) != 0 {
+                    _data.video!.serialize(buffer, true)
                 }
                 break
             case .inputMediaVenue(let _data):
@@ -562,48 +582,48 @@ public extension Api {
             }
         }
 
-        public func descriptionFields() -> (String, [(String, Any)]) {
+        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
             case .inputMediaContact(let _data):
-                return ("inputMediaContact", [("phoneNumber", _data.phoneNumber as Any), ("firstName", _data.firstName as Any), ("lastName", _data.lastName as Any), ("vcard", _data.vcard as Any)])
+                return ("inputMediaContact", [("phoneNumber", ConstructorParameterDescription(_data.phoneNumber)), ("firstName", ConstructorParameterDescription(_data.firstName)), ("lastName", ConstructorParameterDescription(_data.lastName)), ("vcard", ConstructorParameterDescription(_data.vcard))])
             case .inputMediaDice(let _data):
-                return ("inputMediaDice", [("emoticon", _data.emoticon as Any)])
+                return ("inputMediaDice", [("emoticon", ConstructorParameterDescription(_data.emoticon))])
             case .inputMediaDocument(let _data):
-                return ("inputMediaDocument", [("flags", _data.flags as Any), ("id", _data.id as Any), ("videoCover", _data.videoCover as Any), ("videoTimestamp", _data.videoTimestamp as Any), ("ttlSeconds", _data.ttlSeconds as Any), ("query", _data.query as Any)])
+                return ("inputMediaDocument", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("videoCover", ConstructorParameterDescription(_data.videoCover)), ("videoTimestamp", ConstructorParameterDescription(_data.videoTimestamp)), ("ttlSeconds", ConstructorParameterDescription(_data.ttlSeconds)), ("query", ConstructorParameterDescription(_data.query))])
             case .inputMediaDocumentExternal(let _data):
-                return ("inputMediaDocumentExternal", [("flags", _data.flags as Any), ("url", _data.url as Any), ("ttlSeconds", _data.ttlSeconds as Any), ("videoCover", _data.videoCover as Any), ("videoTimestamp", _data.videoTimestamp as Any)])
+                return ("inputMediaDocumentExternal", [("flags", ConstructorParameterDescription(_data.flags)), ("url", ConstructorParameterDescription(_data.url)), ("ttlSeconds", ConstructorParameterDescription(_data.ttlSeconds)), ("videoCover", ConstructorParameterDescription(_data.videoCover)), ("videoTimestamp", ConstructorParameterDescription(_data.videoTimestamp))])
             case .inputMediaEmpty:
                 return ("inputMediaEmpty", [])
             case .inputMediaGame(let _data):
-                return ("inputMediaGame", [("id", _data.id as Any)])
+                return ("inputMediaGame", [("id", ConstructorParameterDescription(_data.id))])
             case .inputMediaGeoLive(let _data):
-                return ("inputMediaGeoLive", [("flags", _data.flags as Any), ("geoPoint", _data.geoPoint as Any), ("heading", _data.heading as Any), ("period", _data.period as Any), ("proximityNotificationRadius", _data.proximityNotificationRadius as Any)])
+                return ("inputMediaGeoLive", [("flags", ConstructorParameterDescription(_data.flags)), ("geoPoint", ConstructorParameterDescription(_data.geoPoint)), ("heading", ConstructorParameterDescription(_data.heading)), ("period", ConstructorParameterDescription(_data.period)), ("proximityNotificationRadius", ConstructorParameterDescription(_data.proximityNotificationRadius))])
             case .inputMediaGeoPoint(let _data):
-                return ("inputMediaGeoPoint", [("geoPoint", _data.geoPoint as Any)])
+                return ("inputMediaGeoPoint", [("geoPoint", ConstructorParameterDescription(_data.geoPoint))])
             case .inputMediaInvoice(let _data):
-                return ("inputMediaInvoice", [("flags", _data.flags as Any), ("title", _data.title as Any), ("description", _data.description as Any), ("photo", _data.photo as Any), ("invoice", _data.invoice as Any), ("payload", _data.payload as Any), ("provider", _data.provider as Any), ("providerData", _data.providerData as Any), ("startParam", _data.startParam as Any), ("extendedMedia", _data.extendedMedia as Any)])
+                return ("inputMediaInvoice", [("flags", ConstructorParameterDescription(_data.flags)), ("title", ConstructorParameterDescription(_data.title)), ("description", ConstructorParameterDescription(_data.description)), ("photo", ConstructorParameterDescription(_data.photo)), ("invoice", ConstructorParameterDescription(_data.invoice)), ("payload", ConstructorParameterDescription(_data.payload)), ("provider", ConstructorParameterDescription(_data.provider)), ("providerData", ConstructorParameterDescription(_data.providerData)), ("startParam", ConstructorParameterDescription(_data.startParam)), ("extendedMedia", ConstructorParameterDescription(_data.extendedMedia))])
             case .inputMediaPaidMedia(let _data):
-                return ("inputMediaPaidMedia", [("flags", _data.flags as Any), ("starsAmount", _data.starsAmount as Any), ("extendedMedia", _data.extendedMedia as Any), ("payload", _data.payload as Any)])
+                return ("inputMediaPaidMedia", [("flags", ConstructorParameterDescription(_data.flags)), ("starsAmount", ConstructorParameterDescription(_data.starsAmount)), ("extendedMedia", ConstructorParameterDescription(_data.extendedMedia)), ("payload", ConstructorParameterDescription(_data.payload))])
             case .inputMediaPhoto(let _data):
-                return ("inputMediaPhoto", [("flags", _data.flags as Any), ("id", _data.id as Any), ("ttlSeconds", _data.ttlSeconds as Any)])
+                return ("inputMediaPhoto", [("flags", ConstructorParameterDescription(_data.flags)), ("id", ConstructorParameterDescription(_data.id)), ("ttlSeconds", ConstructorParameterDescription(_data.ttlSeconds)), ("video", ConstructorParameterDescription(_data.video))])
             case .inputMediaPhotoExternal(let _data):
-                return ("inputMediaPhotoExternal", [("flags", _data.flags as Any), ("url", _data.url as Any), ("ttlSeconds", _data.ttlSeconds as Any)])
+                return ("inputMediaPhotoExternal", [("flags", ConstructorParameterDescription(_data.flags)), ("url", ConstructorParameterDescription(_data.url)), ("ttlSeconds", ConstructorParameterDescription(_data.ttlSeconds))])
             case .inputMediaPoll(let _data):
-                return ("inputMediaPoll", [("flags", _data.flags as Any), ("poll", _data.poll as Any), ("correctAnswers", _data.correctAnswers as Any), ("solution", _data.solution as Any), ("solutionEntities", _data.solutionEntities as Any)])
+                return ("inputMediaPoll", [("flags", ConstructorParameterDescription(_data.flags)), ("poll", ConstructorParameterDescription(_data.poll)), ("correctAnswers", ConstructorParameterDescription(_data.correctAnswers)), ("attachedMedia", ConstructorParameterDescription(_data.attachedMedia)), ("solution", ConstructorParameterDescription(_data.solution)), ("solutionEntities", ConstructorParameterDescription(_data.solutionEntities)), ("solutionMedia", ConstructorParameterDescription(_data.solutionMedia))])
             case .inputMediaStakeDice(let _data):
-                return ("inputMediaStakeDice", [("gameHash", _data.gameHash as Any), ("tonAmount", _data.tonAmount as Any), ("clientSeed", _data.clientSeed as Any)])
+                return ("inputMediaStakeDice", [("gameHash", ConstructorParameterDescription(_data.gameHash)), ("tonAmount", ConstructorParameterDescription(_data.tonAmount)), ("clientSeed", ConstructorParameterDescription(_data.clientSeed))])
             case .inputMediaStory(let _data):
-                return ("inputMediaStory", [("peer", _data.peer as Any), ("id", _data.id as Any)])
+                return ("inputMediaStory", [("peer", ConstructorParameterDescription(_data.peer)), ("id", ConstructorParameterDescription(_data.id))])
             case .inputMediaTodo(let _data):
-                return ("inputMediaTodo", [("todo", _data.todo as Any)])
+                return ("inputMediaTodo", [("todo", ConstructorParameterDescription(_data.todo))])
             case .inputMediaUploadedDocument(let _data):
-                return ("inputMediaUploadedDocument", [("flags", _data.flags as Any), ("file", _data.file as Any), ("thumb", _data.thumb as Any), ("mimeType", _data.mimeType as Any), ("attributes", _data.attributes as Any), ("stickers", _data.stickers as Any), ("videoCover", _data.videoCover as Any), ("videoTimestamp", _data.videoTimestamp as Any), ("ttlSeconds", _data.ttlSeconds as Any)])
+                return ("inputMediaUploadedDocument", [("flags", ConstructorParameterDescription(_data.flags)), ("file", ConstructorParameterDescription(_data.file)), ("thumb", ConstructorParameterDescription(_data.thumb)), ("mimeType", ConstructorParameterDescription(_data.mimeType)), ("attributes", ConstructorParameterDescription(_data.attributes)), ("stickers", ConstructorParameterDescription(_data.stickers)), ("videoCover", ConstructorParameterDescription(_data.videoCover)), ("videoTimestamp", ConstructorParameterDescription(_data.videoTimestamp)), ("ttlSeconds", ConstructorParameterDescription(_data.ttlSeconds))])
             case .inputMediaUploadedPhoto(let _data):
-                return ("inputMediaUploadedPhoto", [("flags", _data.flags as Any), ("file", _data.file as Any), ("stickers", _data.stickers as Any), ("ttlSeconds", _data.ttlSeconds as Any)])
+                return ("inputMediaUploadedPhoto", [("flags", ConstructorParameterDescription(_data.flags)), ("file", ConstructorParameterDescription(_data.file)), ("stickers", ConstructorParameterDescription(_data.stickers)), ("ttlSeconds", ConstructorParameterDescription(_data.ttlSeconds)), ("video", ConstructorParameterDescription(_data.video))])
             case .inputMediaVenue(let _data):
-                return ("inputMediaVenue", [("geoPoint", _data.geoPoint as Any), ("title", _data.title as Any), ("address", _data.address as Any), ("provider", _data.provider as Any), ("venueId", _data.venueId as Any), ("venueType", _data.venueType as Any)])
+                return ("inputMediaVenue", [("geoPoint", ConstructorParameterDescription(_data.geoPoint)), ("title", ConstructorParameterDescription(_data.title)), ("address", ConstructorParameterDescription(_data.address)), ("provider", ConstructorParameterDescription(_data.provider)), ("venueId", ConstructorParameterDescription(_data.venueId)), ("venueType", ConstructorParameterDescription(_data.venueType))])
             case .inputMediaWebPage(let _data):
-                return ("inputMediaWebPage", [("flags", _data.flags as Any), ("url", _data.url as Any)])
+                return ("inputMediaWebPage", [("flags", ConstructorParameterDescription(_data.flags)), ("url", ConstructorParameterDescription(_data.url))])
             }
         }
 
@@ -856,11 +876,18 @@ public extension Api {
             if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
+            var _4: Api.InputDocument?
+            if Int(_1!) & Int(1 << 2) != 0 {
+                if let signature = reader.readInt32() {
+                    _4 = Api.parse(reader, signature: signature) as? Api.InputDocument
+                }
+            }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
-            if _c1 && _c2 && _c3 {
-                return Api.InputMedia.inputMediaPhoto(Cons_inputMediaPhoto(flags: _1!, id: _2!, ttlSeconds: _3))
+            let _c4 = (Int(_1!) & Int(1 << 2) == 0) || _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.InputMedia.inputMediaPhoto(Cons_inputMediaPhoto(flags: _1!, id: _2!, ttlSeconds: _3, video: _4))
             }
             else {
                 return nil
@@ -892,29 +919,43 @@ public extension Api {
             if let signature = reader.readInt32() {
                 _2 = Api.parse(reader, signature: signature) as? Api.Poll
             }
-            var _3: [Buffer]?
+            var _3: [Int32]?
             if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
-                    _3 = Api.parseVector(reader, elementSignature: -1255641564, elementType: Buffer.self)
+                    _3 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
                 }
             }
-            var _4: String?
-            if Int(_1!) & Int(1 << 1) != 0 {
-                _4 = parseString(reader)
+            var _4: Api.InputMedia?
+            if Int(_1!) & Int(1 << 3) != 0 {
+                if let signature = reader.readInt32() {
+                    _4 = Api.parse(reader, signature: signature) as? Api.InputMedia
+                }
             }
-            var _5: [Api.MessageEntity]?
+            var _5: String?
+            if Int(_1!) & Int(1 << 1) != 0 {
+                _5 = parseString(reader)
+            }
+            var _6: [Api.MessageEntity]?
             if Int(_1!) & Int(1 << 1) != 0 {
                 if let _ = reader.readInt32() {
-                    _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageEntity.self)
+                    _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageEntity.self)
+                }
+            }
+            var _7: Api.InputMedia?
+            if Int(_1!) & Int(1 << 2) != 0 {
+                if let signature = reader.readInt32() {
+                    _7 = Api.parse(reader, signature: signature) as? Api.InputMedia
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 3) == 0) || _4 != nil
             let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 {
-                return Api.InputMedia.inputMediaPoll(Cons_inputMediaPoll(flags: _1!, poll: _2!, correctAnswers: _3, solution: _4, solutionEntities: _5))
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 2) == 0) || _7 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
+                return Api.InputMedia.inputMediaPoll(Cons_inputMediaPoll(flags: _1!, poll: _2!, correctAnswers: _3, attachedMedia: _4, solution: _5, solutionEntities: _6, solutionMedia: _7))
             }
             else {
                 return nil
@@ -1038,12 +1079,19 @@ public extension Api {
             if Int(_1!) & Int(1 << 1) != 0 {
                 _4 = reader.readInt32()
             }
+            var _5: Api.InputDocument?
+            if Int(_1!) & Int(1 << 3) != 0 {
+                if let signature = reader.readInt32() {
+                    _5 = Api.parse(reader, signature: signature) as? Api.InputDocument
+                }
+            }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.InputMedia.inputMediaUploadedPhoto(Cons_inputMediaUploadedPhoto(flags: _1!, file: _2!, stickers: _3, ttlSeconds: _4))
+            let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 {
+                return Api.InputMedia.inputMediaUploadedPhoto(Cons_inputMediaUploadedPhoto(flags: _1!, file: _2!, stickers: _3, ttlSeconds: _4, video: _5))
             }
             else {
                 return nil
@@ -1102,8 +1150,8 @@ public extension Api {
                 self.id = id
                 self.queryId = queryId
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMessageCallbackQuery", [("id", self.id as Any), ("queryId", self.queryId as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMessageCallbackQuery", [("id", ConstructorParameterDescription(self.id)), ("queryId", ConstructorParameterDescription(self.queryId))])
             }
         }
         public class Cons_inputMessageID: TypeConstructorDescription {
@@ -1111,8 +1159,8 @@ public extension Api {
             public init(id: Int32) {
                 self.id = id
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMessageID", [("id", self.id as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMessageID", [("id", ConstructorParameterDescription(self.id))])
             }
         }
         public class Cons_inputMessageReplyTo: TypeConstructorDescription {
@@ -1120,8 +1168,8 @@ public extension Api {
             public init(id: Int32) {
                 self.id = id
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputMessageReplyTo", [("id", self.id as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMessageReplyTo", [("id", ConstructorParameterDescription(self.id))])
             }
         }
         case inputMessageCallbackQuery(Cons_inputMessageCallbackQuery)
@@ -1158,16 +1206,16 @@ public extension Api {
             }
         }
 
-        public func descriptionFields() -> (String, [(String, Any)]) {
+        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
             case .inputMessageCallbackQuery(let _data):
-                return ("inputMessageCallbackQuery", [("id", _data.id as Any), ("queryId", _data.queryId as Any)])
+                return ("inputMessageCallbackQuery", [("id", ConstructorParameterDescription(_data.id)), ("queryId", ConstructorParameterDescription(_data.queryId))])
             case .inputMessageID(let _data):
-                return ("inputMessageID", [("id", _data.id as Any)])
+                return ("inputMessageID", [("id", ConstructorParameterDescription(_data.id))])
             case .inputMessagePinned:
                 return ("inputMessagePinned", [])
             case .inputMessageReplyTo(let _data):
-                return ("inputMessageReplyTo", [("id", _data.id as Any)])
+                return ("inputMessageReplyTo", [("id", ConstructorParameterDescription(_data.id))])
             }
         }
 
@@ -1213,6 +1261,80 @@ public extension Api {
     }
 }
 public extension Api {
+    enum InputMessageReadMetric: TypeConstructorDescription {
+        public class Cons_inputMessageReadMetric: TypeConstructorDescription {
+            public var msgId: Int32
+            public var viewId: Int64
+            public var timeInViewMs: Int32
+            public var activeTimeInViewMs: Int32
+            public var heightToViewportRatioPermille: Int32
+            public var seenRangeRatioPermille: Int32
+            public init(msgId: Int32, viewId: Int64, timeInViewMs: Int32, activeTimeInViewMs: Int32, heightToViewportRatioPermille: Int32, seenRangeRatioPermille: Int32) {
+                self.msgId = msgId
+                self.viewId = viewId
+                self.timeInViewMs = timeInViewMs
+                self.activeTimeInViewMs = activeTimeInViewMs
+                self.heightToViewportRatioPermille = heightToViewportRatioPermille
+                self.seenRangeRatioPermille = seenRangeRatioPermille
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputMessageReadMetric", [("msgId", ConstructorParameterDescription(self.msgId)), ("viewId", ConstructorParameterDescription(self.viewId)), ("timeInViewMs", ConstructorParameterDescription(self.timeInViewMs)), ("activeTimeInViewMs", ConstructorParameterDescription(self.activeTimeInViewMs)), ("heightToViewportRatioPermille", ConstructorParameterDescription(self.heightToViewportRatioPermille)), ("seenRangeRatioPermille", ConstructorParameterDescription(self.seenRangeRatioPermille))])
+            }
+        }
+        case inputMessageReadMetric(Cons_inputMessageReadMetric)
+
+        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+            switch self {
+            case .inputMessageReadMetric(let _data):
+                if boxed {
+                    buffer.appendInt32(1076577429)
+                }
+                serializeInt32(_data.msgId, buffer: buffer, boxed: false)
+                serializeInt64(_data.viewId, buffer: buffer, boxed: false)
+                serializeInt32(_data.timeInViewMs, buffer: buffer, boxed: false)
+                serializeInt32(_data.activeTimeInViewMs, buffer: buffer, boxed: false)
+                serializeInt32(_data.heightToViewportRatioPermille, buffer: buffer, boxed: false)
+                serializeInt32(_data.seenRangeRatioPermille, buffer: buffer, boxed: false)
+                break
+            }
+        }
+
+        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+            switch self {
+            case .inputMessageReadMetric(let _data):
+                return ("inputMessageReadMetric", [("msgId", ConstructorParameterDescription(_data.msgId)), ("viewId", ConstructorParameterDescription(_data.viewId)), ("timeInViewMs", ConstructorParameterDescription(_data.timeInViewMs)), ("activeTimeInViewMs", ConstructorParameterDescription(_data.activeTimeInViewMs)), ("heightToViewportRatioPermille", ConstructorParameterDescription(_data.heightToViewportRatioPermille)), ("seenRangeRatioPermille", ConstructorParameterDescription(_data.seenRangeRatioPermille))])
+            }
+        }
+
+        public static func parse_inputMessageReadMetric(_ reader: BufferReader) -> InputMessageReadMetric? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int64?
+            _2 = reader.readInt64()
+            var _3: Int32?
+            _3 = reader.readInt32()
+            var _4: Int32?
+            _4 = reader.readInt32()
+            var _5: Int32?
+            _5 = reader.readInt32()
+            var _6: Int32?
+            _6 = reader.readInt32()
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            let _c5 = _5 != nil
+            let _c6 = _6 != nil
+            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
+                return Api.InputMessageReadMetric.inputMessageReadMetric(Cons_inputMessageReadMetric(msgId: _1!, viewId: _2!, timeInViewMs: _3!, activeTimeInViewMs: _4!, heightToViewportRatioPermille: _5!, seenRangeRatioPermille: _6!))
+            }
+            else {
+                return nil
+            }
+        }
+    }
+}
+public extension Api {
     indirect enum InputNotifyPeer: TypeConstructorDescription {
         public class Cons_inputNotifyForumTopic: TypeConstructorDescription {
             public var peer: Api.InputPeer
@@ -1221,8 +1343,8 @@ public extension Api {
                 self.peer = peer
                 self.topMsgId = topMsgId
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputNotifyForumTopic", [("peer", self.peer as Any), ("topMsgId", self.topMsgId as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputNotifyForumTopic", [("peer", ConstructorParameterDescription(self.peer)), ("topMsgId", ConstructorParameterDescription(self.topMsgId))])
             }
         }
         public class Cons_inputNotifyPeer: TypeConstructorDescription {
@@ -1230,8 +1352,8 @@ public extension Api {
             public init(peer: Api.InputPeer) {
                 self.peer = peer
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputNotifyPeer", [("peer", self.peer as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputNotifyPeer", [("peer", ConstructorParameterDescription(self.peer))])
             }
         }
         case inputNotifyBroadcasts
@@ -1273,16 +1395,16 @@ public extension Api {
             }
         }
 
-        public func descriptionFields() -> (String, [(String, Any)]) {
+        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
             case .inputNotifyBroadcasts:
                 return ("inputNotifyBroadcasts", [])
             case .inputNotifyChats:
                 return ("inputNotifyChats", [])
             case .inputNotifyForumTopic(let _data):
-                return ("inputNotifyForumTopic", [("peer", _data.peer as Any), ("topMsgId", _data.topMsgId as Any)])
+                return ("inputNotifyForumTopic", [("peer", ConstructorParameterDescription(_data.peer)), ("topMsgId", ConstructorParameterDescription(_data.topMsgId))])
             case .inputNotifyPeer(let _data):
-                return ("inputNotifyPeer", [("peer", _data.peer as Any)])
+                return ("inputNotifyPeer", [("peer", ConstructorParameterDescription(_data.peer))])
             case .inputNotifyUsers:
                 return ("inputNotifyUsers", [])
             }
@@ -1335,8 +1457,8 @@ public extension Api {
             public init(pnvToken: String) {
                 self.pnvToken = pnvToken
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputPasskeyCredentialFirebasePNV", [("pnvToken", self.pnvToken as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputPasskeyCredentialFirebasePNV", [("pnvToken", ConstructorParameterDescription(self.pnvToken))])
             }
         }
         public class Cons_inputPasskeyCredentialPublicKey: TypeConstructorDescription {
@@ -1348,8 +1470,8 @@ public extension Api {
                 self.rawId = rawId
                 self.response = response
             }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputPasskeyCredentialPublicKey", [("id", self.id as Any), ("rawId", self.rawId as Any), ("response", self.response as Any)])
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputPasskeyCredentialPublicKey", [("id", ConstructorParameterDescription(self.id)), ("rawId", ConstructorParameterDescription(self.rawId)), ("response", ConstructorParameterDescription(self.response))])
             }
         }
         case inputPasskeyCredentialFirebasePNV(Cons_inputPasskeyCredentialFirebasePNV)
@@ -1374,12 +1496,12 @@ public extension Api {
             }
         }
 
-        public func descriptionFields() -> (String, [(String, Any)]) {
+        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
             case .inputPasskeyCredentialFirebasePNV(let _data):
-                return ("inputPasskeyCredentialFirebasePNV", [("pnvToken", _data.pnvToken as Any)])
+                return ("inputPasskeyCredentialFirebasePNV", [("pnvToken", ConstructorParameterDescription(_data.pnvToken))])
             case .inputPasskeyCredentialPublicKey(let _data):
-                return ("inputPasskeyCredentialPublicKey", [("id", _data.id as Any), ("rawId", _data.rawId as Any), ("response", _data.response as Any)])
+                return ("inputPasskeyCredentialPublicKey", [("id", ConstructorParameterDescription(_data.id)), ("rawId", ConstructorParameterDescription(_data.rawId)), ("response", ConstructorParameterDescription(_data.response))])
             }
         }
 
@@ -1408,107 +1530,6 @@ public extension Api {
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.InputPasskeyCredential.inputPasskeyCredentialPublicKey(Cons_inputPasskeyCredentialPublicKey(id: _1!, rawId: _2!, response: _3!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api {
-    enum InputPasskeyResponse: TypeConstructorDescription {
-        public class Cons_inputPasskeyResponseLogin: TypeConstructorDescription {
-            public var clientData: Api.DataJSON
-            public var authenticatorData: Buffer
-            public var signature: Buffer
-            public var userHandle: String
-            public init(clientData: Api.DataJSON, authenticatorData: Buffer, signature: Buffer, userHandle: String) {
-                self.clientData = clientData
-                self.authenticatorData = authenticatorData
-                self.signature = signature
-                self.userHandle = userHandle
-            }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputPasskeyResponseLogin", [("clientData", self.clientData as Any), ("authenticatorData", self.authenticatorData as Any), ("signature", self.signature as Any), ("userHandle", self.userHandle as Any)])
-            }
-        }
-        public class Cons_inputPasskeyResponseRegister: TypeConstructorDescription {
-            public var clientData: Api.DataJSON
-            public var attestationData: Buffer
-            public init(clientData: Api.DataJSON, attestationData: Buffer) {
-                self.clientData = clientData
-                self.attestationData = attestationData
-            }
-            public func descriptionFields() -> (String, [(String, Any)]) {
-                return ("inputPasskeyResponseRegister", [("clientData", self.clientData as Any), ("attestationData", self.attestationData as Any)])
-            }
-        }
-        case inputPasskeyResponseLogin(Cons_inputPasskeyResponseLogin)
-        case inputPasskeyResponseRegister(Cons_inputPasskeyResponseRegister)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .inputPasskeyResponseLogin(let _data):
-                if boxed {
-                    buffer.appendInt32(-1021329078)
-                }
-                _data.clientData.serialize(buffer, true)
-                serializeBytes(_data.authenticatorData, buffer: buffer, boxed: false)
-                serializeBytes(_data.signature, buffer: buffer, boxed: false)
-                serializeString(_data.userHandle, buffer: buffer, boxed: false)
-                break
-            case .inputPasskeyResponseRegister(let _data):
-                if boxed {
-                    buffer.appendInt32(1046713180)
-                }
-                _data.clientData.serialize(buffer, true)
-                serializeBytes(_data.attestationData, buffer: buffer, boxed: false)
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, Any)]) {
-            switch self {
-            case .inputPasskeyResponseLogin(let _data):
-                return ("inputPasskeyResponseLogin", [("clientData", _data.clientData as Any), ("authenticatorData", _data.authenticatorData as Any), ("signature", _data.signature as Any), ("userHandle", _data.userHandle as Any)])
-            case .inputPasskeyResponseRegister(let _data):
-                return ("inputPasskeyResponseRegister", [("clientData", _data.clientData as Any), ("attestationData", _data.attestationData as Any)])
-            }
-        }
-
-        public static func parse_inputPasskeyResponseLogin(_ reader: BufferReader) -> InputPasskeyResponse? {
-            var _1: Api.DataJSON?
-            if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.DataJSON
-            }
-            var _2: Buffer?
-            _2 = parseBytes(reader)
-            var _3: Buffer?
-            _3 = parseBytes(reader)
-            var _4: String?
-            _4 = parseString(reader)
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = _4 != nil
-            if _c1 && _c2 && _c3 && _c4 {
-                return Api.InputPasskeyResponse.inputPasskeyResponseLogin(Cons_inputPasskeyResponseLogin(clientData: _1!, authenticatorData: _2!, signature: _3!, userHandle: _4!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_inputPasskeyResponseRegister(_ reader: BufferReader) -> InputPasskeyResponse? {
-            var _1: Api.DataJSON?
-            if let signature = reader.readInt32() {
-                _1 = Api.parse(reader, signature: signature) as? Api.DataJSON
-            }
-            var _2: Buffer?
-            _2 = parseBytes(reader)
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            if _c1 && _c2 {
-                return Api.InputPasskeyResponse.inputPasskeyResponseRegister(Cons_inputPasskeyResponseRegister(clientData: _1!, attestationData: _2!))
             }
             else {
                 return nil

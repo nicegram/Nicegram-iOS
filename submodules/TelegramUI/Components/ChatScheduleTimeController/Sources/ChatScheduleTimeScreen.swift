@@ -225,6 +225,8 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                 title = strings.Conversation_SetReminder_Title
             case .format:
                 title = strings.Conversation_FormatDate_Title
+            case .poll:
+                title = strings.CreatePoll_Deadline_Title
             }
             let titleSize = self.title.update(
                 transition: transition,
@@ -384,6 +386,8 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             var repeatValueFrame = CGRect()
             if case .format = component.mode {
                 contentHeight += 8.0
+            } else if case .poll = component.mode {
+                contentHeight += 8.0
             } else {
                 transition.setFrame(layer: self.bottomSeparator, frame: CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: UIScreenPixel)))
                 self.bottomSeparator.backgroundColor = environment.theme.list.itemBlocksSeparatorColor.cgColor
@@ -491,6 +495,8 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                 }
             case .format:
                 buttonTitle = component.currentTime != nil ? strings.Conversation_FormatDate_EditDate : strings.Conversation_FormatDate_AddDate
+            case .poll:
+                buttonTitle = strings.CreatePoll_Deadline_SetDeadline
             }
                 
             let buttonSideInset: CGFloat = 30.0
@@ -636,7 +642,17 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                                     guard let self else {
                                         return
                                     }
-                                    self.date = value
+                                    var date = value
+                                    if let minDate = self.minDate, date < minDate {
+                                        let timeZone = TimeZone(secondsFromGMT: 0)!
+                                        var calendar = Calendar(identifier: .gregorian)
+                                        calendar.timeZone = timeZone
+                                        if let nextDayDate = calendar.date(byAdding: .day, value: 1, to: date) {
+                                            date = nextDayDate
+                                        }
+                                    }
+                                    self.date = date
+                                    self.datePicker?.date = date
                                     self.state?.updated()
                                 }
                             )),
@@ -930,6 +946,7 @@ public class ChatScheduleTimeScreen: ViewControllerComponentContainer {
         case scheduledMessages(sendWhenOnlineAvailable: Bool)
         case reminders
         case format
+        case poll
     }
     
     public struct Result {

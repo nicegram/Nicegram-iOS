@@ -19,6 +19,7 @@ import ChatSendMessageActionUI
 import MinimizedContainer
 import ComponentFlow
 import GlassBackgroundComponent
+import TextFormat
 
 public enum AttachmentButtonType: Equatable {
     case gallery
@@ -30,6 +31,9 @@ public enum AttachmentButtonType: Equatable {
     case poll
     case app(AttachMenuBot)
     case gift
+    case sticker
+    case emoji
+    case audio
     case standalone
     
     public var key: String {
@@ -52,6 +56,12 @@ public enum AttachmentButtonType: Equatable {
             return "app_\(bot.shortName)"
         case .gift:
             return "gift"
+        case .sticker:
+            return "sticker"
+        case .emoji:
+            return "emoji"
+        case .audio:
+            return "audio"
         case .standalone:
             return "standalone"
         }
@@ -109,6 +119,24 @@ public enum AttachmentButtonType: Equatable {
             }
         case .gift:
             if case .gift = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .sticker:
+            if case .sticker = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .emoji:
+            if case .emoji = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .audio:
+            if case .audio = rhs {
                 return true
             } else {
                 return false
@@ -553,7 +581,7 @@ public class AttachmentController: ViewController, MinimizableController {
             self.wrapperNode = ASDisplayNode()
             self.wrapperNode.clipsToBounds = true
             
-            self.container = AttachmentContainer(presentationData: self.presentationData, isFullSize: controller.isFullSize, glass: controller.style == .glass)
+            self.container = AttachmentContainer(presentationData: self.presentationData, isFullSize: controller.isFullSize, glass: controller._hasGlassStyle, hasPill: controller.style == .glass)
             self.container.canHaveKeyboardFocus = true
             
             let panelStyle: AttachmentPanel.Style
@@ -719,6 +747,47 @@ public class AttachmentController: ViewController, MinimizableController {
                     case .whenOnline:
                         strongSelf.mediaPickerContext?.send(mode: .whenOnline, attachmentMode: .media, parameters: parameters)
                     }
+                }
+            }
+            self.panel.invokeAICompose = { [weak self] in
+                Task { @MainActor in
+                    guard let self, let controller = self.controller, let mediaPickerContext = self.mediaPickerContext else {
+                        return
+                    }
+                    
+                    guard let caption = await mediaPickerContext.caption.get() else {
+                        return
+                    }
+                    if caption.length == 0 {
+                        return
+                    }
+                    
+                    let textProcessingScreen = await controller.context.sharedContext.makeTextProcessingScreen(
+                        context: controller.context,
+                        theme: self.presentationData.theme,
+                        mode: .edit(
+                            saveRestoreStateId: nil,
+                            completion: { [weak self] text in
+                                guard let self, let mediaPickerContext = self.mediaPickerContext else {
+                                    return
+                                }
+                                self.panel.updateCaption(chatInputStateStringWithAppliedEntities(text.text, entities: text.entities))
+                                mediaPickerContext.setCaption(chatInputStateStringWithAppliedEntities(text.text, entities: text.entities))
+                            },
+                            send: { [weak self] text in
+                                guard let self, let mediaPickerContext = self.mediaPickerContext else {
+                                    return
+                                }
+                                mediaPickerContext.setCaption(chatInputStateStringWithAppliedEntities(text.text, entities: text.entities))
+                                mediaPickerContext.send(mode: .generic, attachmentMode: .media, parameters: nil)
+                            },
+                            sendContextActions: nil
+                        ),
+                        inputText: TextWithEntities(text: caption.string, entities: []),
+                        copyResult: nil,
+                        translateChat: nil
+                    )
+                    self.controller?.push(textProcessingScreen)
                 }
             }
             
@@ -892,11 +961,10 @@ public class AttachmentController: ViewController, MinimizableController {
                 return true
             }
             let previousType = self.currentType
-            self.currentType = type
-            self.controller?.requestController(type, { [weak self] controller, mediaPickerContext in
+            let shouldSwitch = self.controller?.requestController(type, { [weak self] controller, mediaPickerContext in
                 if let strongSelf = self {
                     if let controller = controller  {
-                        if case .glass = strongSelf.controller?.style {
+                        if strongSelf.controller?._hasGlassStyle == true {
                             controller._hasGlassStyle = true
                         }
                         strongSelf.controller?._ready.set(controller.ready.get())
@@ -971,8 +1039,11 @@ public class AttachmentController: ViewController, MinimizableController {
                     }
                     strongSelf.mediaPickerContext = mediaPickerContext
                 }
-            })
-            return true
+            }) ?? true
+            if shouldSwitch {
+                self.currentType = type
+            }
+            return shouldSwitch
         }
         
         private func animateSwitchTransition(_ controller: AttachmentContainable, previousController: AttachmentContainable?) {
@@ -1355,13 +1426,12 @@ public class AttachmentController: ViewController, MinimizableController {
                         
             var containerInsets = containerLayout.intrinsicInsets
             var hasPanel = false
-//            let previousHasButton = self.hasButton
             let hasButton = self.panel.isButtonVisible && !self.isDismissing
             self.hasButton = hasButton
-            if let controller = self.controller, controller.buttons.count > 1 || controller.hasTextInput {
+            if let controller = self.controller, controller.buttons.count > 1 || controller.hasTextInput || self.panel.hasMediaAccessoryPanel {
                 hasPanel = true
             }
-            if !self.isPanelVisible {
+            if !self.isPanelVisible && !self.panel.hasMediaAccessoryPanel {
                 hasPanel = false
             }
             
@@ -1375,7 +1445,8 @@ public class AttachmentController: ViewController, MinimizableController {
             }
             
             let isEffecitvelyCollapsedUpdated = (self.selectionCount > 0) != (self.panel.isSelecting)
-            let panelHeight = self.panel.update(layout: containerLayout, buttons: self.controller?.buttons ?? [], isSelecting: self.selectionCount > 0, selectionCount: self.selectionCount, elevateProgress: !hasPanel && !hasButton, transition: transition)
+            let panelHeight = self.panel.update(layout: containerLayout, buttons: self.controller?.buttons ?? [], isSelecting: self.selectionCount > 0, selectionCount: self.selectionCount, elevateProgress: !hasPanel && !hasButton, hideButtons: !self.isPanelVisible && self.panel.hasMediaAccessoryPanel, transition: transition)
+            
             if hasPanel || hasButton {
                 containerInsets.bottom = panelHeight + panelOffset
             }
@@ -1437,8 +1508,9 @@ public class AttachmentController: ViewController, MinimizableController {
         }
     }
     
-    public var requestController: (AttachmentButtonType, @escaping (AttachmentContainable?, AttachmentMediaPickerContext?) -> Void) -> Void = { _, completion in
+    public var requestController: (AttachmentButtonType, @escaping (AttachmentContainable?, AttachmentMediaPickerContext?) -> Void) -> Bool = { _, completion in
         completion(nil, nil)
+        return true
     }
     
     public var getInputContainerNode: () -> (CGFloat, ASDisplayNode, () -> AttachmentController.InputPanelTransition?)? = { return nil }
@@ -1474,7 +1546,7 @@ public class AttachmentController: ViewController, MinimizableController {
         
         super.init(navigationBarPresentationData: nil)
         
-        self._hasGlassStyle = style == .glass
+        self._hasGlassStyle = true //style == .glass
         
         self.statusBar.statusBarStyle = .Ignore
         self.blocksBackgroundWhenInOverlay = true
@@ -1496,7 +1568,7 @@ public class AttachmentController: ViewController, MinimizableController {
     public var forceSourceRect = false
     
     fileprivate var isStandalone: Bool {
-        return self.buttons.contains(.standalone)
+        return self.buttons.contains(.standalone) || self.buttons.count == 1
     }
     
     public func convertToStandalone() {

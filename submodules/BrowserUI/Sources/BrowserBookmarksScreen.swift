@@ -95,6 +95,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, openHashtag: { _, _ in
             }, updateInputState: { _ in
             }, updateInputMode: { _ in
+            }, updatePresentationState: { _ in
             }, openMessageShareMenu: { _ in
             }, presentController: { _, _ in
             }, presentControllerInCurrent: { _, _ in
@@ -107,6 +108,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, openConferenceCall: { _ in                
             }, longTap: { _, _ in
             }, todoItemLongTap: { _, _ in
+            }, pollOptionLongTap: { _, _ in
             }, openCheckoutOrReceipt: { _, _ in
             }, openSearch: {
             }, setupReply: { _ in
@@ -119,6 +121,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, addContact: { _ in
             }, rateCall: { _, _, _ in
             }, requestSelectMessagePollOptions: { _, _ in
+            }, requestAddMessagePollOption: { _, _, _, _, _ in
             }, requestOpenMessagePollResults: { _, _ in
             }, openAppStorePage: {
             }, displayMessageTooltip: { _, _, _, _, _ in
@@ -126,12 +129,13 @@ public final class BrowserBookmarksScreen: ViewController {
             }, scheduleCurrentMessage: { _ in
             }, sendScheduledMessagesNow: { _ in
             }, editScheduledMessagesTime: { _ in
-            }, performTextSelectionAction: { _, _, _, _ in
+            }, performTextSelectionAction: { _, _, _, _, _ in
             }, displayImportedMessageTooltip: { _ in
             }, displaySwipeToReplyHint: {
             }, dismissReplyMarkupMessage: { _ in
             }, openMessagePollResults: { _, _ in
             }, openPollCreation: { _ in
+            }, openPollMedia: { _, _ in
             }, displayPollSolution: { _, _ in
             }, displayPsa: { _, _ in
             }, displayDiceTooltip: { _ in
@@ -185,7 +189,7 @@ public final class BrowserBookmarksScreen: ViewController {
             }, requestToggleTodoMessageItem: { _, _, _ in
             }, displayTodoToggleUnavailable: { _ in
             }, openStarsPurchase: { _ in
-            }, openRankInfo: { _, _, _ in }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings, pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
+            }, openRankInfo: { _, _, _ in }, openSetPeerAvatar: {}, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings, pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
             
             
             let tagMask: MessageTags = .webPage
@@ -205,7 +209,8 @@ public final class BrowserBookmarksScreen: ViewController {
                     reverseGroups: false,
                     displayHeaders: .none,
                     hintLinks: true,
-                    isGlobalSearch: false
+                    isGlobalSearch: false,
+                    isMusicPlaylist: false
                 )
             )
             

@@ -281,7 +281,7 @@ public final class ChatInlineSearchResultsListComponent: Component {
         private var hintAnimateListTransition: Bool = false
         
         override public init(frame: CGRect) {
-            self.listNode = ListView()
+            self.listNode = ListViewImpl()
             
             super.init(frame: frame)
             
@@ -1043,6 +1043,7 @@ public final class ChatInlineSearchResultsListComponent: Component {
                                 presence: nil,
                                 hasUnseenMentions: false,
                                 hasUnseenReactions: false,
+                                hasUnseenPollVotes: false,
                                 draftState: nil,
                                 mediaDraftContentType: nil,
                                 inputActivities: nil,
@@ -1082,6 +1083,7 @@ public final class ChatInlineSearchResultsListComponent: Component {
                                 presence: nil,
                                 hasUnseenMentions: false,
                                 hasUnseenReactions: false,
+                                hasUnseenPollVotes: false,
                                 draftState: item.draft.flatMap(ChatListItemContent.DraftState.init(draft:)),
                                 mediaDraftContentType: nil,
                                 inputActivities: nil,

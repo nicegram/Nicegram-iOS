@@ -45,6 +45,12 @@ public struct PresentationResourcesItemList {
         })
     }
     
+    public static func disclosureSwitchLockImage(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.itemListDisclosureSwitchLock.rawValue, { theme in
+            return generateTintedImage(image: UIImage(bundleImageName: "Item List/SwitchLockIcon"), color: theme.list.disclosureArrowColor)
+        })
+    }
+    
     public static func checkIconImage(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListCheckIcon.rawValue, { theme in
             return generateItemListCheckIcon(color: theme.list.itemAccentColor)
@@ -135,12 +141,26 @@ public struct PresentationResourcesItemList {
         return theme.image(PresentationResourceKey.itemListReorderIndicatorIcon.rawValue, { theme in
             return generateImage(CGSize(width: 17.0, height: 14.0), rotatedContext: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
-                context.setFillColor(theme.list.itemBlocksSeparatorColor.cgColor)
+                context.setFillColor(theme.list.itemPlaceholderTextColor.cgColor)
 
                 let lineHeight = 1.0 + UIScreenPixel
                 context.addPath(CGPath(roundedRect: CGRect(x: 0.0, y: UIScreenPixel, width: 17.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
                 context.addPath(CGPath(roundedRect: CGRect(x: 0.0, y: UIScreenPixel + 6.0, width: 17.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
                 context.addPath(CGPath(roundedRect: CGRect(x: 0.0, y: UIScreenPixel + 12.0, width: 17.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
+                context.fillPath()
+            })
+        })
+    }
+    
+    public static func itemListAddIndicatorIcon(_ theme: PresentationTheme) -> UIImage? {
+        return theme.image(PresentationResourceKey.itemListAddIndicatorIcon.rawValue, { theme in
+            return generateImage(CGSize(width: 17.0, height: 15.0), rotatedContext: { size, context in
+                context.clear(CGRect(origin: CGPoint(), size: size))
+                context.setFillColor(theme.list.itemPlaceholderTextColor.cgColor)
+
+                let lineHeight = 1.0 + UIScreenPixel
+                context.addPath(CGPath(roundedRect: CGRect(x: 1.0, y: 7.0, width: 15.0, height: lineHeight), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
+                context.addPath(CGPath(roundedRect: CGRect(x: 8.0, y: 0.0, width: lineHeight, height: 15.0), cornerWidth: lineHeight / 2.0, cornerHeight: lineHeight / 2.0, transform: nil))
                 context.fillPath()
             })
         })

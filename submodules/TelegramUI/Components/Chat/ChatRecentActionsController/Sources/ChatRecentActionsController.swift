@@ -179,7 +179,10 @@ public final class ChatRecentActionsController: TelegramBaseController {
         }, dismissForwardMessages: {
         }, dismissSuggestPost: {
         }, displayUndo: { _ in
+        }, presentInputTextTranslation: { _, _ in
         }, sendEmoji: { _, _, _ in
+        }, openAICompose: {
+        }, openSetPeerAvatar: {
         }, updateHistoryFilter: { _ in
         }, updateChatLocationThread: { _, _ in
         }, toggleChatSidebarMode: {

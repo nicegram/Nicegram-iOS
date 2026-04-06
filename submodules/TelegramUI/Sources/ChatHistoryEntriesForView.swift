@@ -58,7 +58,8 @@ func chatHistoryEntriesForView(
     customThreadOutgoingReadState: MessageId?,
     cachedData: CachedPeerData?,
     adMessage: Message?,
-    dynamicAdMessages: [Message]
+    dynamicAdMessages: [Message],
+    isMusicPlaylist: Bool
 ) -> ([ChatHistoryEntry], ChatHistoryEntriesForViewState) {
     var currentState = currentState
     
@@ -69,6 +70,7 @@ func chatHistoryEntriesForView(
     var adminRanks: [PeerId: CachedChannelAdminRank] = [:]
     var stickersEnabled = true
     var chatPeer: Peer?
+    var cachedPeerDataPeers: [PeerId: Peer] = [:]
     if let peerId = location.peerId {
         for additionalEntry in view.additionalData {
             if case let .cacheEntry(id, data) = additionalEntry {
@@ -97,6 +99,8 @@ func chatHistoryEntriesForView(
                         }
                     }
                 }
+            } else if case let .cachedPeerDataPeers(_, peers) = additionalEntry {
+                cachedPeerDataPeers = peers
             }
         }
     }
@@ -244,7 +248,7 @@ func chatHistoryEntriesForView(
             if let messageGroupingKey = message.groupingKey {
                 let selection: ChatHistoryMessageSelection
                 if let selectedMessages = selectedMessages {
-                    selection = .selectable(selected: selectedMessages.contains(message.id))
+                    selection = .selectable(selected: selectedMessages.contains(message.id), num: nil)
                 } else {
                     selection = .none
                 }
@@ -290,7 +294,7 @@ func chatHistoryEntriesForView(
             } else {
                 let selection: ChatHistoryMessageSelection
                 if let selectedMessages = selectedMessages {
-                    selection = .selectable(selected: selectedMessages.contains(message.id))
+                    selection = .selectable(selected: selectedMessages.contains(message.id), num: nil)
                 } else {
                     selection = .none
                 }
@@ -305,7 +309,7 @@ func chatHistoryEntriesForView(
         } else {
             let selection: ChatHistoryMessageSelection
             if let selectedMessages = selectedMessages {
-                selection = .selectable(selected: selectedMessages.contains(message.id))
+                selection = .selectable(selected: selectedMessages.contains(message.id), num: nil)
             } else {
                 selection = .none
             }
@@ -433,6 +437,12 @@ func chatHistoryEntriesForView(
         var i = 0
         let unreadEntry: ChatHistoryEntry = .UnreadEntry(maxReadIndex, presentationData)
         for entry in entries {
+            if case let .MessageGroupEntry(_, messages, _) = entry {
+                if !messages.isEmpty && maxReadIndex >= messages[0].0.index {
+                    i += 1
+                    continue
+                }
+            }
             if entry > unreadEntry {
                 if i != 0 {
                     entries.insert(unreadEntry, at: i)
@@ -444,7 +454,7 @@ func chatHistoryEntriesForView(
     }
     
     var addedThreadHead = false
-    if case let .replyThread(replyThreadMessage) = location, !replyThreadMessage.isForumPost, view.earlierId == nil, !view.holeEarlier, !view.isLoading {
+    if case let .replyThread(replyThreadMessage) = location, !replyThreadMessage.isForumPost, view.earlierId == nil, !view.holeEarlier, !view.isLoading, !isMusicPlaylist {
         loop: for entry in view.additionalData {
             switch entry {
             case let .message(id, messages) where id == replyThreadMessage.effectiveTopId:
@@ -519,17 +529,19 @@ func chatHistoryEntriesForView(
                 }
             }
             if case let .peer(peerId) = location, peerId.isReplies {
-                entries.insert(.ChatInfoEntry(.botInfo(title: "", text: presentationData.strings.RepliesChat_DescriptionText, photo: nil, video: nil), presentationData), at: 0)
+                entries.insert(.ChatInfoEntry(.botInfo(title: "", text: presentationData.strings.RepliesChat_DescriptionText, photo: nil, video: nil, peer: nil, managedByBot: nil), presentationData), at: 0)
             } else if case let .peer(peerId) = location, peerId.isVerificationCodes {
-                entries.insert(.ChatInfoEntry(.botInfo(title: "", text: presentationData.strings.VerificationCodes_DescriptionText, photo: nil, video: nil), presentationData), at: 0)
+                entries.insert(.ChatInfoEntry(.botInfo(title: "", text: presentationData.strings.VerificationCodes_DescriptionText, photo: nil, video: nil, peer: nil, managedByBot: nil), presentationData), at: 0)
             } else if let cachedPeerData = cachedPeerData as? CachedUserData {
                 if let botInfo = cachedPeerData.botInfo, !botInfo.description.isEmpty {
                     if location.threadId == nil {
                         if let subject, case .pinnedMessages = subject {
                         } else {
-                            entries.insert(.ChatInfoEntry(.botInfo(title: presentationData.strings.Bot_DescriptionTitle, text: botInfo.description, photo: botInfo.photo, video: botInfo.video), presentationData), at: 0)
+                            entries.insert(.ChatInfoEntry(.botInfo(title: presentationData.strings.Bot_DescriptionTitle, text: botInfo.description, photo: botInfo.photo, video: botInfo.video, peer: nil, managedByBot: nil), presentationData), at: 0)
                         }
                     }
+                } else if let botManagerId = cachedPeerData.botManagerId, let managedByBot = cachedPeerDataPeers[botManagerId], let peer = chatPeer.flatMap(EnginePeer.init) {
+                    entries.insert(.ChatInfoEntry(.botInfo(title: "", text: "", photo: nil, video: nil, peer: peer, managedByBot: EnginePeer(managedByBot)), presentationData), at: 0)
                 } else if let peerStatusSettings = cachedPeerData.peerStatusSettings, peerStatusSettings.registrationDate != nil || peerStatusSettings.phoneCountry != nil {
                     if peerStatusSettings.flags.contains(.canAddContact) || peerStatusSettings.flags.contains(.canReport) || peerStatusSettings.flags.contains(.canBlock) {
                         
@@ -820,6 +832,10 @@ func chatHistoryEntriesForView(
                 entries.insert(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)), at: 0)
             }
         }
+    }
+    
+    if isMusicPlaylist && entries.count == 1 {
+        return ([], currentState)
     }
     
     if reverse {

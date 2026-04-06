@@ -284,7 +284,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                 }
                                 switch fullUser {
                                     case let .userFull(userFullData):
-                                        let (userFullFlags, userFullFlags2, userFullAbout, userFullSettings, apiPersonalPhoto, profilePhoto, apiFallbackPhoto, userFullBotInfo, userFullPinnedMsgId, userFullCommonChatsCount, userFullTtlPeriod, userFullChatTheme, groupAdminRights, channelAdminRights, userWallpaper, businessWorkHours, businessLocation, greetingMessage, awayMessage, businessIntro, birthday, personalChannelId, personalChannelMessage, starGiftsCount, starRefProgram, apiVerification, apiSendPaidMessageStars, disallowedStarGifts, starsRating, starsMyPendingRating, starsMyPendingRatingDate, mainTab, savedMusic, note) = (userFullData.flags, userFullData.flags2, userFullData.about, userFullData.settings, userFullData.personalPhoto, userFullData.profilePhoto, userFullData.fallbackPhoto, userFullData.botInfo, userFullData.pinnedMsgId, userFullData.commonChatsCount, userFullData.ttlPeriod, userFullData.theme, userFullData.botGroupAdminRights, userFullData.botBroadcastAdminRights, userFullData.wallpaper, userFullData.businessWorkHours, userFullData.businessLocation, userFullData.businessGreetingMessage, userFullData.businessAwayMessage, userFullData.businessIntro, userFullData.birthday, userFullData.personalChannelId, userFullData.personalChannelMessage, userFullData.stargiftsCount, userFullData.starrefProgram, userFullData.botVerification, userFullData.sendPaidMessagesStars, userFullData.disallowedGifts, userFullData.starsRating, userFullData.starsMyPendingRating, userFullData.starsMyPendingRatingDate, userFullData.mainTab, userFullData.savedMusic, userFullData.note)
+                                        let (userFullFlags, userFullFlags2, userFullAbout, userFullSettings, apiPersonalPhoto, profilePhoto, apiFallbackPhoto, userFullBotInfo, userFullPinnedMsgId, userFullCommonChatsCount, userFullTtlPeriod, userFullChatTheme, groupAdminRights, channelAdminRights, userWallpaper, businessWorkHours, businessLocation, greetingMessage, awayMessage, businessIntro, birthday, personalChannelId, personalChannelMessage, starGiftsCount, starRefProgram, apiVerification, apiSendPaidMessageStars, disallowedStarGifts, starsRating, starsMyPendingRating, starsMyPendingRatingDate, mainTab, savedMusic, note, botManagerId) = (userFullData.flags, userFullData.flags2, userFullData.about, userFullData.settings, userFullData.personalPhoto, userFullData.profilePhoto, userFullData.fallbackPhoto, userFullData.botInfo, userFullData.pinnedMsgId, userFullData.commonChatsCount, userFullData.ttlPeriod, userFullData.theme, userFullData.botGroupAdminRights, userFullData.botBroadcastAdminRights, userFullData.wallpaper, userFullData.businessWorkHours, userFullData.businessLocation, userFullData.businessGreetingMessage, userFullData.businessAwayMessage, userFullData.businessIntro, userFullData.birthday, userFullData.personalChannelId, userFullData.personalChannelMessage, userFullData.stargiftsCount, userFullData.starrefProgram, userFullData.botVerification, userFullData.sendPaidMessagesStars, userFullData.disallowedGifts, userFullData.starsRating, userFullData.starsMyPendingRating, userFullData.starsMyPendingRatingDate, userFullData.mainTab, userFullData.savedMusic, userFullData.note, userFullData.botManagerId)
                                         let botInfo = userFullBotInfo.flatMap(BotInfo.init(apiBotInfo:))
                                         let isBlocked = (userFullFlags & (1 << 0)) != 0
                                         let voiceCallsAvailable = (userFullFlags & (1 << 4)) != 0
@@ -299,6 +299,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                         let displayGiftButton = (userFullFlags2 & (1 << 16)) != 0
                                         let myCopyProtectionEnabled = (userFullFlags2 & (1 << 23)) != 0
                                         let copyProtectionEnabled = (userFullFlags2 & (1 << 24)) != 0
+                                        let unofficialSecurityRisk = (userFullFlags2 & (1 << 26)) != 0
                                     
                                         var flags: CachedUserFlags = previous.flags
                                         if premiumRequired {
@@ -345,6 +346,11 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                             flags.insert(.copyProtectionEnabled)
                                         } else {
                                             flags.remove(.copyProtectionEnabled)
+                                        }
+                                        if unofficialSecurityRisk {
+                                            flags.insert(.unofficialSecurityRisk)
+                                        } else {
+                                            flags.remove(.unofficialSecurityRisk)
                                         }
                                     
                                         let callsPrivate = (userFullFlags & (1 << 5)) != 0
@@ -492,6 +498,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                             .withUpdatedMainProfileTab(mappedMainProfileTab)
                                             .withUpdatedSavedMusic(mappedSavedMusic)
                                             .withUpdatedNote(mappedNote)
+                                            .withUpdatedBotManagerId(botManagerId.flatMap { PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value($0)) })
                                 }
                             })
                         }
@@ -548,7 +555,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                     }
                                 }
                                 
-                                let photo: TelegramMediaImage? = chatFullChatPhoto.flatMap(telegramMediaImageFromApiPhoto)
+                                let photo: TelegramMediaImage? = chatFullChatPhoto.flatMap { telegramMediaImageFromApiPhoto($0) }
                                 
                                 let exportedInvitation = chatFullExportedInvite.flatMap { ExportedInvitation(apiExportedInvite: $0) }
                                 let pinnedMessageId = chatFullPinnedMsgId.flatMap({ MessageId(peerId: peerId, namespace: Namespaces.Message.Cloud, id: $0) })
