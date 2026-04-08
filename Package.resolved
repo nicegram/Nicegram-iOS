@@ -50,7 +50,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
-        "branch" : "chore/update-libs",
+        "branch" : "release/1.0.0",
         "revision" : "ccc78c6290987979c7e84c6428223e20c9d33392"
       }
     },
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "52548902007e7beda99fcdca31f62eccc4befe38",
-        "version" : "12.11.0"
+        "revision" : "d47760f97a853808be6a045d278fbd12abf546b6",
+        "version" : "12.12.0"
       }
     },
     {
@@ -212,8 +212,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/adjust/ios_sdk.git",
       "state" : {
-        "revision" : "4dbba3ac0a247a1072363b11c1f2534e873bc96b",
-        "version" : "5.6.0"
+        "revision" : "baa6ff4b732be26d8b3cf7138feb6e01ca6efa9a",
+        "version" : "5.6.1"
       }
     },
     {
@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "eb157dd85b3f595b803de52271a26ba6e78c010c"
+        "branch" : "build/663",
+        "revision" : "c1d3b7ee15fb496ea6e39ec7ed131cfcb7cfe359"
       }
     },
     {
@@ -285,7 +285,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "42b7fb1406cb7321a8a02a04325d82cbf9ee9ffc"
+        "revision" : "504f138a065f1e54a4ffd71220bbeef4d73f3cc5"
       }
     },
     {
@@ -302,8 +302,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/qonversion/qonversion-ios-sdk.git",
       "state" : {
-        "revision" : "aec38505b6441cdd2453da9d74a881f3eeab2c09",
-        "version" : "6.9.0"
+        "revision" : "a2bfa94f4cd6c52a42f4c1887be1ea4f8b73742d",
+        "version" : "6.10.0"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "20f53c34a8c9ed84ba468af3f654f8c04b6eb614",
-        "version" : "6.18.1"
+        "revision" : "2b009bfb2d73a11acfb37cd50a426f04aba17883",
+        "version" : "6.18.2"
       }
     },
     {
