@@ -13,6 +13,7 @@ swift_library(
         "@swiftpkg_nicegram_assistant_ios//:CoreAnalytics",
         "@swiftpkg_nicegram_assistant_ios//:FeatWhitebridge",
         "@swiftpkg_nicegram_assistant_ios//:FeatAiChatAnalysis",
+        "@swiftpkg_nicegram_assistant_ios//:FeatCopilot",
         "@swiftpkg_nicegram_assistant_ios//:FeatAttentionEconomy",
         "@swiftpkg_nicegram_assistant_ios//:FeatCalls",
         "@swiftpkg_nicegram_assistant_ios//:FeatSensitiveContentAccess",

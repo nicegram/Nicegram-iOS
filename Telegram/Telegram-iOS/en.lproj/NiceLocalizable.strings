@@ -256,3 +256,7 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "Get a structured overview of public information found online — profiles, background, social activity, and more!";
 "whitebridge.chats.quick.action" = "View WhiteBridge Report";
+
+/*AI Reply*/
+"aiReply.contextMenu.title" = "Draft a Reply";
+"aiReply.hint" = "Draft your reply in seconds ✨\nTurn your thoughts into polished, ready‑to‑send messages with instant help from advanced AI.";

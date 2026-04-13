@@ -36,6 +36,7 @@ import NGAiChatUI
 import NGStrings
 import NGTranslate
 import NGUI
+import NGUtils
 import PeerInfoUI
 import NGData
 import NGSpeechToText
@@ -2223,6 +2224,32 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             if !actions.isEmpty {
                 actions.append(.separator)
             }
+            
+            // Nicegram AI Reply
+            if messages.count == 1, message.effectivelyIncoming(context.account.peerId), !message.text.isEmpty {
+                actions.append(.action(ContextMenuActionItem(text: l("aiReply.contextMenu.title"), icon: { theme in
+                    return generateTintedImage(image: UIImage(bundleImageName: "ai_reply")?.withRenderingMode(.alwaysTemplate), color: theme.actionSheet.primaryTextColor)
+                }, action: { _, f in
+                    interfaceInteraction.setupReplyMessage(message.id, nil, { _, completed in
+                        completed()
+                    })
+                    AiReplyHelper(context: context).present(
+                        messageId: message.id,
+                        draftText: chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string,
+                        onSelectReply: { reply in
+                            interfaceInteraction.updateTextInputStateAndMode { _, inputMode in
+                                var inputMode = inputMode
+                                if inputMode == .none {
+                                    inputMode = .text
+                                }
+                                return (ChatTextInputState(inputText: NSAttributedString(string: reply)), inputMode)
+                            }
+                        }
+                    )
+                    f(.dismissWithoutContent)
+                })))
+            }
+            //
             
             // Nicegram AiChat
             let messageTextIsEmpty = message.text.isEmpty
