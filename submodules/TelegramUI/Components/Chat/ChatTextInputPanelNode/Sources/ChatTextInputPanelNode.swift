@@ -1,4 +1,6 @@
 // Nicegram
+import NGAppCache
+import NGStrings
 import NGUtils
 //
 import Foundation
@@ -280,6 +282,12 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     public let attachmentButton: HighlightTrackingButton
     public let attachmentButtonBackground: GlassBackgroundView
     public let attachmentButtonIcon: GlassBackgroundView.ContentImageView
+    // Nicegram AI Reply
+    public let aiReplyButtonContainer: UIView
+    public let aiReplyButton: HighlightTrackingButton
+    public let aiReplyButtonBackground: GlassBackgroundView
+    public let aiReplyButtonIcon: GlassBackgroundView.ContentImageView
+    //
     private var commentsButtonIcon: RasterizedCompositionMonochromeLayer?
     private var commentsButtonCenterIcon: UIImageView?
     private var commentsButtonContentsLayer: RasterizedCompositionImageLayer?
@@ -319,6 +327,9 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     private var enableBounceAnimations: Bool = false
     
     public var displayAttachmentMenu: () -> Void = { }
+    // Nicegram AI Reply
+    public var displayAIReplyFlow: () -> Void = { }
+    //
     public var sendMessage: () -> Void = { }
     public var paste: (ChatTextInputPanelPasteData) -> Void = { _ in }
     public var updateHeight: (Bool) -> Void = { _ in }
@@ -642,6 +653,11 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     private let presentationContext: ChatPresentationContext?
     
     private var tooltipController: TooltipScreen?
+
+    // Nicegram AI Reply
+    private var didShowAiReplyTooltip: Bool = false
+    private var pendingAiReplyTooltip: Bool = false
+    //
     
     // Nicegram (sendWithKb)
     public init(context: AccountContext, presentationInterfaceState: ChatPresentationInterfaceState, presentationContext: ChatPresentationContext?, presentController: @escaping (ViewController) -> Void, sendWithKb: Bool = false) {
@@ -726,6 +742,25 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         self.attachmentButtonIcon = GlassBackgroundView.ContentImageView()
         self.attachmentButtonIcon.isUserInteractionEnabled = false
         self.attachmentButtonBackground.contentView.addSubview(self.attachmentButtonIcon)
+
+        // Nicegram AI Reply
+        self.aiReplyButton = HighlightTrackingButton()
+        self.aiReplyButton.accessibilityLabel = "AI Reply"
+        self.aiReplyButton.accessibilityTraits = [.button]
+        self.aiReplyButton.isAccessibilityElement = true
+
+        self.aiReplyButtonContainer = UIView()
+        self.aiReplyButtonContainer.alpha = 0.0
+
+        self.aiReplyButtonBackground = GlassBackgroundView(frame: CGRect())
+        self.aiReplyButtonBackground.contentView.addSubview(self.aiReplyButton)
+
+        self.aiReplyButtonIcon = GlassBackgroundView.ContentImageView()
+        self.aiReplyButtonIcon.isUserInteractionEnabled = false
+        self.aiReplyButtonBackground.contentView.addSubview(self.aiReplyButtonIcon)
+
+        self.aiReplyButtonContainer.addSubview(self.aiReplyButtonBackground)
+        //
         
         self.attachmentButtonDisabledNode = HighlightableButtonNode()
         self.searchLayoutClearButton = HighlightTrackingButton()
@@ -852,6 +887,21 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             }
         }
         self.attachmentButtonDisabledNode.addTarget(self, action: #selector(self.attachmentButtonPressed), forControlEvents: .touchUpInside)
+
+        // Nicegram AI Reply
+        self.aiReplyButton.addTarget(self, action: #selector(self.aiReplyButtonPressed), for: .touchUpInside)
+        self.aiReplyButton.highligthedChanged = { [weak self] highlighted in
+            if let self {
+                if highlighted {
+                    self.aiReplyButtonIcon.layer.removeAnimation(forKey: "opacity")
+                    self.aiReplyButtonIcon.alpha = 0.4
+                } else {
+                    self.aiReplyButtonIcon.alpha = 1.0
+                    self.aiReplyButtonIcon.layer.animateAlpha(from: 0.4, to: 1.0, duration: 0.2)
+                }
+            }
+        }
+        //
         
         // Nicegram QuickReplies
         let gesture = ContextGesture()
@@ -997,6 +1047,9 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         
         self.glassBackgroundContainer.contentView.addSubview(self.menuButton.view)
         self.glassBackgroundContainer.contentView.addSubview(self.attachmentButtonBackground)
+        // Nicegram AI Reply
+        self.glassBackgroundContainer.contentView.addSubview(self.aiReplyButtonContainer)
+        //
         self.glassBackgroundContainer.contentView.addSubview(self.attachmentButtonDisabledNode.view)
         
         self.glassBackgroundContainer.contentView.addSubview(self.startButton.view)
@@ -1620,6 +1673,18 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         self.attachmentButton.accessibilityTraits = (!isSlowmodeActive || isMediaEnabled) ? [.button] : [.button, .notEnabled]
         self.attachmentButtonDisabledNode.isHidden = !isSlowmodeActive || isMediaEnabled
         
+        // Nicegram AI Reply
+        let isAiReplyEnabled = AiReplyHelper.isEnabled()
+        let isReplyingToMessage = interfaceState.interfaceState.replyMessageSubject != nil
+        let isReplyingToIncomingMessage = interfaceState.replyMessage?.flags.contains(.Incoming) ?? false
+        let aiReplyButtonAlpha: CGFloat = (isAiReplyEnabled && isReplyingToMessage && isReplyingToIncomingMessage) ? 1.0 : 0.0
+        self.aiReplyButtonContainer.alpha = aiReplyButtonAlpha
+        self.aiReplyButton.isEnabled = !aiReplyButtonAlpha.isZero
+        if aiReplyButtonAlpha > 0.0 {
+            self.pendingAiReplyTooltip = true
+        }
+        //
+        
         let canBypassRestrictions = canBypassRestrictions(chatPresentationInterfaceState: interfaceState)
         
         var sendingTextDisabled = false
@@ -1906,6 +1971,11 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
                     self.attachmentButtonIcon.image = PresentationResourcesChat.chatInputPanelAttachmentButtonImage(interfaceState.theme)
                     self.attachmentButtonIcon.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
                 }
+                
+                // Nicegram AI Reply
+                self.aiReplyButtonIcon.image = UIImage(bundleImageName: "ai_reply")?.withRenderingMode(.alwaysTemplate)
+                self.aiReplyButtonIcon.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
+                //
                
                 self.sendActionButtons.updateTheme(theme: interfaceState.theme, wallpaper: interfaceState.chatWallpaper)
                 self.mediaActionButtons.updateTheme(theme: interfaceState.theme, wallpaper: interfaceState.chatWallpaper)
@@ -1946,6 +2016,11 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
                         self.attachmentButtonIcon.image = PresentationResourcesChat.chatInputPanelAttachmentButtonImage(interfaceState.theme)
                         self.attachmentButtonIcon.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
                     }
+                    
+                    // Nicegram AI Reply
+                    self.aiReplyButtonIcon.image = UIImage(bundleImageName: "ai_reply")?.withRenderingMode(.alwaysTemplate)
+                    self.aiReplyButtonIcon.tintColor = interfaceState.theme.chat.inputPanel.panelControlColor
+                    //
                 }
             }
 
@@ -3384,6 +3459,25 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             transition.setPosition(view: self.attachmentButtonIcon, position: attachmentButtonIconFrame.center)
             transition.setBounds(view: self.attachmentButtonIcon, bounds: CGRect(origin: CGPoint(), size: attachmentButtonIconFrame.size))
         }
+
+        // Nicegram AI Reply
+        let aiReplyButtonFrame = attachmentButtonFrame.offsetBy(dx: 0.0, dy: -(attachmentButtonFrame.height + 6.0))
+        transition.updateFrame(layer: self.aiReplyButtonContainer.layer, frame: aiReplyButtonFrame)
+
+        let aiReplyLocalFrame = CGRect(origin: .zero, size: aiReplyButtonFrame.size)
+        self.aiReplyButtonBackground.update(size: aiReplyLocalFrame.size, cornerRadius: aiReplyLocalFrame.height * 0.5, isDark: interfaceState.theme.overallDarkAppearance, tintColor: defaultGlassTintColor, isInteractive: true, transition: ComponentTransition(transition))
+        transition.updateFrame(layer: self.aiReplyButtonBackground.layer, frame: aiReplyLocalFrame)
+        transition.updateFrame(layer: self.aiReplyButton.layer, frame: aiReplyLocalFrame)
+
+        if let image = self.aiReplyButtonIcon.image {
+            let aiReplyButtonIconFrame = CGRect(origin: CGPoint(x: floor((aiReplyLocalFrame.width - image.size.width) * 0.5), y: floor((aiReplyLocalFrame.height - image.size.height) * 0.5)), size: image.size)
+            let transition = ComponentTransition(transition)
+            transition.setPosition(view: self.aiReplyButtonIcon, position: aiReplyButtonIconFrame.center)
+            transition.setBounds(view: self.aiReplyButtonIcon, bounds: CGRect(origin: CGPoint(), size: aiReplyButtonIconFrame.size))
+        }
+
+        self.maybeDisplayAiReplyTooltip(interfaceState: interfaceState)
+        //
         
         if let context = self.context, let interfaceState = self.presentationInterfaceState, let editMessageState = interfaceState.editMessageState, let updatedMediaReference = editMessageState.mediaReference {
             let attachmentImageNode: TransformImageNode
@@ -3776,6 +3870,58 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         
         parentController.present(tooltipController, in: .current)
     }
+
+    // Nicegram AI Reply
+    private func maybeDisplayAiReplyTooltip(interfaceState: ChatPresentationInterfaceState) {
+        guard self.pendingAiReplyTooltip, !self.didShowAiReplyTooltip, !AppCache.aiReplyChatTooltipShown else {
+            return
+        }
+        guard let context = self.context, let parentController = self.interfaceInteraction?.chatController() else {
+            return
+        }
+
+        guard self.aiReplyButtonContainer.alpha > 0.0, !self.aiReplyButtonContainer.isHidden else {
+            return
+        }
+        guard self.view.window != nil, parentController.view.window != nil else {
+            return
+        }
+
+        let sourceRect = self.aiReplyButtonBackground.convert(self.aiReplyButtonBackground.bounds, to: parentController.view)
+        guard !sourceRect.isEmpty, sourceRect.width > 1.0, sourceRect.height > 1.0 else {
+            return
+        }
+
+        self.didShowAiReplyTooltip = true
+        self.pendingAiReplyTooltip = false
+        AppCache.aiReplyChatTooltipShown = true
+
+        self.tooltipController?.dismiss()
+
+        let tooltipController = TooltipScreen(
+            account: context.account,
+            sharedContext: context.sharedContext,
+            text: .attributedString(
+                text: NSAttributedString(
+                    string: l("aiReply.hint"),
+                    font: Font.regular(14.0),
+                    textColor: interfaceState.theme.list.blocksBackgroundColor
+                )
+            ),
+            style: .customBlur(interfaceState.theme.list.itemAccentColor, -4.0),
+            arrowStyle: .small,
+            icon: .none,
+            location: .point(sourceRect.insetBy(dx: 0.0, dy: 4.0), .bottom),
+            displayDuration: .infinite,
+            shouldDismissOnTouch: { _, _ in
+                return .dismiss(consume: false)
+            }
+        )
+
+        self.tooltipController = tooltipController
+        parentController.present(tooltipController, in: .current)
+    }
+    //
     
     public func chatInputTextNodeDidUpdateText() {
         if let textInputNode = self.textInputNode, let presentationInterfaceState = self.presentationInterfaceState, let context = self.context {
@@ -5484,6 +5630,12 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             self.displayAttachmentMenu()
         }
     }
+
+    // Nicegram AI Reply
+    @objc func aiReplyButtonPressed() {
+        self.displayAIReplyFlow()
+    }
+    //
     
     @objc func searchLayoutClearButtonPressed() {
         if let interfaceInteraction = self.interfaceInteraction {

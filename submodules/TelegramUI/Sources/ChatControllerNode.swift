@@ -1212,6 +1212,43 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.textInputPanelNode?.displayAttachmentMenu = { [weak self] in
             self?.displayAttachmentMenu()
         }
+        
+        // Nicegram AI Reply
+        self.textInputPanelNode?.displayAIReplyFlow = { [weak self] in
+            guard let self, let interfaceInteraction = self.interfaceInteraction else {
+                return
+            }
+            
+            guard AiReplyHelper.isEnabled() else {
+                return
+            }
+            
+            guard self.chatPresentationInterfaceState.replyMessage?.flags.contains(.Incoming) ?? false else {
+                return
+            }
+            
+            guard let messageId = self.chatPresentationInterfaceState.interfaceState.replyMessageSubject?.subjectModel.messageId else {
+                return
+            }
+            
+            AiReplyHelper(context: self.context).present(
+                messageId: messageId,
+                draftText: self.chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string,
+                onSelectReply: { [weak self] reply in
+                    guard let self else { return }
+                    
+                    interfaceInteraction.updateTextInputStateAndMode { _, inputMode in
+                        var inputMode = inputMode
+                        if inputMode == .none {
+                            inputMode = .text
+                        }
+                        return (ChatTextInputState(inputText: NSAttributedString(string: reply)), inputMode)
+                    }
+                }
+            )
+        }
+        //
+        
         self.textInputPanelNode?.updateActivity = { [weak self] in
             self?.updateTypingActivity(true)
         }

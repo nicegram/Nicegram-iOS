@@ -256,3 +256,7 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "Получите структурированный обзор открытой информации из интернета — профили, анкетные данные, социальная активность и не только!";
 "whitebridge.chats.quick.action" = "Посмотреть отчет WhiteBridge";
+
+/*AI Reply*/
+"aiReply.contextMenu.title" = "Создать черновик ответа";
+"aiReply.hint" = "Создайте черновик ответа за секунды ✨\nПревращайте мысли в готовые сообщения с быстрой помощью продвинутого ИИ.";
