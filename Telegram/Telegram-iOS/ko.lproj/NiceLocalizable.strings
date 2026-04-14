@@ -258,7 +258,3 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "온라인에서 찾은 공개 정보를 구조적으로 확인하세요 — 프로필, 배경, 소셜 활동 등!";
 "whitebridge.chats.quick.action" = "WhiteBridge 보고서 보기";
-
-/*AI Reply*/
-"aiReply.contextMenu.title" = "답장 초안 작성";
-"aiReply.hint" = "몇 초 만에 답장 초안 작성 ✨\n고급 AI의 즉각적인 도움으로 생각을 다듬어 바로 보낼 수 있는 메시지로 바꿔 보세요.";

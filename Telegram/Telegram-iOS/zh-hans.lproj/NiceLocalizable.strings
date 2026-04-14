@@ -256,7 +256,3 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "获取结构化概览：来自网络的公开信息——个人资料、背景、社交动态等一应俱全！";
 "whitebridge.chats.quick.action" = "查看 WhiteBridge 报告";
-
-/*AI Reply*/
-"aiReply.contextMenu.title" = "起草回复";
-"aiReply.hint" = "几秒内起草回复 ✨\n借助先进 AI 的即时帮助，把你的想法变成精炼、随时可发送的消息。";

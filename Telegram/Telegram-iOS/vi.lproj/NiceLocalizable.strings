@@ -256,7 +256,3 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "Nhận tổng quan có cấu trúc về thông tin công khai được tìm thấy trực tuyến — hồ sơ, lý lịch, hoạt động xã hội và hơn thế nữa!";
 "whitebridge.chats.quick.action" = "Xem Báo Cáo WhiteBridge";
-
-/*AI Reply*/
-"aiReply.contextMenu.title" = "Soạn câu trả lời";
-"aiReply.hint" = "Soạn câu trả lời trong vài giây ✨\nBiến suy nghĩ của bạn thành tin nhắn trau chuốt, sẵn sàng gửi đi với sự hỗ trợ tức thì từ AI tiên tiến.";
