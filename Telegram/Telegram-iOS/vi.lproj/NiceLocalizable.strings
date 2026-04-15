@@ -260,3 +260,7 @@
 /*AI Reply*/
 "aiReply.contextMenu.title" = "Soạn câu trả lời";
 "aiReply.hint" = "Soạn câu trả lời trong vài giây ✨\nBiến suy nghĩ của bạn thành tin nhắn trau chuốt, sẵn sàng gửi đi với sự hỗ trợ tức thì từ AI tiên tiến.";
+
+/*Voice Typing*/
+"voiceTyping.hint.title" = "Nói thay vì gõ";
+"voiceTyping.hint.subtitle" = "Lời bạn nói sẽ lập tức chuyển thành văn bản ngay khi bạn cất tiếng, giúp bạn tập trung vào ý tưởng.";

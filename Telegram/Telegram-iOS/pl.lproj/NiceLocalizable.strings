@@ -260,3 +260,7 @@
 /*AI Reply*/
 "aiReply.contextMenu.title" = "Szkicuj odpowiedź";
 "aiReply.hint" = "Szkicuj odpowiedź w kilka sekund ✨\nZamień myśli w dopracowane, gotowe do wysłania wiadomości dzięki natychmiastowej pomocy zaawansowanej AI.";
+
+/*Voice Typing*/
+"voiceTyping.hint.title" = "Mów zamiast pisać";
+"voiceTyping.hint.subtitle" = "Twoje słowa zamieniają się w tekst w chwili, gdy mówisz — dzięki temu skupiasz się na swoich pomysłach.";

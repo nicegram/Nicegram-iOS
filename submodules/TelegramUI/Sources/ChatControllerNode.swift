@@ -314,6 +314,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         nicegramOverlayView
     }
     
+    @available(iOS 15.0, *)
+    private var voiceTypingHostingController: UIViewController?
+    
     private var cancellables = Set<AnyCancellable>()
     //
     
@@ -1247,6 +1250,24 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             )
         }
+        
+        self.textInputPanelNode?.displayVoiceTypingFlow = { [weak self] in
+            guard let self else {
+                return
+            }
+            
+            guard VoiceTypingHelper.isEnabled() else {
+                return
+            }
+            
+            VoiceTypingHelper(context: self.context).present(
+                onReadyToRecord: { [weak self] in
+                    guard let self else { return }
+                    guard #available(iOS 15.0, *) else { return }
+                    self.showVoiceTypingOverlay()
+                }
+            )
+        }
         //
         
         self.textInputPanelNode?.updateActivity = { [weak self] in
@@ -1294,9 +1315,59 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inputMediaNodeDataDisposable?.dispose()
         self.inlineSearchResultsReadyDisposable?.dispose()
         self.loadMoreSearchResultsDisposable?.dispose()
+        
+        if #available(iOS 15.0, *) {
+            self.hideVoiceTypingOverlay()
+        }
     }
 
     // Nicegram
+    @available(iOS 15.0, *)
+    private func showVoiceTypingOverlay() {
+        guard voiceTypingHostingController == nil else {
+            return
+        }
+        
+        let hostingController = VoiceTypingOverlayHostingControllerFactory.make(
+            eventsHandler: { [weak self] event in
+                guard let self else { return }
+                
+                switch event {
+                case .onCancel:
+                    self.hideVoiceTypingOverlay()
+                case .onRecordingFinished:
+                    break
+                case .onRecognizingFinished(let text):
+                    self.hideVoiceTypingOverlay()
+                    guard let interfaceInteraction = self.interfaceInteraction else {
+                        return
+                    }
+                    interfaceInteraction.updateTextInputStateAndMode { _, inputMode in
+                        var inputMode = inputMode
+                        if inputMode == .none {
+                            inputMode = .text
+                        }
+                        return (ChatTextInputState(inputText: NSAttributedString(string: text)), inputMode)
+                    }
+                }
+            }
+        )
+        
+        voiceTypingHostingController = hostingController
+        self.textInputPanelNode?.setVoiceTypingOverlayView(hostingController.view)
+    }
+    
+    @available(iOS 15.0, *)
+    private func hideVoiceTypingOverlay() {
+        guard let hostingController = voiceTypingHostingController else {
+            return
+        }
+        
+        voiceTypingHostingController = nil
+        self.textInputPanelNode?.setVoiceTypingOverlayView(nil)
+        hostingController.view.removeFromSuperview()
+    }
+    
     @available(iOS 15.0, *)
     @objc private func openNicegramWallet() {
         Task {

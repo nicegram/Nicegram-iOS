@@ -260,3 +260,7 @@
 /*AI Reply*/
 "aiReply.contextMenu.title" = "起草回复";
 "aiReply.hint" = "几秒内起草回复 ✨\n借助先进 AI 的即时帮助，把你的想法变成精炼、随时可发送的消息。";
+
+/*Voice Typing*/
+"voiceTyping.hint.title" = "说话代替打字";
+"voiceTyping.hint.subtitle" = "你一开口，语音就会立刻变成文字，让你专注于自己的想法。";

@@ -261,3 +261,7 @@
 /*AI Reply*/
 "aiReply.contextMenu.title" = "Yanıt Taslağı Oluşturun";
 "aiReply.hint" = "Saniyeler içinde yanıtınızı taslaklayın ✨\nGelişmiş yapay zekânın anlık yardımıyla düşüncelerinizi özenle hazırlanmış, göndermeye hazır mesajlara dönüştürün.";
+
+/*Voice Typing*/
+"voiceTyping.hint.title" = "Yazmak yerine konuşun";
+"voiceTyping.hint.subtitle" = "Konuştuğunuz anda sözleriniz metne dönüşür, böylece fikirlerinize odaklanabilirsiniz.";

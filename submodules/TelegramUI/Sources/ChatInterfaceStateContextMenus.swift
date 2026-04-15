@@ -2226,7 +2226,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
             }
             
             // Nicegram AI Reply
-            if messages.count == 1, message.effectivelyIncoming(context.account.peerId), !message.text.isEmpty {
+            if canSendMessagesToChat(chatPresentationInterfaceState),
+               messages.count == 1,
+               message.effectivelyIncoming(context.account.peerId),
+               !message.text.isEmpty {
                 actions.append(.action(ContextMenuActionItem(text: l("aiReply.contextMenu.title"), icon: { theme in
                     return generateTintedImage(image: UIImage(bundleImageName: "ai_reply")?.withRenderingMode(.alwaysTemplate), color: theme.actionSheet.primaryTextColor)
                 }, action: { _, f in

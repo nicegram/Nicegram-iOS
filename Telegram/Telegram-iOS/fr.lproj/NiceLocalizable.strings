@@ -260,3 +260,7 @@
 /*AI Reply*/
 "aiReply.contextMenu.title" = "Rédiger une réponse";
 "aiReply.hint" = "Rédigez votre réponse en quelques secondes ✨\nTransformez vos idées en messages soignés, prêts à envoyer, grâce à l’aide instantanée d’une IA avancée.";
+
+/*Voice Typing*/
+"voiceTyping.hint.title" = "Parlez au lieu de taper";
+"voiceTyping.hint.subtitle" = "Vos paroles se transforment en texte dès que vous parlez, pour rester concentré sur vos idées.";
