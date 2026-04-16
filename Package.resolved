@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/voice-typing",
-        "revision" : "5fcf7cb6af0467aec3c451c33dfdf12ff1eaf311"
+        "revision" : "1c2d5fff913dee5a0b5bd4df4b6c675312b15bf7"
       }
     },
     {

@@ -282,12 +282,14 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     public let attachmentButton: HighlightTrackingButton
     public let attachmentButtonBackground: GlassBackgroundView
     public let attachmentButtonIcon: GlassBackgroundView.ContentImageView
+    
     // Nicegram AI Reply
     public let aiReplyButtonContainer: UIView
     public let aiReplyButton: HighlightTrackingButton
     public let aiReplyButtonBackground: GlassBackgroundView
     public let aiReplyButtonIcon: GlassBackgroundView.ContentImageView
     //
+    
     // Nicegram Voice Typing
     private var voiceTypingOverlayView: UIView?
     //
@@ -321,6 +323,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     private var mediaPreviewPanelNode: ChatRecordingPreviewInputPanelNodeImpl?
     
     private var accessoryItemButtons: [(ChatTextInputAccessoryItem, AccessoryItemIconButton)] = []
+    
     // Nicegram Voice Typing
     private var voiceTypingActionButton: HighlightableButtonNode?
     //
@@ -333,11 +336,15 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     private var enableBounceAnimations: Bool = false
     
     public var displayAttachmentMenu: () -> Void = { }
+    
     // Nicegram AI Reply
     public var displayAIReplyFlow: () -> Void = { }
+    //
+    
     // Nicegram Voice Typing
     public var displayVoiceTypingFlow: () -> Void = { }
     //
+    
     public var sendMessage: () -> Void = { }
     public var paste: (ChatTextInputPanelPasteData) -> Void = { _ in }
     public var updateHeight: (Bool) -> Void = { _ in }
@@ -3971,7 +3978,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         
         parentController.present(tooltipController, in: .current)
     }
-
+    
     // Nicegram AI Reply
     private func maybeDisplayAiReplyTooltip(interfaceState: ChatPresentationInterfaceState) {
         guard self.pendingAiReplyTooltip, !self.didShowAiReplyTooltip, !AppCache.aiReplyChatTooltipShown else {
@@ -3980,36 +3987,36 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         guard let context = self.context, let parentController = self.interfaceInteraction?.chatController() else {
             return
         }
-
+        
         guard self.aiReplyButtonContainer.alpha > 0.0, !self.aiReplyButtonContainer.isHidden else {
             return
         }
         guard self.view.window != nil, parentController.view.window != nil else {
             return
         }
-
-        let sourceRect = self.aiReplyButtonBackground.convert(self.aiReplyButtonBackground.bounds, to: parentController.view)
+        
+        let sourceRect = self.aiReplyButton.convert(self.aiReplyButton.bounds, to: parentController.view)
         guard !sourceRect.isEmpty, sourceRect.width > 1.0, sourceRect.height > 1.0 else {
             return
         }
-
+        
         self.didShowAiReplyTooltip = true
         self.pendingAiReplyTooltip = false
         AppCache.aiReplyChatTooltipShown = true
-
+        
         self.tooltipController?.dismiss()
-
+        
         let tooltipController = TooltipScreen(
             account: context.account,
             sharedContext: context.sharedContext,
             text: .attributedString(
                 text: NSAttributedString(
                     string: l("aiReply.hint"),
-                    font: Font.regular(14.0),
-                    textColor: interfaceState.theme.list.blocksBackgroundColor
+                    font: Font.medium(13.0),
+                    textColor: UIColor.white
                 )
             ),
-            style: .customBlur(interfaceState.theme.list.itemAccentColor, -4.0),
+            style: .customBlur(UIColor("#353027"), -4.0),
             arrowStyle: .small,
             icon: .none,
             location: .point(sourceRect.insetBy(dx: 0.0, dy: 4.0), .bottom),
@@ -4018,7 +4025,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
                 return .dismiss(consume: false)
             }
         )
-
+        
         self.tooltipController = tooltipController
         parentController.present(tooltipController, in: .current)
     }
@@ -4026,7 +4033,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     
     // Nicegram Voice Typing
     private func maybeDisplayVoiceTypingTooltip(interfaceState: ChatPresentationInterfaceState) {
-        guard self.pendingVoiceTypingTooltip, !self.didShowVoiceTypingTooltip, !AppCache.voiceTypingChatTooltipShown else {
+        guard self.pendingVoiceTypingTooltip, !self.didShowVoiceTypingTooltip else {
             return
         }
         guard let context = self.context, let parentController = self.interfaceInteraction?.chatController() else {
@@ -4071,7 +4078,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             text: .attributedString(
                 text: attributedText
             ),
-            style: .customBlur(interfaceState.theme.list.itemAccentColor, -4.0),
+            style: .customBlur(UIColor(hex: "#353027"), -4.0),
             arrowStyle: .small,
             icon: .none,
             location: .point(sourceRect.insetBy(dx: 0.0, dy: 4.0), .bottom),
