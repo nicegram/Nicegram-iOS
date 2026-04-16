@@ -439,6 +439,7 @@ public func galleryItemForEntry(
                         context: context,
                         presentationData: presentationData,
                         message: message,
+                        mediaSubject: entry.mediaSubject,
                         location: location,
                         translateToLanguage: translateToLanguage,
                         peerIsCopyProtected: peerIsCopyProtected,
@@ -670,8 +671,16 @@ private func galleryEntriesForMessageHistoryEntries(_ entries: [MessageHistoryEn
                 case .pollOption:
                     if let poll = entry.message.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll {
                         for option in poll.options {
-                            if let _ = option.media {
-                                results.append(GalleryEntry(entry: entry, mediaSubject: .pollOption(option.opaqueIdentifier)))
+                            if let optionMedia = option.media {
+                                var isGalleryMedia = false
+                                if optionMedia is TelegramMediaImage {
+                                    isGalleryMedia = true
+                                } else if let file = optionMedia as? TelegramMediaFile, file.isVideo || file.mimeType.hasPrefix("image/") {
+                                    isGalleryMedia = true
+                                }
+                                if isGalleryMedia {
+                                    results.append(GalleryEntry(entry: entry, mediaSubject: .pollOption(option.opaqueIdentifier)))
+                                }
                             }
                         }
                     }
@@ -687,7 +696,7 @@ private func galleryEntriesForMessageHistoryEntries(_ entries: [MessageHistoryEn
 }
 
 public class GalleryController: ViewController, StandalonePresentableController, KeyShortcutResponder, GalleryControllerProtocol {
-    public static let darkNavigationTheme = NavigationBarTheme(overallDarkAppearance: true, buttonColor: .white, disabledButtonColor: UIColor(rgb: 0x525252), primaryTextColor: .white, backgroundColor: UIColor(white: 0.0, alpha: 0.6), enableBackgroundBlur: false, separatorColor: UIColor(white: 0.0, alpha: 0.8), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear, edgeEffectColor: .clear, style: .glass)
+    public static let darkNavigationTheme = NavigationBarTheme(overallDarkAppearance: true, buttonColor: .white, disabledButtonColor: UIColor(rgb: 0x525252), primaryTextColor: .white, backgroundColor: UIColor(white: 0.0, alpha: 0.6), enableBackgroundBlur: false, separatorColor: UIColor(white: 0.0, alpha: 0.8), badgeBackgroundColor: .clear, badgeStrokeColor: .clear, badgeTextColor: .clear, edgeEffectColor: .clear, accentButtonColor: .white, accentForegroundColor: .black, style: .glass)
     
     private var galleryNode: GalleryControllerNode {
         return self.displayNode as! GalleryControllerNode
@@ -924,8 +933,9 @@ public class GalleryController: ViewController, StandalonePresentableController,
         if case .custom = source {
             displayInfoOnTop = true
         }
-        
+
         let syncResult = Atomic<(Bool, (() -> Void)?)>(value: (false, nil))
+        var isFirstTime = true
         self.disposable.set(combineLatest(
             messageView,
             self.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration]) |> take(1),
@@ -1012,14 +1022,22 @@ public class GalleryController: ViewController, StandalonePresentableController,
                                     storeMediaPlaybackState: strongSelf.actionInteraction?.storeMediaPlaybackState ?? { _, _, _ in },
                                     generateStoreAfterDownload: strongSelf.generateStoreAfterDownload,
                                     sendSticker: strongSelf.actionInteraction?.sendSticker,
-                                    present: { [weak self] c, a in
-                                        if let strongSelf = self {
+                                    present: { [weak strongSelf] c, a in
+                                        if let strongSelf {
                                             strongSelf.presentInGlobalOverlay(c, with: a)
                                         }
                                     }
                                 ) {
                                     if isCentral {
                                         centralItemIndex = items.count
+                                        
+                                        if isFirstTime {
+                                            isFirstTime = false
+                                            if item is UniversalVideoGalleryItem {
+                                            } else {
+                                                strongSelf.galleryNode.areControlsHidden = false
+                                            }
+                                        }
                                     }
                                     items.append(item)
                                 }

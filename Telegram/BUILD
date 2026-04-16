@@ -284,10 +284,10 @@ filegroup(
 )
 
 filegroup(
-    name = "DefaultAppIcon",
+    name = "AppStoreIcons",
     srcs = glob([
-        "Telegram-iOS/DefaultAppIcon.xcassets/**/*",
-    ], exclude = ["Telegram-iOS/DefaultAppIcon.xcassets/**/.*"]),
+        "Telegram-iOS/AppIcons/AppStoreIcons.xcassets/**/*",
+    ], exclude = ["Telegram-iOS/AppIcons/AppStoreIcons.xcassets/**/.*"]),
 )
 
 # Nicegram
@@ -306,9 +306,8 @@ filegroup(
     ], allow_empty=True),
 )
 
-# Nicegram AltIcons
-# removed BlackClassicIcon, BlueClassicIcon 
-alternate_icon_folders = [
+# Nicegram InAppIcons (user-switchable alternate icons)
+in_app_icons = [
     "BlackIcon",
     "BlackFilledIcon",
     "BlueIcon",
@@ -327,16 +326,16 @@ alternate_icon_folders = [
     "PremiumBlack",
     "PremiumTurbo",
     "NewBlack",
-    "NewWhite"
+    "NewWhite",
 ]
 
 [
     filegroup(
         name = "{}".format(name),
         srcs = glob([
-            "Telegram-iOS/{}.alticon/*.png".format(name),
+            "Telegram-iOS/AppIcons/InAppIcons/{}.alticon/*.png".format(name),
         ]),
-    ) for name in alternate_icon_folders
+    ) for name in in_app_icons
 ]
 
 filegroup(
@@ -523,7 +522,7 @@ icloud_fragment = "" if not telegram_enable_icloud else """
     <string>iCloud.{telegram_bundle_id}</string>
 </array>
 <key>com.apple.developer.ubiquity-kvstore-identifier</key>
-<string>{telegram_team_id}.*</string>
+<string>{telegram_team_id}.{telegram_bundle_id}</string>
 <key>com.apple.developer.icloud-container-environment</key>
 <string>{telegram_icloud_environment}</string>
 """.format(
@@ -910,33 +909,6 @@ genrule(
     visibility = [
         "//visibility:public",
     ]
-)
-
-genrule(
-    name = "GenerateAddAlternateIcons",
-    srcs = [
-        "Telegram-iOS/AddAlternateIcons.sh",
-    ],
-    cmd_bash =
-"""
-    cat $(location Telegram-iOS/AddAlternateIcons.sh) >> $(location AddAlternateIcons.sh)
-""",
-    outs = [
-        "AddAlternateIcons.sh",
-    ],
-    executable = True,
-    visibility = [
-        "//visibility:public",
-    ]
-)
-
-sh_binary(
-    name = "AddAlternateIcons",
-    data = [
-        "Telegram-iOS/AlternateIcons.plist",
-        "Telegram-iOS/AlternateIcons-iPad.plist",
-    ],
-    srcs = [":GenerateAddAlternateIcons"],
 )
 
 plist_fragment(
@@ -2137,12 +2109,13 @@ ios_application(
         ":RequiredDeviceCapabilitiesPlist",
         ":UrlTypesInfoPlist",
     ],
+    app_icons = [":AppStoreIcons"],
+    primary_app_icon = "PrimaryIcon",
     alternate_icons = [
-        ":{}".format(name) for name in alternate_icon_folders
+        ":{}".format(name) for name in in_app_icons
     ],
     resources = [
         ":LaunchScreen",
-        ":DefaultAppIcon",
     ],
     frameworks = [
         ":MtProtoKitFramework",

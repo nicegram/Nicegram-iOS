@@ -170,7 +170,8 @@ private final class SearchContext {
             scope: .everywhere,
             tags: nil,
             minDate: minDate,
-            maxDate: nil
+            maxDate: nil,
+            folderId: nil
         )
 
         let context = self.context

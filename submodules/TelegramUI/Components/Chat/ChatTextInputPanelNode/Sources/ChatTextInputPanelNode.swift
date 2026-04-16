@@ -292,7 +292,9 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     
     // Nicegram Voice Typing
     private var voiceTypingOverlayView: UIView?
+    private let voiceTypingActionButtonWidth: CGFloat = 34.0
     //
+    
     private var commentsButtonIcon: RasterizedCompositionMonochromeLayer?
     private var commentsButtonCenterIcon: UIImageView?
     private var commentsButtonContentsLayer: RasterizedCompositionImageLayer?
@@ -1207,7 +1209,11 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         
         var accessoryButtonsWidth: CGFloat = 0.0
         var firstButton = true
-        for (_, button) in self.accessoryItemButtons {
+        
+        // Nicegram Voice Typing
+        var hasInputAccessoryButton = false
+        //
+        for (item, button) in self.accessoryItemButtons {
             if firstButton {
                 firstButton = false
                 accessoryButtonsWidth += self.accessoryButtonInset
@@ -1215,7 +1221,20 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
                 accessoryButtonsWidth += self.accessoryButtonSpacing
             }
             accessoryButtonsWidth += button.buttonWidth
+            switch item {
+            case .input:
+                // Nicegram Voice Typing
+                hasInputAccessoryButton = true
+                //
+            default:
+                break
+            }
         }
+        // Nicegram Voice Typing
+        if VoiceTypingHelper.isEnabled() && hasInputAccessoryButton {
+            accessoryButtonsWidth += voiceTypingActionButtonWidth
+        }
+        //
         
         if let presentationInterfaceState = self.presentationInterfaceState {
             refreshChatTextInputTypingAttributes(textInputNode.textView, theme: presentationInterfaceState.theme, baseFontSize: baseFontSize)
@@ -1325,6 +1344,9 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         
         var accessoryButtonsWidth: CGFloat = 0.0
         var firstButton = true
+        // Nicegram Voice Typing
+        var hasInputAccessoryButton = false
+        //
         for (item, button) in self.accessoryItemButtons {
             if firstButton {
                 firstButton = false
@@ -1335,6 +1357,9 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             accessoryButtonsWidth += button.buttonWidth
             switch item {
             case .input:
+                // Nicegram Voice Typing
+                hasInputAccessoryButton = true
+                //
                 accessoryButtonsWidth -= 2.0
             default:
                 break
@@ -1349,6 +1374,12 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             }
             accessoryButtonsWidth += 32.0
         }
+        
+        // Nicegram Voice Typing
+        if VoiceTypingHelper.isEnabled() && hasInputAccessoryButton {
+            accessoryButtonsWidth += voiceTypingActionButtonWidth
+        }
+        //
         
         var textFieldMinHeight: CGFloat = 35.0
         var textInputViewRealInsets = UIEdgeInsets()
@@ -1687,7 +1718,8 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         } else {
             attachmentButtonAlpha = 0.0
         }
-
+        
+        // Nicegram Voice Typing
         let voiceTypingStackAlpha: CGFloat = self.voiceTypingOverlayView == nil ? 1.0 : 0.0
         let isVoiceTypingOverlayHidden = voiceTypingStackAlpha.isZero
         
@@ -1704,6 +1736,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         self.attachmentButton.accessibilityTraits = (!isSlowmodeActive || isMediaEnabled) ? [.button] : [.button, .notEnabled]
         self.attachmentButtonDisabledNode.isHidden = (!isSlowmodeActive || isMediaEnabled) || isVoiceTypingOverlayHidden
         transition.updateAlpha(node: self.attachmentButtonDisabledNode, alpha: voiceTypingStackAlpha)
+        //
         
         // Nicegram AI Reply
         let isAiReplyEnabled = AiReplyHelper.isEnabled()
@@ -2947,8 +2980,6 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             }
         }
         
-        
-        
         if let textInputNode = self.textInputNode {
             transition.updateAlpha(node: textInputNode, alpha: audioRecordingItemsAlpha)
         }
@@ -3255,11 +3286,13 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
             nextButtonTopRight.x -= accessoryButtonSpacing
             switch item.key {
             case .input:
+                // Nicegram Voice Typing
                 if case let .input(_, inputMode) = item, case .emoji = inputMode {
                     emojiPickerButtonFrame = buttonFrame
                 } else if case let .input(_, inputMode) = item, case .stickers = inputMode {
                     emojiPickerButtonFrame = buttonFrame
                 }
+                //
                 nextButtonTopRight.x += 2.0
             default:
                 break
@@ -3285,7 +3318,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
                 voiceTypingActionButton.setImage(UIImage(bundleImageName: "voice-typing-icon"), for: [])
             }
             
-            let voiceButtonSize = CGSize(width: 34.0, height: minimalInputHeight)
+            let voiceButtonSize = CGSize(width: voiceTypingActionButtonWidth, height: minimalInputHeight)
             let voiceButtonSpacing: CGFloat = 0.0
             let voiceButtonFrame = CGRect(
                 origin: CGPoint(
@@ -4033,7 +4066,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     
     // Nicegram Voice Typing
     private func maybeDisplayVoiceTypingTooltip(interfaceState: ChatPresentationInterfaceState) {
-        guard self.pendingVoiceTypingTooltip, !self.didShowVoiceTypingTooltip else {
+        guard self.pendingVoiceTypingTooltip, !self.didShowVoiceTypingTooltip, !AppCache.voiceTypingChatTooltipShown else {
             return
         }
         guard let context = self.context, let parentController = self.interfaceInteraction?.chatController() else {
@@ -5814,7 +5847,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
     public func performVoiceTypingAction() {
         self.displayVoiceTypingFlow()
     }
-    //
+    
     public func setVoiceTypingOverlayView(_ view: UIView?) {
         let previousOverlayView = self.voiceTypingOverlayView
         let overlayFadeTransition: ContainedViewLayoutTransition = .animated(duration: 0.2, curve: .easeInOut)
@@ -5841,7 +5874,7 @@ public class ChatTextInputPanelNode: ChatInputPanelNode, ASEditableTextNodeDeleg
         self.menuButton.isHidden = !stackVisible
         self.mediaActionButtons.isHidden = !stackVisible
         self.sendActionButtons.isHidden = !stackVisible
-
+        
         self.attachmentButton.isUserInteractionEnabled = stackVisible
         self.sendActionButtons.view.isUserInteractionEnabled = stackVisible
         self.mediaActionButtons.view.isUserInteractionEnabled = stackVisible

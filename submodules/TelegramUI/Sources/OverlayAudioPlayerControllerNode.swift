@@ -17,6 +17,7 @@ import UndoUI
 import ChatHistoryEntry
 import MultilineTextComponent
 import GlassControls
+import PhotoResources
 
 final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestureRecognizerDelegate {
     let ready = Promise<Bool>()
@@ -60,6 +61,10 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
     private var historyNode: ChatHistoryListNodeImpl
     private var replacementHistoryNode: ChatHistoryListNodeImpl?
     private var replacementHistoryNodeFloatingOffset: CGFloat?
+    
+    private var currentAlbumArt: (FileMediaReference, SharedMediaPlaybackAlbumArt)?
+    private let albumArtBackground: UIVisualEffectView
+    private let albumArtNode = TransformImageNode()
     
     private var saveMediaDisposable: MetaDisposable?
     
@@ -293,7 +298,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         
         self.historyFrameTopMaskNode = ASImageNode()
         self.historyFrameTopMaskNode.displaysAsynchronously = false
-        self.historyFrameTopMaskNode.image = PresentationResourcesItemList.cornersImage(self.presentationData.theme.withModalBlocksBackground(), top: true, bottom: false, glass: true)
+        self.historyFrameTopMaskNode.image = generateCornersImage(theme: self.presentationData.theme)
         self.historyFrameTopMaskNode.isUserInteractionEnabled = false
         
         let tagMask: MessageTags
@@ -305,12 +310,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
             case .file:
                 tagMask = .file
         }
-        
-        var isMusicPlaylist = true
-        if let playlistLocation = self.playlistLocation as? PeerMessagesPlaylistLocation, case .savedMusic = playlistLocation {
-            isMusicPlaylist = false
-        }
-        
+                
         let chatLocationContextHolder = Atomic<ChatLocationContextHolder?>(value: nil)
         self.historyNode = ChatHistoryListNodeImpl(
             context: context,
@@ -324,7 +324,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
             subject: .message(id: .id(initialMessageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil, setupReply: false),
             controllerInteraction: self.controllerInteraction,
             selectedMessages: .single(nil),
-            mode: .list(reversed: self.currentIsReversed, reverseGroups: !self.currentIsReversed, displayHeaders: .none, hintLinks: false, isGlobalSearch: self.isGlobalSearch, isMusicPlaylist: isMusicPlaylist),
+            mode: .list(reversed: self.currentIsReversed, reverseGroups: !self.currentIsReversed, displayHeaders: .none, hintLinks: false, isGlobalSearch: self.isGlobalSearch, isMusicPlaylist: true),
             isChatPreview: false,
             messageTransitionNode: { return nil
             }
@@ -334,6 +334,10 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         self.collapseNode = HighlightableButtonNode()
         self.collapseNode.displaysAsynchronously = false
         self.collapseNode.setImage(generateCollapseIcon(theme: self.presentationData.theme), for: [])
+        
+        self.albumArtBackground = UIVisualEffectView()
+        self.albumArtBackground.contentView.addSubview(self.albumArtNode.view)
+        self.albumArtNode.isUserInteractionEnabled = false
         
         super.init()
         
@@ -374,6 +378,19 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
             if let strongSelf = self, let validLayout = strongSelf.validLayout {
                 strongSelf.containerLayoutUpdated(validLayout, transition: .animated(duration: 0.5, curve: .spring))
             }
+        }
+        
+        self.controlsNode.requestAlbumArtDisplay = { [weak self] fileReferenceAndAlbumArt in
+            guard let self, let layout = self.validLayout else {
+                return
+            }
+            self.currentAlbumArt = fileReferenceAndAlbumArt
+            
+            if let (fileReference, albumArt) = fileReferenceAndAlbumArt {
+                self.albumArtNode.setSignal(playerAlbumArt(postbox: self.context.account.postbox, engine: self.context.engine, fileReference: fileReference, albumArt: albumArt, thumbnail: false))
+            }
+            
+            self.containerLayoutUpdated(layout, transition: .animated(duration: 0.25, curve: .easeInOut))
         }
         
         self.controlsNode.requestCollapse = { [weak self] in
@@ -542,6 +559,8 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         )
         
         self.setupReordering()
+        
+        self.albumArtBackground.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.albumArtTapped(_:))))
     }
     
     deinit {
@@ -564,10 +583,11 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
             guard let self else {
                 return false
             }
+            if self.historyFrameTopOverlayNode.bounds.contains(self.view.convert(point, to: self.historyFrameTopOverlayNode.view)) {
+                return true
+            }
             if self.controlsNode.bounds.contains(self.view.convert(point, to: self.controlsNode.view)) {
-                if self.controlsNode.frame.maxY <= self.historyNode.frame.minY {
-                    return true
-                }
+                return true
             }
             return false
         }
@@ -633,7 +653,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         self.historyFrameLeftOverlayNode.backgroundColor = self.hasAnyHistoryMessages == true ? self.presentationData.theme.list.modalBlocksBackgroundColor : self.presentationData.theme.list.modalPlainBackgroundColor
         self.historyFrameRightOverlayNode.backgroundColor = self.hasAnyHistoryMessages == true ? self.presentationData.theme.list.modalBlocksBackgroundColor : self.presentationData.theme.list.modalPlainBackgroundColor
         self.historyFrameTopOverlayNode.backgroundColor = self.hasAnyHistoryMessages == true ? self.presentationData.theme.list.modalBlocksBackgroundColor : self.presentationData.theme.list.modalPlainBackgroundColor
-        self.historyFrameTopMaskNode.image = PresentationResourcesItemList.cornersImage(self.presentationData.theme.withModalBlocksBackground(), top: true, bottom: false, glass: true)
+        self.historyFrameTopMaskNode.image = generateCornersImage(theme: self.presentationData.theme)
         
         self.collapseNode.setImage(generateCollapseIcon(theme: self.presentationData.theme), for: [])
         
@@ -841,7 +861,8 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         let controlsHeight = self.controlsNode.updateLayout(width: layout.size.width, leftInset: 0.0, rightInset: 0.0, bottomInset: layout.intrinsicInsets.bottom, maxHeight: layout.size.height, savedMusic: self.isSaved, transition: transition)
         
         let controlsFrame = CGRect(origin: CGPoint(x: 0.0, y: layout.size.height - controlsHeight), size: CGSize(width: layout.size.width, height: controlsHeight))
-        transition.updateFrame(node: self.controlsNode, frame: controlsFrame)
+        let controlsTransition = self.controlsNode.frame.width > 0.0 ? transition : .immediate
+        controlsTransition.updateFrame(node: self.controlsNode, frame: controlsFrame)
         
         let layoutTopInset: CGFloat = max(layout.statusBarHeight ?? 0.0, layout.safeInsets.top)
         var insets = UIEdgeInsets()
@@ -962,6 +983,49 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         
         self.updateHistoryContentOffset(self.historyNode.visibleContentOffset(), transition: transition)
         
+        self.albumArtBackground.frame = CGRect(origin: .zero, size: layout.size)
+        
+        if let _ = self.currentAlbumArt {
+            var animateIn = false
+            if self.albumArtBackground.superview == nil {
+                self.view.addSubview(self.albumArtBackground)
+                animateIn = true
+            }
+            let albumArtSide = min(360.0, layout.size.width - 32.0)
+            let albumArtSize = CGSize(width: albumArtSide, height: albumArtSide)
+            self.albumArtNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((layout.size.width - albumArtSize.width) / 2.0), y: floorToScreenPixels((layout.size.height - albumArtSize.height) / 2.0)), size: albumArtSize)
+            
+            let makeLargeAlbumArtLayout = self.albumArtNode.asyncLayout()
+            let applyLargeAlbumArt = makeLargeAlbumArtLayout(TransformImageArguments(corners: ImageCorners(radius: 4.0), imageSize: albumArtSize, boundingSize: albumArtSize, intrinsicInsets: UIEdgeInsets()))
+            applyLargeAlbumArt()
+            
+            if animateIn {
+                self.controlsNode.albumArtNode.alpha = 0.0
+                
+                let sourceFrame = self.controlsNode.albumArtNode.view.convert(self.controlsNode.albumArtNode.bounds, to: self.albumArtBackground.contentView)
+                ContainedViewLayoutTransition.animated(duration: 0.4, curve: .spring).animateFrame(node: self.albumArtNode, from: sourceFrame)
+                UIView.animate(withDuration: 0.2, animations: {
+                    self.albumArtBackground.effect = UIBlurEffect(style: self.presentationData.theme.overallDarkAppearance ? .dark : .light)
+                })
+            }
+        } else {
+            self.controlsNode.albumArtNode.alpha = 1.0
+            
+            if self.albumArtBackground.superview != nil {
+                let fadeTransition = ComponentTransition(transition)
+                fadeTransition.setBlur(layer: self.albumArtNode.layer, radius: 10.0)
+                fadeTransition.setAlpha(layer: self.albumArtNode.layer, alpha: 0.0)
+                
+                UIView.animate(withDuration: 0.2, animations: {
+                    self.albumArtBackground.effect = nil
+                }, completion: { _ in
+                    self.albumArtBackground.removeFromSuperview()
+                    ComponentTransition.immediate.setBlur(layer: self.albumArtNode.layer, radius: 0.0)
+                    ComponentTransition.immediate.setAlpha(layer: self.albumArtNode.layer, alpha: 1.0)
+                })
+            }
+        }
+        
         var layout = layout
         layout.intrinsicInsets.bottom = controlsHeight + (self.historyNode.hasAnyMessages ? 0.0 : 8.0)
         self.getParentController()?.presentationContext.containerLayoutUpdated(layout, transition: transition)
@@ -988,7 +1052,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         if !self.bounds.contains(point) {
             return nil
         }
-        if point.y < self.historyFrameNode.frame.minY {
+        if self.albumArtBackground.superview == nil &&  point.y < self.historyFrameNode.frame.minY {
             return self.dimNode.view
         }
         return result
@@ -997,6 +1061,13 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
     @objc func dimTapGesture(_ recognizer: UITapGestureRecognizer) {
         if case .ended = recognizer.state {
             self.requestDismiss()
+        }
+    }
+    
+    @objc func albumArtTapped(_ recognizer: UITapGestureRecognizer) {
+        if case .ended = recognizer.state, let layout = self.validLayout {
+            self.currentAlbumArt = nil
+            self.containerLayoutUpdated(layout, transition: .animated(duration: 0.3, curve: .easeInOut))
         }
     }
             
@@ -1098,7 +1169,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         self.historyFrameLeftOverlayNode.frame = leftOverlayFrame
         self.historyFrameRightOverlayNode.frame = rightOverlayFrame
         if let image = self.historyFrameTopMaskNode.image {
-            self.historyFrameTopMaskNode.frame = CGRect(origin: CGPoint(x: sideInset, y: topOverlayFrame.maxY - UIScreenPixel), size: CGSize(width: layout.size.width - sideInset * 2.0, height: image.size.height))
+            self.historyFrameTopMaskNode.frame = CGRect(origin: CGPoint(x: sideInset, y: topOverlayFrame.maxY - 1.0), size: CGSize(width: layout.size.width - sideInset * 2.0, height: image.size.height))
         }
         self.historyFrameTopMaskNode.isHidden = self.controlsNode.hasPlainBackground
         
@@ -1128,11 +1199,6 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
                 tagMask = .file
         }
         
-        var isMusicPlaylist = true
-        if let playlistLocation = self.playlistLocation as? PeerMessagesPlaylistLocation, case .savedMusic = playlistLocation {
-            isMusicPlaylist = false
-        }
-        
         let chatLocationContextHolder = Atomic<ChatLocationContextHolder?>(value: nil)
         let historyNode = ChatHistoryListNodeImpl(
             context: self.context,
@@ -1146,7 +1212,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
             subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil, setupReply: false),
             controllerInteraction: self.controllerInteraction,
             selectedMessages: .single(nil),
-            mode: .list(reversed: self.currentIsReversed, reverseGroups: !self.currentIsReversed, displayHeaders: .none, hintLinks: false, isGlobalSearch: self.isGlobalSearch, isMusicPlaylist: isMusicPlaylist),
+            mode: .list(reversed: self.currentIsReversed, reverseGroups: !self.currentIsReversed, displayHeaders: .none, hintLinks: false, isGlobalSearch: self.isGlobalSearch, isMusicPlaylist: true),
             isChatPreview: false,
             messageTransitionNode: { return nil
             }
@@ -1561,4 +1627,23 @@ private func generateCollapseIcon(theme: PresentationTheme) -> UIImage? {
         context.addPath(path.cgPath)
         context.fillPath()
     })
+}
+
+private func generateCornersImage(theme: PresentationTheme) -> UIImage? {
+    return generateImage(CGSize(width: 56.0, height: 56.0), rotatedContext: { (size, context) in
+        let bounds = CGRect(origin: CGPoint(), size: size)
+        context.setFillColor(theme.list.modalBlocksBackgroundColor.cgColor)
+        context.fill(bounds)
+        
+        context.setBlendMode(.clear)
+        
+        var corners: UIRectCorner = []
+        corners.insert(.topLeft)
+        corners.insert(.topRight)
+        
+        let cornerRadius: CGFloat = 26.0
+        let path = UIBezierPath(roundedRect: bounds.offsetBy(dx: 0.0, dy: 1.0), byRoundingCorners: corners, cornerRadii: CGSize(width: cornerRadius, height: cornerRadius))
+        context.addPath(path.cgPath)
+        context.fillPath()
+    })?.stretchableImage(withLeftCapWidth: 28, topCapHeight: 28)
 }

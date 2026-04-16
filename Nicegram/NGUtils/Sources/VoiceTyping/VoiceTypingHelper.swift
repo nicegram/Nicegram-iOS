@@ -1,12 +1,7 @@
-import AccountContext
 import FeatVoiceTyping
 
 public final class VoiceTypingHelper {
-    private let context: AccountContext
-    
-    public init(context: AccountContext) {
-        self.context = context
-    }
+    public init() {}
 }
 
 public extension VoiceTypingHelper {

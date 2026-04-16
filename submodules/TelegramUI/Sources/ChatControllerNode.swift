@@ -229,6 +229,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     var inlineSearchResults: ComponentView<Empty>?
     private var inlineSearchResultsReadyDisposable: Disposable?
     private var inlineSearchResultsReady: Bool = false
+    private var inlineSearchResultsScrollingState: (domain: ChatSearchDomain, query: String, state: ChatInlineSearchResultsListComponent.ScrollingState)?
     
     var isScrollingLockedAtTop: Bool = false
     
@@ -314,10 +315,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         nicegramOverlayView
     }
     
-    @available(iOS 15.0, *)
-    private var voiceTypingHostingController: UIViewController?
-    
     private var cancellables = Set<AnyCancellable>()
+    //
+    
+    // Nicegram Voice Typing
+    private var voiceTypingHostingController: UIViewController?
     //
     
     // Nicegram AiChat
@@ -1162,7 +1164,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             self?.interfaceInteraction?.presentController(controller, nil)
         }, sendWithKb: NGSettings.sendWithEnter)
         if let data = self.context.currentAppConfiguration.with({ $0 }).data, let value = data["ios_disable_ai_chat"] as? Double, value == 1.0 {
-        } else {
+        } else if let peerId = self.chatPresentationInterfaceState.chatLocation.peerId, peerId.namespace != Namespaces.Peer.SecretChat {
             self.textInputPanelNode?.isAIEnabled = true
         }
         self.textInputPanelNode?.textInputAccessoryPanel = textInputAccessoryPanel
@@ -1250,7 +1252,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             )
         }
+        //
         
+        // Nicegram Voice Typing
         self.textInputPanelNode?.displayVoiceTypingFlow = { [weak self] in
             guard let self else {
                 return
@@ -1260,7 +1264,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 return
             }
             
-            VoiceTypingHelper(context: self.context).present(
+            VoiceTypingHelper().present(
                 onReadyToRecord: { [weak self] in
                     guard let self else { return }
                     guard #available(iOS 15.0, *) else { return }
@@ -1316,12 +1320,14 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.inlineSearchResultsReadyDisposable?.dispose()
         self.loadMoreSearchResultsDisposable?.dispose()
         
+        // Nicegram Voice Typing
         if #available(iOS 15.0, *) {
             self.hideVoiceTypingOverlay()
         }
+        //
     }
-
-    // Nicegram
+    
+    // Nicegram Voice Typing
     @available(iOS 15.0, *)
     private func showVoiceTypingOverlay() {
         guard voiceTypingHostingController == nil else {
@@ -1342,12 +1348,25 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     guard let interfaceInteraction = self.interfaceInteraction else {
                         return
                     }
-                    interfaceInteraction.updateTextInputStateAndMode { _, inputMode in
+                    interfaceInteraction.updateTextInputStateAndMode { textInputState, inputMode in
                         var inputMode = inputMode
                         if inputMode == .none {
                             inputMode = .text
                         }
-                        return (ChatTextInputState(inputText: NSAttributedString(string: text)), inputMode)
+                        guard !text.isEmpty else {
+                            return (textInputState, inputMode)
+                        }
+                        let inputText = NSMutableAttributedString(attributedString: textInputState.inputText)
+                        let existing = inputText.string
+                        if !existing.isEmpty {
+                            let needsSpace = !existing.hasSuffix(" ") && !text.hasPrefix(" ") && !text.hasPrefix("\n")
+                            if needsSpace {
+                                inputText.append(NSAttributedString(string: " "))
+                            }
+                        }
+                        inputText.append(NSAttributedString(string: text))
+                        let selectionPosition = inputText.length
+                        return (ChatTextInputState(inputText: inputText, selectionRange: selectionPosition ..< selectionPosition), inputMode)
                     }
                 }
             }
@@ -1357,6 +1376,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.textInputPanelNode?.setVoiceTypingOverlayView(hostingController.view)
     }
     
+    // Nicegram Voice Typing
     @available(iOS 15.0, *)
     private func hideVoiceTypingOverlay() {
         guard let hostingController = voiceTypingHostingController else {
@@ -1367,6 +1387,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.textInputPanelNode?.setVoiceTypingOverlayView(nil)
         hostingController.view.removeFromSuperview()
     }
+    //
     
     @available(iOS 15.0, *)
     @objc private func openNicegramWallet() {
@@ -3597,6 +3618,16 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             showNavigateButtons = false
         }
         
+        if let inlineSearchResultsScrollingState = self.inlineSearchResultsScrollingState {
+            if let search = self.chatPresentationInterfaceState.search {
+                if search.domain != inlineSearchResultsScrollingState.domain || search.query != inlineSearchResultsScrollingState.query {
+                    self.inlineSearchResultsScrollingState = nil
+                }
+            } else {
+                self.inlineSearchResultsScrollingState = nil
+            }
+        }
+        
         if displayInlineSearch {
             let peerId = self.chatPresentationInterfaceState.chatLocation.peerId
             
@@ -3654,6 +3685,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     insets: childContentInsets,
                     inputHeight: layout.inputHeight ?? 0.0,
                     showEmptyResults: self.showListEmptyResults,
+                    initialScrollingState: self.inlineSearchResultsScrollingState?.state,
                     messageSelected: { [weak self] message in
                         guard let self else {
                             return
@@ -3932,6 +3964,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 environment: {},
                 containerSize: layout.size
             )
+            self.inlineSearchResultsScrollingState = nil
             if let inlineSearchResultsView = inlineSearchResults.view as? ChatInlineSearchResultsListComponent.View {
                 var animateIn = false
                 if inlineSearchResultsView.superview == nil {
@@ -3985,6 +4018,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             if let inlineSearchResults = self.inlineSearchResults {
                 self.inlineSearchResults = nil
                 if let inlineSearchResultsView = inlineSearchResults.view as? ChatInlineSearchResultsListComponent.View {
+                    
+                    if let search = self.chatPresentationInterfaceState.search, let scrollingState = inlineSearchResultsView.scrollingState() {
+                        self.inlineSearchResultsScrollingState = (search.domain, search.query, scrollingState)
+                    }
+                    
                     transition.updateAlpha(layer: inlineSearchResultsView.layer, alpha: 0.0, completion: { [weak inlineSearchResultsView] _ in
                         inlineSearchResultsView?.removeFromSuperview()
                     })

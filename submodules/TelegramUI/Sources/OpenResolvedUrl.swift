@@ -20,7 +20,6 @@ import JoinLinkPreviewUI
 import LanguageLinkPreviewUI
 import SettingsUI
 import UrlHandling
-import ShareController
 import ChatInterfaceState
 import TelegramCallsUI
 import UndoUI
@@ -650,10 +649,9 @@ func openResolvedUrlImpl(
                 }
             } else {
                 if let url = url, !url.isEmpty {
-                    let shareController = ShareController(context: context, subject: .url(url), presetText: text, externalShare: false, immediateExternalShare: false)
-                    shareController.actionCompleted = {
+                    let shareController = context.sharedContext.makeShareController(context: context, params: ShareControllerParams(subject: .url(url), presetText: text, externalShare: false, immediateExternalShare: false, actionCompleted: {
                         present(UndoOverlayController(presentationData: presentationData, content: .linkCopied(title: nil, text: presentationData.strings.Conversation_LinkCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), nil)
-                    }
+                    }))
                     present(shareController, nil)
                     context.sharedContext.applicationBindings.dismissNativeController()
                 } else {
@@ -793,6 +791,7 @@ func openResolvedUrlImpl(
             if case .new = section {
                 context.sharedContext.openAddContact(
                     context: context,
+                    peer: nil,
                     firstName: "",
                     lastName: "",
                     phoneNumber: "",
@@ -869,6 +868,7 @@ func openResolvedUrlImpl(
             case .contact:
                 context.sharedContext.openAddContact(
                     context: context,
+                    peer: nil,
                     firstName: "",
                     lastName: "",
                     phoneNumber: "",

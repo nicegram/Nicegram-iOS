@@ -8771,6 +8771,7 @@ Sorry for the inconvenience.";
 "Premium.CurrentPlan" = "your current plan";
 "Premium.UpgradeFor" = "Upgrade for %@ / month";
 "Premium.UpgradeForAnnual" = "Upgrade for %@ / year";
+"Premium.UpgradeForBiannual" = "Upgrade for %@ / 2 years";
 
 "ChatList.PremiumAnnualDiscountTitle" = "Telegram Premium with a discount of %@";
 "ChatList.PremiumAnnualDiscountText" = "Sign up for the annual payment plan for Telegram Premium now to get the discount.";
@@ -16168,3 +16169,10 @@ Error: %8$@";
 "PeerInfo.UnofficialSecurityRisk" = "%@ uses an unofficial Telegram client – messages to this user may be less secure.";
 
 "Gallery.Live" = "LIVE";
+
+"CreatePoll.QuestionNeeded" = "Enter a question";
+"CreatePoll.OptionsNeeded" = "Add at least two options";
+"CreatePoll.QuizCorrectOptionNeeded" = "Select a correct option";
+"CreatePoll.QuizCorrectOptionNeededMultiple" = "Select at least one correct option";
+
+"Stars.Intro.Transaction.Commission.Title" = "%@ commission";

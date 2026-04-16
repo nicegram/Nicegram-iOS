@@ -71,11 +71,11 @@ local_path_override(
 # Nicegram, rules_swift_package_manager
 bazel_dep(
     name = "rules_swift_package_manager",
-    version = "1.13.0",
+    version = "1.15.0",
 )
 git_override(
     module_name = "rules_swift_package_manager",
-    commit = "fb1172a831024072a29bb00d2b7b9eb121de299b",
+    commit = "60338551660c932fd7cd5574dd4112fbf43a5b9c",
     remote = "https://github.com/denis15yo/rules_swift_package_manager",
 )
 

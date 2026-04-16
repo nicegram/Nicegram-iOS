@@ -39,7 +39,7 @@
     {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/attaswift/BigInt",
+      "location" : "https://github.com/attaswift/BigInt.git",
       "state" : {
         "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
         "version" : "5.3.0"
@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "feat/voice-typing",
-        "revision" : "1c2d5fff913dee5a0b5bd4df4b6c675312b15bf7"
+        "revision" : "f8e0607f141bd41c78312f6e980cab2dbaa53510"
       }
     },
     {
@@ -444,7 +444,7 @@
     {
       "identity" : "swift-collections",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-collections.git",
+      "location" : "https://github.com/apple/swift-collections",
       "state" : {
         "revision" : "6675bc0ff86e61436e615df6fc5174e043e57924",
         "version" : "1.4.1"
