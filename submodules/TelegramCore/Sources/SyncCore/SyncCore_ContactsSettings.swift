@@ -5,7 +5,9 @@ public struct ContactsSettings: Codable {
     public var synchronizeContacts: Bool
     
     public static var defaultSettings: ContactsSettings {
-        return ContactsSettings(synchronizeContacts: true)
+        // Nicegram, disable contact synchronization by default
+        return ContactsSettings(synchronizeContacts: false)
+        //
     }
     
     public init(synchronizeContacts: Bool) {
