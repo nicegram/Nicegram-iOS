@@ -257,11 +257,3 @@ Il browser selezionato deve essere installato.";
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "Ottieni una panoramica strutturata delle informazioni pubbliche trovate online — profili, background, attività social e molto altro!";
 "whitebridge.chats.quick.action" = "Visualizza report WhiteBridge";
-
-/*AI Reply*/
-"aiReply.contextMenu.title" = "Scrivi una risposta";
-"aiReply.hint" = "Scrivi la tua risposta in pochi secondi ✨\nTrasforma i tuoi pensieri in messaggi curati e pronti da inviare con l’aiuto immediato di un’IA avanzata.";
-
-/*Voice Typing*/
-"voiceTyping.hint.title" = "Parla invece di digitare";
-"voiceTyping.hint.subtitle" = "Le tue parole si trasformano in testo non appena parli, così resti concentrato sulle tue idee.";

@@ -5,7 +5,6 @@ NGDEPS = [
     "//Nicegram/NGData:NGData",
     "//Nicegram/NGUI:NGUI",
     "//Nicegram/NGStrings:NGStrings",
-    "//Nicegram/NGUtils:NGUtils",
     "//Nicegram/NGTranslate:NGTranslate",
     "//Nicegram/NGLab:NGLab",
     "//Nicegram/NGAppCache:NGAppCache",

@@ -258,11 +258,3 @@
 "whitebridge.profile.button" = "WhiteBridge";
 "whitebridge.profile.hint" = "احصل على نظرة عامة منظّمة على المعلومات العامة المتاحة على الإنترنت — الملفات الشخصية والخلفية والنشاط الاجتماعي والمزيد!";
 "whitebridge.chats.quick.action" = "عرض تقرير WhiteBridge";
-
-/*AI Reply*/
-"aiReply.contextMenu.title" = "صِغ ردًا";
-"aiReply.hint" = "صِغ ردّك خلال ثوانٍ ✨\nحوّل أفكارك إلى رسائل مصقولة وجاهزة للإرسال مع مساعدة فورية من ذكاء اصطناعي متقدم.";
-
-/*Voice Typing*/
-"voiceTyping.hint.title" = "تحدّث بدلًا من الكتابة";
-"voiceTyping.hint.subtitle" = "ستتحوّل كلماتك إلى نصّ فور أن تتحدّث، لتبقى مُركّزًا على أفكارك.";
