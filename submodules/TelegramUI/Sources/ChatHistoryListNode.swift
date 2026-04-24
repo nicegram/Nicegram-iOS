@@ -3412,6 +3412,37 @@ public final class ChatHistoryListNodeImpl: ListViewImpl, ChatHistoryNode, ChatH
         })
         
         if let loaded = displayedRange.visibleRange, let firstEntry = historyView.filteredEntries.first, let lastEntry = historyView.filteredEntries.last {
+            // Nicegram
+            func resolvePaginationAnchorIndex(
+                preferred: MessageIndex,
+                entries: [ChatHistoryEntry],
+                searchFromEnd: Bool
+            ) -> MessageIndex {
+                let sequence = searchFromEnd ? AnySequence(entries.reversed()) : AnySequence(entries)
+                for entry in sequence {
+                    switch entry {
+                    case let .MessageEntry(message, _, _, _, _, _):
+                        return message.index
+                    case let .MessageGroupEntry(_, messages, _):
+                        return messages.last?.0.index ?? preferred
+                    default:
+                        continue
+                    }
+                }
+                return preferred
+            }
+            
+            let lastAnchorIndex = resolvePaginationAnchorIndex(
+                preferred: lastEntry.index,
+                entries: historyView.filteredEntries,
+                searchFromEnd: true
+            )
+            let firstAnchorIndex = resolvePaginationAnchorIndex(
+                preferred: firstEntry.index,
+                entries: historyView.filteredEntries,
+                searchFromEnd: false
+            )
+            //
             var mathesFirst = false
             if loaded.firstIndex <= 5 {
                 var firstHasGroups = false
@@ -3453,7 +3484,7 @@ public final class ChatHistoryListNodeImpl: ListViewImpl, ChatHistoryNode, ChatH
             }
             
             if mathesFirst && historyView.originalView.laterId != nil {
-                let locationInput: ChatHistoryLocation = .Navigation(index: .message(lastEntry.index), anchorIndex: .message(lastEntry.index), count: historyMessageCount, highlight: false)
+                let locationInput: ChatHistoryLocation = .Navigation(index: .message(lastAnchorIndex), anchorIndex: .message(lastAnchorIndex), count: historyMessageCount, highlight: false)
                 if self.chatHistoryLocationValue?.content != locationInput {
                     self.chatHistoryLocationValue = ChatHistoryLocationInput(content: locationInput, id: self.takeNextHistoryLocationId())
                 }
@@ -3462,7 +3493,7 @@ public final class ChatHistoryListNodeImpl: ListViewImpl, ChatHistoryNode, ChatH
                     self.chatHistoryLocationValue = ChatHistoryLocationInput(content: .Navigation(index: .upperBound, anchorIndex: .upperBound, count: historyMessageCount, highlight: false), id: self.takeNextHistoryLocationId())
                 }
             } else if mathesLast {
-                let locationInput: ChatHistoryLocation = .Navigation(index: .message(firstEntry.index), anchorIndex: .message(firstEntry.index), count: historyMessageCount, highlight: false)
+                let locationInput: ChatHistoryLocation = .Navigation(index: .message(firstAnchorIndex), anchorIndex: .message(firstAnchorIndex), count: historyMessageCount, highlight: false)
                 if historyView.originalView.earlierId != nil {
                     if self.chatHistoryLocationValue?.content != locationInput {
                         self.chatHistoryLocationValue = ChatHistoryLocationInput(content: locationInput, id: self.takeNextHistoryLocationId())
