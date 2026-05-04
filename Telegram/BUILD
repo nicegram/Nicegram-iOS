@@ -284,10 +284,10 @@ filegroup(
 )
 
 filegroup(
-    name = "AppStoreIcons",
+    name = "PrimaryIcon",
     srcs = glob([
-        "Telegram-iOS/AppIcons/AppStoreIcons.xcassets/**/*",
-    ], exclude = ["Telegram-iOS/AppIcons/AppStoreIcons.xcassets/**/.*"]),
+        "Telegram-iOS/AppIcons/PrimaryIcon.xcassets/**/*",
+    ], exclude = ["Telegram-iOS/AppIcons/PrimaryIcon.xcassets/**/.*"]),
 )
 
 # Nicegram
@@ -336,6 +336,28 @@ in_app_icons = [
             "Telegram-iOS/AppIcons/InAppIcons/{}.alticon/*.png".format(name),
         ]),
     ) for name in in_app_icons
+]
+
+# Icons used only for App Store Connect Product Page Optimization (PPO) A/B
+# testing. They are not exposed to the in-app icon switcher; only the
+# 1024x1024 PNG is needed so App Store Connect lists them in the PPO
+# App Icon tab.
+ppo_icons = [
+    "RadASO_1",
+    "RadASO_2",
+    "RadASO_3",
+    "RadASO_4",
+    "RadASO_5",
+    "RadASO_6",
+]
+
+[
+    filegroup(
+        name = "{}".format(name),
+        srcs = glob([
+            "Telegram-iOS/AppIcons/ProductPageOptimizationIcons/{}.alticon/*.png".format(name),
+        ]),
+    ) for name in ppo_icons
 ]
 
 filegroup(
@@ -2109,10 +2131,9 @@ ios_application(
         ":RequiredDeviceCapabilitiesPlist",
         ":UrlTypesInfoPlist",
     ],
-    app_icons = [":AppStoreIcons"],
-    primary_app_icon = "PrimaryIcon",
+    app_icons = [":PrimaryIcon"],
     alternate_icons = [
-        ":{}".format(name) for name in in_app_icons
+        ":{}".format(name) for name in in_app_icons + ppo_icons
     ],
     resources = [
         ":LaunchScreen",
