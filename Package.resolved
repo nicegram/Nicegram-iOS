@@ -39,10 +39,10 @@
     {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/attaswift/BigInt",
+      "location" : "https://github.com/attaswift/BigInt.git",
       "state" : {
-        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
-        "version" : "5.3.0"
+        "revision" : "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
+        "version" : "5.7.0"
       }
     },
     {
@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "fix/review-autologin",
-        "revision" : "b9ace531a9796203312a6779ac251c9c1f3ecfa6"
+        "revision" : "2ef5b41fb84ec174513afc1a40215a89dc2e0259"
       }
     },
     {
