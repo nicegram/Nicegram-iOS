@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "fix/review-autologin",
-        "revision" : "873217f6af5658d56d3df689557435f7c6a957cb"
+        "revision" : "b9ace531a9796203312a6779ac251c9c1f3ecfa6"
       }
     },
     {
@@ -582,7 +582,7 @@
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
         "revision" : "bd21d55bf7629c30c07acc8691f1f9ebbcd3e572",
-        "version" : "1.0.33"
+        "version" : "1.0.34"
       }
     },
     {
