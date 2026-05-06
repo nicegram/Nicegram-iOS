@@ -292,14 +292,6 @@ filegroup(
 
 # Nicegram
 filegroup(
-    name = "AlternativePrimaryIcon",
-    srcs = glob([
-        "Telegram-iOS/AppIcons/AlternativePrimaryIcon.xcassets/**/*",
-    ], exclude = ["Telegram-iOS/AppIcons/AlternativePrimaryIcon.xcassets/**/.*"]),
-)
-
-# Nicegram
-filegroup(
     name = "GoogleService-Info",
     srcs = glob([
         "Telegram-iOS/GoogleService-Info.plist",
@@ -335,6 +327,7 @@ in_app_icons = [
     "PremiumTurbo",
     "NewBlack",
     "NewWhite",
+    "PaperPlane",
 ]
 
 [
@@ -2139,7 +2132,7 @@ ios_application(
         ":RequiredDeviceCapabilitiesPlist",
         ":UrlTypesInfoPlist",
     ],
-    app_icons = [":AlternativePrimaryIcon"],
+    app_icons = [":PrimaryIcon"],
     alternate_icons = [
         ":{}".format(name) for name in in_app_icons + ppo_icons
     ],

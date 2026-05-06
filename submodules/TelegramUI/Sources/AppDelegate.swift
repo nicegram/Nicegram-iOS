@@ -1152,7 +1152,8 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             if #available(iOS 10.3, *) {
                 var icons = [
                     // Nicegram, default AppIcon changed
-                    PresentationAppIcon(name: "NewBlack", imageName: "NewBlack", isDefault: buildConfig.isAppStoreBuild),
+                    PresentationAppIcon(name: "PaperPlane", imageName: "PaperPlane", isDefault: buildConfig.isAppStoreBuild),
+                    PresentationAppIcon(name: "NewBlack", imageName: "NewBlack"),
                     PresentationAppIcon(name: "NewWhite", imageName: "NewWhite"),
                     PresentationAppIcon(name: "New3", imageName: "New3"),
                     PresentationAppIcon(name: "BlueIcon", imageName: "BlueIcon"),
