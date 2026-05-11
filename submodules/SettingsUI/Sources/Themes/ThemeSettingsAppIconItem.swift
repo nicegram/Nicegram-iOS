@@ -415,8 +415,10 @@ class ThemeSettingsAppIconItemNode: ListViewItemNode, ItemListItemNode {
                                     name = item.strings.Appearance_AppIconBlack
                                 case "PremiumTurbo":
                                     name = item.strings.Appearance_AppIconTurbo
-                                case "NewBlack":
+                                case "PaperPlane":
                                     name = item.strings.Appearance_AppIconDefault
+                                case "NewBlack":
+                                    name = "NewBlack"
                                 case "NewWhite":
                                     name = "New White"
                                 default:

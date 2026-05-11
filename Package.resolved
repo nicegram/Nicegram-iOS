@@ -39,10 +39,10 @@
     {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/attaswift/BigInt",
+      "location" : "https://github.com/attaswift/BigInt.git",
       "state" : {
-        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
-        "version" : "5.3.0"
+        "revision" : "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
+        "version" : "5.7.0"
       }
     },
     {
@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "46579c364d39b86ec9fb8f613e19f023700a929c",
-        "version" : "12.12.1"
+        "revision" : "d10045cace0b4c335c4efa8f7df7e9a9fc5a7c60",
+        "version" : "12.13.0"
       }
     },
     {
@@ -140,8 +140,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "5100f946bd32778662047a823bf145c6da32d85d",
-        "version" : "12.12.1"
+        "revision" : "c2c76bebcfbb90d90ea10599f934f9af160e1604",
+        "version" : "12.13.0"
       }
     },
     {
@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "a59b978e8ebedc1b397136199e562f44d3598e0d"
+        "revision" : "9d7d50513f0a928691da49f409f92372e2511c5b"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "00e6682305e1c3dbc34f06e2f44ae804877d252f",
-        "version" : "6.20.0"
+        "revision" : "d066bd3b711b09c3f9820d9a52685b3f1d88e03e",
+        "version" : "6.20.1"
       }
     },
     {
@@ -581,8 +581,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "82ba58c64fd7713d6c97f2a030d4b4f592b0cfab",
-        "version" : "1.0.32"
+        "revision" : "821698c7f7edde786da183770ad5e5f12f92fbfc",
+        "version" : "1.0.35"
       }
     },
     {
