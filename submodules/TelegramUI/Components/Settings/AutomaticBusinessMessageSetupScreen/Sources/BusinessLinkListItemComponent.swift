@@ -6,7 +6,6 @@ import ListSectionComponent
 import TelegramPresentationData
 import AppBundle
 import AccountContext
-import Postbox
 import TelegramCore
 import TextNodeWithEntities
 import MultilineTextComponent

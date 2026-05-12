@@ -319,15 +319,23 @@ public class CallStatusBarNodeImpl: CallStatusBarNode {
             switch content {
                 case let .call(sharedContext, account, call):
                     self.presentationData = sharedContext.currentPresentationData.with { $0 }
+                    let callPeer = TelegramEngine(account: account).data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: call.peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     self.stateDisposable.set(
                         (combineLatest(
-                            account.postbox.loadedPeerWithId(call.peerId),
+                            callPeer,
                             call.state,
                             call.isMuted
                         )
                     |> deliverOnMainQueue).start(next: { [weak self] peer, state, isMuted in
                         if let strongSelf = self {
-                            strongSelf.currentPeer = peer
+                            strongSelf.currentPeer = peer._asPeer()
                             strongSelf.currentCallState = state
                             strongSelf.currentIsMuted = isMuted
                             

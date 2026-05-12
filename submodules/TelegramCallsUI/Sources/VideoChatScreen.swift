@@ -685,7 +685,14 @@ final class VideoChatScreenComponent: Component {
                 return
             }
             
-            let _ = (groupCall.accountContext.account.postbox.loadedPeerWithId(peerId)
+            let _ = (groupCall.accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                if let peer {
+                    return .single(peer)
+                } else {
+                    return .never()
+                }
+            }
             |> deliverOnMainQueue).start(next: { [weak self] chatPeer in
                 guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                     return
@@ -693,7 +700,7 @@ final class VideoChatScreenComponent: Component {
                 guard let callState = self.callState, let peer = self.peer else {
                     return
                 }
-                
+
                 let initialTitle = callState.title
 
                 let title: String
@@ -706,7 +713,7 @@ final class VideoChatScreenComponent: Component {
                     text = environment.strings.VoiceChat_EditTitleText
                 }
 
-                let controller = voiceChatTitleEditController(context: groupCall.accountContext, forceTheme: environment.theme, title: title, text: text, placeholder: EnginePeer(chatPeer).displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), value: initialTitle, maxLength: 40, apply: { [weak self] title in
+                let controller = voiceChatTitleEditController(context: groupCall.accountContext, forceTheme: environment.theme, title: title, text: text, placeholder: chatPeer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), value: initialTitle, maxLength: 40, apply: { [weak self] title in
                     guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                         return
                     }
@@ -804,7 +811,14 @@ final class VideoChatScreenComponent: Component {
             }
             
             if let peerId = groupCall.peerId {
-                let _ = (groupCall.accountContext.account.postbox.loadedPeerWithId(peerId)
+                let _ = (groupCall.accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                    if let peer {
+                        return .single(peer)
+                    } else {
+                        return .never()
+                    }
+                }
                 |> deliverOnMainQueue).start(next: { [weak self] peer in
                     guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                         return
@@ -1815,7 +1829,14 @@ final class VideoChatScreenComponent: Component {
                         }
                     })
                     
-                    let currentAccountPeer = groupCall.accountContext.account.postbox.loadedPeerWithId(groupCall.accountContext.account.peerId)
+                    let currentAccountPeer = groupCall.accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: groupCall.accountContext.account.peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     |> map { peer in
                         return [FoundPeer(peer: peer, subscribers: nil)]
                     }
@@ -1898,11 +1919,10 @@ final class VideoChatScreenComponent: Component {
                                 }
                             }
                         } else {
-                            //TODO:localized
                             if event.joined {
-                                self.lastTitleEvent = "\(event.peer.compactDisplayTitle) joined"
+                                self.lastTitleEvent = environment.strings.VideoChat_StatusPeerJoined(event.peer.compactDisplayTitle).string
                             } else {
-                                self.lastTitleEvent = "\(event.peer.compactDisplayTitle) left"
+                                self.lastTitleEvent = environment.strings.VideoChat_StatusPeerLeft(event.peer.compactDisplayTitle).string
                             }
                             if !self.isUpdating {
                                 self.state?.updated(transition: .spring(duration: 0.4))
@@ -3469,7 +3489,6 @@ final class VideoChatScreenComponent: Component {
                         mode: .standard(.default),
                         chatLocation: .peer(id: call.accountContext.account.peerId),
                         subject: nil,
-                        peerNearbyData: nil,
                         greetingData: nil,
                         pendingUnpinnedAllMessages: false,
                         activeGroupCallInfo: nil,

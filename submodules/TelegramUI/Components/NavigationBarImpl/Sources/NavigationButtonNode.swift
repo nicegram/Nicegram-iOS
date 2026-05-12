@@ -211,6 +211,7 @@ private final class ItemComponent: Component {
 
 private final class NavigationButtonItemNode: ImmediateTextNode {
     private let isGlass: Bool
+    var requestUpdate: (() -> Void)?
     
     private func fontForCurrentState() -> UIFont {
         return self.bold ? Font.semibold(17.0) : Font.medium(17.0)
@@ -235,7 +236,13 @@ private final class NavigationButtonItemNode: ImmediateTextNode {
                 
                 if let item = self.item {
                     self.setEnabledListener = item.addSetEnabledListener { [weak self] value in
-                        self?.isEnabled = value
+                        guard let self else {
+                            return
+                        }
+                        if self.isEnabled != value {
+                            self.isEnabled = value
+                            self.requestUpdate?()
+                        }
                     }
                     self.accessibilityHint = item.accessibilityHint
                     self.accessibilityLabel = item.accessibilityLabel
@@ -528,6 +535,7 @@ private final class NavigationButtonItemNode: ImmediateTextNode {
 public final class NavigationButtonNodeImpl: ContextControllerSourceNode, NavigationButtonNode {
     enum ContentType {
         case accent
+        case accentDisabled
         case generic
     }
     
@@ -536,6 +544,8 @@ public final class NavigationButtonNodeImpl: ContextControllerSourceNode, Naviga
     
     private var items: [UIBarButtonItem] = []
     private var nodes: [NavigationButtonItemNode] = []
+    
+    var requestUpdate: (() -> Void)?
     
     private var disappearingNodes: [(frame: CGRect, size: CGSize, node: NavigationButtonItemNode)] = []
     
@@ -633,6 +643,9 @@ public final class NavigationButtonNodeImpl: ContextControllerSourceNode, Naviga
                     }
                 }
             }
+            node.requestUpdate = { [weak self] in
+                self?.requestUpdate?()
+            }
             self.nodes.append(node)
             self.addSubnode(node)
         }
@@ -679,6 +692,9 @@ public final class NavigationButtonNodeImpl: ContextControllerSourceNode, Naviga
                             strongSelf.pressed(index)
                         }
                     }
+                }
+                node.requestUpdate = { [weak self] in
+                    self?.requestUpdate?()
                 }
                 self.nodes.append(node)
                 self.addSubnode(node)
@@ -812,7 +828,11 @@ public final class NavigationButtonNodeImpl: ContextControllerSourceNode, Naviga
             if item.title == "___close" {
             } else if item.title == "___clear" {
             } else if item.title == "___done" {
-                nodeContentType = .accent
+                if item.isEnabled {
+                    nodeContentType = .accent
+                } else {
+                    nodeContentType = .accentDisabled
+                }
             }
             
             if commonType == nil {

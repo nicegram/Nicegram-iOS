@@ -92,5 +92,18 @@ public func chatTextLinkEditController(
     dismissImpl = { [weak alertController] in
         alertController?.dismiss(completion: nil)
     }
+
+    if link == nil {
+        Queue.mainQueue().after(0.1, {
+            let pasteboard = UIPasteboard.general
+            if pasteboard.hasURLs {
+                if inputState.value.string.isEmpty, let url = pasteboard.url?.absoluteString, !url.isEmpty {
+                    let value = NSAttributedString(string: url)
+                    inputState.setValue(value, selectionRange: 0 ..< value.length)
+                }
+            }
+        })
+    }
+
     return alertController
 }

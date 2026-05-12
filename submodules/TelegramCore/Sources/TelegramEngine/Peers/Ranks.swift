@@ -57,15 +57,15 @@ func _internal_updateChatRank(account: Account, peerId: PeerId, userId: PeerId, 
                             return nil
                         } else {
                             let updatedParticipant = currentParticipant?.withUpdated(rank: rank) ?? .member(id: userId, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: rank, subscriptionUntilDate: nil)
-                            var peers: [PeerId: Peer] = [:]
+                            var peers: [EnginePeer.Id: EnginePeer] = [:]
                             var presences: [PeerId: PeerPresence] = [:]
-                            peers[user.id] = user
+                            peers[user.id] = EnginePeer(user)
                             if let presence = transaction.getPeerPresence(peerId: user.id) {
                                 presences[user.id] = presence
                             }
                             if case let .member(_, _, maybeAdminInfo, _, _, _) = updatedParticipant, let adminInfo = maybeAdminInfo {
                                 if let peer = transaction.getPeer(adminInfo.promotedBy) {
-                                    peers[peer.id] = peer
+                                    peers[peer.id] = EnginePeer(peer)
                                 }
                             }
                             let historyView = transaction.getMessagesHistoryViewState(input: .single(peerId: peerId, threadId: nil), ignoreMessagesInTimestampRange: nil, ignoreMessageIds: Set(), count: 50, clipHoles: true, anchor: .upperBound, namespaces: .just(Set([Namespaces.Message.Cloud])))
@@ -92,7 +92,7 @@ func _internal_updateChatRank(account: Account, peerId: PeerId, userId: PeerId, 
                                     return .update(StoreMessage(id: currentMessage.id, customStableId: nil, globallyUniqueId: currentMessage.globallyUniqueId, groupingKey: currentMessage.groupingKey, threadId: currentMessage.threadId, timestamp: currentMessage.timestamp, flags: StoreMessageFlags(currentMessage.flags), tags: currentMessage.tags, globalTags: currentMessage.globalTags, localTags: currentMessage.localTags, forwardInfo: storeForwardInfo, authorId: currentMessage.author?.id, text: currentMessage.text, attributes: attributes, media: currentMessage.media))
                                 })
                             }
-                            return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: user, peers: peers, presences: presences))
+                            return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(user), peers: peers, presences: presences))
                         }
                     }
                     |> castError(UpdateChatRankError.self)

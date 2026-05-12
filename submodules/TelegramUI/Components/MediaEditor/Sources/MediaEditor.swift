@@ -837,7 +837,7 @@ public final class MediaEditor {
             |> mapToSignal { message in
                 var player: AVPlayer?
                 if let message, !"".isEmpty {
-                    if let maybeFile = message.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile, maybeFile.isVideo, let path = self.context.account.postbox.mediaBox.completedResourcePath(maybeFile.resource, pathExtension: "mp4") {
+                    if let maybeFile = message.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile, maybeFile.isVideo, let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(maybeFile.resource.id), pathExtension: "mp4") {
                         let asset = AVURLAsset(url: URL(fileURLWithPath: path))
                         player = self.makePlayer(asset: asset)
                     }

@@ -275,8 +275,8 @@
       "kind" : "remoteSourceControl",
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
-        "branch" : "fix/review-autologin",
-        "revision" : "2ef5b41fb84ec174513afc1a40215a89dc2e0259"
+        "branch" : "develop",
+        "revision" : "9d7d50513f0a928691da49f409f92372e2511c5b"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "00e6682305e1c3dbc34f06e2f44ae804877d252f",
-        "version" : "6.20.0"
+        "revision" : "d066bd3b711b09c3f9820d9a52685b3f1d88e03e",
+        "version" : "6.20.1"
       }
     },
     {
@@ -437,17 +437,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark",
       "state" : {
-        "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
-        "version" : "0.7.1"
+        "revision" : "924936d0427cb25a61169739a7660230bffa6ea6",
+        "version" : "0.8.0"
       }
     },
     {
       "identity" : "swift-collections",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-collections.git",
+      "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "6675bc0ff86e61436e615df6fc5174e043e57924",
-        "version" : "1.4.1"
+        "revision" : "03cc312c2c933ed87abace34044a5dff7a3117c1",
+        "version" : "1.5.0"
       }
     },
     {
@@ -581,8 +581,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "bd21d55bf7629c30c07acc8691f1f9ebbcd3e572",
-        "version" : "1.0.34"
+        "revision" : "821698c7f7edde786da183770ad5e5f12f92fbfc",
+        "version" : "1.0.35"
       }
     },
     {
@@ -608,8 +608,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "dfda5af9acd969f0bb74e7c507bf44bf4c4963ef",
-        "version" : "4.6.7"
+        "revision" : "358a8bc073b21820bae091cc24b40a60b5e0a32f",
+        "version" : "4.6.8"
       }
     },
     {

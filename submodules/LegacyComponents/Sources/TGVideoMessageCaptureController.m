@@ -337,11 +337,7 @@ typedef enum
     _circleWrapperView.alpha = 0.0f;
     _circleWrapperView.clipsToBounds = false;
     [_wrapperView addSubview:_circleWrapperView];
-    
-    _shadowView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"VideoMessageShadow")];
-    _shadowView.frame = _circleWrapperView.bounds;
-    [_circleWrapperView addSubview:_shadowView];
-    
+        
     _circleView = [[UIView alloc] initWithFrame:CGRectInset(_circleWrapperView.bounds, shadowSize, shadowSize)];
     _circleView.clipsToBounds = true;
     _circleView.layer.cornerRadius = _circleView.frame.size.width / 2.0f;
@@ -851,13 +847,13 @@ typedef enum
         }
         
         if (strongSelf.presentScheduleController) {
-            strongSelf.presentScheduleController(^(int32_t time) {
+            strongSelf.presentScheduleController(^(int32_t time, bool silentPosting) {
                 __strong TGVideoMessageCaptureController *strongSelf = weakSelf;
                 if (strongSelf == nil) {
                     return;
                 }
                 
-                [strongSelf finishWithURL:strongSelf->_url dimensions:CGSizeMake(240.0f, 240.0f) duration:strongSelf->_duration liveUploadData:strongSelf->_liveUploadData thumbnailImage:strongSelf->_thumbnailImage isSilent:false scheduleTimestamp:time];
+                [strongSelf finishWithURL:strongSelf->_url dimensions:CGSizeMake(240.0f, 240.0f) duration:strongSelf->_duration liveUploadData:strongSelf->_liveUploadData thumbnailImage:strongSelf->_thumbnailImage isSilent:silentPosting scheduleTimestamp:time];
                 
                 _automaticDismiss = true;
                 [strongSelf dismiss:false];

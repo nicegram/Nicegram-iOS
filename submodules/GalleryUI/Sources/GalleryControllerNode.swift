@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import SwipeToDismissGesture
 import AccountContext
 import UndoUI

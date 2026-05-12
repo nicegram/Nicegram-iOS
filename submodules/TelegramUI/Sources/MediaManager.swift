@@ -3,7 +3,6 @@ import SwiftSignalKit
 import AVFoundation
 import MobileCoreServices
 import Display
-import Postbox
 import TelegramCore
 import MediaPlayer
 import TelegramAudio
@@ -79,7 +78,7 @@ public final class MediaManagerImpl: NSObject, MediaManager {
         didSet {
             if self.voiceMediaPlayer !== oldValue {
                 if let voiceMediaPlayer = self.voiceMediaPlayer {
-                    let account = voiceMediaPlayer.account
+                    let account = voiceMediaPlayer.engine.account
                     self.voiceMediaPlayerStateDisposable.set((voiceMediaPlayer.playbackState
                     |> deliverOnMainQueue).startStrict(next: { [weak self, weak voiceMediaPlayer] state in
                         guard let strongSelf = self else {
@@ -118,7 +117,7 @@ public final class MediaManagerImpl: NSObject, MediaManager {
             if self.musicMediaPlayer !== oldValue {
                 if let musicMediaPlayer = self.musicMediaPlayer {
                     let type = musicMediaPlayer.type
-                    let account = musicMediaPlayer.account
+                    let account = musicMediaPlayer.engine.account
                     self.musicMediaPlayerStateValue.set(musicMediaPlayer.playbackState
                     |> map { state -> (Account, SharedMediaPlayerItemPlaybackStateOrLoading, MediaManagerPlayerType)? in
                         guard let state = state else {
@@ -525,7 +524,7 @@ public final class MediaManagerImpl: NSObject, MediaManager {
                                     controlPlaybackWithProximity = playlist.context.sharedContext.currentMediaInputSettings.with({ $0.enableRaiseToSpeak })
                                 }
                                 
-                                let voiceMediaPlayer = SharedMediaPlayer(context: context, mediaManager: strongSelf, inForeground: strongSelf.inForeground, account: context.account, audioSession: strongSelf.audioSession, overlayMediaManager: strongSelf.overlayMediaManager, playlist: playlist, initialOrder: .reversed, initialLooping: .none, initialPlaybackRate: settings.voicePlaybackRate, playerIndex: nextPlayerIndex, controlPlaybackWithProximity: controlPlaybackWithProximity, type: type, continueInstantVideoLoopAfterFinish: continueInstantVideoLoopAfterFinish)
+                                let voiceMediaPlayer = SharedMediaPlayer(context: context, mediaManager: strongSelf, inForeground: strongSelf.inForeground, engine: context.engine, audioSession: strongSelf.audioSession, overlayMediaManager: strongSelf.overlayMediaManager, playlist: playlist, initialOrder: .reversed, initialLooping: .none, initialPlaybackRate: settings.voicePlaybackRate, playerIndex: nextPlayerIndex, controlPlaybackWithProximity: controlPlaybackWithProximity, type: type, continueInstantVideoLoopAfterFinish: continueInstantVideoLoopAfterFinish)
                                 strongSelf.voiceMediaPlayer = voiceMediaPlayer
                                 voiceMediaPlayer.playedToEnd = { [weak voiceMediaPlayer] in
                                     if let strongSelf = self, let voiceMediaPlayer = voiceMediaPlayer, voiceMediaPlayer === strongSelf.voiceMediaPlayer {
@@ -559,7 +558,7 @@ public final class MediaManagerImpl: NSObject, MediaManager {
                                 strongSelf.musicMediaPlayer?.control(control)
                             } else {
                                 strongSelf.musicMediaPlayer?.stop()
-                                let musicMediaPlayer = SharedMediaPlayer(context: context, mediaManager: strongSelf, inForeground: strongSelf.inForeground, account: context.account, audioSession: strongSelf.audioSession, overlayMediaManager: strongSelf.overlayMediaManager, playlist: playlist, initialOrder: settings.order, initialLooping: settings.looping, initialPlaybackRate: storedState?.playbackRate ?? .x1, playerIndex: nextPlayerIndex, controlPlaybackWithProximity: false, type: type, continueInstantVideoLoopAfterFinish: true)
+                                let musicMediaPlayer = SharedMediaPlayer(context: context, mediaManager: strongSelf, inForeground: strongSelf.inForeground, engine: context.engine, audioSession: strongSelf.audioSession, overlayMediaManager: strongSelf.overlayMediaManager, playlist: playlist, initialOrder: settings.order, initialLooping: settings.looping, initialPlaybackRate: storedState?.playbackRate ?? .x1, playerIndex: nextPlayerIndex, controlPlaybackWithProximity: false, type: type, continueInstantVideoLoopAfterFinish: true)
                                 strongSelf.musicMediaPlayer = musicMediaPlayer
                                 strongSelf.musicListenTracker = MusicListenTracker(engine: context.engine)
                                 musicMediaPlayer.cancelled = { [weak musicMediaPlayer] in

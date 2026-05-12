@@ -11,7 +11,6 @@ import AccountContext
 import TelegramCore
 import MultilineTextComponent
 import EmojiStatusComponent
-import Postbox
 import TelegramStringFormatting
 import CheckNode
 import AvatarNode
@@ -102,35 +101,22 @@ private let smallExtensionFont = Font.with(size: 12.0, design: .round, weight: .
 private final class FileListItemComponent: Component {
     enum Icon: Equatable {
         case fileExtension(String)
-        case media(Media, TelegramMediaImageRepresentation)
+        case mediaFile(TelegramMediaFile, TelegramMediaImageRepresentation)
+        case mediaImage(TelegramMediaImage, TelegramMediaImageRepresentation)
         case audio
-        
+
         static func ==(lhs: Icon, rhs: Icon) -> Bool {
-            switch lhs {
-            case let .fileExtension(value):
-                if case .fileExtension(value) = rhs {
-                    return true
-                } else {
-                    return false
-                }
-            case let .media(media, representation):
-                if case let .media(rhsMedia, rhsRepresentation) = rhs {
-                    if media.id != rhsMedia.id {
-                        return false
-                    }
-                    if representation != rhsRepresentation {
-                        return false
-                    }
-                    return true
-                } else {
-                    return false
-                }
-            case .audio:
-                if case .audio = rhs {
-                    return true
-                } else {
-                    return false
-                }
+            switch (lhs, rhs) {
+            case let (.fileExtension(l), .fileExtension(r)):
+                return l == r
+            case let (.mediaFile(lFile, lRepresentation), .mediaFile(rFile, rRepresentation)):
+                return lFile.fileId == rFile.fileId && lRepresentation == rRepresentation
+            case let (.mediaImage(lImage, lRepresentation), .mediaImage(rImage, rRepresentation)):
+                return lImage.imageId == rImage.imageId && lRepresentation == rRepresentation
+            case (.audio, .audio):
+                return true
+            default:
+                return false
             }
         }
     }
@@ -445,25 +431,34 @@ private final class FileListItemComponent: Component {
                 }
             }
             
-            if case let .media(media, representation) = component.icon {
+            let mediaRepresentation: TelegramMediaImageRepresentation?
+            switch component.icon {
+            case let .mediaFile(_, representation), let .mediaImage(_, representation):
+                mediaRepresentation = representation
+            default:
+                mediaRepresentation = nil
+            }
+
+            if let representation = mediaRepresentation {
                 var resetImage = false
-                
+
                 let iconImageNode: TransformImageNode
                 if let current = self.iconImageNode {
                     iconImageNode = current
                 } else {
                     resetImage = true
-                    
+
                     iconImageNode = TransformImageNode()
                     self.iconImageNode = iconImageNode
                     self.containerButton.addSubview(iconImageNode.view)
                 }
-                
+
                 let iconSize = CGSize(width: 40.0, height: 40.0)
                 let imageSize: CGSize = representation.dimensions.cgSize
-                
+
                 if resetImage {
-                    if let file = media as? TelegramMediaFile {
+                    switch component.icon {
+                    case let .mediaFile(file, _):
                         iconImageNode.setSignal(chatWebpageSnippetFile(
                             account: component.context.account,
                             userLocation: .peer(component.messageId.peerId),
@@ -471,19 +466,21 @@ private final class FileListItemComponent: Component {
                             representation: representation,
                             automaticFetch: false
                         ))
-                    } else if let image = media as? TelegramMediaImage {
+                    case let .mediaImage(image, _):
                         iconImageNode.setSignal(mediaGridMessagePhoto(
                             account: component.context.account,
                             userLocation: .peer(component.messageId.peerId),
                             photoReference: ImageMediaReference.standalone(media: image),
                             automaticFetch: false
                         ))
+                    default:
+                        break
                     }
                 }
-                
+
                 let iconFrame = CGRect(origin: CGPoint(x: iconLeftInset + floor((leftInset - iconLeftInset - iconSize.width) / 2.0), y: floor((height - verticalInset * 2.0 - iconSize.height) / 2.0)), size: iconSize)
                 transition.setFrame(view: iconImageNode.view, frame: iconFrame)
-                
+
                 let iconImageLayout = iconImageNode.asyncLayout()
                 let iconImageApply = iconImageLayout(TransformImageArguments(
                     corners: ImageCorners(radius: 8.0),
@@ -631,11 +628,11 @@ final class StorageFileListPanelComponent: Component {
     typealias EnvironmentType = StorageUsagePanelEnvironment
     
     final class Item: Equatable {
-        let message: Message
+        let message: EngineMessage
         let size: Int64
-        
+
         init(
-            message: Message,
+            message: EngineMessage,
             size: Int64
         ) {
             self.message = message
@@ -982,14 +979,14 @@ final class StorageFileListPanelComponent: Component {
                                 extensionIconValue = fileExtension
                                 
                                 if let representation = smallestImageRepresentation(file.previewRepresentations) {
-                                    imageIconValue = .media(file, representation)
+                                    imageIconValue = .mediaFile(file, representation)
                                 }
                             }
                         } else if let image = media as? TelegramMediaImage {
                             title = environment.strings.Message_Photo
                             
                             if let representation = largestImageRepresentation(image.representations) {
-                                imageIconValue = .media(image, representation)
+                                imageIconValue = .mediaImage(image, representation)
                             }
                         }
                     }
@@ -1062,7 +1059,7 @@ final class StorageFileListPanelComponent: Component {
                 component: AnyComponent(FileListItemComponent(
                     context: component.context,
                     theme: environment.theme,
-                    messageId: EngineMessage.Id(peerId: PeerId(namespace: PeerId.Namespace._internalFromInt32Value(0), id: PeerId.Id._internalFromInt64Value(0)), namespace: 0, id: 0),
+                    messageId: EngineMessage.Id(peerId: component.context.account.peerId, namespace: 0, id: 0),
                     title: "ABCDEF",
                     subtitle: "ABCDEF",
                     label: "1000",

@@ -70,7 +70,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
     private let isPeerEnabled: (ContactListPeer) -> Bool
     var dismissed: (() -> Void)?
     
-    var presentScheduleTimePicker: (@escaping (Int32, Int32?) -> Void) -> Void = { _ in }
+    var presentScheduleTimePicker: (@escaping (Int32, Int32?, Bool) -> Void) -> Void = { _ in }
     
     private let createActionDisposable = MetaDisposable()
     private let confirmationDisposable = MetaDisposable()
@@ -514,7 +514,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
                 a(.default)
               
                 if let self {
-                    self.sendMessage?(EnginePeer(peer))
+                    self.sendMessage?(peer)
                 }
             })))
             
@@ -524,7 +524,7 @@ class ContactSelectionControllerImpl: ViewController, ContactSelectionController
                 a(.default)
 
                 if let self {
-                    self.openProfile?(EnginePeer(peer))
+                    self.openProfile?(peer)
                 }
             })))
             
@@ -646,8 +646,8 @@ final class ContactsPickerContext: AttachmentMediaPickerContext {
     }
     
     func schedule(parameters: ChatSendMessageActionSheetController.SendParameters?) {
-        self.controller?.presentScheduleTimePicker ({ time, repeatPeriod in
-            self.controller?.contactsNode.requestMultipleAction?(false, time, parameters)
+        self.controller?.presentScheduleTimePicker ({ time, repeatPeriod, silentPosting in
+            self.controller?.contactsNode.requestMultipleAction?(silentPosting, time, parameters)
         })
     }
     

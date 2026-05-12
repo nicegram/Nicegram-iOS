@@ -30,7 +30,7 @@ extension PeerInfoScreenNode {
             }
             
             if case .botPreview = pane.scope {
-                guard let data = self.data, let user = data.peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.canEdit) else {
+                guard let data = self.data, case let .user(user) = data.peer, let botInfo = user.botInfo, botInfo.flags.contains(.canEdit) else {
                     return
                 }
                 
@@ -141,7 +141,7 @@ extension PeerInfoScreenNode {
                 self.mediaGalleryContextMenu = contextController
                 controller.presentInGlobalOverlay(contextController)
             } else if case .peer = pane.scope {
-                guard let data = self.data, let user = data.peer as? TelegramUser else {
+                guard let data = self.data, case let .user(user) = data.peer else {
                     return
                 }
                 let _ = user

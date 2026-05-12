@@ -28,8 +28,9 @@ public struct ChatMessageEntryAttributes: Equatable {
     public var isCentered: Bool
     public var authorStoryStats: PeerStoryStats?
     public var displayContinueThreadFooter: Bool
+    public var pinToTop: Bool
     
-    public init(rank: CachedChannelAdminRank?, isContact: Bool, contentTypeHint: ChatMessageEntryContentType, updatingMedia: ChatUpdatingMessageMedia?, isPlaying: Bool, isCentered: Bool, authorStoryStats: PeerStoryStats?, displayContinueThreadFooter: Bool) {
+    public init(rank: CachedChannelAdminRank?, isContact: Bool, contentTypeHint: ChatMessageEntryContentType, updatingMedia: ChatUpdatingMessageMedia?, isPlaying: Bool, isCentered: Bool, authorStoryStats: PeerStoryStats?, displayContinueThreadFooter: Bool, pinToTop: Bool) {
         self.rank = rank
         self.isContact = isContact
         self.contentTypeHint = contentTypeHint
@@ -38,6 +39,7 @@ public struct ChatMessageEntryAttributes: Equatable {
         self.isCentered = isCentered
         self.authorStoryStats = authorStoryStats
         self.displayContinueThreadFooter = displayContinueThreadFooter
+        self.pinToTop = pinToTop
     }
     
     public init() {
@@ -49,6 +51,7 @@ public struct ChatMessageEntryAttributes: Equatable {
         self.isCentered = false
         self.authorStoryStats = nil
         self.displayContinueThreadFooter = false
+        self.pinToTop = false
     }
 }
 
@@ -109,7 +112,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return UInt64(6) << 40
             }
         // Nicegram Ads
-        case let .nicegramAd:
+        case .nicegramAd:
             return UInt64(8) << 40
         //
         }
@@ -133,7 +136,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                 return MessageIndex.absoluteLowerBound()
             }
         // Nicegram Ads
-        case let .nicegramAd:
+        case .nicegramAd:
             return MessageIndex.absoluteLowerBound()
         //
         }
@@ -157,7 +160,7 @@ public enum ChatHistoryEntry: Identifiable, Comparable {
                     return MessageIndex.absoluteLowerBound()
                 }
             // Nicegram Ads
-            case let .nicegramAd:
+            case .nicegramAd:
                 return MessageIndex.absoluteLowerBound()
             //
         }

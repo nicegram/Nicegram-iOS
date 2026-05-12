@@ -20,7 +20,7 @@ enum PeerInfoScreenMemberItemAction {
 final class PeerInfoScreenMemberItem: PeerInfoScreenItem {
     let id: AnyHashable
     let context: ItemListPeerItem.Context
-    let enclosingPeer: Peer?
+    let enclosingPeer: EnginePeer?
     let member: PeerInfoMember
     let badge: String?
     let isAccount: Bool
@@ -31,7 +31,7 @@ final class PeerInfoScreenMemberItem: PeerInfoScreenItem {
     init(
         id: AnyHashable,
         context: ItemListPeerItem.Context,
-        enclosingPeer: Peer?,
+        enclosingPeer: EnginePeer?,
         member: PeerInfoMember,
         badge: String? = nil,
         isAccount: Bool,
@@ -149,9 +149,9 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
             case .member:
                 var canEditRank = false
                 if item.member.id == item.context.accountPeerId {
-                    if let channel = item.enclosingPeer as? TelegramChannel, channel.hasPermission(.editRank) {
+                    if case let .channel(channel) = item.enclosingPeer, channel.hasPermission(.editRank) {
                         canEditRank = true
-                    } else if let group = item.enclosingPeer as? TelegramGroup, !group.hasBannedPermission(.banEditRank) {
+                    } else if case let .legacyGroup(group) = item.enclosingPeer, !group.hasBannedPermission(.banEditRank) {
                         canEditRank = true
                     }
                 }
@@ -178,13 +178,13 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
         let actions = availableActionsForMemberOfPeer(accountPeerId: item.context.accountPeerId, peer: item.enclosingPeer, member: item.member)
         
         var options: [ItemListPeerItemRevealOption] = []
-        if actions.contains(.promote) && item.enclosingPeer is TelegramChannel {
+        if actions.contains(.promote), case .channel = item.enclosingPeer {
             options.append(ItemListPeerItemRevealOption(type: .neutral, title: presentationData.strings.GroupInfo_ActionPromote, action: {
                 item.action?(.promote)
             }))
         }
         if actions.contains(.restrict) {
-            if item.enclosingPeer is TelegramChannel {
+            if case .channel = item.enclosingPeer {
                 options.append(ItemListPeerItemRevealOption(type: .warning, title: presentationData.strings.GroupInfo_ActionRestrict, action: {
                     item.action?(.restrict)
                 }))
@@ -220,7 +220,7 @@ private final class PeerInfoScreenMemberItemNode: PeerInfoScreenItemNode {
             itemText = .presence
         }
         
-        let peerItem = ItemListPeerItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, context: item.context, peer: EnginePeer(item.member.peer), height: itemHeight, presence: item.member.presence.flatMap(EnginePeer.Presence.init), text: itemText, label: itemLabel, editing: ItemListPeerItemEditing(editable: !options.isEmpty, editing: false, revealed: nil), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, selectable: false, animateFirstAvatarTransition: !item.isAccount, sectionId: 0, action: nil, setPeerIdWithRevealedOptions: { lhs, rhs in
+        let peerItem = ItemListPeerItem(presentationData: ItemListPresentationData(presentationData), systemStyle: .glass, dateTimeFormat: presentationData.dateTimeFormat, nameDisplayOrder: presentationData.nameDisplayOrder, context: item.context, peer: item.member.peer, height: itemHeight, presence: item.member.presence.flatMap(EnginePeer.Presence.init), text: itemText, label: itemLabel, editing: ItemListPeerItemEditing(editable: !options.isEmpty, editing: false, revealed: nil), revealOptions: ItemListPeerItemRevealOptions(options: options), switchValue: nil, enabled: true, selectable: false, animateFirstAvatarTransition: !item.isAccount, sectionId: 0, action: nil, setPeerIdWithRevealedOptions: { lhs, rhs in
             
         }, removePeer: { _ in
             

@@ -34,7 +34,7 @@ final class CameraVideoSource: VideoSource {
         let index = self.onUpdatedListeners.add(f)
         
         return ActionDisposable { [weak self] in
-            DispatchQueue.main.async {
+            Queue.mainQueue().async {
                 guard let self else {
                     return
                 }
@@ -252,7 +252,7 @@ final class LiveStreamMediaSource {
         let index = self.onVideoUpdatedListeners.add(f)
         
         return ActionDisposable { [weak self] in
-            DispatchQueue.main.async {
+            Queue.mainQueue().async {
                 guard let self else {
                     return
                 }

@@ -307,7 +307,7 @@ public enum DeviceMetrics: CaseIterable, Equatable {
         var keyboardHeight = _keyboardHeight(inLandscape: inLandscape)
         if #available(iOS 26.0, *) {
             if !inLandscape {
-                keyboardHeight += 9.0
+                keyboardHeight -= 1.0
             }
         }
         return keyboardHeight

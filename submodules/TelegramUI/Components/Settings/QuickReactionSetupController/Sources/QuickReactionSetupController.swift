@@ -245,10 +245,10 @@ public func quickReactionSetupController(
         }
     )
     
-    let settings = context.account.postbox.preferencesView(keys: [PreferencesKeys.reactionSettings])
+    let settings = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.reactionSettings))
     |> map { preferencesView -> ReactionSettings in
         let reactionSettings: ReactionSettings
-        if let entry = preferencesView.values[PreferencesKeys.reactionSettings], let value = entry.get(ReactionSettings.self) {
+        if let entry = preferencesView, let value = entry.get(ReactionSettings.self) {
             reactionSettings = value
         } else {
             reactionSettings = .default

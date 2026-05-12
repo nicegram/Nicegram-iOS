@@ -37,6 +37,7 @@
 @protocol TGCaptionPanelView <NSObject>
 
 @property (nonatomic, readonly) UIView * _Nonnull view;
+@property (nonatomic, readonly) CGFloat additionalInputHeight;
 
 - (void)setTimeout:(int32_t)timeout isVideo:(bool)isVideo isCaptionAbove:(bool)isCaptionAbove;
 
@@ -55,6 +56,10 @@
 @property (nonatomic, copy) void(^ _Nullable timerUpdated)(NSNumber * _Nullable value);
 @property (nonatomic, copy) void(^ _Nullable captionIsAboveUpdated)(BOOL value);
 
+@optional
+- (CGFloat)updateContainerLayoutSize:(CGSize)size safeAreaInset:(UIEdgeInsets)safeAreaInset bottomInset:(CGFloat)bottomInset keyboardHeight:(CGFloat)keyboardHeight animated:(bool)animated;
+
+@required
 - (CGFloat)updateLayoutSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight sideInset:(CGFloat)sideInset animated:(bool)animated;
 - (CGFloat)baseHeight;
 

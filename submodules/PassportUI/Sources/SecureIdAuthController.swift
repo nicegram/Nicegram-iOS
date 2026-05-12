@@ -227,7 +227,7 @@ public final class SecureIdAuthController: ViewController, StandalonePresentable
                         }
                         
                         let primaryLanguageByCountry = configuration.nativeLanguageByCountry
-                        return .single(SecureIdEncryptedFormData(form: form, primaryLanguageByCountry: primaryLanguageByCountry, accountPeer: accountPeer._asPeer(), servicePeer: servicePeer._asPeer()))
+                        return .single(SecureIdEncryptedFormData(form: form, primaryLanguageByCountry: primaryLanguageByCountry, accountPeer: accountPeer, servicePeer: servicePeer))
                     }
                 }
                 |> deliverOnMainQueue).start(next: { [weak self] formData in
@@ -268,7 +268,7 @@ public final class SecureIdAuthController: ViewController, StandalonePresentable
                             case .form:
                                 break
                             case var .list(list):
-                                list.accountPeer = accountPeer._asPeer()
+                                list.accountPeer = accountPeer
                                 list.primaryLanguageByCountry = primaryLanguageByCountry
                                 list.encryptedValues = values
                                 return .list(list)
@@ -328,7 +328,14 @@ public final class SecureIdAuthController: ViewController, StandalonePresentable
             guard let strongSelf = self else {
                 return
             }
-            let _ = (strongSelf.context.account.postbox.loadedPeerWithId(mention.peerId)
+            let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: mention.peerId))
+            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                if let peer {
+                    return .single(peer)
+                } else {
+                    return .never()
+                }
+            }
             |> deliverOnMainQueue).start(next: { peer in
                 guard let strongSelf = self else {
                     return

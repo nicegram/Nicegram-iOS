@@ -153,7 +153,7 @@ private extension NGDeeplinkHandler {
     }
     
     func handleSpecialOffer(url: URL) -> Bool {
-        SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
+        _ = SpecialOfferTgHelper.showSpecialOfferFromDeeplink(
             id: url.queryItems["id"]
         )
         return true

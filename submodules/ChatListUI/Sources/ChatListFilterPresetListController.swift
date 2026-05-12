@@ -580,18 +580,18 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
         pushControllerImpl?(controller)
     })
         
-    let featuredFilters = context.account.postbox.preferencesView(keys: [PreferencesKeys.chatListFiltersFeaturedState])
+    let featuredFilters = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.chatListFiltersFeaturedState))
     |> map { preferences -> [ChatListFeaturedFilter] in
-        guard let state = preferences.values[PreferencesKeys.chatListFiltersFeaturedState]?.get(ChatListFiltersFeaturedState.self) else {
+        guard let state = preferences?.get(ChatListFiltersFeaturedState.self) else {
             return []
         }
         return state.filters
     }
     |> distinctUntilChanged
-        
+
     let updatedFilterOrder = Promise<[Int32]?>(nil)
-    
-    let preferences = context.account.postbox.preferencesView(keys: [ApplicationSpecificPreferencesKeys.chatListFilterSettings])
+
+    let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: ApplicationSpecificPreferencesKeys.chatListFilterSettings))
     
     let previousDisplayTags = Atomic<Bool?>(value: nil)
     
@@ -622,7 +622,7 @@ public func chatListFilterPresetListController(context: AccountContext, mode: Ch
         case .default:
             leftNavigationButton = nil
         case .modal:
-            leftNavigationButton = ItemListNavigationButton(content: .text(presentationData.strings.Common_Close), style: .regular, enabled: true, action: {
+            leftNavigationButton = ItemListNavigationButton(content: .text("___close"), style: .regular, enabled: true, action: {
                 dismissImpl?()
             })
         }

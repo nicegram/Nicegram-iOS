@@ -30,7 +30,7 @@ final class InstantPageSlideshowItem: InstantPageItem {
     
     func matchesNode(_ node: InstantPageNode) -> Bool {
         if let node = node as? InstantPageSlideshowNode {
-            return self.medias == node.medias
+            return instantPageMediaArraysMatchNodeIdentity(self.medias, node.medias)
         } else {
             return false
         }
@@ -55,4 +55,3 @@ final class InstantPageSlideshowItem: InstantPageItem {
     func drawInTile(context: CGContext) {
     }
 }
-

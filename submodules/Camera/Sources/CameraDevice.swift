@@ -141,10 +141,12 @@ final class CameraDevice {
                 Logger.shared.log("Camera", "No format selected")
             }
             
+            #if DEBUG
             Logger.shared.log("Camera", "Available formats:")
             for format in device.formats {
                 Logger.shared.log("Camera", format.description)
             }
+            #endif
             
             if let targetFPS = device.actualFPS(maxFramerate) {
                 device.activeVideoMinFrameDuration = targetFPS.duration
@@ -154,7 +156,7 @@ final class CameraDevice {
             if device.isLowLightBoostSupported {
                 device.automaticallyEnablesLowLightBoostWhenAvailable = true
             }
-            
+                        
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
             }
@@ -180,18 +182,16 @@ final class CameraDevice {
         self.setFocusPoint(CGPoint(x: 0.5, y: 0.5), focusMode: .continuousAutoFocus, exposureMode: .continuousAutoExposure, monitorSubjectAreaChange: false)
     }
     
-    var fps: Double = defaultFPS {
-        didSet {
-            guard let device = self.videoDevice, let targetFPS = device.actualFPS(Double(self.fps)) else {
-                return
-            }
-            
-            self.fps = targetFPS.fps
-            
-            self.transaction(device) { device in
-                device.activeVideoMinFrameDuration = targetFPS.duration
-                device.activeVideoMaxFrameDuration = targetFPS.duration
-            }
+    private(set) var fps: Double = defaultFPS
+    
+    func setFps(_ fps: Double) {
+        guard let device = self.videoDevice, let targetFPS = device.actualFPS(Double(fps)) else {
+            return
+        }
+        self.fps = targetFPS.fps
+        self.transaction(device) { device in
+            device.activeVideoMinFrameDuration = targetFPS.duration
+            device.activeVideoMaxFrameDuration = targetFPS.duration
         }
     }
     
@@ -305,7 +305,8 @@ final class CameraDevice {
             return
         }
         self.transaction(device) { device in
-            device.videoZoomFactor = max(device.neutralZoomFactor, min(10.0, device.neutralZoomFactor + zoomLevel))
+            let target = device.neutralZoomFactor + zoomLevel
+            device.videoZoomFactor = self.clampedZoomFactor(target, for: device)
         }
     }
     
@@ -314,7 +315,8 @@ final class CameraDevice {
             return
         }
         self.transaction(device) { device in
-            device.videoZoomFactor = max(1.0, min(10.0, device.videoZoomFactor * zoomDelta))
+            let target = device.videoZoomFactor * zoomDelta
+            device.videoZoomFactor = self.clampedZoomFactor(target, for: device)
         }
     }
     
@@ -323,7 +325,8 @@ final class CameraDevice {
             return
         }
         self.transaction(device) { device in
-            device.ramp(toVideoZoomFactor: zoomLevel, withRate: Float(rate))
+            let target = self.clampedZoomFactor(zoomLevel, for: device)
+            device.ramp(toVideoZoomFactor: target, withRate: Float(rate))
         }
     }
     
@@ -332,7 +335,14 @@ final class CameraDevice {
             return
         }
         self.transaction(device) { device in
-            device.videoZoomFactor = neutral ? device.neutralZoomFactor : device.minAvailableVideoZoomFactor
+            let target = neutral ? device.neutralZoomFactor : device.minAvailableVideoZoomFactor
+            device.videoZoomFactor = self.clampedZoomFactor(target, for: device)
         }
+    }
+
+    private func clampedZoomFactor(_ value: CGFloat, for device: AVCaptureDevice) -> CGFloat {
+        let minimum = max(1.0, device.minAvailableVideoZoomFactor)
+        let maximum = max(minimum, device.maxAvailableVideoZoomFactor)
+        return min(maximum, max(minimum, value))
     }
 }

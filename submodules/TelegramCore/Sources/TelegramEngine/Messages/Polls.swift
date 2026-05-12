@@ -31,6 +31,7 @@ func pollCloudMediaToInputMedia(_ media: Media) -> Api.InputMedia? {
 
 public enum RequestMessageSelectPollOptionError {
     case generic
+    case restrictedToSubscribers
 }
 
 func _internal_requestMessageSelectPollOption(account: Account, messageId: MessageId, opaqueIdentifiers: [Data]) -> Signal<TelegramMediaPoll?, RequestMessageSelectPollOptionError> {
@@ -40,7 +41,10 @@ func _internal_requestMessageSelectPollOption(account: Account, messageId: Messa
     |> mapToSignal { peer in
         if let inputPeer = apiInputPeer(peer) {
             return account.network.request(Api.functions.messages.sendVote(peer: inputPeer, msgId: messageId.id, options: opaqueIdentifiers.map { Buffer(data: $0) }))
-            |> mapError { _ -> RequestMessageSelectPollOptionError in
+            |> mapError { error -> RequestMessageSelectPollOptionError in
+                if error.errorDescription == "POLL_MEMBER_RESTRICTED" {
+                    return .restrictedToSubscribers
+                }
                 return .generic
             }
             |> mapToSignal { result -> Signal<TelegramMediaPoll?, RequestMessageSelectPollOptionError> in
@@ -58,7 +62,7 @@ func _internal_requestMessageSelectPollOption(account: Account, messageId: Messa
                                 if let poll = poll {
                                     switch poll {
                                     case let .poll(pollData):
-                                        let (flags, question, answers, closePeriod, closeDate, pollHash) = (pollData.flags, pollData.question, pollData.answers, pollData.closePeriod, pollData.closeDate, pollData.hash)
+                                        let (flags, question, answers, closePeriod, closeDate, pollHash, countries) = (pollData.flags, pollData.question, pollData.answers, pollData.closePeriod, pollData.closeDate, pollData.hash, pollData.countriesIso2)
                                         let publicity: TelegramMediaPollPublicity
                                         if (flags & (1 << 1)) != 0 {
                                             publicity = .public
@@ -75,6 +79,7 @@ func _internal_requestMessageSelectPollOption(account: Account, messageId: Messa
                                         let revotingDisabled = (flags & (1 << 7)) != 0
                                         let shuffleAnswers = (flags & (1 << 8)) != 0
                                         let hideResultsUntilClose = (flags & (1 << 9)) != 0
+                                        let restrictToSubscribers = (flags & (1 << 11)) != 0
                                         let questionText: String
                                         let questionEntities: [MessageTextEntity]
                                         switch question {
@@ -83,7 +88,7 @@ func _internal_requestMessageSelectPollOption(account: Account, messageId: Messa
                                             questionText = text
                                             questionEntities = messageTextEntitiesFromApiEntities(entities)
                                         }
-                                        resultPoll = TelegramMediaPoll(pollId: pollId, publicity: publicity, kind: kind, text: questionText, textEntities: questionEntities, options: answers.map(TelegramMediaPollOption.init(apiOption:)), correctAnswers: nil, results: TelegramMediaPollResults(apiResults: results), isClosed: (flags & (1 << 0)) != 0, deadlineTimeout: closePeriod, deadlineDate: closeDate, pollHash: pollHash, openAnswers: openAnswers, revotingDisabled: revotingDisabled, shuffleAnswers: shuffleAnswers, hideResultsUntilClose: hideResultsUntilClose, attachedMedia: resultPoll?.attachedMedia)
+                                        resultPoll = TelegramMediaPoll(pollId: pollId, publicity: publicity, kind: kind, text: questionText, textEntities: questionEntities, options: answers.map(TelegramMediaPollOption.init(apiOption:)), correctAnswers: nil, results: TelegramMediaPollResults(apiResults: results), isClosed: (flags & (1 << 0)) != 0, deadlineTimeout: closePeriod, deadlineDate: closeDate, pollHash: pollHash, openAnswers: openAnswers, revotingDisabled: revotingDisabled, shuffleAnswers: shuffleAnswers, hideResultsUntilClose: hideResultsUntilClose, attachedMedia: resultPoll?.attachedMedia, restrictToSubscribers: restrictToSubscribers, countries: countries ?? [])
                                     }
                                 }
                                 
@@ -217,10 +222,17 @@ func _internal_requestClosePoll(postbox: Postbox, network: Network, stateManager
             pollFlags |= 1 << 1
         }
         var pollMediaFlags: Int32 = 0
-        var correctAnswers: [Buffer]?
+        var correctAnswersIndices: [Int32]?
         if let correctAnswersValue = poll.correctAnswers {
             pollMediaFlags |= 1 << 0
-            correctAnswers = correctAnswersValue.map { Buffer(data: $0) }
+            
+            var indices: [Int32] = []
+            for i in 0 ..< poll.options.count {
+                if correctAnswersValue.contains(where: { poll.options[i].opaqueIdentifier == $0 }) {
+                    indices.append(Int32(i))
+                }
+            }
+            correctAnswersIndices = indices
         }
 
         pollFlags |= 1 << 0
@@ -228,10 +240,27 @@ func _internal_requestClosePoll(postbox: Postbox, network: Network, stateManager
         if poll.deadlineTimeout != nil {
             pollFlags |= 1 << 4
         }
-        if poll.openAnswers { pollFlags |= 1 << 6 }
-        if poll.revotingDisabled { pollFlags |= 1 << 7 }
-        if poll.shuffleAnswers { pollFlags |= 1 << 8 }
-        if poll.hideResultsUntilClose { pollFlags |= 1 << 9 }
+        if poll.deadlineDate != nil {
+            pollFlags |= 1 << 5
+        }
+        if poll.openAnswers {
+            pollFlags |= 1 << 6
+        }
+        if poll.revotingDisabled {
+            pollFlags |= 1 << 7
+        }
+        if poll.shuffleAnswers {
+            pollFlags |= 1 << 8
+        }
+        if poll.hideResultsUntilClose {
+            pollFlags |= 1 << 9
+        }
+        if poll.restrictToSubscribers {
+            pollFlags |= 1 << 11
+        }
+        if !poll.countries.isEmpty {
+            pollFlags |= 1 << 12
+        }
 
         var mappedSolution: String?
         var mappedSolutionEntities: [Api.MessageEntity]?
@@ -240,12 +269,8 @@ func _internal_requestClosePoll(postbox: Postbox, network: Network, stateManager
             mappedSolutionEntities = apiTextAttributeEntities(TextEntitiesMessageAttribute(entities: solution.entities), associatedPeers: SimpleDictionary())
             pollMediaFlags |= 1 << 1
         }
-
-        //TODO:fix
-        let _ = correctAnswers
-        let correctAnswerss: [Int32] = []
         
-        return network.request(Api.functions.messages.editMessage(flags: flags, peer: inputPeer, id: messageId.id, message: nil, media: .inputMediaPoll(.init(flags: pollMediaFlags, poll: .poll(.init(id: poll.pollId.id, flags: pollFlags, question: .textWithEntities(.init(text: poll.text, entities: apiEntitiesFromMessageTextEntities(poll.textEntities, associatedPeers: SimpleDictionary()))), answers: poll.options.map({ $0.apiOption }), closePeriod: poll.deadlineTimeout, closeDate: nil, hash: 0)), correctAnswers: correctAnswerss, attachedMedia: nil, solution: mappedSolution, solutionEntities: mappedSolutionEntities, solutionMedia: nil)), replyMarkup: nil, entities: nil, scheduleDate: nil, scheduleRepeatPeriod: nil, quickReplyShortcutId: nil))
+        return network.request(Api.functions.messages.editMessage(flags: flags, peer: inputPeer, id: messageId.id, message: nil, media: .inputMediaPoll(.init(flags: pollMediaFlags, poll: .poll(.init(id: poll.pollId.id, flags: pollFlags, question: .textWithEntities(.init(text: poll.text, entities: apiEntitiesFromMessageTextEntities(poll.textEntities, associatedPeers: SimpleDictionary()))), answers: poll.options.map({ $0.apiOption }), closePeriod: poll.deadlineTimeout, closeDate: poll.deadlineDate, countriesIso2: poll.countries, hash: 0)), correctAnswers: correctAnswersIndices, attachedMedia: nil, solution: mappedSolution, solutionEntities: mappedSolutionEntities, solutionMedia: nil)), replyMarkup: nil, entities: nil, scheduleDate: nil, scheduleRepeatPeriod: nil, quickReplyShortcutId: nil))
         |> map(Optional.init)
         |> `catch` { _ -> Signal<Api.Updates?, NoError> in
             return .single(nil)

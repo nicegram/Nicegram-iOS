@@ -2,8 +2,8 @@ import Foundation
 import UIKit
 import Display
 
-final class GlassHighlightGestureRecognizer: UIGestureRecognizer, UIGestureRecognizerDelegate {
-    var highlightContainerView: UIView?
+public final class GlassHighlightGestureRecognizer: UIGestureRecognizer, UIGestureRecognizerDelegate {
+    public weak var highlightContainerView: UIView?
     
     private var touchEffect: TouchEffect?
     private var initialTouchLocation: CGPoint?
@@ -14,7 +14,7 @@ final class GlassHighlightGestureRecognizer: UIGestureRecognizer, UIGestureRecog
         }
     }
     
-    override init(target: Any?, action: Selector?) {
+    public override init(target: Any?, action: Selector?) {
         super.init(target: target, action: action)
         
         self.delegate = self
@@ -24,19 +24,19 @@ final class GlassHighlightGestureRecognizer: UIGestureRecognizer, UIGestureRecog
         self.requiresExclusiveTouchType = false
     }
     
-    override func canPrevent(_ preventedGestureRecognizer: UIGestureRecognizer) -> Bool {
+    override public func canPrevent(_ preventedGestureRecognizer: UIGestureRecognizer) -> Bool {
         return false
     }
     
-    override func canBePrevented(by preventingGestureRecognizer: UIGestureRecognizer) -> Bool {
+    override public func canBePrevented(by preventingGestureRecognizer: UIGestureRecognizer) -> Bool {
         return false
     }
     
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
     
-    override func reset() {
+    override public func reset() {
         if let touchEffect = self.touchEffect {
             touchEffect.setIsTracking(false)
         }
@@ -45,7 +45,7 @@ final class GlassHighlightGestureRecognizer: UIGestureRecognizer, UIGestureRecog
         self.initialTouchLocation = nil
     }
     
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+    override public func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         if let view = self.touchEffectView ?? self.view, let touch = touches.first {
             let touchLocation = touch.location(in: view)
             let touchEffect = TouchEffect(view: view, highlightContainerView: self.highlightContainerView)
@@ -60,21 +60,21 @@ final class GlassHighlightGestureRecognizer: UIGestureRecognizer, UIGestureRecog
         }
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+    override public func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
         if let touchEffect = self.touchEffect {
             touchEffect.setIsTracking(false)
         }
         self.touchEffect = nil
     }
     
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+    override public func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
         if let touchEffect = self.touchEffect {
             touchEffect.setIsTracking(false)
         }
         self.touchEffect = nil
     }
     
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+    override public func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         guard let touchEffect = self.touchEffect,
               let view = self.touchEffectView ?? self.view,
               let touch = touches.first,

@@ -58,11 +58,11 @@ func _internal_requestStartBotInGroup(account: Account, botPeerId: PeerId, group
                     |> mapToSignal { participant -> Signal<StartBotInGroupResult, RequestStartBotInGroupError> in
                         return account.postbox.transaction { transaction -> StartBotInGroupResult in
                             if let participant = participant, let peer = transaction.getPeer(participant.peerId) {
-                                var peers: [PeerId: Peer] = [:]
+                                var peers: [EnginePeer.Id: EnginePeer] = [:]
                                 let presences: [PeerId: PeerPresence] = [:]
-                                
-                                peers[peer.id] = peer
-                                return .channelParticipant(RenderedChannelParticipant(participant: participant, peer: peer, peers: peers, presences: presences))
+
+                                peers[peer.id] = EnginePeer(peer)
+                                return .channelParticipant(RenderedChannelParticipant(participant: participant, peer: EnginePeer(peer), peers: peers, presences: presences))
                             } else {
                                 return .none
                             }

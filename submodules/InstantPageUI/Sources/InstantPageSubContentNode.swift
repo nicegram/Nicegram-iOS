@@ -8,7 +8,7 @@ import TelegramPresentationData
 import TelegramUIPreferences
 import AccountContext
 
-final class InstantPageSubContentNode : ASDisplayNode {
+final class InstantPageSubContentNode : ASDisplayNode, InstantPageExternalMediaDimensionsNode {
     private let context: AccountContext
     private let strings: PresentationStrings
     private let nameDisplayOrder: PresentationPersonNameOrder
@@ -32,6 +32,13 @@ final class InstantPageSubContentNode : ASDisplayNode {
     var currentDetailsItems: [InstantPageDetailsItem] = []
     
     var requestLayoutUpdate: ((Bool) -> Void)?
+    var updateExternalMediaDimensions: ((EngineMedia.Id, PixelDimensions) -> Void)? {
+        didSet {
+            for (_, itemNode) in self.visibleItemsWithNodes {
+                self.applyExternalMediaDimensionsUpdater(to: itemNode)
+            }
+        }
+    }
     
     var currentLayout: InstantPageLayout
     let contentSize: CGSize
@@ -209,6 +216,7 @@ final class InstantPageSubContentNode : ASDisplayNode {
                         topNode = newNode
                         self.visibleItemsWithNodes[itemIndex] = newNode
                         itemNode = newNode
+                        self.applyExternalMediaDimensionsUpdater(to: newNode)
                         
                         if let itemNode = itemNode as? InstantPageDetailsNode {
                             itemNode.requestLayoutUpdate = { [weak self] animated in
@@ -286,6 +294,16 @@ final class InstantPageSubContentNode : ASDisplayNode {
         }
         for index in removeItemIndices {
             self.visibleItemsWithNodes.removeValue(forKey: index)
+        }
+    }
+    
+    private func applyExternalMediaDimensionsUpdater(to itemNode: InstantPageNode) {
+        if let itemNode = itemNode as? InstantPageImageNode {
+            itemNode.updateExternalMediaDimensions = self.updateExternalMediaDimensions
+        } else if let itemNode = itemNode as? InstantPageDetailsNode {
+            itemNode.contentNode.updateExternalMediaDimensions = self.updateExternalMediaDimensions
+        } else if let itemNode = itemNode as? InstantPageSlideshowNode {
+            itemNode.updateExternalMediaDimensions = self.updateExternalMediaDimensions
         }
     }
     

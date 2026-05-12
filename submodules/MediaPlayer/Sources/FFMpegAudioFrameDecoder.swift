@@ -7,7 +7,7 @@ final class FFMpegAudioFrameDecoder: MediaTrackFrameDecoder {
     private let swrContext: FFMpegSWResample
     
     private var timescale: CMTimeScale = 44000
-    private let audioFrame: FFMpegAVFrame
+    private let audioFrame: FFMpegAVFrame?
     private var resetDecoderOnNextFrame = true
     
     private let formatDescription: CMAudioFormatDescription
@@ -43,11 +43,15 @@ final class FFMpegAudioFrameDecoder: MediaTrackFrameDecoder {
     }
     
     func decodeRaw(frame: MediaTrackDecodableFrame) -> Data? {
+        guard let audioFrame = self.audioFrame else {
+            return nil
+        }
+        
         let status = frame.packet.send(toDecoder: self.codecContext)
         if status == 0 {
-            let result = self.codecContext.receive(into: self.audioFrame)
+            let result = self.codecContext.receive(into: audioFrame)
             if case .success = result {
-                guard let data = self.swrContext.resample(self.audioFrame) else {
+                guard let data = self.swrContext.resample(audioFrame) else {
                     return nil
                 }
                 
@@ -67,10 +71,14 @@ final class FFMpegAudioFrameDecoder: MediaTrackFrameDecoder {
     }
     
     func decode() -> MediaTrackFrame? {
+        guard let audioFrame = self.audioFrame else {
+            return nil
+        }
+        
         while true {
-            let result = self.codecContext.receive(into: self.audioFrame)
+            let result = self.codecContext.receive(into: audioFrame)
             if case .success = result {
-                if let convertedFrame = convertAudioFrame(self.audioFrame) {
+                if let convertedFrame = convertAudioFrame(audioFrame) {
                     self.delayedFrames.append(convertedFrame)
                 }
             } else {

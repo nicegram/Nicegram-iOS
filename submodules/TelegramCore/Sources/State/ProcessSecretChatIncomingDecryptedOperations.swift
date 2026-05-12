@@ -448,7 +448,7 @@ extension SecretChatServiceAction {
                         self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                     case let .decryptedMessageActionAbortKey(exchangeId):
                         self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                    case .decryptedMessageActionNoop:
+                    case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                         return nil
                 }
         }
@@ -484,7 +484,7 @@ extension SecretChatServiceAction {
                     self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                 case let .decryptedMessageActionAbortKey(exchangeId):
                     self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                case .decryptedMessageActionNoop:
+                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                     return nil
             }
         }
@@ -520,7 +520,7 @@ extension SecretChatServiceAction {
                     self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                 case let .decryptedMessageActionAbortKey(exchangeId):
                     self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                case .decryptedMessageActionNoop:
+                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                     return nil
             }
         }
@@ -556,7 +556,7 @@ extension SecretChatServiceAction {
                     self = .rekeyAction(.pfsCommitKey(rekeySessionId: exchangeId, keyFingerprint: keyFingerprint))
                 case let .decryptedMessageActionAbortKey(exchangeId):
                     self = .rekeyAction(.pfsAbortSession(rekeySessionId: exchangeId))
-                case .decryptedMessageActionNoop:
+                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                     return nil
             }
         }
@@ -919,7 +919,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop:
+                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                     return nil
             }
     }
@@ -1151,7 +1151,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop:
+                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                     return nil
             }
     }
@@ -1430,7 +1430,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop:
+                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                     return nil
         }
     }
@@ -1631,7 +1631,7 @@ private func parseMessage(peerId: PeerId, authorId: PeerId, tagLocalIndex: Int32
                     return nil
                 case .decryptedMessageActionAbortKey:
                     return nil
-                case .decryptedMessageActionNoop:
+                case .decryptedMessageActionNoop, .decryptedMessageActionTyping:
                     return nil
         }
     }

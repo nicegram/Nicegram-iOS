@@ -1517,12 +1517,19 @@ private final class StickerPackContainer: ASDisplayNode {
         if let (info, items, installed) = self.currentStickerPack {
             var dismissed = false
             switch self.decideNextAction(self, installed ? .remove : .add) {
-                case .dismiss:
-                    self.requestDismiss()
-                    dismissed = true
-                case .navigatedNext, .ignored:
-                    self.updateStickerPackContents([.result(info: StickerPackCollectionInfo.Accessor(info), items: items, installed: !installed)], hasPremium: false)
+            case .dismiss:
+                self.requestDismiss()
+                dismissed = true
+            case .navigatedNext, .ignored:
+                self.updateStickerPackContents([.result(info: StickerPackCollectionInfo.Accessor(info), items: items, installed: !installed)], hasPremium: false)
             }
+            
+            guard let controller = self.controller else {
+                return
+            }
+            let navigationController = controller.parentNavigationController ?? (controller.navigationController as? NavigationController)
+            let context = self.context
+            let strings = self.presentationData.strings
             
             let actionPerformed = self.controller?.actionPerformed
             if installed {
@@ -1536,7 +1543,19 @@ private final class StickerPackContainer: ASDisplayNode {
                     }
                 })
             } else {
-                let _ = self.context.engine.stickers.addStickerPackInteractively(info: info, items: items).start()
+                let _ = self.context.engine.stickers.addStickerPackInteractively(info: info, items: items, noDelay: true).startStandalone()
+                let _ = (self.context.account.stateManager.installedStickerPacksArchivedEvents
+                |> deliverOnMainQueue
+                |> take(1)
+                |> timeout(3.0, queue: .mainQueue(), alternate: .single(0))).startStandalone(next: { [weak navigationController] count in
+                    if count == 0 {
+                        return
+                    }
+                    guard let navigationController else {
+                        return
+                    }
+                    navigationController.pushViewController(textAlertController(context: context, updatedPresentationData: controller.updatedPresentationData, title: nil, text: strings.ArchivedPacksAlert_Title, actions: [TextAlertAction(type: .defaultAction, title: strings.Common_OK, action: {})]))
+                })
                 if dismissed {
                     actionPerformed?([(info, items, .add)])
                 }

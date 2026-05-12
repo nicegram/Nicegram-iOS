@@ -11,15 +11,15 @@ import LegacyUI
 import LegacyMediaPickerUI
 
 func presentLegacyWebSearchEditor(context: AccountContext, theme: PresentationTheme, result: ChatContextResult, initialLayout: ContainerViewLayout?, updateHiddenMedia: @escaping (String?) -> Void, transitionHostView: @escaping () -> UIView?, transitionView: @escaping (ChatContextResult) -> UIView?, completed: @escaping (UIImage) -> Void, present: @escaping (ViewController, Any?) -> Void) {
-    guard let item = legacyWebSearchItem(account: context.account, result: result) else {
+    guard let item = legacyWebSearchItem(engine: context.engine, result: result) else {
         return
     }
     
     var screenImage: Signal<UIImage?, NoError> = .single(nil)
     if let resource = item.thumbnailResource {
-        screenImage = context.account.postbox.mediaBox.resourceData(resource, option: .complete(waitUntilFetchStatus: false), attemptSynchronously: true)
+        screenImage = context.engine.resources.data(resource: EngineMediaResource(resource), attemptSynchronously: true)
         |> map { maybeData -> UIImage? in
-            if maybeData.complete {
+            if maybeData.isComplete {
                 if let loadedData = try? Data(contentsOf: URL(fileURLWithPath: maybeData.path), options: []), let image = UIImage(data: loadedData) {
                     return image
                 }

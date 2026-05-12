@@ -792,7 +792,7 @@ class WebSearchControllerNode: ASDisplayNode {
             }
         } else {
             if let mode = self.controller?.mode, case let .editor(completion) = mode {
-                if let item = legacyWebSearchItem(account: self.context.account, result: currentResult) {
+                if let item = legacyWebSearchItem(engine: self.context.engine, result: currentResult) {
                     let _ = (item.originalImage
                     |> deliverOnMainQueue).start(next: { image in
                         if !image.degraded() {

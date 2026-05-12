@@ -38,6 +38,9 @@ swift_library(
         "//submodules/TelegramUI/Components/ToastComponent",
         "//submodules/TelegramUI/Components/InteractiveTextComponent",
         "//submodules/TelegramUI/Components/EmojiStatusComponent",
+        "//submodules/TelegramUI/Components/ListMultilineTextFieldItemComponent",
+        "//submodules/TelegramUI/Components/TextFieldComponent",
+        "//submodules/TelegramUI/Components/EntityKeyboard",
         "//submodules/TelegramNotices",
         "//submodules/Markdown",
         "//submodules/TelegramUIPreferences",
@@ -45,6 +48,7 @@ swift_library(
         "//submodules/TextSelectionNode",
         "//submodules/Pasteboard",
         "//submodules/Speak",
+        "//submodules/ContextUI",
     ],
     visibility = [
         "//visibility:public",

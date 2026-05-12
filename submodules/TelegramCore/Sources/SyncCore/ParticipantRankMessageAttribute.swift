@@ -4,8 +4,6 @@ import Postbox
 public class ParticipantRankMessageAttribute: MessageAttribute {
     public let rank: String
     
-    public var associatedMessageIds: [MessageId] = []
-    
     public init(rank: String) {
         self.rank = rank
     }

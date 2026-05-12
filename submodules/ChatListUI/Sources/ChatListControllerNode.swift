@@ -1542,6 +1542,24 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
             
             // Nicegram FolderForKeywords, showFolderForKeywords condition
             if let tabContainerData = self.controller?.tabContainerData, (tabContainerData.0.count > 1 || showFolderForKeywords) {
+                let folderFilterIndex: (ChatListFilterTabEntryId, [ChatListFilterTabEntry]) -> Int? = { id, entries in
+                    var index = 0
+                    for entry in entries {
+                        switch entry {
+                        case .all:
+                            if entry.id == id {
+                                return nil
+                            }
+                        case .filter:
+                            if entry.id == id {
+                                return index
+                            }
+                            index += 1
+                        }
+                    }
+                    return nil
+                }
+
                 let selectedTab: HorizontalTabsComponent.Tab.Id
                 switch self.effectiveContainerNode.currentItemFilter {
                 case .all:
@@ -1622,10 +1640,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                                 
                                 var isDisabled = false
                                 if let filtersLimit = tabContainerData.2 {
-                                    guard let folderIndex = tabContainerData.0.firstIndex(where: { $0.id == mappedId }) else {
-                                        return
+                                    if let folderIndex = folderFilterIndex(mappedId, tabContainerData.0) {
+                                        isDisabled = !isPremium && folderIndex >= filtersLimit
                                     }
-                                    isDisabled = !isPremium && folderIndex >= filtersLimit
                                 }
                                 
                                 if isDisabled {
@@ -1668,10 +1685,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
                                 
                                 var isDisabled = false
                                 if let filtersLimit = tabContainerData.2 {
-                                    guard let folderIndex = tabContainerData.0.firstIndex(where: { $0.id == entry.id }) else {
-                                        return
+                                    if let folderIndex = folderFilterIndex(entry.id, tabContainerData.0) {
+                                        isDisabled = !isPremium && folderIndex >= filtersLimit
                                     }
-                                    isDisabled = !isPremium && folderIndex >= filtersLimit
                                 }
                                 
                                 self.controller?.tabContextGesture(id: mappedId, sourceNode: nil, sourceView: sourceView, gesture: gesture, keepInPlace: false, isDisabled: isDisabled)
@@ -2055,6 +2071,9 @@ final class ChatListControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         })
         contentNode.dismissSearch = { [weak self] in
             self?.dismissSearch?()
+        }
+        contentNode.dismissSearchImmediately = { [weak self] in
+            self?.controller?.deactivateSearch(animated: false)
         }
         contentNode.openAdInfo = { [weak self] node, adPeer in
             self?.controller?.openAdInfo(node: node, adPeer: adPeer)

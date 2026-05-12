@@ -3,7 +3,6 @@ import AVFoundation
 import CoreMedia
 import FFMpegBinding
 import VideoToolbox
-import Postbox
 
 #if os(macOS)
 public let internal_isHardwareAv1Supported: Bool = {

@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Postbox
 import Display
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -135,6 +134,32 @@ public final class InstantPageTheme {
     
     public func withUpdatedFontStyles(sizeMultiplier: CGFloat, forceSerif: Bool) -> InstantPageTheme {
         return InstantPageTheme(type: type, pageBackgroundColor: pageBackgroundColor, textCategories: self.textCategories.withUpdatedFontStyles(sizeMultiplier: sizeMultiplier, forceSerif: forceSerif), serif: forceSerif, codeBlockBackgroundColor: codeBlockBackgroundColor, linkColor: linkColor, textHighlightColor: textHighlightColor, linkHighlightColor: linkHighlightColor, markerColor: markerColor, panelBackgroundColor: panelBackgroundColor, panelHighlightedBackgroundColor: panelHighlightedBackgroundColor, panelPrimaryColor: panelPrimaryColor, panelSecondaryColor: panelSecondaryColor, panelAccentColor: panelAccentColor, tableBorderColor: tableBorderColor, tableHeaderColor: tableHeaderColor, controlColor: controlColor, imageTintColor: imageTintColor, overlayPanelColor: overlayPanelColor)
+    }
+
+    func headingTextAttributes(level: Int32, link: Bool) -> InstantPageTextAttributes {
+        let clampedLevel = max(Int32(3), min(level, Int32(6)))
+        let subheaderAttributes = self.textCategories.subheader
+        guard clampedLevel > 3 else {
+            return subheaderAttributes.withUnderline(link)
+        }
+
+        let baseSize: CGFloat
+        switch clampedLevel {
+        case 4:
+            baseSize = 17.0
+        case 5:
+            baseSize = 15.0
+        default:
+            baseSize = 13.0
+        }
+
+        let sizeMultiplier = subheaderAttributes.font.size / 19.0
+        let attributes = InstantPageTextAttributes(
+            font: InstantPageFont(style: .serif, size: floor(baseSize * sizeMultiplier), lineSpacingFactor: subheaderAttributes.font.lineSpacingFactor),
+            color: subheaderAttributes.color,
+            underline: subheaderAttributes.underline
+        )
+        return attributes.withUnderline(link)
     }
 }
 

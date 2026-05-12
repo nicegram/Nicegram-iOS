@@ -10,15 +10,15 @@ import PhotoResources
 import StickerResources
 
 final class VerticalListContextResultsChatInputPanelItem: ListViewItem {
-    fileprivate let account: Account
+    fileprivate let engine: TelegramEngine
     fileprivate let theme: PresentationTheme
     fileprivate let result: ChatContextResult
     fileprivate let resultSelected: (ChatContextResult, ASDisplayNode, CGRect) -> Bool
-    
+
     let selectable: Bool = true
-    
-    public init(account: Account, theme: PresentationTheme, result: ChatContextResult, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) {
-        self.account = account
+
+    public init(engine: TelegramEngine, theme: PresentationTheme, result: ChatContextResult, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) {
+        self.engine = engine
         self.theme = theme
         self.result = result
         self.resultSelected = resultSelected
@@ -226,8 +226,7 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
                 let arguments = TransformImageArguments(corners: imageCorners, imageSize: iconSize, boundingSize: boundingSize, intrinsicInsets: UIEdgeInsets())
                 iconImageApply = iconImageLayout(arguments)
                 
-                updatedStatusSignal = item.account.postbox.mediaBox.resourceStatus(imageResource)
-                |> map(EngineMediaResource.FetchStatus.init)
+                updatedStatusSignal = item.engine.resources.status(resource: EngineMediaResource(imageResource))
             }
             
             var updatedIconImageResource = false
@@ -242,11 +241,11 @@ final class VerticalListContextResultsChatInputPanelItemNode: ListViewItemNode {
             if updatedIconImageResource {
                 if let imageResource = imageResource {
                     if let stickerFile = stickerFile {
-                        updateIconImageSignal = chatMessageSticker(account: item.account, userLocation: .other, file: stickerFile, small: false, fetched: true)
+                        updateIconImageSignal = chatMessageSticker(account: item.engine.account, userLocation: .other, file: stickerFile, small: false, fetched: true)
                     } else {
                         let tmpRepresentation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 55, height: 55), resource: imageResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
                         let tmpImage = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: [tmpRepresentation], immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
-                        updateIconImageSignal = chatWebpageSnippetPhoto(account: item.account, userLocation: .other, photoReference: .standalone(media: tmpImage))
+                        updateIconImageSignal = chatWebpageSnippetPhoto(account: item.engine.account, userLocation: .other, photoReference: .standalone(media: tmpImage))
                     }
                 } else {
                     updateIconImageSignal = .complete()

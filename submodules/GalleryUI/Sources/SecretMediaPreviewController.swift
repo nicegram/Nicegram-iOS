@@ -516,7 +516,7 @@ public final class SecretMediaPreviewController: ViewController {
                 var duration: Double = 0.0
                 for media in message.media {
                     if let file = media as? TelegramMediaFile {
-                        if let path = self.context.account.postbox.mediaBox.completedResourcePath(file.resource) {
+                        if let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.resource.id)) {
                             let tempFile = TempBox.shared.file(path: path, fileName: file.fileName ?? "file")
                             self.tempFile = tempFile
                             tempFilePath = tempFile.path

@@ -6,7 +6,6 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import VideoToolbox
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import AccountContext
 import FileMediaResourceStatus
@@ -66,7 +65,7 @@ public func cutoutAvailability(context: AccountContext) -> Signal<CutoutAvailabi
             |> take(1)
             |> mapToSignal { maybeFileAndMessage -> Signal<CutoutAvailability, NoError> in
                 if let (file, message) = maybeFileAndMessage {
-                    let fetchedData = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .file, reference: FileMediaReference.message(message: MessageReference(message._asMessage()), media: file).resourceReference(file.resource))
+                    let fetchedData = context.engine.resources.fetch(reference: FileMediaReference.message(message: MessageReference(message._asMessage()), media: file).resourceReference(file.resource), userLocation: .other, userContentType: .file)
                     
                     enum FetchStatus {
                         case completed(String)
@@ -76,8 +75,8 @@ public func cutoutAvailability(context: AccountContext) -> Signal<CutoutAvailabi
                                         
                     let fetchStatus = Signal<FetchStatus, NoError> { subscriber in
                         let fetchedDisposable = fetchedData.start()
-                        let resourceDataDisposable = context.account.postbox.mediaBox.resourceData(file.resource, attemptSynchronously: false).start(next: { next in
-                            if next.complete {
+                        let resourceDataDisposable = context.engine.resources.data(resource: EngineMediaResource(file.resource)).start(next: { next in
+                            if next.isComplete {
                                 SSZipArchive.unzipFile(atPath: next.path, toDestination: NSTemporaryDirectory())
                                 subscriber.putNext(.completed(compiledModelPath))
                                 subscriber.putCompletion()

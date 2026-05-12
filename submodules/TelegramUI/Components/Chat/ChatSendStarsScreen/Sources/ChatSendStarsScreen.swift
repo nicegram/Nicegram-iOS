@@ -2293,7 +2293,7 @@ private final class ChatSendStarsScreenComponent: Component {
                                         if let peerInfoController = context.sharedContext.makePeerInfoController(
                                             context: context,
                                             updatedPresentationData: nil,
-                                            peer: peer._asPeer(),
+                                            peer: peer,
                                             mode: .generic,
                                             avatarInitiallyExpanded: false,
                                             fromChat: false,

@@ -5,6 +5,7 @@
 
 #import <LegacyComponents/TGMediaPickerGalleryModel.h>
 #import <LegacyComponents/TGMediaPickerGalleryPhotoItem.h>
+#import <LegacyComponents/TGMediaPickerSendActionSheetController.h>
 #import <LegacyComponents/TGMediaPickerGalleryVideoItem.h>
 
 #import <LegacyComponents/TGMediaPickerGalleryVideoItemView.h>
@@ -156,21 +157,18 @@
     }
 }
 
-+ (void)presentWithContext:(id<LegacyComponentsContext>)context controller:(TGViewController *)controller caption:(NSAttributedString *)caption withItem:(id<TGMediaEditableItem, TGMediaSelectableItem>)item paint:(bool)paint adjustments:(bool)adjustments recipientName:(NSString *)recipientName stickersContext:(id<TGPhotoPaintStickersContext>)stickersContext fromRect:(CGRect)fromRect mainSnapshot:(UIView *)mainSnapshot snapshots:(NSArray *)snapshots immediate:(bool)immediate activateInput:(bool)activateInput isGif:(bool)isGif appeared:(void (^)(void))appeared completion:(void (^)(id<TGMediaEditableItem>, TGMediaEditingContext *))completion dismissed:(void (^)())dismissed
++ (TGModernGalleryController *)_configuredControllerWithContext:(id<LegacyComponentsContext> _Nonnull)context caption:(NSAttributedString * _Nonnull)caption withItem:(id<TGMediaEditableItem, TGMediaSelectableItem> _Nonnull)item paint:(bool)paint adjustments:(bool)adjustments recipientName:(NSString * _Nonnull)recipientName stickersContext:(id<TGPhotoPaintStickersContext> _Nullable)stickersContext fromRect:(CGRect)fromRect mainSnapshot:(UIView * _Nullable)__unused mainSnapshot snapshots:(NSArray * _Nonnull)snapshots immediate:(bool)immediate activateInput:(bool)activateInput isGif:(bool)isGif hasSilentPosting:(bool)hasSilentPosting hasSchedule:(bool)hasSchedule reminder:(bool)reminder presentSchedulePicker:(TGPhotoVideoEditorSchedulePicker _Nonnull)presentSchedulePicker appeared:(void (^ _Nonnull)(void))appeared completion:(TGPhotoVideoEditorCompletion _Nonnull)completion completedDismiss:(void (^ _Nullable)(void))completedDismiss customDismiss:(void (^ _Nullable)(void))customDismiss
 {
-    id<LegacyComponentsOverlayWindowManager> windowManager = [context makeOverlayWindowManager];
-    id<LegacyComponentsContext> windowContext = [windowManager context];
-    
     TGMediaEditingContext *editingContext = [[TGMediaEditingContext alloc] init];
     [editingContext setForcedCaption:caption];
     
-    TGModernGalleryController *galleryController = [[TGModernGalleryController alloc] initWithContext:windowContext];
+    TGModernGalleryController *galleryController = [[TGModernGalleryController alloc] initWithContext:context];
     galleryController.adjustsStatusBarVisibility = true;
     galleryController.animateTransition = !immediate;
     galleryController.finishedTransitionIn = ^(id<TGModernGalleryItem> item, TGModernGalleryItemView *itemView) {
         appeared();
     };
-    //galleryController.hasFadeOutTransition = true;
+    galleryController.customDismissBlock = customDismiss;
     
     id<TGModernGalleryEditableItem> galleryItem = nil;
     if (item.isVideo) {
@@ -181,7 +179,7 @@
     galleryItem.editingContext = editingContext;
     galleryItem.stickersContext = stickersContext;
     
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:windowContext items:@[galleryItem] focusItem:galleryItem selectionContext:nil editingContext:editingContext hasCaptions:true allowCaptionEntities:true hasTimer:false onlyCrop:false inhibitDocumentCaptions:false hasSelectionPanel:false hasCamera:false recipientName:recipientName isScheduledMessages:false hasCoverButton:false];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:context items:@[galleryItem] focusItem:galleryItem selectionContext:nil editingContext:editingContext hasCaptions:true allowCaptionEntities:true hasTimer:false onlyCrop:false inhibitDocumentCaptions:false hasSelectionPanel:false hasCamera:false recipientName:recipientName isScheduledMessages:false hasCoverButton:false];
     model.controller = galleryController;
     model.stickersContext = stickersContext;
     
@@ -213,6 +211,7 @@
     galleryController.model = model;
     
     __weak TGModernGalleryController *weakGalleryController = galleryController;
+    __weak TGMediaPickerGalleryModel *weakModel = model;
     
     [model.interfaceView updateSelectionInterface:1 counterVisible:false animated:false];
     model.interfaceView.thumbnailSignalForItem = ^SSignal *(id item)
@@ -233,9 +232,61 @@
         }
         
         if (completion != nil)
-            completion(item.asset, editingContext);
+            completion(item.asset, editingContext, false, 0);
         
         [strongController dismissWhenReadyAnimated:true];
+    };
+    model.interfaceView.doneLongPressed = ^(TGMediaPickerGalleryItem *item)
+    {
+        __strong TGModernGalleryController *strongController = weakGalleryController;
+        __strong TGMediaPickerGalleryModel *strongModel = weakModel;
+        if (strongController == nil || strongModel == nil || !(hasSilentPosting || hasSchedule))
+            return;
+        
+        if (iosMajorVersion() >= 10) {
+            UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+            [generator impactOccurred];
+        }
+        
+        TGMediaPickerSendActionSheetController *sendController = [[TGMediaPickerSendActionSheetController alloc] initWithContext:context isDark:true sendButtonFrame:strongModel.interfaceView.doneButtonFrame canSendSilently:hasSilentPosting canSendWhenOnline:hasSchedule canSchedule:hasSchedule reminder:reminder hasTimer:false];
+        sendController.modalPresentationStyle = UIModalPresentationOverFullScreen;
+        sendController.customDismissBlock = ^{
+            __strong TGModernGalleryController *strongController = weakGalleryController;
+            [strongController dismissViewControllerAnimated:false completion:nil];
+        };
+        void (^complete)(bool, int32_t) = ^(bool silentPosting, int32_t scheduleTime)
+        {
+            __strong TGModernGalleryController *strongController = weakGalleryController;
+            if (strongController == nil)
+                return;
+            
+            if ([item isKindOfClass:[TGMediaPickerGalleryVideoItem class]])
+            {
+                TGMediaPickerGalleryVideoItemView *itemView = (TGMediaPickerGalleryVideoItemView *)[strongController itemViewForItem:item];
+                [itemView stop];
+                [itemView setPlayButtonHidden:true animated:true];
+            }
+            
+            if (completion != nil)
+                completion(item.asset, editingContext, silentPosting, scheduleTime);
+            
+            [strongController dismissWhenReadyAnimated:true];
+        };
+        sendController.send = ^{
+            complete(false, 0);
+        };
+        sendController.sendSilently = ^{
+            complete(true, 0);
+        };
+        sendController.sendWhenOnline = ^{
+            complete(false, 0x7ffffffe);
+        };
+        sendController.schedule = ^{
+            presentSchedulePicker(true, ^(int32_t time, bool silentPosting) {
+                complete(silentPosting, time);
+            });
+        };
+        [strongController presentViewController:sendController animated:false completion:nil];
     };
     
     galleryController.beginTransitionIn = ^UIView *(__unused TGMediaPickerGalleryItem *item, __unused TGModernGalleryItemView *itemView)
@@ -247,21 +298,12 @@
     {
         return nil;
     };
-    
-    galleryController.completedTransitionOut = ^
-    {
-        TGModernGalleryController *strongGalleryController = weakGalleryController;
-        if (strongGalleryController != nil && strongGalleryController.overlayWindow == nil)
+    if (completedDismiss != nil) {
+        galleryController.completedTransitionOut = ^
         {
-            TGNavigationController *navigationController = (TGNavigationController *)strongGalleryController.navigationController;
-            TGOverlayControllerWindow *window = (TGOverlayControllerWindow *)navigationController.view.window;
-            if ([window isKindOfClass:[TGOverlayControllerWindow class]])
-                [window dismiss];
-        }
-        if (dismissed) {
-            dismissed();
-        }
-    };
+            completedDismiss();
+        };
+    }
     
     if (paint || adjustments) {
         [model.interfaceView immediateEditorTransitionIn];
@@ -271,8 +313,6 @@
         [galleryController.view addSubview:view];
     }
     
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:windowManager parentController:controller contentController:galleryController];
-    controllerWindow.hidden = false;
     galleryController.view.clipsToBounds = true;
     
     if (isGif) {
@@ -292,9 +332,33 @@
             [model beginEditingCaption];
         });
     }
+    
+    return galleryController;
 }
 
-+ (void)presentEditorWithContext:(id<LegacyComponentsContext>)context controller:(TGViewController *)controller withItem:(id<TGMediaEditableItem>)item cropRect:(CGRect)cropRect adjustments:(id<TGMediaEditAdjustments>)adjustments referenceView:(UIView *)referenceView completion:(void (^)(UIImage *, id<TGMediaEditAdjustments>))completion fullSizeCompletion:(void (^)(UIImage *))fullSizeCompletion beginTransitionOut:(void (^)(bool))beginTransitionOut finishTransitionOut:(void (^)())finishTransitionOut;
++ (TGModernGalleryController * _Nonnull)controllerWithContext:(id<LegacyComponentsContext> _Nonnull)context caption:(NSAttributedString * _Nonnull)caption withItem:(id<TGMediaEditableItem, TGMediaSelectableItem> _Nonnull)item paint:(bool)paint adjustments:(bool)adjustments recipientName:(NSString * _Nonnull)recipientName stickersContext:(id<TGPhotoPaintStickersContext> _Nullable)stickersContext fromRect:(CGRect)fromRect mainSnapshot:(UIView * _Nullable)mainSnapshot snapshots:(NSArray * _Nonnull)snapshots immediate:(bool)immediate activateInput:(bool)activateInput isGif:(bool)isGif hasSilentPosting:(bool)hasSilentPosting hasSchedule:(bool)hasSchedule reminder:(bool)reminder presentSchedulePicker:(TGPhotoVideoEditorSchedulePicker _Nonnull)presentSchedulePicker appeared:(void (^ _Nonnull)(void))appeared completion:(TGPhotoVideoEditorCompletion _Nonnull)completion dismissed:(void (^ _Nonnull)(void))dismissed
+{
+    TGModernGalleryController *galleryController = [self _configuredControllerWithContext:context caption:caption withItem:item paint:paint adjustments:adjustments recipientName:recipientName stickersContext:stickersContext fromRect:fromRect mainSnapshot:mainSnapshot snapshots:snapshots immediate:immediate activateInput:activateInput isGif:isGif hasSilentPosting:hasSilentPosting hasSchedule:hasSchedule reminder:reminder presentSchedulePicker:presentSchedulePicker appeared:appeared completion:completion completedDismiss:dismissed customDismiss:nil];
+    galleryController.asyncTransitionIn = true;
+    return galleryController;
+}
+
++ (void)presentWithContext:(id<LegacyComponentsContext> _Nonnull)context controller:(TGViewController * _Nonnull)controller caption:(NSAttributedString * _Nonnull)caption withItem:(id<TGMediaEditableItem, TGMediaSelectableItem> _Nonnull)item paint:(bool)paint adjustments:(bool)adjustments recipientName:(NSString * _Nonnull)recipientName stickersContext:(id<TGPhotoPaintStickersContext> _Nullable)stickersContext fromRect:(CGRect)fromRect mainSnapshot:(UIView * _Nullable)mainSnapshot snapshots:(NSArray * _Nonnull)snapshots immediate:(bool)immediate activateInput:(bool)activateInput isGif:(bool)isGif hasSilentPosting:(bool)hasSilentPosting hasSchedule:(bool)hasSchedule reminder:(bool)reminder presentSchedulePicker:(TGPhotoVideoEditorSchedulePicker _Nonnull)presentSchedulePicker appeared:(void (^ _Nonnull)(void))appeared completion:(TGPhotoVideoEditorCompletion _Nonnull)completion dismissed:(void (^ _Nonnull)(void))dismissed
+{
+    __weak TGViewController *weakController = controller;
+    TGModernGalleryController *galleryController = [self _configuredControllerWithContext:context caption:caption withItem:item paint:paint adjustments:adjustments recipientName:recipientName stickersContext:stickersContext fromRect:fromRect mainSnapshot:mainSnapshot snapshots:snapshots immediate:immediate activateInput:activateInput isGif:isGif hasSilentPosting:hasSilentPosting hasSchedule:hasSchedule reminder:reminder presentSchedulePicker:presentSchedulePicker appeared:appeared completion:completion completedDismiss:nil customDismiss:^{
+        __strong TGViewController *strongController = weakController;
+        [strongController dismissViewControllerAnimated:false completion:^{
+            if (dismissed) {
+                dismissed();
+            }
+        }];
+    }];
+    galleryController.modalPresentationStyle = UIModalPresentationFullScreen;
+    [controller presentViewController:galleryController animated:false completion:nil];
+}
+
++ (void)presentEditorWithContext:(id<LegacyComponentsContext> _Nonnull)context controller:(TGViewController * _Nonnull)controller withItem:(id<TGMediaEditableItem> _Nonnull)item cropRect:(CGRect)cropRect adjustments:(id<TGMediaEditAdjustments> _Nullable)adjustments referenceView:(UIView * _Nonnull)referenceView completion:(void (^ _Nonnull)(UIImage * _Nonnull image, id<TGMediaEditAdjustments> _Nullable adjustments))completion fullSizeCompletion:(void (^ _Nonnull)(UIImage * _Nonnull image))fullSizeCompletion beginTransitionOut:(void (^ _Nullable)(bool saving))beginTransitionOut finishTransitionOut:(void (^ _Nullable)(void))finishTransitionOut
 {
     id<LegacyComponentsOverlayWindowManager> windowManager = [context makeOverlayWindowManager];
     

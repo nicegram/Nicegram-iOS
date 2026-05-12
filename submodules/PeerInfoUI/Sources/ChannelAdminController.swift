@@ -385,7 +385,7 @@ private enum ChannelAdminEntry: ItemListNodeEntry {
                 return ItemListSingleLineInputItem(presentationData: presentationData, systemStyle: .glass, title: NSAttributedString(string: "", textColor: .black), text: text, placeholder: placeholder, type: .regular(capitalization: false, autocorrection: true), spacing: 0.0, clearType: enabled ? .always : .none, enabled: enabled, tag: ChannelAdminEntryTag.rank, sectionId: self.section, textUpdated: { updatedText in
                     arguments.updateRank(text, updatedText)
                 }, shouldUpdateText: { text in
-                    if text.containsEmoji {
+                    if text.containsGraphicEmoji {
                         arguments.animateError()
                         return false
                     }
@@ -673,6 +673,7 @@ private func channelAdminControllerEntries(presentationData: PresentationData, s
                         .direct(.canManageRanks),
                         .direct(.canPinMessages),
                         .direct(.canManageTopics),
+                        .sub(.stories, storiesRelatedFlags),
                         .direct(.canManageCalls),
                         .direct(.canBeAnonymous),
                         .direct(.canAddAdmins)
@@ -1229,7 +1230,7 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
             guard let peer else {
                 return
             }
-            if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: updatedPresentationData, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+            if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: updatedPresentationData, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                 pushControllerImpl?(controller)
             }
         })
@@ -1328,7 +1329,7 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                         return current
                     }
                     
-                    if let updateRank = updateRank, updateRank.count > rankMaxLength || updateRank.containsEmoji {
+                    if let updateRank = updateRank, updateRank.count > rankMaxLength || updateRank.containsGraphicEmoji {
                         errorImpl?()
                         return
                     }
@@ -1360,7 +1361,7 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                     }
                     
                     let effectiveRank = updateRank ?? currentRank
-                    if effectiveRank?.containsEmoji ?? false {
+                    if effectiveRank?.containsGraphicEmoji ?? false {
                         errorImpl?()
                         return
                     }
@@ -1435,7 +1436,7 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                         return current
                     }
                     
-                    if let updateRank = updateRank, updateRank.count > rankMaxLength || updateRank.containsEmoji {
+                    if let updateRank = updateRank, updateRank.count > rankMaxLength || updateRank.containsGraphicEmoji {
                         errorImpl?()
                         return
                     }
@@ -1515,7 +1516,7 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                     return current
                 }
                 
-                if let updateRank = updateRank, updateRank.count > rankMaxLength || updateRank.containsEmoji {
+                if let updateRank = updateRank, updateRank.count > rankMaxLength || updateRank.containsGraphicEmoji {
                     errorImpl?()
                     return
                 }
@@ -1553,6 +1554,7 @@ public func channelAdminController(context: AccountContext, updatedPresentationD
                             
                             dismissImpl?()
                         }, completed: {
+                            updated(TelegramChatAdminRights(rights: updateFlags))
                             dismissImpl?()
                         }))
                     } else if updateFlags != defaultFlags || updateRank != nil {

@@ -411,13 +411,20 @@ public final class InviteLinkInviteController: ViewController {
                     
                     if let invite {
                         if case let .groupOrChannel(peerId) = self.mode {
-                            let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                                if let peer {
+                                    return .single(peer)
+                                } else {
+                                    return .never()
+                                }
+                            }
                             |> deliverOnMainQueue).start(next: { [weak self] peer in
                                 guard let strongSelf = self else {
                                     return
                                 }
                                 let isGroup: Bool
-                                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                                if case let .channel(channel) = peer, case .broadcast = channel.info {
                                     isGroup = false
                                 } else {
                                     isGroup = true
@@ -443,10 +450,17 @@ public final class InviteLinkInviteController: ViewController {
                             return
                         }
                         
-                        let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                            if let peer {
+                                return .single(peer)
+                            } else {
+                                return .never()
+                            }
+                        }
                         |> deliverOnMainQueue).start(next: { [weak self] peer in
                             let isGroup: Bool
-                            if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                            if case let .channel(channel) = peer, case .broadcast = channel.info {
                                 isGroup = false
                             } else {
                                 isGroup = true

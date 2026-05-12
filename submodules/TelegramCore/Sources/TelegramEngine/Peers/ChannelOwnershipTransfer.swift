@@ -167,17 +167,17 @@ func _internal_updateChatOwnership(account: Account, peerId: PeerId, memberId: P
                                     return cachedData
                                 }
                             })
-                            var peers: [PeerId: Peer] = [:]
+                            var peers: [EnginePeer.Id: EnginePeer] = [:]
                             var presences: [PeerId: PeerPresence] = [:]
-                            peers[accountUser.id] = accountUser
+                            peers[accountUser.id] = EnginePeer(accountUser)
                             if let presence = transaction.getPeerPresence(peerId: accountUser.id) {
                                 presences[accountUser.id] = presence
                             }
-                            peers[user.id] = user
+                            peers[user.id] = EnginePeer(user)
                             if let presence = transaction.getPeerPresence(peerId: user.id) {
                                 presences[user.id] = presence
                             }
-                            return [(currentCreator, RenderedChannelParticipant(participant: updatedPreviousCreator, peer: accountUser, peers: peers, presences: presences)), (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: user, peers: peers, presences: presences))]
+                            return [(currentCreator, RenderedChannelParticipant(participant: updatedPreviousCreator, peer: EnginePeer(accountUser), peers: peers, presences: presences)), (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(user), peers: peers, presences: presences))]
                         }
                         |> mapError { _ -> ChatOwnershipTransferError in }
                     }

@@ -513,7 +513,7 @@ open class NavigationController: UINavigationController, ContainableController, 
         }
         
         if let globalScrollToTopNode = self.globalScrollToTopNode {
-            globalScrollToTopNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: layout.size.width, height: 1.0))
+            globalScrollToTopNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: CGSize(width: layout.size.width, height: 1))
         }
         
         var overlayContainerLayout = layout

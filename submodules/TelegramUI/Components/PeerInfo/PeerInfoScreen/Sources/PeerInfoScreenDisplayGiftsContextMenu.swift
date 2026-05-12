@@ -26,7 +26,7 @@ extension PeerInfoScreenNode {
         let giftsContext = pane.giftsContext
         
         var hasVisibility = false
-        if let channel = data.peer as? TelegramChannel, channel.hasPermission(.sendSomething) {
+        if case let .channel(channel) = data.peer, channel.hasPermission(.sendSomething) {
             hasVisibility = true
         } else if data.peer?.id == self.context.account.peerId {
             hasVisibility = true

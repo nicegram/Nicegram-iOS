@@ -478,7 +478,7 @@ static TGVideoEditAdjustments *TGMediaAssetsPatchedLivePhotoAdjustments(PGPhotoE
     self.pickerController.isSuggesting = isSuggesting;
 }
 
-- (void)setPresentScheduleController:(void (^)(bool, void (^)(int32_t)))presentScheduleController {
+- (void)setPresentScheduleController:(void (^)(bool, void (^)(int32_t, bool)))presentScheduleController {
     _presentScheduleController = [presentScheduleController copy];
     self.pickerController.presentScheduleController = presentScheduleController;
 }
@@ -1890,8 +1890,8 @@ static TGVideoEditAdjustments *TGMediaAssetsPatchedLivePhotoAdjustments(PGPhotoE
 
 - (void)schedule:(bool)media {
     __weak TGMediaAssetsController *weakSelf = self;
-    self.presentScheduleController(media, ^(int32_t scheduleTime) {
-        [weakSelf completeWithCurrentItem:nil silentPosting:false scheduleTime:scheduleTime];
+    self.presentScheduleController(media, ^(int32_t scheduleTime, bool silentPosting) {
+        [weakSelf completeWithCurrentItem:nil silentPosting:silentPosting scheduleTime:scheduleTime];
     });
 }
 

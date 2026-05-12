@@ -4,9 +4,9 @@ import SwiftSignalKit
 import TelegramApi
 import MtProtoKit
 
-func _internal_requestUpdatePeerIsBlocked(account: Account, peerId: PeerId, isBlocked: Bool) -> Signal<Void, NoError> {
+func _internal_requestUpdatePeerIsBlocked(account: Account, peerId: PeerId, isBlocked: Bool, sourceMessageId: MessageId? = nil) -> Signal<Void, NoError> {
     return account.postbox.transaction { transaction -> Signal<Void, NoError> in
-        if let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer) {
+        if let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer, sourceMessageId: sourceMessageId, transaction: transaction) {
             let signal: Signal<Api.Bool, MTRpcError>
             if isBlocked {
                 signal = account.network.request(Api.functions.contacts.block(flags: 0, id: inputPeer))

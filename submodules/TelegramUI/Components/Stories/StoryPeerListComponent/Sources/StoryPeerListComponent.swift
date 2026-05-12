@@ -377,6 +377,7 @@ public final class StoryPeerListComponent: Component {
             self.scrollView.alwaysBounceVertical = false
             self.scrollView.alwaysBounceHorizontal = true
             self.scrollView.clipsToBounds = false
+            self.scrollView.scrollsToTop = false
             
             self.scrollContainerView = UIView()
             self.scrollContainerView.clipsToBounds = true

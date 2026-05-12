@@ -67,6 +67,8 @@ private extension ComponentTransition.Animation.Curve {
         switch self {
         case .easeInOut:
             return CAMediaTimingFunction(name: .easeInEaseOut)
+        case .easeIn:
+            return CAMediaTimingFunction(name: .easeIn)
         case .linear:
             return CAMediaTimingFunction(name: .linear)
         case let .custom(a, b, c, d):
@@ -82,6 +84,8 @@ private extension ComponentTransition.Animation.Curve {
             return [.curveLinear]
         case .easeInOut:
             return [.curveEaseInOut]
+        case .easeIn:
+            return [.curveEaseIn]
         case .spring:
             return UIView.AnimationOptions(rawValue: 7 << 16)
         case .custom:
@@ -141,6 +145,7 @@ public struct ComponentTransition {
     public enum Animation {
         public enum Curve {
             case easeInOut
+            case easeIn
             case spring
             case linear
             case custom(Float, Float, Float, Float)
@@ -150,6 +155,8 @@ public struct ComponentTransition {
                 switch self {
                 case .easeInOut:
                     return listViewAnimationCurveEaseInOut(offset)
+                case .easeIn:
+                    return listViewAnimationCurveEaseIn(offset)
                 case .spring:
                     return listViewAnimationCurveSystem(offset)
                 case .linear:

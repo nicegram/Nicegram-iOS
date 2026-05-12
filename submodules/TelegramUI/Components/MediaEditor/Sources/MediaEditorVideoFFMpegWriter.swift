@@ -105,7 +105,9 @@ final class MediaEditorVideoFFMpegWriter: MediaEditorVideoExportWriter {
         let height = CVPixelBufferGetHeight(buffer)
         let bytesPerRow = CVPixelBufferGetBytesPerRow(buffer)
         
-        let frame = FFMpegAVFrame(pixelFormat: .YUVA, width: Int32(width), height: Int32(height))
+        guard let frame = FFMpegAVFrame(pixelFormat: .YUVA, width: Int32(width), height: Int32(height)) else {
+            return false
+        }
         
         CVPixelBufferLockBaseAddress(buffer, CVPixelBufferLockFlags.readOnly)
         let src = CVPixelBufferGetBaseAddress(buffer)

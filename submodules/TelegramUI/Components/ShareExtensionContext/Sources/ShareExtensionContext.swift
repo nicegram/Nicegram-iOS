@@ -34,6 +34,8 @@ import TelegramAccountAuxiliaryMethods
 import PeerSelectionController
 import ContextMenuScreen
 import NavigationBarImpl
+import ContextUI
+import ContextControllerImpl
 
 private var installedSharedLogger = false
 
@@ -200,6 +202,18 @@ public class ShareRootControllerImpl {
         
         defaultNavigationBarImpl = { presentationData in
             return NavigationBarImpl(presentationData: presentationData)
+        }
+        makeContextControllerImpl = { context, presentationData, configuration, recognizer, gesture, workaroundUseLegacyImplementation, disableScreenshots, hideReactionPanelTail in
+            return ContextControllerImpl(
+                context: context,
+                presentationData: presentationData,
+                configuration: configuration,
+                recognizer: recognizer,
+                gesture: gesture,
+                workaroundUseLegacyImplementation: workaroundUseLegacyImplementation,
+                disableScreenshots: disableScreenshots,
+                hideReactionPanelTail: hideReactionPanelTail
+            )
         }
     }
     
@@ -417,7 +431,7 @@ public class ShareRootControllerImpl {
             let accountData: Signal<(ShareControllerEnvironment, ShareControllerAccountContext, [ShareControllerSwitchableAccount]), NoError> = accountManager.accountRecords()
             |> take(1)
             |> mapToSignal { view -> Signal<(ShareControllerEnvironment, ShareControllerAccountContext, [ShareControllerSwitchableAccount]), NoError> in
-                var signals: [Signal<(AccountRecordId, AccountStateManager, Peer)?, NoError>] = []
+                var signals: [Signal<(AccountRecordId, AccountStateManager, EnginePeer)?, NoError>] = []
                 for record in view.records {
                     if record.attributes.contains(where: { attribute in
                         if case .loggedOut = attribute {
@@ -441,14 +455,14 @@ public class ShareRootControllerImpl {
                         rootPath: rootPath,
                         auxiliaryMethods: makeTelegramAccountAuxiliaryMethods(uploadInBackground: nil)
                     )
-                    |> mapToSignal { result -> Signal<(AccountRecordId, AccountStateManager, Peer)?, NoError> in
+                    |> mapToSignal { result -> Signal<(AccountRecordId, AccountStateManager, EnginePeer)?, NoError> in
                         if let result {
-                            return result.postbox.transaction { transaction -> (AccountRecordId, AccountStateManager, Peer)? in
+                            return result.postbox.transaction { transaction -> (AccountRecordId, AccountStateManager, EnginePeer)? in
                                 guard let peer = transaction.getPeer(result.accountPeerId) else {
                                     return nil
                                 }
-                                
-                                return (record.id, result, peer)
+
+                                return (record.id, result, EnginePeer(peer))
                             }
                         } else {
                             return .single(nil)

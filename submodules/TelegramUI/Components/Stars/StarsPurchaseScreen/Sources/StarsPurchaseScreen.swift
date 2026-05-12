@@ -227,7 +227,7 @@ private final class StarsPurchaseScreenContentComponent: CombinedComponent {
             let boldTextFont = Font.semibold(15.0)
             
             // Nicegram StarsPurchase
-            let showNicegramContent = true
+            let showNicegramContent = "".isEmpty
             if showNicegramContent {
                 let buttonSize = CGSize(
                     width: availableWidth - sideInsets,
