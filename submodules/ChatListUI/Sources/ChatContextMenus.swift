@@ -400,7 +400,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                                         }
                                                         return filters
                                                     }).startStandalone()
-                                                    chatListController?.present(UndoOverlayController(presentationData: presentationData, content: .chatAddedToFolder(context: context, chatTitle: peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), folderTitle: title.rawAttributedString), elevatedLayout: false, animateInAsReplacement: true, action: { _ in
+                                                    chatListController?.present(UndoOverlayController( presentationData: presentationData, content: .chatAddedToFolder(context: context, chatTitle: peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), folderTitle: title.rawAttributedString), elevatedLayout: false, animateInAsReplacement: true, action: { _ in
                                                         return false
                                                     }), in: .current)
                                                 })
@@ -1299,7 +1299,7 @@ public func savedMessagesPeerMenuItems(context: AccountContext, threadId: Int64,
 }
 
 private func openCustomMute(context: AccountContext, peerId: EnginePeer.Id, threadId: Int64, baseController: ViewController) {
-    let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .mute, currentTime: nil, completion: { [weak baseController] value in
+    let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .mute, currentTime: nil, dismissByTapOutside: true, completion: { [weak baseController] value in
         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
         
         if value <= 0 {

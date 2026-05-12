@@ -232,7 +232,7 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
                 network: context.stateManager.network,
                 contentSettings: context.contentSettings,
                 theme: theme,
-                peer: info.peer,
+                peer: EnginePeer(info.peer),
                 emptyColor: nil,
                 synchronousLoad: false
             )
@@ -373,7 +373,7 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
         self.contentOffsetUpdated = f
     }
     
-    private func calculateMetrics(size: CGSize, additionalBottomInset: CGFloat, isEmbedded: Bool) -> (topInset: CGFloat, itemWidth: CGFloat) {
+    private func calculateMetrics(size: CGSize, additionalBottomInset: CGFloat) -> (topInset: CGFloat, itemWidth: CGFloat) {
         let itemCount = self.entries.count
         
         let itemInsets = UIEdgeInsets(top: 0.0, left: 12.0, bottom: 0.0, right: 12.0)
@@ -394,7 +394,7 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
         }
         let initiallyRevealedRowCount = min(minimallyRevealedRowCount, CGFloat(rowCount))
         
-        let gridTopInset = isEmbedded ? 136.0 : max(0.0, size.height - floor(initiallyRevealedRowCount * itemWidth) - 14.0 - additionalBottomInset)
+        let gridTopInset = max(0.0, size.height - floor(initiallyRevealedRowCount * itemWidth) - 14.0 - additionalBottomInset)
         return (gridTopInset, itemWidth)
     }
     
@@ -569,14 +569,9 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
         }
     }
     
-    var isEmbedded = false
     func updateLayout(size: CGSize, isLandscape: Bool, bottomInset: CGFloat, transition: ContainedViewLayoutTransition) {
         let firstLayout = self.validLayout == nil
         self.validLayout = (size, bottomInset)
-        
-        self.contentTitleNode.isHidden = self.isEmbedded
-        self.contentSubtitleNode.isHidden = self.isEmbedded
-        self.searchButtonNode.isHidden = self.isEmbedded
         
         let gridLayoutTransition: ContainedViewLayoutTransition
         if firstLayout {
@@ -587,7 +582,7 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
             self.overrideGridOffsetTransition = nil
         }
         
-        let (gridTopInset, itemWidth) = self.calculateMetrics(size: size, additionalBottomInset: bottomInset, isEmbedded: self.isEmbedded)
+        let (gridTopInset, itemWidth) = self.calculateMetrics(size: size, additionalBottomInset: bottomInset)
         
         var scrollToItem: GridNodeScrollToItem?
         if let ensurePeerVisibleOnLayout = self.ensurePeerVisibleOnLayout {
@@ -685,8 +680,8 @@ final class SharePeersContainerNode: ASDisplayNode, ShareContentContainerNode {
             self.contentTitleNode.isHidden = true
             self.contentSubtitleNode.isHidden = true
         } else {
-            self.contentTitleNode.isHidden = self.isEmbedded
-            self.contentSubtitleNode.isHidden = self.isEmbedded
+            self.contentTitleNode.isHidden = false
+            self.contentSubtitleNode.isHidden = false
             
             var subtitleText = self.strings.ShareMenu_SelectChats
             if !self.controllerInteraction.selectedPeers.isEmpty {

@@ -475,8 +475,6 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
     private var credibilityIconComponent: EmojiStatusComponent?
     private var verifiedIconView: ComponentHostView<Empty>?
     private var verifiedIconComponent: EmojiStatusComponent?
-    private var emojiStatusIconView: ComponentHostView<Empty>?
-    private var emojiStatusIconComponent: EmojiStatusComponent?
     public let statusNode: TextNodeWithEntities
     private var statusIconNode: ASImageNode?
     private var badgeBackgroundNode: ASImageNode?
@@ -552,14 +550,6 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                         component: AnyComponent(verifiedIconComponent.withVisibleForAnimations(self.visibilityStatus)),
                         environment: {},
                         containerSize: verifiedIconView.bounds.size
-                    )
-                }
-                if let emojiStatusIconView = self.emojiStatusIconView, let emojiStatusIconComponent = self.emojiStatusIconComponent {
-                    let _ = emojiStatusIconView.update(
-                        transition: .immediate,
-                        component: AnyComponent(emojiStatusIconComponent.withVisibleForAnimations(self.visibilityStatus)),
-                        environment: {},
-                        containerSize: emojiStatusIconView.bounds.size
                     )
                 }
                 if let avatarIconView = self.avatarIconView, let avatarIconComponent = self.avatarIconComponent {
@@ -850,29 +840,27 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
             
             let premiumConfiguration = PremiumConfiguration.with(appConfiguration: item.context.currentAppConfiguration.with { $0 })
             
-            var credibilityStatusIcon: EmojiStatusComponent.Content?
+            var credibilityIcon: EmojiStatusComponent.Content?
+            var credibilityParticleColor: UIColor?
             var verifiedIcon: EmojiStatusComponent.Content?
-            var emojiStatusIcon: EmojiStatusComponent.Content?
-            var emojiStatusParticleColor: UIColor?
-            
             switch item.peer {
             case let .peer(peer, _):
                 if let peer = peer, (peer.id != item.context.account.peerId || item.peerMode == .memberList || item.aliasHandling == .standard) {
                     if peer.isScam {
-                        credibilityStatusIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_ScamAccount.uppercased())
+                        credibilityIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_ScamAccount.uppercased())
                     } else if peer.isFake {
-                        credibilityStatusIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased())
+                        credibilityIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased())
                     } else if let emojiStatus = peer.emojiStatus, !item.isAd {
-                        emojiStatusIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: item.presentationData.theme.list.mediaPlaceholderColor, themeColor: item.presentationData.theme.list.itemAccentColor, loopMode: .count(2))
+                        credibilityIcon = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: item.presentationData.theme.list.mediaPlaceholderColor, themeColor: item.presentationData.theme.list.itemAccentColor, loopMode: .count(2))
                         if let color = emojiStatus.color {
-                            emojiStatusParticleColor = UIColor(rgb: UInt32(bitPattern: color))
+                            credibilityParticleColor = UIColor(rgb: UInt32(bitPattern: color))
                         }
                     } else if peer.isPremium && !premiumConfiguration.isPremiumDisabled {
-                        credibilityStatusIcon = .premium(color: item.presentationData.theme.list.itemAccentColor)
+                        credibilityIcon = .premium(color: item.presentationData.theme.list.itemAccentColor)
                     }
                     
                     if peer.isVerified {
-                        credibilityStatusIcon = .verified(fillColor: item.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor, sizeType: .compact)
+                        credibilityIcon = .verified(fillColor: item.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor, sizeType: .compact)
                     }
                     if let verificationIconFileId = peer.verificationIconFileId {
                         verifiedIcon = .animation(content: .customEmoji(fileId: verificationIconFileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: item.presentationData.theme.list.mediaPlaceholderColor, themeColor: item.presentationData.theme.list.itemAccentColor, loopMode: .count(0))
@@ -1117,9 +1105,9 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                     additionalTitleInset += 16.0
                 }
             }
-            if let credibilityStatusIcon {
+            if let credibilityIcon {
                 additionalTitleInset += 3.0
-                switch credibilityStatusIcon {
+                switch credibilityIcon {
                 case let .text(_, string):
                     let textString = NSAttributedString(string: string, font: Font.bold(10.0), textColor: .black, paragraphAlignment: .center)
                     let stringRect = textString.boundingRect(with: CGSize(width: 100.0, height: 16.0), options: .usesLineFragmentOrigin, context: nil)
@@ -1127,10 +1115,6 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                 default:
                     additionalTitleInset += 16.0
                 }
-            }
-            if let _ = emojiStatusIcon {
-                additionalTitleInset += 3.0
-                additionalTitleInset += 16.0
             }
             if let actionButtons = actionButtons {
                 additionalTitleInset += 3.0
@@ -1603,7 +1587,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                 }
                             }
                             
-                            if let credibilityStatusIcon {
+                            if let credibilityIcon {
                                 let animationCache = item.context.animationCache
                                 let animationRenderer = item.context.animationRenderer
                                 
@@ -1620,8 +1604,8 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                                     context: item.context,
                                     animationCache: animationCache,
                                     animationRenderer: animationRenderer,
-                                    content: credibilityStatusIcon,
-                                    particleColor: nil,
+                                    content: credibilityIcon,
+                                    particleColor: credibilityParticleColor,
                                     isVisibleForAnimations: strongSelf.visibilityStatus,
                                     action: nil,
                                     emojiFileUpdated: nil
@@ -1641,46 +1625,6 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                             } else if let credibilityIconView = strongSelf.credibilityIconView {
                                 strongSelf.credibilityIconView = nil
                                 credibilityIconView.removeFromSuperview()
-                            }
-                            
-                            if let emojiStatusIcon {
-                                let animationCache = item.context.animationCache
-                                let animationRenderer = item.context.animationRenderer
-                                
-                                let emojiStatusIconView: ComponentHostView<Empty>
-                                if let current = strongSelf.emojiStatusIconView {
-                                    emojiStatusIconView = current
-                                } else {
-                                    emojiStatusIconView = ComponentHostView<Empty>()
-                                    strongSelf.offsetContainerNode.view.addSubview(emojiStatusIconView)
-                                    strongSelf.emojiStatusIconView = emojiStatusIconView
-                                }
-                                
-                                let emojiStatusIconComponent = EmojiStatusComponent(
-                                    context: item.context,
-                                    animationCache: animationCache,
-                                    animationRenderer: animationRenderer,
-                                    content: emojiStatusIcon,
-                                    particleColor: emojiStatusParticleColor,
-                                    isVisibleForAnimations: strongSelf.visibilityStatus,
-                                    action: nil,
-                                    emojiFileUpdated: nil
-                                )
-                                strongSelf.emojiStatusIconComponent = emojiStatusIconComponent
-                                
-                                let iconSize = emojiStatusIconView.update(
-                                    transition: .immediate,
-                                    component: AnyComponent(emojiStatusIconComponent),
-                                    environment: {},
-                                    containerSize: CGSize(width: 16.0, height: 16.0)
-                                )
-                                
-                                nextIconX += 4.0
-                                transition.updateFrame(view: emojiStatusIconView, frame: CGRect(origin: CGPoint(x: nextIconX, y: floorToScreenPixels(titleFrame.midY - iconSize.height / 2.0)), size: iconSize))
-                                nextIconX += iconSize.width
-                            } else if let emojiStatusIconView = strongSelf.emojiStatusIconView {
-                                strongSelf.emojiStatusIconView = nil
-                                emojiStatusIconView.removeFromSuperview()
                             }
                             
                             if let (titleBadgeLayout, titleBadgeApply) = titleBadgeLayoutAndApply {

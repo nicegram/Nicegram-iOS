@@ -205,12 +205,12 @@ public final class BatchVideoRenderingContext {
                     ).startStrict()
                 }
                 if targetContext.dataDisposable == nil {
-                    targetContext.dataDisposable = (self.context.engine.resources.data(resource: EngineMediaResource(targetContext.file.media.resource))
+                    targetContext.dataDisposable = (self.context.account.postbox.mediaBox.resourceData(targetContext.file.media.resource)
                     |> deliverOnMainQueue).startStrict(next: { [weak self, weak targetContext] data in
                         guard let self, let targetContext else {
                             return
                         }
-                        if data.isComplete && targetContext.dataPath == nil {
+                        if data.complete && targetContext.dataPath == nil {
                             targetContext.dataPath = data.path
                             self.update()
                         }

@@ -196,14 +196,7 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
         self.view.endEditing(true)
         
         self.context.joinGroupCall(peerId: peerId, invite: invite, requestJoinAsPeerId: { completion in
-            let currentAccountPeer = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                if let peer {
-                    return .single(peer)
-                } else {
-                    return .never()
-                }
-            }
+            let currentAccountPeer = context.account.postbox.loadedPeerWithId(context.account.peerId)
             |> map { peer in
                 return [FoundPeer(peer: peer, subscribers: nil)]
             }
@@ -240,10 +233,10 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
                         var items: [ActionSheetItem] = []
                         var isGroup = false
                         for peer in peers {
-                            if case .legacyGroup = peer.peer {
+                            if peer.peer is TelegramGroup {
                                 isGroup = true
                                 break
-                            } else if case let .channel(channel) = peer.peer, case .group = channel.info {
+                            } else if let peer = peer.peer as? TelegramChannel, case .group = peer.info {
                                 isGroup = true
                                 break
                             }
@@ -255,14 +248,14 @@ open class TelegramBaseController: ViewController, KeyShortcutResponder {
                             if peer.peer.id.namespace == Namespaces.Peer.CloudUser {
                                 subtitle = presentationData.strings.VoiceChat_PersonalAccount
                             } else if let subscribers = peer.subscribers {
-                                if case let .channel(channel) = peer.peer, case .broadcast = channel.info {
+                                if let peer = peer.peer as? TelegramChannel, case .broadcast = peer.info {
                                     subtitle = strongSelf.presentationData.strings.Conversation_StatusSubscribers(subscribers)
                                 } else {
                                     subtitle = strongSelf.presentationData.strings.Conversation_StatusMembers(subscribers)
                                 }
                             }
                             
-                            items.append(VoiceChatPeerActionSheetItem(context: context, peer: peer.peer, title: peer.peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), subtitle: subtitle ?? "", action: {
+                            items.append(VoiceChatPeerActionSheetItem(context: context, peer: EnginePeer(peer.peer), title: EnginePeer(peer.peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder), subtitle: subtitle ?? "", action: {
                                 dismissAction()
                                 completion(peer.peer.id)
                             }))

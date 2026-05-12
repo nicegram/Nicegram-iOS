@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
+import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -134,7 +135,7 @@ public enum ItemListAvatarAndNameInfoItemMode {
 public class ItemListAvatarAndNameInfoItem: ListViewItem, ItemListItem, ListItemComponentAdaptor.ItemGenerator {
     public enum ItemContext {
         case accountContext(AccountContext)
-        case other(accountPeerId: EnginePeer.Id, stateManager: AccountStateManager)
+        case other(accountPeerId: EnginePeer.Id, postbox: Postbox, network: Network)
         
         var accountContext: AccountContext? {
             if case let .accountContext(accountContext) = self {
@@ -757,8 +758,8 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
                         switch item.itemContext {
                         case let .accountContext(context):
                             strongSelf.avatarNode.setPeer(context: context, theme: item.presentationData.theme, peer: peer, overrideImage: overrideImage, emptyColor: ignoreEmpty ? nil : item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
-                        case let .other(accountPeerId, stateManager):
-                            strongSelf.avatarNode.setPeer(accountPeerId: accountPeerId, postbox: stateManager.postbox, network: stateManager.network, contentSettings: .default, theme: item.presentationData.theme, peer: peer, authorOfMessage: nil, overrideImage: overrideImage, emptyColor: ignoreEmpty ? nil : item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
+                        case let .other(accountPeerId, postbox, network):
+                            strongSelf.avatarNode.setPeer(accountPeerId: accountPeerId, postbox: postbox, network: network, contentSettings: .default, theme: item.presentationData.theme, peer: peer, authorOfMessage: nil, overrideImage: overrideImage, emptyColor: ignoreEmpty ? nil : item.presentationData.theme.list.mediaPlaceholderColor, synchronousLoad: synchronousLoads)
                         }
                         
                     }

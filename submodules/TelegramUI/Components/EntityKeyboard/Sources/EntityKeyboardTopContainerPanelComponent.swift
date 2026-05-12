@@ -5,6 +5,7 @@ import ComponentFlow
 import PagerComponent
 import TelegramPresentationData
 import TelegramCore
+import Postbox
 
 public final class EntityKeyboardTopContainerPanelEnvironment: Equatable {
     let isContentInFocus: Bool
@@ -12,7 +13,7 @@ public final class EntityKeyboardTopContainerPanelEnvironment: Equatable {
     let visibilityFractionUpdated: ActionSlot<(CGFloat, ComponentTransition)>
     let isExpandedUpdated: (Bool, ComponentTransition) -> Void
     
-    public init(
+    init(
         isContentInFocus: Bool,
         height: CGFloat,
         visibilityFractionUpdated: ActionSlot<(CGFloat, ComponentTransition)>,

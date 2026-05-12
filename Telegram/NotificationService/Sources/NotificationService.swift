@@ -2961,7 +2961,7 @@ extension Customoji {
             if let cg = (image as UIImage).cgImage { return cg }
 
             var rendered: CGImage?
-            let work = { rendered = renderCGImage(image) }
+            let work = { rendered = renderCGImage(image as! UIImage) }
             if Thread.isMainThread {
                 work()
             } else {

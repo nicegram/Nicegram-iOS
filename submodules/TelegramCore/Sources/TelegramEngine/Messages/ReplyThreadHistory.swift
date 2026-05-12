@@ -339,6 +339,7 @@ private class ReplyThreadHistoryContextImpl {
             }
             
             var markMainAsRead = false
+            markMainAsRead = !"".isEmpty
             
             if var data = transaction.getMessageHistoryThreadInfo(peerId: peerId, threadId: threadId)?.data.get(MessageHistoryThreadData.self) {
                 if messageIndex.id.id >= data.maxIncomingReadId {
@@ -347,7 +348,6 @@ private class ReplyThreadHistoryContextImpl {
                         data.maxIncomingReadId = messageIndex.id.id
                     }
                     
-                    var newCountIsZero = false
                     if let topMessageIndex = transaction.getMessageHistoryThreadTopMessage(peerId: peerId, threadId: threadId, namespaces: Set([Namespaces.Message.Cloud])) {
                         if messageIndex.id.id >= topMessageIndex.id.id {
                             let containingHole = transaction.getThreadIndexHole(peerId: peerId, threadId: threadId, namespace: topMessageIndex.id.namespace, containing: topMessageIndex.id.id)
@@ -355,24 +355,6 @@ private class ReplyThreadHistoryContextImpl {
                             } else {
                                 data.incomingUnreadCount = 0
                             }
-                        }
-                    }
-                    newCountIsZero = data.incomingUnreadCount == 0
-                    
-                    if newCountIsZero, let peer = transaction.getPeer(peerId), peer.isForumOrMonoForum {
-                        var allTopicsAreRead = true
-                        for item in transaction.getMessageHistoryThreadIndex(peerId: peer.id, limit: 100) {
-                            guard let data = transaction.getMessageHistoryThreadInfo(peerId: messageIndex.id.peerId, threadId: item.threadId)?.data.get(MessageHistoryThreadData.self) else {
-                                continue
-                            }
-                            if data.incomingUnreadCount != 0 {
-                                allTopicsAreRead = false
-                                break
-                            }
-                        }
-                        
-                        if allTopicsAreRead {
-                            markMainAsRead = true
                         }
                     }
                     

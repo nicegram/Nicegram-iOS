@@ -140,7 +140,7 @@ func fetchAndUpdateSupplementalCachedPeerData(peerId rawPeerId: PeerId, accountP
     }
 }
 
-func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPeerId: PeerId, sourceMessageId: EngineMessage.Id? = nil, network: Network, postbox: Postbox) -> Signal<Bool, NoError> {
+func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPeerId: PeerId, network: Network, postbox: Postbox) -> Signal<Bool, NoError> {
     return postbox.combinedView(keys: [.basicPeer(rawPeerId)])
     |> mapToSignal { views -> Signal<Bool, NoError> in
         if accountPeerId == rawPeerId {
@@ -178,7 +178,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
             if rawPeerId == accountPeerId {
                 return (.inputUserSelf, rawPeer, rawPeerId)
             } else {
-                return (apiInputUser(peer, sourceMessageId: sourceMessageId, transaction: transaction), peer, peer.id)
+                return (apiInputUser(peer), peer, peer.id)
             }
         }
         |> mapToSignal { inputUser, maybePeer, peerId -> Signal<Bool, NoError> in
@@ -302,7 +302,7 @@ func _internal_fetchAndUpdateCachedPeerData(accountPeerId: PeerId, peerId rawPee
                                         let unofficialSecurityRisk = (userFullFlags2 & (1 << 26)) != 0
                                     
                                         var flags: CachedUserFlags = previous.flags
-                                        if premiumRequired && peerId != accountPeerId {
+                                        if premiumRequired {
                                             flags.insert(.premiumRequired)
                                         } else {
                                             flags.remove(.premiumRequired)

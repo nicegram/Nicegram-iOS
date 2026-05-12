@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import AsyncDisplayKit
 import Display
+import Postbox
 import TelegramCore
 import AccountContext
 import ChatPresentationInterfaceState
@@ -22,15 +23,7 @@ open class ChatInputPanelNode: ASDisplayNode {
     open func updateAbsoluteRect(_ rect: CGRect, within containerSize: CGSize, transition: ContainedViewLayoutTransition) {
     }
     
-    public final func compactBottomSideInset(bottomInset: CGFloat, deviceMetrics: DeviceMetrics) -> CGFloat {
-        if bottomInset <= 32.0 && deviceMetrics.screenCornerRadius > 0.0 {
-            return 18.0
-        } else {
-            return 0.0
-        }
-    }
-    
-    open func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+    open func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
         return 0.0
     }
     

@@ -333,8 +333,8 @@ public enum PremiumSource: Equatable {
             } else {
                 return false
             }
-        case let .auth(lhsPrice, lhsDays):
-            if case let .auth(rhsPrice, rhsDays) = rhs, lhsPrice == rhsPrice, lhsDays == rhsDays {
+        case let .auth(lhsPrice):
+            if case let .auth(rhsPrice) = rhs, lhsPrice == rhsPrice {
                 return true
             } else {
                 return false
@@ -395,7 +395,7 @@ public enum PremiumSource: Equatable {
     case todo
     case copyProtection
     case aiTools
-    case auth(String, Int32)
+    case auth(String)
     case premiumGift(TelegramMediaFile)
     
     var identifier: String? {
@@ -3811,16 +3811,9 @@ private final class PremiumIntroScreenComponent: CombinedComponent {
             if !buttonIsHidden {
                 let buttonTitle: String
                 var buttonSubtitle: String?
-                if case let .auth(price, days) = context.component.source {
+                if case let .auth(price) = context.component.source {
                     buttonTitle = environment.strings.Premium_Week_SignUp(price).string
-                    if days == 7 {
-                        buttonSubtitle = environment.strings.Premium_Week_SignUpInfo
-                    } else if days > 0 {
-                        let daysString = environment.strings.Premium_SignUp_SignUpNewInfo_Days(days)
-                        buttonSubtitle = environment.strings.Premium_SignUp_SignUpNewInfo(daysString).string
-                    } else {
-                        buttonSubtitle = environment.strings.Premium_SignUp_SignUpNewInfoNone
-                    }
+                    buttonSubtitle = environment.strings.Premium_Week_SignUpInfo
                 } else if isUnusedGift {
                     buttonTitle = environment.strings.Premium_Gift_ApplyLink
                 } else if state.isPremium == true && state.canUpgrade {

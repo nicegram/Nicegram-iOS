@@ -90,7 +90,7 @@ private enum Entry: ItemListNodeEntry {
                 return ItemListTextItem(presentationData: presentationData, text: .plain(text), sectionId: section)
             case let .header(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, multiline: true, sectionId: self.section)
-        case let .commonlanguageToggle(_, text, langCode, value, _):
+        case let .commonlanguageToggle(_, text, langCode, value, id):
             return ItemListSwitchItem(presentationData: presentationData, title: text, value: value, enabled: true, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateData(langCode, value)
             })
@@ -198,6 +198,9 @@ private struct SelectionState: Equatable {
 
 
 public func ignoreTranslateController(context: AccountContext) -> ViewController {
+    var dismissImpl: (() -> Void)?
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+        
     let statePromise = ValuePromise(SelectionState(), ignoreRepeated: false)
     let stateValue = Atomic(value: SelectionState())
     let updateState: ((SelectionState) -> SelectionState) -> Void = { f in
@@ -224,15 +227,22 @@ public func ignoreTranslateController(context: AccountContext) -> ViewController
     
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
         |> map {presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
+            
             let entries = ignoreTranslateControllerEntries(presentationData: presentationData)
             
+            
+            var scrollToItem: ListViewScrollToItem?
+            
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.IgnoreTranslate.Title")), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: nil, animateChanges: false)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem, animateChanges: false)
             
             return (controllerState, (listState, arguments))
     }
     
     let controller = ItemListController(context: context, state: signal)
+    dismissImpl = { [weak controller] in
+        controller?.dismiss()
+    }
     
     return controller
 }

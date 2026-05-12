@@ -18,7 +18,7 @@ import WallpaperResources
 import GZip
 import TelegramUniversalVideoContent
 import GradientBackground
-import LegacyImpl
+import Svg
 import UniversalMediaPlayer
 import RangeSet
 

@@ -148,23 +148,23 @@ public extension Api {
             var _3: Int32?
             _3 = reader.readInt32()
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: [Int32]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _5 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
                 }
             }
             var _6: Api.InputWallPaper?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.InputWallPaper
                 }
             }
             var _7: Api.WallPaperSettings?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _7 = Api.parse(reader, signature: signature) as? Api.WallPaperSettings
                 }
@@ -172,10 +172,10 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _7 != nil
+            let _c4 = (Int(_1!) & Int(1 << 3) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 1) == 0) || _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.InputThemeSettings.inputThemeSettings(Cons_inputThemeSettings(flags: _1!, baseTheme: _2!, accentColor: _3!, outboxAccentColor: _4, messageColors: _5, wallpaper: _6, wallpaperSettings: _7))
             }
@@ -580,23 +580,23 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.InputDocument?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.InputDocument
                 }
             }
             var _3: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _3 = parseString(reader)
             }
             var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _4 = parseString(reader)
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
+            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputWebFileLocation.inputWebFileAudioAlbumThumbLocation(Cons_inputWebFileAudioAlbumThumbLocation(flags: _1!, document: _2, title: _3, performer: _4))
             }
@@ -723,30 +723,30 @@ public extension Api {
                 _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.LabeledPrice.self)
             }
             var _4: Int64?
-            if Int(_1 ?? 0) & Int(1 << 8) != 0 {
+            if Int(_1!) & Int(1 << 8) != 0 {
                 _4 = reader.readInt64()
             }
             var _5: [Int64]?
-            if Int(_1 ?? 0) & Int(1 << 8) != 0 {
+            if Int(_1!) & Int(1 << 8) != 0 {
                 if let _ = reader.readInt32() {
                     _5 = Api.parseVector(reader, elementSignature: 570911930, elementType: Int64.self)
                 }
             }
             var _6: String?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 _6 = parseString(reader)
             }
             var _7: Int32?
-            if Int(_1 ?? 0) & Int(1 << 11) != 0 {
+            if Int(_1!) & Int(1 << 11) != 0 {
                 _7 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 8) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 8) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 11) == 0) || _7 != nil
+            let _c4 = (Int(_1!) & Int(1 << 8) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 8) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 10) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 11) == 0) || _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.Invoice.invoice(Cons_invoice(flags: _1!, currency: _2!, prices: _3!, maxTipAmount: _4, suggestedTipAmounts: _5, termsUrl: _6, subscriptionPeriod: _7))
             }
@@ -1556,7 +1556,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1572,7 +1572,7 @@ public extension Api {
             var _6: Int32?
             _6 = reader.readInt32()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
@@ -1588,7 +1588,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1596,7 +1596,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _4 = parseString(reader)
             }
             var _5: String?
@@ -1606,9 +1606,9 @@ public extension Api {
                 _6 = Api.parse(reader, signature: signature) as? Api.InputUser
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
@@ -1622,7 +1622,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1634,7 +1634,7 @@ public extension Api {
                 _4 = Api.parse(reader, signature: signature) as? Api.InputUser
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
@@ -1648,7 +1648,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1656,7 +1656,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.KeyboardButton.keyboardButton(Cons_keyboardButton(flags: _1!, style: _2, text: _3!))
@@ -1669,7 +1669,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1677,7 +1677,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.KeyboardButton.keyboardButtonBuy(Cons_keyboardButtonBuy(flags: _1!, style: _2, text: _3!))
@@ -1690,7 +1690,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1700,7 +1700,7 @@ public extension Api {
             var _4: Buffer?
             _4 = parseBytes(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
@@ -1714,7 +1714,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1724,7 +1724,7 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
@@ -1738,7 +1738,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1746,7 +1746,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.KeyboardButton.keyboardButtonGame(Cons_keyboardButtonGame(flags: _1!, style: _2, text: _3!))
@@ -1759,7 +1759,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1767,7 +1767,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.KeyboardButton.keyboardButtonRequestGeoLocation(Cons_keyboardButtonRequestGeoLocation(flags: _1!, style: _2, text: _3!))
@@ -1780,7 +1780,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1796,7 +1796,7 @@ public extension Api {
             var _6: Int32?
             _6 = reader.readInt32()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
@@ -1812,7 +1812,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1820,7 +1820,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.KeyboardButton.keyboardButtonRequestPhone(Cons_keyboardButtonRequestPhone(flags: _1!, style: _2, text: _3!))
@@ -1833,13 +1833,13 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
             }
             var _3: Api.Bool?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.Bool
                 }
@@ -1847,8 +1847,8 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.KeyboardButton.keyboardButtonRequestPoll(Cons_keyboardButtonRequestPoll(flags: _1!, style: _2, quiz: _3, text: _4!))
@@ -1861,7 +1861,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1871,7 +1871,7 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
@@ -1885,7 +1885,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1895,16 +1895,16 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             var _5: [Api.InlineQueryPeerType]?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let _ = reader.readInt32() {
                     _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InlineQueryPeerType.self)
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _5 != nil
+            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.KeyboardButton.keyboardButtonSwitchInline(Cons_keyboardButtonSwitchInline(flags: _1!, style: _2, text: _3!, query: _4!, peerTypes: _5))
             }
@@ -1916,7 +1916,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1926,7 +1926,7 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
@@ -1940,7 +1940,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1948,7 +1948,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _4 = parseString(reader)
             }
             var _5: String?
@@ -1956,9 +1956,9 @@ public extension Api {
             var _6: Int32?
             _6 = reader.readInt32()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
@@ -1972,7 +1972,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -1982,7 +1982,7 @@ public extension Api {
             var _4: Int64?
             _4 = reader.readInt64()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
@@ -1996,7 +1996,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.KeyboardButtonStyle?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.KeyboardButtonStyle
                 }
@@ -2006,7 +2006,7 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 10) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {

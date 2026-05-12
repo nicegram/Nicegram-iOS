@@ -779,7 +779,7 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
     })
     
     let sharedData = context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.inAppNotificationSettings])
-    let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.globalNotifications))
+    let preferences = context.account.postbox.preferencesView(keys: [PreferencesKeys.globalNotifications])
     
     let exceptionsSignal = Signal<NotificationExceptionsList?, NoError>.single(exceptionsList) |> then(context.engine.peers.notificationExceptionsList() |> map(Optional.init))
     
@@ -794,7 +794,7 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
             for (key, value) in list.settings {
                 if let peer = list.peers[key], !peer.debugDisplayTitle.isEmpty, peer.id != context.account.peerId {
                     if value.storySettings != defaultStorySettings {
-                        stories[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                        stories[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                     }
                     
                     switch value.muteState {
@@ -805,24 +805,24 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
                         default:
                             switch key.namespace {
                             case Namespaces.Peer.CloudUser:
-                                users[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                                users[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                             default:
-                                if case let .channel(peer) = peer, case .broadcast = peer.info {
+                                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                     channels[key] = NotificationExceptionWrapper(settings: value, peer: .channel(peer))
                                 } else {
-                                    groups[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                                    groups[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                                 }
                             }
                         }
                     default:
                         switch key.namespace {
                         case Namespaces.Peer.CloudUser:
-                            users[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                            users[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                         default:
-                            if case let .channel(peer) = peer, case .broadcast = peer.info {
+                            if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                 channels[key] = NotificationExceptionWrapper(settings: value, peer: .channel(peer))
                             } else {
-                                groups[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                                groups[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                             }
                         }
                     }
@@ -858,7 +858,7 @@ public func notificationsAndSoundsController(context: AccountContext, exceptions
         |> map { presentationData, sharedData, view, exceptions, authorizationStatus, warningSuppressed, hasMoreThanOneAccount -> (ItemListControllerState, (ItemListNodeState, Any)) in
             
             let viewSettings: GlobalNotificationSettingsSet
-            if let settings = view?.get(GlobalNotificationSettings.self) {
+            if let settings = view.values[PreferencesKeys.globalNotifications]?.get(GlobalNotificationSettings.self) {
                 viewSettings = settings.effective
             } else {
                 viewSettings = GlobalNotificationSettingsSet.defaultSettings

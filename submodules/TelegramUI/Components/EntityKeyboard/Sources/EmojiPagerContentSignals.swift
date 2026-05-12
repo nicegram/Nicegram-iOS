@@ -1241,9 +1241,6 @@ public extension EmojiPagerContentComponent {
                             tintMode: tintMode
                         )
                     case let .text(text):
-                        if !areUnicodeEmojiEnabled {
-                            continue
-                        }
                         resultItem = EmojiPagerContentComponent.Item(
                             animationData: nil,
                             content: .staticEmoji(text),

@@ -257,7 +257,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
     
     if forceEdit {
         updateState {
-            $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
+            $0.withUpdatedEditing(true)
         }
     }
     
@@ -428,8 +428,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
         }
     }, togglePackSelected: { packId in
         updateState { state in
-            if state.editing {
-                var selectedPackIds = state.selectedPackIds ?? Set()
+            if var selectedPackIds = state.selectedPackIds {
                 if selectedPackIds.contains(packId) {
                     selectedPackIds.remove(packId)
                 } else {
@@ -555,7 +554,7 @@ public func archivedStickerPacksController(context: AccountContext, mode: Archiv
                     presentControllerImpl?(actionSheet, nil)
                 }), .init(title: presentationData.strings.StickerPacks_ActionShare, isEnabled: selectedCount > 0, action: {
                     updateState {
-                        $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
+                        $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(nil)
                     }
                     
                     var packNames: [String] = []

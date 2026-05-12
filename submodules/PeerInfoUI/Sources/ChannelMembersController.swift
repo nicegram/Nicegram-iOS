@@ -265,19 +265,10 @@ private enum ChannelMembersEntry: ItemListNodeEntry {
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         let arguments = arguments as! ChannelMembersControllerArguments
         switch self {
-            case let .hideMembers(text, disabledReason, isInteractive, currentValue):
-                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: currentValue, enableInteractiveChanges: isInteractive, enabled: true, displayLocked: !currentValue && disabledReason != nil, sectionId: self.section, style: .blocks, updated: { value in
+            case let .hideMembers(text, disabledReason, isInteractive, value):
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: text, value: value, enableInteractiveChanges: isInteractive, enabled: true, displayLocked: !value && disabledReason != nil, sectionId: self.section, style: .blocks, updated: { value in
                     if let disabledReason {
-                        switch disabledReason {
-                        case .notEnoughMembers:
-                            if currentValue && !value {
-                                arguments.updateHideMembers(value)
-                            } else {
-                                arguments.displayHideMembersTip(disabledReason)
-                            }
-                        case .notAllowed:
-                            arguments.displayHideMembersTip(disabledReason)
-                        }
+                        arguments.displayHideMembersTip(disabledReason)
                     } else {
                         arguments.updateHideMembers(value)
                     }
@@ -302,7 +293,7 @@ private enum ChannelMembersEntry: ItemListNodeEntry {
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .peerItem(_, _, strings, dateTimeFormat, nameDisplayOrder, participant, editing, enabled, _, isGroup):
                 let text: ItemListPeerItemText
-                if case let .user(user) = participant.peer, let _ = user.botInfo {
+                if let user = participant.peer as? TelegramUser, let _ = user.botInfo {
                     text = .text(strings.Bot_GenericBotStatus, .secondary)
                 } else {
                     text = .presence
@@ -330,7 +321,7 @@ private enum ChannelMembersEntry: ItemListNodeEntry {
                     label = .none
                 }
             
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: participant.peer, presence: participant.presences[participant.peer.id].flatMap(EnginePeer.Presence.init), text: text, label: label, editing: editing, switchValue: nil, enabled: enabled, selectable: participant.peer.id != arguments.context.account.peerId, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(participant.peer), presence: participant.presences[participant.peer.id].flatMap(EnginePeer.Presence.init), text: text, label: label, editing: editing, switchValue: nil, enabled: enabled, selectable: participant.peer.id != arguments.context.account.peerId, sectionId: self.section, action: {
                     arguments.openParticipant(participant, isGroup)
                 }, setPeerIdWithRevealedOptions: { previousId, id in
                     arguments.setPeerIdWithRevealedOptions(previousId, id)
@@ -782,7 +773,7 @@ public func channelMembersController(context: AccountContext, updatedPresentatio
                     return state.withUpdatedSearchingMembers(false)
                 }
             }, openPeer: { peer, _ in
-                if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                     pushControllerImpl?(infoController)
                 }
             }, pushController: { c in

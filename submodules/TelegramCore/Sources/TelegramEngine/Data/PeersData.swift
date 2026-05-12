@@ -1688,9 +1688,6 @@ public extension TelegramEngine.EngineData.Item {
             }
 
             func _extract(data: TelegramEngine.EngineData, views: [PostboxViewKey: PostboxView]) -> Any {
-                guard self.id != data.accountPeerId else {
-                    return false
-                }
                 guard let basicPeerView = views[.basicPeer(data.accountPeerId)] as? BasicPeerView else {
                     assertionFailure()
                     return false

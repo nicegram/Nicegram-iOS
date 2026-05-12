@@ -25,7 +25,7 @@ func openAddContactImpl(context: AccountContext, peer: EnginePeer?, firstName: S
                 shareViaException: false,
                 completion: { peer, stableId, contactData in
                     if let peer = peer {
-                        if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                        if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                             pushController(infoController)
                         }
                     } else if let stableId, let contactData {
@@ -39,7 +39,7 @@ func openAddContactImpl(context: AccountContext, peer: EnginePeer?, firstName: S
             DeviceAccess.authorizeAccess(to: .contacts)
         default:
             let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-            present(textAlertController(context: context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.AccessDenied_Settings, action: {
+            present(textAlertController(context: context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
                 context.sharedContext.applicationBindings.openSettings()
             })]), nil)
         }

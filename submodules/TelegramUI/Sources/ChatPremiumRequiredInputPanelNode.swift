@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import Postbox
 import SwiftSignalKit
 import TelegramNotices
 import TelegramPresentationData
@@ -29,10 +30,9 @@ final class ChatPremiumRequiredInputPanelNode: ChatInputPanelNode {
         var isSecondary: Bool
         var interfaceState: ChatPresentationInterfaceState
         var metrics: LayoutMetrics
-        var deviceMetrics: DeviceMetrics
         var isMediaInputExpanded: Bool
 
-        init(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isMediaInputExpanded: Bool) {
+        init(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) {
             self.width = width
             self.leftInset = leftInset
             self.rightInset = rightInset
@@ -43,7 +43,6 @@ final class ChatPremiumRequiredInputPanelNode: ChatInputPanelNode {
             self.isSecondary = isSecondary
             self.interfaceState = interfaceState
             self.metrics = metrics
-            self.deviceMetrics = deviceMetrics
             self.isMediaInputExpanded = isMediaInputExpanded
         }
     }
@@ -75,8 +74,8 @@ final class ChatPremiumRequiredInputPanelNode: ChatInputPanelNode {
     deinit {
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isMediaInputExpanded: Bool) -> CGFloat {
-        let params = Params(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, interfaceState: interfaceState, metrics: metrics, deviceMetrics: deviceMetrics, isMediaInputExpanded: isMediaInputExpanded)
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+        let params = Params(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, interfaceState: interfaceState, metrics: metrics, isMediaInputExpanded: isMediaInputExpanded)
         if let currentLayout = self.currentLayout, currentLayout.params == params {
             return currentLayout.height
         }

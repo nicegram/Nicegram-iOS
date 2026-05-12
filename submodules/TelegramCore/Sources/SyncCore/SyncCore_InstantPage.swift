@@ -32,8 +32,6 @@ private enum InstantPageBlockType: Int32 {
     case details = 25
     case relatedArticles = 26
     case map = 27
-    case heading = 28
-    case formula = 29
 }
 
 private func decodeListItems(_ decoder: PostboxDecoder) -> [InstantPageListItem] {
@@ -62,10 +60,8 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
     case authorDate(author: RichText, date: Int32)
     case header(RichText)
     case subheader(RichText)
-    case heading(text: RichText, level: Int32)
-    case formula(latex: String)
     case paragraph(RichText)
-    case preformatted(text: RichText, language: String?)
+    case preformatted(RichText)
     case footer(RichText)
     case divider
     case anchor(String)
@@ -101,17 +97,10 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 self = .header(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText)
             case InstantPageBlockType.subheader.rawValue:
                 self = .subheader(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText)
-            case InstantPageBlockType.heading.rawValue:
-                self = .heading(text: decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText, level: decoder.decodeInt32ForKey("l", orElse: 3))
-            case InstantPageBlockType.formula.rawValue:
-                self = .formula(latex: decoder.decodeStringForKey("l", orElse: ""))
             case InstantPageBlockType.paragraph.rawValue:
                 self = .paragraph(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText)
             case InstantPageBlockType.preformatted.rawValue:
-                self = .preformatted(
-                    text: decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText,
-                    language: decoder.decodeOptionalStringForKey("l")
-                )
+                self = .preformatted(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText)
             case InstantPageBlockType.footer.rawValue:
                 self = .footer(decoder.decodeObjectForKey("t", decoder: { RichText(decoder: $0) }) as! RichText)
             case InstantPageBlockType.divider.rawValue:
@@ -195,24 +184,12 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
             case let .subheader(text):
                 encoder.encodeInt32(InstantPageBlockType.subheader.rawValue, forKey: "r")
                 encoder.encodeObject(text, forKey: "t")
-            case let .heading(text, level):
-                encoder.encodeInt32(InstantPageBlockType.heading.rawValue, forKey: "r")
-                encoder.encodeObject(text, forKey: "t")
-                encoder.encodeInt32(level, forKey: "l")
-            case let .formula(latex):
-                encoder.encodeInt32(InstantPageBlockType.formula.rawValue, forKey: "r")
-                encoder.encodeString(latex, forKey: "l")
             case let .paragraph(text):
                 encoder.encodeInt32(InstantPageBlockType.paragraph.rawValue, forKey: "r")
                 encoder.encodeObject(text, forKey: "t")
-            case let .preformatted(text, language):
+            case let .preformatted(text):
                 encoder.encodeInt32(InstantPageBlockType.preformatted.rawValue, forKey: "r")
                 encoder.encodeObject(text, forKey: "t")
-                if let language {
-                    encoder.encodeString(language, forKey: "l")
-                } else {
-                    encoder.encodeNil(forKey: "l")
-                }
             case let .footer(text):
                 encoder.encodeInt32(InstantPageBlockType.footer.rawValue, forKey: "r")
                 encoder.encodeObject(text, forKey: "t")
@@ -397,26 +374,14 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 } else {
                     return false
                 }
-            case let .heading(lhsText, lhsLevel):
-                if case let .heading(rhsText, rhsLevel) = rhs, lhsText == rhsText, lhsLevel == rhsLevel {
-                    return true
-                } else {
-                    return false
-                }
-            case let .formula(lhsLatex):
-                if case let .formula(rhsLatex) = rhs, lhsLatex == rhsLatex {
-                    return true
-                } else {
-                    return false
-                }
             case let .paragraph(text):
                 if case .paragraph(text) = rhs {
                     return true
                 } else {
                     return false
                 }
-            case let .preformatted(lhsText, lhsLanguage):
-                if case let .preformatted(rhsText, rhsLanguage) = rhs, lhsText == rhsText, lhsLanguage == rhsLanguage {
+            case let .preformatted(text):
+                if case .preformatted(text) = rhs {
                     return true
                 } else {
                     return false
@@ -580,16 +545,6 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
                 throw FlatBuffersError.missingRequiredField()
             }
             self = .subheader(try RichText(flatBuffersObject: value.text))
-        case .instantpageblockHeading:
-            guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_Heading.self) else {
-                throw FlatBuffersError.missingRequiredField()
-            }
-            self = .heading(text: try RichText(flatBuffersObject: value.text), level: value.level)
-        case .instantpageblockFormula:
-            guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_Formula.self) else {
-                throw FlatBuffersError.missingRequiredField()
-            }
-            self = .formula(latex: value.latex)
         case .instantpageblockParagraph:
             guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_Paragraph.self) else {
                 throw FlatBuffersError.missingRequiredField()
@@ -599,7 +554,7 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
             guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_Preformatted.self) else {
                 throw FlatBuffersError.missingRequiredField()
             }
-            self = .preformatted(text: try RichText(flatBuffersObject: value.text), language: value.language)
+            self = .preformatted(try RichText(flatBuffersObject: value.text))
         case .instantpageblockFooter:
             guard let value = flatBuffersObject.value(type: TelegramCore_InstantPageBlock_Footer.self) else {
                 throw FlatBuffersError.missingRequiredField()
@@ -743,34 +698,17 @@ public indirect enum InstantPageBlock: PostboxCoding, Equatable {
             let start = TelegramCore_InstantPageBlock_Subheader.startInstantPageBlock_Subheader(&builder)
             TelegramCore_InstantPageBlock_Subheader.add(text: textOffset, &builder)
             offset = TelegramCore_InstantPageBlock_Subheader.endInstantPageBlock_Subheader(&builder, start: start)
-        case let .heading(text, level):
-            valueType = .instantpageblockHeading
-            let textOffset = text.encodeToFlatBuffers(builder: &builder)
-            let start = TelegramCore_InstantPageBlock_Heading.startInstantPageBlock_Heading(&builder)
-            TelegramCore_InstantPageBlock_Heading.add(text: textOffset, &builder)
-            TelegramCore_InstantPageBlock_Heading.add(level: level, &builder)
-            offset = TelegramCore_InstantPageBlock_Heading.endInstantPageBlock_Heading(&builder, start: start)
-        case let .formula(latex):
-            valueType = .instantpageblockFormula
-            let latexOffset = builder.create(string: latex)
-            let start = TelegramCore_InstantPageBlock_Formula.startInstantPageBlock_Formula(&builder)
-            TelegramCore_InstantPageBlock_Formula.add(latex: latexOffset, &builder)
-            offset = TelegramCore_InstantPageBlock_Formula.endInstantPageBlock_Formula(&builder, start: start)
         case let .paragraph(text):
             valueType = .instantpageblockParagraph
             let textOffset = text.encodeToFlatBuffers(builder: &builder)
             let start = TelegramCore_InstantPageBlock_Paragraph.startInstantPageBlock_Paragraph(&builder)
             TelegramCore_InstantPageBlock_Paragraph.add(text: textOffset, &builder)
             offset = TelegramCore_InstantPageBlock_Paragraph.endInstantPageBlock_Paragraph(&builder, start: start)
-        case let .preformatted(text, language):
+        case let .preformatted(text):
             valueType = .instantpageblockPreformatted
             let textOffset = text.encodeToFlatBuffers(builder: &builder)
-            let languageOffset = language.flatMap { builder.create(string: $0) }
             let start = TelegramCore_InstantPageBlock_Preformatted.startInstantPageBlock_Preformatted(&builder)
             TelegramCore_InstantPageBlock_Preformatted.add(text: textOffset, &builder)
-            if let languageOffset {
-                TelegramCore_InstantPageBlock_Preformatted.add(language: languageOffset, &builder)
-            }
             offset = TelegramCore_InstantPageBlock_Preformatted.endInstantPageBlock_Preformatted(&builder, start: start)
         case let .footer(text):
             valueType = .instantpageblockFooter

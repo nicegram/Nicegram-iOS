@@ -99,10 +99,10 @@ func _internal_channelMembers(postbox: Postbox, network: Network, accountPeerId:
                             let (participants, chats, users) = (channelParticipantsData.participants, channelParticipantsData.chats, channelParticipantsData.users)
                             let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                             updatePeers(transaction: transaction, accountPeerId: accountPeerId, peers: parsedPeers)
-                            var peers: [EnginePeer.Id: EnginePeer] = [:]
+                            var peers: [PeerId: Peer] = [:]
                             for id in parsedPeers.allIds {
                                 if let peer = transaction.getPeer(id) {
-                                    peers[peer.id] = EnginePeer(peer)
+                                    peers[peer.id] = peer
                                 }
                             }
                             
@@ -112,7 +112,7 @@ func _internal_channelMembers(postbox: Postbox, network: Network, accountPeerId:
                                     if let presence = transaction.getPeerPresence(peerId: participant.peerId) {
                                         renderedPresences[participant.peerId] = presence
                                     }
-                                    items.append(RenderedChannelParticipant(participant: participant, peer: EnginePeer(peer), peers: peers, presences: renderedPresences))
+                                    items.append(RenderedChannelParticipant(participant: participant, peer: peer, peers: peers, presences: renderedPresences))
                                 }
                             }
                         case .channelParticipantsNotModified:

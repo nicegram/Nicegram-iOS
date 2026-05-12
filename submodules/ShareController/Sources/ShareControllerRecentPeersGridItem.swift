@@ -63,7 +63,8 @@ final class ShareControllerRecentPeersGridItemNode: GridItemNode {
             } else {
                 peersNode = ChatListSearchRecentPeersNode(
                     accountPeerId: context.accountPeerId,
-                    stateManager: context.stateManager,
+                    postbox: context.stateManager.postbox,
+                    network: context.stateManager.network,
                     energyUsageSettings: environment.energyUsageSettings,
                     contentSettings: context.contentSettings,
                     animationCache: context.animationCache,

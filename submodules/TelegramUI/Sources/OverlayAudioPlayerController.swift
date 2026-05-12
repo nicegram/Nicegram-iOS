@@ -180,7 +180,7 @@ final class OverlayAudioPlayerControllerImpl: ViewController, OverlayAudioPlayer
                                 let fileId = Int64.random(in: Int64.min ... Int64.max)
                                 let mimeType = guessMimeTypeByFileExtension((item.fileName as NSString).pathExtension)
                                 var previewRepresentations: [TelegramMediaImageRepresentation] = []
-                                if mimeType.hasPrefix("image/") || mimeType == "application/pdf" || item.audioMetadata?.hasAudioArtwork == true {
+                                if mimeType.hasPrefix("image/") || mimeType == "application/pdf" {
                                     previewRepresentations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 320, height: 320), resource: ICloudFileResource(urlData: item.urlData, thumbnail: true), progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
                                 }
                                 var attributes: [TelegramMediaFileAttribute] = []
@@ -211,7 +211,7 @@ final class OverlayAudioPlayerControllerImpl: ViewController, OverlayAudioPlayer
                                         switch result {
                                         case let .media(resultMedia):
                                             if let resultFile = resultMedia.media as? TelegramMediaFile {
-                                                self.context.engine.resources.moveResourceData(from: EngineMediaResource.Id(file.resource.id), to: EngineMediaResource.Id(resultFile.resource.id), synchronous: true)
+                                                self.context.account.postbox.mediaBox.moveResourceData(from: file.resource.id, to: resultFile.resource.id, synchronous: true)
                                                 self.controllerNode.addToSavedMusic(file: .standalone(media: file))
                                             }
                                         }

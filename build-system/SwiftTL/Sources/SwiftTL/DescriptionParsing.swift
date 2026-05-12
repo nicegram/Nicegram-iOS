@@ -1,29 +1,6 @@
 import Foundation
 
 enum DescriptionParser {
-    enum ParsedSchema {
-        case flat(constructors: [ConstructorDescription], functions: [ConstructorDescription])
-        case layered(layers: [(layerNumber: Int, constructors: [ConstructorDescription])])
-    }
-
-    struct SchemaParsingError: Error, CustomStringConvertible {
-        var text: String
-        var description: String { text }
-    }
-
-    private static let skipPrefixes: [String] = [
-        "true#3fedd339 = True;",
-        "vector#1cb5c415 {t:Type} # [ t ] = Vector t;",
-        "error#c4b9f9bb code:int text:string = Error;",
-        "null#56730bcc = Null;"
-    ]
-    private static let skipContains: [String] = ["{X:Type}"]
-
-    private static func shouldSkipLine(_ line: String) -> Bool {
-        skipPrefixes.contains { line.hasPrefix($0) } ||
-        skipContains.contains { line.contains($0) }
-    }
-
     enum TypeReferenceDescription {
         case generic(name: String, argumentType: QualifiedName)
         case type(name: QualifiedName)
@@ -47,35 +24,44 @@ enum DescriptionParser {
         var type: TypeReferenceDescription
     }
     
-    static func parse(data: String) throws -> ParsedSchema {
+    static func parse(data: String) throws -> (constructors: [ConstructorDescription], functions: [ConstructorDescription]) {
         let lines = data.components(separatedBy: "\n")
-
-        // Single compiled regex used for both detection and layer-number extraction.
-        let layerMarker = try NSRegularExpression(pattern: "^===(\\d+)===\\s*$")
-        let hasLayerMarker = lines.contains { line in
-            let range = NSRange(line.startIndex..., in: line)
-            return layerMarker.firstMatch(in: line, range: range) != nil
-        }
-
-        if hasLayerMarker {
-            return try parseLayered(lines: lines, layerMarker: layerMarker)
-        } else {
-            return try parseFlat(lines: lines)
-        }
-    }
-
-    private static func parseFlat(lines: [String]) throws -> ParsedSchema {
+        
         var typeLines: [String] = []
         var functionLines: [String] = []
-
+        
+        let skipPrefixes: [String] = [
+            //"boolFalse#bc799737 = Bool;",
+            //"boolTrue#997275b5 = Bool;",
+            "true#3fedd339 = True;",
+            "vector#1cb5c415 {t:Type} # [ t ] = Vector t;",
+            "error#c4b9f9bb code:int text:string = Error;",
+            "null#56730bcc = Null;"
+        ]
+        
+        let skipContains: [String] = [
+            "{X:Type}"
+        ]
+        
         var isParsingFunctions = false
-        for line in lines {
+        loop: for line in lines {
             if line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty {
-                continue
+                // skip
             } else if line == "---functions---" {
                 isParsingFunctions = true
             } else {
-                if shouldSkipLine(line) { continue }
+                for string in skipPrefixes {
+                    if line.hasPrefix(string) {
+                        continue loop
+                    }
+                }
+                
+                for string in skipContains {
+                    if line.contains(string) {
+                        continue loop
+                    }
+                }
+                
                 if isParsingFunctions {
                     functionLines.append(line)
                 } else {
@@ -83,94 +69,35 @@ enum DescriptionParser {
                 }
             }
         }
-
+        
         var constructors: [ConstructorDescription] = []
         var functions: [ConstructorDescription] = []
-
+        
         for line in typeLines {
             do {
-                constructors.append(try parseConstructor(string: line))
+                let constructor = try self.parseConstructor(string: line)
+                constructors.append(constructor)
             } catch let e {
                 print("Error while parsing line:\n\(line)\n")
                 print("\(e)")
+                
                 throw e
             }
         }
+        
         for line in functionLines {
             do {
-                functions.append(try parseConstructor(string: line))
+                let constructor = try parseConstructor(string: line)
+                functions.append(constructor)
             } catch let e {
                 print("Error while parsing line:\n\(line)\n")
                 print("\(e)")
+                
                 throw e
             }
         }
-
-        return .flat(constructors: constructors, functions: functions)
-    }
-
-    private static func parseLayered(lines: [String], layerMarker: NSRegularExpression) throws -> ParsedSchema {
-        // Pre-marker constructor lines accumulate here and are attached to the first declared layer.
-        var preMarkerLines: [String] = []
-        var sections: [(layerNumber: Int, lines: [String])] = []
-        var lastLayerNumber: Int? = nil
-
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            if trimmed.isEmpty { continue }
-
-            if line == "---functions---" {
-                throw SchemaParsingError(text: "Layered schemas may not declare ---functions---; secret/layered schemas are types-only.")
-            }
-
-            let range = NSRange(line.startIndex..., in: line)
-            if let match = layerMarker.firstMatch(in: line, range: range),
-               let numberRange = Range(match.range(at: 1), in: line),
-               let layerNumber = Int(line[numberRange])
-            {
-                if let previous = lastLayerNumber, layerNumber <= previous {
-                    throw SchemaParsingError(text: "Layer markers must appear in strictly ascending order; found ===\(layerNumber)=== after ===\(previous)===.")
-                }
-                sections.append((layerNumber, []))
-                lastLayerNumber = layerNumber
-                continue
-            }
-
-            // Apply the same skip rules as flat mode.
-            if shouldSkipLine(line) { continue }
-
-            if sections.isEmpty {
-                preMarkerLines.append(line)
-            } else {
-                sections[sections.count - 1].lines.append(line)
-            }
-        }
-
-        if sections.isEmpty {
-            throw SchemaParsingError(text: "Layered schema has a layer marker regex match but no ===N=== sections were extracted; this indicates a parser bug.")
-        }
-
-        // Attach pre-marker lines to the first (lowest) declared layer.
-        if !preMarkerLines.isEmpty {
-            sections[0].lines.insert(contentsOf: preMarkerLines, at: 0)
-        }
-
-        var layers: [(layerNumber: Int, constructors: [ConstructorDescription])] = []
-        for (layerNumber, sectionLines) in sections {
-            var constructors: [ConstructorDescription] = []
-            for line in sectionLines {
-                do {
-                    constructors.append(try parseConstructor(string: line))
-                } catch let e {
-                    print("Error while parsing line (layer \(layerNumber)):\n\(line)\n")
-                    print("\(e)")
-                    throw e
-                }
-            }
-            layers.append((layerNumber, constructors))
-        }
-
-        return .layered(layers: layers)
+        
+        return (constructors, functions)
     }
     
     private static func parseConstructor(string: String) throws -> ConstructorDescription {

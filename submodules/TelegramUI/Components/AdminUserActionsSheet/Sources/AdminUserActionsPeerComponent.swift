@@ -227,7 +227,7 @@ final class AdminUserActionsPeerComponent: Component {
             let titleSize = self.title.update(
                 transition: .immediate,
                 component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.title, font: Font.medium(component.baseFontSize), textColor: component.theme.list.itemPrimaryTextColor))
+                    text: .plain(NSAttributedString(string: component.title, font: Font.semibold(component.baseFontSize), textColor: component.theme.list.itemPrimaryTextColor))
                 )),
                 environment: {},
                 containerSize: CGSize(width: maxTextSize, height: 100.0)

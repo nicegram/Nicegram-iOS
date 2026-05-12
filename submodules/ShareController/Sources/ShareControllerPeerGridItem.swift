@@ -236,7 +236,8 @@ final class ShareControllerPeerGridItemNode: GridItemNode {
                 let resolveInlineStickers = context.resolveInlineStickers
                 self.peerNode.setup(
                     accountPeerId: context.accountPeerId,
-                    stateManager: context.stateManager,
+                    postbox: context.stateManager.postbox,
+                    network: context.stateManager.network,
                     energyUsageSettings: environment.energyUsageSettings,
                     contentSettings: context.contentSettings,
                     animationCache: context.animationCache,
@@ -271,7 +272,8 @@ final class ShareControllerPeerGridItemNode: GridItemNode {
                 }
                 self.peerNode.setupStoryRepost(
                     accountPeerId: context.accountPeerId,
-                    stateManager: context.stateManager,
+                    postbox: context.stateManager.postbox,
+                    network: context.stateManager.network,
                     theme: theme,
                     strings: strings,
                     synchronousLoad: synchronousLoad,

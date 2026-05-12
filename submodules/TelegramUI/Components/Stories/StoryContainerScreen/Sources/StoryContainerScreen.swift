@@ -982,9 +982,6 @@ private final class StoryContainerScreenComponent: Component {
                         if let environment = self.environment, case .regular = environment.metrics.widthClass {
                             if result.isDescendant(of: self.backgroundEffectView) {
                                 if let stateValue = self.stateValue, let slice = stateValue.slice, let itemSetView = self.visibleItemSetViews[slice.peer.id] {
-                                    if point.x < itemSetView.frame.minX || point.x > itemSetView.frame.maxX {
-                                        return result
-                                    }
                                     return itemSetView.view.view
                                 }
                             }
@@ -1247,13 +1244,6 @@ private final class StoryContainerScreenComponent: Component {
                     }
                 }
             }
-        }
-
-        fileprivate func navigateWithKeyShortcut(direction: StoryItemSetContainerComponent.NavigationDirection) {
-            guard !hasFirstResponder(self) else {
-                return
-            }
-            self.navigate(direction: direction)
         }
         
         func presentExternalTooltip(_ tooltipScreen: UndoOverlayController) {
@@ -2022,7 +2012,7 @@ private final class StoryContainerScreenComponent: Component {
     }
 }
 
-public class StoryContainerScreen: ViewControllerComponentContainer, KeyShortcutResponder {
+public class StoryContainerScreen: ViewControllerComponentContainer {
     public struct TransitionState: Equatable {
         public var sourceSize: CGSize
         public var destinationSize: CGSize
@@ -2161,56 +2151,6 @@ public class StoryContainerScreen: ViewControllerComponentContainer, KeyShortcut
                 componentView.animateIn()
             }
         }
-    }
-
-    public var keyShortcuts: [KeyShortcut] {
-        if self.isViewLoaded, hasFirstResponder(self.view) {
-            return []
-        }
-        var keyShortcuts: [KeyShortcut] = []
-        keyShortcuts.append(
-            KeyShortcut(
-                title: "",
-                input: UIKeyCommand.inputUpArrow,
-                modifiers: [.command],
-                action: { [weak self] in
-                    self?.dismiss()
-                }
-            )
-        )
-        keyShortcuts.append(
-            KeyShortcut(
-                title: "",
-                input: "W",
-                modifiers: [.command],
-                action: { [weak self] in
-                    self?.dismiss()
-                }
-            )
-        )
-        keyShortcuts.append(
-            KeyShortcut(
-                input: UIKeyCommand.inputLeftArrow,
-                modifiers: [],
-                action: { [weak self] in
-                    if let componentView = self?.node.hostView.componentView as? StoryContainerScreenComponent.View {
-                        componentView.navigateWithKeyShortcut(direction: .previous)
-                    }
-                }
-            )
-        )
-        keyShortcuts.append(
-            KeyShortcut(
-                input: UIKeyCommand.inputRightArrow,
-                modifiers: [],
-                action: { [weak self] in
-                    if let componentView = self?.node.hostView.componentView as? StoryContainerScreenComponent.View {
-                        componentView.navigateWithKeyShortcut(direction: .next)
-                    }
-                }
-            )
-        )
-        return keyShortcuts
     }
     
     public func presentExternalTooltip(_ tooltipScreen: UndoOverlayController) {

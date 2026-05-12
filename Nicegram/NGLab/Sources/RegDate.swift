@@ -127,7 +127,7 @@ public func makeNiceRegDateStr(_ date: String) -> String {
     let dayDateFormatter = DateFormatter()
     dayDateFormatter.dateFormat = "yyyy-MM-dd"
     
-    let convertDateFormatter = DateFormatter()
+    var convertDateFormatter = DateFormatter()
     
     if let monthDate = monthDateFormatter.date(from: date) {
         convertDateFormatter.dateFormat = "~ MMMM yyyy"

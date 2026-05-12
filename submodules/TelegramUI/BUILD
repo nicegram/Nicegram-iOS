@@ -12,6 +12,7 @@ NGDEPS = [
     "//Nicegram/NGQuickReplies:NGQuickReplies",
     "//Nicegram/NGDataSharing:NGDataSharing",
     "//Nicegram/NGModels:NGModels",
+    "//Nicegram/NGWrap:NGWrap",
     "//Nicegram/NGKeywords:NGKeywords",
     "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
@@ -76,7 +77,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//third-party/recaptcha:RecaptchaEnterprise",
@@ -249,7 +250,7 @@ swift_library(
         "//submodules/ItemListVenueItem:ItemListVenueItem",
         "//submodules/SemanticStatusNode:SemanticStatusNode",
         "//submodules/AccountUtils:AccountUtils",
-        "//submodules/Svg/LegacyImpl",
+        "//submodules/Svg:Svg",
         "//submodules/ManagedAnimationNode:ManagedAnimationNode",
         "//submodules/TooltipUI:TooltipUI",
         "//submodules/ListMessageItem:ListMessageItem",
@@ -552,7 +553,6 @@ swift_library(
         "//submodules/TelegramUI/Components/ChatParticipantRightsScreen",
         "//submodules/TelegramUI/Components/PeerInfo/PeerCopyProtectionInfoScreen",
         "//submodules/TelegramUI/Components/Chat/ChatRankInfoScreen",
-        "//submodules/TelegramUI/Components/PollStatsScreen",
         "//submodules/TelegramUI/Components/RankChatPreviewItem",
         "//submodules/TelegramUI/Components/TextProcessingScreen",
         "//submodules/TelegramUI/Components/CreateBotScreen",

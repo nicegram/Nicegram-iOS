@@ -1320,7 +1320,7 @@ public final class PeerListItemComponent: Component {
             
             
             var mediaReference: AnyMediaReference?
-            if let peer = component.peer, let peerReference = PeerReference(peer) {
+            if let peer = component.peer, let peerReference = PeerReference(peer._asPeer()) {
                 if let story = component.story {
                     mediaReference = .story(peer: peerReference, id: story.id, media: story.media._asMedia())
                 } else if let message = component.message {

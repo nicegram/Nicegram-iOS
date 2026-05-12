@@ -2067,7 +2067,6 @@
 "StickerPack.Share" = "Share";
 "StickerPack.Send" = "Send Sticker";
 "StickerPack.AddSticker" = "Add Sticker";
-"StickerPack.RemoveStickerSet" = "Remove Sticker Set";
 
 "StickerPack.RemoveStickerCount_1" = "Remove 1 Sticker";
 "StickerPack.RemoveStickerCount_2" = "Remove 2 Stickers";
@@ -2707,7 +2706,6 @@ Unused sets are archived when you add more.";
 "Channel.AdminLog.AddMembers" = "Add Members";
 "Channel.AdminLog.SendPolls" = "Send Polls";
 "Channel.AdminLog.ManageTopics" = "Manage Topics";
-"Channel.AdminLog.SendReactions" = "Send Reactions";
 
 "Channel.AdminLog.CanChangeInfo" = "Change Info";
 "Channel.AdminLog.CanSendMessages" = "Post Messages";
@@ -16156,41 +16154,6 @@ Error: %8$@";
 "TextProcessing.ResultBadge" = "Result";
 "TextProcessing.Translate.LanguageStyle" = "%1$@ (%2$@)";
 "TextProcessing.StyleTooltip" = "Select Style";
-"TextProcessing.AlertCreatorDeleteStyle.Title" = "Delete Style";
-"TextProcessing.AlertCreatorDeleteStyle.Text" = "Are you sure you want to delete this style? It will be removed for everyone who installed it.";
-"TextProcessing.AlertDeleteStyle.Title" = "Delete Style";
-"TextProcessing.AlertDeleteStyle.Text" = "Are you sure you want to delete this style?";
-"TextProcessing.StyleMenu.Edit" = "Edit Style";
-"TextProcessing.StyleMenu.Share" = "Share Style";
-"TextProcessing.StyleMenu.Delete" = "Delete Style";
-"TextProcessing.StyleMenu.ButtonClose" = "Close";
-"TextProcessing.StyleMenu.ButtonAdd" = "Add Style";
-"TextProcessing.StylePreview.ExampleHeader" = "EXAMPLE";
-"TextProcessing.StylePreview.ExampleHeaderRefresh" = "ANOTHER EXAMPLE";
-"TextProcessing.StylePreview.Subtitle" = "Add this style to instantly\nrewrite your messages.";
-"TextProcessing.StylePreview.Before" = "Before";
-"TextProcessing.StylePreview.After" = "After";
-"TextProcessing.AlertTooManyStyles.Title" = "Too Many Styles";
-"TextProcessing.AlertTooManyStyles.Text" = "Please delete some of your saved styles to create a new one.";
-"TextProcessing.ToastStyleCreated.Title" = "%@ style created!";
-"TextProcessing.ToastStyleCreated.Text" = "Press and hold a style to edit or share the link.";
-"TextProcessing.StyleList.Add" = "Add Style";
-"TextProcessing.StyleFooterAuthor" = "Style by [%@]()";
-"TextProcessing.StyleFooterUserCount_1" = "Used by 1 person";
-"TextProcessing.StyleFooterUserCount_any" = "Used by %d people";
-"TextProcessing.StyleFooterCreatedByFormat" = "%1$@. %2$@";
-"TextProcessing.StyleFooterCreatedBy" = "Created by [%@]()";
-"TextProcessing.StyleFooterCreatedBySimpleFormat" = "%@.";
-"TextProcessing.EditStyle.NamePlaceholder" = "Style Name (for example, \"Pirate\")";
-"TextProcessing.EditStyle.TextPlaceholder" = "Instructions (for example, \"Write like a swashbuckling pirate. Use arr, ye, matey, and talk about treasure, the sea, and rum\")";
-"TextProcessing.EditStyle.TitleCreate" = "New Style";
-"TextProcessing.EditStyle.TitleEdit" = "Edit Style";
-"TextProcessing.EditStyle.ActionCreate" = "Create";
-"TextProcessing.EditStyle.ActionEdit" = "Save";
-"TextProcessing.EditStyle.Delete" = "Delete Style";
-"TextProcessing.EditStyle.AddLink" = "Add a link to my account";
-"TextProcessing.ToastStyleAdded.Title" = "Style Added";
-"TextProcessing.ToastStyleAdded.Text" = "Tap 'AI' → '%@' when typing your next long message.";
 
 "Bot.AlertCanNotCreateBots" = "%@ can't manage other bots.";
 
@@ -16209,100 +16172,7 @@ Error: %8$@";
 
 "CreatePoll.QuestionNeeded" = "Enter a question";
 "CreatePoll.OptionsNeeded" = "Add at least two options";
-"CreatePoll.OptionsNeededOne" = "Add at least one option";
 "CreatePoll.QuizCorrectOptionNeeded" = "Select a correct option";
 "CreatePoll.QuizCorrectOptionNeededMultiple" = "Select at least one correct option";
-"CreatePoll.QuizCountryNeeded" = "Select at least one country";
 
 "Stars.Intro.Transaction.Commission.Title" = "%@ commission";
-
-"Conversation.ViewPollStats" = "View Statistics";
-"PollStats.Title" = "Poll Stats";
-"PollStats.GraphHeader" = "VOTE TIMELINE";
-
-"CreatePoll.RestrictToSubscribers" = "Restrict to Subscribers";
-"CreatePoll.RestrictToSubscribersInfo" = "Only subscribers who joined 24+ hours ago can vote";
-
-"CreatePoll.LimitCountry" = "Limit by Country";
-"CreatePoll.LimitCountryInfo" = "Only users from selected countries can vote";
-"CreatePoll.AllowedCountries" = "Allowed Countries";
-"CreatePoll.AllowedCountries.Countries_1" = "%@ country";
-"CreatePoll.AllowedCountries.Countries_any" = "%@ countries";
-
-"Chat.Poll.Restriction.Subscribers" = "Only subscribers of **%@** can vote.";
-"Chat.Poll.Restriction.Subscribers.TimeLimit" = "Only subscribers who joined more than **24 hours** ago can vote.";
-"Chat.Poll.Restriction.Country" = "Only users from %@ can vote.";
-"Chat.Poll.Restriction.SubscribersCountry" = "Only subscribers of **%@** from %@ can vote.";
-"Chat.Poll.Restriction.Country.CountriesDelimiter" = ", ";
-"Chat.Poll.Restriction.Country.CountriesLastDelimiter" = " and ";
-
-"Conversation.MessageGuestChatForUser" = "for %@";
-
-"Settings.About.PrivacyHelpEmpty" = "A few words about you.";
-"Settings.About.PrivacyHelpEveryone" = "Everyone can see your bio. [Change >]()";
-"Settings.About.PrivacyHelpContacts" = "Only your contacts can see your bio. [Change >]()";
-"Settings.About.PrivacyHelpNobody" = "Nobody can see your bio. [Change >]()";
-
-"Settings.Birthday.PrivacyHelpEveryone" = "Everyone can see your birthday. [Change >]()";
-"Settings.Birthday.PrivacyHelpContacts" = "Only your contacts can see your birthday. [Change >]()";
-"Settings.Birthday.PrivacyHelpNobody" = "Nobody can see your birthday. [Change >]()";
-
-"GroupPermission.NoSendReactions" = "no reactions";
-"Channel.BanUser.PermissionSendReactions" = "Send Reactions";
-
-"Chat.AdminAction.ToastReactionsDeletedTitleSingle" = "Reaction Deleted";
-"Chat.AdminAction.ToastReactionsDeletedTextSingle" = "Reaction Deleted.";
-"Chat.AdminAction.ToastReactionsDeletedTextMultiple" = "Reactions Deleted.";
-"Chat.AdminAction.ToastMessagesAndReactionsDeletedText" = "Messages and reactions deleted.";
-
-"Premium.SignUp.SignUpNewInfo" = "Get Telegram Premium for %@";
-"Premium.SignUp.SignUpNewInfo.Days_1" = "%@ day";
-"Premium.SignUp.SignUpNewInfo.Days_any" = "%@ days";
-"Premium.SignUp.SignUpNewInfoNone" = "Get Telegram Premium";
-
-"Login.Fee.Support.NewText.Days_1" = "%@ day";
-"Login.Fee.Support.NewText.Days_any" = "%@ days";
-"Login.Fee.Support.NewText" = "Sign up for a %@ Telegram Premium subscription to help cover the SMS costs.";
-"Login.Fee.Support.NewTextNone" = "Sign up for Telegram Premium subscription to help cover the SMS costs.";
-
-"Login.Fee.GetPremiumNone" = "Get Telegram Premium";
-"Login.Fee.GetPremiumForDays" = "Get Telegram Premium for %@";
-"Login.Fee.GetPremiumForDays.Days_1" = "%@ day";
-"Login.Fee.GetPremiumForDays.Days_any" = "%@ days";
-
-"PeerInfo.DeleteReaction" = "Delete Reaction";
-"Chat.DeleteReactionInfo" = "Tap and hold to delete reaction.";
-
-"Chat.AdminActionSheet.DeleteReactionTitle" = "Delete 1 Reaction";
-"Chat.AdminActionSheet.DeleteAllMessages" = "Delete All Messages";
-"Chat.AdminActionSheet.DeleteAllReactions" = "Delete All Reactions";
-
-"Conversation.CalendarSearch.Title" = "Search";
-"Conversation.CalendarSearch.Done" = "Done";
-
-"ScheduleMessage.SilentPosting.YouEnabled" = "You will receive a silent notification";
-"ScheduleMessage.SilentPosting.YouDisabled" = "You will be notified";
-"ScheduleMessage.SilentPosting.UserEnabled" = "%@ will receive a silent notification";
-"ScheduleMessage.SilentPosting.UserDisabled" = "%@ will be notified";
-"ScheduleMessage.SilentPosting.GroupEnabled" = "Members will receive a silent notification";
-"ScheduleMessage.SilentPosting.GroupDisabled" = "Members will be notified";
-"ScheduleMessage.SilentPosting.ChannelEnabled" = "Subscribers will receive a silent notification";
-"ScheduleMessage.SilentPosting.ChannelDisabled" = "Subscribers will be notified";
-
-"Settings.ChatAutomation" = "Chat Automation";
-"Settings.ChatAutomationInfo" = "Add a bot to reply to messages on your behalf.";
-"Settings.ChatAutomationOff" = "Off";
-
-"Chat.SendReactionRestricted" = "You cannot send reactions in this chat.";
-
-"ChatbotSetup.BotInstalled" = "%@ now manages your account.";
-
-"ChatbotSetup.SetupNotCompleted.Title" = "No Bot Added";
-"ChatbotSetup.SetupNotCompleted.Text" = "You haven’t added a bot to manage your account. Leave anyway?";
-"ChatbotSetup.SetupNotCompleted.Leave" = "Leave";
-
-"Chat.SavedMessagesStatusViewAsChats" = "Tap to view as chats";
-"Chat.ToastVoiceMessageDeviceMuted" = "Device is muted.";
-
-"VideoChat.StatusPeerJoined" = "%@ joined";
-"VideoChat.StatusPeerLeft" = "%@ left";

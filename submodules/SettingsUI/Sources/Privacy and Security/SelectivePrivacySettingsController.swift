@@ -1478,7 +1478,7 @@ public func selectivePrivacySettingsController(
                                 }
                             }
                             
-                            updatedPeers[peer.id] = SelectivePrivacyPeer(peer: peer, participantCount: participantCount)
+                            updatedPeers[peer.id] = SelectivePrivacyPeer(peer: peer._asPeer(), participantCount: participantCount)
                         }
                     }
                     return updatedPeers

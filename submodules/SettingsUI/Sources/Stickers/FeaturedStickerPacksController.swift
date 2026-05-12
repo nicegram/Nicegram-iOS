@@ -172,7 +172,7 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
         presentStickerPackController?(info)
     }, addPack: { info in
         let _ = (context.engine.stickers.loadedStickerPack(reference: .id(id: info.id.id, accessHash: info.accessHash), forceActualized: false)
-        |> mapToSignal { result -> Signal<AddStickerPackResult, NoError> in
+        |> mapToSignal { result -> Signal<Void, NoError> in
             switch result {
                 case let .result(info, items, installed):
                     if installed {
@@ -186,17 +186,8 @@ public func featuredStickerPacksController(context: AccountContext) -> ViewContr
                     break
             }
             return .complete()
-        } |> deliverOnMainQueue).startStandalone()
+        } |> deliverOnMainQueue).start()
     })
-    
-    actionsDisposable.add((context.account.stateManager.installedStickerPacksArchivedEvents
-    |> deliverOnMainQueue).startStandalone(next: { count in
-       if count == 0 {
-           return
-       }
-        let presentationData = context.sharedContext.currentPresentationData.with({ $0 })
-        presentControllerImpl?(textAlertController(context: context, updatedPresentationData: nil, title: nil, text: presentationData.strings.ArchivedPacksAlert_Title, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
-    }))
     
     let stickerPacks = Promise<CombinedView>()
     stickerPacks.set(context.account.postbox.combinedView(keys: [.itemCollectionInfos(namespaces: [Namespaces.ItemCollection.CloudStickerPacks])]))

@@ -23,7 +23,7 @@ public func guessMimeTypeByFileExtension(_ ext: String) -> String {
     return TGMimeTypeMap.mimeType(forExtension: ext) ?? "application/binary"
 }
 
-public func configureLegacyAssetPicker(_ controller: TGMediaAssetsController, context: AccountContext, peer: Peer, chatLocation: ChatLocation, captionsEnabled: Bool = true, storeCreatedAssets: Bool = true, showFileTooltip: Bool = false, initialCaption: NSAttributedString, hasSchedule: Bool, presentWebSearch: (() -> Void)?, presentSelectionLimitExceeded: @escaping () -> Void, presentSchedulePicker: @escaping (Bool, @escaping (Int32, Bool) -> Void) -> Void, presentTimerPicker: @escaping (@escaping (Int32) -> Void) -> Void, getCaptionPanelView: @escaping () -> TGCaptionPanelView?) {
+public func configureLegacyAssetPicker(_ controller: TGMediaAssetsController, context: AccountContext, peer: Peer, chatLocation: ChatLocation, captionsEnabled: Bool = true, storeCreatedAssets: Bool = true, showFileTooltip: Bool = false, initialCaption: NSAttributedString, hasSchedule: Bool, presentWebSearch: (() -> Void)?, presentSelectionLimitExceeded: @escaping () -> Void, presentSchedulePicker: @escaping (Bool, @escaping (Int32) -> Void) -> Void, presentTimerPicker: @escaping (@escaping (Int32) -> Void) -> Void, getCaptionPanelView: @escaping () -> TGCaptionPanelView?) {
     let paintStickersContext = LegacyPaintStickersContext(context: context)
     paintStickersContext.captionPanelView = {
         return getCaptionPanelView()
@@ -46,8 +46,8 @@ public func configureLegacyAssetPicker(_ controller: TGMediaAssetsController, co
         controller.hasCoverButton = true
     }
     controller.presentScheduleController = { media, done in
-        presentSchedulePicker(media, { time, silentPosting in
-            done?(time, silentPosting)
+        presentSchedulePicker(media, { time in
+            done?(time)
         })
     }
     controller.presentTimerController = { done in

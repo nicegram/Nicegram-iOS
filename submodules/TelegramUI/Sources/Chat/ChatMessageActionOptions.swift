@@ -27,17 +27,6 @@ private enum OptionsId: Hashable {
     case link
 }
 
-private func chatLocationMatchesDestination(_ chatLocation: ChatLocation, peerId: EnginePeer.Id, threadId: Int64?) -> Bool {
-    switch chatLocation {
-    case let .peer(id):
-        return id == peerId && threadId == nil
-    case let .replyThread(replyThreadMessage):
-        return replyThreadMessage.peerId == peerId && replyThreadMessage.threadId == threadId
-    case .customChatContents:
-        return false
-    }
-}
-
 private func presentChatInputOptions(selfController: ChatControllerImpl, sourceView: UIView, initialId: OptionsId) {
     var getContextController: (() -> ContextController?)?
     
@@ -158,8 +147,10 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceView: 
             }
             
             var isDice = false
+            var isMusic = false
             for media in message.media {
                 if let media = media as? TelegramMediaFile, media.isMusic {
+                    isMusic = true
                     if !message.text.isEmpty {
                         hasCaptions = true
                     }
@@ -173,7 +164,7 @@ private func chatForwardOptions(selfController: ChatControllerImpl, sourceView: 
                     hasPaid = true
                 }
             }
-            if !isDice {
+            if !isDice && !isMusic {
                 hasOther = true
             }
         }
@@ -632,13 +623,14 @@ func moveReplyMessageToAnotherChat(selfController: ChatControllerImpl, replySubj
                     return
                 }
                 let peerId = peer.id
+                //let accountPeerId = selfController.context.account.peerId
                 
                 var isPinnedMessages = false
                 if case .pinnedMessages = selfController.presentationInterfaceState.subject {
                     isPinnedMessages = true
                 }
                 
-                if chatLocationMatchesDestination(selfController.chatLocation, peerId: peerId, threadId: threadId), selfController.parentController == nil, !isPinnedMessages {
+                if case .peer(peerId) = selfController.chatLocation, selfController.parentController == nil, !isPinnedMessages {
                     selfController.updateChatPresentationInterfaceState(animated: false, interactive: true, { $0.updatedInterfaceState({ $0.withUpdatedReplyMessageSubject(replySubject).withoutSelectionState() }).updatedSearch(nil) })
                     selfController.updateItemNodesSearchTextHighlightStates()
                     selfController.searchResultsController = nil
@@ -659,7 +651,7 @@ func moveReplyToChat(selfController: ChatControllerImpl, peerId: EnginePeer.Id, 
     if let navigationController = selfController.effectiveNavigationController {
         for controller in navigationController.viewControllers {
             if let maybeChat = controller as? ChatControllerImpl {
-                if chatLocationMatchesDestination(maybeChat.chatLocation, peerId: peerId, threadId: threadId) {
+                if case .peer(peerId) = maybeChat.chatLocation {
                     var isChatPinnedMessages = false
                     if case .pinnedMessages = maybeChat.presentationInterfaceState.subject {
                         isChatPinnedMessages = true

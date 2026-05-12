@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
+import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -140,9 +141,9 @@ public final class ManagedDiceAnimationNode: ManagedAnimationNode {
         self.context = context
         self.emoji = emoji
         
-        self.configuration.set(self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
+        self.configuration.set(self.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
         |> map { preferencesView -> InteractiveEmojiConfiguration? in
-            let appConfiguration: AppConfiguration = preferencesView?.get(AppConfiguration.self) ?? .defaultValue
+            let appConfiguration: AppConfiguration = preferencesView.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
             return InteractiveEmojiConfiguration.with(appConfiguration: appConfiguration)
         })
         self.emojis.set(context.engine.stickers.loadedStickerPack(reference: .dice(emoji), forceActualized: false)

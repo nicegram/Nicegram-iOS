@@ -71,7 +71,7 @@ public final class TwoFactorDataInputScreen: ViewController {
         self.presentationData = self.sharedContext.currentPresentationData.with { $0 }
         
         let defaultTheme = NavigationBarTheme(rootControllerTheme: self.presentationData.theme)
-        let navigationBarTheme = NavigationBarTheme(overallDarkAppearance: defaultTheme.overallDarkAppearance, buttonColor: defaultTheme.buttonColor, disabledButtonColor: defaultTheme.disabledButtonColor, primaryTextColor: defaultTheme.primaryTextColor, backgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: defaultTheme.badgeBackgroundColor, badgeStrokeColor: defaultTheme.badgeStrokeColor, badgeTextColor: defaultTheme.badgeTextColor, accentButtonColor: defaultTheme.accentButtonColor, accentDisabledButtonColor: defaultTheme.accentDisabledButtonColor, accentForegroundColor: defaultTheme.accentForegroundColor)
+        let navigationBarTheme = NavigationBarTheme(overallDarkAppearance: defaultTheme.overallDarkAppearance, buttonColor: defaultTheme.buttonColor, disabledButtonColor: defaultTheme.disabledButtonColor, primaryTextColor: defaultTheme.primaryTextColor, backgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: defaultTheme.badgeBackgroundColor, badgeStrokeColor: defaultTheme.badgeStrokeColor, badgeTextColor: defaultTheme.badgeTextColor, accentButtonColor: defaultTheme.accentButtonColor, accentForegroundColor: defaultTheme.accentForegroundColor)
         
         super.init(navigationBarPresentationData: NavigationBarPresentationData(theme: navigationBarTheme, strings: NavigationBarStrings(back: self.presentationData.strings.Common_Back, close: self.presentationData.strings.Common_Close)))
         
@@ -534,7 +534,7 @@ public final class TwoFactorDataInputScreen: ViewController {
                             strongSelf.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: alertText, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
                         })
                     }),
-                    TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
+                    TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
                 ]), in: .window(.root))
             case let .passwordHint(recovery, password, doneText):
                 if let recovery = recovery {
@@ -550,7 +550,7 @@ public final class TwoFactorDataInputScreen: ViewController {
                         }
                         strongSelf.performRecovery(recovery: recovery, password: "", hint: "")
                     }),
-                    TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
+                    TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {})
                 ]), in: .window(.root))
             case let .rememberPassword(doneText):
                 guard case let .authorized(engine) = strongSelf.engine else {

@@ -376,7 +376,7 @@ public final class ChatTitleComponent: Component {
             var titleStatusIcon: ChatTitleCredibilityIcon = .none
             var isEnabled = true
             switch component.content {
-            case let .peer(peerView, customTitle, _, _, isScheduledMessages, isMuted, _, hidePeerStatus, isEnabledValue):
+            case let .peer(peerView, customTitle, _, _, isScheduledMessages, isMuted, _, isEnabledValue):
                 if peerView.peerId.isReplies {
                     titleSegments = [AnimatedTextComponent.Item(
                         id: AnyHashable(0),
@@ -448,7 +448,7 @@ public final class ChatTitleComponent: Component {
                                 titleCredibilityIcon = .fake
                             } else if peer.isScam {
                                 titleCredibilityIcon = .scam
-                            } else if !hidePeerStatus, let emojiStatus = peer.emojiStatus {
+                            } else if let emojiStatus = peer.emojiStatus {
                                 titleStatusIcon = .emojiStatus(emojiStatus)
                             } else if peer.isPremium && !premiumConfiguration.isPremiumDisabled {
                                 titleCredibilityIcon = .premium
@@ -612,7 +612,7 @@ public final class ChatTitleComponent: Component {
             
             var inputActivitiesAllowed = true
             switch component.content {
-            case let .peer(peerView, _, _, _, isScheduledMessages, _, _, _, _):
+            case let .peer(peerView, _, _, _, isScheduledMessages, _, _, _):
                 if let peer = peerView.peer {
                     if peer.id == component.context.account.peerId || isScheduledMessages || peer.id.isRepliesOrVerificationCodes {
                         inputActivitiesAllowed = false
@@ -710,7 +710,7 @@ public final class ChatTitleComponent: Component {
                     }
                 } else {
                     switch component.content {
-                    case let .peer(peerView, customTitle, customSubtitle, onlineMemberCount, isScheduledMessages, _, customMessageCount, _, _):
+                    case let .peer(peerView, customTitle, customSubtitle, onlineMemberCount, isScheduledMessages, _, customMessageCount, _):
                         if let customSubtitle {
                             let string = NSAttributedString(string: customSubtitle, font: subtitleFont, textColor: component.theme.chat.inputPanel.inputControlColor)
                             state = .info(string, .generic)

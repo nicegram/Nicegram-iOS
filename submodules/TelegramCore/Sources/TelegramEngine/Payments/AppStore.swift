@@ -20,7 +20,7 @@ public enum AppStoreTransactionPurpose {
     case stars(count: Int64, currency: String, amount: Int64, peerId: EnginePeer.Id?)
     case starsGift(peerId: EnginePeer.Id, count: Int64, currency: String, amount: Int64)
     case starsGiveaway(stars: Int64, boostPeer: EnginePeer.Id, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32, currency: String, amount: Int64, users: Int32)
-    case authCode(restore: Bool, phoneNumber: String, phoneCodeHash: String, premiumDays: Int32, currency: String, amount: Int64)
+    case authCode(restore: Bool, phoneNumber: String, phoneCodeHash: String, currency: String, amount: Int64)
 }
 
 private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTransactionPurpose) -> Signal<Api.InputStorePaymentPurpose, NoError> {
@@ -155,12 +155,12 @@ private func apiInputStorePaymentPurpose(postbox: Postbox, purpose: AppStoreTran
             return .single(.inputStorePaymentStarsGiveaway(.init(flags: flags, stars: stars, boostPeer: apiBoostPeer, additionalPeers: additionalPeers, countriesIso2: countries, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, currency: currency, amount: amount, users: users)))
         }
         |> switchToLatest
-    case let .authCode(restore, phoneNumber, phoneCodeHash, premiumDays, currency, amount):
+    case let .authCode(restore, phoneNumber, phoneCodeHash, currency, amount):
         var flags: Int32 = 0
         if restore {
             flags |= (1 << 0)
         }
-        return .single(.inputStorePaymentAuthCode(.init(flags: flags, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, premiumDays: premiumDays, currency: currency, amount: amount)))
+        return .single(.inputStorePaymentAuthCode(.init(flags: flags, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, currency: currency, amount: amount)))
     }
 }
 

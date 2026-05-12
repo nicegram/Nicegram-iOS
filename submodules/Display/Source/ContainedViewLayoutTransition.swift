@@ -12,7 +12,6 @@ extension CGRect {
 public enum ContainedViewLayoutTransitionCurve: Equatable, Hashable {
     case linear
     case easeInOut
-    case easeIn
     case spring
     case customSpring(damping: CGFloat, initialVelocity: CGFloat)
     case custom(Float, Float, Float, Float)
@@ -29,8 +28,6 @@ public extension ContainedViewLayoutTransitionCurve {
             return offset
         case .easeInOut:
             return listViewAnimationCurveEaseInOut(offset)
-        case .easeIn:
-            return listViewAnimationCurveEaseIn(offset)
         case .spring:
             return listViewAnimationCurveSystem(offset)
         case .customSpring:
@@ -48,8 +45,6 @@ public extension ContainedViewLayoutTransitionCurve {
                 return CAMediaTimingFunctionName.linear.rawValue
             case .easeInOut:
                 return CAMediaTimingFunctionName.easeInEaseOut.rawValue
-            case .easeIn:
-                return CAMediaTimingFunctionName.easeIn.rawValue
             case .spring:
                 return kCAMediaTimingFunctionSpring
             case let .customSpring(damping, initialVelocity):
@@ -64,8 +59,6 @@ public extension ContainedViewLayoutTransitionCurve {
             case .linear:
                 return nil
             case .easeInOut:
-                return nil
-            case .easeIn:
                 return nil
             case .spring:
                 return nil
@@ -82,8 +75,6 @@ public extension ContainedViewLayoutTransitionCurve {
                 return [.curveLinear]
             case .easeInOut:
                 return [.curveEaseInOut]
-            case .easeIn:
-                return [.curveEaseIn]
             case .spring:
                 return UIView.AnimationOptions(rawValue: 7 << 16)
             case .customSpring:

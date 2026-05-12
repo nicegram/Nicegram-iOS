@@ -7,7 +7,7 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/TelegramCore:TelegramCore",
@@ -24,7 +24,7 @@ swift_library(
         "//submodules/WebPBinding:WebPBinding",
         "//submodules/AppBundle:AppBundle",
         "//submodules/MusicAlbumArtResources:MusicAlbumArtResources",
-        "//submodules/Svg/LegacyImpl",
+        "//submodules/Svg:Svg",
         "//submodules/Utils/RangeSet:RangeSet",
         "//submodules/ImageCompression",
     ],

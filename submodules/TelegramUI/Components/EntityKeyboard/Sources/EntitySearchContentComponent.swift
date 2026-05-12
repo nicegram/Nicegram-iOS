@@ -5,6 +5,7 @@ import ComponentFlow
 import PagerComponent
 import TelegramPresentationData
 import TelegramCore
+import Postbox
 import AnimationCache
 import MultiAnimationRenderer
 import AccountContext

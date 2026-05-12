@@ -411,20 +411,13 @@ public final class InviteLinkInviteController: ViewController {
                     
                     if let invite {
                         if case let .groupOrChannel(peerId) = self.mode {
-                            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-                            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                                if let peer {
-                                    return .single(peer)
-                                } else {
-                                    return .never()
-                                }
-                            }
+                            let _ = (context.account.postbox.loadedPeerWithId(peerId)
                             |> deliverOnMainQueue).start(next: { [weak self] peer in
                                 guard let strongSelf = self else {
                                     return
                                 }
                                 let isGroup: Bool
-                                if case let .channel(channel) = peer, case .broadcast = channel.info {
+                                if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                     isGroup = false
                                 } else {
                                     isGroup = true
@@ -450,17 +443,10 @@ public final class InviteLinkInviteController: ViewController {
                             return
                         }
                         
-                        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-                        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                            if let peer {
-                                return .single(peer)
-                            } else {
-                                return .never()
-                            }
-                        }
+                        let _ = (context.account.postbox.loadedPeerWithId(peerId)
                         |> deliverOnMainQueue).start(next: { [weak self] peer in
                             let isGroup: Bool
-                            if case let .channel(channel) = peer, case .broadcast = channel.info {
+                            if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                 isGroup = false
                             } else {
                                 isGroup = true

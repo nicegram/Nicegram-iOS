@@ -9,8 +9,7 @@ typedef NS_ENUM(NSUInteger, FFMpegAVFrameColorRange) {
 
 typedef NS_ENUM(NSUInteger, FFMpegAVFramePixelFormat) {
     FFMpegAVFramePixelFormatYUV,
-    FFMpegAVFramePixelFormatYUVA,
-    FFMpegAVFramePixelFormatUnsupported
+    FFMpegAVFramePixelFormatYUVA
 };
 
 typedef NS_ENUM(NSUInteger, FFMpegAVFrameNativePixelFormat) {
@@ -30,7 +29,7 @@ typedef NS_ENUM(NSUInteger, FFMpegAVFrameNativePixelFormat) {
 @property (nonatomic, readonly) FFMpegAVFramePixelFormat pixelFormat;
 
 - (instancetype)init;
-- (instancetype _Nullable)initWithPixelFormat:(FFMpegAVFramePixelFormat)pixelFormat width:(int32_t)width height:(int32_t)height;
+- (instancetype)initWithPixelFormat:(FFMpegAVFramePixelFormat)pixelFormat width:(int32_t)width height:(int32_t)height;
 
 - (void *)impl;
 - (FFMpegAVFrameNativePixelFormat)nativePixelFormat;

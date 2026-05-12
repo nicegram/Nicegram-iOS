@@ -630,25 +630,18 @@ final class VoiceChatMainStageNode: ASDisplayNode {
                 self.speakingAudioLevelView = nil
             }
             
-            self.speakingPeerDisposable.set((self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                if let peer {
-                    return .single(peer)
-                } else {
-                    return .never()
-                }
-            }
+            self.speakingPeerDisposable.set((self.context.account.postbox.loadedPeerWithId(peerId)
             |> deliverOnMainQueue).start(next: { [weak self] peer in
                 guard let strongSelf = self else {
                     return
                 }
-
+                
                 let presentationData = strongSelf.context.sharedContext.currentPresentationData.with { $0 }
-                    strongSelf.speakingAvatarNode.setPeer(context: strongSelf.context, theme: presentationData.theme, peer: peer)
-
+                    strongSelf.speakingAvatarNode.setPeer(context: strongSelf.context, theme: presentationData.theme, peer: EnginePeer(peer))
+                
                 let bodyAttributes = MarkdownAttributeSet(font: Font.regular(15.0), textColor: .white, additionalAttributes: [:])
                 let boldAttributes = MarkdownAttributeSet(font: Font.semibold(15.0), textColor: .white, additionalAttributes: [:])
-                let attributedText = addAttributesToStringWithRanges(presentationData.strings.VoiceChat_ParticipantIsSpeaking(peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder))._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
+                let attributedText = addAttributesToStringWithRanges(presentationData.strings.VoiceChat_ParticipantIsSpeaking(EnginePeer(peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder))._tuple, body: bodyAttributes, argumentAttributes: [0: boldAttributes])
                 strongSelf.speakingTitleNode.attributedText = attributedText
 
                 strongSelf.speakingContainerNode.alpha = 0.0

@@ -522,6 +522,7 @@ public final class CallController: ViewController {
             confirmation: { peer in
                 switch peer {
                 case let .peer(peer, _, _):
+                    let peer = EnginePeer(peer)
                     guard case let .user(user) = peer else {
                         return .single(false)
                     }
@@ -539,6 +540,7 @@ public final class CallController: ViewController {
             isPeerEnabled: { peer in
                 switch peer {
                 case let .peer(peer, _, _):
+                    let peer = EnginePeer(peer)
                     guard case let .user(user) = peer else {
                         return false
                     }

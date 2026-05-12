@@ -313,48 +313,6 @@ public struct PresentationResourcesChatList {
         })
     }
     
-    public static func todoIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.chatListTodoIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/TodoIcon"), color: theme.chatList.muteIconColor)
-        })
-    }
-    
-    public static func gameIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.chatListGameIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/GameIcon"), color: theme.chatList.muteIconColor)
-        })
-    }
-    
-    public static func callIncomingIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.chatListCallIncomingIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/CallIncomingIcon"), color: theme.chatList.muteIconColor)
-        })
-    }
-    
-    public static func callOutgoingIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.chatListCallOutgoingIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/CallOutgoingIcon"), color: theme.chatList.muteIconColor)
-        })
-    }
-    
-    public static func callVideoIncomingIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.chatListCallVideoIncomingIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/CallVideoIncomingIcon"), color: theme.chatList.muteIconColor)
-        })
-    }
-    
-    public static func callVideoOutgoingIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.chatListCallVideoOutgoingIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/CallVideoOutgoingIcon"), color: theme.chatList.muteIconColor)
-        })
-    }
-    
-    public static func voiceMessageIcon(_ theme: PresentationTheme) -> UIImage? {
-        return theme.image(PresentationResourceKey.chatListVoiceMessageIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Chat List/VoiceMessageIcon"), color: theme.chatList.muteIconColor)
-        })
-    }
-    
     public static func verifiedIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.chatListVerifiedIcon.rawValue, { theme in
             if let backgroundImage = UIImage(bundleImageName: "Chat List/PeerVerifiedIconBackground"), let foregroundImage = UIImage(bundleImageName: "Chat List/PeerVerifiedIconForeground") {

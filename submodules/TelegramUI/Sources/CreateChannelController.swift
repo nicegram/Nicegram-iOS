@@ -19,12 +19,8 @@ import PeerInfoUI
 import MapResourceToAvatarSizes
 import LegacyMediaPickerUI
 import TextFormat
-import MediaEditor
-import MediaEditorScreen
-import CameraScreen
 import AvatarEditorScreen
 import OldChannelsController
-import Photos
 import AVFoundation
 
 private struct CreateChannelArguments {
@@ -367,29 +363,10 @@ public func createChannelController(context: AccountContext, mode: CreateChannel
     
     let actionsDisposable = DisposableSet()
     
-    var avatarPickerHolder: Any?
-    var pendingAvatar: CreatePendingPeerAvatar?
-    let applyPendingAvatar: (CreatePendingPeerAvatar) -> Void = { avatar in
-        pendingAvatar = avatar
-        updateState { current in
-            var current = current
-            current.avatar = avatar.updatingAvatar
-            return current
-        }
-    }
-    let updatePendingAvatarIfCurrent: (CreatePendingPeerAvatar) -> Void = { avatar in
-        if pendingAvatar?.previewRepresentation.resource.id == avatar.previewRepresentation.resource.id {
-            applyPendingAvatar(avatar)
-        }
-    }
-    let clearPendingAvatar: () -> Void = {
-        pendingAvatar = nil
-        updateState { current in
-            var current = current
-            current.avatar = nil
-            return current
-        }
-    }
+    let currentAvatarMixin = Atomic<TGMediaAvatarMenuMixin?>(value: nil)
+    
+    let uploadedAvatar = Promise<UploadedPeerPhotoData>()
+    var uploadedVideoAvatar: (Promise<UploadedPeerPhotoData?>, Double?)? = nil
     
     let checkAddressNameDisposable = MetaDisposable()
     actionsDisposable.add(checkAddressNameDisposable)
@@ -457,9 +434,12 @@ public func createChannelController(context: AccountContext, mode: CreateChannel
                         }
                     }
                 }).start(next: { peerId in
-                    if let pendingAvatar {
-                        let _ = context.engine.peers.updatePeerPhoto(peerId: peerId, photo: pendingAvatar.uploadedPhoto, video: pendingAvatar.uploadedVideo, videoStartTimestamp: pendingAvatar.videoStartTimestamp, markup: pendingAvatar.markup, mapResourceToAvatarSizes: { resource, representations in
-                            return mapResourceToAvatarSizes(engine: context.engine, resource: resource, representations: representations)
+                    let updatingAvatar = stateValue.with {
+                        return $0.avatar
+                    }
+                    if let _ = updatingAvatar {
+                        let _ = context.engine.peers.updatePeerPhoto(peerId: peerId, photo: uploadedAvatar.get(), video: uploadedVideoAvatar?.0.get(), videoStartTimestamp: uploadedVideoAvatar?.1, mapResourceToAvatarSizes: { resource, representations in
+                            return mapResourceToAvatarSizes(postbox: context.account.postbox, resource: resource, representations: representations)
                         }).start()
                     }
                     
@@ -494,127 +474,216 @@ public func createChannelController(context: AccountContext, mode: CreateChannel
     }, changeProfilePhoto: {
         endEditingImpl?()
         
-        let keyboardInputData = Promise<AvatarKeyboardInputData>()
-        keyboardInputData.set(AvatarEditorScreen.inputData(context: context, isGroup: true))
-        
-        var dismissPickerImpl: (() -> Void)?
-        let (mainController, pickerHolder) = context.sharedContext.makeAvatarMediaPickerScreen(context: context, getSourceRect: { return nil }, canDelete: pendingAvatar != nil, performDelete: {
-            clearPendingAvatar()
-        }, completion: { result, transitionView, transitionRect, transitionImage, fromCamera, _, cancelled in
-            avatarPickerHolder = nil
-            
-            let applyPhoto: (UIImage) -> Void = { image in
-                if let avatar = CreatePeerAvatarSetup.photo(context: context, image: image) {
-                    applyPendingAvatar(avatar)
-                }
-            }
-            let applyVideo: (UIImage, MediaEditorScreenImpl.MediaResult.VideoResult?, MediaEditorValues?, UploadPeerPhotoMarkup?) -> Void = { image, video, values, markup in
-                if let avatar = CreatePeerAvatarSetup.video(context: context, image: image, video: video, values: values, markup: markup, didCompleteLoadingPreview: { avatar in
-                    updatePendingAvatarIfCurrent(avatar)
-                }) {
-                    applyPendingAvatar(avatar)
-                }
-            }
-            
-            let subject: Signal<MediaEditorScreenImpl.Subject?, NoError>
-            if let asset = result as? PHAsset {
-                subject = .single(.asset(asset))
-            } else if let image = result as? UIImage {
-                subject = .single(.image(image: image, dimensions: PixelDimensions(image.size), additionalImage: nil, additionalImagePosition: .bottomRight, fromCamera: false))
-            } else if let result = result as? Signal<CameraScreenImpl.Result, NoError> {
-                subject = result
-                |> map { value -> MediaEditorScreenImpl.Subject? in
-                    switch value {
-                    case .pendingImage:
-                        return nil
-                    case let .image(image):
-                        return .image(image: image.image, dimensions: PixelDimensions(image.image.size), additionalImage: nil, additionalImagePosition: .topLeft, fromCamera: false)
-                    case let .video(video):
-                        return .video(videoPath: video.videoPath, thumbnail: video.coverImage, mirror: video.mirror, additionalVideoPath: nil, additionalThumbnail: nil, dimensions: video.dimensions, duration: video.duration, videoPositionChanges: [], additionalVideoPosition: .topLeft, fromCamera: false)
-                    default:
-                        return nil
-                    }
-                }
-            } else {
-                let controller = AvatarEditorScreen(context: context, inputData: keyboardInputData.get(), peerType: .channel, markup: nil)
-                controller.imageCompletion = { image, commit in
-                    applyPhoto(image)
-                    commit()
-                }
-                controller.videoCompletion = { image, _, _, markup, commit in
-                    applyVideo(image, nil, nil, markup)
-                    commit()
-                }
-                pushControllerImpl?(controller)
-                return
-            }
-            
-            let editorController = MediaEditorScreenImpl(
-                context: context,
-                mode: .avatarEditor,
-                subject: subject,
-                transitionIn: fromCamera ? .camera : transitionView.flatMap({ .gallery(
-                    MediaEditorScreenImpl.TransitionIn.GalleryTransitionIn(
-                        sourceView: $0,
-                        sourceRect: transitionRect,
-                        sourceImage: transitionImage
-                    )
-                ) }),
-                transitionOut: { finished, _ in
-                    if !finished, let transitionView {
-                        return MediaEditorScreenImpl.TransitionOut(
-                            destinationView: transitionView,
-                            destinationRect: transitionView.bounds,
-                            destinationCornerRadius: 0.0
-                        )
-                    }
-                    return nil
-                },
-                completion: { results, commit in
-                    guard let result = results.first else {
-                        return
-                    }
-                    switch result.media {
-                    case let .image(image, _):
-                        applyPhoto(image)
-                        commit({})
-                    case let .video(video, coverImage, values, _, _):
-                        if let coverImage {
-                            applyVideo(coverImage, video, values, nil)
-                        }
-                        commit({})
-                    default:
-                        break
-                    }
-                    dismissPickerImpl?()
-                } as ([MediaEditorScreenImpl.Result], @escaping (@escaping () -> Void) -> Void) -> Void
-            )
-            editorController.cancelled = { _ in
-                cancelled()
-            }
-            pushControllerImpl?(editorController)
-        }, dismissed: {
-            avatarPickerHolder = nil
-        })
-        avatarPickerHolder = pickerHolder
-        if let mainController {
-            dismissPickerImpl = { [weak mainController] in
-                if let mainController, let navigationController = mainController.navigationController {
-                    var viewControllers = navigationController.viewControllers
-                    viewControllers = viewControllers.filter { controller in
-                        return !(controller is CameraScreen) && controller !== mainController
-                    }
-                    navigationController.setViewControllers(viewControllers, animated: false)
-                }
-            }
-            if mainController is ActionSheetController {
-                presentControllerImpl?(mainController, nil)
-            } else {
-                mainController.navigationPresentation = .flatModal
-                mainController.supportedOrientations = ViewControllerSupportedOrientations(regularSize: .all, compactSize: .portrait)
-                pushControllerImpl?(mainController)
-            }
+        let title = stateValue.with { state -> String in
+            return state.editingName.composedTitle
         }
+        
+        let _ = (context.engine.data.get(
+            TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId),
+            TelegramEngine.EngineData.Item.Configuration.SearchBots()
+        )
+        |> deliverOnMainQueue).start(next: { peer, searchBotsConfiguration in
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            
+            let legacyController = LegacyController(presentation: .custom, theme: presentationData.theme)
+            legacyController.statusBar.statusBarStyle = .Ignore
+            
+            let emptyController = LegacyEmptyController(context: legacyController.context)!
+            let navigationController = makeLegacyNavigationController(rootController: emptyController)
+            navigationController.setNavigationBarHidden(true, animated: false)
+            navigationController.navigationBar.transform = CGAffineTransform(translationX: -1000.0, y: 0.0)
+            
+            legacyController.bind(controller: navigationController)
+            
+            endEditingImpl?()
+            presentControllerImpl?(legacyController, nil)
+            
+            let completedChannelPhotoImpl: (UIImage) -> Void = { image in
+                if let data = image.jpegData(compressionQuality: 0.6) {
+                    let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+                    context.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
+                    let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
+                    uploadedAvatar.set(context.engine.peers.uploadedPeerPhoto(resource: resource))
+                    uploadedVideoAvatar = nil
+                    updateState { current in
+                        var current = current
+                        current.avatar = .image(representation, false)
+                        return current
+                    }
+                }
+            }
+            
+            let completedChannelVideoImpl: (UIImage, Any?, TGVideoEditAdjustments?) -> Void = { image, asset, adjustments in
+                if let data = image.jpegData(compressionQuality: 0.6) {
+                    let photoResource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+                    context.account.postbox.mediaBox.storeResourceData(photoResource.id, data: data)
+                    let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: photoResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
+                    updateState { state in
+                        var state = state
+                        state.avatar = .image(representation, true)
+                        return state
+                    }
+                    
+                    var videoStartTimestamp: Double? = nil
+                    if let adjustments = adjustments, adjustments.videoStartValue > 0.0 {
+                        videoStartTimestamp = adjustments.videoStartValue - adjustments.trimStartValue
+                    }
+                    
+                    let signal = Signal<TelegramMediaResource?, UploadPeerPhotoError> { subscriber in
+                        let entityRenderer: LegacyPaintEntityRenderer? = adjustments.flatMap { adjustments in
+                            if let paintingData = adjustments.paintingData, paintingData.hasAnimation {
+                                return LegacyPaintEntityRenderer(postbox: context.account.postbox, adjustments: adjustments)
+                            } else {
+                                return nil
+                            }
+                        }
+                        
+                        let tempFile = EngineTempBox.shared.tempFile(fileName: "video.mp4")
+                        let uploadInterface = LegacyLiveUploadInterface(context: context)
+                        let signal: SSignal
+                        if let url = asset as? URL, url.absoluteString.hasSuffix(".jpg"), let data = try? Data(contentsOf: url, options: [.mappedRead]), let image = UIImage(data: data), let entityRenderer = entityRenderer {
+                            let durationSignal: SSignal = SSignal(generator: { subscriber in
+                                let disposable = (entityRenderer.duration()).start(next: { duration in
+                                    subscriber.putNext(duration)
+                                    subscriber.putCompletion()
+                                })
+                                
+                                return SBlockDisposable(block: {
+                                    disposable.dispose()
+                                })
+                            })
+                            signal = durationSignal.map(toSignal: { duration -> SSignal in
+                                if let duration = duration as? Double {
+                                    return TGMediaVideoConverter.renderUIImage(image, duration: duration, adjustments: adjustments, path: tempFile.path, watcher: nil, entityRenderer: entityRenderer)!
+                                } else {
+                                    return SSignal.single(nil)
+                                }
+                            })
+                           
+                        } else if let asset = asset as? AVAsset {
+                            signal = TGMediaVideoConverter.convert(asset, adjustments: adjustments, path: tempFile.path, watcher: uploadInterface, entityRenderer: entityRenderer)!
+                        } else {
+                            signal = SSignal.complete()
+                        }
+                        
+                        let signalDisposable = signal.start(next: { next in
+                            if let result = next as? TGMediaVideoConversionResult {
+                                if let image = result.coverImage, let data = image.jpegData(compressionQuality: 0.7) {
+                                    context.account.postbox.mediaBox.storeResourceData(photoResource.id, data: data)
+                                }
+                                
+                                if let timestamp = videoStartTimestamp {
+                                    videoStartTimestamp = max(0.0, min(timestamp, result.duration - 0.05))
+                                }
+                                
+                                var value = stat()
+                                if stat(result.fileURL.path, &value) == 0 {
+                                    if let data = try? Data(contentsOf: result.fileURL) {
+                                        let resource: TelegramMediaResource
+                                        if let liveUploadData = result.liveUploadData as? LegacyLiveUploadInterfaceResult {
+                                            resource = LocalFileMediaResource(fileId: liveUploadData.id)
+                                        } else {
+                                            resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
+                                        }
+                                        context.account.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
+                                        subscriber.putNext(resource)
+                                        
+                                        EngineTempBox.shared.dispose(tempFile)
+                                    }
+                                }
+                                subscriber.putCompletion()
+                            }
+                        }, error: { _ in
+                        }, completed: nil)
+                        
+                        let disposable = ActionDisposable {
+                            signalDisposable?.dispose()
+                        }
+                        
+                        return ActionDisposable {
+                            disposable.dispose()
+                        }
+                    }
+                    
+                    uploadedAvatar.set(context.engine.peers.uploadedPeerPhoto(resource: photoResource))
+                    
+                    let promise = Promise<UploadedPeerPhotoData?>()
+                    promise.set(signal
+                    |> `catch` { _ -> Signal<TelegramMediaResource?, NoError> in
+                        return .single(nil)
+                    }
+                    |> mapToSignal { resource -> Signal<UploadedPeerPhotoData?, NoError> in
+                        if let resource = resource {
+                            return context.engine.peers.uploadedPeerVideo(resource: resource) |> map(Optional.init)
+                        } else {
+                            return .single(nil)
+                        }
+                    } |> afterNext { next in
+                        if let next = next, next.isCompleted {
+                            updateState { state in
+                                var state = state
+                                state.avatar = .image(representation, false)
+                                return state
+                            }
+                        }
+                    })
+                    uploadedVideoAvatar = (promise, videoStartTimestamp)
+                }
+            }
+            
+            let keyboardInputData = Promise<AvatarKeyboardInputData>()
+            keyboardInputData.set(AvatarEditorScreen.inputData(context: context, isGroup: true))
+            
+            let mixin = TGMediaAvatarMenuMixin(context: legacyController.context, parentController: emptyController, hasSearchButton: true, hasDeleteButton: stateValue.with({ $0.avatar }) != nil, hasViewButton: false, personalPhoto: false, isVideo: false, saveEditedPhotos: false, saveCapturedMedia: false, signup: false, forum: false, title: nil, isSuggesting: false)!
+            mixin.stickersContext = LegacyPaintStickersContext(context: context)
+            let _ = currentAvatarMixin.swap(mixin)
+            mixin.requestSearchController = { assetsController in
+                let controller = WebSearchController(context: context, peer: peer, chatLocation: nil, configuration: searchBotsConfiguration, mode: .avatar(initialQuery: title, completion: { result in
+                    assetsController?.dismiss()
+                    completedChannelPhotoImpl(result)
+                }))
+                presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+            }
+//            mixin.requestAvatarEditor = { imageCompletion, videoCompletion in
+//                guard let imageCompletion, let videoCompletion else {
+//                    return
+//                }
+//                let controller = AvatarEditorScreen(context: context, inputData: keyboardInputData.get(), peerType: .channel, markup: nil)
+//                controller.imageCompletion = imageCompletion
+//                controller.videoCompletion = videoCompletion
+//                pushControllerImpl?(controller)
+//            }
+            mixin.didFinishWithImage = { image in
+                if let image = image {
+                    completedChannelPhotoImpl(image)
+                }
+            }
+            mixin.didFinishWithVideo = { image, asset, adjustments in
+                if let image = image, let asset = asset {
+                    completedChannelVideoImpl(image, asset, adjustments)
+                }
+            }
+            if stateValue.with({ $0.avatar }) != nil {
+                mixin.didFinishWithDelete = {
+                    updateState { current in
+                        var current = current
+                        current.avatar = nil
+                        return current
+                    }
+                    uploadedAvatar.set(.never())
+                }
+            }
+            mixin.didDismiss = { [weak legacyController] in
+                let _ = currentAvatarMixin.swap(nil)
+                legacyController?.dismiss()
+            }
+            let menuController = mixin.present()
+            if let menuController = menuController {
+                menuController.customRemoveFromParentViewController = { [weak legacyController] in
+                    legacyController?.dismiss()
+                }
+            }
+        })
     }, focusOnDescription: {
         focusOnDescriptionImpl?()
     }, updatePublicLinkText: { text in
@@ -672,8 +741,6 @@ public func createChannelController(context: AccountContext, mode: CreateChannel
         return (controllerState, (listState, arguments))
     } |> afterDisposed {
         actionsDisposable.dispose()
-        
-        let _ = avatarPickerHolder
     }
     
     let controller = ItemListController(context: context, state: signal)

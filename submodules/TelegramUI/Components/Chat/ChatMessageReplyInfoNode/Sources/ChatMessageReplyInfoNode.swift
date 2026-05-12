@@ -430,6 +430,8 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
             }
             
             let textColor: UIColor
+            let iconColor: UIColor
+            
             switch arguments.type {
                 case let .bubble(incoming):
                     if isExpiredStory || isStory {
@@ -439,8 +441,10 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                     } else {
                         textColor = incoming ? arguments.presentationData.theme.theme.chat.message.incoming.primaryTextColor : arguments.presentationData.theme.theme.chat.message.outgoing.primaryTextColor
                     }
+                    iconColor = incoming ? arguments.presentationData.theme.theme.chat.message.incoming.accentTextColor : arguments.presentationData.theme.theme.chat.message.outgoing.accentTextColor
                 case .standalone:
                     textColor = titleColor
+                    iconColor = titleColor
             }
             
             var textLeftInset: CGFloat = 0.0
@@ -868,7 +872,6 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                             expiredStoryIconView.frame = CGRect(origin: CGPoint(x: textFrame.minX - 1.0, y: textFrame.minY + 3.0 + UIScreenPixel), size: imageSize)
                         }
                     }
-                    expiredStoryIconView.tintColor = titleColor
                 } else if let expiredStoryIconView = node.expiredStoryIconView {
                     expiredStoryIconView.removeFromSuperview()
                 }
@@ -948,7 +951,7 @@ public class ChatMessageReplyInfoNode: ASDisplayNode {
                 
                 if let todoItemCompleted {
                     let checkLayerFrame = CGRect(origin: CGPoint(x: textFrame.minX - 16.0, y: textFrame.minY + 5.0), size: CGSize(width: 12.0, height: 12.0))
-                    let checkTheme = CheckNodeTheme(backgroundColor: titleColor, strokeColor: .clear, borderColor: titleColor, overlayBorder: false, hasInset: true, hasShadow: false, borderWidth: 1.0)
+                    let checkTheme = CheckNodeTheme(backgroundColor: iconColor, strokeColor: .clear, borderColor: iconColor, overlayBorder: false, hasInset: true, hasShadow: false, borderWidth: 1.0)
                     
                     let checkLayer: CheckLayer
                     if let current = node.checkLayer {

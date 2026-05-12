@@ -65,7 +65,7 @@ private enum RecommendedPeersListEntry: Comparable, Identifiable {
         }
     }
     
-    func item(context: AccountContext, presentationData: PresentationData, action: @escaping (EnginePeer) -> Void, openPeerContextAction: @escaping (EnginePeer, ASDisplayNode, ContextGesture?) -> Void) -> ListViewItem {
+    func item(context: AccountContext, presentationData: PresentationData, action: @escaping (EnginePeer) -> Void, openPeerContextAction: @escaping (Peer, ASDisplayNode, ContextGesture?) -> Void) -> ListViewItem {
         switch self {
         case let .peer(_, _, peer, subscribers):
             let text: ItemListPeerItemText
@@ -85,13 +85,13 @@ private enum RecommendedPeersListEntry: Comparable, Identifiable {
             }, setPeerIdWithRevealedOptions: { _, _ in
             }, removePeer: { _ in
             }, contextAction: { node, gesture in
-                openPeerContextAction(peer, node, gesture)
+                openPeerContextAction(peer._asPeer(), node, gesture)
             }, hasTopStripe: false, noInsets: true, noCorners: true, style: .plain, disableInteractiveTransitionIfNecessary: true)
         }
     }
 }
 
-private func preparedTransition(from fromEntries: [RecommendedPeersListEntry], to toEntries: [RecommendedPeersListEntry], context: AccountContext, presentationData: PresentationData, action: @escaping (EnginePeer) -> Void, openPeerContextAction: @escaping (EnginePeer, ASDisplayNode, ContextGesture?) -> Void) -> RecommendedPeersListTransaction {
+private func preparedTransition(from fromEntries: [RecommendedPeersListEntry], to toEntries: [RecommendedPeersListEntry], context: AccountContext, presentationData: PresentationData, action: @escaping (EnginePeer) -> Void, openPeerContextAction: @escaping (Peer, ASDisplayNode, ContextGesture?) -> Void) -> RecommendedPeersListTransaction {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
@@ -116,7 +116,7 @@ extension RecommendedBots: RecommendedPeers {
 final class PeerInfoRecommendedPeersPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private let context: AccountContext
     private let chatControllerInteraction: ChatControllerInteraction
-    private let openPeerContextAction: (Bool, EnginePeer, ASDisplayNode, ContextGesture?) -> Void
+    private let openPeerContextAction: (Bool, Peer, ASDisplayNode, ContextGesture?) -> Void
     
     weak var parentController: ViewController?
     
@@ -152,7 +152,7 @@ final class PeerInfoRecommendedPeersPaneNode: ASDisplayNode, PeerInfoPaneNode {
         
     private var disposable: Disposable?
     
-    init(context: AccountContext, peerId: PeerId, chatControllerInteraction: ChatControllerInteraction, openPeerContextAction: @escaping (Bool, EnginePeer, ASDisplayNode, ContextGesture?) -> Void) {
+    init(context: AccountContext, peerId: PeerId, chatControllerInteraction: ChatControllerInteraction, openPeerContextAction: @escaping (Bool, Peer, ASDisplayNode, ContextGesture?) -> Void) {
         self.context = context
         self.chatControllerInteraction = chatControllerInteraction
         self.openPeerContextAction = openPeerContextAction

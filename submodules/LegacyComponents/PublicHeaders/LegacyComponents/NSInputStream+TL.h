@@ -4,8 +4,11 @@
 
 @interface NSInputStream (TL)
 
+- (int32_t)readInt32;
 - (int32_t)readInt32:(bool *)failed __attribute__((nonnull(1)));
+- (int64_t)readInt64;
 - (int64_t)readInt64:(bool *)failed __attribute__((nonnull(1)));
+- (double)readDouble;
 - (double)readDouble:(bool *)failed __attribute__((nonnull(1)));
 - (NSData *)readData:(int)length;
 - (NSData *)readData:(int)length failed:(bool *)failed __attribute__((nonnull(2)));

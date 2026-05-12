@@ -40,7 +40,7 @@ public extension WalletContact {
             username = ""
         }
 
-        let canSendMessage = canSendMessagesToPeer(peer)
+        let canSendMessage = canSendMessagesToPeer(peer._asPeer())
 
         var canInviteToWallet = false
         if case let .user(user) = peer, user.botInfo == nil {

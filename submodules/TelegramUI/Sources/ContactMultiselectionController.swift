@@ -18,13 +18,13 @@ import PremiumUI
 import UndoUI
 import ContextUI
 
-private func peerTokenTitle(accountPeerId: PeerId, peer: EnginePeer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) -> String {
+private func peerTokenTitle(accountPeerId: PeerId, peer: Peer, strings: PresentationStrings, nameDisplayOrder: PresentationPersonNameOrder) -> String {
     if peer.id == accountPeerId {
         return strings.DialogList_SavedMessages
     } else if peer.id.isReplies {
         return strings.DialogList_Replies
     } else {
-        return peer.displayTitle(strings: strings, displayOrder: nameDisplayOrder)
+        return EnginePeer(peer).displayTitle(strings: strings, displayOrder: nameDisplayOrder)
     }
 }
 
@@ -168,7 +168,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                     }
                 }
                 strongSelf.contactsNode.editableTokens.append(contentsOf: peers.map { peer -> EditableTokenListToken in
-                    return EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: params.context.account.peerId, peer: peer, strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer))
+                    return EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: params.context.account.peerId, peer: peer._asPeer(), strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer))
                 })
                 strongSelf._peersReady.set(.single(true))
                 if strongSelf.isNodeLoaded {
@@ -198,7 +198,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                     }
                     let peers = peerList.compactMap { $0 }
                     strongSelf.contactsNode.editableTokens.append(contentsOf: peers.map { peer -> EditableTokenListToken in
-                        return EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: params.context.account.peerId, peer: peer, strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer))
+                        return EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: params.context.account.peerId, peer: peer._asPeer(), strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer))
                     })
                     strongSelf._peersReady.set(.single(true))
                     if strongSelf.isNodeLoaded {
@@ -383,7 +383,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                                     displayCountAlert = true
                                     updatedState = updatedState.withToggledPeerId(.peer(peer.id))
                                 } else {
-                                    addedToken = EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: accountPeerId, peer: peer, strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer))
+                                    addedToken = EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: accountPeerId, peer: peer, strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(EnginePeer(peer)))
                                 }
                             }
                             updatedCount = updatedState.selectedPeerIndices.count
@@ -400,7 +400,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                             state.selectedPeerIds.remove(peer.id)
                             removedTokenId = peer.id
                         } else {
-                            addedToken = EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: accountPeerId, peer: peer, strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer))
+                            addedToken = EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: accountPeerId, peer: peer, strings: strongSelf.presentationData.strings, nameDisplayOrder: strongSelf.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(EnginePeer(peer)))
                             state.selectedPeerIds.insert(peer.id)
                         }
                         updatedCount = state.selectedPeerIds.count
@@ -448,7 +448,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
 
         if !self.params.initialSelectedPeers.isEmpty {
             for peer in self.params.initialSelectedPeers {
-                self.contactsNode.openPeer?(.peer(peer: peer, isGlobal: false, participantCount: nil))
+                self.contactsNode.openPeer?(.peer(peer: peer._asPeer(), isGlobal: false, participantCount: nil))
             }
             /*if case let .contacts(contactsNode) = self.contactsNode.contentNode {
                 contactsNode.updateSelectionState { state in
@@ -478,7 +478,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                 a(.default)
               
                 if let self {
-                    self.params.sendMessage?(peer)
+                    self.params.sendMessage?(EnginePeer(peer))
                 }
             })))
             
@@ -488,7 +488,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                 a(.default)
 
                 if let self {
-                    self.params.openProfile?(peer)
+                    self.params.openProfile?(EnginePeer(peer))
                 }
             })))
             
@@ -745,7 +745,7 @@ class ContactMultiselectionControllerImpl: ViewController, ContactMultiselection
                     }
                     for peer in peers {
                         if !existingPeerIds.contains(peer.id) {
-                            tokens.append(EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: self.context.account.peerId, peer: peer, strings: self.presentationData.strings, nameDisplayOrder: self.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer)))
+                            tokens.append(EditableTokenListToken(id: peer.id, title: peerTokenTitle(accountPeerId: self.context.account.peerId, peer: peer._asPeer(), strings: self.presentationData.strings, nameDisplayOrder: self.presentationData.nameDisplayOrder), fixedPosition: nil, subject: .peer(peer)))
                         }
                     }
                 } else {

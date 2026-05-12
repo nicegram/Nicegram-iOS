@@ -326,22 +326,25 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
     public enum Context {
         public final class Custom {
             public let accountPeerId: EnginePeer.Id
-            public let engine: TelegramEngine
+            public let postbox: Postbox
+            public let network: Network
             public let animationCache: AnimationCache
             public let animationRenderer: MultiAnimationRenderer
             public let isPremiumDisabled: Bool
             public let resolveInlineStickers: ([Int64]) -> Signal<[Int64: TelegramMediaFile], NoError>
-
+            
             public init(
                 accountPeerId: EnginePeer.Id,
-                engine: TelegramEngine,
+                postbox: Postbox,
+                network: Network,
                 animationCache: AnimationCache,
                 animationRenderer: MultiAnimationRenderer,
                 isPremiumDisabled: Bool,
                 resolveInlineStickers: @escaping ([Int64]) -> Signal<[Int64: TelegramMediaFile], NoError>
             ) {
                 self.accountPeerId = accountPeerId
-                self.engine = engine
+                self.postbox = postbox
+                self.network = network
                 self.animationCache = animationCache
                 self.animationRenderer = animationRenderer
                 self.isPremiumDisabled = isPremiumDisabled
@@ -361,12 +364,21 @@ public final class ItemListPeerItem: ListViewItem, ItemListItem {
             }
         }
         
-        public var engine: TelegramEngine {
+        public var postbox: Postbox {
             switch self {
             case let .account(context):
-                return context.engine
+                return context.account.postbox
             case let .custom(custom):
-                return custom.engine
+                return custom.postbox
+            }
+        }
+        
+        public var network: Network {
+            switch self {
+            case let .account(context):
+                return context.account.network
+            case let .custom(custom):
+                return custom.network
             }
         }
         
@@ -940,7 +952,6 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                 
                 if item.peer.isVerified {
                     credibilityIcon = .verified(fillColor: item.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor, sizeType: .compact)
-                    credibilityParticleColor = nil
                 }
                 if let verificationIconFileId = item.peer.verificationIconFileId {
                     verifiedIcon = .animation(content: .customEmoji(fileId: verificationIconFileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: item.presentationData.theme.list.mediaPlaceholderColor, themeColor: item.presentationData.theme.list.itemAccentColor, loopMode: .count(0))
@@ -1483,7 +1494,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                         }
                         
                         let verifiedIconComponent = EmojiStatusComponent(
-                            postbox: item.context.engine.account.postbox,
+                            postbox: item.context.postbox,
                             energyUsageSettings: item.context.energyUsageSettings,
                             resolveInlineStickers: item.context.resolveInlineStickers,
                             animationCache: animationCache,
@@ -1531,7 +1542,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                         }
                         
                         let credibilityIconComponent = EmojiStatusComponent(
-                            postbox: item.context.engine.account.postbox,
+                            postbox: item.context.postbox,
                             energyUsageSettings: item.context.energyUsageSettings,
                             resolveInlineStickers: item.context.resolveInlineStickers,
                             animationCache: animationCache,
@@ -1690,7 +1701,7 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                         }
                         
                         let avatarIconComponent = EmojiStatusComponent(
-                            postbox: item.context.engine.account.postbox,
+                            postbox: item.context.postbox,
                             energyUsageSettings: item.context.energyUsageSettings,
                             resolveInlineStickers: item.context.resolveInlineStickers,
                             animationCache: item.context.animationCache,
@@ -1718,8 +1729,8 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                         if item.peer.id == item.context.accountPeerId, case .threatSelfAsSaved = item.aliasHandling {
                             strongSelf.avatarNode.setPeer(
                                 accountPeerId: item.context.accountPeerId,
-                                postbox: item.context.engine.account.postbox,
-                                network: item.context.engine.account.network,
+                                postbox: item.context.postbox,
+                                network: item.context.network,
                                 contentSettings: item.context.contentSettings,
                                 theme: item.presentationData.theme,
                                 peer: item.peer,
@@ -1730,8 +1741,8 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                         } else if item.peer.id.isReplies {
                             strongSelf.avatarNode.setPeer(
                                 accountPeerId: item.context.accountPeerId,
-                                postbox: item.context.engine.account.postbox,
-                                network: item.context.engine.account.network,
+                                postbox: item.context.postbox,
+                                network: item.context.network,
                                 contentSettings: item.context.contentSettings,
                                 theme: item.presentationData.theme,
                                 peer: item.peer,
@@ -1753,8 +1764,8 @@ public class ItemListPeerItemNode: ItemListRevealOptionsItemNode, ItemListItemNo
                             
                             strongSelf.avatarNode.setPeer(
                                 accountPeerId: item.context.accountPeerId,
-                                postbox: item.context.engine.account.postbox,
-                                network: item.context.engine.account.network,
+                                postbox: item.context.postbox,
+                                network: item.context.network,
                                 contentSettings: item.context.contentSettings,
                                 theme: item.presentationData.theme,
                                 peer: item.peer,

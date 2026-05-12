@@ -40,8 +40,9 @@ public extension TgSpeechToTextManager {
             let _ = (
                 mediaBox.resourceData(mediaFile.resource)
                 |> take(1)
-                |> mapToSignal { data -> Signal<String?, NoError> in
-                    guard case .apple = source else { return .single(data.path) }
+                |> mapToSignal { [weak self] data -> Signal<String?, NoError> in
+                    guard let self,
+                          case .apple = source else { return .single(data.path) }
 
                     return convertOpusToAAC(sourcePath: data.path, allocateTempFile: {
                         return TempBox.shared.tempFile(fileName: "audio.m4a").path

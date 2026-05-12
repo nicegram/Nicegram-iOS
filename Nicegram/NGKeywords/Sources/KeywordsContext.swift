@@ -168,7 +168,6 @@ private final class SearchContext {
     func start(with id: String, keyword: String, minDate: Int32? = nil) {
         let location: SearchMessagesLocation = .general(
             scope: .everywhere,
-            groupId: nil,
             tags: nil,
             minDate: minDate,
             maxDate: nil,

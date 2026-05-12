@@ -340,7 +340,7 @@ public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalP
                                     }
                                 }
                                 
-                                updatedPeers[peer.id] = SelectivePrivacyPeer(peer: peer, participantCount: participantCount)
+                                updatedPeers[peer.id] = SelectivePrivacyPeer(peer: peer._asPeer(), participantCount: participantCount)
                             }
                         }
                         return updatedPeers

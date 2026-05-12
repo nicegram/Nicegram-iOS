@@ -28,7 +28,7 @@ func updateChatPresentationInterfaceStateImpl(
     completion externalCompletion: @escaping (ContainedViewLayoutTransition) -> Void
 ) {
     var transition = transition
-    if !selfController.enableAnimations {
+    if !selfController.didAppear {
         transition = .immediate
     }
     
@@ -94,7 +94,7 @@ func updateChatPresentationInterfaceStateImpl(
             guard let selfController, value else {
                 return
             }
-            selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .genericAction, title: selfController.presentationData.strings.Common_Cancel, action: {
+            selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .defaultAction, title: selfController.presentationData.strings.Common_Cancel, action: {
             }), TextAlertAction(type: .defaultAction, title: selfController.presentationData.strings.Common_OK, action: { [weak selfController] in
                 guard let selfController else {
                     return
@@ -151,7 +151,7 @@ func updateChatPresentationInterfaceStateImpl(
                 case .generic:
                     break
                 case let .inlineBotLocationRequest(peerId):
-                    selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .genericAction, title: selfController.presentationData.strings.Common_Cancel, action: { [weak selfController] in
+                    selfController.present(textAlertController(context: selfController.context, updatedPresentationData: selfController.updatedPresentationData, title: nil, text: selfController.presentationData.strings.Conversation_ShareInlineBotLocationConfirmation, actions: [TextAlertAction(type: .defaultAction, title: selfController.presentationData.strings.Common_Cancel, action: { [weak selfController] in
                         guard let selfController else {
                             return
                         }

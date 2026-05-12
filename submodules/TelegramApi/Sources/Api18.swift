@@ -393,7 +393,7 @@ public extension Api {
                 _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Document.self)
             }
             var _6: Int32?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 _6 = reader.readInt32()
             }
             let _c1 = _1 != nil
@@ -401,7 +401,7 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _6 != nil
+            let _c6 = (Int(_1!) & Int(1 << 3) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.Page.page(Cons_page(flags: _1!, url: _2!, blocks: _3!, photos: _4!, documents: _5!, views: _6))
             }
@@ -1207,23 +1207,23 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _2 = parseString(reader)
             }
             var _3: String?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _3 = parseString(reader)
             }
             var _4: Int64?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_1!) & Int(1 << 4) != 0 {
                 _4 = reader.readInt64()
             }
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
+            if Int(_1!) & Int(1 << 5) != 0 {
                 _5 = reader.readInt32()
             }
             var _6: Int32?
-            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
+            if Int(_1!) & Int(1 << 5) != 0 {
                 _6 = reader.readInt32()
             }
             var _7: Api.PageCaption?
@@ -1231,11 +1231,11 @@ public extension Api {
                 _7 = Api.parse(reader, signature: signature) as? Api.PageCaption
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _6 != nil
+            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 2) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 4) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 5) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 5) == 0) || _6 != nil
             let _c7 = _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.PageBlock.pageBlockEmbed(Cons_pageBlockEmbed(flags: _1!, url: _2, html: _3, posterPhotoId: _4, w: _5, h: _6, caption: _7!))
@@ -1392,18 +1392,18 @@ public extension Api {
                 _3 = Api.parse(reader, signature: signature) as? Api.PageCaption
             }
             var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _4 = parseString(reader)
             }
             var _5: Int64?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _5 = reader.readInt64()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.PageBlock.pageBlockPhoto(Cons_pageBlockPhoto(flags: _1!, photoId: _2!, caption: _3!, url: _4, webpageId: _5))
             }

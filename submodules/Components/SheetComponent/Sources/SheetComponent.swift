@@ -403,8 +403,7 @@ public final class SheetComponent<ChildEnvironmentType: Sendable & Equatable>: C
                 if availableSize.width < availableSize.height {
                     glassInset = 6.0
                 }
-                let containerCornerRadius = max(24.0, sheetEnvironment.deviceMetrics.screenCornerRadius)
-                bottomCornerRadius = containerCornerRadius - 2.0
+                bottomCornerRadius = sheetEnvironment.deviceMetrics.screenCornerRadius - glassInset
             case .legacy:
                 topCornerRadius = 12.0
                 bottomCornerRadius = 12.0

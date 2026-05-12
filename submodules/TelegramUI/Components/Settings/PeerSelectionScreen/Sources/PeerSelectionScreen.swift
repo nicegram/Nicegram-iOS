@@ -522,9 +522,7 @@ final class PeerSelectionScreenComponent: Component {
                         let timingFunction: String
                         switch curve {
                         case .easeInOut:
-                            timingFunction = CAMediaTimingFunctionName.easeInEaseOut.rawValue
-                        case .easeIn:
-                            timingFunction = CAMediaTimingFunctionName.easeIn.rawValue
+                            timingFunction = CAMediaTimingFunctionName.easeOut.rawValue
                         case .linear:
                             timingFunction = CAMediaTimingFunctionName.linear.rawValue
                         case .spring:

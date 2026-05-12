@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -424,7 +425,7 @@ private func themeSettingsControllerEntries(
     var authorName = presentationData.strings.Appearance_PreviewReplyAuthor
     if let accountPeer {
         nameColor = accountPeer.nameColor ?? .preset(.blue)
-        if accountPeer.hasCustomNameColor {
+        if accountPeer._asPeer().hasCustomNameColor {
             authorName = accountPeer.displayTitle(strings: strings, displayOrder: presentationData.nameDisplayOrder)
         }
         profileColor = accountPeer.effectiveProfileColor
@@ -1320,7 +1321,7 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
             wallpaperSignal = cachedWallpaper(account: context.account, slug: file.slug, settings: colorWallpaper.settings)
             |> mapToSignal { cachedWallpaper in
                 if let wallpaper = cachedWallpaper?.wallpaper, case let .file(file) = wallpaper {
-                    let _ = context.engine.resources.fetch(reference: .wallpaper(wallpaper: .slug(file.slug), resource: file.file.resource), userLocation: .other, userContentType: .other).start()
+                    let _ = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: .wallpaper(wallpaper: .slug(file.slug), resource: file.file.resource)).start()
 
                     return .single(wallpaper)
     

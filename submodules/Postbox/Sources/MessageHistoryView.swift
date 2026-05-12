@@ -1069,30 +1069,28 @@ final class MutableMessageHistoryView: MutablePostboxView {
             }
         }
         
-        if self.tag == nil {
-            switch self.peerIds {
-            case let .single(peerId, threadId):
-                let location = PeerAndThreadId(peerId: peerId, threadId: threadId)
-                if let typingDraftUpdate = transaction.updatedTypingDrafts[location] {
-                    if let typingDraft = typingDraftUpdate.value, self.namespaces.contains(typingDraft.namespace) {
-                        self.typingDraft = self.renderTypingDraft(postbox: postbox, typingDraft: typingDraft)
-                    } else {
-                        self.typingDraft = nil
-                    }
-                    hasChanges = true
+        switch self.peerIds {
+        case let .single(peerId, threadId):
+            let location = PeerAndThreadId(peerId: peerId, threadId: threadId)
+            if let typingDraftUpdate = transaction.updatedTypingDrafts[location] {
+                if let typingDraft = typingDraftUpdate.value, self.namespaces.contains(typingDraft.namespace) {
+                    self.typingDraft = self.renderTypingDraft(postbox: postbox, typingDraft: typingDraft)
+                } else {
+                    self.typingDraft = nil
                 }
-            case .external:
-                break
-            case .associated:
-                break
+                hasChanges = true
             }
+        case .external:
+            break
+        case .associated:
+            break
         }
         
         return hasChanges
     }
     
     private func reloadTypingDraft(postbox: PostboxImpl) {
-        guard case let .single(peerId, threadId) = self.peerIds, self.tag == nil else {
+        guard case let .single(peerId, threadId) = self.peerIds else {
             self.typingDraft = nil
             return
         }

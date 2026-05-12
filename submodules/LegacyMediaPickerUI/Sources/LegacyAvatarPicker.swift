@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import LegacyComponents
 import TelegramPresentationData
@@ -54,18 +55,18 @@ public func presentLegacyAvatarPicker(holder: Atomic<NSObject?>, signup: Bool, t
 public func legacyAvatarEditor(context: AccountContext, media: AnyMediaReference, transitionView: UIView?, senderName: String? = nil, present: @escaping (ViewController, Any?) -> Void, imageCompletion: @escaping (UIImage) -> Void, videoCompletion: @escaping (UIImage, URL, TGVideoEditAdjustments) -> Void) {
     let isVideo = !((media.media as? TelegramMediaImage)?.videoRepresentations.isEmpty ?? true)
     
-    let imageSignal = fetchMediaData(context: context, userLocation: .other, mediaReference: media, forceVideo: false)
+    let imageSignal = fetchMediaData(context: context, postbox: context.account.postbox, userLocation: .other, mediaReference: media, forceVideo: false)
     |> map { (value, _) -> (UIImage?, Bool) in
-        if case let .data(data) = value, data.isComplete {
+        if case let .data(data) = value, data.complete {
             return (UIImage(contentsOfFile: data.path), true)
         } else {
             return (nil, false)
         }
     }
     
-    let videoSignal = isVideo ? fetchMediaData(context: context, userLocation: .other, mediaReference: media, forceVideo: true)
+    let videoSignal = isVideo ? fetchMediaData(context: context, postbox: context.account.postbox, userLocation: .other, mediaReference: media, forceVideo: true)
     |> map { (value, isImage) -> (URL?, Bool) in
-        if case let .data(data) = value, data.isComplete && !isImage {
+        if case let .data(data) = value, data.complete && !isImage {
             return (URL(fileURLWithPath: data.path), true)
         } else {
             return (nil, false)
@@ -107,9 +108,11 @@ public func legacyAvatarEditor(context: AccountContext, media: AnyMediaReference
         present(legacyController, nil)
         
         TGPhotoVideoEditor.present(with: legacyController.context, parentController: emptyController, image: image.0, video: video.0, stickersContext: paintStickersContext, transitionView: transitionView, senderName: senderName, didFinishWithImage: { image in
-            imageCompletion(image)
+            if let image = image {
+                imageCompletion(image)
+            }
         }, didFinishWithVideo: { image, url, adjustments in
-            if let adjustments = adjustments {
+            if let image = image, let url = url, let adjustments = adjustments {
                 videoCompletion(image, url, adjustments)
             }
         }, dismissed: { [weak legacyController] in

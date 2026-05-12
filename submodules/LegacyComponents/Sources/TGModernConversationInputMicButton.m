@@ -265,7 +265,7 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
     _innerCircleView.center = centerPoint;
     _outerCircleView.center = centerPoint;
     _decoration.center = centerPoint;
-    _innerIconWrapperView.center = CGPointMake(CGRectGetMidX(_decoration.bounds), CGRectGetMidY(_decoration.bounds));
+    _innerIconWrapperView.center = CGPointMake(_decoration.frame.size.width / 2.0f, _decoration.frame.size.height / 2.0f);
     
     _lockPanelWrapperView.frame = CGRectMake(floor(centerPoint.x - _lockPanelWrapperView.frame.size.width / 2.0f), floor(centerPoint.y - 122.0f - _lockPanelWrapperView.frame.size.height / 2.0f), _lockPanelWrapperView.frame.size.width, _lockPanelWrapperView.frame.size.height);
     
@@ -917,8 +917,6 @@ static const CGFloat outerCircleMinScale = innerCircleRadius / outerCircleRadius
     
     _currentTranslation = MIN(0.0, _currentTranslation * 0.7f + _targetTranslation * 0.3f);
     _cancelTranslation = MIN(0.0, _cancelTranslation * 0.7f + _cancelTargetTranslation * 0.3f);
-    
-    [self updateOverlay];
     
     if (t > _animationStartTime) {
         CGFloat outerScale = outerCircleMinScale + _currentLevel * (1.0f - outerCircleMinScale);

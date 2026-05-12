@@ -10,8 +10,6 @@ public extension ComponentTransition.Animation.Curve {
             self = .linear
         case .easeInOut:
             self = .easeInOut
-        case .easeIn:
-            self = .easeIn
         case let .custom(a, b, c, d):
             self = .custom(a, b, c, d)
         case .customSpring:
@@ -27,8 +25,6 @@ public extension ComponentTransition.Animation.Curve {
             return .linear
         case .easeInOut:
             return .easeInOut
-        case .easeIn:
-            return .easeIn
         case .spring:
             return .spring
         case let .custom(a, b, c, d):

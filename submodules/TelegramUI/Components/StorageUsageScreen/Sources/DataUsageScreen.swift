@@ -911,7 +911,7 @@ final class DataUsageScreenComponent: Component {
                         self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.4, curve: .spring)).withUserData(AnimationHint(value: .modeChanged)))
                     })),
                 environment: {},
-                containerSize: CGSize(width: availableSize.width - (environment.safeInsets.left + 36.0) * 2.0, height: 100.0)
+                containerSize: CGSize(width: availableSize.width - (environment.safeInsets.left + 16.0 + 44.0 + 10.0) * 2.0, height: 100.0)
             )
             let segmentedControlFrame = CGRect(origin: CGPoint(x: floor((availableSize.width - segmentedSize.width) * 0.5), y: contentHeight), size: segmentedSize)
             if let segmentedControlComponentView = self.segmentedControlView.view {

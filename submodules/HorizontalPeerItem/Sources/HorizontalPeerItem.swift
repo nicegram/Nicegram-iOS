@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import TelegramStringFormatting
@@ -26,7 +27,8 @@ public final class HorizontalPeerItem: ListViewItem {
     let strings: PresentationStrings
     let mode: HorizontalPeerItemMode
     let accountPeerId: EnginePeer.Id
-    let stateManager: AccountStateManager
+    let postbox: Postbox
+    let network: Network
     let energyUsageSettings: EnergyUsageSettings
     let contentSettings: ContentSettings
     let animationCache: AnimationCache
@@ -46,7 +48,8 @@ public final class HorizontalPeerItem: ListViewItem {
         strings: PresentationStrings,
         mode: HorizontalPeerItemMode,
         accountPeerId: EnginePeer.Id,
-        stateManager: AccountStateManager,
+        postbox: Postbox,
+        network: Network,
         energyUsageSettings: EnergyUsageSettings,
         contentSettings: ContentSettings,
         animationCache: AnimationCache,
@@ -64,7 +67,8 @@ public final class HorizontalPeerItem: ListViewItem {
         self.strings = strings
         self.mode = mode
         self.accountPeerId = accountPeerId
-        self.stateManager = stateManager
+        self.postbox = postbox
+        self.network = network
         self.energyUsageSettings = energyUsageSettings
         self.contentSettings = contentSettings
         self.animationCache = animationCache
@@ -224,7 +228,7 @@ public final class HorizontalPeerItemNode: ListViewItemNode {
                     } else {
                         strongSelf.peerNode.compact = false
                     }
-                    strongSelf.peerNode.setup(accountPeerId: item.accountPeerId, stateManager: item.stateManager, energyUsageSettings: item.energyUsageSettings, contentSettings: item.contentSettings, animationCache: item.animationCache, animationRenderer: item.animationRenderer, resolveInlineStickers: item.resolveInlineStickers, theme: item.theme, strings: item.strings, peer: EngineRenderedPeer(peer: item.peer), requiresPremiumForMessaging: false, numberOfLines: 1, synchronousLoad: synchronousLoads)
+                    strongSelf.peerNode.setup(accountPeerId: item.accountPeerId, postbox: item.postbox, network: item.network, energyUsageSettings: item.energyUsageSettings, contentSettings: item.contentSettings, animationCache: item.animationCache, animationRenderer: item.animationRenderer, resolveInlineStickers: item.resolveInlineStickers, theme: item.theme, strings: item.strings, peer: EngineRenderedPeer(peer: item.peer), requiresPremiumForMessaging: false, numberOfLines: 1, synchronousLoad: synchronousLoads)
                     strongSelf.peerNode.frame = CGRect(origin: CGPoint(), size: itemLayout.size)
                     strongSelf.peerNode.updateSelection(selected: item.isPeerSelected(item.peer.id), animated: false)
                     

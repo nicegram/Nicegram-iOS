@@ -217,7 +217,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
                 return false
             }
         case let .recordAllCalls(lhsText, lhsBool):
-            if case let .recordAllCalls(rhsText, rhsBool) = rhs, lhsText == rhsText, lhsBool == rhsBool {
+            if case let .recordAllCalls(rhsText, rhsBool) = rhs, lhsText == rhsText, lhsText == rhsText {
                 return true
             } else {
                 return false
@@ -258,7 +258,7 @@ private enum PremiumControllerEntry: ItemListNodeEntry {
         case let .otherHeader(_, text):
             return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
 
-        case .testButton:
+        case let .testButton(_, _):
             return ItemListActionItem(presentationData: presentationData, title: "Test Button", kind: .generic, alignment: .natural, sectionId: self.section, style: .blocks, action: {
                 arguments.testAction()
             })
@@ -321,7 +321,10 @@ private func stringForShowMissedTimeout(_ strings: PresentationStrings, _ timeou
 
 public func premiumController(context: AccountContext) -> ViewController {
     // let statePromise = ValuePromise(PremiumSelectionState(), ignoreRepeated: true)
+    var dismissImpl: (() -> Void)?
     var presentControllerImpl: ((ViewController, Any?) -> Void)?
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+    var pushControllerImpl: ((ViewController) -> Void)?
 
     //var currentBrowser = Browser(rawValue: "safari")
     let statePromise = ValuePromise(SelectionState(), ignoreRepeated: false)
@@ -437,17 +440,37 @@ public func premiumController(context: AccountContext) -> ViewController {
 
     let signal = combineLatest(context.sharedContext.presentationData, statePromise.get())
         |> map { presentationData, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
+
             let entries = premiumControllerEntries(presentationData: presentationData, context: context)
 
+            var _ = 0
+            var scrollToItem: ListViewScrollToItem?
+            // workaround
+            //            let focusOnItemTag: FakeEntryTag? = nil
+            //            if let focusOnItemTag = focusOnItemTag {
+            //                for entry in entries {
+            //                    if entry.tag?.isEqual(to: focusOnItemTag) ?? false {
+            //                        scrollToItem = ListViewScrollToItem(index: index, position: .top(0.0), animated: false, curve: .Default(duration: 0.0), directionHint: .Up)
+            //                    }
+            //                    index += 1
+            //                }
+            //            }
+
             let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(l("Premium.Title")), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back))
-            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: nil)
+            let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: entries, style: .blocks, ensureVisibleItemTag: nil, initialScrollToItem: scrollToItem)
 
             return (controllerState, (listState, arguments))
     }
 
     let controller = ItemListController(context: context, state: signal)
+    dismissImpl = { [weak controller] in
+        controller?.dismiss()
+    }
     presentControllerImpl = { [weak controller] c, a in
         controller?.present(c, in: .window(.root), with: a)
+    }
+    pushControllerImpl = { [weak controller] c in
+        (controller?.navigationController as? NavigationController)?.pushViewController(c)
     }
     return controller
 }

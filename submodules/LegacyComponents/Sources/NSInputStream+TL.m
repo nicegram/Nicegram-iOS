@@ -22,6 +22,27 @@ static inline int roundUpInput(int numToRound, int multiple)
 
 @implementation NSInputStream (TL)
 
+- (int32_t)readInt32
+{
+    int32_t value = 0;
+    
+    if ([self read:(uint8_t *)&value maxLength:4] != 4)
+    {
+        TGLegacyLog(@"***** Couldn't read int32");
+        
+        @throw [[NSException alloc] initWithName:@"NSInputStream+TLException" reason:@"readInt32 end of stream" userInfo:@{}];
+    }
+    
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#   error "Big endian is not implemented"
+#else
+#   error "Unknown byte order"
+#endif
+    
+    return value;
+}
+
 - (int32_t)readInt32:(bool *)failed
 {
     int32_t value = 0;

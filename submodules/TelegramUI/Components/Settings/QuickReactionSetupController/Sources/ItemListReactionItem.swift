@@ -4,6 +4,7 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramPresentationData
+import Postbox
 import TelegramCore
 import ItemListUI
 import EmojiStatusComponent

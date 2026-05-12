@@ -277,8 +277,8 @@ private final class StarsTransactionSheetContent: CombinedComponent {
                 descriptionText = ""
                 count = CurrencyAmount(amount: subscription.pricing.amount, currency: .stars)
                 date = subscription.untilDate
-                if case let .channel(channel) = subscription.peer, channel.creationDate > 0 {
-                    additionalDate = channel.creationDate
+                if let creationDate = (subscription.peer._asPeer() as? TelegramChannel)?.creationDate, creationDate > 0 {
+                    additionalDate = creationDate
                 } else {
                     additionalDate = nil
                 }
@@ -1955,7 +1955,7 @@ public class StarsTransactionScreen: ViewControllerComponentContainer {
                     return
                 }
                 if isProfile {
-                    if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                    if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                         navigationController.pushViewController(controller)
                     }
                 } else {

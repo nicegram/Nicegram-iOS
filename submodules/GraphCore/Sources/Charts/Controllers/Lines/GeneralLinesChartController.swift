@@ -34,8 +34,6 @@ public class GeneralLinesChartController: BaseLinesChartController {
     private var prevoiusHorizontalStrideInterval: Int = 1
     
     private(set) var chartLines: [LinesChartRenderer.LineData] = []
-    
-    public var min5 = false
 
     override public init(chartsCollection: ChartsCollection)  {
         self.initialChartCollection = chartsCollection
@@ -219,18 +217,9 @@ public class GeneralLinesChartController: BaseLinesChartController {
     }
     
     func updateHorizontalLimits(horizontalRange: ClosedRange<CGFloat>, animated: Bool) {
-        var scaleType: ChartScaleType = .day
-        if self.min5 {
-            scaleType = .minutes5
-        } else if isZoomed {
-            scaleType = .hour
-        }
-        
-        if let (stride, labels) = horizontalLimitsLabels(
-            horizontalRange: horizontalRange,
-            scaleType: scaleType,
-            prevoiusHorizontalStrideInterval: prevoiusHorizontalStrideInterval
-        ) {
+        if let (stride, labels) = horizontalLimitsLabels(horizontalRange: horizontalRange,
+                                                         scaleType: isZoomed ? .hour : .day,
+                                                         prevoiusHorizontalStrideInterval: prevoiusHorizontalStrideInterval) {
             self.horizontalScalesRenderer.setup(labels: labels, animated: animated)
             self.prevoiusHorizontalStrideInterval = stride
         }

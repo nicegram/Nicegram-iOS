@@ -9,13 +9,6 @@ import ContextReferenceButtonComponent
 import GlassBackgroundComponent
 import EdgeEffect
 
-enum BrowserToolbarMode: Equatable {
-    case webPage
-    case instantPage
-    case document
-    case markdown
-}
-
 final class BrowserToolbarComponent: CombinedComponent {
     let theme: PresentationTheme
     let bottomInset: CGFloat
@@ -138,7 +131,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
     let canGoForward: Bool
     let canOpenIn: Bool
     let canShare: Bool
-    let mode: BrowserToolbarMode
+    let isDocument: Bool
     let performAction: ActionSlot<BrowserScreen.Action>
     let performHoldAction: (UIView, ContextGesture?, BrowserScreen.Action) -> Void
     
@@ -148,7 +141,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
         canGoForward: Bool,
         canOpenIn: Bool,
         canShare: Bool,
-        mode: BrowserToolbarMode,
+        isDocument: Bool,
         performAction: ActionSlot<BrowserScreen.Action>,
         performHoldAction: @escaping (UIView, ContextGesture?, BrowserScreen.Action) -> Void
     ) {
@@ -157,7 +150,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
         self.canGoForward = canGoForward
         self.canOpenIn = canOpenIn
         self.canShare = canShare
-        self.mode = mode
+        self.isDocument = isDocument
         self.performAction = performAction
         self.performHoldAction = performHoldAction
     }
@@ -178,7 +171,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
         if lhs.canShare != rhs.canShare {
             return false
         }
-        if lhs.mode != rhs.mode {
+        if lhs.isDocument != rhs.isDocument {
             return false
         }
         return true
@@ -224,8 +217,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                 transition: .easeInOut(duration: 0.2)
             )
             
-            switch context.component.mode {
-            case .document:
+            if context.component.isDocument {
                 var originX: CGFloat = sideInset
                                 
                 let search = search.update(
@@ -278,40 +270,7 @@ final class NavigationToolbarContentComponent: CombinedComponent {
                     .position(CGPoint(x: originX, y: availableSize.height / 2.0))
                 )
                 size.width = originX + sideInset
-            case .markdown:
-                var originX: CGFloat = sideInset
-
-                if !context.component.canShare {
-                    context.add(share
-                        .position(CGPoint(x: availableSize.width / 2.0, y: 10000.0))
-                    )
-                } else {
-                    context.add(share
-                        .position(CGPoint(x: originX, y: availableSize.height / 2.0))
-                    )
-                    originX += spacing
-                }
-
-                let quickLook = quickLook.update(
-                    component: Button(
-                        content: AnyComponent(
-                            BundleIconComponent(
-                                name: "Instant View/OpenDocument",
-                                tintColor: textColor
-                            )
-                        ),
-                        action: {
-                            performAction.invoke(.openIn)
-                        }
-                    ).minSize(buttonSize),
-                    availableSize: buttonSize,
-                    transition: .easeInOut(duration: 0.2)
-                )
-                context.add(quickLook
-                    .position(CGPoint(x: originX, y: availableSize.height / 2.0))
-                )
-                size.width = originX + sideInset
-            case .webPage, .instantPage:
+            } else {
                 var originX: CGFloat = sideInset
                 
                 let canGoBack = context.component.canGoBack

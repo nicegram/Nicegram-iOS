@@ -1,14 +1,15 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import Display
 
-public func mapResourceToAvatarSizes(engine: TelegramEngine, resource: EngineMediaResource, representations: [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError> {
-    return engine.resources.data(id: resource.id)
+public func mapResourceToAvatarSizes(postbox: Postbox, resource: MediaResource, representations: [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError> {
+    return postbox.mediaBox.resourceData(resource)
     |> take(1)
     |> map { data -> [Int: Data] in
-        guard data.isComplete, let image = UIImage(contentsOfFile: data.path) else {
+        guard data.complete, let image = UIImage(contentsOfFile: data.path) else {
             return [:]
         }
         var result: [Int: Data] = [:]

@@ -59,8 +59,7 @@ func chatHistoryEntriesForView(
     cachedData: CachedPeerData?,
     adMessage: Message?,
     dynamicAdMessages: [Message],
-    isMusicPlaylist: Bool,
-    pinToTopStableId: EngineMessage.StableId?
+    isMusicPlaylist: Bool
 ) -> ([ChatHistoryEntry], ChatHistoryEntriesForViewState) {
     var currentState = currentState
     
@@ -144,11 +143,6 @@ func chatHistoryEntriesForView(
     loop: for entry in view.entries {
         var message = entry.message
         var isRead = entry.isRead
-        
-        var pinToTop = false
-        if message.stableId == pinToTopStableId {
-            pinToTop = true
-        }
         
         if pendingRemovedMessages.contains(message.id) {
             continue
@@ -264,7 +258,7 @@ func chatHistoryEntriesForView(
                     isCentered = link.isCentered
                 }
                 
-                let attributes = ChatMessageEntryAttributes(rank: adminRank, isContact: entry.attributes.authorIsContact, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: message.index == associatedData.currentlyPlayingMessageId, isCentered: isCentered, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false, pinToTop: pinToTop)
+                let attributes = ChatMessageEntryAttributes(rank: adminRank, isContact: entry.attributes.authorIsContact, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: message.index == associatedData.currentlyPlayingMessageId, isCentered: isCentered, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false)
                 
                 let groupStableId = currentState.messageGroupStableId(messageStableId: message.stableId, groupId: messageGroupingKey, isLocal: Namespaces.Message.allLocal.contains(message.id.namespace))
                 var found = false
@@ -310,7 +304,7 @@ func chatHistoryEntriesForView(
                     isCentered = link.isCentered
                 }
                 
-                entries.append(.MessageEntry(message, presentationData, isRead, entry.location, selection, ChatMessageEntryAttributes(rank: adminRank, isContact: entry.attributes.authorIsContact, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: message.index == associatedData.currentlyPlayingMessageId, isCentered: isCentered, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false, pinToTop: pinToTop)))
+                entries.append(.MessageEntry(message, presentationData, isRead, entry.location, selection, ChatMessageEntryAttributes(rank: adminRank, isContact: entry.attributes.authorIsContact, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: message.index == associatedData.currentlyPlayingMessageId, isCentered: isCentered, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false)))
             }
         } else {
             let selection: ChatHistoryMessageSelection
@@ -320,7 +314,7 @@ func chatHistoryEntriesForView(
                 selection = .none
             }
             
-            entries.append(.MessageEntry(message, presentationData, isRead, entry.location, selection, ChatMessageEntryAttributes(rank: adminRank, isContact: entry.attributes.authorIsContact, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: message.index == associatedData.currentlyPlayingMessageId, isCentered: false, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false, pinToTop: pinToTop)))
+            entries.append(.MessageEntry(message, presentationData, isRead, entry.location, selection, ChatMessageEntryAttributes(rank: adminRank, isContact: entry.attributes.authorIsContact, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: message.index == associatedData.currentlyPlayingMessageId, isCentered: false, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false)))
         }
     }
     
@@ -394,7 +388,7 @@ func chatHistoryEntriesForView(
             associatedThreadInfo: nil,
             associatedStories: [:]
         )
-        entries.insert(.MessageEntry(serviceMessage, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)), at: index)
+        entries.insert(.MessageEntry(serviceMessage, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)), at: index)
     }
     
     for i in (0 ..< entries.count).reversed() {
@@ -434,7 +428,7 @@ func chatHistoryEntriesForView(
                 }
             }
             if let insertAtPosition {
-                entries.insert(.MessageEntry(joinMessage, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)), at: insertAtPosition)
+                entries.insert(.MessageEntry(joinMessage, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)), at: insertAtPosition)
             }
         }
     }
@@ -502,12 +496,12 @@ func chatHistoryEntriesForView(
                     if messages.count > 1, let groupingKey = messages[0].groupingKey {
                         var groupMessages: [(Message, Bool, ChatHistoryMessageSelection, ChatMessageEntryAttributes, MessageHistoryEntryLocation?)] = []
                         for message in messages {
-                            groupMessages.append((message, false, .none, ChatMessageEntryAttributes(rank: adminRank, isContact: false, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: false, isCentered: false, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false, pinToTop: false), nil))
+                            groupMessages.append((message, false, .none, ChatMessageEntryAttributes(rank: adminRank, isContact: false, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[message.id], isPlaying: false, isCentered: false, authorStoryStats: message.author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false), nil))
                         }
                         entries.insert(.MessageGroupEntry(groupingKey, groupMessages, presentationData), at: 0)
                     } else {
                         if !hasTopicCreated {
-                            entries.insert(.MessageEntry(messages[0], presentationData, false, nil, selection, ChatMessageEntryAttributes(rank: adminRank, isContact: false, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[messages[0].id], isPlaying: false, isCentered: false, authorStoryStats: messages[0].author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false, pinToTop: false)), at: 0)
+                            entries.insert(.MessageEntry(messages[0], presentationData, false, nil, selection, ChatMessageEntryAttributes(rank: adminRank, isContact: false, contentTypeHint: contentTypeHint, updatingMedia: updatingMedia[messages[0].id], isPlaying: false, isCentered: false, authorStoryStats: messages[0].author.flatMap { view.peerStoryStats[$0.id] }, displayContinueThreadFooter: false)), at: 0)
                         }
                     }
                     
@@ -588,7 +582,7 @@ func chatHistoryEntriesForView(
                                 associatedThreadInfo: nil,
                                 associatedStories: [:]
                             )
-                            entries.insert(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)), at: 0)
+                            entries.insert(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)), at: 0)
                         }
                         
                         if let chatPeer, let nameChangeDate = peerStatusSettings.nameChangeDate, nameChangeDate > 0 {
@@ -628,7 +622,7 @@ func chatHistoryEntriesForView(
                                 associatedThreadInfo: nil,
                                 associatedStories: [:]
                             )
-                            entries.insert(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)), at: 0)
+                            entries.insert(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)), at: 0)
                         }
 
                         if let peer = chatPeer.flatMap(EnginePeer.init) {
@@ -681,7 +675,7 @@ func chatHistoryEntriesForView(
         if !dynamicAdMessages.isEmpty {
             assert(entries.sorted() == entries)
             for message in dynamicAdMessages {
-                entries.append(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)))
+                entries.append(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)))
             }
             entries.sort()
         }
@@ -716,7 +710,7 @@ func chatHistoryEntriesForView(
                     associatedStories: message.associatedStories
                 )
                 nextAdMessageId += 1
-                entries.append(.MessageEntry(updatedMessage, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)))
+                entries.append(.MessageEntry(updatedMessage, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)))
             }
         }
     }
@@ -778,7 +772,7 @@ func chatHistoryEntriesForView(
                 associatedThreadInfo: nil,
                 associatedStories: [:]
             )
-            entries.append(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)))
+            entries.append(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)))
         }
     }
     
@@ -835,7 +829,7 @@ func chatHistoryEntriesForView(
                     associatedThreadInfo: nil,
                     associatedStories: [:]
                 )
-                entries.insert(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)), at: 0)
+                entries.insert(.MessageEntry(message, presentationData, false, nil, .none, ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)), at: 0)
             }
         }
     }

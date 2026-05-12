@@ -386,18 +386,18 @@ public extension Api {
             var _3: Int32?
             _3 = reader.readInt32()
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: String?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _5 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _5 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 2) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.ChannelParticipant.channelParticipant(Cons_channelParticipant(flags: _1!, userId: _2!, date: _3!, subscriptionUntilDate: _4, rank: _5))
             }
@@ -411,7 +411,7 @@ public extension Api {
             var _2: Int64?
             _2 = reader.readInt64()
             var _3: Int64?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _3 = reader.readInt64()
             }
             var _4: Int64?
@@ -423,16 +423,16 @@ public extension Api {
                 _6 = Api.parse(reader, signature: signature) as? Api.ChatAdminRights
             }
             var _7: String?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _7 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _7 != nil
+            let _c7 = (Int(_1!) & Int(1 << 2) == 0) || _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.ChannelParticipant.channelParticipantAdmin(Cons_channelParticipantAdmin(flags: _1!, userId: _2!, inviterId: _3, promotedBy: _4!, date: _5!, adminRights: _6!, rank: _7))
             }
@@ -456,7 +456,7 @@ public extension Api {
                 _5 = Api.parse(reader, signature: signature) as? Api.ChatBannedRights
             }
             var _6: String?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _6 = parseString(reader)
             }
             let _c1 = _1 != nil
@@ -464,7 +464,7 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _6 != nil
+            let _c6 = (Int(_1!) & Int(1 << 2) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.ChannelParticipant.channelParticipantBanned(Cons_channelParticipantBanned(flags: _1!, peer: _2!, kickedBy: _3!, date: _4!, bannedRights: _5!, rank: _6))
             }
@@ -482,13 +482,13 @@ public extension Api {
                 _3 = Api.parse(reader, signature: signature) as? Api.ChatAdminRights
             }
             var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _4 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.ChannelParticipant.channelParticipantCreator(Cons_channelParticipantCreator(flags: _1!, userId: _2!, adminRights: _3!, rank: _4))
             }
@@ -519,19 +519,19 @@ public extension Api {
             var _4: Int32?
             _4 = reader.readInt32()
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _5 = reader.readInt32()
             }
             var _6: String?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _6 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _6 != nil
+            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 2) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.ChannelParticipant.channelParticipantSelf(Cons_channelParticipantSelf(flags: _1!, userId: _2!, inviterId: _3!, date: _4!, subscriptionUntilDate: _5, rank: _6))
             }
@@ -721,16 +721,16 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _2 = parseString(reader)
             }
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _3 = reader.readInt32()
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
+            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.ChannelParticipantsFilter.channelParticipantsMentions(Cons_channelParticipantsMentions(flags: _1!, q: _2, topMsgId: _3))
             }
@@ -1023,13 +1023,13 @@ public extension Api {
             var _3: Int64?
             _3 = reader.readInt64()
             var _4: Int64?
-            if Int(_1 ?? 0) & Int(1 << 13) != 0 {
+            if Int(_1!) & Int(1 << 13) != 0 {
                 _4 = reader.readInt64()
             }
             var _5: String?
             _5 = parseString(reader)
             var _6: String?
-            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
+            if Int(_1!) & Int(1 << 6) != 0 {
                 _6 = parseString(reader)
             }
             var _7: Api.ChatPhoto?
@@ -1039,106 +1039,106 @@ public extension Api {
             var _8: Int32?
             _8 = reader.readInt32()
             var _9: [Api.RestrictionReason]?
-            if Int(_1 ?? 0) & Int(1 << 9) != 0 {
+            if Int(_1!) & Int(1 << 9) != 0 {
                 if let _ = reader.readInt32() {
                     _9 = Api.parseVector(reader, elementSignature: 0, elementType: Api.RestrictionReason.self)
                 }
             }
             var _10: Api.ChatAdminRights?
-            if Int(_1 ?? 0) & Int(1 << 14) != 0 {
+            if Int(_1!) & Int(1 << 14) != 0 {
                 if let signature = reader.readInt32() {
                     _10 = Api.parse(reader, signature: signature) as? Api.ChatAdminRights
                 }
             }
             var _11: Api.ChatBannedRights?
-            if Int(_1 ?? 0) & Int(1 << 15) != 0 {
+            if Int(_1!) & Int(1 << 15) != 0 {
                 if let signature = reader.readInt32() {
                     _11 = Api.parse(reader, signature: signature) as? Api.ChatBannedRights
                 }
             }
             var _12: Api.ChatBannedRights?
-            if Int(_1 ?? 0) & Int(1 << 18) != 0 {
+            if Int(_1!) & Int(1 << 18) != 0 {
                 if let signature = reader.readInt32() {
                     _12 = Api.parse(reader, signature: signature) as? Api.ChatBannedRights
                 }
             }
             var _13: Int32?
-            if Int(_1 ?? 0) & Int(1 << 17) != 0 {
+            if Int(_1!) & Int(1 << 17) != 0 {
                 _13 = reader.readInt32()
             }
             var _14: [Api.Username]?
-            if Int(_2 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_2!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _14 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Username.self)
                 }
             }
             var _15: Api.RecentStory?
-            if Int(_2 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_2!) & Int(1 << 4) != 0 {
                 if let signature = reader.readInt32() {
                     _15 = Api.parse(reader, signature: signature) as? Api.RecentStory
                 }
             }
             var _16: Api.PeerColor?
-            if Int(_2 ?? 0) & Int(1 << 7) != 0 {
+            if Int(_2!) & Int(1 << 7) != 0 {
                 if let signature = reader.readInt32() {
                     _16 = Api.parse(reader, signature: signature) as? Api.PeerColor
                 }
             }
             var _17: Api.PeerColor?
-            if Int(_2 ?? 0) & Int(1 << 8) != 0 {
+            if Int(_2!) & Int(1 << 8) != 0 {
                 if let signature = reader.readInt32() {
                     _17 = Api.parse(reader, signature: signature) as? Api.PeerColor
                 }
             }
             var _18: Api.EmojiStatus?
-            if Int(_2 ?? 0) & Int(1 << 9) != 0 {
+            if Int(_2!) & Int(1 << 9) != 0 {
                 if let signature = reader.readInt32() {
                     _18 = Api.parse(reader, signature: signature) as? Api.EmojiStatus
                 }
             }
             var _19: Int32?
-            if Int(_2 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_2!) & Int(1 << 10) != 0 {
                 _19 = reader.readInt32()
             }
             var _20: Int32?
-            if Int(_2 ?? 0) & Int(1 << 11) != 0 {
+            if Int(_2!) & Int(1 << 11) != 0 {
                 _20 = reader.readInt32()
             }
             var _21: Int64?
-            if Int(_2 ?? 0) & Int(1 << 13) != 0 {
+            if Int(_2!) & Int(1 << 13) != 0 {
                 _21 = reader.readInt64()
             }
             var _22: Int64?
-            if Int(_2 ?? 0) & Int(1 << 14) != 0 {
+            if Int(_2!) & Int(1 << 14) != 0 {
                 _22 = reader.readInt64()
             }
             var _23: Int64?
-            if Int(_2 ?? 0) & Int(1 << 18) != 0 {
+            if Int(_2!) & Int(1 << 18) != 0 {
                 _23 = reader.readInt64()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 13) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 13) == 0) || _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _6 != nil
+            let _c6 = (Int(_1!) & Int(1 << 6) == 0) || _6 != nil
             let _c7 = _7 != nil
             let _c8 = _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 9) == 0) || _9 != nil
-            let _c10 = (Int(_1 ?? 0) & Int(1 << 14) == 0) || _10 != nil
-            let _c11 = (Int(_1 ?? 0) & Int(1 << 15) == 0) || _11 != nil
-            let _c12 = (Int(_1 ?? 0) & Int(1 << 18) == 0) || _12 != nil
-            let _c13 = (Int(_1 ?? 0) & Int(1 << 17) == 0) || _13 != nil
-            let _c14 = (Int(_2 ?? 0) & Int(1 << 0) == 0) || _14 != nil
-            let _c15 = (Int(_2 ?? 0) & Int(1 << 4) == 0) || _15 != nil
-            let _c16 = (Int(_2 ?? 0) & Int(1 << 7) == 0) || _16 != nil
-            let _c17 = (Int(_2 ?? 0) & Int(1 << 8) == 0) || _17 != nil
-            let _c18 = (Int(_2 ?? 0) & Int(1 << 9) == 0) || _18 != nil
-            let _c19 = (Int(_2 ?? 0) & Int(1 << 10) == 0) || _19 != nil
-            let _c20 = (Int(_2 ?? 0) & Int(1 << 11) == 0) || _20 != nil
-            let _c21 = (Int(_2 ?? 0) & Int(1 << 13) == 0) || _21 != nil
-            let _c22 = (Int(_2 ?? 0) & Int(1 << 14) == 0) || _22 != nil
-            let _c23 = (Int(_2 ?? 0) & Int(1 << 18) == 0) || _23 != nil
+            let _c9 = (Int(_1!) & Int(1 << 9) == 0) || _9 != nil
+            let _c10 = (Int(_1!) & Int(1 << 14) == 0) || _10 != nil
+            let _c11 = (Int(_1!) & Int(1 << 15) == 0) || _11 != nil
+            let _c12 = (Int(_1!) & Int(1 << 18) == 0) || _12 != nil
+            let _c13 = (Int(_1!) & Int(1 << 17) == 0) || _13 != nil
+            let _c14 = (Int(_2!) & Int(1 << 0) == 0) || _14 != nil
+            let _c15 = (Int(_2!) & Int(1 << 4) == 0) || _15 != nil
+            let _c16 = (Int(_2!) & Int(1 << 7) == 0) || _16 != nil
+            let _c17 = (Int(_2!) & Int(1 << 8) == 0) || _17 != nil
+            let _c18 = (Int(_2!) & Int(1 << 9) == 0) || _18 != nil
+            let _c19 = (Int(_2!) & Int(1 << 10) == 0) || _19 != nil
+            let _c20 = (Int(_2!) & Int(1 << 11) == 0) || _20 != nil
+            let _c21 = (Int(_2!) & Int(1 << 13) == 0) || _21 != nil
+            let _c22 = (Int(_2!) & Int(1 << 14) == 0) || _22 != nil
+            let _c23 = (Int(_2!) & Int(1 << 18) == 0) || _23 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 && _c19 && _c20 && _c21 && _c22 && _c23 {
                 return Api.Chat.channel(Cons_channel(flags: _1!, flags2: _2!, id: _3!, accessHash: _4, title: _5!, username: _6, photo: _7!, date: _8!, restrictionReason: _9, adminRights: _10, bannedRights: _11, defaultBannedRights: _12, participantsCount: _13, usernames: _14, storiesMaxId: _15, color: _16, profileColor: _17, emojiStatus: _18, level: _19, subscriptionUntilDate: _20, botVerificationIcon: _21, sendPaidMessagesStars: _22, linkedMonoforumId: _23))
             }
@@ -1156,14 +1156,14 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 16) != 0 {
+            if Int(_1!) & Int(1 << 16) != 0 {
                 _5 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 16) == 0) || _5 != nil
+            let _c5 = (Int(_1!) & Int(1 << 16) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.Chat.channelForbidden(Cons_channelForbidden(flags: _1!, id: _2!, accessHash: _3!, title: _4!, untilDate: _5))
             }
@@ -1189,19 +1189,19 @@ public extension Api {
             var _7: Int32?
             _7 = reader.readInt32()
             var _8: Api.InputChannel?
-            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
+            if Int(_1!) & Int(1 << 6) != 0 {
                 if let signature = reader.readInt32() {
                     _8 = Api.parse(reader, signature: signature) as? Api.InputChannel
                 }
             }
             var _9: Api.ChatAdminRights?
-            if Int(_1 ?? 0) & Int(1 << 14) != 0 {
+            if Int(_1!) & Int(1 << 14) != 0 {
                 if let signature = reader.readInt32() {
                     _9 = Api.parse(reader, signature: signature) as? Api.ChatAdminRights
                 }
             }
             var _10: Api.ChatBannedRights?
-            if Int(_1 ?? 0) & Int(1 << 18) != 0 {
+            if Int(_1!) & Int(1 << 18) != 0 {
                 if let signature = reader.readInt32() {
                     _10 = Api.parse(reader, signature: signature) as? Api.ChatBannedRights
                 }
@@ -1213,9 +1213,9 @@ public extension Api {
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             let _c7 = _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 14) == 0) || _9 != nil
-            let _c10 = (Int(_1 ?? 0) & Int(1 << 18) == 0) || _10 != nil
+            let _c8 = (Int(_1!) & Int(1 << 6) == 0) || _8 != nil
+            let _c9 = (Int(_1!) & Int(1 << 14) == 0) || _9 != nil
+            let _c10 = (Int(_1!) & Int(1 << 18) == 0) || _10 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 {
                 return Api.Chat.chat(Cons_chat(flags: _1!, id: _2!, title: _3!, photo: _4!, participantsCount: _5!, date: _6!, version: _7!, migratedTo: _8, adminRights: _9, defaultBannedRights: _10))
             }
@@ -1766,23 +1766,23 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _5 = reader.readInt32()
             }
             var _6: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _6 = reader.readInt32()
             }
             var _7: Int32?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _7 = reader.readInt32()
             }
             var _8: Int32?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _8 = reader.readInt32()
             }
             var _9: Int32?
-            if Int(_1 ?? 0) & Int(1 << 13) != 0 {
+            if Int(_1!) & Int(1 << 13) != 0 {
                 _9 = reader.readInt32()
             }
             var _10: Int32?
@@ -1800,7 +1800,7 @@ public extension Api {
                 _14 = Api.parse(reader, signature: signature) as? Api.PeerNotifySettings
             }
             var _15: Api.ExportedChatInvite?
-            if Int(_1 ?? 0) & Int(1 << 23) != 0 {
+            if Int(_1!) & Int(1 << 23) != 0 {
                 if let signature = reader.readInt32() {
                     _15 = Api.parse(reader, signature: signature) as? Api.ExportedChatInvite
                 }
@@ -1810,149 +1810,149 @@ public extension Api {
                 _16 = Api.parseVector(reader, elementSignature: 0, elementType: Api.BotInfo.self)
             }
             var _17: Int64?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_1!) & Int(1 << 4) != 0 {
                 _17 = reader.readInt64()
             }
             var _18: Int32?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_1!) & Int(1 << 4) != 0 {
                 _18 = reader.readInt32()
             }
             var _19: Int32?
-            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
+            if Int(_1!) & Int(1 << 5) != 0 {
                 _19 = reader.readInt32()
             }
             var _20: Api.StickerSet?
-            if Int(_1 ?? 0) & Int(1 << 8) != 0 {
+            if Int(_1!) & Int(1 << 8) != 0 {
                 if let signature = reader.readInt32() {
                     _20 = Api.parse(reader, signature: signature) as? Api.StickerSet
                 }
             }
             var _21: Int32?
-            if Int(_1 ?? 0) & Int(1 << 9) != 0 {
+            if Int(_1!) & Int(1 << 9) != 0 {
                 _21 = reader.readInt32()
             }
             var _22: Int32?
-            if Int(_1 ?? 0) & Int(1 << 11) != 0 {
+            if Int(_1!) & Int(1 << 11) != 0 {
                 _22 = reader.readInt32()
             }
             var _23: Int64?
-            if Int(_1 ?? 0) & Int(1 << 14) != 0 {
+            if Int(_1!) & Int(1 << 14) != 0 {
                 _23 = reader.readInt64()
             }
             var _24: Api.ChannelLocation?
-            if Int(_1 ?? 0) & Int(1 << 15) != 0 {
+            if Int(_1!) & Int(1 << 15) != 0 {
                 if let signature = reader.readInt32() {
                     _24 = Api.parse(reader, signature: signature) as? Api.ChannelLocation
                 }
             }
             var _25: Int32?
-            if Int(_1 ?? 0) & Int(1 << 17) != 0 {
+            if Int(_1!) & Int(1 << 17) != 0 {
                 _25 = reader.readInt32()
             }
             var _26: Int32?
-            if Int(_1 ?? 0) & Int(1 << 18) != 0 {
+            if Int(_1!) & Int(1 << 18) != 0 {
                 _26 = reader.readInt32()
             }
             var _27: Int32?
-            if Int(_1 ?? 0) & Int(1 << 12) != 0 {
+            if Int(_1!) & Int(1 << 12) != 0 {
                 _27 = reader.readInt32()
             }
             var _28: Int32?
             _28 = reader.readInt32()
             var _29: Api.InputGroupCall?
-            if Int(_1 ?? 0) & Int(1 << 21) != 0 {
+            if Int(_1!) & Int(1 << 21) != 0 {
                 if let signature = reader.readInt32() {
                     _29 = Api.parse(reader, signature: signature) as? Api.InputGroupCall
                 }
             }
             var _30: Int32?
-            if Int(_1 ?? 0) & Int(1 << 24) != 0 {
+            if Int(_1!) & Int(1 << 24) != 0 {
                 _30 = reader.readInt32()
             }
             var _31: [String]?
-            if Int(_1 ?? 0) & Int(1 << 25) != 0 {
+            if Int(_1!) & Int(1 << 25) != 0 {
                 if let _ = reader.readInt32() {
                     _31 = Api.parseVector(reader, elementSignature: -1255641564, elementType: String.self)
                 }
             }
             var _32: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 26) != 0 {
+            if Int(_1!) & Int(1 << 26) != 0 {
                 if let signature = reader.readInt32() {
                     _32 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
             }
             var _33: String?
-            if Int(_1 ?? 0) & Int(1 << 27) != 0 {
+            if Int(_1!) & Int(1 << 27) != 0 {
                 _33 = parseString(reader)
             }
             var _34: Int32?
-            if Int(_1 ?? 0) & Int(1 << 28) != 0 {
+            if Int(_1!) & Int(1 << 28) != 0 {
                 _34 = reader.readInt32()
             }
             var _35: [Int64]?
-            if Int(_1 ?? 0) & Int(1 << 28) != 0 {
+            if Int(_1!) & Int(1 << 28) != 0 {
                 if let _ = reader.readInt32() {
                     _35 = Api.parseVector(reader, elementSignature: 570911930, elementType: Int64.self)
                 }
             }
             var _36: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 29) != 0 {
+            if Int(_1!) & Int(1 << 29) != 0 {
                 if let signature = reader.readInt32() {
                     _36 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
             }
             var _37: Api.ChatReactions?
-            if Int(_1 ?? 0) & Int(1 << 30) != 0 {
+            if Int(_1!) & Int(1 << 30) != 0 {
                 if let signature = reader.readInt32() {
                     _37 = Api.parse(reader, signature: signature) as? Api.ChatReactions
                 }
             }
             var _38: Int32?
-            if Int(_2 ?? 0) & Int(1 << 13) != 0 {
+            if Int(_2!) & Int(1 << 13) != 0 {
                 _38 = reader.readInt32()
             }
             var _39: Api.PeerStories?
-            if Int(_2 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_2!) & Int(1 << 4) != 0 {
                 if let signature = reader.readInt32() {
                     _39 = Api.parse(reader, signature: signature) as? Api.PeerStories
                 }
             }
             var _40: Api.WallPaper?
-            if Int(_2 ?? 0) & Int(1 << 7) != 0 {
+            if Int(_2!) & Int(1 << 7) != 0 {
                 if let signature = reader.readInt32() {
                     _40 = Api.parse(reader, signature: signature) as? Api.WallPaper
                 }
             }
             var _41: Int32?
-            if Int(_2 ?? 0) & Int(1 << 8) != 0 {
+            if Int(_2!) & Int(1 << 8) != 0 {
                 _41 = reader.readInt32()
             }
             var _42: Int32?
-            if Int(_2 ?? 0) & Int(1 << 9) != 0 {
+            if Int(_2!) & Int(1 << 9) != 0 {
                 _42 = reader.readInt32()
             }
             var _43: Api.StickerSet?
-            if Int(_2 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_2!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _43 = Api.parse(reader, signature: signature) as? Api.StickerSet
                 }
             }
             var _44: Api.BotVerification?
-            if Int(_2 ?? 0) & Int(1 << 17) != 0 {
+            if Int(_2!) & Int(1 << 17) != 0 {
                 if let signature = reader.readInt32() {
                     _44 = Api.parse(reader, signature: signature) as? Api.BotVerification
                 }
             }
             var _45: Int32?
-            if Int(_2 ?? 0) & Int(1 << 18) != 0 {
+            if Int(_2!) & Int(1 << 18) != 0 {
                 _45 = reader.readInt32()
             }
             var _46: Int64?
-            if Int(_2 ?? 0) & Int(1 << 21) != 0 {
+            if Int(_2!) & Int(1 << 21) != 0 {
                 _46 = reader.readInt64()
             }
             var _47: Api.ProfileTab?
-            if Int(_2 ?? 0) & Int(1 << 22) != 0 {
+            if Int(_2!) & Int(1 << 22) != 0 {
                 if let signature = reader.readInt32() {
                     _47 = Api.parse(reader, signature: signature) as? Api.ProfileTab
                 }
@@ -1961,49 +1961,49 @@ public extension Api {
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 13) == 0) || _9 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 2) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 2) == 0) || _8 != nil
+            let _c9 = (Int(_1!) & Int(1 << 13) == 0) || _9 != nil
             let _c10 = _10 != nil
             let _c11 = _11 != nil
             let _c12 = _12 != nil
             let _c13 = _13 != nil
             let _c14 = _14 != nil
-            let _c15 = (Int(_1 ?? 0) & Int(1 << 23) == 0) || _15 != nil
+            let _c15 = (Int(_1!) & Int(1 << 23) == 0) || _15 != nil
             let _c16 = _16 != nil
-            let _c17 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _17 != nil
-            let _c18 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _18 != nil
-            let _c19 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _19 != nil
-            let _c20 = (Int(_1 ?? 0) & Int(1 << 8) == 0) || _20 != nil
-            let _c21 = (Int(_1 ?? 0) & Int(1 << 9) == 0) || _21 != nil
-            let _c22 = (Int(_1 ?? 0) & Int(1 << 11) == 0) || _22 != nil
-            let _c23 = (Int(_1 ?? 0) & Int(1 << 14) == 0) || _23 != nil
-            let _c24 = (Int(_1 ?? 0) & Int(1 << 15) == 0) || _24 != nil
-            let _c25 = (Int(_1 ?? 0) & Int(1 << 17) == 0) || _25 != nil
-            let _c26 = (Int(_1 ?? 0) & Int(1 << 18) == 0) || _26 != nil
-            let _c27 = (Int(_1 ?? 0) & Int(1 << 12) == 0) || _27 != nil
+            let _c17 = (Int(_1!) & Int(1 << 4) == 0) || _17 != nil
+            let _c18 = (Int(_1!) & Int(1 << 4) == 0) || _18 != nil
+            let _c19 = (Int(_1!) & Int(1 << 5) == 0) || _19 != nil
+            let _c20 = (Int(_1!) & Int(1 << 8) == 0) || _20 != nil
+            let _c21 = (Int(_1!) & Int(1 << 9) == 0) || _21 != nil
+            let _c22 = (Int(_1!) & Int(1 << 11) == 0) || _22 != nil
+            let _c23 = (Int(_1!) & Int(1 << 14) == 0) || _23 != nil
+            let _c24 = (Int(_1!) & Int(1 << 15) == 0) || _24 != nil
+            let _c25 = (Int(_1!) & Int(1 << 17) == 0) || _25 != nil
+            let _c26 = (Int(_1!) & Int(1 << 18) == 0) || _26 != nil
+            let _c27 = (Int(_1!) & Int(1 << 12) == 0) || _27 != nil
             let _c28 = _28 != nil
-            let _c29 = (Int(_1 ?? 0) & Int(1 << 21) == 0) || _29 != nil
-            let _c30 = (Int(_1 ?? 0) & Int(1 << 24) == 0) || _30 != nil
-            let _c31 = (Int(_1 ?? 0) & Int(1 << 25) == 0) || _31 != nil
-            let _c32 = (Int(_1 ?? 0) & Int(1 << 26) == 0) || _32 != nil
-            let _c33 = (Int(_1 ?? 0) & Int(1 << 27) == 0) || _33 != nil
-            let _c34 = (Int(_1 ?? 0) & Int(1 << 28) == 0) || _34 != nil
-            let _c35 = (Int(_1 ?? 0) & Int(1 << 28) == 0) || _35 != nil
-            let _c36 = (Int(_1 ?? 0) & Int(1 << 29) == 0) || _36 != nil
-            let _c37 = (Int(_1 ?? 0) & Int(1 << 30) == 0) || _37 != nil
-            let _c38 = (Int(_2 ?? 0) & Int(1 << 13) == 0) || _38 != nil
-            let _c39 = (Int(_2 ?? 0) & Int(1 << 4) == 0) || _39 != nil
-            let _c40 = (Int(_2 ?? 0) & Int(1 << 7) == 0) || _40 != nil
-            let _c41 = (Int(_2 ?? 0) & Int(1 << 8) == 0) || _41 != nil
-            let _c42 = (Int(_2 ?? 0) & Int(1 << 9) == 0) || _42 != nil
-            let _c43 = (Int(_2 ?? 0) & Int(1 << 10) == 0) || _43 != nil
-            let _c44 = (Int(_2 ?? 0) & Int(1 << 17) == 0) || _44 != nil
-            let _c45 = (Int(_2 ?? 0) & Int(1 << 18) == 0) || _45 != nil
-            let _c46 = (Int(_2 ?? 0) & Int(1 << 21) == 0) || _46 != nil
-            let _c47 = (Int(_2 ?? 0) & Int(1 << 22) == 0) || _47 != nil
+            let _c29 = (Int(_1!) & Int(1 << 21) == 0) || _29 != nil
+            let _c30 = (Int(_1!) & Int(1 << 24) == 0) || _30 != nil
+            let _c31 = (Int(_1!) & Int(1 << 25) == 0) || _31 != nil
+            let _c32 = (Int(_1!) & Int(1 << 26) == 0) || _32 != nil
+            let _c33 = (Int(_1!) & Int(1 << 27) == 0) || _33 != nil
+            let _c34 = (Int(_1!) & Int(1 << 28) == 0) || _34 != nil
+            let _c35 = (Int(_1!) & Int(1 << 28) == 0) || _35 != nil
+            let _c36 = (Int(_1!) & Int(1 << 29) == 0) || _36 != nil
+            let _c37 = (Int(_1!) & Int(1 << 30) == 0) || _37 != nil
+            let _c38 = (Int(_2!) & Int(1 << 13) == 0) || _38 != nil
+            let _c39 = (Int(_2!) & Int(1 << 4) == 0) || _39 != nil
+            let _c40 = (Int(_2!) & Int(1 << 7) == 0) || _40 != nil
+            let _c41 = (Int(_2!) & Int(1 << 8) == 0) || _41 != nil
+            let _c42 = (Int(_2!) & Int(1 << 9) == 0) || _42 != nil
+            let _c43 = (Int(_2!) & Int(1 << 10) == 0) || _43 != nil
+            let _c44 = (Int(_2!) & Int(1 << 17) == 0) || _44 != nil
+            let _c45 = (Int(_2!) & Int(1 << 18) == 0) || _45 != nil
+            let _c46 = (Int(_2!) & Int(1 << 21) == 0) || _46 != nil
+            let _c47 = (Int(_2!) & Int(1 << 22) == 0) || _47 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 && _c19 && _c20 && _c21 && _c22 && _c23 && _c24 && _c25 && _c26 && _c27 && _c28 && _c29 && _c30 && _c31 && _c32 && _c33 && _c34 && _c35 && _c36 && _c37 && _c38 && _c39 && _c40 && _c41 && _c42 && _c43 && _c44 && _c45 && _c46 && _c47 {
                 return Api.ChatFull.channelFull(Cons_channelFull(flags: _1!, flags2: _2!, id: _3!, about: _4!, participantsCount: _5, adminsCount: _6, kickedCount: _7, bannedCount: _8, onlineCount: _9, readInboxMaxId: _10!, readOutboxMaxId: _11!, unreadCount: _12!, chatPhoto: _13!, notifySettings: _14!, exportedInvite: _15, botInfo: _16!, migratedFromChatId: _17, migratedFromMaxId: _18, pinnedMsgId: _19, stickerset: _20, availableMinId: _21, folderId: _22, linkedChatId: _23, location: _24, slowmodeSeconds: _25, slowmodeNextSendDate: _26, statsDc: _27, pts: _28!, call: _29, ttlPeriod: _30, pendingSuggestions: _31, groupcallDefaultJoinAs: _32, themeEmoticon: _33, requestsPending: _34, recentRequesters: _35, defaultSendAs: _36, availableReactions: _37, reactionsLimit: _38, stories: _39, wallpaper: _40, boostsApplied: _41, boostsUnrestrict: _42, emojiset: _43, botVerification: _44, stargiftsCount: _45, sendPaidMessagesStars: _46, mainTab: _47))
             }
@@ -2023,7 +2023,7 @@ public extension Api {
                 _4 = Api.parse(reader, signature: signature) as? Api.ChatParticipants
             }
             var _5: Api.Photo?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.Photo
                 }
@@ -2033,83 +2033,83 @@ public extension Api {
                 _6 = Api.parse(reader, signature: signature) as? Api.PeerNotifySettings
             }
             var _7: Api.ExportedChatInvite?
-            if Int(_1 ?? 0) & Int(1 << 13) != 0 {
+            if Int(_1!) & Int(1 << 13) != 0 {
                 if let signature = reader.readInt32() {
                     _7 = Api.parse(reader, signature: signature) as? Api.ExportedChatInvite
                 }
             }
             var _8: [Api.BotInfo]?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 if let _ = reader.readInt32() {
                     _8 = Api.parseVector(reader, elementSignature: 0, elementType: Api.BotInfo.self)
                 }
             }
             var _9: Int32?
-            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
+            if Int(_1!) & Int(1 << 6) != 0 {
                 _9 = reader.readInt32()
             }
             var _10: Int32?
-            if Int(_1 ?? 0) & Int(1 << 11) != 0 {
+            if Int(_1!) & Int(1 << 11) != 0 {
                 _10 = reader.readInt32()
             }
             var _11: Api.InputGroupCall?
-            if Int(_1 ?? 0) & Int(1 << 12) != 0 {
+            if Int(_1!) & Int(1 << 12) != 0 {
                 if let signature = reader.readInt32() {
                     _11 = Api.parse(reader, signature: signature) as? Api.InputGroupCall
                 }
             }
             var _12: Int32?
-            if Int(_1 ?? 0) & Int(1 << 14) != 0 {
+            if Int(_1!) & Int(1 << 14) != 0 {
                 _12 = reader.readInt32()
             }
             var _13: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 15) != 0 {
+            if Int(_1!) & Int(1 << 15) != 0 {
                 if let signature = reader.readInt32() {
                     _13 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
             }
             var _14: String?
-            if Int(_1 ?? 0) & Int(1 << 16) != 0 {
+            if Int(_1!) & Int(1 << 16) != 0 {
                 _14 = parseString(reader)
             }
             var _15: Int32?
-            if Int(_1 ?? 0) & Int(1 << 17) != 0 {
+            if Int(_1!) & Int(1 << 17) != 0 {
                 _15 = reader.readInt32()
             }
             var _16: [Int64]?
-            if Int(_1 ?? 0) & Int(1 << 17) != 0 {
+            if Int(_1!) & Int(1 << 17) != 0 {
                 if let _ = reader.readInt32() {
                     _16 = Api.parseVector(reader, elementSignature: 570911930, elementType: Int64.self)
                 }
             }
             var _17: Api.ChatReactions?
-            if Int(_1 ?? 0) & Int(1 << 18) != 0 {
+            if Int(_1!) & Int(1 << 18) != 0 {
                 if let signature = reader.readInt32() {
                     _17 = Api.parse(reader, signature: signature) as? Api.ChatReactions
                 }
             }
             var _18: Int32?
-            if Int(_1 ?? 0) & Int(1 << 20) != 0 {
+            if Int(_1!) & Int(1 << 20) != 0 {
                 _18 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _5 != nil
+            let _c5 = (Int(_1!) & Int(1 << 2) == 0) || _5 != nil
             let _c6 = _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 13) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _9 != nil
-            let _c10 = (Int(_1 ?? 0) & Int(1 << 11) == 0) || _10 != nil
-            let _c11 = (Int(_1 ?? 0) & Int(1 << 12) == 0) || _11 != nil
-            let _c12 = (Int(_1 ?? 0) & Int(1 << 14) == 0) || _12 != nil
-            let _c13 = (Int(_1 ?? 0) & Int(1 << 15) == 0) || _13 != nil
-            let _c14 = (Int(_1 ?? 0) & Int(1 << 16) == 0) || _14 != nil
-            let _c15 = (Int(_1 ?? 0) & Int(1 << 17) == 0) || _15 != nil
-            let _c16 = (Int(_1 ?? 0) & Int(1 << 17) == 0) || _16 != nil
-            let _c17 = (Int(_1 ?? 0) & Int(1 << 18) == 0) || _17 != nil
-            let _c18 = (Int(_1 ?? 0) & Int(1 << 20) == 0) || _18 != nil
+            let _c7 = (Int(_1!) & Int(1 << 13) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 3) == 0) || _8 != nil
+            let _c9 = (Int(_1!) & Int(1 << 6) == 0) || _9 != nil
+            let _c10 = (Int(_1!) & Int(1 << 11) == 0) || _10 != nil
+            let _c11 = (Int(_1!) & Int(1 << 12) == 0) || _11 != nil
+            let _c12 = (Int(_1!) & Int(1 << 14) == 0) || _12 != nil
+            let _c13 = (Int(_1!) & Int(1 << 15) == 0) || _13 != nil
+            let _c14 = (Int(_1!) & Int(1 << 16) == 0) || _14 != nil
+            let _c15 = (Int(_1!) & Int(1 << 17) == 0) || _15 != nil
+            let _c16 = (Int(_1!) & Int(1 << 17) == 0) || _16 != nil
+            let _c17 = (Int(_1!) & Int(1 << 18) == 0) || _17 != nil
+            let _c18 = (Int(_1!) & Int(1 << 20) == 0) || _18 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 && _c18 {
                 return Api.ChatFull.chatFull(Cons_chatFull(flags: _1!, id: _2!, about: _3!, participants: _4!, chatPhoto: _5, notifySettings: _6!, exportedInvite: _7, botInfo: _8, pinnedMsgId: _9, folderId: _10, call: _11, ttlPeriod: _12, groupcallDefaultJoinAs: _13, themeEmoticon: _14, requestsPending: _15, recentRequesters: _16, availableReactions: _17, reactionsLimit: _18))
             }
@@ -2236,7 +2236,7 @@ public extension Api {
             var _2: String?
             _2 = parseString(reader)
             var _3: String?
-            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
+            if Int(_1!) & Int(1 << 5) != 0 {
                 _3 = parseString(reader)
             }
             var _4: Api.Photo?
@@ -2246,7 +2246,7 @@ public extension Api {
             var _5: Int32?
             _5 = reader.readInt32()
             var _6: [Api.User]?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_1!) & Int(1 << 4) != 0 {
                 if let _ = reader.readInt32() {
                     _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
                 }
@@ -2254,31 +2254,31 @@ public extension Api {
             var _7: Int32?
             _7 = reader.readInt32()
             var _8: Api.StarsSubscriptionPricing?
-            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
+            if Int(_1!) & Int(1 << 10) != 0 {
                 if let signature = reader.readInt32() {
                     _8 = Api.parse(reader, signature: signature) as? Api.StarsSubscriptionPricing
                 }
             }
             var _9: Int64?
-            if Int(_1 ?? 0) & Int(1 << 12) != 0 {
+            if Int(_1!) & Int(1 << 12) != 0 {
                 _9 = reader.readInt64()
             }
             var _10: Api.BotVerification?
-            if Int(_1 ?? 0) & Int(1 << 13) != 0 {
+            if Int(_1!) & Int(1 << 13) != 0 {
                 if let signature = reader.readInt32() {
                     _10 = Api.parse(reader, signature: signature) as? Api.BotVerification
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 5) == 0) || _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _6 != nil
+            let _c6 = (Int(_1!) & Int(1 << 4) == 0) || _6 != nil
             let _c7 = _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 12) == 0) || _9 != nil
-            let _c10 = (Int(_1 ?? 0) & Int(1 << 13) == 0) || _10 != nil
+            let _c8 = (Int(_1!) & Int(1 << 10) == 0) || _8 != nil
+            let _c9 = (Int(_1!) & Int(1 << 12) == 0) || _9 != nil
+            let _c10 = (Int(_1!) & Int(1 << 13) == 0) || _10 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 {
                 return Api.ChatInvite.chatInvite(Cons_chatInvite(flags: _1!, title: _2!, about: _3, photo: _4!, participantsCount: _5!, participants: _6, color: _7!, subscriptionPricing: _8, subscriptionFormId: _9, botVerification: _10))
             }

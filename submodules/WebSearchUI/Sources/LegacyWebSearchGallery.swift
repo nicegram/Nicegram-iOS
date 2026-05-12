@@ -11,6 +11,7 @@ import AccountContext
 import PhotoResources
 import LegacyUI
 import LegacyMediaPickerUI
+import Postbox
 
 class LegacyWebSearchItem: NSObject, TGMediaEditableItem, TGMediaSelectableItem {
     var isVideo: Bool {
@@ -208,7 +209,7 @@ private class LegacyWebSearchGalleryItemView: TGModernGalleryImageItemView, TGMo
     }
 }
 
-func legacyWebSearchItem(engine: TelegramEngine, result: ChatContextResult) -> LegacyWebSearchItem? {
+func legacyWebSearchItem(account: Account, result: ChatContextResult) -> LegacyWebSearchItem? {
     var thumbnailDimensions: CGSize?
     var thumbnailResource: TelegramMediaResource?
     var imageResource: TelegramMediaResource?
@@ -245,7 +246,7 @@ func legacyWebSearchItem(engine: TelegramEngine, result: ChatContextResult) -> L
     }
     
     if let imageResource = imageResource {
-        let progressSignal = engine.resources.status(resource: EngineMediaResource(imageResource))
+        let progressSignal = account.postbox.mediaBox.resourceStatus(imageResource)
         |> map { status -> Float in
             switch status {
                 case .Local:
@@ -263,7 +264,7 @@ func legacyWebSearchItem(engine: TelegramEngine, result: ChatContextResult) -> L
         }
         representations.append(TelegramMediaImageRepresentation(dimensions: PixelDimensions(imageDimensions), resource: imageResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
         let tmpImage = TelegramMediaImage(imageId: EngineMedia.Id(namespace: 0, id: 0), representations: representations, immediateThumbnailData: immediateThumbnailData, reference: nil, partialReference: nil, flags: [])
-        thumbnailSignal = chatMessagePhotoDatas(postbox: engine.account.postbox, userLocation: .other, photoReference: .standalone(media: tmpImage), autoFetchFullSize: false)
+        thumbnailSignal = chatMessagePhotoDatas(postbox: account.postbox, userLocation: .other, photoReference: .standalone(media: tmpImage), autoFetchFullSize: false)
         |> mapToSignal { value -> Signal<UIImage, NoError> in
             let thumbnailData = value._0
             if let data = thumbnailData, let image = UIImage(data: data) {
@@ -272,7 +273,7 @@ func legacyWebSearchItem(engine: TelegramEngine, result: ChatContextResult) -> L
                 return .complete()
             }
         }
-        originalSignal = chatMessagePhotoDatas(postbox: engine.account.postbox, userLocation: .other, photoReference: .standalone(media: tmpImage), autoFetchFullSize: true)
+        originalSignal = chatMessagePhotoDatas(postbox: account.postbox, userLocation: .other, photoReference: .standalone(media: tmpImage), autoFetchFullSize: true)
         |> mapToSignal { value -> Signal<UIImage, NoError> in
             let thumbnailData = value._0
             let fullSizeData = value._1
@@ -294,11 +295,11 @@ func legacyWebSearchItem(engine: TelegramEngine, result: ChatContextResult) -> L
     }
 }
 
-private func galleryItems(engine: TelegramEngine, results: [ChatContextResult], current: ChatContextResult, selectionContext: TGMediaSelectionContext?, editingContext: TGMediaEditingContext) -> ([TGModernGalleryItem], TGModernGalleryItem?) {
+private func galleryItems(account: Account, results: [ChatContextResult], current: ChatContextResult, selectionContext: TGMediaSelectionContext?, editingContext: TGMediaEditingContext) -> ([TGModernGalleryItem], TGModernGalleryItem?) {
     var focusItem: TGModernGalleryItem?
     var galleryItems: [TGModernGalleryItem] = []
     for result in results {
-        if let item = legacyWebSearchItem(engine: engine, result: result) {
+        if let item = legacyWebSearchItem(account: account, result: result) {
             let galleryItem = LegacyWebSearchGalleryItem(item: item)
             galleryItem.selectionContext = selectionContext
             galleryItem.editingContext = editingContext
@@ -335,7 +336,7 @@ func presentLegacyWebSearchGallery(context: AccountContext, peer: EnginePeer?, t
     controller.asyncTransitionIn = true
     legacyController.bind(controller: controller)
     
-    let (items, focusItem) = galleryItems(engine: context.engine, results: results, current: current, selectionContext: selectionContext, editingContext: editingContext)
+    let (items, focusItem) = galleryItems(account: context.account, results: results, current: current, selectionContext: selectionContext, editingContext: editingContext)
     
     let model = TGMediaPickerGalleryModel(context: legacyController.context, items: items, focus: focusItem, selectionContext: selectionContext, editingContext: editingContext, hasCaptions: false, allowCaptionEntities: true, hasTimer: false, onlyCrop: false, inhibitDocumentCaptions: false, hasSelectionPanel: false, hasCamera: false, recipientName: recipientName, isScheduledMessages: false, hasCoverButton: false)!
     model.stickersContext = paintStickersContext

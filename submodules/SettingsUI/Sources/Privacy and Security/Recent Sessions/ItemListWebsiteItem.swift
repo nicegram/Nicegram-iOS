@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -35,7 +36,7 @@ final class ItemListWebsiteItem: ListViewItem, ItemListItem {
     let dateTimeFormat: PresentationDateTimeFormat
     let nameDisplayOrder: PresentationPersonNameOrder
     let website: WebAuthorization
-    let peer: EnginePeer?
+    let peer: Peer?
     let enabled: Bool
     let editing: Bool
     let revealed: Bool
@@ -44,7 +45,7 @@ final class ItemListWebsiteItem: ListViewItem, ItemListItem {
     let removeSession: (Int64) -> Void
     let action: (() -> Void)?
     
-    init(context: AccountContext, presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, website: WebAuthorization, peer: EnginePeer?, enabled: Bool, editing: Bool, revealed: Bool, sectionId: ItemListSectionId, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void, action: (() -> Void)?) {
+    init(context: AccountContext, presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle, dateTimeFormat: PresentationDateTimeFormat, nameDisplayOrder: PresentationPersonNameOrder, website: WebAuthorization, peer: Peer?, enabled: Bool, editing: Bool, revealed: Bool, sectionId: ItemListSectionId, setSessionIdWithRevealedOptions: @escaping (Int64?, Int64?) -> Void, removeSession: @escaping (Int64) -> Void, action: (() -> Void)?) {
         self.context = context
         self.presentationData = presentationData
         self.systemStyle = systemStyle
@@ -228,8 +229,8 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
             
             let rightInset: CGFloat = params.rightInset
             
-            if let peer = item.peer, case .user = peer {
-                titleAttributedString = NSAttributedString(string: peer.displayTitle(strings: item.presentationData.strings, displayOrder: item.nameDisplayOrder), font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor)
+            if let user = item.peer as? TelegramUser {
+                titleAttributedString = NSAttributedString(string: EnginePeer(user).displayTitle(strings: item.presentationData.strings, displayOrder: item.nameDisplayOrder), font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor)
             }
             
             var appString = ""
@@ -331,7 +332,7 @@ class ItemListWebsiteItemNode: ItemListRevealOptionsItemNode {
                     }
                     
                     if let peer = item.peer {
-                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: peer, authorOfMessage: nil, overrideImage: nil, emptyColor: nil, clipStyle: .none, synchronousLoad: false)
+                        strongSelf.avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: EnginePeer(peer), authorOfMessage: nil, overrideImage: nil, emptyColor: nil, clipStyle: .none, synchronousLoad: false)
                     }
                     
                     let revealOffset = strongSelf.revealOffset

@@ -487,6 +487,7 @@ public final class ChatTextInputPanelComponent: Component {
                             mode: .standard(.default),
                             chatLocation: .peer(id: component.chatPeerId),
                             subject: nil,
+                            peerNearbyData: nil,
                             greetingData: nil,
                             pendingUnpinnedAllMessages: false,
                             activeGroupCallInfo: nil,
@@ -798,6 +799,7 @@ public final class ChatTextInputPanelComponent: Component {
                 mode: .standard(.default),
                 chatLocation: .peer(id: component.chatPeerId),
                 subject: nil,
+                peerNearbyData: nil,
                 greetingData: nil,
                 pendingUnpinnedAllMessages: false,
                 activeGroupCallInfo: nil,
@@ -843,7 +845,7 @@ public final class ChatTextInputPanelComponent: Component {
             
             if let sendAsConfiguration = component.sendAsConfiguration {
                 presentationInterfaceState = presentationInterfaceState.updatedSendAsPeers([SendAsPeer(
-                    peer: sendAsConfiguration.currentPeer,
+                    peer: sendAsConfiguration.currentPeer._asPeer(),
                     subscribers: sendAsConfiguration.subscriberCount.flatMap(Int32.init(clamping:)),
                     isPremiumRequired: sendAsConfiguration.isPremiumLocked
                 )]).updatedShowSendAsPeers(sendAsConfiguration.isSelecting).updatedCurrentSendAsPeerId(sendAsConfiguration.currentPeer.id)
@@ -1050,7 +1052,6 @@ public final class ChatTextInputPanelComponent: Component {
                 transition: transition.containedViewLayoutTransition,
                 interfaceState: presentationInterfaceState,
                 metrics: LayoutMetrics(widthClass: .compact, heightClass: .compact, orientation: nil),
-                deviceMetrics: DeviceMetrics.iPhone16Pro,
                 isMediaInputExpanded: false
             )
             

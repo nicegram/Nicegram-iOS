@@ -317,7 +317,7 @@ private final class JoinSubjectScreenComponent: Component {
                 if let peerInfoController = context.sharedContext.makePeerInfoController(
                     context: context,
                     updatedPresentationData: nil,
-                    peer: peer,
+                    peer: peer._asPeer(),
                     mode: .generic,
                     avatarInitiallyExpanded: false,
                     fromChat: false,

@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import Postbox
 import SwiftSignalKit
 import TelegramStringFormatting
 import ChatPresentationInterfaceState
@@ -80,7 +81,7 @@ final class ChatRestrictedInputPanelNode: ChatInputPanelNode {
         self.interfaceInteraction?.openBoostToUnrestrict()
     }
     
-    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+    override func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
         if self.presentationInterfaceState != interfaceState {
             self.presentationInterfaceState = interfaceState
         }

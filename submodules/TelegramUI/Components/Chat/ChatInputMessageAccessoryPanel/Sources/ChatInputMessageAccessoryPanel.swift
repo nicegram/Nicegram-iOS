@@ -222,7 +222,6 @@ public final class ChatInputMessageAccessoryPanel: Component {
     let contents: Contents
     let chatPeerId: EnginePeer.Id?
     let action: ((UIView) -> Void)?
-    let longPressAction: ((UIView) -> Void)?
     let dismiss: (UIView) -> Void
 
     public init(
@@ -230,14 +229,12 @@ public final class ChatInputMessageAccessoryPanel: Component {
         contents: Contents,
         chatPeerId: EnginePeer.Id?,
         action: ((UIView) -> Void)?,
-        longPressAction: ((UIView) -> Void)? = nil,
         dismiss: @escaping (UIView) -> Void
     ) {
         self.context = context
         self.contents = contents
         self.chatPeerId = chatPeerId
         self.action = action
-        self.longPressAction = longPressAction
         self.dismiss = dismiss
     }
 
@@ -254,16 +251,12 @@ public final class ChatInputMessageAccessoryPanel: Component {
         if (lhs.action == nil) != (rhs.action == nil) {
             return false
         }
-        if (lhs.longPressAction == nil) != (rhs.longPressAction == nil) {
-            return false
-        }
         return true
     }
     
     public final class View: UIView, ChatInputAccessoryPanelView {
         private let closeButton: HighlightTrackingButton
         private let closeButtonIcon: GlassBackgroundView.ContentImageView
-        private let longPressGestureRecognizer: UILongPressGestureRecognizer
         
         private let lineView: UIImageView
         private let titleNode: CompositeTextNode
@@ -302,7 +295,6 @@ public final class ChatInputMessageAccessoryPanel: Component {
             
             self.closeButton = HighlightTrackingButton()
             self.closeButtonIcon = GlassBackgroundView.ContentImageView()
-            self.longPressGestureRecognizer = UILongPressGestureRecognizer()
             
             self.lineView = UIImageView()
             self.titleNode = CompositeTextNode()
@@ -319,10 +311,6 @@ public final class ChatInputMessageAccessoryPanel: Component {
             self.closeButton.addTarget(self, action: #selector(self.closeButtonPressed), for: .touchUpInside)
             
             self.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.tapGesture(_:))))
-
-            self.longPressGestureRecognizer.addTarget(self, action: #selector(self.longPressGesture(_:)))
-            self.longPressGestureRecognizer.isEnabled = false
-            self.addGestureRecognizer(self.longPressGestureRecognizer)
         }
         
         required public init?(coder: NSCoder) {
@@ -342,15 +330,6 @@ public final class ChatInputMessageAccessoryPanel: Component {
             }
         }
         
-        @objc private func longPressGesture(_ recognizer: UILongPressGestureRecognizer) {
-            guard let component = self.component else {
-                return
-            }
-            if case .began = recognizer.state {
-                component.longPressAction?(self)
-            }
-        }
-
         @objc private func closeButtonPressed() {
             guard let component = self.component else {
                 return
@@ -405,7 +384,6 @@ public final class ChatInputMessageAccessoryPanel: Component {
             self.component = component
             self.state = state
             self.environment = environment
-            self.longPressGestureRecognizer.isEnabled = component.longPressAction != nil
             
             if self.closeButtonIcon.image == nil {
                 self.closeButtonIcon.image = generateCloseIcon()

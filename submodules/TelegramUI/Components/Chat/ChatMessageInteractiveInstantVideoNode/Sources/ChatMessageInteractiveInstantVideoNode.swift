@@ -703,7 +703,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                     
                     if let updatedFile = updatedFile, updatedMedia {
                         if let resource = updatedFile.previewRepresentations.first?.resource {
-                            strongSelf.fetchedThumbnailDisposable.set(item.context.engine.resources.fetch(reference: FileMediaReference.message(message: MessageReference(item.message), media: updatedFile).resourceReference(resource), userLocation: .peer(item.message.id.peerId), userContentType: .video).startStrict())
+                            strongSelf.fetchedThumbnailDisposable.set(fetchedMediaResource(mediaBox: item.context.account.postbox.mediaBox, userLocation: .peer(item.message.id.peerId), userContentType: .video, reference: FileMediaReference.message(message: MessageReference(item.message), media: updatedFile).resourceReference(resource)).startStrict())
                         } else {
                             strongSelf.fetchedThumbnailDisposable.set(nil)
                         }
@@ -840,7 +840,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                     var displayTranscribe = false
                     if item.message.id.peerId.namespace != Namespaces.Peer.SecretChat && statusDisplayType == .free && !isViewOnceMessage && !item.presentationData.isPreview {
                         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: item.context.currentAppConfiguration.with { $0 })
-                        if item.associatedData.isPremium || item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
+                        if item.associatedData.isPremium {
                             displayTranscribe = true
                         } else if premiumConfiguration.audioTransciptionTrialCount > 0 {
                             if incoming {
@@ -852,6 +852,8 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                             } else {
                                 displayTranscribe = false
                             }
+                        } else if item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
+                            displayTranscribe = true
                         }
                     }
                     

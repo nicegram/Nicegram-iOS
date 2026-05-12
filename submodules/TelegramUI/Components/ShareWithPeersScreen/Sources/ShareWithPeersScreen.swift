@@ -774,10 +774,10 @@ final class ShareWithPeersScreenComponent: Component {
                             if item.peer.id == context.account.peerId {
                                 continue
                             }
-                            if case let .user(user) = item.peer, user.botInfo != nil {
+                            if let user = item.peer as? TelegramUser, user.botInfo != nil {
                                 continue
                             }
-                            peers.append(item.peer)
+                            peers.append(EnginePeer(item.peer))
                         }
                         if !list.list.isEmpty {
                             subscriber.putNext(peers)
@@ -2765,7 +2765,7 @@ final class ShareWithPeersScreenComponent: Component {
             let navigationLeftButtonSize = self.navigationLeftButton.update(
                 transition: transition,
                 component: AnyComponent(GlassBarButtonComponent(
-                    size: CGSize(width: 44.0, height: 44.0),
+                    size: CGSize(width: 40.0, height: 40.0),
                     backgroundColor: environment.theme.rootController.navigationBar.glassBarButtonBackgroundColor,
                     isDark: environment.theme.overallDarkAppearance,
                     state: .generic,

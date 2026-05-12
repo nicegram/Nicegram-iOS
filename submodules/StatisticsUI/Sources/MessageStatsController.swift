@@ -36,7 +36,6 @@ private final class MessageStatsControllerArguments {
 
 private enum StatsSection: Int32 {
     case overview
-    case votes
     case interactions
     case reactions
     case publicForwards
@@ -45,9 +44,6 @@ private enum StatsSection: Int32 {
 private enum StatsEntry: ItemListNodeEntry {
     case overviewTitle(PresentationTheme, String)
     case overview(PresentationTheme, PostStats, EngineStoryItem.Views?, Int32?)
-    
-    case votesTitle(PresentationTheme, String)
-    case votesGraph(PresentationTheme, PresentationStrings, PresentationDateTimeFormat, StatsGraph, ChartType, Bool)
     
     case interactionsTitle(PresentationTheme, String)
     case interactionsGraph(PresentationTheme, PresentationStrings, PresentationDateTimeFormat, StatsGraph, ChartType, Bool)
@@ -62,8 +58,6 @@ private enum StatsEntry: ItemListNodeEntry {
         switch self {
             case .overviewTitle, .overview:
                 return StatsSection.overview.rawValue
-            case .votesTitle, .votesGraph:
-                return StatsSection.votes.rawValue
             case .interactionsTitle, .interactionsGraph:
                 return StatsSection.interactions.rawValue
             case .reactionsTitle, .reactionsGraph:
@@ -79,22 +73,18 @@ private enum StatsEntry: ItemListNodeEntry {
                 return 0
             case .overview:
                 return 1
-            case .votesTitle:
-                return 2
-            case .votesGraph:
-                return 3
             case .interactionsTitle:
-                return 4
+                return 2
             case .interactionsGraph:
-                return 5
+                return 3
             case .reactionsTitle:
-                return 6
+                return 4
             case .reactionsGraph:
-                return 7
+                return 5
             case .publicForwardsTitle:
-                return 8
+                return 6
             case let .publicForward(index, _, _, _, _):
-                return 9 + index
+                return 7 + index
         }
     }
     
@@ -115,18 +105,6 @@ private enum StatsEntry: ItemListNodeEntry {
                     } else {
                         return false
                     }
-                } else {
-                    return false
-                }
-            case let .votesTitle(lhsTheme, lhsText):
-                if case let .votesTitle(rhsTheme, rhsText) = rhs, lhsTheme === rhsTheme, lhsText == rhsText {
-                    return true
-                } else {
-                    return false
-                }
-            case let .votesGraph(lhsTheme, lhsStrings, lhsDateTimeFormat, lhsGraph, lhsType, lhsNoInitialZoom):
-                if case let .votesGraph(rhsTheme, rhsStrings, rhsDateTimeFormat, rhsGraph, rhsType, rhsNoInitialZoom) = rhs, lhsTheme === rhsTheme, lhsStrings === rhsStrings, lhsDateTimeFormat == rhsDateTimeFormat, lhsGraph == rhsGraph, lhsType == rhsType, lhsNoInitialZoom == rhsNoInitialZoom {
-                    return true
                 } else {
                     return false
                 }
@@ -177,14 +155,13 @@ private enum StatsEntry: ItemListNodeEntry {
         let arguments = arguments as! MessageStatsControllerArguments
         switch self {
             case let .overviewTitle(_, text),
-                 let .votesTitle(_, text),
                  let .interactionsTitle(_, text),
                  let .reactionsTitle(_, text),
                  let .publicForwardsTitle(_, text):
                 return ItemListSectionHeaderItem(presentationData: presentationData, text: text, sectionId: self.section)
             case let .overview(_, stats, storyViews, publicShares):
                 return StatsOverviewItem(context: arguments.context, presentationData: presentationData, systemStyle: .glass, isGroup: false, stats: stats as? Stats, storyViews: storyViews, publicShares: publicShares, sectionId: self.section, style: .blocks)
-            case let .votesGraph(_, _, _, graph, type, noInitialZoom), let .interactionsGraph(_, _, _, graph, type, noInitialZoom), let .reactionsGraph(_, _, _, graph, type, noInitialZoom):
+            case let .interactionsGraph(_, _, _, graph, type, noInitialZoom), let .reactionsGraph(_, _, _, graph, type, noInitialZoom):
                 return StatsGraphItem(presentationData: presentationData, systemStyle: .glass, graph: graph, type: type, noInitialZoom: noInitialZoom, getDetailsData: { date, completion in
                     let _ = arguments.loadDetailedGraph(graph, Int64(date.timeIntervalSince1970) * 1000).start(next: { graph in
                         if let graph = graph, case let .Loaded(_, data) = graph {
@@ -198,10 +175,10 @@ private enum StatsEntry: ItemListNodeEntry {
                 var reactions: Int32 = 0
             
                 var isStory = false
-                let peer: EnginePeer
+                let peer: Peer
                 switch item {
                 case let .message(message):
-                    peer = EnginePeer(message.peers[message.id.peerId]!)
+                    peer = message.peers[message.id.peerId]!
                     for attribute in message.attributes {
                         if let viewsAttribute = attribute as? ViewCountMessageAttribute {
                             views = Int32(viewsAttribute.count)
@@ -214,7 +191,7 @@ private enum StatsEntry: ItemListNodeEntry {
                         }
                     }
                 case let .story(peerValue, story):
-                    peer = peerValue
+                    peer = peerValue._asPeer()
                     views = Int32(story.views?.seenCount ?? 0)
                     forwards = Int32(story.views?.forwardCount ?? 0)
                     reactions = Int32(story.views?.reactedCount ?? 0)
@@ -238,7 +215,7 @@ private enum StatsEntry: ItemListNodeEntry {
     }
 }
 
-private func messageStatsControllerEntries(data: PostStats?, pollData: PollStats?, storyViews: EngineStoryItem.Views?, forwards: StoryStatsPublicForwardsContext.State?, presentationData: PresentationData) -> [StatsEntry] {
+private func messageStatsControllerEntries(data: PostStats?, storyViews: EngineStoryItem.Views?, forwards: StoryStatsPublicForwardsContext.State?, presentationData: PresentationData) -> [StatsEntry] {
     var entries: [StatsEntry] = []
     
     if let data = data {
@@ -249,11 +226,6 @@ private func messageStatsControllerEntries(data: PostStats?, pollData: PollStats
             publicShares = forwards.count
         }
         entries.append(.overview(presentationData.theme, data, storyViews, publicShares))
-        
-        if let pollData, !pollData.votesGraph.isEmpty {
-            entries.append(.votesTitle(presentationData.theme, presentationData.strings.PollStats_GraphHeader.uppercased()))
-            entries.append(.votesGraph(presentationData.theme, presentationData.strings, presentationData.dateTimeFormat, pollData.votesGraph, .lines5Min, false))
-        }
         
         var isStories = false
         if let _ = data as? StoryStats {
@@ -323,10 +295,8 @@ public func messageStatsController(context: AccountContext, updatedPresentationD
     let actionsDisposable = DisposableSet()
     let dataPromise = Promise<PostStats?>(nil)
     let forwardsPromise = Promise<StoryStatsPublicForwardsContext.State?>(nil)
-    let pollDataPromise = Promise<PollStats?>(nil)
     
     let anyStatsContext: Any
-    var pollStatsContext: Any?
     let dataSignal: Signal<PostStats?, NoError>
     var loadDetailedGraphImpl: ((StatsGraph, Int64) -> Signal<StatsGraph?, NoError>)?
     var openStoryImpl: ((EnginePeer.Id, EngineStoryItem, UIView) -> Void)?
@@ -350,31 +320,6 @@ public func messageStatsController(context: AccountContext, updatedPresentationD
         anyStatsContext = statsContext
         
         forwardsContext = StoryStatsPublicForwardsContext(account: context.account, subject: .message(messageId: id))
-        
-        pollDataPromise.set(context.engine.data.get(TelegramEngine.EngineData.Item.Messages.Message(id: id))
-        |> map { message -> PollStatsContext? in
-            guard let message else {
-                return nil
-            }
-            for media in message.media {
-                if let poll = media as? TelegramMediaPoll, poll.results.canViewStats {
-                    return PollStatsContext(account: context.account, messageId: message.id)
-                }
-            }
-            return nil
-        }
-        |> afterNext { statsContext in
-            pollStatsContext = statsContext
-        }
-        |> mapToSignal { pollStatsContext in
-            guard let pollStatsContext else {
-                return .single(nil)
-            }
-            return pollStatsContext.state
-            |> map { state in
-                return state.stats
-            }
-        })
     case let .story(peerIdValue, id, item, _):
         peerId = peerIdValue
         storyItem = item
@@ -393,11 +338,13 @@ public func messageStatsController(context: AccountContext, updatedPresentationD
         forwardsContext = StoryStatsPublicForwardsContext(account: context.account, subject: .story(peerId: peerId, id: id))
     }
     
-    forwardsPromise.set(.single(nil)
-    |> then(
-        forwardsContext.state
-        |> map(Optional.init)
-    ))
+    forwardsPromise.set(
+        .single(nil)
+        |> then(
+            forwardsContext.state
+            |> map(Optional.init)
+        )
+    )
     
     let arguments = MessageStatsControllerArguments(context: context, loadDetailedGraph: { graph, x -> Signal<StatsGraph?, NoError> in
         return loadDetailedGraphImpl?(graph, x) ?? .single(nil)
@@ -437,13 +384,12 @@ public func messageStatsController(context: AccountContext, updatedPresentationD
     let signal = combineLatest(
         presentationData,
         dataPromise.get(),
-        pollDataPromise.get(),
         forwardsPromise.get(),
         longLoadingSignal,
         iconNodePromise.get()
     )
     |> deliverOnMainQueue
-    |> map { presentationData, data, pollData, forwards, longLoading, iconNode -> (ItemListControllerState, (ItemListNodeState, Any)) in
+    |> map { presentationData, data, forwards, longLoading, iconNode -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let previous = previousData.swap(data)
         var emptyStateItem: ItemListControllerEmptyStateItem?
         if data == nil {
@@ -469,14 +415,13 @@ public func messageStatsController(context: AccountContext, updatedPresentationD
                 openStoryImpl?(peerId, storyItem, iconNode.view)
             }
         }) }, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: messageStatsControllerEntries(data: data, pollData: pollData, storyViews: storyViews, forwards: forwards, presentationData: presentationData), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: messageStatsControllerEntries(data: data, storyViews: storyViews, forwards: forwards, presentationData: presentationData), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
     |> afterDisposed {
         actionsDisposable.dispose()
         let _ = anyStatsContext
-        let _ = pollStatsContext
         let _ = forwardsContext
     }
     
@@ -601,7 +546,7 @@ public func messageStatsController(context: AccountContext, updatedPresentationD
                         return
                     }
                     if case .user = peer {
-                        if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: peer.largeProfileImage != nil, fromChat: false, requestsContext: nil) {
+                        if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: peer.largeProfileImage != nil, fromChat: false, requestsContext: nil) {
                             navigationController.pushViewController(controller)
                         }
                     } else {

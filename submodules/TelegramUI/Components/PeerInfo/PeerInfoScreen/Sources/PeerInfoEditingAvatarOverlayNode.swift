@@ -60,7 +60,7 @@ final class PeerInfoEditingAvatarOverlayNode: ASDisplayNode {
         transition.updateAlpha(node: self, alpha: 1.0 - fraction)
     }
     
-    func update(peer: EnginePeer?, threadData: MessageHistoryThreadData?, chatLocation: ChatLocation, item: PeerInfoAvatarListItem?, updatingAvatar: PeerInfoUpdatingAvatar?, uploadProgress: AvatarUploadProgress?, theme: PresentationTheme, avatarSize: CGFloat, isEditing: Bool) {
+    func update(peer: Peer?, threadData: MessageHistoryThreadData?, chatLocation: ChatLocation, item: PeerInfoAvatarListItem?, updatingAvatar: PeerInfoUpdatingAvatar?, uploadProgress: AvatarUploadProgress?, theme: PresentationTheme, avatarSize: CGFloat, isEditing: Bool) {
         guard let peer = peer else {
             return
         }
@@ -71,7 +71,7 @@ final class PeerInfoEditingAvatarOverlayNode: ASDisplayNode {
         let transition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .linear)
         
         let clipStyle: AvatarNodeClipStyle
-        if case let .channel(channel) = peer, channel.isForumOrMonoForum {
+        if let channel = peer as? TelegramChannel, channel.isForumOrMonoForum {
             clipStyle = .roundedRect
         } else {
             clipStyle = .round

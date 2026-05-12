@@ -139,7 +139,7 @@ public final class VoiceChatJoinScreen: ViewController {
                         strongSelf.dismiss()
                         strongSelf.join(activeCall)
                     } else {
-                        strongSelf.controllerNode.setPeer(call: activeCall, peer: peer, title: call.info.title, memberCount: call.info.participantCount, isStream: call.info.isStream)
+                        strongSelf.controllerNode.setPeer(call: activeCall, peer: peer._asPeer(), title: call.info.title, memberCount: call.info.participantCount, isStream: call.info.isStream)
                     }
                 } else {
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -622,7 +622,7 @@ public final class VoiceChatJoinScreen: ViewController {
             }))
         }
         
-        func setPeer(call: CachedChannelData.ActiveCall, peer: EnginePeer, title: String?, memberCount: Int, isStream: Bool) {
+        func setPeer(call: CachedChannelData.ActiveCall, peer: Peer, title: String?, memberCount: Int, isStream: Bool) {
             self.call = call
             
             let transition = ContainedViewLayoutTransition.animated(duration: 0.22, curve: .easeInOut)
@@ -647,7 +647,7 @@ final class VoiceChatPreviewContentNode: ASDisplayNode, ShareContentContainerNod
     private let titleNode: ImmediateTextNode
     private let countNode: ImmediateTextNode
     
-    init(context: AccountContext, peer: EnginePeer, title: String?, memberCount: Int, isStream: Bool, theme: PresentationTheme, strings: PresentationStrings, displayOrder: PresentationPersonNameOrder) {
+    init(context: AccountContext, peer: Peer, title: String?, memberCount: Int, isStream: Bool, theme: PresentationTheme, strings: PresentationStrings, displayOrder: PresentationPersonNameOrder) {
         self.avatarNode = AvatarNode(font: avatarFont)
         self.titleNode = ImmediateTextNode()
         self.titleNode.maximumNumberOfLines = 4
@@ -659,10 +659,10 @@ final class VoiceChatPreviewContentNode: ASDisplayNode, ShareContentContainerNod
         super.init()
         
         self.addSubnode(self.avatarNode)
-        self.avatarNode.setPeer(context: context, theme: theme, peer: peer, emptyColor: theme.list.mediaPlaceholderColor)
+        self.avatarNode.setPeer(context: context, theme: theme, peer: EnginePeer(peer), emptyColor: theme.list.mediaPlaceholderColor)
         
         self.addSubnode(self.titleNode)
-        self.titleNode.attributedText = NSAttributedString(string: title ?? peer.displayTitle(strings: strings, displayOrder: displayOrder), font: Font.semibold(16.0), textColor: theme.actionSheet.primaryTextColor)
+        self.titleNode.attributedText = NSAttributedString(string: title ?? EnginePeer(peer).displayTitle(strings: strings, displayOrder: displayOrder), font: Font.semibold(16.0), textColor: theme.actionSheet.primaryTextColor)
         
         self.addSubnode(self.countNode)
 

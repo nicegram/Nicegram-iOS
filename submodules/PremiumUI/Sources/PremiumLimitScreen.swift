@@ -448,34 +448,6 @@ public class PremiumLimitDisplayComponent: Component {
                     }
                     view.frame = CGRect(origin: CGPoint(x: activityPosition - 12.0 - inactiveValueSize.width, y: floorToScreenPixels((lineHeight - inactiveValueSize.height) / 2.0)), size: inactiveValueSize)
                 }
-                                
-                let activeValueSize = self.activeValueLabel.update(
-                    transition: .immediate,
-                    component: AnyComponent(
-                        MultilineTextComponent(
-                            text: .plain(
-                                NSAttributedString(
-                                    string: component.activeValue,
-                                    font: Font.semibold(15.0),
-                                    textColor: rightTextColor
-                                )
-                            )
-                        )
-                    ),
-                    environment: {},
-                    containerSize: availableSize
-                )
-                let activeValueLabelFrame = CGRect(origin: CGPoint(x: containerFrame.width - 12.0 - activeValueSize.width, y: floorToScreenPixels((lineHeight - activeValueSize.height) / 2.0)), size: activeValueSize)
-                if let view = self.activeValueLabel.view {
-                    if view.superview == nil {
-                        self.container.addSubview(view)
-                        
-                        if component.invertProgress {
-                            self.container.bringSubviewToFront(self.activeContainer)
-                        }
-                    }
-                    view.frame = activeValueLabelFrame
-                }
                 
                 let activeTitleSize = self.activeTitleLabel.update(
                     transition: .immediate,
@@ -498,12 +470,33 @@ public class PremiumLimitDisplayComponent: Component {
                         self.container.addSubview(view)
                     }
                     view.frame = CGRect(origin: CGPoint(x: activityPosition + 12.0, y: floorToScreenPixels((lineHeight - activeTitleSize.height) / 2.0)), size: activeTitleSize)
-                    
-                    if view.frame.maxX > activeValueLabelFrame.minX - 8.0 {
-                        view.alpha = 0.0
-                    } else {
-                        view.alpha = 1.0
+                }
+                
+                let activeValueSize = self.activeValueLabel.update(
+                    transition: .immediate,
+                    component: AnyComponent(
+                        MultilineTextComponent(
+                            text: .plain(
+                                NSAttributedString(
+                                    string: component.activeValue,
+                                    font: Font.semibold(15.0),
+                                    textColor: rightTextColor
+                                )
+                            )
+                        )
+                    ),
+                    environment: {},
+                    containerSize: availableSize
+                )
+                if let view = self.activeValueLabel.view {
+                    if view.superview == nil {
+                        self.container.addSubview(view)
+                        
+                        if component.invertProgress {
+                            self.container.bringSubviewToFront(self.activeContainer)
+                        }
                     }
+                    view.frame = CGRect(origin: CGPoint(x: containerFrame.width - 12.0 - activeValueSize.width, y: floorToScreenPixels((lineHeight - activeValueSize.height) / 2.0)), size: activeValueSize)
                 }
             }
                         

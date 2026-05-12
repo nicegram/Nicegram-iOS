@@ -927,7 +927,7 @@ final class GiftOptionsScreenComponent: Component {
                                     if let controller = context.sharedContext.makePeerInfoController(
                                         context: context,
                                         updatedPresentationData: nil,
-                                        peer: peer,
+                                        peer: peer._asPeer(),
                                         mode: .gifts,
                                         avatarInitiallyExpanded: false,
                                         fromChat: false,

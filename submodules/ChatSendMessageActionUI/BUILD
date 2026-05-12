@@ -12,13 +12,14 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",
         "//submodules/Display:Display",
         "//submodules/TelegramCore:TelegramCore",
+        "//submodules/Postbox",
         "//submodules/AccountContext:AccountContext",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/ContextUI:ContextUI",

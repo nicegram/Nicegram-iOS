@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ItemListUI

@@ -1607,7 +1607,6 @@ public func createGiveawayController(context: AccountContext, updatedPresentatio
         let stateContext = CountriesMultiselectionScreen.StateContext(
             context: context,
             subject: .countries,
-            maxCount: context.userLimits.maxGiveawayCountriesCount,
             initialSelectedCountries: state.countries
         )
         let _ = (stateContext.ready |> filter { $0 } |> take(1) |> deliverOnMainQueue).startStandalone(next: { _ in

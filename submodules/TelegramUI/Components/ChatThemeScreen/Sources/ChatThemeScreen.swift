@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
+import Postbox
 import TelegramCore
 import SwiftSignalKit
 import AccountContext
@@ -491,7 +492,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
                             }
                             strongSelf.animatedStickerNode = animatedStickerNode
                             strongSelf.emojiContainerNode.insertSubnode(animatedStickerNode, belowSubnode: strongSelf.placeholderNode)
-                            let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
+                            let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
                             animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: file.resource), width: 128, height: 128, playbackMode: .still(.start), mode: .direct(cachePathPrefix: pathPrefix))
                             
                             animatedStickerNode.anchorPoint = CGPoint(x: 0.5, y: 1.0)
@@ -499,7 +500,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
                         animatedStickerNode.autoplay = true
                         animatedStickerNode.visibility = strongSelf.visibilityStatus
                         
-                        strongSelf.stickerFetchedDisposable.set(item.context.engine.resources.fetch(reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource), userLocation: .other, userContentType: .sticker).startStrict())
+                        strongSelf.stickerFetchedDisposable.set(fetchedMediaResource(mediaBox: item.context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource)).startStrict())
                         
                         let thumbnailDimensions = PixelDimensions(width: 512, height: 512)
                         strongSelf.placeholderNode.update(backgroundColor: nil, foregroundColor: UIColor(rgb: 0xffffff, alpha: 0.2), shimmeringColor: UIColor(rgb: 0xffffff, alpha: 0.3), data: file.immediateThumbnailData, size: emojiFrame.size, enableEffect: item.context.sharedContext.energyUsageSettings.fullTranslucency, imageSize: thumbnailDimensions.cgSize)

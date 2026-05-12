@@ -316,9 +316,9 @@ public final class GlobalControlPanelsContext {
             if chatListNotices {
                 let twoStepData: Signal<TwoStepVerificationConfiguration?, NoError> = .single(nil) |> then(context.engine.auth.twoStepVerificationConfiguration() |> map(Optional.init))
                 
-                let accountFreezeConfiguration = (context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
+                let accountFreezeConfiguration = (context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
                                                   |> map { view -> AppConfiguration in
-                    let appConfiguration: AppConfiguration = view?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
+                    let appConfiguration: AppConfiguration = view.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
                     return appConfiguration
                 }
                 |> distinctUntilChanged

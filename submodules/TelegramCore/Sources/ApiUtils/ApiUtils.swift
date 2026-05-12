@@ -14,10 +14,6 @@ public extension PeerReference {
             return PeerId(namespace: Namespaces.Peer.CloudChannel, id: PeerId.Id._internalFromInt64Value(id))
         }
     }
-
-    init?(_ peer: EnginePeer) {
-        self.init(peer._asPeer())
-    }
 }
 
 extension PeerReference {    
@@ -84,60 +80,6 @@ public func apiInputPeer(_ peer: Peer) -> Api.InputPeer? {
     }
 }
 
-private func apiInputPeerFromSourceMessage(_ sourceMessageId: MessageId?, transaction: Transaction) -> (MessageId, Api.InputPeer)? {
-    guard let sourceMessageId else {
-        return nil
-    }
-    guard let sourcePeer = transaction.getPeer(sourceMessageId.peerId) else {
-        return nil
-    }
-    guard let inputPeer = apiInputPeer(sourcePeer) else {
-        return nil
-    }
-    return (sourceMessageId, inputPeer)
-}
-
-func apiInputPeer(_ peer: Peer, sourceMessageId: MessageId?, transaction: Transaction) -> Api.InputPeer? {
-    switch peer {
-    case let user as TelegramUser:
-        if let accessHash = user.accessHash {
-            switch accessHash {
-            case let .personal(value):
-                return Api.InputPeer.inputPeerUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: value))
-            case let .genericPublic(value):
-                if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-                    return Api.InputPeer.inputPeerUserFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, userId: user.id.id._internalGetInt64Value()))
-                }
-                return Api.InputPeer.inputPeerUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: value))
-            }
-        } else if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-            return Api.InputPeer.inputPeerUserFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, userId: user.id.id._internalGetInt64Value()))
-        } else {
-            return nil
-        }
-    case let group as TelegramGroup:
-        return Api.InputPeer.inputPeerChat(.init(chatId: group.id.id._internalGetInt64Value()))
-    case let channel as TelegramChannel:
-        if let accessHash = channel.accessHash {
-            switch accessHash {
-            case let .personal(value):
-                return Api.InputPeer.inputPeerChannel(.init(channelId: channel.id.id._internalGetInt64Value(), accessHash: value))
-            case let .genericPublic(value):
-                if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-                    return Api.InputPeer.inputPeerChannelFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, channelId: channel.id.id._internalGetInt64Value()))
-                }
-                return Api.InputPeer.inputPeerChannel(.init(channelId: channel.id.id._internalGetInt64Value(), accessHash: value))
-            }
-        } else if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-            return Api.InputPeer.inputPeerChannelFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, channelId: channel.id.id._internalGetInt64Value()))
-        } else {
-            return nil
-        }
-    default:
-        return nil
-    }
-}
-
 func apiInputPeerOrSelf(_ peer: Peer, accountPeerId: PeerId) -> Api.InputPeer? {
     if peer.id == accountPeerId {
         return .inputPeerSelf
@@ -153,51 +95,9 @@ func apiInputChannel(_ peer: Peer) -> Api.InputChannel? {
     }
 }
 
-func apiInputChannel(_ peer: Peer, sourceMessageId: MessageId?, transaction: Transaction) -> Api.InputChannel? {
-    guard let channel = peer as? TelegramChannel else {
-        return nil
-    }
-    if let accessHash = channel.accessHash {
-        switch accessHash {
-        case let .personal(value):
-            return Api.InputChannel.inputChannel(.init(channelId: channel.id.id._internalGetInt64Value(), accessHash: value))
-        case let .genericPublic(value):
-            if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-                return Api.InputChannel.inputChannelFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, channelId: channel.id.id._internalGetInt64Value()))
-            }
-            return Api.InputChannel.inputChannel(.init(channelId: channel.id.id._internalGetInt64Value(), accessHash: value))
-        }
-    } else if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-        return Api.InputChannel.inputChannelFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, channelId: channel.id.id._internalGetInt64Value()))
-    } else {
-        return nil
-    }
-}
-
 func apiInputUser(_ peer: Peer) -> Api.InputUser? {
     if let user = peer as? TelegramUser, let accessHash = user.accessHash {
         return Api.InputUser.inputUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: accessHash.value))
-    } else {
-        return nil
-    }
-}
-
-func apiInputUser(_ peer: Peer, sourceMessageId: MessageId?, transaction: Transaction) -> Api.InputUser? {
-    guard let user = peer as? TelegramUser else {
-        return nil
-    }
-    if let accessHash = user.accessHash {
-        switch accessHash {
-        case let .personal(value):
-            return Api.InputUser.inputUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: value))
-        case let .genericPublic(value):
-            if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-                return Api.InputUser.inputUserFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, userId: user.id.id._internalGetInt64Value()))
-            }
-            return Api.InputUser.inputUser(.init(userId: user.id.id._internalGetInt64Value(), accessHash: value))
-        }
-    } else if let (sourceMessageId, sourcePeer) = apiInputPeerFromSourceMessage(sourceMessageId, transaction: transaction) {
-        return Api.InputUser.inputUserFromMessage(.init(peer: sourcePeer, msgId: sourceMessageId.id, userId: user.id.id._internalGetInt64Value()))
     } else {
         return nil
     }

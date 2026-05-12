@@ -87,7 +87,6 @@ enum InviteLinkUsageLimit: Equatable {
 
 final class ItemListInviteLinkUsageLimitItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
-    let systemStyle: ItemListSystemStyle
     let strings: PresentationStrings
     let dateTimeFormat: PresentationDateTimeFormat
     let value: InviteLinkUsageLimit
@@ -95,9 +94,8 @@ final class ItemListInviteLinkUsageLimitItem: ListViewItem, ItemListItem {
     let sectionId: ItemListSectionId
     let updated: (InviteLinkUsageLimit) -> Void
     
-    init(theme: PresentationTheme, systemStyle: ItemListSystemStyle, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, value: InviteLinkUsageLimit, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (InviteLinkUsageLimit) -> Void) {
+    init(theme: PresentationTheme, strings: PresentationStrings, dateTimeFormat: PresentationDateTimeFormat, value: InviteLinkUsageLimit, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (InviteLinkUsageLimit) -> Void) {
         self.theme = theme
-        self.systemStyle = systemStyle
         self.strings = strings
         self.dateTimeFormat = dateTimeFormat
         self.value = value
@@ -338,7 +336,7 @@ private final class ItemListInviteLinkUsageLimitItemNode: ListViewItemNode {
                         strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)

@@ -515,10 +515,6 @@ public func peerViewMonoforumMainPeer(_ view: PeerView) -> Peer? {
 }
 
 public extension RenderedPeer {
-    convenience init(peer: EnginePeer) {
-        self.init(peer: peer._asPeer())
-    }
-
     convenience init(message: Message) {
         var peers = SimpleDictionary<PeerId, Peer>()
         let peerId = message.id.peerId

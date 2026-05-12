@@ -54,7 +54,7 @@ public final class InstantPageImageItem: InstantPageItem {
     
     public func matchesNode(_ node: InstantPageNode) -> Bool {
         if let node = node as? InstantPageImageNode {
-            return instantPageMediaMatchesNodeIdentity(node.media, self.media)
+            return node.media == self.media
         } else {
             return false
         }

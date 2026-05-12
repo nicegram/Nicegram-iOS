@@ -82,7 +82,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
         
         var title = "file"
         var url = ""
-        if let path = self.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.media.resource.id)) {
+        if let path = self.context.account.postbox.mediaBox.completedResourcePath(file.media.resource) {
             var updatedPath = path
             if let fileName = file.media.fileName {
                 let tempFile = TempBox.shared.file(path: path, fileName: fileName)
@@ -364,7 +364,7 @@ final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDF
         let pageIndicatorSize = self.pageIndicator.update(
             transition: .immediate,
             component: AnyComponent(
-                Text(text: self.presentationData.strings.Items_NOfM("\(self.pageNumber?.0 ?? 1)", "\(self.pageNumber?.1 ?? 1)").string, font: Font.with(size: 15.0, weight: .regular, traits: .monospacedNumbers), color: self.presentationData.theme.list.itemPrimaryTextColor)
+                Text(text: "\(self.pageNumber?.0 ?? 1) of \(self.pageNumber?.1 ?? 1)", font: Font.with(size: 15.0, weight: .regular, traits: .monospacedNumbers), color: self.presentationData.theme.list.itemPrimaryTextColor)
             ),
             environment: {},
             containerSize: size

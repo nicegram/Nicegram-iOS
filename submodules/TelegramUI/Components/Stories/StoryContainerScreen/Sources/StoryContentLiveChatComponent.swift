@@ -367,7 +367,7 @@ final class StoryContentLiveChatComponent: Component {
                             rank: nil,
                             subscriptionUntilDate: nil
                         ),
-                        peer: author
+                        peer: author._asPeer()
                     )],
                     mode: .liveStream(
                         messageCount: 1,

@@ -968,7 +968,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
             present: { context, _, present in
                 let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                 |> deliverOnMainQueue).start(next: { peer in
-                    guard let peer = peer else {
+                    guard let peer = peer?._asPeer() else {
                         return
                     }
                     let controller = context.sharedContext.makeChatQrCodeScreen(context: context, peer: peer, threadId: nil, temporary: false)
@@ -977,7 +977,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
             }
         )
     )
-
+    
     //TODO:fix
     items.append(
         SettingsSearchableItem(
@@ -986,7 +986,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
             present: { context, _, present in
                 let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                 |> deliverOnMainQueue).start(next: { peer in
-                    guard let peer = peer else {
+                    guard let peer = peer?._asPeer() else {
                         return
                     }
                     let controller = context.sharedContext.makeChatQrCodeScreen(context: context, peer: peer, threadId: nil, temporary: false)
@@ -1017,7 +1017,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
             present: { context, _, present in
                 let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                 |> deliverOnMainQueue).start(next: { peer in
-                    guard let peer = peer else {
+                    guard let peer = peer?._asPeer() else {
                         return
                     }
                     let controller = context.sharedContext.makePeerInfoController(
@@ -1034,7 +1034,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
             }
         )
     )
-
+    
     items.append(
         SettingsSearchableItem(
             id: "my-profile/edit",
@@ -1043,7 +1043,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
             present: { context, _, present in
                 let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                 |> deliverOnMainQueue).start(next: { peer in
-                    guard let peer = peer else {
+                    guard let peer = peer?._asPeer() else {
                         return
                     }
                     let controller = context.sharedContext.makePeerInfoController(
@@ -1056,7 +1056,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
                         requestsContext: nil
                     )
                     present(.push, controller)
-
+                    
                     Queue.mainQueue().justDispatch {
                         if let controller = controller as? PeerInfoScreen {
                             controller.activateEdit()
@@ -1077,7 +1077,7 @@ private func myProfileSearchableItems(context: AccountContext) -> [SettingsSearc
             present: { context, _, present in
                 let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                 |> deliverOnMainQueue).start(next: { peer in
-                    guard let peer = peer else {
+                    guard let peer = peer?._asPeer() else {
                         return
                     }
                     let controller = context.sharedContext.makePeerInfoController(
@@ -1551,7 +1551,7 @@ private func notificationSearchableItems(context: AccountContext, settings: Glob
             for (key, value) in list.settings {
                 if let peer = list.peers[key], !peer.debugDisplayTitle.isEmpty, peer.id != context.account.peerId {
                     if value.storySettings != defaultStorySettings {
-                        stories[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                        stories[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                     }
                     
                     switch value.muteState {
@@ -1562,24 +1562,24 @@ private func notificationSearchableItems(context: AccountContext, settings: Glob
                                 default:
                                     switch key.namespace {
                                         case Namespaces.Peer.CloudUser:
-                                            users[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                                            users[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                                         default:
-                                            if case let .channel(peer) = peer, case .broadcast = peer.info {
+                                            if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                                 channels[key] = NotificationExceptionWrapper(settings: value, peer: .channel(peer))
                                             } else {
-                                                groups[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                                                groups[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                                             }
                                     }
                             }
                         default:
                             switch key.namespace {
                                 case Namespaces.Peer.CloudUser:
-                                    users[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                                    users[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                                 default:
-                                    if case let .channel(peer) = peer, case .broadcast = peer.info {
+                                    if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
                                         channels[key] = NotificationExceptionWrapper(settings: value, peer: .channel(peer))
                                     } else {
-                                        groups[key] = NotificationExceptionWrapper(settings: value, peer: peer)
+                                        groups[key] = NotificationExceptionWrapper(settings: value, peer: EnginePeer(peer))
                                     }
                             }
                     }
@@ -2073,11 +2073,11 @@ private func privacySearchableItems(context: AccountContext, privacySettings: Ac
         }
         let callsSignal: Signal<(VoiceCallSettings, VoipConfiguration)?, NoError>
         if case .voiceCalls = kind {
-            callsSignal = combineLatest(context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.voiceCallSettings]), context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.voipConfiguration)))
+            callsSignal = combineLatest(context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.voiceCallSettings]), context.account.postbox.preferencesView(keys: [PreferencesKeys.voipConfiguration]))
             |> take(1)
             |> map { sharedData, view -> (VoiceCallSettings, VoipConfiguration)? in
                 let voiceCallSettings: VoiceCallSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.voiceCallSettings]?.get(VoiceCallSettings.self) ?? .defaultSettings
-                let voipConfiguration = view?.get(VoipConfiguration.self) ?? .defaultValue
+                let voipConfiguration = view.values[PreferencesKeys.voipConfiguration]?.get(VoipConfiguration.self) ?? .defaultValue
                 return (voiceCallSettings, voipConfiguration)
             }
         } else {
@@ -4317,11 +4317,11 @@ func settingsSearchableItems(
         return accountsAndPeers.1.count + 1 < maximumNumberOfAccounts
     }
     
-    let notificationSettings = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.globalNotifications))
+    let notificationSettings = context.account.postbox.preferencesView(keys: [PreferencesKeys.globalNotifications])
     |> take(1)
     |> map { view -> GlobalNotificationSettingsSet in
         let viewSettings: GlobalNotificationSettingsSet
-        if let settings = view?.get(GlobalNotificationSettings.self) {
+        if let settings = view.values[PreferencesKeys.globalNotifications]?.get(GlobalNotificationSettings.self) {
             viewSettings = settings.effective
         } else {
             viewSettings = GlobalNotificationSettingsSet.defaultSettings

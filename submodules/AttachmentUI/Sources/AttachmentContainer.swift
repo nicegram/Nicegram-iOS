@@ -479,9 +479,7 @@ final class AttachmentContainer: ASDisplayNode, ASGestureRecognizerDelegate {
         if self.isDismissed {
             return
         }
-        
-        let containerCornerRadius = max(24.0, layout.deviceMetrics.screenCornerRadius)
-        self.bottomClipNode.cornerRadius = containerCornerRadius - 2.0
+        self.bottomClipNode.cornerRadius = layout.deviceMetrics.screenCornerRadius - 2.0
         
         self.isUpdatingState = true
         

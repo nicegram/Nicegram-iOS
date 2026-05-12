@@ -39,10 +39,10 @@
     {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/attaswift/BigInt.git",
+      "location" : "https://github.com/attaswift/BigInt",
       "state" : {
-        "revision" : "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
-        "version" : "5.7.0"
+        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
+        "version" : "5.3.0"
       }
     },
     {
@@ -51,7 +51,7 @@
       "location" : "https://github.com/denis15yo/core-swift.git",
       "state" : {
         "branch" : "release/1.0.0",
-        "revision" : "ccc78c6290987979c7e84c6428223e20c9d33392"
+        "revision" : "5e67f8746a35d47b4537b9dbba87791630999085"
       }
     },
     {
@@ -185,8 +185,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/gtm-session-fetcher.git",
       "state" : {
-        "revision" : "0be208810d2e8b90fcd2464d1816723b47819fe7",
-        "version" : "5.2.0"
+        "revision" : "c0ac7575d70050c2973ba2318bd5af47f8e8153a",
+        "version" : "5.3.0"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "d066bd3b711b09c3f9820d9a52685b3f1d88e03e",
-        "version" : "6.20.1"
+        "revision" : "7313c6b1340bcf490071434d07a06c83e52071fe",
+        "version" : "6.20.2"
       }
     },
     {
@@ -581,8 +581,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "821698c7f7edde786da183770ad5e5f12f92fbfc",
-        "version" : "1.0.35"
+        "revision" : "aacae64c40f40500a9485b6b2d8d060a4777cf72",
+        "version" : "1.0.36"
       }
     },
     {

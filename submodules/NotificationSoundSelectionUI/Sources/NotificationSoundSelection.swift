@@ -476,7 +476,7 @@ public func notificationSoundSelectionController(context: AccountContext, update
                     break
                 }
             }),
-            TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
+            TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {
             })
         ], parseMarkdown: true), in: .window(.root))
     }

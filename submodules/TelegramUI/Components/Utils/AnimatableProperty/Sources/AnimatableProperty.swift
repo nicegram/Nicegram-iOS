@@ -74,8 +74,6 @@ public final class AnimatableProperty<T: Interpolatable> {
             break
         case .easeInOut:
             t = listViewAnimationCurveEaseInOut(t)
-        case .easeIn:
-            t = listViewAnimationCurveEaseIn(t)
         case .spring:
             t = lookupSpringValue(t)
         case let .custom(x1, y1, x2, y2):

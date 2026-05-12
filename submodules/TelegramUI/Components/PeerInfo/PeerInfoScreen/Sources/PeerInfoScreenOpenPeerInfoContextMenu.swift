@@ -7,6 +7,7 @@ import UIKit
 import Display
 import AccountContext
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import UndoUI
@@ -126,7 +127,7 @@ extension PeerInfoScreenNode {
                 text = customLink
                 content = .linkCopied(title: nil, text: self.presentationData.strings.Conversation_LinkCopied)
             } else if let addressName = peer.addressName {
-                if case .channel = peer {
+                if peer is TelegramChannel {
                     text = "https://t.me/\(addressName)"
                     content = .linkCopied(title: nil, text: self.presentationData.strings.Conversation_LinkCopied)
                 } else {

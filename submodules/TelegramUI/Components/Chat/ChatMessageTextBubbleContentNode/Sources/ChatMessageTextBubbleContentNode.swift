@@ -249,10 +249,11 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
         let currentMaxGlyphCount: Int?
         if let textRevealAnimationState = self.textRevealAnimationState {
             currentMaxGlyphCount = textRevealAnimationState.glyphCount(timestamp: CACurrentMediaTime())
+            //print("currentMaxGlyphCount(\(textRevealAnimationState.fromCount) -> \(textRevealAnimationState.toCount)) fraction: \(textRevealAnimationState.fraction(timestamp: CACurrentMediaTime()))")
         } else {
             currentMaxGlyphCount = nil
         }
-        let previousGlyphCount = self.textNode.textNode.cachedLayout?.attributedString?.length ?? 0
+        let previousGlyphCount = self.textNode.textNode.getCharacterToGlyphMapping().count
         
         return { item, layoutConstants, _, _, _, _ in
             let contentProperties = ChatMessageBubbleContentProperties(hidesSimpleAuthorHeader: false, headerSpacing: 0.0, hidesBackground: .never, forceFullCorners: false, forceAlignment: .none)
@@ -698,15 +699,6 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     }
                 }
                 
-                var hasDraft = false
-                if item.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
-                    hasDraft = true
-                }
-                var hadDraft = false
-                if let previousItem, previousItem.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
-                    hadDraft = true
-                }
-                
                 let textInsets = UIEdgeInsets(top: 2.0, left: 2.0, bottom: 5.0, right: 2.0)
                 let (textLayout, textApply) = textLayout(InteractiveTextNodeLayoutArguments(
                     attributedString: attributedText,
@@ -720,10 +712,17 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     lineColor: messageTheme.accentControlColor,
                     displayContentsUnderSpoilers: displayContentsUnderSpoilers.value,
                     customTruncationToken: customTruncationToken,
-                    expandedBlocks: expandedBlockIds,
-                    computeCharacterRects: true,
-                    minWidth: (attributedText.string.isEmpty && hasDraft) ? 40.0 : nil
+                    expandedBlocks: expandedBlockIds
                 ))
+                
+                var hasDraft = false
+                if item.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
+                    hasDraft = true
+                }
+                var hadDraft = false
+                if let previousItem, previousItem.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
+                    hadDraft = true
+                }
                 
                 var maxGlyphCount = currentMaxGlyphCount
                 if maxGlyphCount == nil && (hasDraft || hadDraft) {
@@ -731,7 +730,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 }
                 var clippedGlyphCountLayout: TextNodeLayout.LayoutInfo?
                 if let maxGlyphCount {
-                    clippedGlyphCountLayout = textLayout.layoutForCharacterCount(characterCount: maxGlyphCount)
+                    clippedGlyphCountLayout = textLayout.layoutForGlyphCount(glyphCount: maxGlyphCount)
                 }
             
                 var statusSuggestedWidthAndContinue: (CGFloat, (CGFloat) -> (CGSize, (ListViewItemUpdateAnimation) -> ChatMessageDateAndStatusNode))?
@@ -793,13 +792,14 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                 
                 if let clippedGlyphCountLayout {
                     textFrame.size = clippedGlyphCountLayout.size
+                    //print("currentMaxGlyphCount: \(currentMaxGlyphCount), size: \(textFrame.size.height)")
                     textFrameWithoutInsets.size = CGSize(width: textFrame.width - textInsets.left - textInsets.right, height: textFrame.height - textInsets.top - textInsets.bottom)
                 }
                 
                 textFrameWithoutInsets = textFrameWithoutInsets.offsetBy(dx: layoutConstants.text.bubbleInsets.left, dy: topInset)
                 
                 var suggestedBoundingWidth: CGFloat = textFrameWithoutInsets.width
-                if let statusSuggestedWidthAndContinue = statusSuggestedWidthAndContinue, !hasDraft {
+                if let statusSuggestedWidthAndContinue = statusSuggestedWidthAndContinue {
                     suggestedBoundingWidth = max(suggestedBoundingWidth, statusSuggestedWidthAndContinue.0)
                 }
                 let sideInsets = layoutConstants.text.bubbleInsets.left + layoutConstants.text.bubbleInsets.right
@@ -811,7 +811,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     let statusSizeAndApply = statusSuggestedWidthAndContinue?.1(boundingWidth - sideInsets)
                     
                     boundingSize = textFrameWithoutInsets.size
-                    if let statusSizeAndApply = statusSizeAndApply, !hasDraft {
+                    if let statusSizeAndApply = statusSizeAndApply {
                         boundingSize.height += statusSizeAndApply.0.height
                     }
                     
@@ -828,7 +828,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                             
                             var previousAnimateGlyphCount: Int?
                             if hasDraft || hadDraft {
-                                previousAnimateGlyphCount = strongSelf.textNode.textNode.cachedLayout?.attributedString?.length ?? 0
+                                previousAnimateGlyphCount = strongSelf.textNode.textNode.getCharacterToGlyphMapping().count
                             }
                             
                             strongSelf.textNode.textNode.displaysAsynchronously = !item.presentationData.isPreview
@@ -1053,13 +1053,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                                 codeHighlightState.disposable.dispose()
                             }
                             
-                            if previousAnimateGlyphCount != nil || strongSelf.textRevealAnimationState != nil || hasDraft || hadDraft {
-                                if strongSelf.textNode.textNode.revealCharacterCount == nil {
-                                    if hasDraft {
-                                        strongSelf.statusNode?.alpha = 0.0
-                                    }
-                                    strongSelf.textNode.textNode.updateRevealCharacterCount(count: previousAnimateGlyphCount ?? 0, animated: false)
-                                }
+                            if previousAnimateGlyphCount != nil || strongSelf.textRevealAnimationState != nil || hadDraft {
                                 strongSelf.updateTextRevealAnimation(previousGlyphCount: previousAnimateGlyphCount ?? 0)
                             }
                         }
@@ -1071,7 +1065,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
     
     private func updateTextRevealAnimation(previousGlyphCount: Int) {
         var fromCount = previousGlyphCount
-        let toCount = self.textNode.textNode.cachedLayout?.attributedString?.length ?? 0
+        let toCount = self.textNode.textNode.getCharacterToGlyphMapping().count
         let timestamp = CACurrentMediaTime()
         if let textRevealAnimationState = self.textRevealAnimationState {
             if textRevealAnimationState.toCount == toCount {
@@ -1083,13 +1077,13 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
             if self.textRevealAnimationState != nil {
                 self.textRevealAnimationState = nil
                 self.textRevealLink = nil
-                self.textNode.textNode.updateRevealCharacterCount(count: nil, animated: false)
+                self.textNode.textNode.updateRevealGlyphCount(count: nil)
             }
             return
         }
         
-        var duration: Double = Double(toCount - fromCount) / 40.0
-        duration = max(0.1, min(duration, 1.0))
+        var duration: Double = Double(toCount - fromCount) / 20.0
+        duration = max(0.1, min(duration, 5.0))
         
         self.textRevealAnimationState = TextRevealAnimationState(
             fromCount: fromCount,
@@ -1098,8 +1092,9 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
             duration: duration
         )
         if self.textRevealLink == nil, self.textRevealAnimationState != nil {
+            var lastLineUpdateTimestamp = timestamp
             self.textRevealLink = SharedDisplayLinkDriver.shared.add { [weak self] _ in
-                guard let self, let item = self.item else {
+                guard let self else {
                     return
                 }
                 guard let textRevealAnimationState = self.textRevealAnimationState else {
@@ -1111,30 +1106,25 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
                     self.textRevealAnimationState = nil
                     self.textRevealLink = nil
                     
-                    self.textNode.textNode.updateRevealCharacterCount(count: nil, animated: false)
-                    
-                    if let statusNode = self.statusNode, !item.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
-                        ContainedViewLayoutTransition.animated(duration: 0.2, curve: .easeInOut).updateAlpha(node: statusNode, alpha: 1.0)
-                    }
-                    
+                    self.textNode.textNode.updateRevealGlyphCount(count: nil)
                     self.requestFullUpdate?()
                 } else {
+                    let lineUpdateTimeout = timestamp - lastLineUpdateTimestamp
+                    
                     var requestUpdate = false
                     let glyphCount = textRevealAnimationState.glyphCount(timestamp: timestamp)
-                    if let previousRevealGlyphCount = self.textNode.textNode.revealCharacterCount, previousRevealGlyphCount != glyphCount {
-                        if let cachedLayout = self.textNode.textNode.cachedLayout {
-                            if cachedLayout.sizeForCharacterCount(characterCount: previousRevealGlyphCount) != cachedLayout.sizeForCharacterCount(characterCount: glyphCount) {
+                    if let revealGlyphCount = self.textNode.textNode.revealGlyphCount, let cachedLayout = self.textNode.textNode.cachedLayout {
+                        let previousLayout = cachedLayout.layoutForGlyphCount(glyphCount: revealGlyphCount)
+                        let updatedLayout = cachedLayout.layoutForGlyphCount(glyphCount: glyphCount)
+                        
+                        if updatedLayout.size.height != previousLayout.size.height || abs(updatedLayout.size.width - previousLayout.size.width) > 8.0 {
+                            if lineUpdateTimeout >= 0.0 {
+                                lastLineUpdateTimestamp = timestamp
                                 requestUpdate = true
                             }
-                        } else {
-                            requestUpdate = true
                         }
-                        if requestUpdate {
-                            //print("glyphCount: request update")
-                        }
-                        
-                        self.textNode.textNode.updateRevealCharacterCount(count: glyphCount, animated: true)
                     }
+                    self.textNode.textNode.updateRevealGlyphCount(count: glyphCount)
                     
                     if requestUpdate {
                         self.requestFullUpdate?()
@@ -1146,23 +1136,17 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
     
     override public func animateInsertion(_ currentTimestamp: Double, duration: Double) {
         self.textNode.textNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-        if let statusNode = self.statusNode, statusNode.alpha != 0.0 {
-            statusNode.layer.animateAlpha(from: 0.0, to: statusNode.alpha, duration: 0.2)
-        }
+        self.statusNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
     }
     
     override public func animateAdded(_ currentTimestamp: Double, duration: Double) {
         self.textNode.textNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
-        if let statusNode = self.statusNode, statusNode.alpha != 0.0 {
-            statusNode.layer.animateAlpha(from: 0.0, to: statusNode.alpha, duration: 0.2)
-        }
+        self.statusNode?.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2)
     }
     
     override public func animateRemoved(_ currentTimestamp: Double, duration: Double) {
         self.textNode.textNode.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
-        if let statusNode = self.statusNode, statusNode.alpha != 0.0 {
-            statusNode.layer.animateAlpha(from: statusNode.alpha, to: 0.0, duration: 0.2, removeOnCompletion: false)
-        }
+        self.statusNode?.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.2, removeOnCompletion: false)
     }
     
     override public func tapActionAtPoint(_ point: CGPoint, gesture: TapLongTapOrDoubleTapGesture, isEstimating: Bool) -> ChatMessageBubbleContentTapAction {
@@ -1818,7 +1802,7 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
         guard let textSelectionNode = self.textSelectionNode else {
             return nil
         }
-        guard let rawRange = customRange ?? textSelectionNode.getSelection() else {
+        guard let range = customRange ?? textSelectionNode.getSelection() else {
             return nil
         }
         guard let item = self.item else {
@@ -1828,17 +1812,6 @@ public class ChatMessageTextBubbleContentNode: ChatMessageBubbleContentNode {
             return nil
         }
         
-        func normalizedSelectionRange(_ range: NSRange, length: Int) -> NSRange {
-            let location = min(max(range.location, 0), length)
-            let upperBound = min(max(location, range.location + range.length), length)
-            return NSRange(location: location, length: upperBound - location)
-        }
-        
-        let range = normalizedSelectionRange(rawRange, length: string.length)
-        guard range.length > 0 else {
-            return nil
-        }
-
         let nsString = string.string as NSString
         let substring = nsString.substring(with: range)
         let offset = range.location

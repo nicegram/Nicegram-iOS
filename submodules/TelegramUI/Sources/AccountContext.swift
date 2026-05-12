@@ -332,9 +332,9 @@ public final class AccountContextImpl: AccountContext {
         self.animationRenderer = DCTMultiAnimationRendererImpl()
         (self.animationRenderer as? DCTMultiAnimationRendererImpl)?.useYuvA = sharedContext.immediateExperimentalUISettings.compressedEmojiCache
         
-        let updatedLimitsConfiguration = self.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.limitsConfiguration))
+        let updatedLimitsConfiguration = account.postbox.preferencesView(keys: [PreferencesKeys.limitsConfiguration])
         |> map { preferences -> LimitsConfiguration in
-            return preferences?.get(LimitsConfiguration.self) ?? LimitsConfiguration.defaultValue
+            return preferences.values[PreferencesKeys.limitsConfiguration]?.get(LimitsConfiguration.self) ?? LimitsConfiguration.defaultValue
         }
         
         self.currentLimitsConfiguration = Atomic(value: limitsConfiguration)
@@ -357,7 +357,7 @@ public final class AccountContextImpl: AccountContext {
             let _ = currentContentSettings.swap(value)
         })
         
-        let updatedAppConfiguration = getAppConfiguration(engine: self.engine)
+        let updatedAppConfiguration = getAppConfiguration(postbox: account.postbox)
         self.currentAppConfiguration = Atomic(value: appConfiguration)
         self._appConfiguration.set(.single(appConfiguration) |> then(updatedAppConfiguration))
                 
@@ -382,23 +382,21 @@ public final class AccountContextImpl: AccountContext {
                 }).start()
             }
         })
-                
-        let queue = Queue()
-        self.deviceSpecificContactImportContexts = QueueLocalObject(queue: queue, generate: {
-            return DeviceSpecificContactImportContexts(queue: queue)
-        })
         
         let langCode = sharedContext.currentPresentationData.with { $0 }.strings.baseLanguageCode
         self.currentCountriesConfiguration = Atomic(value: CountriesConfiguration(countries: loadCountryCodes()))
         if !temp {
             let currentCountriesConfiguration = self.currentCountriesConfiguration
             self.countriesConfigurationDisposable = (self.engine.localization.getCountriesList(accountManager: sharedContext.accountManager, langCode: langCode)
-            |> deliverOnMainQueue).start(next: { [weak self] value in
-                let configuration = CountriesConfiguration(countries: value)
-                let _ = currentCountriesConfiguration.swap(configuration)
-                self?._countriesConfiguration.set(.single(configuration))
+            |> deliverOnMainQueue).start(next: { value in
+                let _ = currentCountriesConfiguration.swap(CountriesConfiguration(countries: value))
             })
         }
+        
+        let queue = Queue()
+        self.deviceSpecificContactImportContexts = QueueLocalObject(queue: queue, generate: {
+            return DeviceSpecificContactImportContexts(queue: queue)
+        })
         
         if let contactDataManager = sharedContext.contactDataManager {
             let deviceSpecificContactImportContexts = self.deviceSpecificContactImportContexts
@@ -927,10 +925,10 @@ private final class ChatLocationReplyContextHolderImpl: ChatLocationContextHolde
     }
 }
 
-func getAppConfiguration(engine: TelegramEngine) -> Signal<AppConfiguration, NoError> {
-    return engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
+func getAppConfiguration(postbox: Postbox) -> Signal<AppConfiguration, NoError> {
+    return postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
     |> map { view -> AppConfiguration in
-        let appConfiguration: AppConfiguration = view?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
+        let appConfiguration: AppConfiguration = view.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
         return appConfiguration
     }
     |> distinctUntilChanged

@@ -1957,7 +1957,7 @@ private final class CameraScreenComponent: CombinedComponent {
                                 availableSize: CGSize(width: 40.0, height: 40.0),
                                 transition: .immediate
                             )
-                            if state.displayingCollageSelection {
+                            if component.cameraState.isCollageEnabled {
                                 nextButtonX += 48.0
                             }
                             var collageButtonX = nextButtonX

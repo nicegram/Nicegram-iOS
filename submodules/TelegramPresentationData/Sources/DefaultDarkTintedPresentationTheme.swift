@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import TelegramCore
 import TelegramUIPreferences
+import Postbox
 
 private let defaultDarkTintedAccentColor = UIColor(rgb: 0x2ea6ff)
 public let defaultDarkTintedPresentationTheme = makeDefaultDarkTintedPresentationTheme(preview: false)

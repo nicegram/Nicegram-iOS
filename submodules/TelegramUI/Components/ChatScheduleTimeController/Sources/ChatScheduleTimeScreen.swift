@@ -13,12 +13,10 @@ import SheetComponent
 import ButtonComponent
 import PlainButtonComponent
 import BundleIconComponent
-import LottieAnimationComponent
 import GlassBackgroundComponent
 import GlassBarButtonComponent
 import DatePickerNode
 import UndoUI
-import TooltipUI
 
 private let calendar = Calendar(identifier: .gregorian)
 
@@ -39,7 +37,6 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
     let currentRepeatPeriod: Int32?
     let suggestedTime: Int32?
     let minimalTime: Int32?
-    let silentPosting: Bool
     let externalState: ExternalState
     let dismiss: () -> Void
     
@@ -50,7 +47,6 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
         currentRepeatPeriod: Int32?,
         suggestedTime: Int32?,
         minimalTime: Int32?,
-        silentPosting: Bool,
         externalState: ExternalState,
         dismiss: @escaping () -> Void
     ) {
@@ -60,7 +56,6 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
         self.currentRepeatPeriod = currentRepeatPeriod
         self.suggestedTime = suggestedTime
         self.minimalTime = minimalTime
-        self.silentPosting = silentPosting
         self.externalState = externalState
         self.dismiss = dismiss
     }
@@ -71,8 +66,6 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
     
     final class View: UIView {
         private let cancel = ComponentView<Empty>()
-        private let silent = ComponentView<Empty>()
-        
         private let title = ComponentView<Empty>()
         private let button = ComponentView<Empty>()
         private let secondaryButton = ComponentView<Empty>()
@@ -100,15 +93,13 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
         
         private var monthHeight: CGFloat?
         
-        private var isSilentPosting = false
-        
         private var date: Date?
         private var minDate: Date?
         private var maxDate: Date?
         
         private var isPickingTime = false
         private var isPickingRepeatPeriod = false
-                
+        
         private var repeatPeriod: Int32?
         
         private let dateFormatter: DateFormatter
@@ -153,70 +144,6 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             }
         }
         
-        private func presentSilentPostingTooltip() {
-            guard let component = self.component, let sourceView = self.silent.view else {
-                return
-            }
-
-            let peerId: EnginePeer.Id?
-            switch component.mode {
-            case let .scheduledMessages(peerIdValue, _):
-                peerId = peerIdValue
-            case .reminders:
-                peerId = component.context.account.peerId
-            default:
-                peerId = nil
-            }
-            guard let peerId else {
-                return
-            }
-            
-            let isSilentPosting = self.isSilentPosting
-            let _ = (component.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-            |> deliverOnMainQueue).start(next: { [weak self] peer in
-                guard let self, let peer, let environment = self.environment, let controller = self.environment?.controller() else {
-                    return
-                }
-                var isChannel = false
-                if case let .channel(channel) = peer, case .broadcast = channel.info {
-                    isChannel = true
-                }
-                let text: String
-                if case let .user(user) = peer {
-                    if user.id == component.context.account.peerId {
-                        if isSilentPosting {
-                            text = environment.strings.ScheduleMessage_SilentPosting_YouEnabled
-                        } else {
-                            text = environment.strings.ScheduleMessage_SilentPosting_YouDisabled
-                        }
-                    } else {
-                        if isSilentPosting {
-                            text = environment.strings.ScheduleMessage_SilentPosting_UserEnabled(peer.compactDisplayTitle).string
-                        } else {
-                            text = environment.strings.ScheduleMessage_SilentPosting_UserDisabled(peer.compactDisplayTitle).string
-                        }
-                    }
-                } else if isChannel {
-                    if isSilentPosting {
-                        text = environment.strings.ScheduleMessage_SilentPosting_ChannelEnabled
-                    } else {
-                        text = environment.strings.ScheduleMessage_SilentPosting_ChannelDisabled
-                    }
-                } else {
-                    if isSilentPosting {
-                        text = environment.strings.ScheduleMessage_SilentPosting_GroupEnabled
-                    } else {
-                        text = environment.strings.ScheduleMessage_SilentPosting_GroupDisabled
-                    }
-                }
-
-                let sourceFrame = sourceView.convert(sourceView.bounds, to: nil)
-                controller.present(TooltipScreen(account: component.context.account, sharedContext: component.context.sharedContext, text: .plain(text: text), style: .default, icon: .none, location: .point(sourceFrame, .bottom), shouldDismissOnTouch: { _, _ in
-                    return .dismiss(consume: false)
-                }), in: .window(.root))
-            })
-        }
-        
         func update(component: ChatScheduleTimeSheetContentComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
             self.isUpdating = true
             defer {
@@ -230,7 +157,6 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             self.environment = environment
             
             if self.component == nil {
-                self.isSilentPosting = component.silentPosting
                 switch component.mode {
                 case .format, .search:
                     self.minDate = Date(timeIntervalSince1970: 0.0)
@@ -258,6 +184,40 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             var contentHeight: CGFloat = 0.0
             contentHeight += 30.0
                         
+            let barButtonSize = CGSize(width: 44.0, height: 44.0)
+            let cancelSize = self.cancel.update(
+                transition: transition,
+                component: AnyComponent(
+                    GlassBarButtonComponent(
+                        size: barButtonSize,
+                        backgroundColor: nil,
+                        isDark: environment.theme.overallDarkAppearance,
+                        state: .glass,
+                        component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
+                            BundleIconComponent(
+                                name: "Navigation/Close",
+                                tintColor: environment.theme.chat.inputPanel.panelControlColor
+                            )
+                        )),
+                        action: { [weak self] _ in
+                            guard let self, let component = self.component else {
+                                return
+                            }
+                            component.dismiss()
+                        }
+                    )
+                ),
+                environment: {},
+                containerSize: barButtonSize
+            )
+            let cancelFrame = CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelSize)
+            if let cancelView = self.cancel.view {
+                if cancelView.superview == nil {
+                    self.addSubview(cancelView)
+                }
+                transition.setFrame(view: cancelView, frame: cancelFrame)
+            }
+            
             let title: String
             switch component.mode {
             case .scheduledMessages:
@@ -269,7 +229,8 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             case .poll:
                 title = strings.CreatePoll_Deadline_Title
             case .search:
-                title = strings.Conversation_CalendarSearch_Title
+                //TODO:localize
+                title = "Search"
             }
             let titleSize = self.title.update(
                 transition: transition,
@@ -357,81 +318,74 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                 contentHeight += pickerHeight
             }
             
-            let date = self.date ?? Date()
-            var timeValueFrame: CGRect?
-            
-            switch component.mode {
-            case .search:
-                break
-            default:
-                transition.setFrame(layer: self.topSeparator, frame: CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: UIScreenPixel)))
-                self.topSeparator.backgroundColor = environment.theme.list.itemBlocksSeparatorColor.cgColor
-                if self.topSeparator.superlayer == nil {
-                    self.layer.addSublayer(self.topSeparator)
-                }
-                
-                let timeTitleSize = self.timeTitle.update(
-                    transition: transition,
-                    component: AnyComponent(
-                        Text(text: strings.ScheduleMessage_Time, font: Font.regular(17.0), color: environment.theme.actionSheet.primaryTextColor)
-                    ),
-                    environment: {},
-                    containerSize: availableSize
-                )
-                let timeTitleFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight + 16.0), size: timeTitleSize)
-                if let timeTitleView = self.timeTitle.view {
-                    if timeTitleView.superview == nil {
-                        self.addSubview(timeTitleView)
-                    }
-                    transition.setFrame(view: timeTitleView, frame: timeTitleFrame)
-                }
-                
-                var t: time_t = Int(date.timeIntervalSince1970)
-                var timeinfo = tm()
-                localtime_r(&t, &timeinfo);
-                
-                let timeString = stringForShortTimestamp(hours: Int32(timeinfo.tm_hour), minutes: Int32(timeinfo.tm_min), dateTimeFormat: environment.dateTimeFormat)
-                let timeValueSize = self.timeValue.update(
-                    transition: transition,
-                    component: AnyComponent(
-                        PlainButtonComponent(
-                            content: AnyComponent(
-                                ButtonContentComponent(
-                                    theme: environment.theme,
-                                    text: timeString,
-                                    isActive: self.isPickingTime,
-                                    isLocked: false
-                                )
-                            ),
-                            action: { [weak self] in
-                                guard let self else {
-                                    return
-                                }
-                                if self.isPickingRepeatPeriod {
-                                    self.isPickingRepeatPeriod = false
-                                } else {
-                                    self.isPickingTime = !self.isPickingTime
-                                }
-                                self.state?.updated()
-                            },
-                            animateScale: false
-                        )
-                    ),
-                    environment: {
-                    },
-                    containerSize: availableSize
-                )
-                let timeValueFrameValue = CGRect(origin: CGPoint(x: availableSize.width - sideInset - timeValueSize.width, y: contentHeight + 10.0), size: timeValueSize)
-                timeValueFrame = timeValueFrameValue
-                if let timeValueView = self.timeValue.view {
-                    if timeValueView.superview == nil {
-                        self.addSubview(timeValueView)
-                    }
-                    transition.setFrame(view: timeValueView, frame: timeValueFrameValue)
-                }
-                
-                contentHeight += 56.0
+            transition.setFrame(layer: self.topSeparator, frame: CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: UIScreenPixel)))
+            self.topSeparator.backgroundColor = environment.theme.list.itemBlocksSeparatorColor.cgColor
+            if self.topSeparator.superlayer == nil {
+                self.layer.addSublayer(self.topSeparator)
             }
+            
+            let timeTitleSize = self.timeTitle.update(
+                transition: transition,
+                component: AnyComponent(
+                    Text(text: strings.ScheduleMessage_Time, font: Font.regular(17.0), color: environment.theme.actionSheet.primaryTextColor)
+                ),
+                environment: {},
+                containerSize: availableSize
+            )
+            let timeTitleFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight + 16.0), size: timeTitleSize)
+            if let timeTitleView = self.timeTitle.view {
+                if timeTitleView.superview == nil {
+                    self.addSubview(timeTitleView)
+                }
+                transition.setFrame(view: timeTitleView, frame: timeTitleFrame)
+            }
+            
+            let date = self.date ?? Date()
+            
+            var t: time_t = Int(date.timeIntervalSince1970)
+            var timeinfo = tm()
+            localtime_r(&t, &timeinfo);
+            
+            let timeString = stringForShortTimestamp(hours: Int32(timeinfo.tm_hour), minutes: Int32(timeinfo.tm_min), dateTimeFormat: environment.dateTimeFormat)
+            let timeValueSize = self.timeValue.update(
+                transition: transition,
+                component: AnyComponent(
+                    PlainButtonComponent(
+                        content: AnyComponent(
+                            ButtonContentComponent(
+                                theme: environment.theme,
+                                text: timeString,
+                                isActive: self.isPickingTime,
+                                isLocked: false
+                            )
+                        ),
+                        action: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            if self.isPickingRepeatPeriod {
+                                self.isPickingRepeatPeriod = false
+                            } else {
+                                self.isPickingTime = !self.isPickingTime
+                            }
+                            self.state?.updated()
+                        },
+                        animateScale: false
+                    )
+                ),
+                environment: {
+                },
+                containerSize: availableSize
+            )
+            let timeValueFrame = CGRect(origin: CGPoint(x: availableSize.width - sideInset - timeValueSize.width, y: contentHeight + 10.0), size: timeValueSize)
+            if let timeValueView = self.timeValue.view {
+                if timeValueView.superview == nil {
+                    self.addSubview(timeValueView)
+                }
+                transition.setFrame(view: timeValueView, frame: timeValueFrame)
+            }
+            
+            contentHeight += 56.0
             
             var repeatValueFrame = CGRect()
             if case .format = component.mode {
@@ -550,7 +504,8 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             case .poll:
                 buttonTitle = strings.CreatePoll_Deadline_SetDeadline
             case .search:
-                buttonTitle = strings.Conversation_CalendarSearch_Done
+                //TODO:localize
+                buttonTitle = "Done"
             }
                 
             let buttonSideInset: CGFloat = 30.0
@@ -575,8 +530,7 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                         controller.completion(
                             ChatScheduleTimeScreen.Result(
                                 time: Int32(self.date?.timeIntervalSince1970 ?? 0),
-                                repeatPeriod: self.repeatPeriod,
-                                silentPosting: self.isSilentPosting
+                                repeatPeriod: self.repeatPeriod
                             )
                         )
                         component.dismiss()
@@ -608,12 +562,12 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                     component: AnyComponent(ButtonComponent(
                         background: ButtonComponent.Background(
                             style: .glass,
-                            color: environment.theme.list.itemAccentColor.withMultipliedAlpha(0.1),
-                            foreground: environment.theme.list.itemAccentColor,
-                            pressedColor: environment.theme.list.itemAccentColor.withMultipliedAlpha(0.8),
+                            color: environment.theme.list.itemDestructiveColor.withMultipliedAlpha(0.1),
+                            foreground: environment.theme.list.itemDestructiveColor,
+                            pressedColor: environment.theme.list.itemDestructiveColor.withMultipliedAlpha(0.8),
                         ),
                         content: AnyComponentWithIdentity(id: AnyHashable(0 as Int), component: AnyComponent(
-                            Text(text: strings.Conversation_FormatDate_RemoveDate, font: Font.semibold(17.0), color: environment.theme.list.itemAccentColor)
+                            Text(text: strings.Conversation_FormatDate_RemoveDate, font: Font.semibold(17.0), color: environment.theme.list.itemDestructiveColor)
                         )),
                         isEnabled: true,
                         displaysProgress: false,
@@ -624,8 +578,7 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                             controller.completion(
                                 ChatScheduleTimeScreen.Result(
                                     time: 0,
-                                    repeatPeriod: nil,
-                                    silentPosting: false
+                                    repeatPeriod: nil
                                 )
                             )
                             component.dismiss()
@@ -642,7 +595,7 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                     transition.setFrame(view: buttonView, frame: buttonFrame)
                 }
                 contentHeight += buttonSize.height
-            } else if case .scheduledMessages(_, true) = component.mode {
+            } else if case .scheduledMessages(true) = component.mode {
                 contentHeight += 8.0
                 
                 let buttonSize = self.secondaryButton.update(
@@ -666,8 +619,7 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
                             controller.completion(
                                 ChatScheduleTimeScreen.Result(
                                     time: scheduleWhenOnlineTimestamp,
-                                    repeatPeriod: nil,
-                                    silentPosting: self.isSilentPosting
+                                    repeatPeriod: nil
                                 )
                             )
                             component.dismiss()
@@ -692,7 +644,7 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             
             let contentSize = CGSize(width: availableSize.width, height: contentHeight)
             
-            if self.isPickingTime, let timeValueFrame {
+            if self.isPickingTime {
                 let _ = self.timePicker.update(
                     transition: transition,
                     component: AnyComponent(
@@ -832,87 +784,6 @@ private final class ChatScheduleTimeSheetContentComponent: Component {
             
             component.externalState.repeatValueFrame = repeatValueFrame
             
-            let barButtonSize = CGSize(width: 44.0, height: 44.0)
-            let cancelSize = self.cancel.update(
-                transition: transition,
-                component: AnyComponent(
-                    GlassBarButtonComponent(
-                        size: barButtonSize,
-                        backgroundColor: nil,
-                        isDark: environment.theme.overallDarkAppearance,
-                        state: .glass,
-                        component: AnyComponentWithIdentity(id: "close", component: AnyComponent(
-                            BundleIconComponent(
-                                name: "Navigation/Close",
-                                tintColor: environment.theme.chat.inputPanel.panelControlColor
-                            )
-                        )),
-                        action: { [weak self] _ in
-                            guard let self, let component = self.component else {
-                                return
-                            }
-                            component.dismiss()
-                        }
-                    )
-                ),
-                environment: {},
-                containerSize: barButtonSize
-            )
-            let cancelFrame = CGRect(origin: CGPoint(x: 16.0, y: 16.0), size: cancelSize)
-            if let cancelView = self.cancel.view {
-                if cancelView.superview == nil {
-                    self.addSubview(cancelView)
-                }
-                transition.setFrame(view: cancelView, frame: cancelFrame)
-            }
-            
-            switch component.mode {
-            case .scheduledMessages, .reminders:
-                let silentSize = self.silent.update(
-                    transition: transition,
-                    component: AnyComponent(
-                        GlassBarButtonComponent(
-                            size: barButtonSize,
-                            backgroundColor: nil,
-                            isDark: environment.theme.overallDarkAppearance,
-                            state: .glass,
-                            component: AnyComponentWithIdentity(id: "silent", component: AnyComponent(
-                                LottieAnimationComponent(
-                                    animation: LottieAnimationComponent.AnimationItem(
-                                        name: self.isSilentPosting ? "NavigationMuteOn" : "NavigationMuteOff",
-                                        mode: !transition.animation.isImmediate ? .animating(loop: false) : .still(position: .end),
-                                        range: nil,
-                                        waitForCompletion: false
-                                    ),
-                                    colors: ["__allcolors__": environment.theme.chat.inputPanel.panelControlColor],
-                                    size: CGSize(width: 30.0, height: 30.0)
-                                )
-                            )),
-                            action: { [weak self] _ in
-                                guard let self else {
-                                    return
-                                }
-                                self.isSilentPosting = !self.isSilentPosting
-                                self.state?.updated(transition: .easeInOut(duration: 0.2))
-                                
-                                self.presentSilentPostingTooltip()
-                            }
-                        )
-                    ),
-                    environment: {},
-                    containerSize: barButtonSize
-                )
-                let silentFrame = CGRect(origin: CGPoint(x: availableSize.width - 16.0 - silentSize.width, y: 16.0), size: silentSize)
-                if let silentView = self.silent.view {
-                    if silentView.superview == nil {
-                        self.addSubview(silentView)
-                    }
-                    transition.setFrame(view: silentView, frame: silentFrame)
-                }
-            default:
-                break
-            }
-            
             return contentSize
         }
     }
@@ -935,7 +806,6 @@ private final class ChatScheduleTimeScreenComponent: Component {
     let currentRepeatPeriod: Int32?
     let suggestedTime: Int32?
     let minimalTime: Int32?
-    let silentPosting: Bool
     
     init(
         context: AccountContext,
@@ -943,8 +813,7 @@ private final class ChatScheduleTimeScreenComponent: Component {
         currentTime: Int32?,
         currentRepeatPeriod: Int32?,
         suggestedTime: Int32?,
-        minimalTime: Int32?,
-        silentPosting: Bool
+        minimalTime: Int32?
     ) {
         self.context = context
         self.mode = mode
@@ -952,7 +821,6 @@ private final class ChatScheduleTimeScreenComponent: Component {
         self.currentRepeatPeriod = currentRepeatPeriod
         self.suggestedTime = suggestedTime
         self.minimalTime = minimalTime
-        self.silentPosting = silentPosting
     }
     
     static func ==(lhs: ChatScheduleTimeScreenComponent, rhs: ChatScheduleTimeScreenComponent) -> Bool {
@@ -969,9 +837,6 @@ private final class ChatScheduleTimeScreenComponent: Component {
             return false
         }
         if lhs.minimalTime != rhs.minimalTime {
-            return false
-        }
-        if lhs.silentPosting != rhs.silentPosting {
             return false
         }
         return true
@@ -1028,7 +893,6 @@ private final class ChatScheduleTimeScreenComponent: Component {
                         currentRepeatPeriod: component.currentRepeatPeriod,
                         suggestedTime: component.suggestedTime,
                         minimalTime: component.minimalTime,
-                        silentPosting: component.silentPosting,
                         externalState: self.contentExternalState,
                         dismiss: { [weak self] in
                             guard let self else {
@@ -1094,7 +958,7 @@ private final class ChatScheduleTimeScreenComponent: Component {
 
 public class ChatScheduleTimeScreen: ViewControllerComponentContainer {
     public enum Mode: Equatable {
-        case scheduledMessages(peerId: EnginePeer.Id, sendWhenOnlineAvailable: Bool)
+        case scheduledMessages(sendWhenOnlineAvailable: Bool)
         case reminders
         case format
         case poll
@@ -1104,13 +968,6 @@ public class ChatScheduleTimeScreen: ViewControllerComponentContainer {
     public struct Result {
         public let time: Int32
         public let repeatPeriod: Int32?
-        public let silentPosting: Bool
-        
-        public init(time: Int32, repeatPeriod: Int32?, silentPosting: Bool = false) {
-            self.time = time
-            self.repeatPeriod = repeatPeriod
-            self.silentPosting = silentPosting
-        }
     }
     
     fileprivate let completion: (Result) -> Void
@@ -1122,7 +979,6 @@ public class ChatScheduleTimeScreen: ViewControllerComponentContainer {
         currentRepeatPeriod: Int32? = nil,
         suggestedTime: Int32? = nil,
         minimalTime: Int32? = nil,
-        silentPosting: Bool = false,
         isDark: Bool,
         completion: @escaping (Result) -> Void
     ) {
@@ -1134,8 +990,7 @@ public class ChatScheduleTimeScreen: ViewControllerComponentContainer {
             currentTime: currentTime,
             currentRepeatPeriod: currentRepeatPeriod,
             suggestedTime: suggestedTime,
-            minimalTime: minimalTime,
-            silentPosting: silentPosting
+            minimalTime: minimalTime
         ), navigationBarAppearance: .none, theme: isDark ? .dark : .default)
         
         self.statusBar.statusBarStyle = .Ignore

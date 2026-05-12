@@ -1,7 +1,9 @@
 import Foundation
 import UIKit
+import Postbox
 import SwiftSignalKit
 import AsyncDisplayKit
+import Postbox
 import TelegramCore
 import Display
 import TelegramUIPreferences
@@ -16,7 +18,6 @@ import TextFormat
 import WallpaperBackgroundNode
 import AnimationCache
 import MultiAnimationRenderer
-import Postbox
 
 public struct ChatInterfaceHighlightedState: Equatable {
     public struct Quote: Equatable {
@@ -307,7 +308,6 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
     public let openStarsPurchase: (Int64?) -> Void
     public let openRankInfo: (EnginePeer, ChatRankInfoScreenRole, String) -> Void
     public let openSetPeerAvatar: () -> Void
-    public let displayPollRestrictedToast: (EngineMessage.Id) -> Void
     
     public var canPlayMedia: Bool = false
     public var hiddenMedia: [MessageId: [Media]] = [:]
@@ -488,7 +488,6 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         openStarsPurchase: @escaping (Int64?) -> Void,
         openRankInfo: @escaping (EnginePeer, ChatRankInfoScreenRole, String) -> Void,
         openSetPeerAvatar: @escaping () -> Void,
-        displayPollRestrictedToast: @escaping (EngineMessage.Id) -> Void,
         automaticMediaDownloadSettings: MediaAutoDownloadSettings,
         pollActionState: ChatInterfacePollActionState,
         stickerSettings: ChatInterfaceStickerSettings,
@@ -622,7 +621,6 @@ public final class ChatControllerInteraction: ChatControllerInteractionProtocol 
         self.openStarsPurchase = openStarsPurchase
         self.openRankInfo = openRankInfo
         self.openSetPeerAvatar = openSetPeerAvatar
-        self.displayPollRestrictedToast = displayPollRestrictedToast
         
         self.automaticMediaDownloadSettings = automaticMediaDownloadSettings
         

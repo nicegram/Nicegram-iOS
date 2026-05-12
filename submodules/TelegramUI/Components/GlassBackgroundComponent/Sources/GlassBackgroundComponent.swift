@@ -541,7 +541,18 @@ public class GlassBackgroundView: UIView {
             }
             
             if let shadowView = self.shadowView {
-                shadowView.image = Self.generateLegacyShadowImage(cornerRadius: outerCornerRadius, shadowInset: shadowInset)
+                let shadowInnerInset: CGFloat = 0.5
+                shadowView.image = generateImage(CGSize(width: shadowInset * 2.0 + outerCornerRadius * 2.0, height: shadowInset * 2.0 + outerCornerRadius * 2.0), rotatedContext: { size, context in
+                    context.clear(CGRect(origin: CGPoint(), size: size))
+                    
+                    context.setFillColor(UIColor.black.cgColor)
+                    context.setShadow(offset: CGSize(width: 0.0, height: 1.0), blur: 40.0, color: UIColor(white: 0.0, alpha: 0.04).cgColor)
+                    context.fillEllipse(in: CGRect(origin: CGPoint(x: shadowInset + shadowInnerInset, y: shadowInset + shadowInnerInset), size: CGSize(width: size.width - shadowInset * 2.0 - shadowInnerInset * 2.0, height: size.height - shadowInset * 2.0 - shadowInnerInset * 2.0)))
+                    
+                    context.setFillColor(UIColor.clear.cgColor)
+                    context.setBlendMode(.copy)
+                    context.fillEllipse(in: CGRect(origin: CGPoint(x: shadowInset + shadowInnerInset, y: shadowInset + shadowInnerInset), size: CGSize(width: size.width - shadowInset * 2.0 - shadowInnerInset * 2.0, height: size.height - shadowInset * 2.0 - shadowInnerInset * 2.0)))
+                })?.stretchableImage(withLeftCapWidth: Int(shadowInset + outerCornerRadius), topCapHeight: Int(shadowInset + outerCornerRadius))
                 transition.setAlpha(view: shadowView, alpha: isVisible ? 1.0 : 0.0)
             }
             
@@ -856,35 +867,6 @@ private extension CGContext {
 }
 
 public extension GlassBackgroundView {
-    static func generateLegacyShadowImage(cornerRadius: CGFloat, shadowInset: CGFloat = 32.0, shadowIntensity: CGFloat = 0.04, shadowBlur: CGFloat = 40.0) -> UIImage? {
-        let shadowInnerInset: CGFloat = 0.5
-        let diameter = max(1.0, cornerRadius * 2.0)
-        let size = CGSize(width: shadowInset * 2.0 + diameter, height: shadowInset * 2.0 + diameter)
-        
-        return generateImage(size, rotatedContext: { size, context in
-            context.clear(CGRect(origin: CGPoint(), size: size))
-            
-            let shadowRect = CGRect(
-                origin: CGPoint(x: shadowInset + shadowInnerInset, y: shadowInset + shadowInnerInset),
-                size: CGSize(
-                    width: size.width - shadowInset * 2.0 - shadowInnerInset * 2.0,
-                    height: size.height - shadowInset * 2.0 - shadowInnerInset * 2.0
-                )
-            )
-            
-            context.setFillColor(UIColor.black.cgColor)
-            context.setShadow(offset: CGSize(width: 0.0, height: 1.0), blur: shadowBlur, color: UIColor(white: 0.0, alpha: shadowIntensity).cgColor)
-            context.fillEllipse(in: shadowRect)
-            
-            context.setFillColor(UIColor.clear.cgColor)
-            context.setBlendMode(.copy)
-            context.fillEllipse(in: shadowRect)
-        })?.stretchableImage(
-            withLeftCapWidth: Int(shadowInset + cornerRadius),
-            topCapHeight: Int(shadowInset + cornerRadius)
-        )
-    }
-    
     static func generateLegacyGlassImage(size: CGSize, inset: CGFloat, borderWidthFactor: CGFloat = 1.0, isDark: Bool, fillColor: UIColor) -> UIImage {
         var size = size
         if size == .zero {
@@ -1165,22 +1147,19 @@ public final class GlassBackgroundComponent: Component {
     private let isDark: Bool
     private let tintColor: GlassBackgroundView.TintColor
     private let isInteractive: Bool
-    private let isVisible: Bool
     
     public init(
         size: CGSize,
         cornerRadius: CGFloat,
         isDark: Bool,
         tintColor: GlassBackgroundView.TintColor,
-        isInteractive: Bool = false,
-        isVisible: Bool = true
+        isInteractive: Bool = false
     ) {
         self.size = size
         self.cornerRadius = cornerRadius
         self.isDark = isDark
         self.tintColor = tintColor
         self.isInteractive = isInteractive
-        self.isVisible = isVisible
     }
     
     public static func == (lhs: GlassBackgroundComponent, rhs: GlassBackgroundComponent) -> Bool {
@@ -1199,15 +1178,12 @@ public final class GlassBackgroundComponent: Component {
         if lhs.isInteractive != rhs.isInteractive {
             return false
         }
-        if lhs.isVisible != rhs.isVisible {
-            return false
-        }
         return true
     }
     
     public final class View: GlassBackgroundView {
         func update(component: GlassBackgroundComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
-            self.update(size: component.size, cornerRadius: component.cornerRadius, isDark: component.isDark, tintColor: component.tintColor, isInteractive: component.isInteractive, isVisible: component.isVisible, transition: transition)
+            self.update(size: component.size, cornerRadius: component.cornerRadius, isDark: component.isDark, tintColor: component.tintColor, isInteractive: component.isInteractive, transition: transition)
             
             return component.size
         }

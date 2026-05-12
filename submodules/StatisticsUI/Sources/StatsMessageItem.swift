@@ -19,7 +19,7 @@ public class StatsMessageItem: ListViewItem, ItemListItem {
     let context: AccountContext
     let presentationData: ItemListPresentationData
     let systemStyle: ItemListSystemStyle
-    let peer: EnginePeer
+    let peer: Peer
     let item: StatsPostItem
     let views: Int32
     let reactions: Int32
@@ -31,7 +31,7 @@ public class StatsMessageItem: ListViewItem, ItemListItem {
     let openStory: (UIView) -> Void
     let contextAction: ((ASDisplayNode, ContextGesture?) -> Void)?
     
-    init(context: AccountContext, presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .glass, peer: EnginePeer, item: StatsPostItem, views: Int32, reactions: Int32, forwards: Int32, isPeer: Bool = false, sectionId: ItemListSectionId, style: ItemListStyle, action: (() -> Void)?, openStory: @escaping (UIView) -> Void, contextAction: ((ASDisplayNode, ContextGesture?) -> Void)?) {
+    init(context: AccountContext, presentationData: ItemListPresentationData, systemStyle: ItemListSystemStyle = .glass, peer: Peer, item: StatsPostItem, views: Int32, reactions: Int32, forwards: Int32, isPeer: Bool = false, sectionId: ItemListSectionId, style: ItemListStyle, action: (() -> Void)?, openStory: @escaping (UIView) -> Void, contextAction: ((ASDisplayNode, ContextGesture?) -> Void)?) {
         self.context = context
         self.presentationData = presentationData
         self.systemStyle = systemStyle
@@ -351,7 +351,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
             }
             
             if item.isPeer {
-                text = item.peer.displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
+                text = EnginePeer(item.peer).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
             } else {
                 text = foldLineBreaks(text)
             }
@@ -476,7 +476,7 @@ final class StatsMessageItemNode: ListViewItemNode, ItemListItemNode {
                             strongSelf.offsetContainerNode.addSubnode(avatarNode)
                             strongSelf.avatarNode = avatarNode
                         }
-                        avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: item.peer)
+                        avatarNode.setPeer(context: item.context, theme: item.presentationData.theme, peer: EnginePeer(item.peer))
                         
                         if case .story = item.item {
                             contentImageInset += 3.0

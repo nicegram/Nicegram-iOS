@@ -84,7 +84,7 @@ class ChatExternalFileGalleryItemNode: GalleryItemNode {
     
     private var fetchDisposable = MetaDisposable()
     private let statusDisposable = MetaDisposable()
-    private var status: EngineMediaResource.FetchStatus?
+    private var status: MediaResourceStatus?
     
     init(context: AccountContext, presentationData: PresentationData) {
         self.containerNode = ASDisplayNode()
@@ -183,7 +183,7 @@ class ChatExternalFileGalleryItemNode: GalleryItemNode {
     }
     
     private func setupStatus(context: AccountContext, resource: MediaResource) {
-        self.statusDisposable.set((context.engine.resources.status(resource: EngineMediaResource(resource))
+        self.statusDisposable.set((context.account.postbox.mediaBox.resourceStatus(resource)
         |> deliverOnMainQueue).start(next: { [weak self] status in
             if let strongSelf = self {
                 let previousStatus = strongSelf.status
@@ -320,9 +320,9 @@ class ChatExternalFileGalleryItemNode: GalleryItemNode {
         if let (context, fileReference) = self.contextAndFile, let status = self.status {
             switch status {
                 case .Fetching:
-                    context.engine.resources.cancelInteractiveResourceFetch(id: EngineMediaResource.Id(fileReference.media.resource.id))
+                    context.account.postbox.mediaBox.cancelInteractiveResourceFetch(fileReference.media.resource)
                 case .Remote:
-                    self.fetchDisposable.set(context.engine.resources.fetch(reference: fileReference.resourceReference(fileReference.media.resource), userLocation: (self.message?.id.peerId).flatMap(MediaResourceUserLocation.peer) ?? .other, userContentType: .file).start())
+                    self.fetchDisposable.set(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: (self.message?.id.peerId).flatMap(MediaResourceUserLocation.peer) ?? .other, userContentType: .file, reference: fileReference.resourceReference(fileReference.media.resource)).start())
             default:
                 break
             }

@@ -632,7 +632,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: Api.Reaction?
@@ -642,7 +642,7 @@ public extension Api {
             var _4: Int32?
             _4 = reader.readInt32()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
@@ -747,19 +747,19 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.ReactionNotificationsFrom?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.ReactionNotificationsFrom
                 }
             }
             var _3: Api.ReactionNotificationsFrom?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.ReactionNotificationsFrom
                 }
             }
             var _4: Api.ReactionNotificationsFrom?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.ReactionNotificationsFrom
                 }
@@ -773,9 +773,9 @@ public extension Api {
                 _6 = Api.parse(reader, signature: signature) as? Api.Bool
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
+            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 2) == 0) || _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {

@@ -304,43 +304,43 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.SecureValueType
             }
             var _3: Api.SecureData?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.SecureData
                 }
             }
             var _4: Api.SecureFile?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.SecureFile
                 }
             }
             var _5: Api.SecureFile?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.SecureFile
                 }
             }
             var _6: Api.SecureFile?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.SecureFile
                 }
             }
             var _7: [Api.SecureFile]?
-            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
+            if Int(_1!) & Int(1 << 6) != 0 {
                 if let _ = reader.readInt32() {
                     _7 = Api.parseVector(reader, elementSignature: 0, elementType: Api.SecureFile.self)
                 }
             }
             var _8: [Api.SecureFile]?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_1!) & Int(1 << 4) != 0 {
                 if let _ = reader.readInt32() {
                     _8 = Api.parseVector(reader, elementSignature: 0, elementType: Api.SecureFile.self)
                 }
             }
             var _9: Api.SecurePlainData?
-            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
+            if Int(_1!) & Int(1 << 5) != 0 {
                 if let signature = reader.readInt32() {
                     _9 = Api.parse(reader, signature: signature) as? Api.SecurePlainData
                 }
@@ -349,13 +349,13 @@ public extension Api {
             _10 = parseBytes(reader)
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _9 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 2) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 3) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 6) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 4) == 0) || _8 != nil
+            let _c9 = (Int(_1!) & Int(1 << 5) == 0) || _9 != nil
             let _c10 = _10 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 {
                 return Api.SecureValue.secureValue(Cons_secureValue(flags: _1!, type: _2!, data: _3, frontSide: _4, reverseSide: _5, selfie: _6, translation: _7, files: _8, plainData: _9, hash: _10!))

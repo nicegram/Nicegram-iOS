@@ -2806,15 +2806,6 @@ func extractEmojiFileIds(message: StoreMessage, fileIds: inout Set<Int64>) {
             }
         }
     }
-    for media in message.media {
-        if let media = media as? TelegramMediaWebpage, case let .Loaded(content) = media.content {
-            for attribute in content.attributes {
-                if case let .aiTextStyle(aiTextStyle) = attribute {
-                    fileIds.insert(aiTextStyle.emojiFileId)
-                }
-            }
-        }
-    }
 }
 
 private func messagesFromOperations(state: AccountMutableState) -> [StoreMessage] {
@@ -3318,7 +3309,7 @@ func resetChannels(accountPeerId: PeerId, postbox: Postbox, network: Network, pe
                         
                         resetForumTopics.insert(peerId)
                     }
-
+                    
                     for message in messages {
                         var peerIsForum = false
                         if let peerId = message.peerId {
@@ -3952,7 +3943,6 @@ func replayFinalState(
     var updatedStarGiftAuctionState: [Int64: GiftAuctionContext.State.AuctionState] = [:]
     var updatedStarGiftAuctionMyState: [Int64: GiftAuctionContext.State.MyState] = [:]
     var updatedEmojiGameInfo: EmojiGameInfo?
-    var recentlyUsedGuestChatBots = Set<PeerId>()
     
     var holesFromPreviousStateMessageIds: [MessageId] = []
     var clearHolesFromPreviousStateForChannelMessagesWithPts: [PeerIdAndMessageNamespace: Int32] = [:]
@@ -4021,7 +4011,7 @@ func replayFinalState(
         case cancel
     }
     
-    var liveTypingDraftUpdates: [PeerAndThreadId: [LiveTypingDraftUpdate]] = [:]
+    var liveTypingDraftUpdates: [PeerAndThreadId: LiveTypingDraftUpdate] = [:]
 
     for operation in finalState.state.operations {
         switch operation {
@@ -4236,11 +4226,11 @@ func replayFinalState(
                         let allKey = PeerAndThreadId(peerId: chatPeerId, threadId: nil)
                         
                         if liveTypingDraftUpdates[key] != nil {
-                            liveTypingDraftUpdates[key] = [.cancel]
-                            liveTypingDraftUpdates[allKey] = [.cancel]
+                            liveTypingDraftUpdates[key] = .cancel
+                            liveTypingDraftUpdates[allKey] = .cancel
                         } else if let currentDraft = transaction.getCurrentTypingDraft(location: key) {
-                            liveTypingDraftUpdates[key] = [.cancel]
-                            liveTypingDraftUpdates[allKey] = [.cancel]
+                            liveTypingDraftUpdates[key] = .cancel
+                            liveTypingDraftUpdates[allKey] = .cancel
                             messages[i] = messages[i].withUpdatedCustomStableId(currentDraft.stableId)
                         }
                     }
@@ -4351,15 +4341,6 @@ func replayFinalState(
                                     }
                                 }
                             }
-                            
-                            if message.flags.contains(.Incoming), let authorId = message.authorId {
-                                for attribute in message.attributes {
-                                    if let attribute = attribute as? GuestChatMessageAttribute, attribute.peerId == accountPeerId {
-                                        recentlyUsedGuestChatBots.insert(authorId)
-                                        break
-                                    }
-                                }
-                            }
                         }
                         if !message.flags.contains(.Incoming) && !message.flags.contains(.Unsent) {
                             if message.id.peerId.namespace == Namespaces.Peer.CloudChannel {
@@ -4369,7 +4350,7 @@ func replayFinalState(
                         
                         if !message.flags.contains(.Incoming), message.forwardInfo == nil {
                             if [Namespaces.Peer.CloudGroup, Namespaces.Peer.CloudChannel].contains(message.id.peerId.namespace), let peer = transaction.getPeer(message.id.peerId), peer.isCopyProtectionEnabled {
- 
+                                
                             } else if message.id.peerId.namespace == Namespaces.Peer.CloudUser, let cachedUserData = transaction.getPeerCachedData(peerId: message.id.peerId) as? CachedUserData, cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled) {
                                 
                             } else {
@@ -4534,7 +4515,7 @@ func replayFinalState(
                     if let apiPoll = apiPoll {
                         switch apiPoll {
                         case let .poll(pollData):
-                            let (id, flags, question, answers, closePeriod, closeDate, pollHash, countries) = (pollData.id, pollData.flags, pollData.question, pollData.answers, pollData.closePeriod, pollData.closeDate, pollData.hash, pollData.countriesIso2)
+                            let (id, flags, question, answers, closePeriod, closeDate, pollHash) = (pollData.id, pollData.flags, pollData.question, pollData.answers, pollData.closePeriod, pollData.closeDate, pollData.hash)
                             let publicity: TelegramMediaPollPublicity
                             if (flags & (1 << 1)) != 0 {
                                 publicity = .public
@@ -4552,7 +4533,6 @@ func replayFinalState(
                             let shuffleAnswers = (flags & (1 << 8)) != 0
                             let hideResultsUntilClose = (flags & (1 << 9)) != 0
                             let isCreator = (flags & (1 << 10)) != 0
-                            let restrictToSubscribers = (flags & (1 << 11)) != 0
 
                             let questionText: String
                             let questionEntities: [MessageTextEntity]
@@ -4563,7 +4543,7 @@ func replayFinalState(
                                 questionEntities = messageTextEntitiesFromApiEntities(entities)
                             }
 
-                            updatedPoll = TelegramMediaPoll(pollId: MediaId(namespace: Namespaces.Media.CloudPoll, id: id), publicity: publicity, kind: kind, text: questionText, textEntities: questionEntities, options: answers.map(TelegramMediaPollOption.init(apiOption:)), correctAnswers: nil, results: poll.results, isClosed: (flags & (1 << 0)) != 0, deadlineTimeout: closePeriod, deadlineDate: closeDate, pollHash: pollHash, openAnswers: openAnswers, revotingDisabled: revotingDisabled, shuffleAnswers: shuffleAnswers, hideResultsUntilClose: hideResultsUntilClose, isCreator: isCreator, attachedMedia: poll.attachedMedia, restrictToSubscribers: restrictToSubscribers, countries: countries ?? [])
+                            updatedPoll = TelegramMediaPoll(pollId: MediaId(namespace: Namespaces.Media.CloudPoll, id: id), publicity: publicity, kind: kind, text: questionText, textEntities: questionEntities, options: answers.map(TelegramMediaPollOption.init(apiOption:)), correctAnswers: nil, results: poll.results, isClosed: (flags & (1 << 0)) != 0, deadlineTimeout: closePeriod, deadlineDate: closeDate, pollHash: pollHash, openAnswers: openAnswers, revotingDisabled: revotingDisabled, shuffleAnswers: shuffleAnswers, hideResultsUntilClose: hideResultsUntilClose, isCreator: isCreator, attachedMedia: poll.attachedMedia)
                         }
                     }
                     updatedPoll = updatedPoll.withUpdatedResults(TelegramMediaPollResults(apiResults: results), min: resultsMin)
@@ -4950,30 +4930,23 @@ func replayFinalState(
                     updatedSecretChatTypingActivities.insert(chatPeerId.peerId)
                 }
             case let .AddPeerLiveTypingDraftUpdate(peerAndThreadId, id, timestamp, authorId, text, entities):
-                if liveTypingDraftUpdates[peerAndThreadId] == nil {
-                    liveTypingDraftUpdates[peerAndThreadId] = []
-                }
-                liveTypingDraftUpdates[peerAndThreadId]?.append(.update(LiveTypingDraftUpdate.Update(
+                liveTypingDraftUpdates[peerAndThreadId] = .update(LiveTypingDraftUpdate.Update(
                     id: id,
                     threadId: peerAndThreadId.threadId,
                     authorId: authorId,
                     timestamp: timestamp,
                     text: text,
                     entities: entities
-                )))
+                ))
                 if peerAndThreadId.threadId != nil {
-                    let allKey = PeerAndThreadId(peerId: peerAndThreadId.peerId, threadId: nil)
-                    if liveTypingDraftUpdates[allKey] == nil {
-                        liveTypingDraftUpdates[allKey] = []
-                    }
-                    liveTypingDraftUpdates[allKey]?.append(.update(LiveTypingDraftUpdate.Update(
+                    liveTypingDraftUpdates[PeerAndThreadId(peerId: peerAndThreadId.peerId, threadId: nil)] = .update(LiveTypingDraftUpdate.Update(
                         id: id,
                         threadId: peerAndThreadId.threadId,
                         authorId: authorId,
                         timestamp: timestamp,
                         text: text,
                         entities: entities
-                    )))
+                    ))
                 }
             case let .UpdatePinnedItemIds(groupId, pinnedOperation):
                 switch pinnedOperation {
@@ -5886,10 +5859,6 @@ func replayFinalState(
         }
     }
     
-    for peerId in recentlyUsedGuestChatBots {
-        _internal_addRecentlyUsedInlineBot(transaction: transaction, peerId: peerId)
-    }
-    
     if syncAttachMenuBots {
 //        addSynchronizeAttachMenuBotsOperation(transaction: transaction)
     }
@@ -5912,7 +5881,6 @@ func replayFinalState(
     
     var addedSecretMessageIds: [MessageId] = []
     var addedSecretMessageAuthorIds: [PeerId: PeerId] = [:]
-    let keepArchivedUnmuted = fetchGlobalPrivacySettings(transaction: transaction).keepArchivedUnmuted
     
     for peerId in peerIdsWithAddedSecretMessages {
         inner: while true {
@@ -5921,7 +5889,7 @@ func replayFinalState(
                 let processResult = processSecretChatIncomingDecryptedOperations(encryptionProvider: encryptionProvider, mediaBox: mediaBox, transaction: transaction, peerId: peerId)
                 if !processResult.addedMessages.isEmpty {
                     let currentInclusion = transaction.getPeerChatListInclusion(peerId)
-                    if let groupId = currentInclusion.groupId, groupId == Namespaces.PeerGroup.archive, !keepArchivedUnmuted {
+                    if let groupId = currentInclusion.groupId, groupId == Namespaces.PeerGroup.archive {
                         if let peer = transaction.getPeer(peerId) as? TelegramSecretChat {
                             let isRemovedFromTotalUnreadCount = resolvedIsRemovedFromTotalUnreadCount(globalSettings: transaction.getGlobalNotificationSettings(), peer: peer, peerSettings: transaction.getPeerNotificationSettings(id: peer.regularPeerId))
                             
@@ -6081,36 +6049,17 @@ func replayFinalState(
     
     if !liveTypingDraftUpdates.isEmpty {
         transaction.combineTypingDrafts(locations: Set(liveTypingDraftUpdates.keys), update: { key, current in
-            guard let update = liveTypingDraftUpdates[key]?.max(by: { lhs, rhs in
-                switch lhs {
-                case .cancel:
-                    return false
-                case let .update(lhsUpdate):
-                    switch rhs {
-                    case .cancel:
-                        return true
-                    case let .update(rhsUpdate):
-                        return lhsUpdate.timestamp < rhsUpdate.timestamp
-                    }
-                }
-            }) else {
+            guard let update = liveTypingDraftUpdates[key] else {
                 return current
             }
             switch update {
             case let .update(update):
-                if let current, current.id > update.id {
-                    return current
-                }
-                var timestamp = update.timestamp
-                if let current, current.id == update.id {
-                    timestamp = current.timestamp
-                }
                 return (
                     update.id,
                     Namespaces.Message.Cloud,
                     update.threadId,
                     update.authorId,
-                    timestamp,
+                    update.timestamp,
                     update.text,
                     [
                         TypingDraftMessageAttribute(),

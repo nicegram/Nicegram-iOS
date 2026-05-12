@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import ComponentFlow
+import Postbox
 import TelegramCore
 import AccountContext
 import PlainButtonComponent

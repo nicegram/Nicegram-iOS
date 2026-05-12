@@ -104,7 +104,6 @@ private final class GiftSetupScreenComponent: Component {
         private let backgroundHandleView: UIImageView
         
         private let closeButton = ComponentView<Empty>()
-        private var doneButton: ComponentView<Empty>?
         
         private let remainingCount = ComponentView<Empty>()
         private let auctionFooter = ComponentView<Empty>()
@@ -767,6 +766,7 @@ private final class GiftSetupScreenComponent: Component {
                     mode: .standard(.default),
                     chatLocation: .peer(id: component.context.account.peerId),
                     subject: nil,
+                    peerNearbyData: nil,
                     greetingData: nil,
                     pendingUnpinnedAllMessages: false,
                     activeGroupCallInfo: nil,
@@ -777,6 +777,8 @@ private final class GiftSetupScreenComponent: Component {
                     accountPeerColor: nil,
                     businessIntro: nil
                 )
+                
+                self.inputMediaNodeBackground.backgroundColor = presentationData.theme.rootController.navigationBar.opaqueBackgroundColor.cgColor
                 
                 let heightAndOverflow = inputMediaNode.updateLayout(width: availableSize.width, leftInset: 0.0, rightInset: 0.0, bottomInset: bottomInset, standardInputHeight: deviceMetrics.standardInputHeight(inLandscape: false), inputHeight: inputHeight < 100.0 ? inputHeight - bottomContainerInset : inputHeight, maximumHeight: availableSize.height, inputPanelHeight: 0.0, transition: .immediate, interfaceState: presentationInterfaceState, layoutMetrics: metrics, deviceMetrics: deviceMetrics, isVisible: true, isExpanded: false)
                 let inputNodeHeight = heightAndOverflow.0
@@ -1148,65 +1150,6 @@ private final class GiftSetupScreenComponent: Component {
                 transition.setFrame(view: closeButtonView, frame: closeButtonFrame)
             }
             
-            if environment.inputHeight > 0.0  {
-                var doneButtonTransition = transition
-                let doneButton: ComponentView<Empty>
-                if let current = self.doneButton {
-                    doneButton = current
-                } else {
-                    doneButton = ComponentView()
-                    self.doneButton = doneButton
-                    doneButtonTransition = .immediate
-                }
-                
-                let doneButtonSize = doneButton.update(
-                    transition: .immediate,
-                    component: AnyComponent(GlassBarButtonComponent(
-                        size: CGSize(width: 44.0, height: 44.0),
-                        backgroundColor: environment.theme.list.itemCheckColors.fillColor,
-                        isDark: environment.theme.overallDarkAppearance,
-                        state: .tintedGlass,
-                        component: AnyComponentWithIdentity(id: "done", component: AnyComponent(
-                            BundleIconComponent(
-                                name: "Navigation/Done",
-                                tintColor: environment.theme.list.itemCheckColors.foregroundColor
-                            )
-                        )),
-                        action: { [weak self] _ in
-                            self?.proceed()
-                        }
-                    )),
-                    environment: {},
-                    containerSize: CGSize(width: 44.0, height: 44.0)
-                )
-                let doneButtonFrame = CGRect(origin: CGPoint(x: availableSize.width - rawSideInset - 16.0 - doneButtonSize.width, y: 16.0), size: doneButtonSize)
-                if let doneButtonView = doneButton.view {
-                    if doneButtonView.superview == nil {
-                        doneButtonView.layer.rasterizationScale = UIScreenScale
-                        self.navigationBarContainer.addSubview(doneButtonView)
-                        
-                        if !transition.animation.isImmediate {
-                            doneButtonView.layer.shouldRasterize = true
-                            transition.animateScale(view: doneButtonView, from: 0.01, to: 1.0, completion: { _ in
-                                doneButtonView.layer.shouldRasterize = false
-                            })
-                            transition.animateAlpha(view: doneButtonView, from: 0.0, to: 1.0)
-                        }
-                    }
-                    doneButtonTransition.setPosition(view: doneButtonView, position: doneButtonFrame.center)
-                    doneButtonTransition.setBounds(view: doneButtonView, bounds: CGRect(origin: .zero, size: doneButtonFrame.size))
-                }
-            } else if let doneButton = self.doneButton {
-                self.doneButton = nil
-                if let doneButtonView = doneButton.view {
-                    doneButtonView.layer.shouldRasterize = true
-                    doneButtonView.layer.animateScale(from: 1.0, to: 0.01, duration: 0.25, removeOnCompletion: false)
-                    doneButtonView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
-                        doneButtonView.removeFromSuperview()
-                    })
-                }
-            }
-            
             let containerInset: CGFloat = environment.statusBarHeight + 10.0
             
             var initialContentHeight = contentHeight
@@ -1466,15 +1409,14 @@ private final class GiftSetupScreenComponent: Component {
                                             )
                                         )),
                                     ], alignment: .left, spacing: 2.0)),
-                                    icon: ListActionItemComponent.Icon(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
+                                    accessory: .custom(ListActionItemComponent.CustomAccessory(component: AnyComponentWithIdentity(id: 0, component: AnyComponent(MultilineTextComponent(
                                         text: .plain(NSAttributedString(
                                             string: presentationStringsFormattedNumber(Int32(availability.resale), environment.dateTimeFormat.groupingSeparator),
                                             font: Font.regular(presentationData.listsFontSize.baseDisplaySize),
                                             textColor: theme.list.itemSecondaryTextColor
                                         )),
-                                        maximumNumberOfLines: 1
-                                    )))),
-                                    accessory: .arrow,
+                                        maximumNumberOfLines: 0
+                                    ))), insets: UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 16.0))),
                                     action: { [weak self] _ in
                                         guard let self, let component = self.component, let controller = environment.controller() else {
                                             return

@@ -8,6 +8,7 @@ import AccountContext
 import TelegramCore
 import GlobalControlPanelsContext
 import SwiftSignalKit
+import Postbox
 import PresentationDataUtils
 
 public final class GroupCallHeaderPanelComponent: Component {

@@ -7,13 +7,14 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/Display",
         "//submodules/TelegramCore",
+        "//submodules/Postbox",
         "//submodules/TelegramPresentationData",
         "//submodules/AccountContext",
         "//submodules/UndoUI",

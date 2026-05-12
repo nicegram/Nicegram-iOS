@@ -360,11 +360,6 @@ public final class AccountStateManager {
             return self.starRefBotConnectionEventsPipe.signal()
         }
         
-        fileprivate let installedStickerPacksArchivedEventsPipe = ValuePipe<Int>()
-        var installedStickerPacksArchivedEvents: Signal<Int, NoError> {
-            return self.installedStickerPacksArchivedEventsPipe.signal()
-        }
-        
         private var updatedWebpageContexts: [MediaId: UpdatedWebpageSubscriberContext] = [:]
         private var updatedPeersNearbyContext = UpdatedPeersNearbySubscriberContext()
         private var updatedStarsBalanceContext = UpdatedStarsBalanceSubscriberContext()
@@ -2038,18 +2033,6 @@ public final class AccountStateManager {
     func injectStoryUpdates(updates: [InternalStoryUpdate]) {
         self.impl.with { impl in
             impl.storyUpdatesPipe.putNext(updates)
-        }
-    }
-    
-    public var installedStickerPacksArchivedEvents: Signal<Int, NoError> {
-        return self.impl.signalWith { impl, subscriber in
-            return impl.installedStickerPacksArchivedEvents.start(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
-        }
-    }
-    
-    func installedStickerPacksArchived(count: Int) {
-        self.impl.with { impl in
-            impl.installedStickerPacksArchivedEventsPipe.putNext(count)
         }
     }
     

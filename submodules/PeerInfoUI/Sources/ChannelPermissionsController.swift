@@ -477,10 +477,10 @@ private enum ChannelPermissionsEntry: ItemListNodeEntry {
                     default:
                         break
                 }
-                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: participant.peer, presence: nil, text: text, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: canOpen ? {
+                return ItemListPeerItem(presentationData: presentationData, systemStyle: .glass, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(participant.peer), presence: nil, text: text, label: .none, editing: editing, switchValue: nil, enabled: enabled, selectable: true, sectionId: self.section, action: canOpen ? {
                     arguments.openPeer(participant.participant)
                 } : {
-                    arguments.openPeerInfo(participant.peer)
+                    arguments.openPeerInfo(EnginePeer(participant.peer))
                 }, setPeerIdWithRevealedOptions: { previousId, id in
                     arguments.setPeerIdWithRevealedOptions(previousId, id)
                 }, removePeer: { peerId in
@@ -534,8 +534,6 @@ func stringForGroupPermission(strings: PresentationStrings, right: TelegramChatB
         return strings.Channel_BanUser_PermissionSendVoiceMessage
     } else if right.contains(.banSendInstantVideos) {
         return strings.Channel_BanUser_PermissionSendVideoMessage
-    } else if right.contains(.banSendReactions) {
-        return strings.Channel_BanUser_PermissionSendReactions
     } else if right.contains(.banEditRank) {
         if defaultPermissions {
             return strings.Channel_BanUser_PermissionEditOwnRank
@@ -570,8 +568,6 @@ func compactStringForGroupPermission(strings: PresentationStrings, right: Telegr
         return strings.GroupPermission_NoSendLinks
     } else if right.contains(.banSendPolls) {
         return strings.GroupPermission_NoSendPolls
-    } else if right.contains(.banSendReactions) {
-        return strings.GroupPermission_NoSendReactions
     } else if right.contains(.banChangeInfo) {
         return strings.GroupPermission_NoChangeInfo
     } else if right.contains(.banAddMembers) {
@@ -599,7 +595,6 @@ private let internal_allPossibleGroupPermissionList: [(TelegramChatBannedRightsF
     (.banSendInstantVideos, .banMembers),
     (.banEmbedLinks, .banMembers),
     (.banSendPolls, .banMembers),
-    (.banSendReactions, .banMembers),
     (.banAddMembers, .banMembers),
     (.banPinMessages, .pinMessages),
     (.banManageTopics, .manageTopics),
@@ -652,7 +647,6 @@ public func banSendMediaSubList() -> [(TelegramChatBannedRightsFlags, TelegramCh
         (.banSendInstantVideos, .banMembers),
         (.banEmbedLinks, .banMembers),
         (.banSendPolls, .banMembers),
-        (.banSendReactions, .banMembers)
     ]
 }
 
@@ -1057,14 +1051,7 @@ public func channelPermissionsController(context: AccountContext, updatedPresent
                             }
                     }
                 }
-                let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
-                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                    if let peer {
-                        return .single(peer)
-                    } else {
-                        return .never()
-                    }
-                }
+                let _ = (context.account.postbox.loadedPeerWithId(peerId)
                 |> deliverOnMainQueue).start(next: { channel in
                     dismissController?()
                         presentControllerImpl?(channelBannedMemberController(context: context, peerId: peerId, memberId: peer.id, initialParticipant: participant?.participant, updated: { _ in
@@ -1108,7 +1095,7 @@ public func channelPermissionsController(context: AccountContext, updatedPresent
             }), ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
         })
     }, openPeerInfo: { peer in
-        if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+        if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
             pushControllerImpl?(controller)
         }
     }, openKicked: {

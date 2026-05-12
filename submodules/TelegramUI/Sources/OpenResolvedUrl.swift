@@ -20,6 +20,7 @@ import JoinLinkPreviewUI
 import LanguageLinkPreviewUI
 import SettingsUI
 import UrlHandling
+import ChatInterfaceState
 import TelegramCallsUI
 import UndoUI
 import ImportStickerPackUI
@@ -145,15 +146,6 @@ func openResolvedUrlImpl(
                     }
                 )
             }
-            let isStartGroup: Bool
-            switch peerType {
-            case .group?:
-                isStartGroup = true
-            default:
-                isStartGroup = false
-            }
-            let shouldForceStartGroupStartFlow = isStartGroup && !payload.isEmpty && adminRights == nil
-            let shouldCheckExistingGroupAdmin = isStartGroup && !payload.isEmpty && adminRights != nil
         
             var filter: ChatListNodePeersFilter = [.onlyGroupsAndChannels, .onlyManageable, .excludeDisabled, .excludeRecent, .doNotSearchMessages]
             var title: String = presentationData.strings.Bot_AddToChat_Title
@@ -232,34 +224,9 @@ func openResolvedUrlImpl(
                                 }
                             }),
                             TextAlertAction(type: .genericAction, title: strings.Common_Cancel, action: {})
-                        ],
-                        actionLayout: .vertical
+                        ]
                     )
                     present(alertController, nil)
-                }
-                let openAdminControllerImpl: (TelegramChatAdminRightsFlags?) -> Void = { initialAdminRights in
-                    let adminController = channelAdminController(context: context, peerId: peerId, adminId: botPeerId, initialParticipant: nil, invite: true, initialAdminRights: initialAdminRights, updated: { _ in
-                        if shouldCheckExistingGroupAdmin {
-                            Queue.mainQueue().after(0.1) {
-                                addMemberImpl()
-                            }
-                        } else {
-                            controller?.dismiss()
-                        }
-                    }, upgradedToSupergroup: { _, _ in }, transferedOwnership: { _ in })
-                    navigationController?.pushViewController(adminController)
-                }
-                let openAdminControllerWithResolvedRightsImpl: (Bool) -> Void = { isGroup in
-                    if adminRights == nil {
-                        let _ = (defaultAdminRights.get()
-                        |> take(1)
-                        |> deliverOnMainQueue).start(next: { defaultAdminRights in
-                            let initialAdminRights = isGroup ? defaultAdminRights?.group?.rights : defaultAdminRights?.channel?.rights
-                            openAdminControllerImpl(initialAdminRights)
-                        })
-                    } else {
-                        openAdminControllerImpl(adminRights?.chatAdminRights)
-                    }
                 }
                 
                 if case let .channel(peer) = peer {
@@ -267,73 +234,43 @@ func openResolvedUrlImpl(
                     if case .group = peer.info {
                         isGroup = true
                     }
-                    if shouldForceStartGroupStartFlow {
-                        addMemberImpl()
-                    } else if peer.flags.contains(.isCreator) || peer.adminRights?.rights.contains(.canAddAdmins) == true {
-                        if shouldCheckExistingGroupAdmin && isGroup {
-                            let _ = (context.engine.peers.fetchChannelParticipant(peerId: peerId, participantId: botPeerId)
-                            |> deliverOnMainQueue).start(next: { participant in
-                                let isBotAlreadyAdmin: Bool
-                                if let participant = participant {
-                                    switch participant {
-                                    case .creator:
-                                        isBotAlreadyAdmin = true
-                                    case let .member(_, _, adminInfo, _, _, _):
-                                        isBotAlreadyAdmin = adminInfo != nil
-                                    }
-                                } else {
-                                    isBotAlreadyAdmin = false
-                                }
-                                if isBotAlreadyAdmin {
-                                    addMemberImpl()
-                                } else {
-                                    openAdminControllerWithResolvedRightsImpl(isGroup)
-                                }
-                            })
-                        } else {
-                            openAdminControllerWithResolvedRightsImpl(isGroup)
-                        }
+                    if peer.flags.contains(.isCreator) || peer.adminRights?.rights.contains(.canAddAdmins) == true {
+                        let _ = (defaultAdminRights.get()
+                        |> take(1)
+                        |> deliverOnMainQueue).start(next: { defaultAdminRights in
+                            let initialAdminRights = adminRights?.chatAdminRights ?? (isGroup ? defaultAdminRights?.group?.rights : defaultAdminRights?.channel?.rights)
+                            let controller = channelAdminController(context: context, peerId: peerId, adminId: botPeerId, initialParticipant: nil, invite: true, initialAdminRights: initialAdminRights, updated: { _ in
+                                controller?.dismiss()
+                            }, upgradedToSupergroup: { _, _ in }, transferedOwnership: { _ in })
+                            navigationController?.pushViewController(controller)
+                        })
                     } else {
                         addMemberImpl()
                     }
                 } else if case let .legacyGroup(peer) = peer {
-                    if shouldForceStartGroupStartFlow {
+                    if case .member = peer.role {
                         addMemberImpl()
-                    } else if case .member = peer.role {
-                        addMemberImpl()
-                    } else if shouldCheckExistingGroupAdmin {
-                        let _ = (context.engine.peers.fetchAndUpdateCachedPeerData(peerId: peerId)
-                        |> mapToSignal { _ in
-                            context.engine.data.get(TelegramEngine.EngineData.Item.Peer.LegacyGroupParticipants(id: peerId))
-                        }
-                        |> deliverOnMainQueue).start(next: { participants in
-                            let isBotAlreadyAdmin: Bool
-                            if let participant = participants.knownValue?.first(where: { $0.peerId == botPeerId }) {
-                                switch participant {
-                                case .creator, .admin:
-                                    isBotAlreadyAdmin = true
-                                case .member:
-                                    isBotAlreadyAdmin = false
-                                }
-                            } else {
-                                isBotAlreadyAdmin = false
-                            }
-                            if isBotAlreadyAdmin {
-                                addMemberImpl()
-                            } else {
-                                openAdminControllerWithResolvedRightsImpl(true)
-                            }
-                        })
                     } else {
-                        openAdminControllerWithResolvedRightsImpl(true)
+                        let _ = (defaultAdminRights.get()
+                        |> take(1)
+                        |> deliverOnMainQueue).start(next: { defaultAdminRights in
+                            let initialAdminRights = adminRights?.chatAdminRights ?? defaultAdminRights?.group?.rights
+                            let controller = channelAdminController(context: context, peerId: peerId, adminId: botPeerId, initialParticipant: nil, invite: true, initialAdminRights: initialAdminRights, updated: { _ in
+                                controller?.dismiss()
+                            }, upgradedToSupergroup: { _, _ in }, transferedOwnership: { _ in })
+                            navigationController?.pushViewController(controller)
+                        })
                     }
                 }
             }
             dismissInput()
             navigationController?.pushViewController(controller)
         case let .gameStart(botPeerId, game):
-            let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled, .doNotSearchMessages], hasContactSelector: false, title: presentationData.strings.ShareMenu_SelectChats, selectForumThreads: true))
-            controller.peerSelected = { [weak controller] peer, threadId in
+            let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyManageable, .excludeDisabled, .excludeRecent, .doNotSearchMessages], hasContactSelector: false, title: presentationData.strings.Bot_AddToChat_Title, selectForumThreads: true))
+            controller.peerSelected = { [weak controller] peer, _ in
+                let _ = peer.id
+                let _ = botPeerId
+                let _ = game
                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
                 let text: String
                 if case .user = peer {
@@ -343,20 +280,6 @@ func openResolvedUrlImpl(
                 }
                 
                 let alertController = textAlertController(context: context, title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.RequestPeer_SelectionConfirmationSend, action: {
-                    controller?.inProgress = true
-                    let _ = (context.engine.messages.sendBotGame(botPeerId: botPeerId, game: game, to: peer.id, threadId: threadId)
-                    |> deliverOnMainQueue).startStandalone(error: { _ in
-                        controller?.inProgress = false
-                        let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: nil, text: presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), nil)
-                    })
-                    if let navigationController {
-                        if let threadId {
-                            let _ = context.sharedContext.navigateToForumThread(context: context, peerId: peer.id, threadId: threadId, messageId: nil, navigationController: navigationController, activateInput: nil, scrollToEndIfExists: true, keepStack: .always, animated: true).startStandalone()
-                        } else {
-                            context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: context, chatLocation: .peer(peer), keepStack: .always, useExisting: true, scrollToEndIfExists: true))
-                        }
-                    }
                     controller?.dismiss()
                 }), TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {
                 })])
@@ -656,16 +579,16 @@ func openResolvedUrlImpl(
                     }
                     let chatController: Signal<ChatController, NoError>
                     if let threadId {
-                        chatController = chatControllerForForumThreadImpl(context: context, peerId: peerId, threadId: threadId, initialTextInputState: textInputState)
+                        chatController = chatControllerForForumThreadImpl(context: context, peerId: peerId, threadId: threadId)
                     } else {
-                        chatController = .single(ChatControllerImpl(context: context, chatLocation: .peer(id: peerId), initialTextInputState: textInputState))
+                        chatController = .single(ChatControllerImpl(context: context, chatLocation: .peer(id: peerId)))
                     }
-
+                    
                     let _ = (chatController
                     |> deliverOnMainQueue).start(next: { [weak navigationController] chatController in
                         guard let navigationController else {
                             return
-                        }
+                        }  
                         var controllers = navigationController.viewControllers.filter { controller in
                             if controller is PeerSelectionController {
                                 return false
@@ -676,8 +599,17 @@ func openResolvedUrlImpl(
                         navigationController.setViewControllers(controllers, animated: true)
                     })
                 }
-
-                updateControllers()
+                
+                if let textInputState = textInputState {
+                    let _ = (ChatInterfaceState.update(engine: context.engine, peerId: peerId, threadId: threadId, { currentState in
+                        return currentState.withUpdatedComposeInputState(textInputState)
+                    })
+                    |> deliverOnMainQueue).startStandalone(completed: {
+                        updateControllers()
+                    })
+                } else {
+                    updateControllers()
+                }
             }
             
             if let to = to {
@@ -723,7 +655,7 @@ func openResolvedUrlImpl(
                     present(shareController, nil)
                     context.sharedContext.applicationBindings.dismissNativeController()
                 } else {
-                    let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled], hasFilters: true, selectForumThreads: true))
+                    let controller = context.sharedContext.makePeerSelectionController(PeerSelectionControllerParams(context: context, filter: [.onlyWriteable, .excludeDisabled], selectForumThreads: true))
                     controller.peerSelected = { peer, threadId in
                         continueWithPeer(peer.id, threadId)
                     }
@@ -772,18 +704,18 @@ func openResolvedUrlImpl(
                         subscriber.putNext((nil, settings, themeInfo))
                         subscriber.putCompletion()
                     } else if let resource = themeInfo.file?.resource {
-                        disposables.add(context.engine.resources.fetch(reference: .standalone(resource: resource), userLocation: .other, userContentType: .other).start())
+                        disposables.add(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: .standalone(resource: resource)).start())
                         
-                        let maybeFetched = context.sharedContext.accountManager.resources.data(resource: EngineMediaResource(resource))
+                        let maybeFetched = context.sharedContext.accountManager.mediaBox.resourceData(resource, option: .complete(waitUntilFetchStatus: false), attemptSynchronously: false)
                         |> mapToSignal { maybeData -> Signal<Data?, NoError> in
-                            if maybeData.isComplete {
+                            if maybeData.complete {
                                 let loadedData = try? Data(contentsOf: URL(fileURLWithPath: maybeData.path), options: [])
                                 return .single(loadedData)
                             } else {
-                                return context.engine.resources.data(resource: EngineMediaResource(resource))
+                                return context.account.postbox.mediaBox.resourceData(resource, option: .complete(waitUntilFetchStatus: false), attemptSynchronously: false)
                                 |> map { next -> Data? in
-                                    if next.availableSize > 0, let data = try? Data(contentsOf: URL(fileURLWithPath: next.path), options: []) {
-                                        context.sharedContext.accountManager.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data)
+                                    if next.size > 0, let data = try? Data(contentsOf: URL(fileURLWithPath: next.path), options: []) {
+                                        context.sharedContext.accountManager.mediaBox.storeResourceData(resource.id, data: data)
                                         return data
                                     } else {
                                         return nil
@@ -882,7 +814,7 @@ func openResolvedUrlImpl(
                         navigationController?.pushViewController(controller)
                     default:
                         let presentationData = context.sharedContext.currentPresentationData.with { $0 }
-                        present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.AccessDenied_Settings, action: {
+                        present(textAlertController(context: context, updatedPresentationData: updatedPresentationData, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
                             context.sharedContext.applicationBindings.openSettings()
                         })]), nil)
                     }
@@ -1834,7 +1766,7 @@ func openResolvedUrlImpl(
                 guard let controller = context.sharedContext.makePeerInfoController(
                     context: context,
                     updatedPresentationData: updatedPresentationData,
-                    peer: peer,
+                    peer: peer._asPeer(),
                     mode: .storyAlbum(id: id),
                     avatarInitiallyExpanded: false,
                     fromChat: false,
@@ -1855,7 +1787,7 @@ func openResolvedUrlImpl(
                 guard let controller = context.sharedContext.makePeerInfoController(
                     context: context,
                     updatedPresentationData: updatedPresentationData,
-                    peer: peer,
+                    peer: peer._asPeer(),
                     mode: .giftCollection(id: id),
                     avatarInitiallyExpanded: false,
                     fromChat: false,
@@ -2063,28 +1995,6 @@ func openResolvedUrlImpl(
                 ) else {
                     return
                 }
-                navigationController?.pushViewController(controller)
-            }
-        case let .textStyle(style, initialPreview):
-            Task { @MainActor in
-                var authorPeer: EnginePeer?
-                if let authorId = style.authorId {
-                    authorPeer = await context.engine.data.get(
-                        TelegramEngine.EngineData.Item.Peer.Peer(id: authorId)
-                    ).get()
-                }
-                let isAlreadyAdded = await context.engine.messages.composeAIMessageStyles().get().contains(where: { $0.id == .style(.custom(style.id)) })
-                
-                let controller = await context.sharedContext.makeTextProcessingScreen(context: context, theme: nil, mode: .preview(style: style, authorPeer: authorPeer, initialPreview: initialPreview, isAlreadyAdded: isAlreadyAdded, added: {
-                    Task { @MainActor in
-                        guard let emojiFileId = style.emojiFileId, let file = await context.engine.stickers.resolveInlineStickers(fileIds: [emojiFileId]).get().first?.value else {
-                            return
-                        }
-                        present(UndoOverlayController(presentationData: presentationData, content: .customEmoji(context: context, file: file, loop: false, title: presentationData.strings.TextProcessing_ToastStyleAdded_Title, text: presentationData.strings.TextProcessing_ToastStyleAdded_Text(style.title).string, undoText: nil, customAction: nil), elevatedLayout: false, animateInAsReplacement: false, action: { _ in
-                            return true
-                        }), nil)
-                    }
-                }), inputText: TextWithEntities(text: "", entities: []), copyResult: nil, translateChat: nil)
                 navigationController?.pushViewController(controller)
             }
     }

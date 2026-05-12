@@ -95,7 +95,7 @@ final class WallpaperUploadManagerImpl: WallpaperUploadManager {
                         switch result {
                             case let .complete(wallpaper):
                                 if case let .file(file) = wallpaper {
-                                    sharedContext.accountManager.resources.moveResourceData(from: EngineMediaResource.Id(currentResource.id), to: EngineMediaResource.Id(file.file.resource.id))
+                                    sharedContext.accountManager.mediaBox.moveResourceData(from: currentResource.id, to: file.file.resource.id)
                                     account.postbox.mediaBox.moveResourceData(from: currentResource.id, to: file.file.resource.id)
                                 }
                             default:

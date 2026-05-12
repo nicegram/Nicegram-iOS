@@ -175,23 +175,6 @@ public extension Api {
                 return ("updateBotEditBusinessMessage", [("flags", ConstructorParameterDescription(self.flags)), ("connectionId", ConstructorParameterDescription(self.connectionId)), ("message", ConstructorParameterDescription(self.message)), ("replyToMessage", ConstructorParameterDescription(self.replyToMessage)), ("qts", ConstructorParameterDescription(self.qts))])
             }
         }
-        public class Cons_updateBotGuestChatQuery: TypeConstructorDescription {
-            public var flags: Int32
-            public var queryId: Int64
-            public var message: Api.Message
-            public var referenceMessages: [Api.Message]?
-            public var qts: Int32
-            public init(flags: Int32, queryId: Int64, message: Api.Message, referenceMessages: [Api.Message]?, qts: Int32) {
-                self.flags = flags
-                self.queryId = queryId
-                self.message = message
-                self.referenceMessages = referenceMessages
-                self.qts = qts
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("updateBotGuestChatQuery", [("flags", ConstructorParameterDescription(self.flags)), ("queryId", ConstructorParameterDescription(self.queryId)), ("message", ConstructorParameterDescription(self.message)), ("referenceMessages", ConstructorParameterDescription(self.referenceMessages)), ("qts", ConstructorParameterDescription(self.qts))])
-            }
-        }
         public class Cons_updateBotInlineQuery: TypeConstructorDescription {
             public var flags: Int32
             public var queryId: Int64
@@ -1900,7 +1883,6 @@ public extension Api {
                 return ("updateWebViewResultSent", [("queryId", ConstructorParameterDescription(self.queryId))])
             }
         }
-        case updateAiComposeTones
         case updateAttachMenuBots
         case updateAutoSaveSettings
         case updateBotBusinessConnect(Cons_updateBotBusinessConnect)
@@ -1910,7 +1892,6 @@ public extension Api {
         case updateBotCommands(Cons_updateBotCommands)
         case updateBotDeleteBusinessMessage(Cons_updateBotDeleteBusinessMessage)
         case updateBotEditBusinessMessage(Cons_updateBotEditBusinessMessage)
-        case updateBotGuestChatQuery(Cons_updateBotGuestChatQuery)
         case updateBotInlineQuery(Cons_updateBotInlineQuery)
         case updateBotInlineSend(Cons_updateBotInlineSend)
         case updateBotMenuButton(Cons_updateBotMenuButton)
@@ -2059,11 +2040,6 @@ public extension Api {
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
             switch self {
-            case .updateAiComposeTones:
-                if boxed {
-                    buffer.appendInt32(-1945136645)
-                }
-                break
             case .updateAttachMenuBots:
                 if boxed {
                     buffer.appendInt32(397910539)
@@ -2151,22 +2127,6 @@ public extension Api {
                 _data.message.serialize(buffer, true)
                 if Int(_data.flags) & Int(1 << 0) != 0 {
                     _data.replyToMessage!.serialize(buffer, true)
-                }
-                serializeInt32(_data.qts, buffer: buffer, boxed: false)
-                break
-            case .updateBotGuestChatQuery(let _data):
-                if boxed {
-                    buffer.appendInt32(-841742019)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                serializeInt64(_data.queryId, buffer: buffer, boxed: false)
-                _data.message.serialize(buffer, true)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    buffer.appendInt32(481674261)
-                    buffer.appendInt32(Int32(_data.referenceMessages!.count))
-                    for item in _data.referenceMessages! {
-                        item.serialize(buffer, true)
-                    }
                 }
                 serializeInt32(_data.qts, buffer: buffer, boxed: false)
                 break
@@ -3525,8 +3485,6 @@ public extension Api {
 
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
-            case .updateAiComposeTones:
-                return ("updateAiComposeTones", [])
             case .updateAttachMenuBots:
                 return ("updateAttachMenuBots", [])
             case .updateAutoSaveSettings:
@@ -3545,8 +3503,6 @@ public extension Api {
                 return ("updateBotDeleteBusinessMessage", [("connectionId", ConstructorParameterDescription(_data.connectionId)), ("peer", ConstructorParameterDescription(_data.peer)), ("messages", ConstructorParameterDescription(_data.messages)), ("qts", ConstructorParameterDescription(_data.qts))])
             case .updateBotEditBusinessMessage(let _data):
                 return ("updateBotEditBusinessMessage", [("flags", ConstructorParameterDescription(_data.flags)), ("connectionId", ConstructorParameterDescription(_data.connectionId)), ("message", ConstructorParameterDescription(_data.message)), ("replyToMessage", ConstructorParameterDescription(_data.replyToMessage)), ("qts", ConstructorParameterDescription(_data.qts))])
-            case .updateBotGuestChatQuery(let _data):
-                return ("updateBotGuestChatQuery", [("flags", ConstructorParameterDescription(_data.flags)), ("queryId", ConstructorParameterDescription(_data.queryId)), ("message", ConstructorParameterDescription(_data.message)), ("referenceMessages", ConstructorParameterDescription(_data.referenceMessages)), ("qts", ConstructorParameterDescription(_data.qts))])
             case .updateBotInlineQuery(let _data):
                 return ("updateBotInlineQuery", [("flags", ConstructorParameterDescription(_data.flags)), ("queryId", ConstructorParameterDescription(_data.queryId)), ("userId", ConstructorParameterDescription(_data.userId)), ("query", ConstructorParameterDescription(_data.query)), ("geo", ConstructorParameterDescription(_data.geo)), ("peerType", ConstructorParameterDescription(_data.peerType)), ("offset", ConstructorParameterDescription(_data.offset))])
             case .updateBotInlineSend(let _data):
@@ -3840,9 +3796,6 @@ public extension Api {
             }
         }
 
-        public static func parse_updateAiComposeTones(_ reader: BufferReader) -> Update? {
-            return Api.Update.updateAiComposeTones
-        }
         public static func parse_updateAttachMenuBots(_ reader: BufferReader) -> Update? {
             return Api.Update.updateAttachMenuBots
         }
@@ -3881,11 +3834,11 @@ public extension Api {
             var _6: Int64?
             _6 = reader.readInt64()
             var _7: Buffer?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _7 = parseBytes(reader)
             }
             var _8: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _8 = parseString(reader)
             }
             let _c1 = _1 != nil
@@ -3894,8 +3847,8 @@ public extension Api {
             let _c4 = _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _8 != nil
+            let _c7 = (Int(_1!) & Int(1 << 0) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 1) == 0) || _8 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
                 return Api.Update.updateBotCallbackQuery(Cons_updateBotCallbackQuery(flags: _1!, queryId: _2!, userId: _3!, peer: _4!, msgId: _5!, chatInstance: _6!, data: _7, gameShortName: _8))
             }
@@ -4009,7 +3962,7 @@ public extension Api {
                 _3 = Api.parse(reader, signature: signature) as? Api.Message
             }
             var _4: Api.Message?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.Message
                 }
@@ -4019,39 +3972,10 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             let _c5 = _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.Update.updateBotEditBusinessMessage(Cons_updateBotEditBusinessMessage(flags: _1!, connectionId: _2!, message: _3!, replyToMessage: _4, qts: _5!))
-            }
-            else {
-                return nil
-            }
-        }
-        public static func parse_updateBotGuestChatQuery(_ reader: BufferReader) -> Update? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Int64?
-            _2 = reader.readInt64()
-            var _3: Api.Message?
-            if let signature = reader.readInt32() {
-                _3 = Api.parse(reader, signature: signature) as? Api.Message
-            }
-            var _4: [Api.Message]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
-                if let _ = reader.readInt32() {
-                    _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Message.self)
-                }
-            }
-            var _5: Int32?
-            _5 = reader.readInt32()
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = _5 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 {
-                return Api.Update.updateBotGuestChatQuery(Cons_updateBotGuestChatQuery(flags: _1!, queryId: _2!, message: _3!, referenceMessages: _4, qts: _5!))
             }
             else {
                 return nil
@@ -4067,13 +3991,13 @@ public extension Api {
             var _4: String?
             _4 = parseString(reader)
             var _5: Api.GeoPoint?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.GeoPoint
                 }
             }
             var _6: Api.InlineQueryPeerType?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.InlineQueryPeerType
                 }
@@ -4084,8 +4008,8 @@ public extension Api {
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
             let _c7 = _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.Update.updateBotInlineQuery(Cons_updateBotInlineQuery(flags: _1!, queryId: _2!, userId: _3!, query: _4!, geo: _5, peerType: _6, offset: _7!))
@@ -4102,7 +4026,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             var _4: Api.GeoPoint?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.GeoPoint
                 }
@@ -4110,7 +4034,7 @@ public extension Api {
             var _5: String?
             _5 = parseString(reader)
             var _6: Api.InputBotInlineMessageID?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.InputBotInlineMessageID
                 }
@@ -4118,9 +4042,9 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.Update.updateBotInlineSend(Cons_updateBotInlineSend(flags: _1!, userId: _2!, query: _3!, geo: _4, id: _5!, msgId: _6))
             }
@@ -4218,7 +4142,7 @@ public extension Api {
                 _3 = Api.parse(reader, signature: signature) as? Api.Message
             }
             var _4: Api.Message?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.Message
                 }
@@ -4228,7 +4152,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             let _c5 = _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.Update.updateBotNewBusinessMessage(Cons_updateBotNewBusinessMessage(flags: _1!, connectionId: _2!, message: _3!, replyToMessage: _4, qts: _5!))
@@ -4247,13 +4171,13 @@ public extension Api {
             var _4: Buffer?
             _4 = parseBytes(reader)
             var _5: Api.PaymentRequestedInfo?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.PaymentRequestedInfo
                 }
             }
             var _6: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _6 = parseString(reader)
             }
             var _7: String?
@@ -4264,8 +4188,8 @@ public extension Api {
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
             let _c7 = _7 != nil
             let _c8 = _8 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
@@ -4382,7 +4306,7 @@ public extension Api {
                 _5 = Api.parse(reader, signature: signature) as? Api.Message
             }
             var _6: Api.Message?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.Message
                 }
@@ -4390,7 +4314,7 @@ public extension Api {
             var _7: Int64?
             _7 = reader.readInt64()
             var _8: Buffer?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _8 = parseBytes(reader)
             }
             let _c1 = _1 != nil
@@ -4398,9 +4322,9 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _6 != nil
+            let _c6 = (Int(_1!) & Int(1 << 2) == 0) || _6 != nil
             let _c7 = _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _8 != nil
+            let _c8 = (Int(_1!) & Int(1 << 0) == 0) || _8 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
                 return Api.Update.updateBusinessBotCallbackQuery(Cons_updateBusinessBotCallbackQuery(flags: _1!, queryId: _2!, userId: _3!, connectionId: _4!, message: _5!, replyToMessage: _6, chatInstance: _7!, data: _8))
             }
@@ -4479,19 +4403,19 @@ public extension Api {
             var _5: Int64?
             _5 = reader.readInt64()
             var _6: Api.ChannelParticipant?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.ChannelParticipant
                 }
             }
             var _7: Api.ChannelParticipant?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _7 = Api.parse(reader, signature: signature) as? Api.ChannelParticipant
                 }
             }
             var _8: Api.ExportedChatInvite?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _8 = Api.parse(reader, signature: signature) as? Api.ExportedChatInvite
                 }
@@ -4503,9 +4427,9 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _8 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 1) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 2) == 0) || _8 != nil
             let _c9 = _9 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
                 return Api.Update.updateChannelParticipant(Cons_updateChannelParticipant(flags: _1!, channelId: _2!, date: _3!, actorId: _4!, userId: _5!, prevParticipant: _6, newParticipant: _7, invite: _8, qts: _9!))
@@ -4520,11 +4444,11 @@ public extension Api {
             var _2: Int64?
             _2 = reader.readInt64()
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
@@ -4535,8 +4459,8 @@ public extension Api {
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
             let _c5 = _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.Update.updateChannelReadMessagesContents(Cons_updateChannelReadMessagesContents(flags: _1!, channelId: _2!, topMsgId: _3, savedPeerId: _4, messages: _5!))
@@ -4551,12 +4475,12 @@ public extension Api {
             var _2: Int64?
             _2 = reader.readInt64()
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updateChannelTooLong(Cons_updateChannelTooLong(flags: _1!, channelId: _2!, pts: _3))
             }
@@ -4570,7 +4494,7 @@ public extension Api {
             var _2: Int64?
             _2 = reader.readInt64()
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Api.Peer?
@@ -4583,7 +4507,7 @@ public extension Api {
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
@@ -4675,19 +4599,19 @@ public extension Api {
             var _5: Int64?
             _5 = reader.readInt64()
             var _6: Api.ChatParticipant?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.ChatParticipant
                 }
             }
             var _7: Api.ChatParticipant?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _7 = Api.parse(reader, signature: signature) as? Api.ChatParticipant
                 }
             }
             var _8: Api.ExportedChatInvite?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _8 = Api.parse(reader, signature: signature) as? Api.ExportedChatInvite
                 }
@@ -4699,9 +4623,9 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _8 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 1) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 2) == 0) || _8 != nil
             let _c9 = _9 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
                 return Api.Update.updateChatParticipant(Cons_updateChatParticipant(flags: _1!, chatId: _2!, date: _3!, actorId: _4!, userId: _5!, prevParticipant: _6, newParticipant: _7, invite: _8, qts: _9!))
@@ -4943,7 +4867,7 @@ public extension Api {
                 _3 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
             }
             var _4: [Int32]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _4 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
                 }
@@ -4951,7 +4875,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.Update.updateDeleteScheduledMessages(Cons_updateDeleteScheduledMessages(flags: _1!, peer: _2!, messages: _3!, sentMessages: _4))
             }
@@ -4965,14 +4889,14 @@ public extension Api {
             var _2: Int32?
             _2 = reader.readInt32()
             var _3: Api.DialogFilter?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.DialogFilter
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updateDialogFilter(Cons_updateDialogFilter(flags: _1!, id: _2!, filter: _3))
             }
@@ -5000,7 +4924,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: Api.DialogPeer?
@@ -5008,7 +4932,7 @@ public extension Api {
                 _3 = Api.parse(reader, signature: signature) as? Api.DialogPeer
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updateDialogPinned(Cons_updateDialogPinned(flags: _1!, folderId: _2, peer: _3!))
@@ -5025,14 +4949,14 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.DialogPeer
             }
             var _3: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updateDialogUnreadMark(Cons_updateDialogUnreadMark(flags: _1!, peer: _2!, savedPeerId: _3))
             }
@@ -5048,11 +4972,11 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.Peer
             }
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
@@ -5063,8 +4987,8 @@ public extension Api {
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
             let _c5 = _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.Update.updateDraftMessage(Cons_updateDraftMessage(flags: _1!, peer: _2!, topMsgId: _3, savedPeerId: _4, draft: _5!))
@@ -5210,7 +5134,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
@@ -5220,7 +5144,7 @@ public extension Api {
                 _3 = Api.parse(reader, signature: signature) as? Api.GroupCall
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updateGroupCall(Cons_updateGroupCall(flags: _1!, peer: _2, call: _3!))
@@ -5343,11 +5267,11 @@ public extension Api {
             var _5: Int64?
             _5 = reader.readInt64()
             var _6: Buffer?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _6 = parseBytes(reader)
             }
             var _7: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _7 = parseString(reader)
             }
             let _c1 = _1 != nil
@@ -5355,8 +5279,8 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _7 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 1) == 0) || _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.Update.updateInlineBotCallbackQuery(Cons_updateInlineBotCallbackQuery(flags: _1!, queryId: _2!, userId: _3!, msgId: _4!, chatInstance: _5!, data: _6, gameShortName: _7))
             }
@@ -5447,23 +5371,23 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
             }
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: Int64?
             _5 = reader.readInt64()
             var _6: Api.Poll?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.Poll
                 }
@@ -5473,11 +5397,11 @@ public extension Api {
                 _7 = Api.parse(reader, signature: signature) as? Api.PollResults
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
+            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 2) == 0) || _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
             let _c7 = _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.Update.updateMessagePoll(Cons_updateMessagePoll(flags: _1!, peer: _2, msgId: _3, topMsgId: _4, pollId: _5!, poll: _6, results: _7!))
@@ -5525,11 +5449,11 @@ public extension Api {
             var _3: Int32?
             _3 = reader.readInt32()
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: Api.Peer?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
@@ -5541,8 +5465,8 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _5 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
             let _c6 = _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.Update.updateMessageReactions(Cons_updateMessageReactions(flags: _1!, peer: _2!, msgId: _3!, topMsgId: _4, savedPeerId: _5, reactions: _6!))
@@ -5590,22 +5514,22 @@ public extension Api {
             var _2: Int64?
             _2 = reader.readInt64()
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _4 = parseString(reader)
             }
             var _5: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _5 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.Update.updateNewAuthorization(Cons_updateNewAuthorization(flags: _1!, hash: _2!, date: _3, device: _4, location: _5))
             }
@@ -5782,12 +5706,12 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.Peer
             }
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updatePeerHistoryTTL(Cons_updatePeerHistoryTTL(flags: _1!, peer: _2!, ttlPeriod: _3))
             }
@@ -5834,14 +5758,14 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.Peer
             }
             var _3: Api.WallPaper?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.WallPaper
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updatePeerWallpaper(Cons_updatePeerWallpaper(flags: _1!, peer: _2!, wallpaper: _3))
             }
@@ -5926,18 +5850,18 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: [Api.DialogPeer]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.DialogPeer.self)
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updatePinnedDialogs(Cons_updatePinnedDialogs(flags: _1!, folderId: _2, order: _3))
             }
@@ -5972,14 +5896,14 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.Peer
             }
             var _3: [Int32]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _3 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.Update.updatePinnedForumTopics(Cons_updatePinnedForumTopics(flags: _1!, peer: _2!, order: _3))
             }
@@ -6018,13 +5942,13 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: [Api.DialogPeer]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.DialogPeer.self)
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
             if _c1 && _c2 {
                 return Api.Update.updatePinnedSavedDialogs(Cons_updatePinnedSavedDialogs(flags: _1!, order: _2))
             }
@@ -6089,19 +6013,19 @@ public extension Api {
             var _4: Int32?
             _4 = reader.readInt32()
             var _5: Int64?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _5 = reader.readInt64()
             }
             var _6: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _6 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.Update.updateReadChannelDiscussionInbox(Cons_updateReadChannelDiscussionInbox(flags: _1!, channelId: _2!, topMsgId: _3!, readMaxId: _4!, broadcastId: _5, broadcastPost: _6))
             }
@@ -6130,7 +6054,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: Int64?
@@ -6142,7 +6066,7 @@ public extension Api {
             var _6: Int32?
             _6 = reader.readInt32()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
@@ -6178,7 +6102,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: Api.Peer?
@@ -6186,7 +6110,7 @@ public extension Api {
                 _3 = Api.parse(reader, signature: signature) as? Api.Peer
             }
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: Int32?
@@ -6198,9 +6122,9 @@ public extension Api {
             var _8: Int32?
             _8 = reader.readInt32()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             let _c7 = _7 != nil
@@ -6246,14 +6170,14 @@ public extension Api {
             var _4: Int32?
             _4 = reader.readInt32()
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _5 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.Update.updateReadMessagesContents(Cons_updateReadMessagesContents(flags: _1!, messages: _2!, pts: _3!, ptsCount: _4!, date: _5))
             }
@@ -6387,7 +6311,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: String?
@@ -6403,7 +6327,7 @@ public extension Api {
                 _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageEntity.self)
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
+            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
@@ -6687,7 +6611,7 @@ public extension Api {
             var _2: Int64?
             _2 = reader.readInt64()
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Api.SendMessageAction?
@@ -6696,7 +6620,7 @@ public extension Api {
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.Update.updateUserTyping(Cons_updateUserTyping(flags: _1!, userId: _2!, topMsgId: _3, action: _4!))

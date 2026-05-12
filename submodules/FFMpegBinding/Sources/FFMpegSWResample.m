@@ -111,37 +111,22 @@
         return nil;
     }
 
-    int64_t outSamples = (int64_t)frameImpl->nb_samples * (int64_t)_ratio;
-    // Cap at 8M samples per frame: ~10× larger than any legitimate codec
-    // frame × resample ratio, bounds the per-frame buffer to ~32 MB (s16 stereo),
-    // and rejects pathological inputs (e.g. 1 Hz source with a 65 KB FLAC block).
-    if (outSamples <= 0 || outSamples > 8 * 1024 * 1024) {
-        return nil;
-    }
-
     int bufSize = av_samples_get_buffer_size(NULL,
                                              (int)_destinationChannelCount,
-                                             (int)outSamples,
+                                             frameImpl->nb_samples * (int)_ratio,
                                              (enum AVSampleFormat)_destinationSampleFormat,
                                              1);
-    if (bufSize <= 0) {
-        return nil;
-    }
-
+    
     if (!_buffer || _bufferSize < bufSize) {
-        void *newBuffer = realloc(_buffer, bufSize);
-        if (!newBuffer) {
-            return nil;
-        }
-        _buffer = newBuffer;
         _bufferSize = bufSize;
+        _buffer = realloc(_buffer, _bufferSize);
     }
-
+    
     Byte *outbuf[2] = { _buffer, 0 };
-
+    
     int numFrames = swr_convert(_context,
                                 outbuf,
-                                (int)outSamples,
+                                frameImpl->nb_samples * (int)_ratio,
                                 (const uint8_t **)frameImpl->data,
                                 frameImpl->nb_samples);
     if (numFrames <= 0) {

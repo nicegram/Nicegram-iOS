@@ -347,11 +347,8 @@ func proxyServerSettingsController(sharedContext: SharedAccountContext, context:
                             }
                         }
                     } else {
-                        let wasEmpty = settings.servers.isEmpty
-                        if !settings.servers.contains(proxyServerSettings) {
-                            settings.servers.append(proxyServerSettings)
-                        }
-                        if wasEmpty && settings.servers.count == 1 {
+                        settings.servers.append(proxyServerSettings)
+                        if settings.servers.count == 1 {
                             settings.activeServer = proxyServerSettings
                         }
                     }
@@ -391,3 +388,4 @@ func proxyServerSettingsController(sharedContext: SharedAccountContext, context:
     
     return controller
 }
+

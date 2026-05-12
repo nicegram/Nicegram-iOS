@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        "-warnings-as-errors",
+        #"-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -36,7 +36,6 @@ swift_library(
         "//submodules/TelegramUI/Components/Stories/PeerListItemComponent",
         "//submodules/TelegramUI/Components/AlertComponent",
         "//submodules/ShimmerEffect",
-        "//submodules/UndoUI",
     ],
     visibility = [
         "//visibility:public",

@@ -11,10 +11,6 @@ public final class SelectivePrivacyPeer: Equatable {
         self.peer = peer
         self.participantCount = participantCount
     }
-
-    public convenience init(peer: EnginePeer, participantCount: Int32?) {
-        self.init(peer: peer._asPeer(), participantCount: participantCount)
-    }
     
     public static func ==(lhs: SelectivePrivacyPeer, rhs: SelectivePrivacyPeer) -> Bool {
         if !lhs.peer.isEqual(rhs.peer) {

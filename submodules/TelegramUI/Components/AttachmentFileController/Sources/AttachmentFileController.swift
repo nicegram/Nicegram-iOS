@@ -629,7 +629,7 @@ public func makeAttachmentFileControllerImpl(
                 if let file = message.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile {
                     let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                     |> deliverOnMainQueue).start(next: { peer in
-                        guard let peer, let peerReference = PeerReference(peer) else {
+                        guard let peer, let peerReference = PeerReference(peer._asPeer()) else {
                             return
                         }
                         send([.savedMusic(peer: peerReference, media: file)], false, nil, nil)
@@ -756,7 +756,7 @@ public func makeAttachmentFileControllerImpl(
     case .audio:
         recentDocuments = .single(nil)
         |> then(
-            context.engine.messages.searchMessages(location: .general(scope: .everywhere, groupId: nil, tags: [.music], minDate: nil, maxDate: nil, folderId: nil), query: "", state: nil)
+            context.engine.messages.searchMessages(location: .general(scope: .everywhere, tags: [.music], minDate: nil, maxDate: nil, folderId: nil), query: "", state: nil)
             |> map { result -> [Message]? in
                 return result.0.messages
             }
@@ -981,7 +981,7 @@ public func makeAttachmentFileControllerImpl(
                     return .single(result)
                 }
                 ).start(next: { peer, remoteMessages in
-                    guard let peer, let peerReference = PeerReference(peer) else {
+                    guard let peer, let peerReference = PeerReference(peer._asPeer()) else {
                         return
                     }
                     var messageMap: [MessageId: Message] = [:]

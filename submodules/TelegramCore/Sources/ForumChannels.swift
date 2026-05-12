@@ -3,8 +3,8 @@ import SwiftSignalKit
 import Postbox
 import TelegramApi
 
-public final class EngineMessageHistoryThread {
-    public final class Info: Equatable, Codable {
+public extension EngineMessageHistoryThread {
+    final class Info: Equatable, Codable {
         private enum CodingKeys: String, CodingKey {
             case title
             case icon

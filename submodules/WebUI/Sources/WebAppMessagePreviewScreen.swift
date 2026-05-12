@@ -168,10 +168,8 @@ private final class SheetContent: CombinedComponent {
                 case let .invoice(invoice, replyMarkupValue):
                     media = [invoice]
                     replyMarkup = replyMarkupValue
-                case let .webpage(textValue, entitiesValue, _, _, replyMarkupValue):
-                    text = textValue
-                    entities = entitiesValue
-                    replyMarkup = replyMarkupValue
+                default:
+                    break
                 }
             case let .externalReference(reference):
                 switch reference.message {
@@ -197,10 +195,8 @@ private final class SheetContent: CombinedComponent {
                 case let .invoice(invoice, replyMarkupValue):
                     media = [invoice]
                     replyMarkup = replyMarkupValue
-                case let .webpage(textValue, entitiesValue, _, _, replyMarkupValue):
-                    text = textValue
-                    entities = entitiesValue
-                    replyMarkup = replyMarkupValue
+                default:
+                    break
                 }
             }
             

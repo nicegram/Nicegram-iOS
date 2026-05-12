@@ -30,10 +30,8 @@ public extension TelegramEngine {
             return _internal_updateContactName(account: self.account, peerId: peerId, firstName: firstName, lastName: lastName)
         }
 
-        public func updateContactPhoto(peerId: PeerId, resource: EngineMediaResource?, videoResource: EngineMediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mode: SetCustomPeerPhotoMode, mapResourceToAvatarSizes: @escaping (EngineMediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
-            return _internal_updateContactPhoto(account: self.account, peerId: peerId, resource: resource?._asResource(), videoResource: videoResource?._asResource(), videoStartTimestamp: videoStartTimestamp, markup: markup, mode: mode, mapResourceToAvatarSizes: { rawResource, representations in
-                return mapResourceToAvatarSizes(EngineMediaResource(rawResource), representations)
-            })
+        public func updateContactPhoto(peerId: PeerId, resource: MediaResource?, videoResource: MediaResource?, videoStartTimestamp: Double?, markup: UploadPeerPhotoMarkup?, mode: SetCustomPeerPhotoMode, mapResourceToAvatarSizes: @escaping (MediaResource, [TelegramMediaImageRepresentation]) -> Signal<[Int: Data], NoError>) -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> {
+            return _internal_updateContactPhoto(account: self.account, peerId: peerId, resource: resource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: markup, mode: mode, mapResourceToAvatarSizes: mapResourceToAvatarSizes)
         }
         
         public func updateContactNote(peerId: PeerId, text: String, entities: [MessageTextEntity]) -> Signal<Never, UpdateContactNoteError> {

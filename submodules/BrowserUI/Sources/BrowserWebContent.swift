@@ -442,8 +442,16 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
         case "oauth_request":
             let url = json?["url"] as? String
             if let url {
-                let origin = message.frameInfo.securityOriginString
-                
+                let securityOrigin = message.frameInfo.securityOrigin
+                var origin = ""
+                origin.append(securityOrigin.protocol)
+                origin.append("://")
+                origin.append(securityOrigin.host)
+                if securityOrigin.port != 0 {
+                    origin.append(":")
+                    origin.append("\(securityOrigin.port)")
+                }
+                                
                 let presentationData = self.context.sharedContext.currentPresentationData.with { $0 }
                 let subject: MessageActionUrlSubject = .url(url: url, inAppOrigin: origin)
                 let _ = (self.context.engine.messages.requestMessageActionUrlAuth(subject: subject)
@@ -1715,7 +1723,7 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
                         
                         if let favicon, let imageData = favicon.pngData() {
                             let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-                            self.context.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: imageData)
+                            self.context.account.postbox.mediaBox.storeResourceData(resource.id, data: imageData)
                             image = TelegramMediaImage(
                                 imageId: MediaId(namespace: Namespaces.Media.LocalImage, id: Int64.random(in: Int64.min ... Int64.max)),
                                 representations: [
@@ -2067,20 +2075,5 @@ private func findScrollView(view: UIView?) -> UIScrollView? {
         return findScrollView(view: view.superview)
     } else {
         return nil
-    }
-}
-
-private extension WKFrameInfo {
-    var securityOriginString: String {
-        let securityOrigin = self.securityOrigin
-        var origin = ""
-        origin.append(securityOrigin.protocol)
-        origin.append("://")
-        origin.append(securityOrigin.host)
-        if securityOrigin.port != 0 {
-            origin.append(":")
-            origin.append("\(securityOrigin.port)")
-        }
-        return origin
     }
 }

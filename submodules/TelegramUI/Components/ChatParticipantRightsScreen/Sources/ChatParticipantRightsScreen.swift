@@ -260,7 +260,7 @@ private final class ChatParticipantRightsContent: CombinedComponent {
                         state.updated(transition: .easeInOut(duration: 0.2))
                     },
                     shouldUpdateText: { [weak state] text in
-                        if text.containsGraphicEmoji {
+                        if text.containsEmoji {
                             state?.animateError()
                             return false
                         }

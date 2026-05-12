@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import AvatarNode
 import ContextUI
@@ -112,18 +113,7 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
         self.avatarNode.isHidden = true
     }
     
-    public func setPeer(
-        context: AccountContext,
-        theme: PresentationTheme,
-        peer: EnginePeer?,
-        authorOfMessage: MessageReference? = nil,
-        overrideImage: AvatarNodeImageOverride? = nil,
-        emptyColor: UIColor? = nil,
-        clipStyle: AvatarNodeClipStyle = .round,
-        synchronousLoad: Bool = false,
-        displayDimensions: CGSize = CGSize(width: 60.0, height: 60.0),
-        storeUnrounded: Bool = false
-    ) {
+    public func setPeer(context: AccountContext, theme: PresentationTheme, peer: EnginePeer?, authorOfMessage: MessageReference? = nil, overrideImage: AvatarNodeImageOverride? = nil, emptyColor: UIColor? = nil, clipStyle: AvatarNodeClipStyle = .round, synchronousLoad: Bool = false, displayDimensions: CGSize = CGSize(width: 60.0, height: 60.0), storeUnrounded: Bool = false) {
         self.context = context
         
         if let statusComponentView = self.statusView.view {
@@ -170,10 +160,6 @@ public final class ChatAvatarNavigationNode: ASDisplayNode {
                         isKnown = true
                     }
                     if case let .known(maybePhoto) = cachedPeerData.photo {
-                        profilePhoto = maybePhoto
-                        isKnown = true
-                    }
-                    if profilePhoto == nil, case let .known(maybePhoto) = cachedPeerData.fallbackPhoto {
                         profilePhoto = maybePhoto
                         isKnown = true
                     }

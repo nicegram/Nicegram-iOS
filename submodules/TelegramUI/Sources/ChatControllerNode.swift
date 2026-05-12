@@ -576,16 +576,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         if case let .messageOptions(_, messageIds, info) = subject {
             switch info {
             case let .forward(forward):
-                let accountPeerSignal = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                    if let peer {
-                        return .single(peer)
-                    } else {
-                        return .never()
-                    }
-                }
-                |> map { $0._asPeer() }
-                let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), accountPeerSignal, forward.options)
+                let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), context.account.postbox.loadedPeerWithId(context.account.peerId), forward.options)
                 |> map { messages, accountPeer, options -> ([Message], Int32, Bool) in
                     var messages = messages
                     let forwardedMessageIds = Set(messages.map { $0.id })
@@ -647,7 +638,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                                 }
                                 if let poll = media as? TelegramMediaPoll {
                                     var updatedMedia = message.media.filter { !($0 is TelegramMediaPoll) }
-                                    updatedMedia.append(TelegramMediaPoll(pollId: poll.pollId, publicity: poll.publicity, kind: poll.kind, text: poll.text, textEntities: poll.textEntities, options: poll.options, correctAnswers: poll.correctAnswers, results: TelegramMediaPollResults(voters: nil, totalVoters: nil, recentVoters: [], solution: nil, hasUnseenVotes: false, canViewStats: false), isClosed: false, deadlineTimeout: nil, deadlineDate: nil, pollHash: poll.pollHash))
+                                    updatedMedia.append(TelegramMediaPoll(pollId: poll.pollId, publicity: poll.publicity, kind: poll.kind, text: poll.text, textEntities: poll.textEntities, options: poll.options, correctAnswers: poll.correctAnswers, results: TelegramMediaPollResults(voters: nil, totalVoters: nil, recentVoters: [], solution: nil, hasUnseenVotes: false), isClosed: false, deadlineTimeout: nil, deadlineDate: nil, pollHash: poll.pollHash))
                                     messageMedia = updatedMedia
                                 }
                                 if let _ = media as? TelegramMediaDice {
@@ -674,16 +665,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
                 source = .custom(messages: messages, messageId: MessageId(peerId: PeerId(0), namespace: 0, id: 0), quote: nil, isSavedMusic: false, canReorder: false, loadMore: nil)
             case let .reply(reply):
-                let replyAccountPeerSignal = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                    if let peer {
-                        return .single(peer)
-                    } else {
-                        return .never()
-                    }
-                }
-                |> map { $0._asPeer() }
-                let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), replyAccountPeerSignal)
+                let messages = combineLatest(context.account.postbox.messagesAtIds(messageIds), context.account.postbox.loadedPeerWithId(context.account.peerId))
                 |> map { messages, accountPeer -> ([Message], Int32, Bool) in
                     var messages = messages
                     messages.sort(by: { lhsMessage, rhsMessage in
@@ -712,19 +694,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         stories = .single([:])
                     }
                     
-                    let linkAccountPeerSignal = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                        if let peer {
-                            return .single(peer)
-                        } else {
-                            return .never()
-                        }
-                    }
-                    |> map { $0._asPeer() }
                     if let replyMessageId = options.replyMessageId {
                         return combineLatest(
                             context.account.postbox.messagesAtIds([replyMessageId]),
-                            linkAccountPeerSignal,
+                            context.account.postbox.loadedPeerWithId(context.account.peerId),
                             stories
                         )
                         |> map { messages, peer, stories -> (ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]) in
@@ -732,7 +705,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         }
                     } else {
                         return combineLatest(
-                            linkAccountPeerSignal,
+                            context.account.postbox.loadedPeerWithId(context.account.peerId),
                             stories
                         )
                         |> map { peer, stories -> (ChatControllerSubject.LinkOptions, Peer, Message?, [StoryId: CodableEntry]) in
@@ -944,9 +917,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         
         self.setupHistoryNode()
         
-        self.interactiveEmojisDisposable = (self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
+        self.interactiveEmojisDisposable = (self.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
         |> map { preferencesView -> InteractiveEmojiConfiguration in
-            let appConfiguration: AppConfiguration = preferencesView?.get(AppConfiguration.self) ?? .defaultValue
+            let appConfiguration: AppConfiguration = preferencesView.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
             return InteractiveEmojiConfiguration.with(appConfiguration: appConfiguration)
         }
         |> deliverOnMainQueue).startStrict(next: { [weak self] emojis in
@@ -1725,13 +1698,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         data: mediaPlayback,
                         controller: { [weak self] in
                             return self?.controller
-                        },
-                        shouldPerformAction: { [weak self] action in
-                            guard let controller = self?.controller else {
-                                action()
-                                return
-                            }
-                            let _ = controller.presentVoiceMessageDiscardAlert(action: action)
                         }
                     )))
                 )
@@ -2071,7 +2037,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         } else if let headerPanelsView = self.headerPanelsView {
             self.headerPanelsView = nil
             if let headerPanelsComponentView = headerPanelsView.view {
-                transition.updateTransformScale(layer: headerPanelsComponentView.layer, scale: 0.001)
                 transition.updateAlpha(layer: headerPanelsComponentView.layer, alpha: 0.0, completion: { [weak headerPanelsComponentView] _ in
                     headerPanelsComponentView?.removeFromSuperview()
                 })
@@ -2180,7 +2145,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     if inputTextPanelNode.isFocused {
                         self.context.sharedContext.mainWindow?.simulateKeyboardDismiss(transition: .animated(duration: 0.5, curve: .spring))
                     }
-                    let _ = inputTextPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: false, transition: transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
+                    let _ = inputTextPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: false, transition: transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
                 }
                 if let prevInputPanelNode = self.inputPanelNode, inputPanelNode.canHandleTransition(from: prevInputPanelNode) {
                     inputPanelNodeHandlesTransition = true
@@ -2192,7 +2157,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 } else {
                     dismissedInputPanelNode = self.inputPanelNode
                 }
-                let inputPanelHeight = inputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: false, transition: inputPanelNode.supernode !== self ? .immediate : transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
+                let inputPanelHeight = inputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: false, transition: inputPanelNode.supernode !== self ? .immediate : transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
                 inputPanelSize = CGSize(width: layout.size.width, height: inputPanelHeight)
                 self.inputPanelNode = inputPanelNode
                 if inputPanelNode.supernode !== self {
@@ -2203,7 +2168,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     self.inputPanelOverlayNode.view.addSubview(viewForOverlayContent)
                 }
             } else {
-                let inputPanelHeight = inputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset - 120.0, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: false, transition: transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
+                let inputPanelHeight = inputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset - 120.0, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: false, transition: transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
                 inputPanelSize = CGSize(width: layout.size.width, height: inputPanelHeight)
             }
         } else {
@@ -2214,7 +2179,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         if let secondaryInputPanelNode = inputPanelNodes.secondary, !previewing {
             if secondaryInputPanelNode !== self.secondaryInputPanelNode {
                 dismissedSecondaryInputPanelNode = self.secondaryInputPanelNode
-                let inputPanelHeight = secondaryInputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: true, transition: .immediate, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
+                let inputPanelHeight = secondaryInputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: true, transition: .immediate, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
                 secondaryInputPanelSize = CGSize(width: layout.size.width, height: inputPanelHeight)
                 self.secondaryInputPanelNode = secondaryInputPanelNode
                 if secondaryInputPanelNode.supernode == nil {
@@ -2225,7 +2190,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                     self.inputPanelOverlayNode.view.addSubview(viewForOverlayContent)
                 }
             } else {
-                let inputPanelHeight = secondaryInputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: true, transition: transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, deviceMetrics: layout.deviceMetrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
+                let inputPanelHeight = secondaryInputPanelNode.updateLayout(width: layout.size.width, leftInset: layout.safeInsets.left, rightInset: layout.safeInsets.right, bottomInset: inputPanelBottomInset, additionalSideInsets: layout.additionalInsets, maxHeight: layout.size.height - insets.top - inputPanelBottomInset, maxOverlayHeight: layout.size.height - insets.top - inputPanelBottomInset, isSecondary: true, transition: transition, interfaceState: self.chatPresentationInterfaceState, metrics: layout.metrics, isMediaInputExpanded: self.inputPanelContainerNode.expansionFraction == 1.0)
                 secondaryInputPanelSize = CGSize(width: layout.size.width, height: inputPanelHeight)
             }
         } else {
@@ -2475,7 +2440,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             messageTransitionNode.transform = previousMessageTransitionNode.transform
             
             previousMessageTransitionNode.supernode?.insertSubnode(self.messageTransitionNode, aboveSubnode: previousMessageTransitionNode)
-            previousMessageTransitionNode.overlayContainerNode.supernode?.insertSubnode( self.messageTransitionNode.overlayContainerNode, aboveSubnode: previousMessageTransitionNode.overlayContainerNode)
             
             self.emptyType = nil
             self.isLoadingValue = false
@@ -2668,7 +2632,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 additionalOffset = 80.0
             }
             if let _ = inputPanelSize {
-                inputPanelHideOffset += -56.0 - additionalOffset
+                inputPanelHideOffset += -48.0 - additionalOffset
             }
             if let accessoryPanelSize = accessoryPanelSize {
                 inputPanelHideOffset += -accessoryPanelSize.height - additionalOffset
@@ -2902,8 +2866,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         listInsets.left += floatingTopicsPanelInsets.left
         listInsets.bottom += floatingTopicsPanelInsets.top
         
-        childContentInsets.top = listInsets.bottom
-        
         var emptyNodeInsets = insets
         emptyNodeInsets.bottom += inputPanelsHeight
         self.validEmptyNodeLayout = (contentBounds.size, emptyNodeInsets, listInsets.left, listInsets.right)
@@ -3091,7 +3053,6 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             var headerPanelsTransition = ComponentTransition(transition)
             if headerPanelsComponentView.superview == nil {
                 headerPanelsTransition.animateAlpha(view: headerPanelsComponentView, from: 0.0, to: 1.0)
-                headerPanelsTransition.animateScale(view: headerPanelsComponentView, from: 0.001, to: 1.0)
                 headerPanelsTransition = headerPanelsTransition.withAnimation(.none)
                 self.floatingTopicsPanelContainer.view.addSubview(headerPanelsComponentView)
             }
@@ -4502,8 +4463,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     func frameForInputActionButton() -> CGRect? {
         if let textInputPanelNode = self.textInputPanelNode, self.inputPanelNode === textInputPanelNode {
-            return textInputPanelNode.frameForInputActionButton().flatMap { rect in
-                return self.view.convert(rect, from: textInputPanelNode.view)
+            return textInputPanelNode.frameForInputActionButton().flatMap {
+                return $0.offsetBy(dx: textInputPanelNode.frame.minX, dy: textInputPanelNode.frame.minY)
             }
         }
         return nil

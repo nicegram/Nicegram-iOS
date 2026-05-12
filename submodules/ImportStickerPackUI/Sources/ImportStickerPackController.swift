@@ -79,30 +79,23 @@ public final class ImportStickerPackController: ViewController, StandalonePresen
             
             if case .image = self.stickerPack.type.contentType {
             } else {
-                let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
-                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                    if let peer {
-                        return .single(peer)
-                    } else {
-                        return .never()
-                    }
-                }
+                let _ = (self.context.account.postbox.loadedPeerWithId(self.context.account.peerId)
                 |> deliverOnMainQueue).start(next: { [weak self] peer in
                     guard let strongSelf = self else {
                         return
                     }
-
+                    
                     var signals: [Signal<(UUID, StickerVerificationStatus, EngineMediaResource?), NoError>] = []
                     for sticker in strongSelf.stickerPack.stickers {
                         if let resource = strongSelf.controllerNode.stickerResources[sticker.uuid] {
-                            signals.append(strongSelf.context.engine.stickers.uploadSticker(peer: peer, resource: resource, thumbnail: nil, alt: sticker.emojis.first ?? "", dimensions: PixelDimensions(width: 512, height: 512), duration: nil, mimeType: sticker.mimeType)
+                            signals.append(strongSelf.context.engine.stickers.uploadSticker(peer: peer, resource: resource._asResource(), thumbnail: nil, alt: sticker.emojis.first ?? "", dimensions: PixelDimensions(width: 512, height: 512), duration: nil, mimeType: sticker.mimeType)
                             |> map { result -> (UUID, StickerVerificationStatus, EngineMediaResource?) in
                                 switch result {
                                     case .progress:
                                         return (sticker.uuid, .loading, nil)
                                     case let .complete(resource, mimeType):
                                         if ["application/x-tgsticker", "video/webm"].contains(mimeType) {
-                                            return (sticker.uuid, .verified, resource)
+                                            return (sticker.uuid, .verified, EngineMediaResource(resource))
                                         } else {
                                             return (sticker.uuid, .declined, nil)
                                         }

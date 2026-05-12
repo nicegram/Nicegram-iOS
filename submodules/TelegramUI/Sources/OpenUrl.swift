@@ -176,7 +176,7 @@ private func makeResolvedUrlHandler(
                 openPeer: { peer, navigation in
                     switch navigation {
                     case .info:
-                        if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                        if let infoController = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                             context.sharedContext.applicationBindings.dismissNativeController()
                             navigationController?.pushViewController(infoController)
                         }
@@ -423,7 +423,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
         
         Task { @MainActor in
             let walletDeeplinksManager = NicegramWallet.DeeplinksModule.shared.deeplinksManager()
-            if walletDeeplinksManager.handle(url) {
+            if await walletDeeplinksManager.handle(url) {
                 return
             }
             
@@ -608,7 +608,7 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                             if let peer = peer, let controller = context.sharedContext.makePeerInfoController(
                                 context: context,
                                 updatedPresentationData: nil,
-                                peer: peer,
+                                peer: peer._asPeer(),
                                 mode: .generic,
                                 avatarInitiallyExpanded: false,
                                 fromChat: false,
@@ -768,10 +768,6 @@ func openExternalUrlImpl(context: AccountContext, urlContext: OpenURLContext, ur
                             }
                             handleResolvedUrl(.createBot(parentBot: peer.id, username: params["username"], title: params["name"]))
                         })
-                    }
-                case "textStyle":
-                    if let slug = params["slug"] {
-                        convertedUrl = makeTelegramUrl("/addstyle/\(slug)")
                     }
                 default:
                     break
@@ -1132,10 +1128,8 @@ private func showUpdateAppAlert() {
             title: "Update",
             style: .default,
             handler: { _ in
-                Task { @MainActor in
-                    let urlOpener = CoreContainer.shared.urlOpener()
-                    urlOpener.open(NicegramUrls.appStore)
-                }
+                let urlOpener = CoreContainer.shared.urlOpener()
+                urlOpener.open(NicegramUrls.appStore)
             }
         )
     )

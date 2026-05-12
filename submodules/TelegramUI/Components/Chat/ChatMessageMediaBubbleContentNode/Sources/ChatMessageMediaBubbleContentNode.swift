@@ -158,13 +158,13 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                                         if case .full = automaticDownload {
                                             automaticPlayback = true
                                         } else {
-                                            automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(telegramFile.resource.id)) != nil
+                                            automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                                         }
                                     } else if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
                                         if case .full = automaticDownload {
                                             automaticPlayback = true
                                         } else {
-                                            automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(telegramFile.resource.id)) != nil
+                                            automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                                         }
                                     }
                                 }
@@ -184,7 +184,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                                 if case .full = automaticDownload {
                                     automaticPlayback = true
                                 } else {
-                                    automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(telegramFile.resource.id)) != nil
+                                    automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                                 }
                             } else if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
                                 if let _ = telegramFile.videoCover {
@@ -194,7 +194,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                                 } else if case .full = automaticDownload {
                                     automaticPlayback = true
                                 } else {
-                                    automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(telegramFile.resource.id)) != nil
+                                    automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                                 }
                             }
                         }
@@ -240,7 +240,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                                 } else if case .full = automaticDownload {
                                     automaticPlayback = true
                                 } else {
-                                    automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(telegramFile.resource.id)) != nil
+                                    automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                                 }
                             }
                         }
@@ -265,7 +265,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                             if case .full = automaticDownload {
                                 automaticPlayback = true
                             } else {
-                                automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(telegramFile.resource.id)) != nil
+                                automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                             }
                         } else if (telegramFile.isVideo && !telegramFile.isAnimated) && item.context.sharedContext.energyUsageSettings.autoplayVideo {
                             if let _ = telegramFile.videoCover {
@@ -275,7 +275,7 @@ public class ChatMessageMediaBubbleContentNode: ChatMessageBubbleContentNode {
                             } else if case .full = automaticDownload {
                                 automaticPlayback = true
                             } else {
-                                automaticPlayback = item.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(telegramFile.resource.id)) != nil
+                                automaticPlayback = item.context.account.postbox.mediaBox.completedResourcePath(telegramFile.resource) != nil
                             }
                         }
                     }

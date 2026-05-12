@@ -366,7 +366,7 @@ final class ChatAdPanelNode: ASDisplayNode {
                     if fileReference.media.isAnimatedSticker {
                         let dimensions = fileReference.media.dimensions ?? PixelDimensions(width: 512, height: 512)
                         updateImageSignal = chatMessageAnimatedSticker(postbox: context.account.postbox, userLocation: .peer(message.id.peerId), file: fileReference.media, small: false, size: dimensions.cgSize.aspectFitted(CGSize(width: 160.0, height: 160.0)))
-                        updatedFetchMediaSignal = context.engine.resources.fetch(reference: fileReference.resourceReference(fileReference.media.resource), userLocation: .peer(message.id.peerId), userContentType: MediaResourceUserContentType(file: fileReference.media))
+                        updatedFetchMediaSignal = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .peer(message.id.peerId), userContentType: MediaResourceUserContentType(file: fileReference.media), reference: fileReference.resourceReference(fileReference.media.resource))
                     } else if fileReference.media.isVideo || fileReference.media.isAnimated {
                         updateImageSignal = chatMessageVideoThumbnail(account: context.account, userLocation: .peer(message.id.peerId), fileReference: fileReference, blurred: false)
                     } else if let iconImageRepresentation = smallestImageRepresentation(fileReference.media.previewRepresentations) {

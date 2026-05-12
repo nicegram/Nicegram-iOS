@@ -7,6 +7,7 @@ import ComponentFlow
 import SwiftSignalKit
 import AccountContext
 import TelegramCore
+import Postbox
 import MultilineTextComponent
 import AvatarNode
 import TelegramPresentationData

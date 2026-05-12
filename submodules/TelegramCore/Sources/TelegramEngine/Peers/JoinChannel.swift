@@ -56,12 +56,12 @@ func _internal_joinChannel(account: Account, peerId: PeerId, hash: String?) -> S
                         return .fail(.generic)
                     }
                     return account.postbox.transaction { transaction -> RenderedChannelParticipant? in
-                        var peers: [EnginePeer.Id: EnginePeer] = [:]
+                        var peers: [PeerId: Peer] = [:]
                         var presences: [PeerId: PeerPresence] = [:]
                         guard let peer = transaction.getPeer(account.peerId) else {
                             return nil
                         }
-                        peers[account.peerId] = EnginePeer(peer)
+                        peers[account.peerId] = peer
                         if let presence = transaction.getPeerPresence(peerId: account.peerId) {
                             presences[account.peerId] = presence
                         }
@@ -74,12 +74,12 @@ func _internal_joinChannel(account: Account, peerId: PeerId, hash: String?) -> S
                         if case let .member(_, _, maybeAdminInfo, _, _, _) = updatedParticipant {
                             if let adminInfo = maybeAdminInfo {
                                 if let peer = transaction.getPeer(adminInfo.promotedBy) {
-                                    peers[peer.id] = EnginePeer(peer)
+                                    peers[peer.id] = peer
                                 }
                             }
                         }
                         
-                        return RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(peer), peers: peers, presences: presences)
+                        return RenderedChannelParticipant(participant: updatedParticipant, peer: peer, peers: peers, presences: presences)
                     }
                     |> castError(JoinChannelError.self)
                 }

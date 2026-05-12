@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import AvatarNode
@@ -107,7 +108,7 @@ public final class SelectablePeerNode: ASDisplayNode {
         didSet {
             if !self.theme.isEqual(to: oldValue) {
                 if let peer = self.peer, let mainPeer = peer.chatMainPeer {
-                    self.textNode.attributedText = NSAttributedString(string: mainPeer.debugDisplayTitle, font: textFont, textColor: self.currentSelected ? self.theme.selectedTextColor : (peer.peerId.isSecretChat ? self.theme.secretTextColor : self.theme.textColor), paragraphAlignment: .center)
+                    self.textNode.attributedText = NSAttributedString(string: mainPeer.debugDisplayTitle, font: textFont, textColor: self.currentSelected ? self.theme.selectedTextColor : (peer.peerId.namespace == Namespaces.Peer.SecretChat ? self.theme.secretTextColor : self.theme.textColor), paragraphAlignment: .center)
                 }
             }
         }
@@ -158,7 +159,8 @@ public final class SelectablePeerNode: ASDisplayNode {
     public func setup(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, peer: EngineRenderedPeer, requiresPremiumForMessaging: Bool, requiresStars: Int64? = nil, customTitle: String? = nil, iconId: Int64? = nil, iconColor: Int32? = nil, online: Bool = false, numberOfLines: Int = 2, synchronousLoad: Bool) {
         self.setup(
             accountPeerId: context.account.peerId,
-            stateManager: context.account.stateManager,
+            postbox: context.account.postbox,
+            network: context.account.network,
             energyUsageSettings: context.sharedContext.energyUsageSettings,
             contentSettings: context.currentContentSettings.with { $0 },
             animationCache: context.animationCache,
@@ -180,7 +182,7 @@ public final class SelectablePeerNode: ASDisplayNode {
         )
     }
     
-    public func setupStoryRepost(accountPeerId: EnginePeer.Id, stateManager: AccountStateManager, theme: PresentationTheme, strings: PresentationStrings, synchronousLoad: Bool, storyMode: StoryMode) {
+    public func setupStoryRepost(accountPeerId: EnginePeer.Id, postbox: Postbox, network: Network, theme: PresentationTheme, strings: PresentationStrings, synchronousLoad: Bool, storyMode: StoryMode) {
         self.peer = nil
         
         let title: String
@@ -200,14 +202,14 @@ public final class SelectablePeerNode: ASDisplayNode {
         
         self.textNode.maximumNumberOfLines = 2
         self.textNode.attributedText = NSAttributedString(string: title, font: textFont, textColor: self.theme.textColor, paragraphAlignment: .center)
-        self.avatarNode.setPeer(accountPeerId: accountPeerId, postbox: stateManager.postbox, network: stateManager.network, contentSettings: ContentSettings.default, theme: theme, peer: nil, overrideImage: overrideImage, emptyColor: self.theme.avatarPlaceholderColor, clipStyle: .round, synchronousLoad: synchronousLoad)
+        self.avatarNode.setPeer(accountPeerId: accountPeerId, postbox: postbox, network: network, contentSettings: ContentSettings.default, theme: theme, peer: nil, overrideImage: overrideImage, emptyColor: self.theme.avatarPlaceholderColor, clipStyle: .round, synchronousLoad: synchronousLoad)
         
         if case .repostIcon = overrideImage {
             self.avatarNode.playRepostAnimation()
         }
     }
     
-    public func setup(accountPeerId: EnginePeer.Id, stateManager: AccountStateManager, energyUsageSettings: EnergyUsageSettings, contentSettings: ContentSettings, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, resolveInlineStickers: @escaping ([Int64]) -> Signal<[Int64: TelegramMediaFile], NoError>, theme: PresentationTheme, strings: PresentationStrings, peer: EngineRenderedPeer, requiresPremiumForMessaging: Bool, requiresStars: Int64? = nil, customTitle: String? = nil, iconId: Int64? = nil, iconColor: Int32? = nil, online: Bool = false, numberOfLines: Int = 2, synchronousLoad: Bool) {
+    public func setup(accountPeerId: EnginePeer.Id, postbox: Postbox, network: Network, energyUsageSettings: EnergyUsageSettings, contentSettings: ContentSettings, animationCache: AnimationCache, animationRenderer: MultiAnimationRenderer, resolveInlineStickers: @escaping ([Int64]) -> Signal<[Int64: TelegramMediaFile], NoError>, theme: PresentationTheme, strings: PresentationStrings, peer: EngineRenderedPeer, requiresPremiumForMessaging: Bool, requiresStars: Int64? = nil, customTitle: String? = nil, iconId: Int64? = nil, iconColor: Int32? = nil, online: Bool = false, numberOfLines: Int = 2, synchronousLoad: Bool) {
         let isFirstTime = self.peer == nil
         self.peer = peer
         guard let mainPeer = peer.chatOrMonoforumMainPeer else {
@@ -220,7 +222,7 @@ public final class SelectablePeerNode: ASDisplayNode {
         if requiresPremiumForMessaging {
             defaultColor = self.theme.textColor.withMultipliedAlpha(0.4)
         } else {
-            defaultColor = peer.peerId.isSecretChat ? self.theme.secretTextColor : self.theme.textColor
+            defaultColor = peer.peerId.namespace == Namespaces.Peer.SecretChat ? self.theme.secretTextColor : self.theme.textColor
         }
         
         var isForum = false
@@ -254,7 +256,7 @@ public final class SelectablePeerNode: ASDisplayNode {
         } else {
             clipStyle = .round
         }
-        self.avatarNode.setPeer(accountPeerId: accountPeerId, postbox: stateManager.postbox, network: stateManager.network, contentSettings: contentSettings, theme: theme, peer: mainPeer, overrideImage: overrideImage, emptyColor: self.theme.avatarPlaceholderColor, clipStyle: clipStyle, synchronousLoad: synchronousLoad)
+        self.avatarNode.setPeer(accountPeerId: accountPeerId, postbox: postbox, network: network, contentSettings: contentSettings, theme: theme, peer: mainPeer, overrideImage: overrideImage, emptyColor: self.theme.avatarPlaceholderColor, clipStyle: clipStyle, synchronousLoad: synchronousLoad)
         
         if let requiresStars {
             let avatarBadgeOutline: UIImageView
@@ -371,7 +373,7 @@ public final class SelectablePeerNode: ASDisplayNode {
             let iconSize = self.iconView.update(
                 transition: .easeInOut(duration: 0.2),
                 component: AnyComponent(EmojiStatusComponent(
-                    postbox: stateManager.postbox,
+                    postbox: postbox,
                     energyUsageSettings: energyUsageSettings,
                     resolveInlineStickers: resolveInlineStickers,
                     animationCache: animationCache,
@@ -402,7 +404,7 @@ public final class SelectablePeerNode: ASDisplayNode {
             self.currentSelected = selected
             
             if let attributedText = self.textNode.attributedText {
-                self.textNode.attributedText = NSAttributedString(string: attributedText.string, font: textFont, textColor: selected ? self.theme.selectedTextColor : ((self.peer?.peerId.isSecretChat ?? false) ? self.theme.secretTextColor : self.theme.textColor), paragraphAlignment: .center)
+                self.textNode.attributedText = NSAttributedString(string: attributedText.string, font: textFont, textColor: selected ? self.theme.selectedTextColor : (self.peer?.peerId.namespace == Namespaces.Peer.SecretChat ? self.theme.secretTextColor : self.theme.textColor), paragraphAlignment: .center)
             }
             
             var isForum = false

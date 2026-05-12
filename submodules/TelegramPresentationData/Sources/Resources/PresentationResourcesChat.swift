@@ -1294,7 +1294,7 @@ public struct PresentationResourcesChat {
                     
                     UIGraphicsPopContext()
                 }
-            })?.withRenderingMode(.alwaysTemplate)
+            })
         })
     }
     
@@ -1320,7 +1320,7 @@ public struct PresentationResourcesChat {
                     
                     UIGraphicsPopContext()
                 }
-            })?.withRenderingMode(.alwaysTemplate)
+            })
         })
     }
     
@@ -1346,7 +1346,7 @@ public struct PresentationResourcesChat {
                     
                     UIGraphicsPopContext()
                 }
-            })?.withRenderingMode(.alwaysTemplate)
+            })
         })
     }
     

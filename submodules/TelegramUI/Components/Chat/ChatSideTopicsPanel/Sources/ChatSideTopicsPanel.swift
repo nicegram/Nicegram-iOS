@@ -941,8 +941,8 @@ public final class ChatSideTopicsPanel: Component {
                 }
                 let size = CGSize(width: contentSize, height: availableSize.height)
                 
-                let iconFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((size.height - iconSize.height) * 0.5) - 1.0), size: iconSize)
-                let titleFrame = CGRect(origin: CGPoint(x: iconFrame.maxX + spacing, y: floor((size.height - titleSize.height) * 0.5) - 1.0), size: titleSize)
+                let iconFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((size.height - iconSize.height) * 0.5)), size: iconSize)
+                let titleFrame = CGRect(origin: CGPoint(x: iconFrame.maxX + spacing, y: floor((size.height - titleSize.height) * 0.5)), size: titleSize)
                 
                 if let icon = self.icon {
                     if let avatarNode = self.avatarNode {
@@ -1422,7 +1422,7 @@ public final class ChatSideTopicsPanel: Component {
                 let contentSize: CGFloat = leftInset + rightInset + titleSize.width
                 let size = CGSize(width: contentSize, height: availableSize.height)
                 
-                let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((size.height - titleSize.height) * 0.5) - 1.0), size: titleSize)
+                let titleFrame = CGRect(origin: CGPoint(x: leftInset, y: floor((size.height - titleSize.height) * 0.5)), size: titleSize)
                 
                 if let titleView = self.title.view {
                     if titleView.superview == nil {
@@ -1502,6 +1502,7 @@ public final class ChatSideTopicsPanel: Component {
             self.scrollContainerView = UIView()
             self.scrollViewMask = UIImageView()
             self.scrollContainerView.mask = self.scrollViewMask
+            //self.scrollContainerView.addSubview(self.scrollViewMask)
             
             super.init(frame: frame)
             
@@ -1598,20 +1599,6 @@ public final class ChatSideTopicsPanel: Component {
                         }
                     }
                     if isPinned {
-                        if !seenPinnedItems {
-                            switch component.location {
-                            case .side:
-                                beforePinnedItemsPosition = item.frame.minY
-                            case .top, .bottom:
-                                beforePinnedItemsPosition = item.frame.minX
-                            }
-                            switch component.location {
-                            case .side:
-                                afterPinnedItemsPosition = item.frame.maxY
-                            case .top, .bottom:
-                                afterPinnedItemsPosition = item.frame.maxX
-                            }
-                        }
                         seenPinnedItems = true
                     } else {
                         if !seenPinnedItems {
@@ -1898,7 +1885,7 @@ public final class ChatSideTopicsPanel: Component {
                     itemFrame = CGRect(origin: CGPoint(x: 8.0 + 4.0, y: directionContainerInset + 6.0), size: itemSize)
                     directionContainerInset += itemSize.height
                 case .top, .bottom:
-                    itemFrame = CGRect(origin: CGPoint(x: 12.0, y: 5.0), size: itemSize)
+                    itemFrame = CGRect(origin: CGPoint(x: 12.0, y: 6.0), size: itemSize)
                     directionContainerInset += itemSize.width - 20.0
                 }
                 

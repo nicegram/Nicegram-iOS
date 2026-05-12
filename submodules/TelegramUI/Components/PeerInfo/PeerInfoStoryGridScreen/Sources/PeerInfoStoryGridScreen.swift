@@ -242,7 +242,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 guard let self, let component = self.component, let peer else {
                     return
                 }
-                guard let peerReference = PeerReference(peer) else {
+                guard let peerReference = PeerReference(peer._asPeer()) else {
                     return
                 }
                 
@@ -265,7 +265,7 @@ final class PeerInfoStoryGridScreenComponent: Component {
                 for (_, item) in sortedItems {
                     let itemOffset = progressStart
                     progressStart += valueNorm
-                    signals.append(saveToCameraRoll(context: component.context, userLocation: .other, mediaReference: .story(peer: peerReference, id: item.id, media: item.media._asMedia()))
+                    signals.append(saveToCameraRoll(context: component.context, postbox: component.context.account.postbox, userLocation: .other, mediaReference: .story(peer: peerReference, id: item.id, media: item.media._asMedia()))
                     |> map { progress -> Float in
                         return itemOffset + progress * valueNorm
                     })

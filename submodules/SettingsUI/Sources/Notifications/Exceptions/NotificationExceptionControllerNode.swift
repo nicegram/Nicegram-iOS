@@ -791,10 +791,10 @@ final class NotificationExceptionsControllerNode: ViewControllerTracingNode {
             self?.view.endEditing(true)
         }
         
-        let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.globalNotifications))
-
+        let preferences = context.account.postbox.preferencesView(keys: [PreferencesKeys.globalNotifications])
+        
         let previousEntriesHolder = Atomic<([NotificationExceptionEntry], PresentationTheme, PresentationStrings)?>(value: nil)
-
+        
         self.listDisposable = (combineLatest(context.sharedContext.presentationData, statePromise.get(), preferences, context.engine.peers.notificationSoundList()) |> deliverOnMainQueue).start(next: { [weak self] presentationData, state, prefs, notificationSoundList in
             let entries = notificationsExceptionEntries(presentationData: presentationData, notificationSoundList: notificationSoundList, state: state)
             let previousEntriesAndPresentationData = previousEntriesHolder.swap((entries, presentationData.theme, presentationData.strings))
@@ -1045,10 +1045,10 @@ private final class NotificationExceptionsSearchContainerNode: SearchDisplayCont
             
         }
         
-        let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.globalNotifications))
-
+        let preferences = context.account.postbox.preferencesView(keys: [PreferencesKeys.globalNotifications])
+        
         let previousEntriesHolder = Atomic<([NotificationExceptionEntry], PresentationTheme, PresentationStrings)?>(value: nil)
-
+        
         let stateQuery = stateAndPeers
         |> map { stateAndPeers -> String? in
             return stateAndPeers.1
@@ -1056,7 +1056,7 @@ private final class NotificationExceptionsSearchContainerNode: SearchDisplayCont
         |> distinctUntilChanged
         
         let searchSignal = stateQuery
-        |> mapToSignal { query -> Signal<(PresentationData, NotificationSoundList?, (NotificationExceptionState, String?), PreferencesEntry?, [EngineRenderedPeer]), NoError> in
+        |> mapToSignal { query -> Signal<(PresentationData, NotificationSoundList?, (NotificationExceptionState, String?), PreferencesView, [EngineRenderedPeer]), NoError> in
             var contactsSignal: Signal<[EngineRenderedPeer], NoError> = .single([])
             if let query = query {
                 contactsSignal = context.account.postbox.searchPeers(query: query)

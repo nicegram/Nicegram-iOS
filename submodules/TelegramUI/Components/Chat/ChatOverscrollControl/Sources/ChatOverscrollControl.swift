@@ -3,6 +3,7 @@ import ComponentFlow
 import Display
 import AsyncDisplayKit
 import TelegramCore
+import Postbox
 import AccountContext
 import AvatarNode
 import TextFormat

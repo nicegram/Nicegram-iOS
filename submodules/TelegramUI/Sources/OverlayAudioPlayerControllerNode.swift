@@ -258,10 +258,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         }, requestToggleTodoMessageItem: { _, _, _ in
         }, displayTodoToggleUnavailable: { _ in
         }, openStarsPurchase: { _ in
-        }, openRankInfo: { _, _, _ in
-        }, openSetPeerAvatar: {
-        }, displayPollRestrictedToast: { _ in
-        }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings, pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
+        }, openRankInfo: { _, _, _ in }, openSetPeerAvatar: {}, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings, pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: nil))
         
         self.dimNode = ASDisplayNode()
         self.dimNode.backgroundColor = UIColor(white: 0.0, alpha: 0.5)
@@ -603,7 +600,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         }
         let _ = (self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: savedMusicContext.peerId))
         |> deliverOnMainQueue).start(next: { [weak self] peer in
-            guard let self, let peer = peer.flatMap({ PeerReference($0) }) else {
+            guard let self, let peer = peer.flatMap({ PeerReference($0._asPeer()) }) else {
                 return
             }
 
@@ -739,7 +736,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
                         if let controller = self.context.sharedContext.makePeerInfoController(
                             context: self.context,
                             updatedPresentationData: nil,
-                            peer: peer,
+                            peer: peer._asPeer(),
                             mode: .myProfile,
                             avatarInitiallyExpanded: false,
                             fromChat: false,
@@ -843,9 +840,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         containerTransform = CATransform3DScale(containerTransform, scale, scale, scale)
         
         transition.updateTransform(layer: self.containerContainingNode.layer, transform: containerTransform)
-        
-        let containerCornerRadius = max(22.0, layout.deviceMetrics.screenCornerRadius)
-        transition.updateCornerRadius(node: self.containerContainingNode, cornerRadius: containerCornerRadius)
+        transition.updateCornerRadius(node: self.containerContainingNode, cornerRadius: layout.deviceMetrics.screenCornerRadius)
     }
     
     private var effectiveHeaderHeight: CGFloat {

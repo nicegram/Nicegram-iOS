@@ -1102,10 +1102,6 @@ public final class ChatMessageAvatarHeaderNodeImpl: ListViewItemHeaderNode, Chat
                         profilePhoto = maybePhoto
                         isKnown = true
                     }
-                    if profilePhoto == nil, case let .known(maybePhoto) = cachedPeerData.fallbackPhoto {
-                        profilePhoto = maybePhoto
-                        isKnown = true
-                    }
                 }
                 
                 if isKnown {

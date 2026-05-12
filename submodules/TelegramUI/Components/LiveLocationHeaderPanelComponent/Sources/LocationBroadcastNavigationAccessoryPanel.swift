@@ -178,8 +178,8 @@ final class LocationBroadcastNavigationAccessoryPanel: ASDisplayNode {
         
         let minimizedTitleOffset: CGFloat = subtitleString == nil ? 6.0 : 0.0
         
-        let minimizedTitleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleLayout.size.width) / 2.0), y: 6.0 + minimizedTitleOffset), size: titleLayout.size)
-        let minimizedSubtitleFrame = CGRect(origin: CGPoint(x: floor((size.width - subtitleLayout.size.width) / 2.0), y: 22.0), size: subtitleLayout.size)
+        let minimizedTitleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleLayout.size.width) / 2.0), y: 4.0 + minimizedTitleOffset), size: titleLayout.size)
+        let minimizedSubtitleFrame = CGRect(origin: CGPoint(x: floor((size.width - subtitleLayout.size.width) / 2.0), y: 20.0), size: subtitleLayout.size)
         
         if let image = self.iconNode.image {
             transition.updateFrame(node: self.iconNode, frame: CGRect(origin: CGPoint(x: 7.0 + leftInset, y: 9.0), size: image.size))

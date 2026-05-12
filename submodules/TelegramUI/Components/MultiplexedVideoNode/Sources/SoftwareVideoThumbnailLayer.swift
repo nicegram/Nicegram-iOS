@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TelegramCore
+import Postbox
 import SwiftSignalKit
 import Display
 import PhotoResources

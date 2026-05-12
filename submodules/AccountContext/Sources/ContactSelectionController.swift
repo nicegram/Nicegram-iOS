@@ -9,7 +9,7 @@ public protocol ContactSelectionController: ViewController {
     var result: Signal<([ContactListPeer], ContactListAction, Bool, Int32?, NSAttributedString?, ChatSendMessageActionSheetController.SendParameters?)?, NoError> { get }
     var displayProgress: Bool { get set }
     var dismissed: (() -> Void)? { get set }
-    var presentScheduleTimePicker: (@escaping (Int32, Int32?, Bool) -> Void) -> Void { get set }
+    var presentScheduleTimePicker: (@escaping (Int32, Int32?) -> Void) -> Void { get set }
     
     func dismissSearch()
 }
@@ -59,9 +59,9 @@ public enum ContactListAction: Equatable {
 }
 
 public enum ContactListPeer: Equatable {
-    case peer(peer: EnginePeer, isGlobal: Bool, participantCount: Int32?)
+    case peer(peer: Peer, isGlobal: Bool, participantCount: Int32?)
     case deviceContact(DeviceContactStableId, DeviceContactBasicData)
-
+    
     public var id: ContactListPeerId {
         switch self {
         case let .peer(peer, _, _):
@@ -70,8 +70,8 @@ public enum ContactListPeer: Equatable {
             return .deviceContact(id)
         }
     }
-
-    public var indexName: EnginePeer.IndexName {
+    
+    public var indexName: PeerIndexNameRepresentation {
         switch self {
         case let .peer(peer, _, _):
             return peer.indexName
@@ -79,11 +79,11 @@ public enum ContactListPeer: Equatable {
             return .personName(first: contact.firstName, last: contact.lastName, addressNames: [], phoneNumber: "")
         }
     }
-
+    
     public static func ==(lhs: ContactListPeer, rhs: ContactListPeer) -> Bool {
         switch lhs {
         case let .peer(lhsPeer, lhsIsGlobal, lhsParticipantCount):
-            if case let .peer(rhsPeer, rhsIsGlobal, rhsParticipantCount) = rhs, lhsPeer == rhsPeer, lhsIsGlobal == rhsIsGlobal, lhsParticipantCount == rhsParticipantCount {
+            if case let .peer(rhsPeer, rhsIsGlobal, rhsParticipantCount) = rhs, lhsPeer.isEqual(rhsPeer), lhsIsGlobal == rhsIsGlobal, lhsParticipantCount == rhsParticipantCount {
                 return true
             } else {
                 return false

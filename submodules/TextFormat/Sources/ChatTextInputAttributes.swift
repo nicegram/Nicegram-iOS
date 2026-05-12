@@ -604,9 +604,20 @@ private func refreshTextMentions(text: NSString, initialAttributedText: NSAttrib
     }
 }
 
-private func isTextUrlInnerCharacter(_ c: UnicodeScalar) -> Bool {
-    return alphanumericCharacters.contains(c) || c == " " as UnicodeScalar
-}
+private let textUrlEdgeCharacters: CharacterSet = {
+    var set: CharacterSet = .alphanumerics
+    set.formUnion(.symbols)
+    set.formUnion(.punctuationCharacters)
+    set.remove("(")
+    set.remove(")")
+    return set
+}()
+
+private let textUrlCharacters: CharacterSet = {
+    var set: CharacterSet = textUrlEdgeCharacters
+    set.formUnion(.whitespacesAndNewlines)
+    return set
+}()
 
 private func refreshTextUrls(text: NSString, initialAttributedText: NSAttributedString, attributedText: NSMutableAttributedString, fullRange: NSRange) {
     var textUrlRanges: [(NSRange, ChatTextInputTextUrlAttribute)] = []
@@ -624,7 +635,7 @@ private func refreshTextUrls(text: NSString, initialAttributedText: NSAttributed
         var validLower = range.lowerBound
         inner1: for i in range.lowerBound ..< range.upperBound {
             if let c = UnicodeScalar(text.character(at: i)) {
-                if isTextUrlInnerCharacter(c) {
+                if textUrlCharacters.contains(c) {
                     validLower = i
                     break inner1
                 }
@@ -635,7 +646,7 @@ private func refreshTextUrls(text: NSString, initialAttributedText: NSAttributed
         var validUpper = range.upperBound
         inner2: for i in (validLower ..< range.upperBound).reversed() {
             if let c = UnicodeScalar(text.character(at: i)) {
-                if isTextUrlInnerCharacter(c) {
+                if textUrlCharacters.contains(c) {
                     validUpper = i + 1
                     break inner2
                 }
@@ -647,7 +658,7 @@ private func refreshTextUrls(text: NSString, initialAttributedText: NSAttributed
         let minLower = (i == 0) ? fullRange.lowerBound : textUrlRanges[i - 1].0.upperBound
         inner3: for i in (minLower ..< validLower).reversed() {
             if let c = UnicodeScalar(text.character(at: i)) {
-                if alphanumericCharacters.contains(c) {
+                if textUrlEdgeCharacters.contains(c) {
                     validLower = i
                 } else {
                     break inner3
@@ -660,7 +671,7 @@ private func refreshTextUrls(text: NSString, initialAttributedText: NSAttributed
         let maxUpper = (i == textUrlRanges.count - 1) ? fullRange.upperBound : textUrlRanges[i + 1].0.lowerBound
         inner3: for i in validUpper ..< maxUpper {
             if let c = UnicodeScalar(text.character(at: i)) {
-                if alphanumericCharacters.contains(c) {
+                if textUrlEdgeCharacters.contains(c) {
                     validUpper = i + 1
                 } else {
                     break inner3
@@ -682,7 +693,7 @@ private func refreshTextUrls(text: NSString, initialAttributedText: NSAttributed
                 var combine = true
                 inner: for j in textUrlRanges[i].0.upperBound ..< textUrlRanges[i + 1].0.lowerBound {
                     if let c = UnicodeScalar(text.character(at: j)) {
-                        if isTextUrlInnerCharacter(c) {
+                        if textUrlCharacters.contains(c) {
                         } else {
                             combine = false
                             break inner

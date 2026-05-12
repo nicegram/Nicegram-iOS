@@ -208,11 +208,7 @@ final class ChatbotSearchResultItemComponent: Component {
             case let .found(peer, _):
                 isTextVisible = true
                 titleValue = peer.displayTitle(strings: component.strings, displayOrder: .firstLast)
-                if let addressName = peer.addressName {
-                    subtitleValue = "@\(addressName)"
-                } else {
-                    subtitleValue = component.strings.Bot_GenericBotStatus
-                }
+                subtitleValue = component.strings.Bot_GenericBotStatus
             }
             
             let titleSize = self.titleLabel.update(

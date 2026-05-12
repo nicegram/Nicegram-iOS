@@ -184,13 +184,13 @@ __unused static CGSize TGFitSize(CGSize size, CGSize maxSize) {
         if ([itemProvider hasItemConformingToTypeIdentifier:(NSString *)kUTTypeImage]) {
             [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeImage options:imageOptions completionHandler:^(id<NSSecureCoding> _Nullable item, NSError * _Null_unspecified error) {
                 if (error != nil && ![(NSObject *)item respondsToSelector:@selector(CGImage)] && ![(NSObject *)item respondsToSelector:@selector(absoluteString)]) {
-                    [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeData options:nil completionHandler:^(NSData *data, NSError *error)
+                    [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeData options:nil completionHandler:^(UIImage *image, NSError *error)
                      {
                          if (error != nil)
                              [subscriber putError:nil];
                          else
                          {
-                             [subscriber putNext:@{@"data": data}];
+                             [subscriber putNext:@{@"image": image}];
                              [subscriber putCompletion];
                          }
                      }];
@@ -263,13 +263,13 @@ __unused static CGSize TGFitSize(CGSize size, CGSize maxSize) {
                 }
             }];
         } else {
-            [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeData options:nil completionHandler:^(NSData *data, NSError *error)
+            [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeData options:nil completionHandler:^(UIImage *image, NSError *error)
              {
                  if (error != nil)
                      [subscriber putError:nil];
                  else
                  {
-                     [subscriber putNext:@{@"data": data}];
+                     [subscriber putNext:@{@"image": image}];
                      [subscriber putCompletion];
                  }
              }];

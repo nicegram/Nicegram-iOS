@@ -146,7 +146,7 @@ private final class CameraContext {
                 transform = CGAffineTransformTranslate(transform, 0.0, -size.height)
                 ciImage = ciImage.transformed(by: transform)
             }
-            ciImage = ciImage.clampedToExtent().applyingGaussianBlur(sigma: Camera.isDualCameraSupported(forRoundVideo: true) ? 60.0 : 40.0).cropped(to: CGRect(origin: .zero, size: size))
+            ciImage = ciImage.clampedToExtent().applyingGaussianBlur(sigma: Camera.isDualCameraSupported(forRoundVideo: true) ? 100.0 : 40.0).cropped(to: CGRect(origin: .zero, size: size))
             if let cgImage = self.ciContext.createCGImage(ciImage, from: ciImage.extent) {
                 let uiImage = UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
                 if front {
@@ -189,7 +189,6 @@ private final class CameraContext {
     
     deinit {
         Logger.shared.log("CameraContext", "deinit")
-        NotificationCenter.default.removeObserver(self)
     }
         
     private var isSessionRunning = false
@@ -203,7 +202,7 @@ private final class CameraContext {
     }
     
     func stopCapture(invalidate: Bool = false) {
-        Logger.shared.log("CameraContext", "stopCapture(invalidate: \(invalidate))")
+        Logger.shared.log("CameraContext", "startCapture(invalidate: \(invalidate))")
         if invalidate {
             self.mainDeviceContext?.device.resetZoom()
             
@@ -213,7 +212,6 @@ private final class CameraContext {
         }
         
         self.session.session.stopRunning()
-        self.isSessionRunning = false
     }
     
     func focus(at point: CGPoint, autoFocus: Bool) {
@@ -230,7 +228,7 @@ private final class CameraContext {
     }
     
     func setFps(_ fps: Float64) {
-        self.mainDeviceContext?.device.setFps(fps)
+        self.mainDeviceContext?.device.fps = fps
     }
     
     private var modeChange: Camera.ModeChange = .none {
@@ -277,6 +275,7 @@ private final class CameraContext {
                 self.positionValue = targetPosition
                 self._positionPromise.set(targetPosition)
                 self.modeChange = .position
+                
                 
                 let preferWide = self.initialConfiguration.preferWide || isRoundVideo
                 let preferLowerFramerate = self.initialConfiguration.preferLowerFramerate || isRoundVideo
@@ -566,11 +565,6 @@ private final class CameraContext {
                         return .finished(mainImage, additionalImage, CACurrentMediaTime())
                     }
                 } else {
-                    if case .failed = main {
-                        return .failed
-                    } else if case .failed = additional {
-                        return .failed
-                    }
                     return .began
                 }
             } |> distinctUntilChanged
@@ -588,10 +582,6 @@ private final class CameraContext {
         } else {
             mainDeviceContext.device.setTorchMode(self._flashMode)
         }
-        
-        let timestamp = CACurrentMediaTime() + 2.0
-        self.lastSnapshotTimestamp = timestamp
-        self.lastAdditionalSnapshotTimestamp = timestamp
         
         let orientation = self.simplePreviewView?.videoPreviewLayer.connection?.videoOrientation ?? .portrait
         if self.initialConfiguration.isRoundVideo {
@@ -798,11 +788,6 @@ public final class Camera {
             secondaryPreviewView.setSession(session.session, autoConnect: false)
         }
         
-        if #available(iOS 14.5, *), configuration.isRoundVideo {
-            AVCaptureDevice.centerStageControlMode = .app
-            AVCaptureDevice.isCenterStageEnabled = false
-        }
-        
         self.queue.async {
             let context = CameraContext(queue: self.queue, session: session, configuration: configuration, metrics: self.metrics, previewView: previewView, secondaryPreviewView: secondaryPreviewView)
             self.contextRef = Unmanaged.passRetained(context)
@@ -815,10 +800,6 @@ public final class Camera {
         let contextRef = self.contextRef
         self.queue.async {
             contextRef?.release()
-        }
-        
-        if #available(iOS 14.5, *) {
-            AVCaptureDevice.centerStageControlMode = .user
         }
     }
     
@@ -1189,7 +1170,6 @@ public struct CameraRecordingData {
 }
 
 public enum CameraRecordingError {
-    case videoRecorderInitializationError
     case audioInitializationError
 }
 

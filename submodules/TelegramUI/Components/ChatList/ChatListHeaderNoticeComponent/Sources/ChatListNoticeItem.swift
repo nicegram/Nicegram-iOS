@@ -358,7 +358,7 @@ final class ChatListNoticeItemNode: ItemListRevealOptionsItemNode {
                             strongSelf.avatarsNode = avatarsNode
                         }
                         let avatarSize = CGSize(width: 30.0, height: 30.0)
-                        avatarsNode.update(context: item.context, peers: avatarPeers, synchronousLoad: false, imageSize: avatarSize.width, imageSpacing: 16.0, borderWidth: 2.0 - UIScreenPixel, avatarFontSize: 10.0)
+                        avatarsNode.update(context: item.context, peers: avatarPeers.map { $0._asPeer() }, synchronousLoad: false, imageSize: avatarSize.width, imageSpacing: 16.0, borderWidth: 2.0 - UIScreenPixel, avatarFontSize: 10.0)
                         let avatarsSize = CGSize(width: avatarSize.width + 16.0 * CGFloat(avatarPeers.count - 1), height: avatarSize.height)
                         avatarsNode.updateLayout(size: avatarsSize)
                         avatarsNode.frame = CGRect(origin: CGPoint(x: sideInset - 6.0, y: floor((layout.size.height - avatarsSize.height) / 2.0)), size: avatarsSize)

@@ -32,7 +32,7 @@ final class TextProcessingLanguageSelectionComponent: Component {
     let selectedLanguageCode: String
     let currentStyle: TelegramComposeAIMessageMode.StyleId
     let displayStyles: [TextProcessingScreen.Style]?
-    let completion: (String, TelegramComposeAIMessageMode.StyleReference) -> Void
+    let completion: (String, TelegramComposeAIMessageMode.StyleId) -> Void
     let dismissed: () -> Void
     let inputHeight: CGFloat
 
@@ -45,7 +45,7 @@ final class TextProcessingLanguageSelectionComponent: Component {
         selectedLanguageCode: String,
         currentStyle: TelegramComposeAIMessageMode.StyleId,
         displayStyles: [TextProcessingScreen.Style]?,
-        completion: @escaping (String, TelegramComposeAIMessageMode.StyleReference) -> Void,
+        completion: @escaping (String, TelegramComposeAIMessageMode.StyleId) -> Void,
         dismissed: @escaping () -> Void,
         inputHeight: CGFloat
     ) {
@@ -271,18 +271,7 @@ final class TextProcessingLanguageSelectionComponent: Component {
             }
             if case .ended = recognizer.state {
                 if component.displayStyles != nil, let updatedStyle = self.updatedStyle {
-                    let mappedStyle: TelegramComposeAIMessageMode.StyleReference
-                    switch updatedStyle {
-                    case .neutral:
-                        mappedStyle = .neutral
-                    case let .style(style):
-                        if let styleValue = component.displayStyles?.first(where: { $0.reference.id == style }) {
-                            mappedStyle = .style(styleValue.reference)
-                        } else {
-                            return
-                        }
-                    }
-                    component.completion(component.selectedLanguageCode, mappedStyle)
+                    component.completion(component.selectedLanguageCode, updatedStyle)
                 }
                 self.animateOut()
             }
@@ -309,19 +298,7 @@ final class TextProcessingLanguageSelectionComponent: Component {
                 return
             }
             if self.updatedLanguage != nil || self.updatedStyle != nil {
-                let styleId = self.updatedStyle ?? component.currentStyle
-                let mappedStyle: TelegramComposeAIMessageMode.StyleReference
-                switch styleId {
-                case .neutral:
-                    mappedStyle = .neutral
-                case let .style(style):
-                    if let styleValue = component.displayStyles?.first(where: { $0.reference.id == style }) {
-                        mappedStyle = .style(styleValue.reference)
-                    } else {
-                        return
-                    }
-                }
-                component.completion(self.updatedLanguage ?? component.selectedLanguageCode, mappedStyle)
+                component.completion(self.updatedLanguage ?? component.selectedLanguageCode, self.updatedStyle ?? component.currentStyle)
             }
             self.animateOut()
         }
@@ -492,7 +469,7 @@ final class TextProcessingLanguageSelectionComponent: Component {
                 var styleData: [(id: TelegramComposeAIMessageMode.StyleId, iconFileId: Int64?, iconFile: TelegramMediaFile?, title: String)] = []
                 styleData.append((.neutral, nil, nil, component.strings.TextProcessingStyle_Neutral))
                 for item in displayStyles {
-                    styleData.append((.style(item.reference.id), item.emojiFileId, item.emojiFile, item.title))
+                    styleData.append((item.id, item.emojiFileId, item.emojiFile, item.title))
                 }
 
                 let stylesItemSize = CGSize(width: 82.0, height: 60.0)

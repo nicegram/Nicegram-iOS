@@ -14,6 +14,7 @@ swift_library(
         "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/ComponentFlow",
+        "//submodules/Postbox",
         "//submodules/TelegramCore",
         "//submodules/TelegramPresentationData",
         "//submodules/TelegramUIPreferences",

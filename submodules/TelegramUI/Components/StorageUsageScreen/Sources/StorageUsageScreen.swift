@@ -9,6 +9,7 @@ import ComponentDisplayAdapters
 import TelegramPresentationData
 import AccountContext
 import TelegramCore
+import Postbox
 import MultilineTextComponent
 import EmojiStatusComponent
 import Markdown
@@ -222,7 +223,7 @@ final class StorageUsageScreenComponent: Component {
             return true
         }
         
-        func togglePeer(id: EnginePeer.Id, availableMessages: [EngineMessage.Id: EngineMessage]) -> SelectionState {
+        func togglePeer(id: EnginePeer.Id, availableMessages: [EngineMessage.Id: Message]) -> SelectionState {
             var selectedPeers = self.selectedPeers
             var selectedMessages = self.selectedMessages
             
@@ -350,32 +351,32 @@ final class StorageUsageScreenComponent: Component {
         let peerId: EnginePeer.Id?
         let stats: AllStorageUsageStats
         let contextStats: StorageUsageStats
-        let messages: [EngineMessage.Id: EngineMessage]
-
+        let messages: [MessageId: Message]
+        
         var isSelectingPeers: Bool = false
         private(set) var selectionState: SelectionState
-
+        
         let existingCategories: Set<Category>
         private(set) var selectedCategories: Set<Category>
-
+        
         let peerItems: StoragePeerListPanelComponent.Items?
         let imageItems: StorageMediaGridPanelComponent.Items?
         let fileItems: StorageFileListPanelComponent.Items?
         let musicItems: StorageFileListPanelComponent.Items?
-
+        
         private let allPhotos: Set<EngineMessage.Id>
         private let allVideos: Set<EngineMessage.Id>
         private let allFiles: Set<EngineMessage.Id>
         private let allMusic: Set<EngineMessage.Id>
-
+        
         private(set) var selectedSize: Int64 = 0
-        private(set) var clearIncludeMessages: [EngineMessage] = []
-        private(set) var clearExcludeMessages: [EngineMessage] = []
-
+        private(set) var clearIncludeMessages: [Message] = []
+        private(set) var clearExcludeMessages: [Message] = []
+        
         init(
             peerId: EnginePeer.Id?,
             stats: AllStorageUsageStats,
-            messages: [EngineMessage.Id: EngineMessage],
+            messages: [MessageId: Message],
             peerItems: StoragePeerListPanelComponent.Items?,
             imageItems: StorageMediaGridPanelComponent.Items?,
             fileItems: StorageFileListPanelComponent.Items?,
@@ -580,16 +581,16 @@ final class StorageUsageScreenComponent: Component {
                     }
                 }
                 
-                var clearIncludeMessages: [EngineMessage] = []
-                var clearExcludeMessages: [EngineMessage] = []
-
+                var clearIncludeMessages: [Message] = []
+                var clearExcludeMessages: [Message] = []
+                
                 if self.selectedCategories.contains(.photos) {
                     let deselectedPhotos = self.allPhotos.subtracting(self.selectionState.selectedMessages)
                     if !deselectedPhotos.isEmpty, let imageItems = self.imageItems {
                         for item in imageItems.items {
                             if deselectedPhotos.contains(item.message.id) {
                                 selectedSize -= item.size
-                                clearExcludeMessages.append(item.message)
+                                clearExcludeMessages.append(item.message._asMessage())
                             }
                         }
                     }
@@ -599,19 +600,19 @@ final class StorageUsageScreenComponent: Component {
                         for item in imageItems.items {
                             if selectedPhotos.contains(item.message.id) {
                                 selectedSize += item.size
-                                clearIncludeMessages.append(item.message)
+                                clearIncludeMessages.append(item.message._asMessage())
                             }
                         }
                     }
                 }
-
+                
                 if self.selectedCategories.contains(.videos) {
                     let deselectedVideos = self.allVideos.subtracting(self.selectionState.selectedMessages)
                     if !deselectedVideos.isEmpty, let imageItems = self.imageItems {
                         for item in imageItems.items {
                             if deselectedVideos.contains(item.message.id) {
                                 selectedSize -= item.size
-                                clearExcludeMessages.append(item.message)
+                                clearExcludeMessages.append(item.message._asMessage())
                             }
                         }
                     }
@@ -621,12 +622,12 @@ final class StorageUsageScreenComponent: Component {
                         for item in imageItems.items {
                             if selectedVideos.contains(item.message.id) {
                                 selectedSize += item.size
-                                clearIncludeMessages.append(item.message)
+                                clearIncludeMessages.append(item.message._asMessage())
                             }
                         }
                     }
                 }
-
+                
                 if self.selectedCategories.contains(.files) {
                     let deselectedFiles = self.allFiles.subtracting(self.selectionState.selectedMessages)
                     if !deselectedFiles.isEmpty, let fileItems = self.fileItems {
@@ -648,7 +649,7 @@ final class StorageUsageScreenComponent: Component {
                         }
                     }
                 }
-
+                
                 if self.selectedCategories.contains(.music) {
                     let deselectedMusic = self.allMusic.subtracting(self.selectionState.selectedMessages)
                     if !deselectedMusic.isEmpty, let musicItems = self.musicItems {
@@ -1043,11 +1044,17 @@ final class StorageUsageScreenComponent: Component {
             
             if self.statsDisposable == nil {
                 let context = component.context
-                let cacheSettingsExceptionCount: Signal<[CacheStorageSettings.PeerStorageCategory: Int32], NoError> = context.engine.data.subscribe(
-                    TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.accountSpecificCacheStorageSettings)
-                )
-                |> map { preferencesEntry -> AccountSpecificCacheStorageSettings in
-                    return preferencesEntry?.get(AccountSpecificCacheStorageSettings.self) ?? AccountSpecificCacheStorageSettings.defaultSettings
+                let viewKey: PostboxViewKey = .preferences(keys: Set([PreferencesKeys.accountSpecificCacheStorageSettings]))
+                let cacheSettingsExceptionCount: Signal<[CacheStorageSettings.PeerStorageCategory: Int32], NoError> = component.context.account.postbox.combinedView(keys: [viewKey])
+                |> map { views -> AccountSpecificCacheStorageSettings in
+                    let cacheSettings: AccountSpecificCacheStorageSettings
+                    if let view = views.views[viewKey] as? PreferencesView, let value = view.values[PreferencesKeys.accountSpecificCacheStorageSettings]?.get(AccountSpecificCacheStorageSettings.self) {
+                        cacheSettings = value
+                    } else {
+                        cacheSettings = AccountSpecificCacheStorageSettings.defaultSettings
+                    }
+                    
+                    return cacheSettings
                 }
                 |> distinctUntilChanged
                 |> mapToSignal { accountSpecificSettings -> Signal<[CacheStorageSettings.PeerStorageCategory: Int32], NoError> in
@@ -2076,7 +2083,7 @@ final class StorageUsageScreenComponent: Component {
                                         let peerInfoController = component.context.sharedContext.makePeerInfoController(
                                             context: component.context,
                                             updatedPresentationData: nil,
-                                            peer: peer,
+                                            peer: peer._asPeer(),
                                             mode: .generic,
                                             avatarInitiallyExpanded: false,
                                             fromChat: false,
@@ -2382,20 +2389,20 @@ final class StorageUsageScreenComponent: Component {
                 }
                 
                 class RenderResult {
-                    var messages: [EngineMessage.Id: EngineMessage] = [:]
+                    var messages: [MessageId: Message] = [:]
                     var imageItems: [StorageMediaGridPanelComponent.Item] = []
                     var fileItems: [StorageFileListPanelComponent.Item] = []
                     var musicItems: [StorageFileListPanelComponent.Item] = []
                 }
-
+                
                 self.messagesDisposable = (component.context.engine.resources.renderStorageUsageStatsMessages(stats: contextStats, categories: [.files, .photos, .videos, .music], existingMessages: self.aggregatedData?.messages ?? [:])
                 |> deliverOn(Queue())
                 |> map { messages -> RenderResult in
                     let result = RenderResult()
-
+                    
                     result.messages = messages
                     
-                    var mergedMedia: [EngineMessage.Id: Int64] = [:]
+                    var mergedMedia: [MessageId: Int64] = [:]
                     if let categoryStats = contextStats.categories[.photos] {
                         mergedMedia = categoryStats.messages
                     }
@@ -2423,7 +2430,7 @@ final class StorageUsageScreenComponent: Component {
                                 
                                 if matches {
                                     result.imageItems.append(StorageMediaGridPanelComponent.Item(
-                                        message: message,
+                                        message: EngineMessage(message),
                                         size: messageSize
                                     ))
                                 }
@@ -2559,7 +2566,7 @@ final class StorageUsageScreenComponent: Component {
                 chatLocation: .peer(id: message.id.peerId),
                 chatFilterTag: nil,
                 chatLocationContextHolder: nil,
-                message: message._asMessage(),
+                message: message,
                 standalone: true,
                 reverseMessageGalleryOrder: false,
                 navigationController: self.controller?()?.navigationController as? NavigationController
@@ -2758,21 +2765,25 @@ final class StorageUsageScreenComponent: Component {
             self.controller?()?.presentInGlobalOverlay(controller)
         }
         
-        private func openMessage(message: EngineMessage) {
+        private func openMessage(message: Message) {
             guard let component = self.component else {
                 return
             }
             guard let controller = self.controller?(), let navigationController = controller.navigationController as? NavigationController else {
                 return
             }
+            let foundGalleryMessage: Message? = message
+            guard let galleryMessage = foundGalleryMessage else {
+                return
+            }
             self.endEditing(true)
-
+            
             let _ = component.context.sharedContext.openChatMessage(OpenChatMessageParams(
                 context: component.context,
                 chatLocation: .peer(id: message.id.peerId),
                 chatFilterTag: nil,
                 chatLocationContextHolder: nil,
-                message: message._asMessage(),
+                message: galleryMessage,
                 standalone: true,
                 reverseMessageGalleryOrder: true,
                 navigationController: navigationController,
@@ -3057,9 +3068,9 @@ final class StorageUsageScreenComponent: Component {
                         }
                     }
                     
-                    var includeMessages: [EngineMessage] = []
-                    var excludeMessages: [EngineMessage] = []
-
+                    var includeMessages: [Message] = []
+                    var excludeMessages: [Message] = []
+                    
                     for (id, message) in aggregatedData.messages {
                         if aggregatedData.selectionState.selectedPeers.contains(id.peerId) {
                             if !aggregatedData.selectionState.selectedMessages.contains(id) {
@@ -3071,7 +3082,7 @@ final class StorageUsageScreenComponent: Component {
                             }
                         }
                     }
-
+                    
                     let _ = (component.context.engine.resources.clearStorage(peerIds: aggregatedData.selectionState.selectedPeers, includeMessages: includeMessages, excludeMessages: excludeMessages)
                     |> deliverOnMainQueue).start(next: { [weak self] progress in
                         guard let self else {
@@ -3122,52 +3133,69 @@ final class StorageUsageScreenComponent: Component {
                 self.controller?()?.presentInGlobalOverlay(c, with: nil)
             }
             
-            let accountSpecificSettings: Signal<AccountSpecificCacheStorageSettings, NoError> = context.engine.data.subscribe(
-                TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.accountSpecificCacheStorageSettings)
-            )
-            |> map { preferencesEntry -> AccountSpecificCacheStorageSettings in
-                return preferencesEntry?.get(AccountSpecificCacheStorageSettings.self) ?? AccountSpecificCacheStorageSettings.defaultSettings
+            let viewKey: PostboxViewKey = .preferences(keys: Set([PreferencesKeys.accountSpecificCacheStorageSettings]))
+            let accountSpecificSettings: Signal<AccountSpecificCacheStorageSettings, NoError> = context.account.postbox.combinedView(keys: [viewKey])
+            |> map { views -> AccountSpecificCacheStorageSettings in
+                let cacheSettings: AccountSpecificCacheStorageSettings
+                if let view = views.views[viewKey] as? PreferencesView, let value = view.values[PreferencesKeys.accountSpecificCacheStorageSettings]?.get(AccountSpecificCacheStorageSettings.self) {
+                    cacheSettings = value
+                } else {
+                    cacheSettings = AccountSpecificCacheStorageSettings.defaultSettings
+                }
+
+                return cacheSettings
             }
             |> distinctUntilChanged
-
-            let peerExceptions: Signal<[(peer: EnginePeer, value: Int32)], NoError> = accountSpecificSettings
-            |> mapToSignal { accountSpecificSettings -> Signal<[(peer: EnginePeer, value: Int32)], NoError> in
-                return context.engine.data.get(
-                    EngineDataMap(accountSpecificSettings.peerStorageTimeoutExceptions.map(\.key).map(TelegramEngine.EngineData.Item.Peer.Peer.init(id:)))
-                )
-                |> map { peers -> [(peer: EnginePeer, value: Int32)] in
-                    var result: [(peer: EnginePeer, value: Int32)] = []
-
+            
+            let peerExceptions: Signal<[(peer: FoundPeer, value: Int32)], NoError> = accountSpecificSettings
+            |> mapToSignal { accountSpecificSettings -> Signal<[(peer: FoundPeer, value: Int32)], NoError> in
+                return context.account.postbox.transaction { transaction -> [(peer: FoundPeer, value: Int32)] in
+                    var result: [(peer: FoundPeer, value: Int32)] = []
+                    
                     for item in accountSpecificSettings.peerStorageTimeoutExceptions {
-                        guard let peer = peers[item.key] ?? nil else {
+                        let peerId = item.key
+                        let value = item.value
+                        
+                        guard let peer = transaction.getPeer(peerId) else {
                             continue
                         }
                         let peerCategory: CacheStorageSettings.PeerStorageCategory
-                        switch peer {
-                        case .user, .secretChat:
+                        var subscriberCount: Int32?
+                        if peer is TelegramUser {
                             peerCategory = .privateChats
-                        case .legacyGroup:
+                        } else if peer is TelegramGroup {
                             peerCategory = .groups
-                        case let .channel(channel):
+                            
+                            if let cachedData = transaction.getPeerCachedData(peerId: peerId) as? CachedGroupData {
+                                subscriberCount = (cachedData.participants?.participants.count).flatMap(Int32.init)
+                            }
+                        } else if let channel = peer as? TelegramChannel {
                             if case .group = channel.info {
                                 peerCategory = .groups
                             } else {
                                 peerCategory = .channels
                             }
+                            if peerCategory == mappedCategory {
+                                if let cachedData = transaction.getPeerCachedData(peerId: peerId) as? CachedChannelData {
+                                    subscriberCount = cachedData.participantsSummary.memberCount
+                                }
+                            }
+                        } else {
+                            continue
                         }
-
+                            
                         if peerCategory != mappedCategory {
                             continue
                         }
-
-                        result.append((peer: peer, value: item.value))
+                        
+                        result.append((peer: FoundPeer(peer: peer, subscribers: subscriberCount), value: value))
                     }
-
+                    
                     return result.sorted(by: { lhs, rhs in
                         if lhs.value != rhs.value {
                             return lhs.value < rhs.value
                         }
-                        return lhs.peer.debugDisplayTitle < rhs.peer.debugDisplayTitle
+                        return lhs.peer.peer.debugDisplayTitle < rhs.peer.peer.debugDisplayTitle
                     })
                 }
             }
@@ -3262,7 +3290,7 @@ final class StorageUsageScreenComponent: Component {
                             }
                         })))
                     } else {
-                        subItems.append(.custom(MultiplePeerAvatarsContextItem(context: context, peers: peerExceptions.prefix(3).map { $0.peer }, totalCount: peerExceptions.count, action: { c, _ in
+                        subItems.append(.custom(MultiplePeerAvatarsContextItem(context: context, peers: peerExceptions.prefix(3).map { EnginePeer($0.peer.peer) }, totalCount: peerExceptions.count, action: { c, _ in
                             c.dismiss(completion: {
                                 
                             })

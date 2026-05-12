@@ -136,7 +136,7 @@ extension VideoChatScreenComponent.View {
                                 } else {
                                     text = environment.strings.VoiceChat_InvitedPeerText(peer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)).string
                                 }
-                                self.presentToast(icon: .peer(participant.peer), text: text, duration: 3)
+                                self.presentToast(icon: .peer(EnginePeer(participant.peer)), text: text, duration: 3)
                             }
                         } else {
                             if case let .channel(groupPeer) = groupPeer, let listenerLink = inviteLinks?.listenerLink, !groupPeer.hasPermission(.inviteMembers) {
@@ -292,19 +292,12 @@ extension VideoChatScreenComponent.View {
                                             
                                             switch error {
                                             case .privacy:
-                                                let _ = (groupCall.accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peer.id))
-                                                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-                                                        if let peer {
-                                                            return .single(peer)
-                                                        } else {
-                                                            return .never()
-                                                        }
-                                                    }
+                                                let _ = (groupCall.accountContext.account.postbox.loadedPeerWithId(peer.id)
                                                     |> deliverOnMainQueue).start(next: { [weak self] peer in
                                                     guard let self, let environment = self.environment, case let .group(groupCall) = self.currentCall else {
                                                         return
                                                     }
-                                                    environment.controller()?.present(textAlertController(context: groupCall.accountContext, title: nil, text: environment.strings.Privacy_GroupsAndChannels_InviteToGroupError(peer.compactDisplayTitle, peer.compactDisplayTitle).string, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
+                                                    environment.controller()?.present(textAlertController(context: groupCall.accountContext, title: nil, text: environment.strings.Privacy_GroupsAndChannels_InviteToGroupError(EnginePeer(peer).compactDisplayTitle, EnginePeer(peer).compactDisplayTitle).string, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))
                                                 })
                                             case .notMutualContact:
                                                 environment.controller()?.present(textAlertController(context: context, title: nil, text: environment.strings.GroupInfo_AddUserLeftError, actions: [TextAlertAction(type: .genericAction, title: environment.strings.Common_OK, action: {})]), in: .window(.root))

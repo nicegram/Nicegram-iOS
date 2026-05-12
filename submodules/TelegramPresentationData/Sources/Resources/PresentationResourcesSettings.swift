@@ -140,10 +140,6 @@ public struct PresentationResourcesSettings {
     public static let business = renderSettingsIcon(name: "Item List/Icons/Business", backgroundColors: [UIColor(rgb: 0xA95CE3), UIColor(rgb: 0xF16B80)])
     public static let myProfile = renderSettingsIcon(name: "Item List/Icons/Profile", backgroundColors: [colorRed])
     
-    public static let birthday = renderSettingsIcon(name: "Item List/Icons/Cake", backgroundColors: [colorBlue])
-    public static let aiTools = renderSettingsIcon(name: "Item List/Icons/AITools", backgroundColors: [colorPurple])
-    public static let yourColor = renderSettingsIcon(name: "Item List/Icons/Brush", backgroundColors: [colorLightBlue])
-    
     public static let storageUsage = renderSettingsIcon(name: "Item List/Icons/Pie", backgroundColors: [colorOrange])
     public static let dataUsage = renderSettingsIcon(name: "Item List/Icons/Stats", backgroundColors: [colorPurple])
     
@@ -225,7 +221,48 @@ public struct PresentationResourcesSettings {
     })
     
     public static let ton = renderSettingsIcon(name: "Ads/TonAbout", backgroundColors: [UIColor(rgb: 0x32ade6)])
- 
+    
+//    generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
+//        let bounds = CGRect(origin: CGPoint(), size: size)
+//        context.clear(bounds)
+//        
+//        context.setFillColor(UIColor(rgb: 0x32ade6).cgColor)
+//        context.fill(bounds)
+//        
+//        if let gradientImage, let cgImage = gradientImage.cgImage {
+//            context.saveGState()
+//            context.setBlendMode(.plusLighter)
+//            context.draw(cgImage, in: CGRect(origin: .zero, size: size))
+//            context.restoreGState()
+//        }
+//        
+//        if let backdropImage, let cgImage = backdropImage.cgImage {
+//            context.saveGState()
+//            context.setBlendMode(.overlay)
+//            context.draw(cgImage, in: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: size))
+//            context.restoreGState()
+//        }
+//        
+//        context.setBlendMode(.normal)
+//        
+//        if let image = generateTintedImage(image: UIImage(bundleImageName: "Ads/TonAbout"), color: UIColor(rgb: 0xffffff)), let cgImage = image.cgImage {
+//            context.draw(cgImage, in: CGRect(origin: CGPoint(x: floorToScreenPixels((bounds.width - image.size.width) / 2.0), y: floorToScreenPixels((bounds.height - image.size.height) / 2.0)), size: image.size))
+//        }
+//        
+//        let outerPath = UIBezierPath(rect: CGRect(origin: .zero, size: size))
+//        let innerPath = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: 8.0)
+//        outerPath.append(innerPath)
+//
+//        context.saveGState()
+//        outerPath.usesEvenOddFillRule = true
+//        context.addPath(outerPath.cgPath)
+//        context.clip(using: .evenOdd)
+//
+//        context.setBlendMode(.clear)
+//        context.fill(CGRect(origin: .zero, size: size))
+//        context.restoreGState()
+//    })
+    
     public static let stars = generateImage(CGSize(width: 30.0, height: 30.0), contextGenerator: { size, context in
         let bounds = CGRect(origin: CGPoint(), size: size)
         context.clear(bounds)

@@ -657,7 +657,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
     
     if focusOnItemTag == InstalledStickerPacksEntryTag.edit {
         updateState {
-            $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
+            $0.withUpdatedEditing(true)
         }
     }
     
@@ -836,8 +836,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
         }).start()
     }, togglePackSelected: { packId in
         updateState { state in
-            if state.editing {
-                var selectedPackIds = state.selectedPackIds ?? Set()
+            if var selectedPackIds = state.selectedPackIds {
                 if selectedPackIds.contains(packId) {
                     selectedPackIds.remove(packId)
                 } else {
@@ -864,7 +863,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                     if installed {
                         return .complete()
                     } else {
-                        return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items) |> map { _ in return Void() }
+                        return context.engine.stickers.addStickerPackInteractively(info: info._parse(), items: items)
                     }
                 case .fetching:
                     break
@@ -888,11 +887,11 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
             archivedPromise.set(.single(archivedPacks) |> then(context.engine.stickers.archivedStickerPacks() |> map(Optional.init)))
             quickReaction = combineLatest(
                 context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId)),
-                context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.reactionSettings))
+                context.account.postbox.preferencesView(keys: [PreferencesKeys.reactionSettings])
             )
             |> map { peer, preferencesView -> MessageReaction.Reaction? in
                 let reactionSettings: ReactionSettings
-                if let entry = preferencesView, let value = entry.get(ReactionSettings.self) {
+                if let entry = preferencesView.values[PreferencesKeys.reactionSettings], let value = entry.get(ReactionSettings.self) {
                     reactionSettings = value
                 } else {
                     reactionSettings = .default
@@ -990,7 +989,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                        
                         if case .modal = mode {
                             updateState {
-                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
+                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(nil)
                             }
                         } else {
                             updateState {
@@ -1021,7 +1020,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                        
                         if case .modal = mode {
                             updateState {
-                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
+                                $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(nil)
                             }
                         } else {
                             updateState {
@@ -1047,7 +1046,7 @@ public func installedStickerPacksController(context: AccountContext, mode: Insta
                 }), .init(title: presentationData.strings.StickerPacks_ActionShare, isEnabled: selectedCount > 0, action: {
                     if case .modal = mode {
                         updateState {
-                            $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(Set())
+                            $0.withUpdatedEditing(true).withUpdatedSelectedPackIds(nil)
                         }
                     } else {
                         updateState {

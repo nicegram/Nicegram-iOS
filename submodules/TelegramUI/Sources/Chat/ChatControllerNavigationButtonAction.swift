@@ -438,7 +438,7 @@ extension ChatControllerImpl {
                         
                         if peer.restrictionText(platform: "ios", contentSettings: self.context.currentContentSettings.with { $0 }) == nil && !self.presentationInterfaceState.isNotAccessible {
                             if peer.id == self.context.account.peerId {
-                                if let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer, let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(peer), mode: .generic, avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
+                                if let peer = self.presentationInterfaceState.renderedPeer?.chatMainPeer, let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                                     self.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             } else {
@@ -458,17 +458,17 @@ extension ChatControllerImpl {
                                 default:
                                     mode = .generic
                                 }
-                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(peer), mode: mode, avatarInitiallyExpanded: expandAvatar, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
+                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: mode, avatarInitiallyExpanded: expandAvatar, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
                                     self.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             }
-
+                            
                             let _ = self.dismissPreviewing?(false)
                         }
                     }))
                 case .replyThread:
                     if let peer = self.presentationInterfaceState.renderedPeer?.peer, case let .replyThread(replyThreadMessage) = self.chatLocation, replyThreadMessage.peerId == self.context.account.peerId {
-                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(peer), mode: .forumTopic(thread: replyThreadMessage), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
+                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .forumTopic(thread: replyThreadMessage), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                             self.effectiveNavigationController?.pushViewController(infoController)
                         }
                     } else if let monoforumPeer = self.presentationInterfaceState.renderedPeer?.peer, case let .replyThread(replyThreadMessage) = self.chatLocation, monoforumPeer.isMonoForum {
@@ -483,13 +483,13 @@ extension ChatControllerImpl {
                                 guard let self else {
                                     return
                                 }
-                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer, mode: .monoforum(monoforumPeer.id), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
+                                if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: peer._asPeer(), mode: .monoforum(monoforumPeer.id), avatarInitiallyExpanded: false, fromChat: true, requestsContext: nil) {
                                     self.effectiveNavigationController?.pushViewController(infoController)
                                 }
                             }
                         }
                     } else if let channel = self.presentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.isForumOrMonoForum, case let .replyThread(message) = self.chatLocation {
-                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: EnginePeer(channel), mode: .forumTopic(thread: message), avatarInitiallyExpanded: false, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
+                        if let infoController = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: self.updatedPresentationData, peer: channel, mode: .forumTopic(thread: message), avatarInitiallyExpanded: false, fromChat: true, requestsContext: self.contentData?.inviteRequestsContext) {
                             self.effectiveNavigationController?.pushViewController(infoController)
                         }
                     }

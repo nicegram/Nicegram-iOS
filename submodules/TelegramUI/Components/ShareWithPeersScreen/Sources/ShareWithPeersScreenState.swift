@@ -555,7 +555,7 @@ public extension ShareWithPeersScreen {
                             continue
                         }
                         
-                        peers.append(participant.peer)
+                        peers.append(EnginePeer(participant.peer))
                         existingPeersIds.insert(participant.peer.id)
                     }
                     
@@ -563,7 +563,7 @@ public extension ShareWithPeersScreen {
                         if participant.peer.isDeleted || existingPeersIds.contains(participant.peer.id) || participant.participant.adminInfo != nil {
                             continue
                         }
-                        if case let .user(user) = participant.peer, user.botInfo != nil {
+                        if let user = participant.peer as? TelegramUser, user.botInfo != nil {
                             continue
                         }
                         
@@ -573,7 +573,7 @@ public extension ShareWithPeersScreen {
                             continue
                         }
                         
-                        peers.append(participant.peer)
+                        peers.append(EnginePeer(participant.peer))
                     }
                     
                     let state = State(

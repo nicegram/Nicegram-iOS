@@ -27,14 +27,14 @@ enum PeerInfoMember: Equatable {
         }
     }
     
-    var peer: EnginePeer {
+    var peer: Peer {
         switch self {
         case let .channelMember(participant, _):
             return participant.peer
         case let .legacyGroupMember(peer, _, _, _, _, _):
-            return EnginePeer(peer.peers[peer.peerId]!)
+            return peer.peers[peer.peerId]!
         case let .account(peer):
-            return EnginePeer(peer.peers[peer.peerId]!)
+            return peer.peers[peer.peerId]!
         }
     }
     

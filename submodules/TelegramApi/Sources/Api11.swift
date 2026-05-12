@@ -666,29 +666,29 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.InputDocument
             }
             var _3: Api.InputPhoto?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.InputPhoto
                 }
             }
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
+            if Int(_1!) & Int(1 << 4) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _5 = reader.readInt32()
             }
             var _6: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _6 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
+            let _c3 = (Int(_1!) & Int(1 << 3) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 4) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.InputMedia.inputMediaDocument(Cons_inputMediaDocument(flags: _1!, id: _2!, videoCover: _3, videoTimestamp: _4, ttlSeconds: _5, query: _6))
             }
@@ -702,24 +702,24 @@ public extension Api {
             var _2: String?
             _2 = parseString(reader)
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Api.InputPhoto?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.InputPhoto
                 }
             }
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 _5 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 2) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.InputMedia.inputMediaDocumentExternal(Cons_inputMediaDocumentExternal(flags: _1!, url: _2!, ttlSeconds: _3, videoCover: _4, videoTimestamp: _5))
             }
@@ -751,22 +751,22 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.InputGeoPoint
             }
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: Int32?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 _5 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
+            let _c3 = (Int(_1!) & Int(1 << 2) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.InputMedia.inputMediaGeoLive(Cons_inputMediaGeoLive(flags: _1!, geoPoint: _2!, heading: _3, period: _4, proximityNotificationRadius: _5))
             }
@@ -795,7 +795,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             var _4: Api.InputWebDocument?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.InputWebDocument
                 }
@@ -807,7 +807,7 @@ public extension Api {
             var _6: Buffer?
             _6 = parseBytes(reader)
             var _7: String?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 _7 = parseString(reader)
             }
             var _8: Api.DataJSON?
@@ -815,11 +815,11 @@ public extension Api {
                 _8 = Api.parse(reader, signature: signature) as? Api.DataJSON
             }
             var _9: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _9 = parseString(reader)
             }
             var _10: Api.InputMedia?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _10 = Api.parse(reader, signature: signature) as? Api.InputMedia
                 }
@@ -827,13 +827,13 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _7 != nil
+            let _c7 = (Int(_1!) & Int(1 << 3) == 0) || _7 != nil
             let _c8 = _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _9 != nil
-            let _c10 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _10 != nil
+            let _c9 = (Int(_1!) & Int(1 << 1) == 0) || _9 != nil
+            let _c10 = (Int(_1!) & Int(1 << 2) == 0) || _10 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 {
                 return Api.InputMedia.inputMediaInvoice(Cons_inputMediaInvoice(flags: _1!, title: _2!, description: _3!, photo: _4, invoice: _5!, payload: _6!, provider: _7, providerData: _8!, startParam: _9, extendedMedia: _10))
             }
@@ -851,13 +851,13 @@ public extension Api {
                 _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputMedia.self)
             }
             var _4: String?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _4 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputMedia.inputMediaPaidMedia(Cons_inputMediaPaidMedia(flags: _1!, starsAmount: _2!, extendedMedia: _3!, payload: _4))
             }
@@ -873,19 +873,19 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.InputPhoto
             }
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: Api.InputDocument?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.InputDocument
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 2) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputMedia.inputMediaPhoto(Cons_inputMediaPhoto(flags: _1!, id: _2!, ttlSeconds: _3, video: _4))
             }
@@ -899,12 +899,12 @@ public extension Api {
             var _2: String?
             _2 = parseString(reader)
             var _3: Int32?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 _3 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.InputMedia.inputMediaPhotoExternal(Cons_inputMediaPhotoExternal(flags: _1!, url: _2!, ttlSeconds: _3))
             }
@@ -920,40 +920,40 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.Poll
             }
             var _3: [Int32]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _3 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
                 }
             }
             var _4: Api.InputMedia?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.InputMedia
                 }
             }
             var _5: String?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _5 = parseString(reader)
             }
             var _6: [Api.MessageEntity]?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 if let _ = reader.readInt32() {
                     _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageEntity.self)
                 }
             }
             var _7: Api.InputMedia?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _7 = Api.parse(reader, signature: signature) as? Api.InputMedia
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _7 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 3) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
+            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 2) == 0) || _7 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 {
                 return Api.InputMedia.inputMediaPoll(Cons_inputMediaPoll(flags: _1!, poll: _2!, correctAnswers: _3, attachedMedia: _4, solution: _5, solutionEntities: _6, solutionMedia: _7))
             }
@@ -1015,7 +1015,7 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.InputFile
             }
             var _3: Api.InputFile?
-            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
+            if Int(_1!) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.InputFile
                 }
@@ -1027,34 +1027,34 @@ public extension Api {
                 _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.DocumentAttribute.self)
             }
             var _6: [Api.InputDocument]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputDocument.self)
                 }
             }
             var _7: Api.InputPhoto?
-            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
+            if Int(_1!) & Int(1 << 6) != 0 {
                 if let signature = reader.readInt32() {
                     _7 = Api.parse(reader, signature: signature) as? Api.InputPhoto
                 }
             }
             var _8: Int32?
-            if Int(_1 ?? 0) & Int(1 << 7) != 0 {
+            if Int(_1!) & Int(1 << 7) != 0 {
                 _8 = reader.readInt32()
             }
             var _9: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _9 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _3 != nil
+            let _c3 = (Int(_1!) & Int(1 << 2) == 0) || _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
-            let _c7 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _7 != nil
-            let _c8 = (Int(_1 ?? 0) & Int(1 << 7) == 0) || _8 != nil
-            let _c9 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _9 != nil
+            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c7 = (Int(_1!) & Int(1 << 6) == 0) || _7 != nil
+            let _c8 = (Int(_1!) & Int(1 << 7) == 0) || _8 != nil
+            let _c9 = (Int(_1!) & Int(1 << 1) == 0) || _9 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
                 return Api.InputMedia.inputMediaUploadedDocument(Cons_inputMediaUploadedDocument(flags: _1!, file: _2!, thumb: _3, mimeType: _4!, attributes: _5!, stickers: _6, videoCover: _7, videoTimestamp: _8, ttlSeconds: _9))
             }
@@ -1070,26 +1070,26 @@ public extension Api {
                 _2 = Api.parse(reader, signature: signature) as? Api.InputFile
             }
             var _3: [Api.InputDocument]?
-            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
+            if Int(_1!) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputDocument.self)
                 }
             }
             var _4: Int32?
-            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
+            if Int(_1!) & Int(1 << 1) != 0 {
                 _4 = reader.readInt32()
             }
             var _5: Api.InputDocument?
-            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
+            if Int(_1!) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.InputDocument
                 }
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
-            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
+            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
+            let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.InputMedia.inputMediaUploadedPhoto(Cons_inputMediaUploadedPhoto(flags: _1!, file: _2!, stickers: _3, ttlSeconds: _4, video: _5))
             }

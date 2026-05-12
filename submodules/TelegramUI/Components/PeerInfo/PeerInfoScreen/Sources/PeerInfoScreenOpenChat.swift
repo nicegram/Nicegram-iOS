@@ -22,14 +22,25 @@ extension PeerInfoScreenNode {
                 navigationController.setViewControllers(viewControllers, animated: true)
                 current.activateSearch(domain: .everything, query: "")
             } else if let peer = self.data?.chatPeer {
-                self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), keepStack: .default, activateMessageSearch: (.everything, "")))
+                self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(EnginePeer(peer)), keepStack: self.nearbyPeerDistance != nil ? .always : .default, activateMessageSearch: (.everything, ""), peerNearbyData: self.nearbyPeerDistance.flatMap({ ChatPeerNearbyData(distance: $0) }), completion: { [weak self] _ in
+                    if let strongSelf = self, strongSelf.nearbyPeerDistance != nil {
+                        var viewControllers = navigationController.viewControllers
+                        viewControllers = viewControllers.filter { controller in
+                            if controller is PeerInfoScreen {
+                                return false
+                            }
+                            return true
+                        }
+                        navigationController.setViewControllers(viewControllers, animated: false)
+                    }
+                }))
             }
         }
     }
     
     func openChatForReporting(title: String, option: Data, message: String?) {
         if let peer = self.data?.peer, let navigationController = (self.controller?.navigationController as? NavigationController) {
-            if case let .channel(channel) = peer, channel.isForumOrMonoForum {
+            if let channel = peer as? TelegramChannel, channel.isForumOrMonoForum {
                 //let _ = self.context.engine.peers.reportPeer(peerId: peer.id, reason: reason, message: "").startStandalone()
                 //self.controller?.present(UndoOverlayController(presentationData: self.presentationData, content: .emoji(name: "PoliceCar", text: self.presentationData.strings.Report_Succeed), elevatedLayout: false, action: { _ in return false }), in: .current)
             } else {
@@ -37,9 +48,11 @@ extension PeerInfoScreenNode {
                     NavigateToChatControllerParams(
                         navigationController: navigationController,
                         context: self.context,
-                        chatLocation: .peer(peer),
+                        chatLocation: .peer(EnginePeer(peer)),
                         keepStack: .default,
-                        reportReason: NavigateToChatControllerParams.ReportReason(title: title, option: option, message: message)
+                        reportReason: NavigateToChatControllerParams.ReportReason(title: title, option: option, message: message),
+                        completion: { _ in
+                        }
                     )
                 )
             }
@@ -48,13 +61,15 @@ extension PeerInfoScreenNode {
     
     func openChatForThemeChange() {
         if let peer = self.data?.peer, let navigationController = (self.controller?.navigationController as? NavigationController) {
-            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), keepStack: .default, changeColors: true))
+            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(EnginePeer(peer)), keepStack: .default, changeColors: true, completion: { _ in
+            }))
         }
     }
-
+    
     func openChatForTranslation() {
         if let peer = self.data?.peer, let navigationController = (self.controller?.navigationController as? NavigationController) {
-            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), keepStack: .default, changeColors: false))
+            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(EnginePeer(peer)), keepStack: .default, changeColors: false, completion: { _ in
+            }))
         }
     }
 
@@ -77,66 +92,45 @@ extension PeerInfoScreenNode {
         }
         
         if let peer = self.data?.peer, let navigationController = self.controller?.navigationController as? NavigationController {
-            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), keepStack: .default))
+            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(EnginePeer(peer)), keepStack: self.nearbyPeerDistance != nil ? .always : .default, peerNearbyData: self.nearbyPeerDistance.flatMap({ ChatPeerNearbyData(distance: $0) }), completion: { [weak self] _ in
+                if let strongSelf = self, strongSelf.nearbyPeerDistance != nil {
+                    var viewControllers = navigationController.viewControllers
+                    viewControllers = viewControllers.filter { controller in
+                        if controller is PeerInfoScreen {
+                            return false
+                        }
+                        return true
+                    }
+                    navigationController.setViewControllers(viewControllers, animated: false)
+                }
+            }))
         }
     }
     
-    func openDeleteReaction(messageId: MessageId) {
-        guard let authorPeer = self.data?.peer?._asPeer(), let navigationController = self.controller?.navigationController as? NavigationController else {
-            return
-        }
-
-        let _ = (self.context.engine.data.get(
-            TelegramEngine.EngineData.Item.Peer.Peer(id: messageId.peerId),
-            TelegramEngine.EngineData.Item.Messages.Message(id: messageId)
-        )
-        |> deliverOnMainQueue).startStandalone(next: { [weak self] sourcePeer, sourceMessage in
-            guard let self, let sourcePeer, let sourceMessage = sourceMessage?._asMessage() else {
-                return
-            }
-            guard let channel = sourceMessage.peers[sourceMessage.id.peerId] as? TelegramChannel, channel.hasPermission(.deleteAllMessages) else {
-                return
-            }
-
-            var hasReaction = false
-            for attribute in sourceMessage.attributes {
-                guard let attribute = attribute as? ReactionsMessageAttribute else {
-                    continue
-                }
-                if attribute.recentPeers.contains(where: { $0.peerId == authorPeer.id }) || attribute.topPeers.contains(where: { $0.peerId == authorPeer.id }) {
-                    hasReaction = true
-                    break
-                }
-            }
-            guard hasReaction else {
-                return
-            }
-
-            let chatLocation: NavigateToChatControllerParams.Location
-            if case let .channel(channel) = sourcePeer, channel.isForumOrMonoForum, let threadId = sourceMessage.threadId {
-                chatLocation = .replyThread(ChatReplyThreadMessage(peerId: sourcePeer.id, threadId: threadId, channelMessageId: nil, isChannelPost: false, isForumPost: true, isMonoforumPost: channel.isMonoForum, maxMessage: nil, maxReadIncomingMessageId: nil, maxReadOutgoingMessageId: nil, unreadCount: 0, initialFilledHoles: IndexSet(), initialAnchor: .automatic, isNotAvailable: false))
-            } else {
-                chatLocation = .peer(sourcePeer)
-            }
-
-            self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: chatLocation, subject: .message(id: .id(messageId), highlight: ChatControllerSubject.MessageHighlight(quote: nil), timecode: nil, setupReply: false), keepStack: .always, useExisting: true, completion: { chatController in
-                chatController.presentReactionDeletionOptions(author: authorPeer, messageId: messageId)
-            }))
-        })
-    }
-
     func openChatWithClearedHistory(type: InteractiveHistoryClearingType) {
         guard let peer = self.data?.chatPeer, let navigationController = self.controller?.navigationController as? NavigationController else {
             return
         }
         
-        self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(peer), keepStack: .default, setupController: { controller in
+        self.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: self.context, chatLocation: .peer(EnginePeer(peer)), keepStack: self.nearbyPeerDistance != nil ? .always : .default, peerNearbyData: self.nearbyPeerDistance.flatMap({ ChatPeerNearbyData(distance: $0) }), setupController: { controller in
             controller.beginClearHistory(type: type)
+        }, completion: { [weak self] _ in
+            if let strongSelf = self, strongSelf.nearbyPeerDistance != nil {
+                var viewControllers = navigationController.viewControllers
+                viewControllers = viewControllers.filter { controller in
+                    if controller is PeerInfoScreen {
+                        return false
+                    }
+                    return true
+                }
+                
+                navigationController.setViewControllers(viewControllers, animated: false)
+            }
         }))
     }
 
     func openChannelMessages() {
-        guard case let .channel(channel) = self.data?.peer, let linkedMonoforumId = channel.linkedMonoforumId else {
+        guard let channel = self.data?.peer as? TelegramChannel, let linkedMonoforumId = channel.linkedMonoforumId else {
             return
         }
         let _ = (self.context.engine.data.get(

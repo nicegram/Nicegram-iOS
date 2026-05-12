@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Display
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import TelegramUIPreferences
@@ -546,11 +547,11 @@ public func dataPrivacyController(context: AccountContext, focusOnItemTag: DataP
     }
     |> distinctUntilChanged
     
-    let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, statePromise.get(), context.sharedContext.accountManager.noticeEntry(key: ApplicationSpecificNotice.secretChatLinkPreviewsKey()), context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.contactSynchronizationSettings]), context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.contactsSettings)), context.engine.peers.recentPeers(), hasBotSettings)
+    let signal = combineLatest(queue: .mainQueue(), context.sharedContext.presentationData, statePromise.get(), context.sharedContext.accountManager.noticeEntry(key: ApplicationSpecificNotice.secretChatLinkPreviewsKey()), context.sharedContext.accountManager.sharedData(keys: [ApplicationSpecificSharedDataKeys.contactSynchronizationSettings]), context.account.postbox.preferencesView(keys: [PreferencesKeys.contactsSettings]), context.engine.peers.recentPeers(), hasBotSettings)
     |> map { presentationData, state, noticeView, sharedData, preferences, recentPeers, hasBotSettings -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let secretChatLinkPreviews = noticeView.value.flatMap({ ApplicationSpecificNotice.getSecretChatLinkPreviews($0) })
-
-        let settings: ContactsSettings = preferences?.get(ContactsSettings.self) ?? ContactsSettings.defaultSettings
+        
+        let settings: ContactsSettings = preferences.values[PreferencesKeys.contactsSettings]?.get(ContactsSettings.self) ?? ContactsSettings.defaultSettings
         
         let synchronizeDeviceContacts: Bool = settings.synchronizeContacts
         

@@ -188,9 +188,6 @@ private func requestEditMessageInternal(accountPeerId: PeerId, postbox: Postbox,
                     }
                 }
                 
-                if let webpagePreviewAttribute, webpagePreviewAttribute.leadingPreview {
-                    flags |= Int32(1 << 16)
-                }
                 if let _ = invertMediaAttribute {
                     flags |= Int32(1 << 16)
                 }

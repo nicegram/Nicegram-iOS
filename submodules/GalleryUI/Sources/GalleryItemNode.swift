@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
+import Postbox
 
 public enum GalleryItemNodeNavigationStyle {
     case light

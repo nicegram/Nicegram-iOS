@@ -265,16 +265,16 @@ final class ThemePreviewControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
                 strongSelf.remoteChatBackgroundNode.setSignal(signal)
                 
-                strongSelf.fetchDisposable.set(context.sharedContext.accountManager.resources.fetch(reference: .wallpaper(wallpaper: .slug(file.slug), resource: file.file.resource), userLocation: .other, userContentType: .other).start())
-
-                let engine = strongSelf.context.engine
-                let statusSignal = strongSelf.context.sharedContext.accountManager.resources.status(resource: EngineMediaResource(file.file.resource))
+                strongSelf.fetchDisposable.set(fetchedMediaResource(mediaBox: context.sharedContext.accountManager.mediaBox, userLocation: .other, userContentType: .other, reference: .wallpaper(wallpaper: .slug(file.slug), resource: file.file.resource)).start())
+                                
+                let account = strongSelf.context.account
+                let statusSignal = strongSelf.context.sharedContext.accountManager.mediaBox.resourceStatus(file.file.resource)
                 |> take(1)
-                |> mapToSignal { status -> Signal<EngineMediaResource.FetchStatus, NoError> in
+                |> mapToSignal { status -> Signal<MediaResourceStatus, NoError> in
                     if case .Local = status {
                         return .single(status)
                     } else {
-                        return engine.resources.status(resource: EngineMediaResource(file.file.resource))
+                        return account.postbox.mediaBox.resourceStatus(file.file.resource)
                     }
                 }
                 

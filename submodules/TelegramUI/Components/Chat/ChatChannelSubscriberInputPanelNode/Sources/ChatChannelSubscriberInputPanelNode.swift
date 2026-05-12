@@ -179,7 +179,7 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
     
     private var presentationInterfaceState: ChatPresentationInterfaceState?
     
-    private var layoutData: (CGFloat, CGFloat, CGFloat, CGFloat, UIEdgeInsets, CGFloat, CGFloat, Bool, LayoutMetrics, DeviceMetrics)?
+    private var layoutData: (CGFloat, CGFloat, CGFloat, CGFloat, UIEdgeInsets, CGFloat, CGFloat, Bool, LayoutMetrics)?
     
     public override init() {
         super.init()
@@ -219,8 +219,8 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         switch action {
         case .join, .joinGroup, .applyToJoin:
             self.isJoining = true
-            if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics, deviceMetrics) = self.layoutData, let presentationInterfaceState = self.presentationInterfaceState {
-                let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: presentationInterfaceState, metrics: metrics, deviceMetrics: deviceMetrics, force: true)
+            if let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics) = self.layoutData, let presentationInterfaceState = self.presentationInterfaceState {
+                let _ = self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: .immediate, interfaceState: presentationInterfaceState, metrics: metrics, force: true)
             }
             self.actionDisposable.set((context.peerChannelMemberCategoriesContextsManager.join(engine: context.engine, peerId: peer.id, hash: nil)
             |> afterDisposed { [weak self] in
@@ -308,8 +308,8 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         }
     }
     
-    override public func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, isMediaInputExpanded: Bool) -> CGFloat {
-        return self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: transition, interfaceState: interfaceState, metrics: metrics, deviceMetrics: deviceMetrics, force: false)
+    override public func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, isMediaInputExpanded: Bool) -> CGFloat {
+        return self.updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: transition, interfaceState: interfaceState, metrics: metrics, force: false)
     }
     
     private var displayedGiftOrSuggestTooltip = false
@@ -405,9 +405,9 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         })
     }
     
-    private func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, deviceMetrics: DeviceMetrics, force: Bool) -> CGFloat {
+    private func updateLayout(width: CGFloat, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, additionalSideInsets: UIEdgeInsets, maxHeight: CGFloat, maxOverlayHeight: CGFloat, isSecondary: Bool, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState, metrics: LayoutMetrics, force: Bool) -> CGFloat {
         let isFirstTime = self.layoutData == nil
-        self.layoutData = (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics, deviceMetrics)
+        self.layoutData = (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics)
         
         var transition = transition
         if !isFirstTime && !transition.isAnimated {
@@ -449,9 +449,10 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
         
         var leftInset = leftInset + 8.0
         var rightInset = rightInset + 8.0
-        let compactBottomSideInset = self.compactBottomSideInset(bottomInset: bottomInset, deviceMetrics: deviceMetrics)
-        leftInset += compactBottomSideInset
-        rightInset += compactBottomSideInset
+        if bottomInset <= 32.0 {
+            leftInset += 18.0
+            rightInset += 18.0
+        }
         
         var leftPanelItems: [GlassControlGroupComponent.Item] = []
         if displaySuggestPost {
@@ -544,12 +545,12 @@ public final class ChatChannelSubscriberInputPanelNode: ChatInputPanelNode {
     
     // Nicegram ATT
     private func requestLayout(transition: ContainedViewLayoutTransition) {
-        guard let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics, deviceMetrics) = layoutData else {
+        guard let (width, leftInset, rightInset, bottomInset, additionalSideInsets, maxHeight, maxOverlayHeight, isSecondary, metrics) = layoutData else {
             return
         }
         guard let presentationInterfaceState else { return }
         
-        _ = updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: transition, interfaceState: presentationInterfaceState, metrics: metrics, deviceMetrics: deviceMetrics, force: true)
+        _ = updateLayout(width: width, leftInset: leftInset, rightInset: rightInset, bottomInset: bottomInset, additionalSideInsets: additionalSideInsets, maxHeight: maxHeight, maxOverlayHeight: maxOverlayHeight, isSecondary: isSecondary, transition: transition, interfaceState: presentationInterfaceState, metrics: metrics, force: true)
     }
     //
     

@@ -19,9 +19,9 @@ extension PeerInfoScreenNode {
                     var items: [ActionSheetItem] = []
                     var personalPeerName: String?
                     var isChannel = false
-                    if case .user = peer {
-                        personalPeerName = peer.compactDisplayTitle
-                    } else if case let .channel(channel) = peer, case .broadcast = channel.info {
+                    if let user = peer as? TelegramUser {
+                        personalPeerName = EnginePeer(user).compactDisplayTitle
+                    } else if let channel = peer as? TelegramChannel, case .broadcast = channel.info {
                         isChannel = true
                     }
                     

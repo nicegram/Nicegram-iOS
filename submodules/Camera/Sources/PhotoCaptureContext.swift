@@ -56,7 +56,6 @@ final class PhotoCaptureContext: NSObject, AVCapturePhotoCaptureDelegate {
         } else {
             guard let photoPixelBuffer = photo.pixelBuffer else {
                 print("Error occurred while capturing photo: Missing pixel buffer (\(String(describing: error)))")
-                self.pipe.putNext(.failed)
                 return
             }
                         

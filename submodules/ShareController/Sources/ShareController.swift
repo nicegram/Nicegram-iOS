@@ -300,18 +300,18 @@ public final class ShareControllerAppEnvironment: ShareControllerEnvironment {
 
 public final class ShareControllerSwitchableAccount: Equatable {
     public let account: ShareControllerAccountContext
-    public let peer: EnginePeer
-
-    public init(account: ShareControllerAccountContext, peer: EnginePeer) {
+    public let peer: Peer
+    
+    public init(account: ShareControllerAccountContext, peer: Peer) {
         self.account = account
         self.peer = peer
     }
-
+    
     public static func ==(lhs: ShareControllerSwitchableAccount, rhs: ShareControllerSwitchableAccount) -> Bool {
         if lhs.account !== rhs.account {
             return false
         }
-        if lhs.peer != rhs.peer {
+        if !arePeersEqual(lhs.peer, rhs.peer) {
             return false
         }
         return true
@@ -1173,10 +1173,11 @@ public final class ShareController: ViewController {
             for info in strongSelf.switchableAccounts {
                 items.append(ActionSheetPeerItem(
                     accountPeerId: info.account.accountPeerId,
-                    stateManager: info.account.stateManager,
+                    postbox: info.account.stateManager.postbox,
+                    network: info.account.stateManager.network,
                     contentSettings: info.account.contentSettings,
-                    peer: info.peer,
-                    title: info.peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder),
+                    peer: EnginePeer(info.peer),
+                    title: EnginePeer(info.peer).displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder),
                     isSelected: info.account.accountId == strongSelf.currentContext.accountId,
                     strings: presentationData.strings,
                     theme: presentationData.theme,
@@ -2433,9 +2434,10 @@ public final class ShareController: ViewController {
         }
         let context = accountContext.context
         
+        let postbox = self.currentContext.stateManager.postbox
         let signals: [Signal<Float, NoError>] = messages.compactMap { message -> Signal<Float, NoError>? in
             if let media = message.media.first {
-                return SaveToCameraRoll.saveToCameraRoll(context: context, userLocation: .peer(message.id.peerId), mediaReference: .message(message: MessageReference(message), media: media))
+                return SaveToCameraRoll.saveToCameraRoll(context: context, postbox: postbox, userLocation: .peer(message.id.peerId), mediaReference: .message(message: MessageReference(message), media: media))
             } else {
                 return nil
             }
@@ -2461,7 +2463,7 @@ public final class ShareController: ViewController {
         let context = accountContext.context
         
         let media = TelegramMediaImage(imageId: MediaId(namespace: 0, id: 0), representations: representations.map({ $0.representation }), immediateThumbnailData: nil, reference: nil, partialReference: nil, flags: [])
-        self.controllerNode.transitionToProgressWithValue(signal: SaveToCameraRoll.saveToCameraRoll(context: context, userLocation: .other, mediaReference: .standalone(media: media)) |> map(Optional.init), dismissImmediately: true, completion: {})
+        self.controllerNode.transitionToProgressWithValue(signal: SaveToCameraRoll.saveToCameraRoll(context: context, postbox: context.account.postbox, userLocation: .other, mediaReference: .standalone(media: media)) |> map(Optional.init), dismissImmediately: true, completion: {})
     }
     
     private func saveToCameraRoll(mediaReference: AnyMediaReference, completion: (() -> Void)?) {
@@ -2470,7 +2472,7 @@ public final class ShareController: ViewController {
         }
         let context = accountContext.context
         
-        self.controllerNode.transitionToProgressWithValue(signal: SaveToCameraRoll.saveToCameraRoll(context: context, userLocation: .other, mediaReference: mediaReference) |> map(Optional.init), dismissImmediately: completion == nil, completion: completion ?? {})
+        self.controllerNode.transitionToProgressWithValue(signal: SaveToCameraRoll.saveToCameraRoll(context: context, postbox: context.account.postbox, userLocation: .other, mediaReference: mediaReference) |> map(Optional.init), dismissImmediately: completion == nil, completion: completion ?? {})
     }
     
     private func switchToAccount(account: ShareControllerAccountContext, animateIn: Bool) {
@@ -2528,7 +2530,7 @@ public final class ShareController: ViewController {
             for entry in view.0.entries.reversed() {
                 switch entry {
                 case let .MessageEntry(entryData):
-                    if let peer = entryData.renderedPeer.peers[entryData.renderedPeer.peerId], peer.id != accountPeer.id, canSendMessagesToPeer(EnginePeer(peer)) {
+                    if let peer = entryData.renderedPeer.peers[entryData.renderedPeer.peerId], peer.id != accountPeer.id, canSendMessagesToPeer(peer) {
                         peers.append(EngineRenderedPeer(entryData.renderedPeer))
                         if let user = peer as? TelegramUser, user.flags.contains(.requirePremium) || user.flags.contains(.requireStars) {
                             possiblePremiumRequiredPeers.insert(user.id)

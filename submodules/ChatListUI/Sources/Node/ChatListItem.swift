@@ -2041,10 +2041,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             profilePhoto = maybePhoto
                             isKnown = true
                         }
-                        if profilePhoto == nil, case let .known(maybePhoto) = cachedPeerData.fallbackPhoto {
-                            profilePhoto = maybePhoto
-                            isKnown = true
-                        }
                     }
                     
                     if isKnown {
@@ -2478,8 +2474,11 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             var currentStatusIconContent: EmojiStatusComponent.Content?
             var currentStatusIconParticleColor: UIColor?
             var currentSecretIconImage: UIImage?
-            var currentMessageTypeIcon: UIImage?
-            var currentMessageTypeIconOffset: CGPoint = .zero
+            var currentForwardedIcon: UIImage?
+            var currentStoryIcon: UIImage?
+            var currentGiftIcon: UIImage?
+            var currentLocationIcon: UIImage?
+            var currentPollIcon: UIImage?
             
             var selectableControlSizeAndApply: (CGFloat, (CGSize, Bool) -> ItemListSelectableControlNode)?
             var reorderControlSizeAndApply: (CGFloat, (CGFloat, Bool, ContainedViewLayoutTransition) -> ItemListEditableReorderControlNode)?
@@ -2655,27 +2654,12 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
             var contentImageSpecs: [ContentImageSpec] = []
             var avatarContentImageSpec: ContentImageSpec?
             var forumThread: (id: Int64, title: String, iconId: Int64?, iconColor: Int32, threadPeer: EnginePeer?, isUnread: Bool)?
-
-            enum MessageTypeIcon {
-                enum CallType {
-                    case voice
-                    case video
-                }
-                enum CallDirection {
-                    case incoming
-                    case outgoing
-                }
-                case call(CallType, CallDirection)
-                case forward
-                case story
-                case gift
-                case location
-                case poll
-                case todo
-                case game
-                case voiceMessage
-            }
-            var messageTypeIcon: MessageTypeIcon?
+            
+            var displayForwardedIcon = false
+            var displayStoryReplyIcon = false
+            var displayGiftIcon = false
+            var displayLocationIcon = false
+            var displayPollIcon = false
             var ignoreForwardedIcon = false
             
             switch contentData {
@@ -2699,10 +2683,6 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     if case .user = itemPeer.chatMainPeer {
                         isUser = true
                     }
-                    var isGuestChatAuthor = false
-                    if case let .user(user) = messages.last?.author, let botInfo = user.botInfo, botInfo.flags.contains(.isGuestChat) {
-                        isGuestChatAuthor = true
-                    }
 
                     var peerText: String?
                     if case .savedMessagesChats = item.chatListLocation {
@@ -2720,14 +2700,14 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                             if let message = messages.last, let forwardInfo = message.forwardInfo, let author = forwardInfo.author {
                                 peerText = EnginePeer(author).compactDisplayTitle
                             }
-                        } else if !isUser || isGuestChatAuthor {
+                        } else if !isUser {
                             if case let .channel(peer) = peer, case .broadcast = peer.info {
                             } else if !displayAsMessage {
                                 if let forwardInfo = message.forwardInfo, forwardInfo.flags.contains(.isImported), let authorSignature = forwardInfo.authorSignature {
                                     peerText = authorSignature
                                 } else {
                                     peerText = author.id == account.peerId ? item.presentationData.strings.DialogList_You : EnginePeer(author).displayTitle(strings: item.presentationData.strings, displayOrder: item.presentationData.nameDisplayOrder)
-                                    authorIsCurrentChat = !isGuestChatAuthor && author.id == peer.id
+                                    authorIsCurrentChat = author.id == peer.id
                                 }
                             }
                         }
@@ -3004,33 +2984,24 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         
                         if !ignoreForwardedIcon {
                             if case .savedMessagesChats = item.chatListLocation {
+                                displayForwardedIcon = false
                             } else if let forwardInfo = message.forwardInfo, !forwardInfo.flags.contains(.isImported) && !message.id.peerId.isVerificationCodes {
-                                messageTypeIcon = .forward
+                                displayForwardedIcon = true
                             } else if let _ = message.attributes.first(where: { $0 is ReplyStoryAttribute }) {
-                                messageTypeIcon = .story
+                                displayStoryReplyIcon = true
                             } else {
                                 for media in message.media {
-                                    if let file = media as? TelegramMediaFile {
-                                        if file.isVoice {
-                                            messageTypeIcon = .voiceMessage
-                                        }
-                                    } else if let _ = media as? TelegramMediaPoll {
-                                        messageTypeIcon = .poll
-                                    } else if let _ = media as? TelegramMediaTodo {
-                                        messageTypeIcon = .todo
-                                    } else if let _ = media as? TelegramMediaGame {
-                                        messageTypeIcon = .game
+                                    if let _ = media as? TelegramMediaPoll {
+                                        displayPollIcon = true
                                     } else if let _ = media as? TelegramMediaMap {
-                                        messageTypeIcon = .location
+                                        displayLocationIcon = true
                                     } else if let action = media as? TelegramMediaAction {
                                         switch action.action {
-                                        case let .phoneCall(_, _, _, isVideo):
-                                            messageTypeIcon = .call(isVideo ? .video : .voice, message.flags.contains(.Incoming) ? .incoming : .outgoing)
                                         case .giftPremium, .giftStars, .starGift, .starGiftUnique:
-                                            messageTypeIcon = .gift
+                                            displayGiftIcon = true
                                         case let .giftCode(_, _, _, boostPeerId, _, _, _, _, _, _, _):
                                             if boostPeerId == nil {
-                                                messageTypeIcon = .gift
+                                                displayGiftIcon = true
                                             }
                                         default:
                                             break
@@ -3187,57 +3158,68 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     attributedText = textString
             }
             
-            switch messageTypeIcon {
-            case let .call(type, direction):
-                switch type {
-                case .voice:
-                    switch direction {
-                    case .incoming:
-                        currentMessageTypeIcon = PresentationResourcesChatList.callIncomingIcon(item.presentationData.theme)
-                    case .outgoing:
-                        currentMessageTypeIcon = PresentationResourcesChatList.callOutgoingIcon(item.presentationData.theme)
-                    }
-                case .video:
-                    switch direction {
-                    case .incoming:
-                        currentMessageTypeIcon = PresentationResourcesChatList.callVideoIncomingIcon(item.presentationData.theme)
-                    case .outgoing:
-                        currentMessageTypeIcon = PresentationResourcesChatList.callVideoOutgoingIcon(item.presentationData.theme)
-                    }
-                }
-            case .forward:
-                currentMessageTypeIcon = PresentationResourcesChatList.forwardedIcon(item.presentationData.theme)
-                currentMessageTypeIconOffset.y = 3.0
-            case .story:
-                currentMessageTypeIcon = PresentationResourcesChatList.storyReplyIcon(item.presentationData.theme)
-            case .gift:
-                currentMessageTypeIcon = PresentationResourcesChatList.giftIcon(item.presentationData.theme)
-                currentMessageTypeIconOffset.y = -2.0 - UIScreenPixel
-            case .location:
-                currentMessageTypeIcon = PresentationResourcesChatList.locationIcon(item.presentationData.theme)
-                currentMessageTypeIconOffset.y = -1.0 - UIScreenPixel
-            case .poll:
-                currentMessageTypeIcon = PresentationResourcesChatList.pollIcon(item.presentationData.theme)
-                currentMessageTypeIconOffset.y = -1.0
-            case .todo:
-                currentMessageTypeIcon = PresentationResourcesChatList.todoIcon(item.presentationData.theme)
-                currentMessageTypeIconOffset.y = -1.0
-            case .game:
-                currentMessageTypeIcon = PresentationResourcesChatList.gameIcon(item.presentationData.theme)
-                currentMessageTypeIconOffset.y = -1.0
-            case .voiceMessage:
-                currentMessageTypeIcon = PresentationResourcesChatList.voiceMessageIcon(item.presentationData.theme)
-                currentMessageTypeIconOffset.y = -1.0
-            default:
-                break
+            if displayForwardedIcon {
+                currentForwardedIcon = PresentationResourcesChatList.forwardedIcon(item.presentationData.theme)
             }
             
-            if let currentMessageTypeIcon {
-                textLeftCutout += currentMessageTypeIcon.size.width
+            if displayStoryReplyIcon {
+                currentStoryIcon = PresentationResourcesChatList.storyReplyIcon(item.presentationData.theme)
+            }
+            
+            if displayGiftIcon {
+                currentGiftIcon = PresentationResourcesChatList.giftIcon(item.presentationData.theme)
+            }
+            
+            if displayLocationIcon {
+                currentLocationIcon = PresentationResourcesChatList.locationIcon(item.presentationData.theme)
+            }
+            
+            if displayPollIcon {
+                currentPollIcon = PresentationResourcesChatList.pollIcon(item.presentationData.theme)
+            }
+            
+            if let currentForwardedIcon {
+                textLeftCutout += currentForwardedIcon.size.width
                 if !contentImageSpecs.isEmpty {
                     textLeftCutout += forwardedIconSpacing
                 } else {
-                    textLeftCutout += contentImageTrailingSpace - 1.0
+                    textLeftCutout += contentImageTrailingSpace
+                }
+            }
+            
+            if let currentStoryIcon {
+                textLeftCutout += currentStoryIcon.size.width
+                if !contentImageSpecs.isEmpty {
+                    textLeftCutout += forwardedIconSpacing
+                } else {
+                    textLeftCutout += contentImageTrailingSpace
+                }
+            }
+            
+            if let currentGiftIcon {
+                textLeftCutout += currentGiftIcon.size.width
+                if !contentImageSpecs.isEmpty {
+                    textLeftCutout += forwardedIconSpacing
+                } else {
+                    textLeftCutout += contentImageTrailingSpace
+                }
+            }
+            
+            if let currentLocationIcon {
+                textLeftCutout += currentLocationIcon.size.width
+                if !contentImageSpecs.isEmpty {
+                    textLeftCutout += forwardedIconSpacing
+                } else {
+                    textLeftCutout += contentImageTrailingSpace
+                }
+            }
+            
+            if let currentPollIcon {
+                textLeftCutout += currentPollIcon.size.width
+                if !contentImageSpecs.isEmpty {
+                    textLeftCutout += forwardedIconSpacing
+                } else {
+                    textLeftCutout += contentImageTrailingSpace
                 }
             }
             
@@ -3375,41 +3357,44 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                 }
             }
             if unreadCount.unread {
-                let badgeTextColor: UIColor
-                if unreadCount.muted {
-                    if unreadCount.isProvisonal, case .forum = item.chatListLocation {
-                        badgeTextColor = theme.unreadBadgeInactiveBackgroundColor
-                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactiveProvisional(item.presentationData.theme, diameter: badgeDiameter)
-                        currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactiveProvisional(item.presentationData.theme, diameter: avatarBadgeDiameter)
-                    } else {
-                        badgeTextColor = theme.unreadBadgeInactiveTextColor
-                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactive(item.presentationData.theme, diameter: badgeDiameter)
-                        currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactive(item.presentationData.theme, diameter: avatarBadgeDiameter)
-                    }
+                if !isPeerGroup, let message = messages.last, message.tags.contains(.unseenPersonalMessage), unreadCount.count == 1 {
                 } else {
-                    if unreadCount.isProvisonal, case .forum = item.chatListLocation {
-                        badgeTextColor = theme.unreadBadgeActiveBackgroundColor
-                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActiveProvisional(item.presentationData.theme, diameter: badgeDiameter)
-                        currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActiveProvisional(item.presentationData.theme, diameter: avatarBadgeDiameter)
+                    let badgeTextColor: UIColor
+                    if unreadCount.muted {
+                        if unreadCount.isProvisonal, case .forum = item.chatListLocation {
+                            badgeTextColor = theme.unreadBadgeInactiveBackgroundColor
+                            currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactiveProvisional(item.presentationData.theme, diameter: badgeDiameter)
+                            currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactiveProvisional(item.presentationData.theme, diameter: avatarBadgeDiameter)
+                        } else {
+                            badgeTextColor = theme.unreadBadgeInactiveTextColor
+                            currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactive(item.presentationData.theme, diameter: badgeDiameter)
+                            currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundInactive(item.presentationData.theme, diameter: avatarBadgeDiameter)
+                        }
                     } else {
-                        badgeTextColor = theme.unreadBadgeActiveTextColor
-                        currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActive(item.presentationData.theme, diameter: badgeDiameter)
-                        currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActive(item.presentationData.theme, diameter: avatarBadgeDiameter)
+                        if unreadCount.isProvisonal, case .forum = item.chatListLocation {
+                            badgeTextColor = theme.unreadBadgeActiveBackgroundColor
+                            currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActiveProvisional(item.presentationData.theme, diameter: badgeDiameter)
+                            currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActiveProvisional(item.presentationData.theme, diameter: avatarBadgeDiameter)
+                        } else {
+                            badgeTextColor = theme.unreadBadgeActiveTextColor
+                            currentBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActive(item.presentationData.theme, diameter: badgeDiameter)
+                            currentAvatarBadgeBackgroundImage = PresentationResourcesChatList.badgeBackgroundActive(item.presentationData.theme, diameter: avatarBadgeDiameter)
+                        }
                     }
-                }
-                let unreadCountText = compactNumericCountString(Int(unreadCount.count), decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator)
-                if unreadCount.count > 0 {
-                    badgeContent = .text(NSAttributedString(string: unreadCountText, font: badgeFont, textColor: badgeTextColor))
-                } else if isPeerGroup {
-                    badgeContent = .none
-                } else {
-                    badgeContent = .blank
-                }
-                
-                if let mutedCount = unreadCount.mutedCount, mutedCount > 0 {
-                    let mutedUnreadCountText = compactNumericCountString(Int(mutedCount), decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator)
-                    currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactive(item.presentationData.theme, diameter: badgeDiameter)
-                    mentionBadgeContent = .text(NSAttributedString(string: mutedUnreadCountText, font: badgeFont, textColor: theme.unreadBadgeInactiveTextColor))
+                    let unreadCountText = compactNumericCountString(Int(unreadCount.count), decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator)
+                    if unreadCount.count > 0 {
+                        badgeContent = .text(NSAttributedString(string: unreadCountText, font: badgeFont, textColor: badgeTextColor))
+                    } else if isPeerGroup {
+                        badgeContent = .none
+                    } else {
+                        badgeContent = .blank
+                    }
+                    
+                    if let mutedCount = unreadCount.mutedCount, mutedCount > 0 {
+                        let mutedUnreadCountText = compactNumericCountString(Int(mutedCount), decimalSeparator: item.presentationData.dateTimeFormat.decimalSeparator)
+                        currentMentionBadgeImage = PresentationResourcesChatList.badgeBackgroundInactive(item.presentationData.theme, diameter: badgeDiameter)
+                        mentionBadgeContent = .text(NSAttributedString(string: mutedUnreadCountText, font: badgeFont, textColor: theme.unreadBadgeInactiveTextColor))
+                    }
                 }
             }
 
@@ -4914,16 +4899,31 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     
                     var mediaPreviewOffset = textNodeFrame.origin.offsetBy(dx: 1.0, dy: 1.0 + floor((measureLayout.size.height - contentImageSize.height) / 2.0))
                     
-                    let messageTypeIconImage = currentMessageTypeIcon
-                    let messageTypeIconOffset = CGPoint(x: mediaPreviewOffset.x + currentMessageTypeIconOffset.x, y: mediaPreviewOffset.y + currentMessageTypeIconOffset.y)
+                    var messageTypeIcon: UIImage?
+                    var messageTypeIconOffset = mediaPreviewOffset
+                    if let currentForwardedIcon {
+                        messageTypeIcon = currentForwardedIcon
+                        messageTypeIconOffset.y += 3.0
+                    } else if let currentStoryIcon {
+                        messageTypeIcon = currentStoryIcon
+                    } else if let currentGiftIcon {
+                        messageTypeIcon = currentGiftIcon
+                        messageTypeIconOffset.y -= 2.0 - UIScreenPixel
+                    } else if let currentLocationIcon {
+                        messageTypeIcon = currentLocationIcon
+                        messageTypeIconOffset.y -= 2.0 - UIScreenPixel
+                    } else if let currentPollIcon {
+                        messageTypeIcon = currentPollIcon
+                        messageTypeIconOffset.y -= 2.0 - UIScreenPixel
+                    }
                     
-                    if let messageTypeIconImage {
-                        strongSelf.forwardedIconNode.image = messageTypeIconImage
+                    if let messageTypeIcon {
+                        strongSelf.forwardedIconNode.image = messageTypeIcon
                         if strongSelf.forwardedIconNode.supernode == nil {
                             strongSelf.mainContentContainerNode.addSubnode(strongSelf.forwardedIconNode)
                         }
-                        transition.updateFrame(node: strongSelf.forwardedIconNode, frame: CGRect(origin: messageTypeIconOffset, size: messageTypeIconImage.size))
-                        mediaPreviewOffset.x += messageTypeIconImage.size.width + forwardedIconSpacing
+                        transition.updateFrame(node: strongSelf.forwardedIconNode, frame: CGRect(origin: messageTypeIconOffset, size: messageTypeIcon.size))
+                        mediaPreviewOffset.x += messageTypeIcon.size.width + forwardedIconSpacing
                     } else if strongSelf.forwardedIconNode.supernode != nil {
                         strongSelf.forwardedIconNode.removeFromSupernode()
                     }

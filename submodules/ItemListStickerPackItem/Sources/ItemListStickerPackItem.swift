@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AsyncDisplayKit
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import TelegramPresentationData
 import ItemListUI
@@ -51,12 +52,12 @@ public final class ItemListStickerPackItem: ListViewItem, ItemListItem {
     let style: ItemListStyle
     public let sectionId: ItemListSectionId
     let action: (() -> Void)?
-    let setPackIdWithRevealedOptions: (EngineItemCollectionId?, EngineItemCollectionId?) -> Void
+    let setPackIdWithRevealedOptions: (ItemCollectionId?, ItemCollectionId?) -> Void
     let addPack: () -> Void
     let removePack: () -> Void
     let toggleSelected: () -> Void
     
-    public init(presentationData: ItemListPresentationData, context: AccountContext, systemStyle: ItemListSystemStyle = .legacy, packInfo: StickerPackCollectionInfo.Accessor, itemCount: String, topItem: StickerPackItem?, unread: Bool, control: ItemListStickerPackItemControl, editing: ItemListStickerPackItemEditing, enabled: Bool, playAnimatedStickers: Bool, style: ItemListStyle = .blocks, sectionId: ItemListSectionId, action: (() -> Void)?, setPackIdWithRevealedOptions: @escaping (EngineItemCollectionId?, EngineItemCollectionId?) -> Void, addPack: @escaping () -> Void, removePack: @escaping () -> Void, toggleSelected: @escaping () -> Void) {
+    public init(presentationData: ItemListPresentationData, context: AccountContext, systemStyle: ItemListSystemStyle = .legacy, packInfo: StickerPackCollectionInfo.Accessor, itemCount: String, topItem: StickerPackItem?, unread: Bool, control: ItemListStickerPackItemControl, editing: ItemListStickerPackItemEditing, enabled: Bool, playAnimatedStickers: Bool, style: ItemListStyle = .blocks, sectionId: ItemListSectionId, action: (() -> Void)?, setPackIdWithRevealedOptions: @escaping (ItemCollectionId?, ItemCollectionId?) -> Void, addPack: @escaping () -> Void, removePack: @escaping () -> Void, toggleSelected: @escaping () -> Void) {
         self.presentationData = presentationData
         self.context = context
         self.systemStyle = systemStyle
@@ -125,8 +126,8 @@ public final class ItemListStickerPackItem: ListViewItem, ItemListItem {
 
 public enum StickerPackThumbnailItem: Equatable {
     case still(TelegramMediaImageRepresentation)
-    case animated(EngineMediaResource, PixelDimensions, Bool, Bool)
-
+    case animated(MediaResource, PixelDimensions, Bool, Bool)
+    
     public static func ==(lhs: StickerPackThumbnailItem, rhs: StickerPackThumbnailItem) -> Bool {
         switch lhs {
         case let .still(representation):
@@ -136,7 +137,7 @@ public enum StickerPackThumbnailItem: Equatable {
                 return false
             }
         case let .animated(lhsResource, lhsDimensions, lhsIsVideo, lhsTinted):
-            if case let .animated(rhsResource, rhsDimensions, rhsIsVideo, rhsTinted) = rhs, lhsResource == rhsResource, lhsDimensions == rhsDimensions, lhsIsVideo == rhsIsVideo, lhsTinted == rhsTinted {
+            if case let .animated(rhsResource, rhsDimensions, rhsIsVideo, rhsTinted) = rhs, lhsResource.isEqual(to: rhsResource), lhsDimensions == rhsDimensions, lhsIsVideo == rhsIsVideo, lhsTinted == rhsTinted {
                 return true
             } else {
                 return false
@@ -499,7 +500,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             var resourceReference: MediaResourceReference?
             if item.packInfo.hasThumbnail, let thumbnail = item.packInfo._parse().thumbnail {
                 if thumbnail.typeHint != .generic {
-                    thumbnailItem = .animated(EngineMediaResource(thumbnail.resource), thumbnail.dimensions, thumbnail.typeHint == .video, item.packInfo.flags.contains(.isCustomTemplateEmoji))
+                    thumbnailItem = .animated(thumbnail.resource, thumbnail.dimensions, thumbnail.typeHint == .video, item.packInfo.flags.contains(.isCustomTemplateEmoji))
                 } else {
                     thumbnailItem = .still(thumbnail)
                 }
@@ -507,7 +508,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             } else if let item = item.topItem {
                 let itemFile = item.file._parse()
                 if itemFile.isAnimatedSticker || itemFile.isVideoSticker {
-                    thumbnailItem = .animated(EngineMediaResource(itemFile.resource), itemFile.dimensions ?? PixelDimensions(width: 100, height: 100), itemFile.isVideoSticker, itemFile.isCustomTemplateEmoji)
+                    thumbnailItem = .animated(itemFile.resource, itemFile.dimensions ?? PixelDimensions(width: 100, height: 100), itemFile.isVideoSticker, itemFile.isCustomTemplateEmoji)
                     resourceReference = MediaResourceReference.media(media: .standalone(media: itemFile), resource: itemFile.resource)
                 } else if let dimensions = itemFile.dimensions, let resource = chatMessageStickerResource(file: itemFile, small: true) as? TelegramMediaResource {
                     thumbnailItem = .still(TelegramMediaImageRepresentation(dimensions: dimensions, resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false))
@@ -516,7 +517,7 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
             }
             
             var updatedImageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?
-            var updatedFetchSignal: Signal<EngineFetchResourceSourceType, EngineFetchResourceError>?
+            var updatedFetchSignal: Signal<FetchResourceSourceType, FetchResourceError>?
             
             let imageBoundingSize = CGSize(width: 34.0, height: 34.0)
             var imageApply: (() -> Void)?
@@ -536,14 +537,14 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
                         }
                     case let .animated(resource, dimensions, _, _):
                         imageSize = dimensions.cgSize.aspectFitted(imageBoundingSize)
-
+                    
                         if fileUpdated {
                             imageApply = makeImageLayout(TransformImageArguments(corners: ImageCorners(), imageSize: imageBoundingSize, boundingSize: imageBoundingSize, intrinsicInsets: UIEdgeInsets()))
-                            updatedImageSignal = chatMessageStickerPackThumbnail(postbox: item.context.account.postbox, resource: resource._asResource(), animated: true, nilIfEmpty: true)
+                            updatedImageSignal = chatMessageStickerPackThumbnail(postbox: item.context.account.postbox, resource: resource, animated: true, nilIfEmpty: true)
                         }
                 }
                 if fileUpdated, let resourceReference = resourceReference {
-                    updatedFetchSignal = item.context.engine.resources.fetch(reference: resourceReference, userLocation: .other, userContentType: .sticker)
+                    updatedFetchSignal = fetchedMediaResource(mediaBox: item.context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: resourceReference)
                 }
             } else {
                 updatedImageSignal = .single({ _ in return nil })
@@ -828,9 +829,9 @@ class ItemListStickerPackItemNode: ItemListRevealOptionsItemNode {
                                     }
                                     strongSelf.animationNode = animationNode
                                     strongSelf.addSubnode(animationNode)
-
-                                    let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: resource.id)
-                                    animationNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: resource._asResource(), isVideo: isVideo), width: 80, height: 80, playbackMode: .loop, mode: .direct(cachePathPrefix: pathPrefix))
+                                    
+                                    let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(resource.id)
+                                    animationNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: resource, isVideo: isVideo), width: 80, height: 80, playbackMode: .loop, mode: .direct(cachePathPrefix: pathPrefix))
                                 }
                                 animationNode.visibility = strongSelf.visibility != .none && item.playAnimatedStickers
                                 animationNode.isHidden = !item.playAnimatedStickers

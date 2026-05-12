@@ -629,6 +629,8 @@ public func nicegramSettingsController(context: AccountContext, accountsContexts
     var getRootControllerImpl: (() -> UIViewController?)?
     var updateTabsImpl: (() -> Void)?
 
+    let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+
     let arguments = NicegramSettingsControllerArguments(context: context, accountsContexts: accountsContexts, presentController: { controller, arguments in
         presentControllerImpl?(controller, arguments)
     }, pushController: { controller in

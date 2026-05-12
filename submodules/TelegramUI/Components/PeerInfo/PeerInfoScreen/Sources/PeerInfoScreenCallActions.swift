@@ -45,7 +45,7 @@ extension PeerInfoScreenNode {
             return
         }
         
-        guard case let .user(peer) = self.data?.peer, let cachedUserData = self.data?.cachedData as? CachedUserData else {
+        guard let peer = self.data?.peer as? TelegramUser, let cachedUserData = self.data?.cachedData as? CachedUserData else {
             return
         }
         if cachedUserData.callsPrivate {
@@ -128,7 +128,7 @@ extension PeerInfoScreenNode {
                     case .generic, .scheduledTooLate:
                         text = strongSelf.presentationData.strings.Login_UnknownError
                     case .anonymousNotAllowed:
-                        if case let .channel(channel) = strongSelf.data?.peer, case .broadcast = channel.info {
+                        if let channel = strongSelf.data?.peer as? TelegramChannel, case .broadcast = channel.info {
                             text = strongSelf.presentationData.strings.LiveStream_AnonymousDisabledAlertText
                         } else {
                             text = strongSelf.presentationData.strings.VoiceChat_AnonymousDisabledAlertText
@@ -144,14 +144,7 @@ extension PeerInfoScreenNode {
 
     func openVoiceChatDisplayAsPeerSelection(completion: @escaping (PeerId) -> Void, gesture: ContextGesture? = nil, contextController: ContextControllerProtocol? = nil, result: ((ContextMenuActionResult) -> Void)? = nil, backAction: ((ContextControllerProtocol) -> Void)? = nil) {
         let dismissOnSelection = contextController == nil
-        let currentAccountPeer = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
-        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-            if let peer {
-                return .single(peer)
-            } else {
-                return .never()
-            }
-        }
+        let currentAccountPeer = self.context.account.postbox.loadedPeerWithId(context.account.peerId)
         |> map { peer in
             return [FoundPeer(peer: peer, subscribers: nil)]
         }
@@ -172,10 +165,10 @@ extension PeerInfoScreenNode {
                 
                 var isGroup = false
                 for peer in peers {
-                    if case .legacyGroup = peer.peer {
+                    if peer.peer is TelegramGroup {
                         isGroup = true
                         break
-                    } else if case let .channel(channel) = peer.peer, case .group = channel.info {
+                    } else if let peer = peer.peer as? TelegramChannel, case .group = peer.info {
                         isGroup = true
                         break
                     }
@@ -190,7 +183,7 @@ extension PeerInfoScreenNode {
                     if peer.peer.id.namespace == Namespaces.Peer.CloudUser {
                         subtitle = strongSelf.presentationData.strings.VoiceChat_PersonalAccount
                     } else if let subscribers = peer.subscribers {
-                        if case let .channel(channel) = peer.peer, case .broadcast = channel.info {
+                        if let peer = peer.peer as? TelegramChannel, case .broadcast = peer.info {
                             subtitle = strongSelf.presentationData.strings.Conversation_StatusSubscribers(subscribers)
                         } else {
                             subtitle = strongSelf.presentationData.strings.Conversation_StatusMembers(subscribers)
@@ -198,8 +191,8 @@ extension PeerInfoScreenNode {
                     }
 
                     let avatarSize = CGSize(width: 28.0, height: 28.0)
-                    let avatarSignal = peerAvatarCompleteImage(account: strongSelf.context.account, peer: peer.peer, size: avatarSize)
-                    items.append(.action(ContextMenuActionItem(text: peer.peer.displayTitle(strings: strongSelf.presentationData.strings, displayOrder: strongSelf.presentationData.nameDisplayOrder), textLayout: subtitle.flatMap { .secondLineWithValue($0) } ?? .singleLine, icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: avatarSignal), action: { _, f in
+                    let avatarSignal = peerAvatarCompleteImage(account: strongSelf.context.account, peer: EnginePeer(peer.peer), size: avatarSize)
+                    items.append(.action(ContextMenuActionItem(text: EnginePeer(peer.peer).displayTitle(strings: strongSelf.presentationData.strings, displayOrder: strongSelf.presentationData.nameDisplayOrder), textLayout: subtitle.flatMap { .secondLineWithValue($0) } ?? .singleLine, icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: avatarSignal), action: { _, f in
                         if dismissOnSelection {
                             f(.dismissWithoutContent)
                         }
@@ -253,14 +246,7 @@ extension PeerInfoScreenNode {
         let context = self.context
         let peerId = self.peerId
         let defaultJoinAsPeerId = defaultJoinAsPeerId ?? self.context.account.peerId
-        let currentAccountPeer = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId))
-        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
-            if let peer {
-                return .single(peer)
-            } else {
-                return .never()
-            }
-        }
+        let currentAccountPeer = self.context.account.postbox.loadedPeerWithId(self.context.account.peerId)
         |> map { peer in
             return [FoundPeer(peer: peer, subscribers: nil)]
         }
@@ -285,7 +271,7 @@ extension PeerInfoScreenNode {
                 }
                 if let peer = selectedPeer {
                     let avatarSize = CGSize(width: 28.0, height: 28.0)
-                    items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.VoiceChat_DisplayAs, textLayout: .secondLineWithValue(peer.peer.displayTitle(strings: strongSelf.presentationData.strings, displayOrder: strongSelf.presentationData.nameDisplayOrder)), icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: peerAvatarCompleteImage(account: strongSelf.context.account, peer: peer.peer, size: avatarSize)), action: { c, f in
+                    items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.VoiceChat_DisplayAs, textLayout: .secondLineWithValue(EnginePeer(peer.peer).displayTitle(strings: strongSelf.presentationData.strings, displayOrder: strongSelf.presentationData.nameDisplayOrder)), icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: peerAvatarCompleteImage(account: strongSelf.context.account, peer: EnginePeer(peer.peer), size: avatarSize)), action: { c, f in
                         guard let strongSelf = self else {
                             return
                         }
@@ -304,7 +290,7 @@ extension PeerInfoScreenNode {
 
             let createVoiceChatTitle: String
             let scheduleVoiceChatTitle: String
-            if case let .channel(channel) = strongSelf.data?.peer, case .broadcast = channel.info {
+            if let channel = strongSelf.data?.peer as? TelegramChannel, case .broadcast = channel.info {
                 createVoiceChatTitle = strongSelf.presentationData.strings.ChannelInfo_CreateLiveStream
                 scheduleVoiceChatTitle = strongSelf.presentationData.strings.ChannelInfo_ScheduleLiveStream
             } else {
@@ -327,11 +313,11 @@ extension PeerInfoScreenNode {
             var credentialsPromise: Promise<GroupCallStreamCredentials>?
             var canCreateStream = false
             switch chatPeer {
-            case let .legacyGroup(group):
+            case let group as TelegramGroup:
                 if case .creator = group.role {
                     canCreateStream = true
                 }
-            case let .channel(channel):
+            case let channel as TelegramChannel:
                 if channel.hasPermission(.manageCalls) {
                     canCreateStream = true
                     credentialsPromise = Promise()

@@ -226,7 +226,7 @@ public class ComposeControllerImpl: ViewController, ComposeController {
                     DeviceAccess.authorizeAccess(to: .contacts)
                 default:
                     let presentationData = strongSelf.presentationData
-                    strongSelf.present(textAlertController(context: strongSelf.context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .defaultAction, title: presentationData.strings.AccessDenied_Settings, action: {
+                    strongSelf.present(textAlertController(context: strongSelf.context, title: presentationData.strings.AccessDenied_Title, text: presentationData.strings.Contacts_AccessDeniedError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_NotNow, action: {}), TextAlertAction(type: .genericAction, title: presentationData.strings.AccessDenied_Settings, action: {
                         self?.context.sharedContext.applicationBindings.openSettings()
                     })]), in: .window(.root))
                 }

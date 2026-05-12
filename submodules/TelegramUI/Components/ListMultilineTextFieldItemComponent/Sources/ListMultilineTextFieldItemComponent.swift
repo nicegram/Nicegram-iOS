@@ -89,7 +89,6 @@ public final class ListMultilineTextFieldItemComponent: Component {
     public let initialText: String
     public let resetText: ResetText?
     public let placeholder: String
-    public let placeholderDefinesMinHeight: Bool
     public let autocapitalizationType: UITextAutocapitalizationType
     public let autocorrectionType: UITextAutocorrectionType
     public let keyboardType: UIKeyboardType
@@ -118,7 +117,6 @@ public final class ListMultilineTextFieldItemComponent: Component {
         initialText: String,
         resetText: ResetText? = nil,
         placeholder: String,
-        placeholderDefinesMinHeight: Bool = false,
         autocapitalizationType: UITextAutocapitalizationType = .sentences,
         autocorrectionType: UITextAutocorrectionType = .default,
         keyboardType: UIKeyboardType = .default,
@@ -146,7 +144,6 @@ public final class ListMultilineTextFieldItemComponent: Component {
         self.initialText = initialText
         self.resetText = resetText
         self.placeholder = placeholder
-        self.placeholderDefinesMinHeight = placeholderDefinesMinHeight
         self.autocapitalizationType = autocapitalizationType
         self.autocorrectionType = autocorrectionType
         self.keyboardType = keyboardType
@@ -187,9 +184,6 @@ public final class ListMultilineTextFieldItemComponent: Component {
             return false
         }
         if lhs.placeholder != rhs.placeholder {
-            return false
-        }
-        if lhs.placeholderDefinesMinHeight != rhs.placeholderDefinesMinHeight {
             return false
         }
         if lhs.autocapitalizationType != rhs.autocapitalizationType {
@@ -475,20 +469,7 @@ public final class ListMultilineTextFieldItemComponent: Component {
                 containerSize: CGSize(width: availableSize.width - textFieldRightInset, height: availableSize.height)
             )
             
-            let placeholderSize = self.placeholder.update(
-                transition: .immediate,
-                component: AnyComponent(MultilineTextComponent(
-                    text: .plain(NSAttributedString(string: component.placeholder.isEmpty ? " " : component.placeholder, font: Font.regular(17.0), textColor: component.theme.list.itemPlaceholderTextColor)),
-                    maximumNumberOfLines: component.placeholderDefinesMinHeight ? 0 : 1
-                )),
-                environment: {},
-                containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: 100.0)
-            )
-            
-            var size = CGSize(width: availableSize.width, height: textFieldSize.height - 1.0)
-            if component.placeholderDefinesMinHeight {
-                size.height = max(size.height, placeholderSize.height + verticalInset * 2.0 - 1.0)
-            }
+            let size = CGSize(width: availableSize.width, height: textFieldSize.height - 1.0)
             let textFieldFrame = CGRect(origin: CGPoint(), size: textFieldSize)
             
             if let textFieldView = self.textField.view {
@@ -499,6 +480,14 @@ public final class ListMultilineTextFieldItemComponent: Component {
                 transition.setFrame(view: textFieldView, frame: textFieldFrame)
             }
             
+            let placeholderSize = self.placeholder.update(
+                transition: .immediate,
+                component: AnyComponent(MultilineTextComponent(
+                    text: .plain(NSAttributedString(string: component.placeholder.isEmpty ? " " : component.placeholder, font: Font.regular(17.0), textColor: component.theme.list.itemPlaceholderTextColor))
+                )),
+                environment: {},
+                containerSize: CGSize(width: availableSize.width - leftInset - rightInset, height: 100.0)
+            )
             let placeholderFrame = CGRect(origin: CGPoint(x: leftInset, y: verticalInset), size: placeholderSize)
             if let placeholderView = self.placeholder.view {
                 if placeholderView.superview == nil {

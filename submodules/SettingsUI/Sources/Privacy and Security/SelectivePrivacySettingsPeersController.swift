@@ -475,7 +475,7 @@ public func selectivePrivacyPeersController(context: AccountContext, title: Stri
                                 }
                             }
                             
-                            updatedPeers.append(SelectivePrivacyPeer(peer: peer, participantCount: participantCount))
+                            updatedPeers.append(SelectivePrivacyPeer(peer: peer._asPeer(), participantCount: participantCount))
                         }
                     }
                     return updatedPeers
@@ -506,7 +506,7 @@ public func selectivePrivacyPeersController(context: AccountContext, title: Stri
         }))
         presentControllerImpl?(controller, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
     }, openPeer: { peer in
-        guard let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) else {
+        guard let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) else {
             return
         }
         pushControllerImpl?(controller)

@@ -353,7 +353,7 @@ final class ChatManagingBotTitlePanelNode: ChatTitleAccessoryPanelNode {
                                     guard let navigationController = chatController.navigationController as? NavigationController else {
                                         return
                                     }
-                                    if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                                    if let controller = self.context.sharedContext.makePeerInfoController(context: self.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                                         navigationController.pushViewController(controller)
                                     }
                                 })

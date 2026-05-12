@@ -3,6 +3,7 @@ import UIKit
 import Display
 import AccountContext
 import SwiftSignalKit
+import Postbox
 import TelegramCore
 import AsyncDisplayKit
 import TelegramUIPreferences
@@ -53,7 +54,7 @@ extension PeerInfoScreenNode {
                 UIPasteboard.general.string = bioText
                 
                 let toastText: String
-                if case .user = self.data?.peer {
+                if let _ = self.data?.peer as? TelegramUser {
                     toastText = self.presentationData.strings.MyProfile_ToastBioCopied
                 } else {
                     toastText = self.presentationData.strings.ChannelProfile_ToastAboutCopied
@@ -87,7 +88,7 @@ extension PeerInfoScreenNode {
             }
             
             let copyText: String
-            if case .user = self.data?.peer {
+            if let _ = self.data?.peer as? TelegramUser {
                 copyText = self.presentationData.strings.MyProfile_BioActionCopy
             } else {
                 copyText = self.presentationData.strings.ChannelProfile_AboutActionCopy

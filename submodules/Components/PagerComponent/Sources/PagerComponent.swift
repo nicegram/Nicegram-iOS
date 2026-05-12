@@ -1103,27 +1103,6 @@ public final class PagerComponent<ChildEnvironmentType: Equatable, TopPanelEnvir
             
             self.isTopPanelExpandedUpdated(isExpanded: false, transition: ComponentTransition(animation: .curve(duration: 0.4, curve: .spring)))
         }
-        
-        public func revealHiddenPanels() {
-            guard let component = self.component else {
-                return
-            }
-            guard case .hideOnScroll = component.panelHideBehavior else {
-                return
-            }
-            guard let centralId = self.centralId, let contentView = self.contentViews[centralId] else {
-                return
-            }
-            guard !contentView.wantsExclusiveMode else {
-                return
-            }
-            guard contentView.scrollingPanelOffsetFraction != 0.0 else {
-                return
-            }
-            
-            contentView.scrollingPanelOffsetFraction = 0.0
-            self.state?.updated(transition: ComponentTransition(animation: .curve(duration: 0.25, curve: .easeInOut)))
-        }
     }
     
     public func makeView() -> View {

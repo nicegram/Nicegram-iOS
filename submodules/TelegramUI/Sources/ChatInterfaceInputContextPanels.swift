@@ -31,17 +31,6 @@ private func inputQueryResultPriority(_ result: ChatPresentationInputQueryResult
     }
 }
 
-private func hasBannedInlineContent(chatPresentationInterfaceState: ChatPresentationInterfaceState) -> Bool {
-    if let channel = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel {
-        let canBypass = canBypassRestrictions(chatPresentationInterfaceState: chatPresentationInterfaceState)
-        return channel.hasBannedPermission(.banSendInline, ignoreDefault: canBypass) != nil
-    } else if let group = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramGroup {
-        return group.hasBannedPermission(.banSendInline)
-    } else {
-        return false
-    }
-}
-
 func textInputContextPanel(context: AccountContext, chatPresentationInterfaceState: ChatPresentationInterfaceState, controllerInteraction: ChatControllerInteraction?, interfaceInteraction: ChatPanelInterfaceInteraction?, currentPanel: ChatInputContextPanelNode?) -> ChatInputContextPanelNode? {
     guard let controllerInteraction else {
         return nil
@@ -60,8 +49,15 @@ func textInputContextPanel(context: AccountContext, chatPresentationInterfaceSta
     }).first else {
         return nil
     }
-
-    if hasBannedInlineContent(chatPresentationInterfaceState: chatPresentationInterfaceState) {
+    
+    var hasBannedInlineContent = false
+    if let channel = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.hasBannedPermission(.banSendInline) != nil {
+        hasBannedInlineContent = true
+    } else if let group = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramGroup, group.hasBannedPermission(.banSendInline) {
+        hasBannedInlineContent = true
+    }
+    
+    if hasBannedInlineContent {
         switch inputQueryResult {
             case .stickers, .contextRequestResult:
                 if let currentPanel = currentPanel as? DisabledContextResultsChatInputContextPanelNode {
@@ -211,8 +207,15 @@ func inputContextPanelForChatPresentationIntefaceState(_ chatPresentationInterfa
     }).first else {
         return nil
     }
-
-    if hasBannedInlineContent(chatPresentationInterfaceState: chatPresentationInterfaceState) {
+    
+    var hasBannedInlineContent = false
+    if let channel = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramChannel, channel.hasBannedPermission(.banSendInline) != nil {
+        hasBannedInlineContent = true
+    } else if let group = chatPresentationInterfaceState.renderedPeer?.peer as? TelegramGroup, group.hasBannedPermission(.banSendInline) {
+        hasBannedInlineContent = true
+    }
+    
+    if hasBannedInlineContent {
         switch inputQueryResult {
             case .stickers, .contextRequestResult:
                 if let currentPanel = currentPanel as? DisabledContextResultsChatInputContextPanelNode {
@@ -330,3 +333,4 @@ func chatOverlayContextPanelForChatPresentationIntefaceState(_ chatPresentationI
     
     return nil
 }
+

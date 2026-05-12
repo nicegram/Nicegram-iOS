@@ -83,50 +83,6 @@ public func chatInputStateStringWithAppliedEntities(_ text: String, entities: [M
 
 private let syntaxHighlighter = Syntaxer()
 
-private func isValidMessageSyntaxHighlightRange(_ range: Range<Int>, expectedLength: Int) -> Bool {
-    return range.lowerBound >= 0 && range.upperBound <= expectedLength && range.lowerBound < range.upperBound
-}
-
-private func validatedCachedMessageSyntaxHighlight(_ highlight: MessageSyntaxHighlight, expectedLength: Int, language: String) -> MessageSyntaxHighlight? {
-    for entity in highlight.entities {
-        if !isValidMessageSyntaxHighlightRange(entity.range, expectedLength: expectedLength) {
-            return nil
-        }
-    }
-    return highlight
-}
-
-private func generateMessageSyntaxHighlight(spec: CachedMessageSyntaxHighlight.Spec, theme: SyntaxterTheme) -> MessageSyntaxHighlight {
-    let expectedLength = (spec.text as NSString).length
-    guard let syntaxHighlighter else {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    guard let highlightedString = syntaxHighlighter.syntax(spec.text, language: spec.language, theme: theme) else {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    guard highlightedString.length == expectedLength else {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    
-    var entities: [MessageSyntaxHighlight.Entity] = []
-    var hasInvalidRange = false
-    highlightedString.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: highlightedString.length), using: { value, subRange, stop in
-        let range = subRange.lowerBound ..< subRange.upperBound
-        if !isValidMessageSyntaxHighlightRange(range, expectedLength: expectedLength) {
-            hasInvalidRange = true
-            stop.pointee = true
-            return
-        }
-        if let value = value as? UIColor, value != .black {
-            entities.append(MessageSyntaxHighlight.Entity(color: Int32(bitPattern: value.rgb), range: range))
-        }
-    })
-    if hasInvalidRange {
-        return MessageSyntaxHighlight(entities: [])
-    }
-    return MessageSyntaxHighlight(entities: entities)
-}
-
 public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEntity], strings: PresentationStrings? = nil, dateTimeFormat: PresentationDateTimeFormat? = nil, baseColor: UIColor, linkColor: UIColor, baseQuoteTintColor: UIColor? = nil, baseQuoteSecondaryTintColor: UIColor? = nil, baseQuoteTertiaryTintColor: UIColor? = nil, codeBlockTitleColor: UIColor? = nil, codeBlockAccentColor: UIColor? = nil, codeBlockBackgroundColor: UIColor? = nil, baseFont: UIFont, linkFont: UIFont, boldFont: UIFont, italicFont: UIFont, boldItalicFont: UIFont, fixedFont: UIFont, blockQuoteFont: UIFont, underlineLinks: Bool = true, external: Bool = false, message: Message?, entityFiles: [MediaId: TelegramMediaFile] = [:], adjustQuoteFontSize: Bool = false, cachedMessageSyntaxHighlight: CachedMessageSyntaxHighlight? = nil, paragraphAlignment: NSTextAlignment? = nil) -> NSAttributedString {
     let baseQuoteTintColor = baseQuoteTintColor ?? baseColor
     
@@ -443,10 +399,8 @@ public func stringWithAppliedEntities(_ text: String, entities: [MessageTextEnti
         
         let codeText = (string.string as NSString).substring(with: range)
         if let cachedMessageSyntaxHighlight, let entry = cachedMessageSyntaxHighlight.values[CachedMessageSyntaxHighlight.Spec(language: language, text: codeText)] {
-            if let validatedEntry = validatedCachedMessageSyntaxHighlight(entry, expectedLength: range.length, language: language) {
-                for entity in validatedEntry.entities {
-                    string.addAttribute(.foregroundColor, value: UIColor(rgb: UInt32(bitPattern: entity.color)), range: NSRange(location: range.location + entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound))
-                }
+            for entity in entry.entities {
+                string.addAttribute(.foregroundColor, value: UIColor(rgb: UInt32(bitPattern: entity.color)), range: NSRange(location: range.location + entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound))
             }
         }
     })
@@ -634,18 +588,8 @@ public func extractMessageSyntaxHighlightSpecs(text: String, entities: [MessageT
 private let internalFixedCodeFont = Font.regular(17.0)
 
 public func asyncUpdateMessageSyntaxHighlight(engine: TelegramEngine, messageId: EngineMessage.Id, current: CachedMessageSyntaxHighlight?, specs: [CachedMessageSyntaxHighlight.Spec]) -> Signal<Never, NoError> {
-    if let current {
-        var hasMissingOrInvalidSpec = false
-        for spec in specs {
-            let expectedLength = (spec.text as NSString).length
-            guard let value = current.values[spec], validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) != nil else {
-                hasMissingOrInvalidSpec = true
-                break
-            }
-        }
-        if !hasMissingOrInvalidSpec {
-            return .complete()
-        }
+    if let current, !specs.contains(where: { current.values[$0] == nil }) {
+        return .complete()
     }
     
     return Signal { subscriber in
@@ -654,11 +598,22 @@ public func asyncUpdateMessageSyntaxHighlight(engine: TelegramEngine, messageId:
         let theme = SyntaxterTheme(dark: false, textColor: .black, textFont: internalFixedCodeFont, italicFont: internalFixedCodeFont, mediumFont: internalFixedCodeFont)
         
         for spec in specs {
-            let expectedLength = (spec.text as NSString).length
             if let value = current?.values[spec] {
-                updated[spec] = validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) ?? MessageSyntaxHighlight(entities: [])
-            } else if let theme {
-                updated[spec] = generateMessageSyntaxHighlight(spec: spec, theme: theme)
+                updated[spec] = value
+            } else {
+                var entities: [MessageSyntaxHighlight.Entity] = []
+                
+                if let syntaxHighlighter {
+                    if let highlightedString = syntaxHighlighter.syntax(spec.text, language: spec.language, theme: theme) {
+                        highlightedString.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: highlightedString.length), using: { value, subRange, _ in
+                            if let value = value as? UIColor, value != .black {
+                                entities.append(MessageSyntaxHighlight.Entity(color: Int32(bitPattern: value.rgb), range: subRange.lowerBound ..< subRange.upperBound))
+                            }
+                        })
+                    }
+                }
+                
+                updated[spec] = MessageSyntaxHighlight(entities: entities)
             }
         }
         
@@ -674,18 +629,8 @@ public func asyncUpdateMessageSyntaxHighlight(engine: TelegramEngine, messageId:
 }
 
 public func asyncStanaloneSyntaxHighlight(current: CachedMessageSyntaxHighlight?, specs: [CachedMessageSyntaxHighlight.Spec]) -> Signal<CachedMessageSyntaxHighlight, NoError> {
-    if let current {
-        var hasMissingOrInvalidSpec = false
-        for spec in specs {
-            let expectedLength = (spec.text as NSString).length
-            guard let value = current.values[spec], validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) != nil else {
-                hasMissingOrInvalidSpec = true
-                break
-            }
-        }
-        if !hasMissingOrInvalidSpec {
-            return .single(current)
-        }
+    if let current, !specs.contains(where: { current.values[$0] == nil }) {
+        return .single(current)
     }
     
     return Signal { subscriber in
@@ -694,11 +639,22 @@ public func asyncStanaloneSyntaxHighlight(current: CachedMessageSyntaxHighlight?
         let theme = SyntaxterTheme(dark: false, textColor: .black, textFont: internalFixedCodeFont, italicFont: internalFixedCodeFont, mediumFont: internalFixedCodeFont)
         
         for spec in specs {
-            let expectedLength = (spec.text as NSString).length
             if let value = current?.values[spec] {
-                updated[spec] = validatedCachedMessageSyntaxHighlight(value, expectedLength: expectedLength, language: spec.language) ?? MessageSyntaxHighlight(entities: [])
-            } else if let theme {
-                updated[spec] = generateMessageSyntaxHighlight(spec: spec, theme: theme)
+                updated[spec] = value
+            } else {
+                var entities: [MessageSyntaxHighlight.Entity] = []
+                
+                if let syntaxHighlighter {
+                    if let highlightedString = syntaxHighlighter.syntax(spec.text, language: spec.language, theme: theme) {
+                        highlightedString.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: highlightedString.length), using: { value, subRange, _ in
+                            if let value = value as? UIColor, value != .black {
+                                entities.append(MessageSyntaxHighlight.Entity(color: Int32(bitPattern: value.rgb), range: subRange.lowerBound ..< subRange.upperBound))
+                            }
+                        })
+                    }
+                }
+                
+                updated[spec] = MessageSyntaxHighlight(entities: entities)
             }
         }
         

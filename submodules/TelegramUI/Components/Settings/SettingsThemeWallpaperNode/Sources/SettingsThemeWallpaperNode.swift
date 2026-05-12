@@ -3,6 +3,7 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import TelegramCore
+import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -281,8 +282,8 @@ public final class SettingsThemeWallpaperNode: ASDisplayNode {
                         }
 
                         let anyStatus = combineLatest(queue: .mainQueue(),
-                            context.engine.resources.status(resource: EngineMediaResource(convertedFullRepresentations[0].reference.resource), approximateSynchronousValue: true),
-                            context.sharedContext.accountManager.resources.status(resource: EngineMediaResource(convertedFullRepresentations[0].reference.resource), approximateSynchronousValue: true)
+                            context.account.postbox.mediaBox.resourceStatus(convertedFullRepresentations[0].reference.resource, approximateSynchronousValue: true),
+                            context.sharedContext.accountManager.mediaBox.resourceStatus(convertedFullRepresentations[0].reference.resource, approximateSynchronousValue: true)
                         )
                         |> map { a, b -> Bool in
                             switch a {
@@ -367,7 +368,7 @@ public final class SettingsThemeWallpaperNode: ASDisplayNode {
                 }
                 self.animatedStickerNode = animatedStickerNode
                 self.emojiContainerNode.addSubnode(animatedStickerNode)
-                let pathPrefix = context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
+                let pathPrefix = context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
                 animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: context.account, resource: file.resource), width: 128, height: 128, playbackMode: .still(.start), mode: .direct(cachePathPrefix: pathPrefix))
                 
                 animatedStickerNode.anchorPoint = CGPoint(x: 0.5, y: 1.0)
@@ -375,7 +376,7 @@ public final class SettingsThemeWallpaperNode: ASDisplayNode {
             animatedStickerNode.autoplay = true
             animatedStickerNode.visibility = true
             
-            self.stickerFetchedDisposable.set(context.engine.resources.fetch(reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource), userLocation: .other, userContentType: .other).start())
+            self.stickerFetchedDisposable.set(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .other, reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource)).start())
             
 //            let thumbnailDimensions = PixelDimensions(width: 512, height: 512)
 //            self.placeholderNode.update(backgroundColor: nil, foregroundColor: UIColor(rgb: 0xffffff, alpha: 0.2), shimmeringColor: UIColor(rgb: 0xffffff, alpha: 0.3), data: file.immediateThumbnailData, size: emojiFrame.size, enableEffect: item.context.sharedContext.energyUsageSettings.fullTranslucency, imageSize: thumbnailDimensions.cgSize)

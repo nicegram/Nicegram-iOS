@@ -576,7 +576,7 @@ public final class AsyncListComponent: Component {
                 case let .curve(duration, curve):
                     updateSizeAndInsets.duration = duration
                     switch curve {
-                    case .linear, .easeInOut, .easeIn:
+                    case .linear, .easeInOut:
                         updateSizeAndInsets.curve = .Default(duration: duration)
                     case .spring:
                         updateSizeAndInsets.curve = .Spring(duration: duration)

@@ -22,6 +22,11 @@ import EmojiTextAttachmentView
 import TextFormat
 
 public final class ListComposePollOptionComponent: Component {
+    public enum Style {
+        case glass
+        case legacy
+    }
+    
     public final class ResetText: Equatable {
         public let value: NSAttributedString
         
@@ -112,6 +117,7 @@ public final class ListComposePollOptionComponent: Component {
     
     public let externalState: TextFieldComponent.ExternalState?
     public let context: AccountContext
+    public let style: Style
     public let theme: PresentationTheme
     public let strings: PresentationStrings
     public let placeholder: NSAttributedString?
@@ -124,7 +130,6 @@ public final class ListComposePollOptionComponent: Component {
     public let canReorder: Bool
     public let canAdd: Bool
     public let attachment: Attachment?
-    public let formattingAvailable: Bool
     public let emptyLineHandling: TextFieldComponent.EmptyLineHandling
     public let returnKeyType: UIReturnKeyType
     public let returnKeyAction: (() -> Void)?
@@ -136,12 +141,12 @@ public final class ListComposePollOptionComponent: Component {
     public let attachAction: (() -> Void)?
     public let deleteAction: (() -> Void)?
     public let paste: ((TextFieldComponent.PasteData) -> Void)?
-    public let present: ((ViewController) -> Void)?
     public let tag: AnyObject?
     
     public init(
         externalState: TextFieldComponent.ExternalState?,
         context: AccountContext,
+        style: Style = .legacy,
         theme: PresentationTheme,
         strings: PresentationStrings,
         placeholder: NSAttributedString? = nil,
@@ -154,7 +159,6 @@ public final class ListComposePollOptionComponent: Component {
         canReorder: Bool = false,
         canAdd: Bool = false,
         attachment: Attachment? = nil,
-        formattingAvailable: Bool = false,
         emptyLineHandling: TextFieldComponent.EmptyLineHandling,
         returnKeyType: UIReturnKeyType = .next,
         returnKeyAction: (() -> Void)? = nil,
@@ -166,11 +170,11 @@ public final class ListComposePollOptionComponent: Component {
         attachAction: (() -> Void)? = nil,
         deleteAction: (() -> Void)? = nil,
         paste: ((TextFieldComponent.PasteData) -> Void)? = nil,
-        present: ((ViewController) -> Void)? = nil,
         tag: AnyObject? = nil
     ) {
         self.externalState = externalState
         self.context = context
+        self.style = style
         self.theme = theme
         self.strings = strings
         self.placeholder = placeholder
@@ -183,7 +187,6 @@ public final class ListComposePollOptionComponent: Component {
         self.canReorder = canReorder
         self.canAdd = canAdd
         self.attachment = attachment
-        self.formattingAvailable = formattingAvailable
         self.emptyLineHandling = emptyLineHandling
         self.returnKeyType = returnKeyType
         self.returnKeyAction = returnKeyAction
@@ -195,7 +198,6 @@ public final class ListComposePollOptionComponent: Component {
         self.attachAction = attachAction
         self.deleteAction = deleteAction
         self.paste = paste
-        self.present = present
         self.tag = tag
     }
     
@@ -204,6 +206,9 @@ public final class ListComposePollOptionComponent: Component {
             return false
         }
         if lhs.context !== rhs.context {
+            return false
+        }
+        if lhs.style != rhs.style {
             return false
         }
         if lhs.theme !== rhs.theme {
@@ -240,9 +245,6 @@ public final class ListComposePollOptionComponent: Component {
             return false
         }
         if lhs.attachment != rhs.attachment {
-            return false
-        }
-        if lhs.formattingAvailable != rhs.formattingAvailable {
             return false
         }
         if lhs.emptyLineHandling != rhs.emptyLineHandling {
@@ -679,7 +681,10 @@ public final class ListComposePollOptionComponent: Component {
             self.component = component
             self.state = state
             
-            let verticalInset: CGFloat = 16.0
+            var verticalInset: CGFloat = 12.0
+            if case .glass = component.style {
+                verticalInset = 16.0
+            }
             var leftInset: CGFloat = 16.0
             var rightInset: CGFloat = 16.0
             let modeSelectorSize = CGSize(width: 32.0, height: 32.0)
@@ -727,15 +732,11 @@ public final class ListComposePollOptionComponent: Component {
                     enableInlineAnimations: component.enableInlineAnimations,
                     emptyLineHandling: component.emptyLineHandling,
                     externalHandlingForMultilinePaste: true,
-                    formatMenuAvailability: component.formattingAvailable ? .available([.bold, .italic, .strikethrough, .underline, .monospace, .spoiler, .link]) : .none,
+                    formatMenuAvailability: .none,
                     returnKeyType: component.returnKeyType,
                     lockedFormatAction: {
                     },
-                    present: { [weak self] c in
-                        guard let self, let component = self.component else {
-                            return
-                        }
-                        component.present?(c)
+                    present: { _ in
                     },
                     paste: { [weak self] data in
                         guard let self, let component = self.component else {
@@ -1358,7 +1359,10 @@ public final class ListComposePollOptionComponent: Component {
                 return
             }
             
-            let verticalInset: CGFloat = 16.0
+            var verticalInset: CGFloat = 12.0
+            if case .glass = component.style {
+                verticalInset = 16.0
+            }
             var leftInset: CGFloat = 16.0
             let rightInset: CGFloat = 16.0
             

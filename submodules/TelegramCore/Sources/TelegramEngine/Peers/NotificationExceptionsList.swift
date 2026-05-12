@@ -5,14 +5,14 @@ import TelegramApi
 
 
 public final class NotificationExceptionsList: Equatable {
-    public let peers: [PeerId: EnginePeer]
+    public let peers: [PeerId: Peer]
     public let settings: [PeerId: TelegramPeerNotificationSettings]
-
-    public init(peers: [PeerId: EnginePeer], settings: [PeerId: TelegramPeerNotificationSettings]) {
+    
+    public init(peers: [PeerId: Peer], settings: [PeerId: TelegramPeerNotificationSettings]) {
         self.peers = peers
         self.settings = settings
     }
-
+    
     public static func ==(lhs: NotificationExceptionsList, rhs: NotificationExceptionsList) -> Bool {
         return lhs === rhs
     }
@@ -41,10 +41,10 @@ func _internal_notificationExceptionsList(accountPeerId: PeerId, postbox: Postbo
                 let parsedPeers = AccumulatedPeers(transaction: transaction, chats: chats, users: users)
                 updatePeers(transaction: transaction,  accountPeerId: accountPeerId,peers: parsedPeers)
 
-                var peers: [PeerId: EnginePeer] = [:]
+                var peers: [PeerId: Peer] = [:]
                 for id in parsedPeers.allIds {
                     if let peer = transaction.getPeer(id) {
-                        peers[peer.id] = EnginePeer(peer)
+                        peers[peer.id] = peer
                     }
                 }
 

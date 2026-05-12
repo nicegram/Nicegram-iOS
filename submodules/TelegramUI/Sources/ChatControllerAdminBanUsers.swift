@@ -21,7 +21,7 @@ fileprivate struct InitialBannedRights {
 }
 
 extension ChatControllerImpl {
-    fileprivate func applyAdminUserActionsResult(messageIds: Set<MessageId>, reactionPeerId: EnginePeer.Id? = nil, result: AdminUserActionsSheet.ChatResult, initialUserBannedRights: [EnginePeer.Id: InitialBannedRights]) {
+    fileprivate func applyAdminUserActionsResult(messageIds: Set<MessageId>, result: AdminUserActionsSheet.ChatResult, initialUserBannedRights: [EnginePeer.Id: InitialBannedRights]) {
         guard let messagesPeerId = self.chatLocation.peerId else {
             return
         }
@@ -30,12 +30,7 @@ extension ChatControllerImpl {
         }
         
         
-        var title: String?
-        if let _ = reactionPeerId {
-            title = self.presentationData.strings.Chat_AdminAction_ToastReactionsDeletedTitleSingle
-        } else {
-            title = messageIds.count == 1 ? self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTitleSingle : self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTitleMultiple
-        }
+        var title: String? = messageIds.count == 1 ? self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTitleSingle : self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTitleMultiple
         if !result.deleteAllFromPeers.isEmpty {
             title = self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTitleMultiple
         }
@@ -72,22 +67,11 @@ extension ChatControllerImpl {
         }
         
         do {
-            if let reactionPeerId {
-                if let messageId = messageIds.first {
-                    let _ = self.context.engine.messages.deleteReaction(messageId: messageId, authorId: reactionPeerId).startStandalone()
-                }
-            } else {
-                let _ = self.context.engine.messages.deleteMessagesInteractively(messageIds: Array(messageIds), type: .forEveryone).startStandalone()
-            }
+            let _ = self.context.engine.messages.deleteMessagesInteractively(messageIds: Array(messageIds), type: .forEveryone).startStandalone()
             
             for authorId in result.deleteAllFromPeers {
                 let _ = self.context.engine.messages.deleteAllMessagesWithAuthor(peerId: messagesPeerId, authorId: authorId, namespace: Namespaces.Message.Cloud).startStandalone()
                 let _ = self.context.engine.messages.clearAuthorHistory(peerId: messagesPeerId, memberId: authorId).startStandalone()
-            }
-            
-            let aroundMessageId = messageIds.count == 1 ? messageIds.first : nil
-            for authorId in result.deleteAllReactionsFromPeers {
-                let _ = self.context.engine.messages.deleteAllReactionsWithAuthor(peerId: messagesPeerId, authorId: authorId, aroundMessageId: aroundMessageId).startStandalone()
             }
             
             for authorId in result.reportSpamPeers {
@@ -104,17 +88,9 @@ extension ChatControllerImpl {
         }
         
         if text.isEmpty {
-            if let _ = reactionPeerId {
-                text = self.presentationData.strings.Chat_AdminAction_ToastReactionsDeletedTextSingle
-            } else {
-                text = messageIds.count == 1 ? self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTextSingle : self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTextMultiple
-            }
-            if !result.deleteAllFromPeers.isEmpty && !result.deleteAllReactionsFromPeers.isEmpty {
-                text = self.presentationData.strings.Chat_AdminAction_ToastMessagesAndReactionsDeletedText
-            } else if !result.deleteAllFromPeers.isEmpty {
+            text = messageIds.count == 1 ? self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTextSingle : self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTextMultiple
+            if !result.deleteAllFromPeers.isEmpty {
                 text = self.presentationData.strings.Chat_AdminAction_ToastMessagesDeletedTextMultiple
-            } else if !result.deleteAllReactionsFromPeers.isEmpty {
-                text = self.presentationData.strings.Chat_AdminAction_ToastReactionsDeletedTextMultiple
             }
             title = nil
         }
@@ -230,7 +206,7 @@ extension ChatControllerImpl {
                     let peer = author
                     renderedParticipants.append(RenderedChannelParticipant(
                         participant: participant,
-                        peer: EnginePeer(peer)
+                        peer: peer
                     ))
                     switch participant {
                     case .creator:
@@ -262,31 +238,7 @@ extension ChatControllerImpl {
         }))
     }
     
-    public func presentReactionDeletionOptions(author: Peer, messageId: MessageId) {
-        guard self.chatLocation.peerId?.namespace == Namespaces.Peer.CloudChannel, author.id != self.context.account.peerId  else {
-            return
-        }
-        let _ = (self.context.sharedContext.chatAvailableMessageActions(
-            engine: self.context.engine,
-            accountPeerId: self.context.account.peerId,
-            messageIds: Set([messageId]),
-            keepUpdated: false
-        )
-        |> deliverOnMainQueue).startStandalone(next: { [weak self] actions in
-            guard let self, !actions.options.isEmpty else {
-                return
-            }
-            self.presentBanMessageOptions(
-                accountPeerId: self.context.account.peerId,
-                author: author,
-                messageIds: Set([messageId]),
-                options: actions.options,
-                reaction: true
-            )
-        })
-    }
-
-    func presentBanMessageOptions(accountPeerId: PeerId, author: Peer, messageIds: Set<MessageId>, options: ChatAvailableMessageActionOptions, reaction: Bool = false) {
+    func presentBanMessageOptions(accountPeerId: PeerId, author: Peer, messageIds: Set<MessageId>, options: ChatAvailableMessageActionOptions) {
         guard let peerId = self.chatLocation.peerId else {
             return
         }
@@ -373,17 +325,14 @@ extension ChatControllerImpl {
                         initialUserBannedRights[participant.peerId] = InitialBannedRights(value: nil)
                     }
                 }
-                
-                let mode: AdminUserActionsSheet.Mode
-                if reaction {
-                    mode = .chatReaction(completion: { [weak self] result in
-                        guard let self else {
-                            return
-                        }
-                        self.applyAdminUserActionsResult(messageIds: messageIds, reactionPeerId: authorPeer.id, result: result, initialUserBannedRights: initialUserBannedRights)
-                    })
-                } else {
-                    mode = .chat(
+                self.push(AdminUserActionsSheet(
+                    context: self.context,
+                    chatPeer: chatPeer,
+                    peers: [RenderedChannelParticipant(
+                        participant: participant,
+                        peer: authorPeer._asPeer()
+                    )],
+                    mode: .chat(
                         messageCount: messageIds.count,
                         deleteAllMessageCount: deleteAllMessageCount,
                         completion: { [weak self] result in
@@ -393,16 +342,6 @@ extension ChatControllerImpl {
                             self.applyAdminUserActionsResult(messageIds: messageIds, result: result, initialUserBannedRights: initialUserBannedRights)
                         }
                     )
-                }
-                
-                self.push(AdminUserActionsSheet(
-                    context: self.context,
-                    chatPeer: chatPeer,
-                    peers: [RenderedChannelParticipant(
-                        participant: participant,
-                        peer: authorPeer
-                    )],
-                    mode: mode
                 ))
             })
         }))
@@ -476,7 +415,7 @@ extension ChatControllerImpl {
                                 }
                                 self.beginDeleteMessagesWithUndo(messageIds: messageIds, type: .forEveryone)
                             }),
-                            TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {})
+                            TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_Cancel, action: {})
                         ],
                         actionLayout: .vertical,
                         parseMarkdown: true
@@ -538,7 +477,7 @@ extension ChatControllerImpl {
                                 }
                                 self.beginDeleteMessagesWithUndo(messageIds: messageIds, type: .forEveryone)
                             }),
-                            TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {})
+                            TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_Cancel, action: {})
                         ],
                         actionLayout: .vertical,
                         parseMarkdown: true
@@ -616,7 +555,7 @@ extension ChatControllerImpl {
                                     let dateString = stringForDate(timestamp: giveaway.untilDate, timeZone: .current, strings: strongSelf.presentationData.strings)
                                     strongSelf.present(textAlertController(context: strongSelf.context, updatedPresentationData: strongSelf.updatedPresentationData, title: strongSelf.presentationData.strings.Chat_Giveaway_DeleteConfirmation_Title, text: strongSelf.presentationData.strings.Chat_Giveaway_DeleteConfirmation_Text(dateString).string, actions: [TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.Common_Delete, action: {
                                         commit()
-                                    }), TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
+                                    }), TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {
                                     })], parseMarkdown: true), in: .window(.root))
                                 }
                                 f(.default)
@@ -785,7 +724,7 @@ extension ChatControllerImpl {
                 chatPeer: chatPeer,
                 peers: [RenderedChannelParticipant(
                     participant: participant,
-                    peer: authorPeer
+                    peer: authorPeer._asPeer()
                 )],
                 mode: .monoforum(completion: { [weak self] result in
                     guard let self else {

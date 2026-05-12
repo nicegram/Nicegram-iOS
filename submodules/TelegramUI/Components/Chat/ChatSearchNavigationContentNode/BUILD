@@ -14,6 +14,7 @@ swift_library(
         "//submodules/Display",
         "//submodules/TelegramPresentationData",
         "//submodules/ChatPresentationInterfaceState",
+        "//submodules/Postbox",
         "//submodules/TelegramCore",
         "//submodules/SearchBarNode",
         "//submodules/LocalizedPeerData",

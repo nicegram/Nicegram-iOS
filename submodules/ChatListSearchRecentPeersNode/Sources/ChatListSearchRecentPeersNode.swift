@@ -79,7 +79,8 @@ private struct ChatListSearchRecentPeersEntry: Comparable, Identifiable {
     
     func item(
         accountPeerId: EnginePeer.Id,
-        stateManager: AccountStateManager,
+        postbox: Postbox,
+        network: Network,
         energyUsageSettings: EnergyUsageSettings,
         contentSettings: ContentSettings,
         animationCache: AnimationCache,
@@ -95,7 +96,8 @@ private struct ChatListSearchRecentPeersEntry: Comparable, Identifiable {
             strings: self.strings,
             mode: mode,
             accountPeerId: accountPeerId,
-            stateManager: stateManager,
+            postbox: postbox,
+            network: network,
             energyUsageSettings: energyUsageSettings,
             contentSettings: contentSettings,
             animationCache: animationCache,
@@ -124,7 +126,8 @@ private struct ChatListSearchRecentNodeTransition {
 
 private func preparedRecentPeersTransition(
     accountPeerId: EnginePeer.Id,
-    stateManager: AccountStateManager,
+    postbox: Postbox,
+    network: Network,
     energyUsageSettings: EnergyUsageSettings,
     contentSettings: ContentSettings,
     animationCache: AnimationCache,
@@ -145,7 +148,8 @@ private func preparedRecentPeersTransition(
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
     let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(
         accountPeerId: accountPeerId,
-        stateManager: stateManager,
+        postbox: postbox,
+        network: network,
         energyUsageSettings: energyUsageSettings,
         contentSettings: contentSettings,
         animationCache: animationCache,
@@ -158,7 +162,8 @@ private func preparedRecentPeersTransition(
     ), directionHint: .Down) }
     let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(
         accountPeerId: accountPeerId,
-        stateManager: stateManager,
+        postbox: postbox,
+        network: network,
         energyUsageSettings: energyUsageSettings,
         contentSettings: contentSettings,
         animationCache: animationCache,
@@ -199,7 +204,8 @@ public final class ChatListSearchRecentPeersNode: ASDisplayNode {
     
     public init(
         accountPeerId: EnginePeer.Id,
-        stateManager: AccountStateManager,
+        postbox: Postbox,
+        network: Network,
         energyUsageSettings: EnergyUsageSettings,
         contentSettings: ContentSettings,
         animationCache: AnimationCache,
@@ -232,7 +238,7 @@ public final class ChatListSearchRecentPeersNode: ASDisplayNode {
         
         let peersDisposable = DisposableSet()
         
-        let recent: Signal<([EnginePeer], [EnginePeer.Id: (Int32, Bool)], [EnginePeer.Id : EnginePeer.Presence]), NoError> = _internal_recentPeers(accountPeerId: accountPeerId, postbox: stateManager.postbox)
+        let recent: Signal<([EnginePeer], [EnginePeer.Id: (Int32, Bool)], [EnginePeer.Id : EnginePeer.Presence]), NoError> = _internal_recentPeers(accountPeerId: accountPeerId, postbox: postbox)
         |> filter { value -> Bool in
             switch value {
                 case .disabled:
@@ -250,11 +256,11 @@ public final class ChatListSearchRecentPeersNode: ASDisplayNode {
                     peers.filter {
                         !$0.isDeleted
                     }.map {
-                        stateManager.postbox.peerView(id: $0.id)
+                        postbox.peerView(id: $0.id)
                     }
                 )
                 |> mapToSignal { peerViews -> Signal<([EnginePeer], [EnginePeer.Id: (Int32, Bool)], [EnginePeer.Id: EnginePeer.Presence]), NoError> in
-                    return stateManager.postbox.combinedView(keys: peerViews.map { item -> PostboxViewKey in
+                    return postbox.combinedView(keys: peerViews.map { item -> PostboxViewKey in
                         let key = PostboxViewKey.unreadCounts(items: [UnreadMessageCountsItem.peer(id: item.peerId, handleThreads: true)])
                         return key
                     })
@@ -318,7 +324,8 @@ public final class ChatListSearchRecentPeersNode: ASDisplayNode {
                 
                 let transition = preparedRecentPeersTransition(
                     accountPeerId: accountPeerId,
-                    stateManager: stateManager,
+                    postbox: postbox,
+                    network: network,
                     energyUsageSettings: energyUsageSettings,
                     contentSettings: contentSettings,
                     animationCache: animationCache,
@@ -338,7 +345,7 @@ public final class ChatListSearchRecentPeersNode: ASDisplayNode {
             }
         }))
         if case .actionSheet = mode {
-            peersDisposable.add(_internal_managedUpdatedRecentPeers(accountPeerId: accountPeerId, postbox: stateManager.postbox, network: stateManager.network).startStrict())
+            peersDisposable.add(_internal_managedUpdatedRecentPeers(accountPeerId: accountPeerId, postbox: postbox, network: network).startStrict())
         }
         self.disposable.set(peersDisposable)
     }

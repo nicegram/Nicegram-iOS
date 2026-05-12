@@ -484,7 +484,6 @@ public func sentShareItems(accountPeerId: PeerId, postbox: Postbox, network: Net
     
     var mediaMessageCount = 0
     var consumedText = false
-    var captionAssigned = false
     for item in items {
         switch item {
         case let .text(text):
@@ -500,22 +499,11 @@ public func sentShareItems(accountPeerId: PeerId, postbox: Postbox, network: Net
         case let .media(media):
             switch media {
             case let .media(reference):
-                let captionText: String
-                if !captionAssigned {
-                    if let file = reference.media as? TelegramMediaFile, file.isInstantVideo {
-                        captionText = ""
-                    } else {
-                        captionText = additionalText
-                        captionAssigned = true
-                    }
-                } else {
-                    captionText = ""
-                }
                 var message = StandaloneSendEnqueueMessage(
                     content: .arbitraryMedia(
                         media: reference,
                         text: StandaloneSendEnqueueMessage.Text(
-                            string: captionText,
+                            string: additionalText,
                             entities: []
                         )
                     ),

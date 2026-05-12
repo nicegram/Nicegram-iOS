@@ -52,10 +52,10 @@ private final class PrefetchManagerInnerImpl {
         }
         |> distinctUntilChanged
         
-        let appConfiguration = engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
+        let appConfiguration = account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
         |> take(1)
         |> map { view in
-            return view?.get(AppConfiguration.self) ?? .defaultValue
+            return view.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
         }
         
         let orderedPreloadMedia = combineLatest(account.viewTracker.orderedPreloadMedia, TelegramEngine(account: account).stickers.loadedStickerPack(reference: .animatedEmoji, forceActualized: false), appConfiguration)

@@ -7,6 +7,7 @@ import ComponentDisplayAdapters
 import AccountContext
 import TelegramCore
 import SwiftSignalKit
+import Postbox
 import PresentationDataUtils
 
 public final class TranslateHeaderPanelComponent: Component {

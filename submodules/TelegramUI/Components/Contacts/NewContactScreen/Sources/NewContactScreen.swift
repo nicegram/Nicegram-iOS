@@ -583,7 +583,7 @@ final class NewContactScreenComponent: Component {
                                 return
                             }
                             if case let .peer(peer, _) = self.resolvedPeer {
-                                if let infoController = component.context.sharedContext.makePeerInfoController(context: component.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                                if let infoController = component.context.sharedContext.makePeerInfoController(context: component.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                                     if let navigationController = component.context.sharedContext.mainWindow?.viewController as? NavigationController {
                                         navigationController.pushViewController(infoController)
                                     }
@@ -716,6 +716,7 @@ final class NewContactScreenComponent: Component {
                             ListComposePollOptionComponent(
                                 externalState: nil,
                                 context: component.context,
+                                style: .glass,
                                 theme: theme,
                                 strings: strings,
                                 placeholder: NSAttributedString(string: strings.AddContact_NotePlaceholder, font: Font.regular(17.0), textColor: theme.list.itemPlaceholderTextColor),

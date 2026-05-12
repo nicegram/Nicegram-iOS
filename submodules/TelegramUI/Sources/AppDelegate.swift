@@ -2097,7 +2097,7 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
                 }))
             }
         })
-                
+        
         return true
     }
     

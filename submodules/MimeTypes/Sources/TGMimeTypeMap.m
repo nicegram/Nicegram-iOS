@@ -95,7 +95,7 @@ static void initializeMapping()
         mimeToExtension[@"application/x-dms"] = @"dms"; extensionToMime[@"dms"] = @"application/x-dms";
         mimeToExtension[@"application/x-doom"] = @"wad"; extensionToMime[@"wad"] = @"application/x-doom";
         mimeToExtension[@"application/x-dvi"] = @"dvi"; extensionToMime[@"dvi"] = @"application/x-dvi";
-        mimeToExtension[@"audio/flac"] = @"flac"; extensionToMime[@"flac"] = @"audio/flac";
+        mimeToExtension[@"application/x-flac"] = @"flac"; extensionToMime[@"flac"] = @"application/x-flac";
         mimeToExtension[@"application/x-font"] = @"pfa"; extensionToMime[@"pfa"] = @"application/x-font";
         mimeToExtension[@"application/x-font"] = @"pfb"; extensionToMime[@"pfb"] = @"application/x-font";
         mimeToExtension[@"application/x-font"] = @"gsf"; extensionToMime[@"gsf"] = @"application/x-font";
@@ -250,7 +250,6 @@ static void initializeMapping()
         mimeToExtension[@"text/plain"] = @"text"; extensionToMime[@"text"] = @"text/plain";
         mimeToExtension[@"text/plain"] = @"diff"; extensionToMime[@"diff"] = @"text/plain";
         mimeToExtension[@"text/plain"] = @"po"; extensionToMime[@"po"] = @"text/plain";     // reserve "pot" for vnd.ms-powerpoint
-        mimeToExtension[@"text/markdown"] = @"md"; extensionToMime[@"md"] = @"text/markdown";
         mimeToExtension[@"text/richtext"] = @"rtx"; extensionToMime[@"rtx"] = @"text/richtext";
         mimeToExtension[@"text/rtf"] = @"rtf"; extensionToMime[@"rtf"] = @"text/rtf";
         mimeToExtension[@"text/texmacs"] = @"ts"; extensionToMime[@"ts"] = @"text/texmacs";

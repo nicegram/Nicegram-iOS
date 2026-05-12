@@ -312,11 +312,6 @@ public final class SearchDisplayController {
         if let searchBar = self.searchBar {
             searchBar.deactivate(clear: false)
         }
-        if !self.searchBarIsExternal, let searchBar = self.searchBar {
-            searchBar.isUserInteractionEnabled = false
-        }
-        self.backgroundNode.isUserInteractionEnabled = false
-        self.contentNode.isUserInteractionEnabled = false
         
         if !self.searchBarIsExternal, let searchBar = self.searchBar {
             if let placeholder = placeholder {
