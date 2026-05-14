@@ -343,6 +343,8 @@ private func trimStart(_ input: RichText) -> RichText {
         }
     case .image:
         break
+    case .formula:
+        break
     }
     return text
 }
@@ -384,6 +386,8 @@ private func trimEnd(_ input: RichText) -> RichText {
             text = .concat(array)
         }
     case .image:
+        break
+    case .formula:
         break
     }
     return text
@@ -428,6 +432,8 @@ private func trim(_ input: RichText) -> RichText {
         }
     case .image:
         break
+    case .formula:
+        break
     }
     return text
 }
@@ -470,6 +476,8 @@ private func addNewLine(_ input: RichText) -> RichText {
         }
     case .image:
         break
+    case let .formula(latex):
+        text = .concat([.formula(latex: latex), .plain("\n")])
     }
     return text
 }
@@ -747,10 +755,16 @@ private func parsePageBlocks(_ input: [Any], _ url: String, _ media: inout [Medi
                 result.append(.paragraph(trim(parseRichText(item, &media))))
             case "h1", "h2":
                 result.append(.header(trim(parseRichText(item, &media))))
-            case "h3", "h4", "h5", "h6":
-                result.append(.subheader(trim(parseRichText(item, &media))))
+            case "h3":
+                result.append(.heading(text: trim(parseRichText(item, &media)), level: 3))
+            case "h4":
+                result.append(.heading(text: trim(parseRichText(item, &media)), level: 4))
+            case "h5":
+                result.append(.heading(text: trim(parseRichText(item, &media)), level: 5))
+            case "h6":
+                result.append(.heading(text: trim(parseRichText(item, &media)), level: 6))
             case "pre":
-                result.append(.preformatted(.fixed(trim(parseRichText(item, &media)))))
+                result.append(.preformatted(text: .fixed(trim(parseRichText(item, &media))), language: nil))
             case "blockquote":
                 result.append(.blockQuote(text: .italic(trim(parseRichText(item, &media))), caption: .empty))
             case "img":

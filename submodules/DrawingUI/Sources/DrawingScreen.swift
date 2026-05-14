@@ -6,7 +6,6 @@ import Display
 import ComponentFlow
 import LegacyComponents
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import AccountContext
@@ -825,7 +824,7 @@ private final class DrawingScreenComponent: CombinedComponent {
             let tools = self.drawingState.tools
             let _ = (self.context.sharedContext.accountManager.transaction { transaction -> Void in
                 transaction.updateSharedData(ApplicationSpecificSharedDataKeys.drawingSettings, { _ in
-                    return PreferencesEntry(DrawingSettings(tools: tools, colors: []))
+                    return EnginePreferencesEntry(DrawingSettings(tools: tools, colors: []))
                 })
             }).start()
         }
@@ -2893,13 +2892,13 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
         var stickers: [Any] = []
         for entity in self.entitiesView.entities {
             if let sticker = entity as? DrawingStickerEntity, case let .file(file, _) = sticker.content {
-                let coder = PostboxEncoder()
+                let coder = EnginePostboxEncoder()
                 coder.encodeRootObject(file.media)
                 stickers.append(coder.makeData())
             } else if let text = entity as? DrawingTextEntity, let subEntities = text.renderSubEntities {
                 for sticker in subEntities {
                     if let sticker = sticker as? DrawingStickerEntity, case let .file(file, _) = sticker.content {
-                        let coder = PostboxEncoder()
+                        let coder = EnginePostboxEncoder()
                         coder.encodeRootObject(file.media)
                         stickers.append(coder.makeData())
                     }

@@ -134,17 +134,18 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
     private final class ItemContentNode: ASDisplayNode {
         let offsetContainerNode: ASDisplayNode
         var containingItem: ContextControllerTakeViewInfo.ContainingItem
-        
+
         var animateClippingFromContentAreaInScreenSpace: CGRect?
         var storedGlobalFrame: CGRect?
         var storedGlobalBoundsFrame: CGRect?
-        
+        var presentationScale: CGFloat = 1.0
+
         init(containingItem: ContextControllerTakeViewInfo.ContainingItem) {
             self.offsetContainerNode = ASDisplayNode()
             self.containingItem = containingItem
-            
+
             super.init()
-            
+
             self.addSubnode(self.offsetContainerNode)
         }
         
@@ -633,6 +634,21 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
                 }
                 let contentNodeValue = ItemContentNode(containingItem: takeInfo.containingItem)
                 contentNodeValue.animateClippingFromContentAreaInScreenSpace = takeInfo.contentAreaInScreenSpace
+
+                // Mirror any ancestor scale on the source (e.g. a sheet's container transform) onto the offset
+                // container so the extracted contents render at the same visual size as in-place — without this
+                // they pop to 1:1 when reparented into the unscaled overlay window.
+                let sourceView = takeInfo.containingItem.view
+                let modeledWidth = sourceView.bounds.width
+                if modeledWidth > 0.001 {
+                    let visualWidth = sourceView.convert(sourceView.bounds, to: nil).width
+                    let detectedScale = visualWidth / modeledWidth
+                    if abs(detectedScale - 1.0) > 0.001 {
+                        contentNodeValue.presentationScale = detectedScale
+                        contentNodeValue.offsetContainerNode.layer.transform = CATransform3DMakeScale(detectedScale, detectedScale, 1.0)
+                    }
+                }
+
                 self.scrollNode.insertSubnode(contentNodeValue, aboveSubnode: self.actionsContainerNode)
                 self.itemContentNode = contentNodeValue
                 itemContentNode = contentNodeValue
@@ -818,7 +834,7 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
             if let transitionInfo = reference.transitionInfo() {
                 if let referenceView = transitionInfo.referenceView as? ContextExtractableContainer {
                     if #available(iOS 26.2, *) {
-                        if transitionInfo.referenceView.bounds.width == transitionInfo.referenceView.bounds.height {
+                        if !"".isEmpty, transitionInfo.referenceView.bounds.width == transitionInfo.referenceView.bounds.height {
                             contextExtractableContainer = (referenceView, convertFrame(transitionInfo.referenceView.bounds.inset(by: transitionInfo.insets), from: transitionInfo.referenceView, to: self.view))
                         }
                     }
@@ -1165,6 +1181,13 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
             
             if let contentNode = itemContentNode {
                 var contentFrame = CGRect(origin: CGPoint(x: contentParentGlobalFrame.minX + contentRect.minX - contentNode.containingItem.contentRect.minX, y: contentRect.minY - contentNode.containingItem.contentRect.minY + contentVerticalOffset + additionalVisibleOffsetY), size: contentNode.containingItem.view.bounds.size)
+                // contentRect.minY was derived from storedGlobalFrame.maxY (visual) minus contentRect.height (modeled);
+                // when an ancestor scale is in effect those don't cancel cleanly, leaving a (1 - scale) * (cy + ch)
+                // residue that pulls the content upward. Add it back so the content lands at the source's visual Y.
+                if contentNode.presentationScale != 1.0 {
+                    let cr = contentNode.containingItem.contentRect
+                    contentFrame.origin.y += (1.0 - contentNode.presentationScale) * (cr.minY + cr.height)
+                }
                 if case let .extracted(extracted) = self.source {
                     if extracted.adjustContentHorizontally {
                         contentFrame.origin.x = combinedActionsFrame.minX
@@ -1554,6 +1577,12 @@ final class ContextControllerExtractedPresentationNode: ASDisplayNode, ContextCo
             switch result {
             case .default, .custom:
                 animationInContentYDistance = currentContentLocalFrame.minY - currentContentScreenFrame.minY
+                // Same modeled-vs-visual mismatch as the static contentFrame compensation: contentRect.minY (used by
+                // currentContentLocalFrame) was derived with modeled height while the source-side reference uses visual
+                // height, leaving a `ch * (1 - scale)` residue that animates the content downward on dismiss.
+                if let contentNode = itemContentNode, contentNode.presentationScale != 1.0 {
+                    animationInContentYDistance += contentNode.containingItem.contentRect.height * (1.0 - contentNode.presentationScale)
+                }
             case .dismissWithoutContent:
                 animationInContentYDistance = 0.0
                 if let contentNode = itemContentNode {

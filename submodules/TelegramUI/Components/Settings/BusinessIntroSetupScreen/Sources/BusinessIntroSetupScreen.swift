@@ -56,6 +56,7 @@ final class BusinessIntroSetupScreenComponent: Component {
         var id: AnyHashable
         var version: Int
         var isPreset: Bool
+        var canLoadMore: Bool
     }
     
     private struct EmojiSearchState {
@@ -100,6 +101,7 @@ final class BusinessIntroSetupScreenComponent: Component {
         private var stickerContent: EmojiPagerContentComponent?
         private var stickerContentDisposable: Disposable?
         private let stickerSearchDisposable = MetaDisposable()
+        private var stickerSearchContext: StickerSearchContext?
         private var stickerSearchState = EmojiSearchState(result: nil, isSearching: false)
         
         private var displayStickerInput: Bool = false
@@ -309,6 +311,7 @@ final class BusinessIntroSetupScreenComponent: Component {
                             self.stickerFile = itemFile._parse()
                             self.displayStickerInput = false
                             
+                            self.stickerSearchContext = nil
                             self.stickerSearchDisposable.set(nil)
                             self.stickerSearchState = EmojiSearchState(result: nil, isSearching: false)
                             
@@ -351,6 +354,7 @@ final class BusinessIntroSetupScreenComponent: Component {
                             
                             switch query {
                             case .none:
+                                self.stickerSearchContext = nil
                                 self.stickerSearchDisposable.set(nil)
                                 self.stickerSearchState = EmojiSearchState(result: nil, isSearching: false)
                                 if !self.isUpdating {
@@ -360,54 +364,49 @@ final class BusinessIntroSetupScreenComponent: Component {
                                 let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
                                 
                                 if query.isEmpty {
+                                    self.stickerSearchContext = nil
                                     self.stickerSearchDisposable.set(nil)
                                     self.stickerSearchState = EmojiSearchState(result: nil, isSearching: false)
                                     self.state?.updated(transition: .immediate)
                                 } else {
                                     let context = component.context
+                                    self.stickerSearchContext = nil
                                     
-                                    let stickers: Signal<[(String?, FoundStickerItem)], NoError> = Signal { subscriber in
-                                        var signals: Signal<[Signal<(String?, [FoundStickerItem]), NoError>], NoError> = .single([])
-                                        
-                                        if query.isSingleEmoji {
-                                            signals = .single([context.engine.stickers.searchStickers(query: nil, emoticon: [query.basicEmoji.0])
-                                            |> map { (nil, $0.items) }])
-                                        } else if query.count > 1, !languageCode.isEmpty && languageCode != "emoji" {
-                                            var signal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query.lowercased(), completeMatch: query.count < 3)
-                                            if !languageCode.lowercased().hasPrefix("en") {
-                                                signal = signal
-                                                |> mapToSignal { keywords in
-                                                    return .single(keywords)
-                                                    |> then(
-                                                        context.engine.stickers.searchEmojiKeywords(inputLanguageCode: "en-US", query: query.lowercased(), completeMatch: query.count < 3)
-                                                        |> map { englishKeywords in
-                                                            return keywords + englishKeywords
-                                                        }
-                                                    )
-                                                }
-                                            } 
-                                            signals = signal
-                                            |> map { keywords -> [Signal<(String?, [FoundStickerItem]), NoError>] in
-                                                let emoticon = keywords.flatMap { $0.emoticons }.map { $0.basicEmoji.0 }
-                                                return [context.engine.stickers.searchStickers(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
-                                                |> map { (nil, $0.items) }]
+                                    let stickers: Signal<(items: [(String?, FoundStickerItem)], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?), NoError>
+                                    if query.isSingleEmoji {
+                                        let searchContext = context.engine.stickers.stickerSearchContext(query: nil, emoticon: [query.basicEmoji.0])
+                                        stickers = searchContext.state
+                                        |> map { state -> (items: [(String?, FoundStickerItem)], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?) in
+                                            return (state.items.map { (nil, $0) }, state.canLoadMore, state.items.isEmpty && state.isLoadingMore, searchContext)
+                                        }
+                                    } else if query.count > 1, !languageCode.isEmpty && languageCode != "emoji" {
+                                        var keywordsSignal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query.lowercased(), completeMatch: query.count < 3)
+                                        if !languageCode.lowercased().hasPrefix("en") {
+                                            keywordsSignal = keywordsSignal
+                                            |> mapToSignal { keywords in
+                                                return .single(keywords)
+                                                |> then(
+                                                    context.engine.stickers.searchEmojiKeywords(inputLanguageCode: "en-US", query: query.lowercased(), completeMatch: query.count < 3)
+                                                    |> map { englishKeywords in
+                                                        return keywords + englishKeywords
+                                                    }
+                                                )
                                             }
                                         }
-                                        
-                                        return (signals
-                                        |> mapToSignal { signals in
-                                            return combineLatest(signals)
-                                        }).start(next: { results in
-                                            var result: [(String?, FoundStickerItem)] = []
-                                            for (emoji, stickers) in results {
-                                                for sticker in stickers {
-                                                    result.append((emoji, sticker))
-                                                }
+                                        stickers = keywordsSignal
+                                        |> mapToSignal { keywords -> Signal<(items: [(String?, FoundStickerItem)], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?), NoError> in
+                                            let emoticon = Array(Set(keywords.flatMap { $0.emoticons }.map { $0.basicEmoji.0 }))
+                                            guard !emoticon.isEmpty else {
+                                                return .single(([], false, false, nil))
                                             }
-                                            subscriber.putNext(result)
-                                        }, completed: {
-                                            subscriber.putCompletion()
-                                        })
+                                            let searchContext = context.engine.stickers.stickerSearchContext(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
+                                            return searchContext.state
+                                            |> map { state -> (items: [(String?, FoundStickerItem)], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?) in
+                                                return (state.items.map { (nil, $0) }, state.canLoadMore, state.items.isEmpty && state.isLoadingMore, searchContext)
+                                            }
+                                        }
+                                    } else {
+                                        stickers = .single(([], false, false, nil))
                                     }
                                     
                                     let currentRemotePacks = Atomic<FoundStickerSets?>(value: nil)
@@ -467,17 +466,10 @@ final class BusinessIntroSetupScreenComponent: Component {
                                     }
                                     
                                     let signal = combineLatest(stickers, packs)
-                                    |> map { stickers, packs -> ([(String?, FoundStickerItem)], FoundStickerSets, Bool, FoundStickerSets?)? in
-                                        return (stickers, packs.0, packs.1, packs.2)
-                                    }
-                                    
-                                    let resultSignal: Signal<[EmojiPagerContentComponent.ItemGroup], NoError> = signal
-                                    |> mapToSignal { result in
-                                        guard let result else {
-                                            return .complete()
-                                        }
-                                        
-                                        let (foundItems, localSets, complete, remoteSets) = result
+                                    |> map { stickers, packs -> (groups: [EmojiPagerContentComponent.ItemGroup], canLoadMore: Bool, isSearching: Bool, searchContext: StickerSearchContext?) in
+                                        let foundItems = stickers.items
+                                        let localSets = packs.0
+                                        let remoteSets = packs.2
                                         
                                         var items: [EmojiPagerContentComponent.Item] = []
                                         
@@ -529,11 +521,7 @@ final class BusinessIntroSetupScreenComponent: Component {
                                             items.append(item)
                                         }
                                         
-                                        if items.isEmpty && !complete {
-                                            return .complete()
-                                        }
-                                    
-                                        return .single([EmojiPagerContentComponent.ItemGroup(
+                                        let groups = [EmojiPagerContentComponent.ItemGroup(
                                             supergroupId: "search",
                                             groupId: "search",
                                             title: nil,
@@ -550,26 +538,29 @@ final class BusinessIntroSetupScreenComponent: Component {
                                             headerItem: nil,
                                             fillWithLoadingPlaceholders: false,
                                             items: items
-                                        )])
+                                        )]
+                                        return (groups, stickers.canLoadMore, stickers.isSearching, stickers.searchContext)
                                     }
                                     
                                     var version = 0
                                     self.stickerSearchState.isSearching = true
                                     self.state?.updated(transition: .immediate)
                                     
-                                    self.stickerSearchDisposable.set((resultSignal
+                                    self.stickerSearchDisposable.set((signal
                                     |> delay(0.15, queue: .mainQueue())
                                     |> deliverOnMainQueue).start(next: { [weak self] result in
                                         guard let self else {
                                             return
                                         }
                                         
-                                        self.stickerSearchState = EmojiSearchState(result: EmojiSearchResult(groups: result, id: AnyHashable(query), version: version, isPreset: false), isSearching: false)
+                                        self.stickerSearchContext = result.searchContext
+                                        self.stickerSearchState = EmojiSearchState(result: EmojiSearchResult(groups: result.groups, id: AnyHashable(query), version: version, isPreset: false, canLoadMore: result.canLoadMore), isSearching: result.isSearching)
                                         version += 1
                                         self.state?.updated(transition: .immediate)
                                     }))
                                 }
                             case let .category(value):
+                                self.stickerSearchContext = nil
                                 let resultSignal = component.context.engine.stickers.searchStickers(category: value, scope: [.installed, .remote])
                                 |> mapToSignal { files -> Signal<(items: [EmojiPagerContentComponent.ItemGroup], isFinalResult: Bool), NoError> in
                                     var items: [EmojiPagerContentComponent.Item] = []
@@ -642,13 +633,13 @@ final class BusinessIntroSetupScreenComponent: Component {
                                                 fillWithLoadingPlaceholders: true,
                                                 items: []
                                             )
-                                        ], id: AnyHashable(value.id), version: version, isPreset: true), isSearching: false)
+                                        ], id: AnyHashable(value.id), version: version, isPreset: true, canLoadMore: false), isSearching: false)
                                         if !self.isUpdating {
                                             self.state?.updated(transition: .immediate)
                                         }
                                         return
                                     }
-                                    self.stickerSearchState = EmojiSearchState(result: EmojiSearchResult(groups: result.items, id: AnyHashable(value.id), version: version, isPreset: true), isSearching: false)
+                                    self.stickerSearchState = EmojiSearchState(result: EmojiSearchResult(groups: result.items, id: AnyHashable(value.id), version: version, isPreset: true, canLoadMore: false), isSearching: false)
                                     version += 1
                                     if !self.isUpdating {
                                         self.state?.updated(transition: .immediate)
@@ -659,6 +650,9 @@ final class BusinessIntroSetupScreenComponent: Component {
                         updateScrollingToItemGroup: {
                         },
                         onScroll: {},
+                        loadMore: { [weak self] in
+                            self?.stickerSearchContext?.loadMore()
+                        },
                         chatPeerId: nil,
                         peekBehavior: nil,
                         customLayout: nil,
@@ -1036,14 +1030,14 @@ final class BusinessIntroSetupScreenComponent: Component {
                 
                 if let stickerSearchResult = self.stickerSearchState.result {
                     var stickerSearchResults: EmojiPagerContentComponent.EmptySearchResults?
-                    if !stickerSearchResult.groups.contains(where: { !$0.items.isEmpty || $0.fillWithLoadingPlaceholders }) {
+                    if !self.stickerSearchState.isSearching && !stickerSearchResult.groups.contains(where: { !$0.items.isEmpty || $0.fillWithLoadingPlaceholders }) {
                         stickerSearchResults = EmojiPagerContentComponent.EmptySearchResults(
                             text: environment.strings.Stickers_NoStickersFound,
                             iconFile: nil
                         )
                     }
                     let defaultSearchState: EmojiPagerContentComponent.SearchState = stickerSearchResult.isPreset ? .active : .empty(hasResults: true)
-                    stickerContent = stickerContent.withUpdatedItemGroups(panelItemGroups: stickerContent.panelItemGroups, contentItemGroups: stickerSearchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: stickerSearchResult.id, version: stickerSearchResult.version), emptySearchResults: stickerSearchResults, searchState: self.stickerSearchState.isSearching ? .searching : defaultSearchState)
+                    stickerContent = stickerContent.withUpdatedItemGroups(panelItemGroups: stickerContent.panelItemGroups, contentItemGroups: stickerSearchResult.groups, itemContentUniqueId: EmojiPagerContentComponent.ContentId(id: stickerSearchResult.id, version: stickerSearchResult.version), emptySearchResults: stickerSearchResults, searchState: self.stickerSearchState.isSearching ? .searching : defaultSearchState, canLoadMore: stickerSearchResult.canLoadMore)
                 } else if self.stickerSearchState.isSearching {
                     stickerContent = stickerContent.withUpdatedItemGroups(panelItemGroups: stickerContent.panelItemGroups, contentItemGroups: stickerContent.contentItemGroups, itemContentUniqueId: stickerContent.itemContentUniqueId, emptySearchResults: stickerContent.emptySearchResults, searchState: .searching)
                 }

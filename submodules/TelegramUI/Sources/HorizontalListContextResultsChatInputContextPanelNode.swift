@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import Display
 import SwiftSignalKit
@@ -19,6 +18,9 @@ import ChatControllerInteraction
 import ChatContextResultPeekContent
 import ChatInputContextPanelNode
 import BatchVideoRendering
+import GlassBackgroundComponent
+import ComponentFlow
+import ComponentDisplayAdapters
 
 private struct ChatContextResultStableId: Hashable {
     let result: ChatContextResult
@@ -83,6 +85,9 @@ private func preparedTransition(from fromEntries: [HorizontalListContextResultsC
 }
 
 final class HorizontalListContextResultsChatInputContextPanelNode: ChatInputContextPanelNode {
+    private let backgroundContainerView: GlassBackgroundContainerView
+    private let backgroundView: GlassBackgroundView
+    private let listClippingView: UIView
     private let listView: ListView
     private var currentExternalResults: ChatContextResultCollection?
     private var currentProcessedResults: ChatContextResultCollection?
@@ -96,9 +101,14 @@ final class HorizontalListContextResultsChatInputContextPanelNode: ChatInputCont
     private let batchVideoContext: QueueLocalObject<BatchVideoRenderingContext>
     
     override init(context: AccountContext, theme: PresentationTheme, strings: PresentationStrings, fontSize: PresentationFontSize, chatPresentationContext: ChatPresentationContext) {
+        self.backgroundContainerView = GlassBackgroundContainerView()
+        self.backgroundView = GlassBackgroundView()
+        self.backgroundContainerView.contentView.addSubview(self.backgroundView)
+        self.listClippingView = UIView()
+        self.listClippingView.clipsToBounds = true
+        
         self.listView = ListViewImpl()
-        self.listView.isOpaque = true
-        self.listView.backgroundColor = theme.list.plainBackgroundColor
+        self.listView.isOpaque = false
         self.listView.transform = CATransform3DMakeRotation(-CGFloat(CGFloat.pi / 2.0), 0.0, 0.0, 1.0)
         self.listView.isHidden = true
         self.listView.accessibilityPageScrolledString = { row, count in
@@ -112,9 +122,12 @@ final class HorizontalListContextResultsChatInputContextPanelNode: ChatInputCont
         super.init(context: context, theme: theme, strings: strings, fontSize: fontSize, chatPresentationContext: chatPresentationContext)
         
         self.isOpaque = false
-        self.clipsToBounds = true
+        self.clipsToBounds = false
+        self.layer.allowsGroupOpacity = true
         
-        self.addSubnode(self.listView)
+        self.view.addSubview(self.backgroundContainerView)
+        self.listClippingView.addSubview(self.listView.view)
+        self.backgroundView.contentView.addSubview(self.listClippingView)
         
         self.listView.displayedItemRangeChanged = { [weak self] displayedRange, opaqueTransactionState in
             if let strongSelf = self, let state = opaqueTransactionState as? HorizontalListContextResultsOpaqueState {
@@ -362,12 +375,26 @@ final class HorizontalListContextResultsChatInputContextPanelNode: ChatInputCont
     
     override func updateLayout(size: CGSize, leftInset: CGFloat, rightInset: CGFloat, bottomInset: CGFloat, transition: ContainedViewLayoutTransition, interfaceState: ChatPresentationInterfaceState) {
         let listHeight: CGFloat = 105.0
+        let sideInset: CGFloat = 8.0
+        let innerInset: CGFloat = 4.0
+        let cornerRadius: CGFloat = 8.0
+        let innerRadius: CGFloat = cornerRadius - innerInset
         
-        self.listView.bounds = CGRect(x: 0.0, y: 0.0, width: listHeight, height: size.width)
+        let listFrame = CGRect(x: sideInset, y: size.height - bottomInset - 8.0 - listHeight, width: size.width - sideInset * 2.0, height: listHeight)
+        let transformedListFrame = CGSize(width: listFrame.height, height: listFrame.width).centered(in: listFrame)
+        self.listView.bounds = CGRect(origin: CGPoint(), size: transformedListFrame.size)
+        transition.updatePosition(node: self.listView, position: CGRect(origin: CGPoint(x: -innerInset, y: -innerInset), size: listFrame.size).center)
         
-        //transition.updateFrame(node: self.listView, frame: CGRect(x: 0.0, y: 0.0, width: size.width, height: size.height))
+        transition.updateFrame(view: self.listClippingView, frame: CGRect(origin: CGPoint(), size: listFrame.size).insetBy(dx: innerInset, dy: innerInset))
+        self.listClippingView.layer.cornerRadius = innerRadius
         
-        transition.updatePosition(node: self.listView, position: CGPoint(x: size.width / 2.0, y: size.height - bottomInset - 8.0 - listHeight / 2.0))
+        let backgroundContainerInset: CGFloat = 32.0
+        let backgroundContainerFrame = listFrame.insetBy(dx: -backgroundContainerInset, dy: -backgroundContainerInset)
+        transition.updateFrame(view: self.backgroundContainerView, frame: backgroundContainerFrame)
+        self.backgroundContainerView.update(size: backgroundContainerFrame.size, isDark: interfaceState.theme.overallDarkAppearance, transition: ComponentTransition(transition))
+        
+        transition.updateFrame(view: self.backgroundView, frame: CGRect(origin: CGPoint(), size: listFrame.size).offsetBy(dx: backgroundContainerInset, dy: backgroundContainerInset))
+        self.backgroundView.update(size: listFrame.size, cornerRadius: cornerRadius, isDark: interfaceState.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: ComponentTransition(transition))
         
         var insets = UIEdgeInsets()
         insets.top = leftInset
@@ -392,22 +419,18 @@ final class HorizontalListContextResultsChatInputContextPanelNode: ChatInputCont
     }
     
     override func animateOut(completion: @escaping () -> Void) {
-        /*let position = self.listView.layer.position
-        self.listView.layer.animatePosition(from: position, to: CGPoint(x: position.x, y: position.y + self.listView.bounds.size.width), duration: 0.3, timingFunction: kCAMediaTimingFunctionSpring, removeOnCompletion: false, completion: { _ in
-            completion()
-        })*/
-        self.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.3, removeOnCompletion: false, completion: { _ in
+        ComponentTransition.easeInOut(duration: 0.3).setAlpha(view: self.backgroundContainerView, alpha: 0.01, completion: { _ in
             completion()
         })
     }
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        let listViewBounds = self.listView.bounds
-        let listViewPosition = self.listView.position
-        let listViewFrame = CGRect(origin: CGPoint(x: listViewPosition.x - listViewBounds.height / 2.0, y: listViewPosition.y - listViewBounds.width / 2.0), size: CGSize(width: listViewBounds.height, height: listViewBounds.width))
-        if !listViewFrame.contains(point) {
+        guard let result = super.hitTest(point, with: event) else {
             return nil
         }
-        return super.hitTest(point, with: event)
+        if result === self.view {
+            return nil
+        }
+        return result
     }
 }

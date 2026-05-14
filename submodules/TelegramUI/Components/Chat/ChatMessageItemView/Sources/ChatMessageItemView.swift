@@ -1025,7 +1025,7 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
         let incomingMessage = item.message.effectivelyIncoming(item.context.account.peerId)
 
         do {
-            let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(resource.id)
+            let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(resource.id))
             
             let additionalAnimationNode: AnimatedStickerNode
             var effectiveScale: CGFloat = 1.0

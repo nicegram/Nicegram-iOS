@@ -5,17 +5,17 @@ import Postbox
 import TelegramApi
 
 public struct InactiveChannel : Equatable {
-    public let peer: Peer
+    public let peer: EnginePeer
     public let lastActivityDate: Int32
     public let participantsCount: Int32?
-    
-    init(peer: Peer, lastActivityDate: Int32, participantsCount: Int32?) {
+
+    init(peer: EnginePeer, lastActivityDate: Int32, participantsCount: Int32?) {
         self.peer = peer
         self.lastActivityDate = lastActivityDate
         self.participantsCount = participantsCount
     }
     public static func ==(lhs: InactiveChannel, rhs: InactiveChannel) -> Bool {
-        return lhs.peer.isEqual(rhs.peer) && lhs.lastActivityDate == rhs.lastActivityDate && lhs.participantsCount == rhs.participantsCount
+        return lhs.peer == rhs.peer && lhs.lastActivityDate == rhs.lastActivityDate && lhs.participantsCount == rhs.participantsCount
     }
 }
 
@@ -43,7 +43,7 @@ func _internal_inactiveChannelList(network: Network) -> Signal<[InactiveChannel]
             }
             var inactive: [InactiveChannel] = []
             for (i, channel) in channels.enumerated() {
-                inactive.append(InactiveChannel(peer: channel, lastActivityDate: i < dates.count ? dates[i] : 0, participantsCount: participantsCounts[channel.id]))
+                inactive.append(InactiveChannel(peer: EnginePeer(channel), lastActivityDate: i < dates.count ? dates[i] : 0, participantsCount: participantsCounts[channel.id]))
             }
             return inactive
         }

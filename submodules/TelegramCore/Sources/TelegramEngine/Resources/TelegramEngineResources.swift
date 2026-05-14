@@ -2,6 +2,7 @@ import Foundation
 import SwiftSignalKit
 import Postbox
 import TelegramApi
+import RangeSet
 
 public enum MediaResourceUserContentType: UInt8, Equatable {
     case other = 0
@@ -253,20 +254,24 @@ public extension TelegramEngine {
             return _internal_collectStorageUsageStats(account: self.account)
         }
 
-        public func renderStorageUsageStatsMessages(stats: StorageUsageStats, categories: [StorageUsageStats.CategoryKey], existingMessages: [EngineMessage.Id: Message]) -> Signal<[EngineMessage.Id: Message], NoError> {
-            return _internal_renderStorageUsageStatsMessages(account: self.account, stats: stats, categories: categories, existingMessages: existingMessages)
+        public func renderStorageUsageStatsMessages(stats: StorageUsageStats, categories: [StorageUsageStats.CategoryKey], existingMessages: [EngineMessage.Id: EngineMessage]) -> Signal<[EngineMessage.Id: EngineMessage], NoError> {
+            let rawExisting = existingMessages.mapValues { $0._asMessage() }
+            return _internal_renderStorageUsageStatsMessages(account: self.account, stats: stats, categories: categories, existingMessages: rawExisting)
+            |> map { rawResult -> [EngineMessage.Id: EngineMessage] in
+                return rawResult.mapValues(EngineMessage.init)
+            }
         }
-        
-        public func clearStorage(peerId: EnginePeer.Id?, categories: [StorageUsageStats.CategoryKey], includeMessages: [Message], excludeMessages: [Message]) -> Signal<Float, NoError> {
-            return _internal_clearStorage(account: self.account, peerId: peerId, categories: categories, includeMessages: includeMessages, excludeMessages: excludeMessages)
+
+        public func clearStorage(peerId: EnginePeer.Id?, categories: [StorageUsageStats.CategoryKey], includeMessages: [EngineMessage], excludeMessages: [EngineMessage]) -> Signal<Float, NoError> {
+            return _internal_clearStorage(account: self.account, peerId: peerId, categories: categories, includeMessages: includeMessages.map { $0._asMessage() }, excludeMessages: excludeMessages.map { $0._asMessage() })
         }
-        
-        public func clearStorage(peerIds: Set<EnginePeer.Id>, includeMessages: [Message], excludeMessages: [Message]) -> Signal<Float, NoError> {
-            _internal_clearStorage(account: self.account, peerIds: peerIds, includeMessages: includeMessages, excludeMessages: excludeMessages)
+
+        public func clearStorage(peerIds: Set<EnginePeer.Id>, includeMessages: [EngineMessage], excludeMessages: [EngineMessage]) -> Signal<Float, NoError> {
+            _internal_clearStorage(account: self.account, peerIds: peerIds, includeMessages: includeMessages.map { $0._asMessage() }, excludeMessages: excludeMessages.map { $0._asMessage() })
         }
-        
-        public func clearStorage(messages: [Message]) -> Signal<Never, NoError> {
-            _internal_clearStorage(account: self.account, messages: messages)
+
+        public func clearStorage(messages: [EngineMessage]) -> Signal<Never, NoError> {
+            _internal_clearStorage(account: self.account, messages: messages.map { $0._asMessage() })
         }
 
         public func clearCachedMediaResources(mediaResourceIds: Set<MediaResourceId>) -> Signal<Float, NoError> {
@@ -414,6 +419,94 @@ public extension TelegramEngine {
         
         public func applicationIcons() -> Signal<TelegramApplicationIcons, NoError> {
             return _internal_applicationIcons(account: account)
+        }
+
+        public func fetch(
+            reference: MediaResourceReference,
+            userLocation: MediaResourceUserLocation,
+            userContentType: MediaResourceUserContentType
+        ) -> Signal<FetchResourceSourceType, FetchResourceError> {
+            return fetchedMediaResource(
+                mediaBox: self.account.postbox.mediaBox,
+                userLocation: userLocation,
+                userContentType: userContentType,
+                reference: reference
+            )
+        }
+
+        public func status(
+            resource: EngineMediaResource,
+            approximateSynchronousValue: Bool = false
+        ) -> Signal<EngineMediaResource.FetchStatus, NoError> {
+            return self.account.postbox.mediaBox.resourceStatus(resource._asResource(), approximateSynchronousValue: approximateSynchronousValue)
+            |> map { EngineMediaResource.FetchStatus($0) }
+        }
+
+        public func status(
+            id: EngineMediaResource.Id,
+            resourceSize: Int64
+        ) -> Signal<EngineMediaResource.FetchStatus, NoError> {
+            return self.account.postbox.mediaBox.resourceStatus(MediaResourceId(id.stringRepresentation), resourceSize: resourceSize)
+            |> map { EngineMediaResource.FetchStatus($0) }
+        }
+
+        public func data(
+            resource: EngineMediaResource,
+            pathExtension: String? = nil,
+            waitUntilFetchStatus: Bool = false,
+            incremental: Bool = false,
+            attemptSynchronously: Bool = false
+        ) -> Signal<EngineMediaResource.ResourceData, NoError> {
+            let option: ResourceDataRequestOption = incremental
+                ? .incremental(waitUntilFetchStatus: waitUntilFetchStatus)
+                : .complete(waitUntilFetchStatus: waitUntilFetchStatus)
+            return self.account.postbox.mediaBox.resourceData(
+                resource._asResource(),
+                pathExtension: pathExtension,
+                option: option,
+                attemptSynchronously: attemptSynchronously
+            )
+            |> map { EngineMediaResource.ResourceData($0) }
+        }
+
+        public func shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id) -> String {
+            return self.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(MediaResourceId(id.stringRepresentation))
+        }
+
+        public func completedResourcePath(id: EngineMediaResource.Id, pathExtension: String? = nil) -> String? {
+            return self.account.postbox.mediaBox.completedResourcePath(id: MediaResourceId(id.stringRepresentation), pathExtension: pathExtension)
+        }
+
+        public func storeResourceData(id: EngineMediaResource.Id, data: Data, synchronous: Bool = false) {
+            self.account.postbox.mediaBox.storeResourceData(MediaResourceId(id.stringRepresentation), data: data, synchronous: synchronous)
+        }
+
+        public func cancelInteractiveResourceFetch(id: EngineMediaResource.Id) {
+            self.account.postbox.mediaBox.cancelInteractiveResourceFetch(resourceId: MediaResourceId(id.stringRepresentation))
+        }
+
+        public func moveResourceData(id: EngineMediaResource.Id, toTempPath: String) {
+            self.account.postbox.mediaBox.moveResourceData(MediaResourceId(id.stringRepresentation), toTempPath: toTempPath)
+        }
+
+        public func moveResourceData(from: EngineMediaResource.Id, to: EngineMediaResource.Id, synchronous: Bool = false) {
+            self.account.postbox.mediaBox.moveResourceData(from: MediaResourceId(from.stringRepresentation), to: MediaResourceId(to.stringRepresentation), synchronous: synchronous)
+        }
+
+        public func copyResourceData(id: EngineMediaResource.Id, fromTempPath: String) {
+            self.account.postbox.mediaBox.copyResourceData(MediaResourceId(id.stringRepresentation), fromTempPath: fromTempPath)
+        }
+
+        public func copyResourceData(from: EngineMediaResource.Id, to: EngineMediaResource.Id, synchronous: Bool = false) {
+            self.account.postbox.mediaBox.copyResourceData(from: MediaResourceId(from.stringRepresentation), to: MediaResourceId(to.stringRepresentation), synchronous: synchronous)
+        }
+
+        public func resourceRangesStatus(resource: EngineMediaResource) -> Signal<RangeSet<Int64>, NoError> {
+            return self.account.postbox.mediaBox.resourceRangesStatus(resource._asResource())
+        }
+
+        public func removeCachedResources(ids: [EngineMediaResource.Id], force: Bool = false, notify: Bool = false) -> Signal<Float, NoError> {
+            return self.account.postbox.mediaBox.removeCachedResources(ids.map { MediaResourceId($0.stringRepresentation) }, force: force, notify: notify)
         }
     }
 }

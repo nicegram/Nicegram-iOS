@@ -137,13 +137,13 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 params.openUrl(url)
                 return true
             case let .pass(file):
-                let _ = (params.context.account.postbox.mediaBox.resourceData(file.resource, option: .complete(waitUntilFetchStatus: true))
+                let _ = (params.context.engine.resources.data(resource: EngineMediaResource(file.resource), waitUntilFetchStatus: true)
                 |> take(1)
                 |> deliverOnMainQueue).startStandalone(next: { data in
                     guard let navigationController = params.navigationController else {
                         return
                     }
-                    if data.complete, let content = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
+                    if data.isComplete, let content = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
                         if let pass = try? PKPass(data: content), let controller = PKAddPassesViewController(pass: pass) {
                             if let window = navigationController.view.window {
                                 controller.popoverPresentationController?.sourceView = window
@@ -256,11 +256,14 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                                 }
                             }
                             
+                            let fileReference: FileMediaReference = .message(message: MessageReference(params.message), media: file)
                             let subject: BrowserScreen.Subject
-                            if file.mimeType == "application/pdf" {
-                                subject = .pdfDocument(file: .message(message: MessageReference(params.message), media: file), canShare: canShare)
+                            if file.mimeType.contains("markdown") {
+                                subject = .markdownDocument(file: fileReference, canShare: canShare)
+                            } else if file.mimeType.contains("pdf") {
+                                subject = .pdfDocument(file: fileReference, canShare: canShare)
                             } else {
-                                subject = .document(file: .message(message: MessageReference(params.message), media: file), canShare: canShare)
+                                subject = .document(file: fileReference, canShare: canShare)
                             }
                             let controller = BrowserScreen(context: params.context, subject: subject)
                             controller.openDocument = { [weak controller] file, canShare in
@@ -327,8 +330,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                     } |> take(1) |> timeout(1.0, queue: .mainQueue(), alternate: .single(false)) |> deliverOnMainQueue).startStandalone(next: { value in
                         if value {
                             let presentationData = params.context.sharedContext.currentPresentationData.with { $0 }
-                            //TODO:localize
-                            let toastController = UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "Device is muted.", timeout: 4.0, customUndoText: nil), elevatedLayout: false, animateInAsReplacement: false, action: { _ in
+                            let toastController = UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: presentationData.strings.Chat_ToastVoiceMessageDeviceMuted, timeout: 4.0, customUndoText: nil), elevatedLayout: false, animateInAsReplacement: false, action: { _ in
                                 return true
                             })
                             params.present(toastController, nil, .current)
@@ -437,7 +439,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                         } else {
                             contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: contact.firstName, lastName: contact.lastName, phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: contact.phoneNumber)]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
                         }
-                        let controller = deviceContactInfoController(context: ShareControllerAppAccountContext(context: params.context), environment: ShareControllerAppEnvironment(sharedContext: params.context.sharedContext), updatedPresentationData: params.updatedPresentationData, subject: .vcard(peer?._asPeer(), nil, contactData), completed: nil, cancelled: nil)
+                        let controller = deviceContactInfoController(context: ShareControllerAppAccountContext(context: params.context), environment: ShareControllerAppEnvironment(sharedContext: params.context.sharedContext), updatedPresentationData: params.updatedPresentationData, subject: .vcard(peer, nil, contactData), completed: nil, cancelled: nil)
                         params.navigationController?.pushViewController(controller)
                     })
                     return true
@@ -460,7 +462,7 @@ func openChatMessageImpl(_ params: OpenChatMessageParams) -> Bool {
                 }), .window(.root))
             case let .theme(media):
                 params.dismissInput()
-                let path = params.context.account.postbox.mediaBox.completedResourcePath(media.resource)
+                let path = params.context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(media.resource.id))
                 var previewTheme: PresentationTheme?
                 if let path = path, let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) {
                     previewTheme = makePresentationTheme(data: data)
@@ -540,7 +542,7 @@ func openChatTheme(context: AccountContext, message: Message, pushController: @e
                 }
                 if case let .theme(slug) = resolvedUrl {
                     if let file = file {
-                        if let path = context.sharedContext.accountManager.mediaBox.completedResourcePath(file.resource), let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
+                        if let path = context.sharedContext.accountManager.resources.completedResourcePath(resource: EngineMediaResource(file.resource)), let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedRead) {
                             if let theme = makePresentationTheme(data: data) {
                                 let controller = ThemePreviewController(context: context, previewTheme: theme, source: .slug(slug, file))
                                 pushController(controller)

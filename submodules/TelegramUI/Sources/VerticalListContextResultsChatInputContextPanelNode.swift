@@ -100,12 +100,12 @@ private enum VerticalListContextResultsChatInputContextPanelEntry: Comparable, I
         }
     }
     
-    func item(account: Account, actionSelected: @escaping () -> Void, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) -> ListViewItem {
+    func item(engine: TelegramEngine, actionSelected: @escaping () -> Void, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) -> ListViewItem {
         switch self {
             case let .action(theme, title):
                 return VerticalListContextResultsChatInputPanelButtonItem(theme: theme, title: title, pressed: actionSelected)
             case let .result(_, theme, result):
-                return VerticalListContextResultsChatInputPanelItem(account: account, theme: theme, result: result, resultSelected: resultSelected)
+                return VerticalListContextResultsChatInputPanelItem(engine: engine, theme: theme, result: result, resultSelected: resultSelected)
         }
     }
 }
@@ -116,12 +116,12 @@ private struct VerticalListContextResultsChatInputContextPanelTransition {
     let updates: [ListViewUpdateItem]
 }
 
-private func preparedTransition(from fromEntries: [VerticalListContextResultsChatInputContextPanelEntry], to toEntries: [VerticalListContextResultsChatInputContextPanelEntry], account: Account, actionSelected: @escaping () -> Void, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) -> VerticalListContextResultsChatInputContextPanelTransition {
+private func preparedTransition(from fromEntries: [VerticalListContextResultsChatInputContextPanelEntry], to toEntries: [VerticalListContextResultsChatInputContextPanelEntry], engine: TelegramEngine, actionSelected: @escaping () -> Void, resultSelected: @escaping (ChatContextResult, ASDisplayNode, CGRect) -> Bool) -> VerticalListContextResultsChatInputContextPanelTransition {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries)
-    
+
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
-    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(account: account, actionSelected: actionSelected, resultSelected: resultSelected), directionHint: nil) }
-    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(account: account, actionSelected: actionSelected, resultSelected: resultSelected), directionHint: nil) }
+    let insertions = indicesAndItems.map { ListViewInsertItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(engine: engine, actionSelected: actionSelected, resultSelected: resultSelected), directionHint: nil) }
+    let updates = updateIndices.map { ListViewUpdateItem(index: $0.0, previousIndex: $0.2, item: $0.1.item(engine: engine, actionSelected: actionSelected, resultSelected: resultSelected), directionHint: nil) }
     
     return VerticalListContextResultsChatInputContextPanelTransition(deletions: deletions, insertions: insertions, updates: updates)
 }
@@ -239,7 +239,7 @@ final class VerticalListContextResultsChatInputContextPanelNode: ChatInputContex
     
     private func prepareTransition(from: [VerticalListContextResultsChatInputContextPanelEntry]?, to: [VerticalListContextResultsChatInputContextPanelEntry], results: ChatContextResultCollection) {
         let firstTime = self.currentEntries == nil
-        let transition = preparedTransition(from: from ?? [], to: to, account: self.context.account, actionSelected: { [weak self] in
+        let transition = preparedTransition(from: from ?? [], to: to, engine: self.context.engine, actionSelected: { [weak self] in
             if let strongSelf = self, let interfaceInteraction = strongSelf.interfaceInteraction {
                 if let switchPeer = results.switchPeer {
                     interfaceInteraction.botSwitchChatWithPayload(results.botId, switchPeer.startParam)

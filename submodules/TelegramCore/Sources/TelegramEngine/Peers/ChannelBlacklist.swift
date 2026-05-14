@@ -125,19 +125,19 @@ func _internal_updateChannelMemberBannedRights(account: Account, peerId: PeerId,
                                 return cachedData
                             }
                         })
-                        var peers: [PeerId: Peer] = [:]
+                        var peers: [EnginePeer.Id: EnginePeer] = [:]
                         var presences: [PeerId: PeerPresence] = [:]
-                        peers[memberPeer.id] = memberPeer
+                        peers[memberPeer.id] = EnginePeer(memberPeer)
                         if let presence = transaction.getPeerPresence(peerId: memberPeer.id) {
                             presences[memberPeer.id] = presence
                         }
                         if case let .member(_, _, _, maybeBanInfo, _, _) = updatedParticipant, let banInfo = maybeBanInfo {
                             if let peer = transaction.getPeer(banInfo.restrictedBy) {
-                                peers[peer.id] = peer
+                                peers[peer.id] = EnginePeer(peer)
                             }
                         }
                         
-                        return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: memberPeer, peers: peers, presences: presences), isMember)
+                        return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(memberPeer), peers: peers, presences: presences), isMember)
                     }
                 }
             } else {

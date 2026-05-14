@@ -16,7 +16,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/AsyncDisplayKit:AsyncDisplayKit",

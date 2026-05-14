@@ -224,7 +224,7 @@ public struct Font {
         } else {
             let font: UIFont
             switch design {
-                case .regular:
+                case .regular, .round:
                     if traits.contains(.italic) {
                         if let descriptor = UIFont.systemFont(ofSize: size, weight: weight.weight).fontDescriptor.withSymbolicTraits([.traitItalic]) {
                             font = UIFont(descriptor: descriptor, size: size)
@@ -254,8 +254,6 @@ public struct Font {
                     } else {
                         font = UIFont(name: "Menlo", size: size - 1.0) ?? UIFont.systemFont(ofSize: size)
                     }
-                case .round:
-                    font = UIFont(name: ".SFCompactRounded-Semibold", size: size) ?? UIFont.systemFont(ofSize: size)
                 case .camera:
                     func encodeText(string: String, key: Int16) -> String {
                         let nsString = string as NSString

@@ -244,8 +244,6 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
     private let cancelButtonNode: WebAppCancelButtonNode
     
     private var buttons: ComponentView<Empty>?
-    private var cancelButton: ComponentView<Empty>?
-    private var rightButton: ComponentView<Empty>?
     private let moreButtonPlayOnce = ActionSlot<Void>()
     
     private let moreButtonNode: MoreButtonNode
@@ -254,7 +252,7 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
     public weak var webSearchController: WebSearchController?
     
     public var openCamera: ((Any?) -> Void)?
-    public var presentSchedulePicker: (Bool, @escaping (Int32) -> Void) -> Void = { _, _ in }
+    public var presentSchedulePicker: (Bool, @escaping (Int32, Bool) -> Void) -> Void = { _, _ in }
     public var presentTimerPicker: (@escaping (Int32) -> Void) -> Void = { _ in }
     public var presentWebSearch: (MediaGroupsScreen, Bool) -> Void = { _, _ in }
     public var getCaptionPanelView: () -> TGCaptionPanelView? = { return nil }
@@ -2108,7 +2106,6 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
         }
         
         if case .glass = style {
-            self.cancelButton = ComponentView()
             self.buttons = ComponentView()
         }
         self.cancelButtonNode = WebAppCancelButtonNode(theme: self.presentationData.theme, strings: self.presentationData.strings)
@@ -2305,8 +2302,8 @@ public final class MediaPickerScreenImpl: ViewController, MediaPickerScreen, Att
             }
         }, schedule: { [weak self] parameters in
             if let strongSelf = self {
-                strongSelf.presentSchedulePicker(false, { [weak self] time in
-                    self?.interaction?.sendSelected(nil, false, time, true, parameters, {})
+                strongSelf.presentSchedulePicker(false, { [weak self] time, silentPosting in
+                    self?.interaction?.sendSelected(nil, silentPosting, time, true, parameters, {})
                 })
             }
         }, dismissInput: { [weak self] in
@@ -4001,19 +3998,33 @@ public func avatarMediaPickerController(
         final class PickerDelegate: NSObject, PHPickerViewControllerDelegate {
             var completion: ((Any?, UIView?, CGRect, UIImage?, Bool, @escaping (Bool?) -> (UIView, CGRect)?, @escaping () -> Void) -> Void)?
             
-            func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-                picker.dismiss(animated: true)
-
-                for item in results {
-                    if item.itemProvider.canLoadObject(ofClass: UIImage.self) {
-                        item.itemProvider.loadObject(ofClass: UIImage.self) { image, error in
-                            if let uiImage = image as? UIImage {
-                                Queue.mainQueue().async {
-                                    self.completion?(uiImage, nil, CGRect(), nil, false, { _ in return nil }, {})
-                                }
+            private func resolveResult(_ result: PHPickerResult) {
+                if let assetIdentifier = result.assetIdentifier {
+                    let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetIdentifier], options: nil)
+                    if let asset = fetchResult.firstObject {
+                        Queue.mainQueue().async {
+                            self.completion?(asset, nil, CGRect(), nil, false, { _ in return nil }, {})
+                        }
+                        return
+                    }
+                }
+                
+                if result.itemProvider.canLoadObject(ofClass: UIImage.self) {
+                    result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] image, _ in
+                        if let uiImage = image as? UIImage {
+                            Queue.mainQueue().async {
+                                self?.completion?(uiImage, nil, CGRect(), nil, false, { _ in return nil }, {})
                             }
                         }
                     }
+                }
+            }
+            
+            func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+                picker.dismiss(animated: true)
+                
+                if let result = results.first {
+                    self.resolveResult(result)
                 }
             }
         }
@@ -4023,7 +4034,7 @@ public func avatarMediaPickerController(
         
         let openMediaPicker = {
             var configuration = PHPickerConfiguration(photoLibrary: .shared())
-            configuration.filter = .images
+            configuration.filter = .any(of: [.images, .videos])
             configuration.selectionLimit = 1
             
             let picker = PHPickerViewController(configuration: configuration)

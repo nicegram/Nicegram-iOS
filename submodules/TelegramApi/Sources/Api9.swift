@@ -1,4 +1,70 @@
 public extension Api {
+    enum InputBusinessAwayMessage: TypeConstructorDescription {
+        public class Cons_inputBusinessAwayMessage: TypeConstructorDescription {
+            public var flags: Int32
+            public var shortcutId: Int32
+            public var schedule: Api.BusinessAwayMessageSchedule
+            public var recipients: Api.InputBusinessRecipients
+            public init(flags: Int32, shortcutId: Int32, schedule: Api.BusinessAwayMessageSchedule, recipients: Api.InputBusinessRecipients) {
+                self.flags = flags
+                self.shortcutId = shortcutId
+                self.schedule = schedule
+                self.recipients = recipients
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("inputBusinessAwayMessage", [("flags", ConstructorParameterDescription(self.flags)), ("shortcutId", ConstructorParameterDescription(self.shortcutId)), ("schedule", ConstructorParameterDescription(self.schedule)), ("recipients", ConstructorParameterDescription(self.recipients))])
+            }
+        }
+        case inputBusinessAwayMessage(Cons_inputBusinessAwayMessage)
+
+        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
+            switch self {
+            case .inputBusinessAwayMessage(let _data):
+                if boxed {
+                    buffer.appendInt32(-2094959136)
+                }
+                serializeInt32(_data.flags, buffer: buffer, boxed: false)
+                serializeInt32(_data.shortcutId, buffer: buffer, boxed: false)
+                _data.schedule.serialize(buffer, true)
+                _data.recipients.serialize(buffer, true)
+                break
+            }
+        }
+
+        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+            switch self {
+            case .inputBusinessAwayMessage(let _data):
+                return ("inputBusinessAwayMessage", [("flags", ConstructorParameterDescription(_data.flags)), ("shortcutId", ConstructorParameterDescription(_data.shortcutId)), ("schedule", ConstructorParameterDescription(_data.schedule)), ("recipients", ConstructorParameterDescription(_data.recipients))])
+            }
+        }
+
+        public static func parse_inputBusinessAwayMessage(_ reader: BufferReader) -> InputBusinessAwayMessage? {
+            var _1: Int32?
+            _1 = reader.readInt32()
+            var _2: Int32?
+            _2 = reader.readInt32()
+            var _3: Api.BusinessAwayMessageSchedule?
+            if let signature = reader.readInt32() {
+                _3 = Api.parse(reader, signature: signature) as? Api.BusinessAwayMessageSchedule
+            }
+            var _4: Api.InputBusinessRecipients?
+            if let signature = reader.readInt32() {
+                _4 = Api.parse(reader, signature: signature) as? Api.InputBusinessRecipients
+            }
+            let _c1 = _1 != nil
+            let _c2 = _2 != nil
+            let _c3 = _3 != nil
+            let _c4 = _4 != nil
+            if _c1 && _c2 && _c3 && _c4 {
+                return Api.InputBusinessAwayMessage.inputBusinessAwayMessage(Cons_inputBusinessAwayMessage(flags: _1!, shortcutId: _2!, schedule: _3!, recipients: _4!))
+            }
+            else {
+                return nil
+            }
+        }
+    }
+}
+public extension Api {
     enum InputBusinessBotRecipients: TypeConstructorDescription {
         public class Cons_inputBusinessBotRecipients: TypeConstructorDescription {
             public var flags: Int32
@@ -51,20 +117,20 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: [Api.InputUser]?
-            if Int(_1!) & Int(1 << 4) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
                 if let _ = reader.readInt32() {
                     _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputUser.self)
                 }
             }
             var _3: [Api.InputUser]?
-            if Int(_1!) & Int(1 << 6) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
                 if let _ = reader.readInt32() {
                     _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputUser.self)
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 4) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 6) == 0) || _3 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.InputBusinessBotRecipients.inputBusinessBotRecipients(Cons_inputBusinessBotRecipients(flags: _1!, users: _2, excludeUsers: _3))
             }
@@ -128,19 +194,19 @@ public extension Api {
             var _2: String?
             _2 = parseString(reader)
             var _3: [Api.MessageEntity]?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageEntity.self)
                 }
             }
             var _4: String?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _4 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputBusinessChatLink.inputBusinessChatLink(Cons_inputBusinessChatLink(flags: _1!, message: _2!, entities: _3, title: _4))
             }
@@ -258,7 +324,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             var _4: Api.InputDocument?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.InputDocument
                 }
@@ -266,7 +332,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputBusinessIntro.inputBusinessIntro(Cons_inputBusinessIntro(flags: _1!, title: _2!, description: _3!, sticker: _4))
             }
@@ -320,13 +386,13 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: [Api.InputUser]?
-            if Int(_1!) & Int(1 << 4) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
                 if let _ = reader.readInt32() {
                     _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.InputUser.self)
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 4) == 0) || _2 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _2 != nil
             if _c1 && _c2 {
                 return Api.InputBusinessRecipients.inputBusinessRecipients(Cons_inputBusinessRecipients(flags: _1!, users: _2))
             }
@@ -537,32 +603,32 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.InputFile?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.InputFile
                 }
             }
             var _3: Api.InputFile?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.InputFile
                 }
             }
             var _4: Double?
-            if Int(_1!) & Int(1 << 2) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
                 _4 = reader.readDouble()
             }
             var _5: Api.VideoSize?
-            if Int(_1!) & Int(1 << 3) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.VideoSize
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 2) == 0) || _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.InputChatPhoto.inputChatUploadedPhoto(Cons_inputChatUploadedPhoto(flags: _1!, file: _2, video: _3, videoStartTs: _4, videoEmojiMarkup: _5))
             }
@@ -950,7 +1016,7 @@ public extension Api {
             var _5: String?
             _5 = parseString(reader)
             var _6: Api.TextWithEntities?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
                 }
@@ -960,7 +1026,7 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.InputContact.inputPhoneContact(Cons_inputPhoneContact(flags: _1!, clientId: _2!, phone: _3!, firstName: _4!, lastName: _5!, note: _6))
             }

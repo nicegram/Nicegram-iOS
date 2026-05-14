@@ -7,14 +7,13 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/AsyncDisplayKit",
         "//submodules/Display",
         "//submodules/TelegramCore",
-        "//submodules/Postbox",
         "//submodules/AccountContext",
         "//submodules/TelegramPresentationData",
         "//submodules/TelegramStringFormatting",
@@ -26,6 +25,7 @@ swift_library(
         "//submodules/TelegramUI/Components/ToastComponent",
         "//submodules/Markdown",
         "//submodules/UndoUI",
+        "//submodules/TooltipUI",
         "//submodules/TelegramUI/Components/LottieComponent",
         "//submodules/Components/MultilineTextComponent",
         "//submodules/Components/BundleIconComponent",
@@ -37,6 +37,7 @@ swift_library(
         "//submodules/TelegramUI/Components/GlassBackgroundComponent",
         "//submodules/TelegramUI/Components/GlassBarButtonComponent",
         "//submodules/TelegramUI/Components/PlainButtonComponent",
+        "//submodules/Components/LottieAnimationComponent",
     ],
     visibility = [
         "//visibility:public",

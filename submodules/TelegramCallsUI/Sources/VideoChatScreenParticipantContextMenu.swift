@@ -497,9 +497,8 @@ extension VideoChatScreenComponent.View {
                     }
                     
                     let _ = self.currentAvatarMixin.swap(nil)
-                    let postbox = currentCall.accountContext.account.postbox
                     self.updateAvatarDisposable.set((currentCall.accountContext.engine.peers.updatePeerPhoto(peerId: peerId, photo: nil, mapResourceToAvatarSizes: { resource, representations in
-                        return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
+                        return mapResourceToAvatarSizes(engine: currentCall.accountContext.engine, resource: resource, representations: representations)
                     })
                     |> deliverOnMainQueue).start())
                 }
@@ -552,16 +551,15 @@ extension VideoChatScreenComponent.View {
         let peerId = callState.myPeerId
         
         let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-        currentCall.accountContext.account.postbox.mediaBox.storeResourceData(resource.id, data: data)
+        currentCall.accountContext.engine.resources.storeResourceData(id: EngineMediaResource.Id(resource.id), data: data)
         let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: resource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
         
         self.currentUpdatingAvatar = (representation, 0.0)
 
-        let postbox = currentCall.accountContext.account.postbox
-        let signal = peerId.namespace == Namespaces.Peer.CloudUser ? currentCall.accountContext.engine.accountData.updateAccountPhoto(resource: resource, videoResource: nil, videoStartTimestamp: nil, markup: nil, mapResourceToAvatarSizes: { resource, representations in
-            return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
-        }) : currentCall.accountContext.engine.peers.updatePeerPhoto(peerId: peerId, photo: currentCall.accountContext.engine.peers.uploadedPeerPhoto(resource: resource), mapResourceToAvatarSizes: { resource, representations in
-            return mapResourceToAvatarSizes(postbox: postbox, resource: resource, representations: representations)
+        let signal = peerId.namespace == Namespaces.Peer.CloudUser ? currentCall.accountContext.engine.accountData.updateAccountPhoto(resource: EngineMediaResource(resource), videoResource: nil, videoStartTimestamp: nil, markup: nil, mapResourceToAvatarSizes: { resource, representations in
+            return mapResourceToAvatarSizes(engine: currentCall.accountContext.engine, resource: resource, representations: representations)
+        }) : currentCall.accountContext.engine.peers.updatePeerPhoto(peerId: peerId, photo: currentCall.accountContext.engine.peers.uploadedPeerPhoto(resource: EngineMediaResource(resource)), mapResourceToAvatarSizes: { resource, representations in
+            return mapResourceToAvatarSizes(engine: currentCall.accountContext.engine, resource: resource, representations: representations)
         })
         
         self.updateAvatarDisposable.set((signal
@@ -594,7 +592,7 @@ extension VideoChatScreenComponent.View {
         let peerId = callState.myPeerId
         
         let photoResource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
-        currentCall.accountContext.account.postbox.mediaBox.storeResourceData(photoResource.id, data: data)
+        currentCall.accountContext.engine.resources.storeResourceData(id: EngineMediaResource.Id(photoResource.id), data: data)
         let representation = TelegramMediaImageRepresentation(dimensions: PixelDimensions(width: 640, height: 640), resource: photoResource, progressiveSizes: [], immediateThumbnailData: nil, hasVideo: false, isPersonal: false)
         
         self.currentUpdatingAvatar = (representation, 0.0)
@@ -693,12 +691,12 @@ extension VideoChatScreenComponent.View {
         self.updateAvatarDisposable.set((signal
         |> mapToSignal { videoResource -> Signal<UpdatePeerPhotoStatus, UploadPeerPhotoError> in
             if peerId.namespace == Namespaces.Peer.CloudUser {
-                return context.engine.accountData.updateAccountPhoto(resource: photoResource, videoResource: videoResource, videoStartTimestamp: videoStartTimestamp, markup: nil, mapResourceToAvatarSizes: { resource, representations in
-                    return mapResourceToAvatarSizes(postbox: account.postbox, resource: resource, representations: representations)
+                return context.engine.accountData.updateAccountPhoto(resource: EngineMediaResource(photoResource), videoResource: EngineMediaResource(videoResource), videoStartTimestamp: videoStartTimestamp, markup: nil, mapResourceToAvatarSizes: { resource, representations in
+                    return mapResourceToAvatarSizes(engine: context.engine, resource: resource, representations: representations)
                 })
             } else {
-                return context.engine.peers.updatePeerPhoto(peerId: peerId, photo: context.engine.peers.uploadedPeerPhoto(resource: photoResource), video: context.engine.peers.uploadedPeerVideo(resource: videoResource) |> map(Optional.init), videoStartTimestamp: videoStartTimestamp, mapResourceToAvatarSizes: { resource, representations in
-                    return mapResourceToAvatarSizes(postbox: account.postbox, resource: resource, representations: representations)
+                return context.engine.peers.updatePeerPhoto(peerId: peerId, photo: context.engine.peers.uploadedPeerPhoto(resource: EngineMediaResource(photoResource)), video: context.engine.peers.uploadedPeerVideo(resource: EngineMediaResource(videoResource)) |> map(Optional.init), videoStartTimestamp: videoStartTimestamp, mapResourceToAvatarSizes: { resource, representations in
+                    return mapResourceToAvatarSizes(engine: context.engine, resource: resource, representations: representations)
                 })
             }
         }

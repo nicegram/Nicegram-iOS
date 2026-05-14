@@ -384,7 +384,7 @@ public func reactionNotificationSettingsController(
         }
     )
     
-    let preferences = context.account.postbox.preferencesView(keys: [PreferencesKeys.globalNotifications])
+    let preferences = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.globalNotifications))
     
     let signal = combineLatest(queue: .mainQueue(),
         context.sharedContext.presentationData,
@@ -394,7 +394,7 @@ public func reactionNotificationSettingsController(
     )
     |> map { presentationData, notificationSoundList, preferencesView, state -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let viewSettings: GlobalNotificationSettingsSet
-        if let settings = preferencesView.values[PreferencesKeys.globalNotifications]?.get(GlobalNotificationSettings.self) {
+        if let settings = preferencesView?.get(GlobalNotificationSettings.self) {
             viewSettings = settings.effective
         } else {
             viewSettings = GlobalNotificationSettingsSet.defaultSettings

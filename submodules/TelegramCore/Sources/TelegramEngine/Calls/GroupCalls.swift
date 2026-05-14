@@ -2957,7 +2957,7 @@ func _internal_groupCallDisplayAsAvailablePeers(accountPeerId: PeerId, network: 
                         }
                     }
                     
-                    return peers.map { FoundPeer(peer: $0, subscribers: subscribers[$0.id]) }
+                    return peers.map { FoundPeer(peer: EnginePeer($0), subscribers: subscribers[$0.id]) }
                 }
             }
         }
@@ -3011,7 +3011,7 @@ func _internal_cachedGroupCallDisplayAsAvailablePeers(account: Account, peerId: 
                     if let cachedData = transaction.getPeerCachedData(peerId: peerId) as? CachedChannelData {
                         subscribers = cachedData.participantsSummary.memberCount
                     }
-                    peers.append(FoundPeer(peer: peer, subscribers: subscribers))
+                    peers.append(FoundPeer(peer: EnginePeer(peer), subscribers: subscribers))
                 }
             }
             return (peers, cached.timestamp)

@@ -248,18 +248,18 @@ func _internal_updateChannelAdminRights(account: Account, peerId: PeerId, adminI
                                     return cachedData
                                 }
                             })
-                            var peers: [PeerId: Peer] = [:]
+                            var peers: [EnginePeer.Id: EnginePeer] = [:]
                             var presences: [PeerId: PeerPresence] = [:]
-                            peers[adminPeer.id] = adminPeer
+                            peers[adminPeer.id] = EnginePeer(adminPeer)
                             if let presence = transaction.getPeerPresence(peerId: adminPeer.id) {
                                 presences[adminPeer.id] = presence
                             }
                             if case let .member(_, _, maybeAdminInfo, _, _, _) = updatedParticipant, let adminInfo = maybeAdminInfo {
                                 if let peer = transaction.getPeer(adminInfo.promotedBy) {
-                                    peers[peer.id] = peer
+                                    peers[peer.id] = EnginePeer(peer)
                                 }
                             }
-                            return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: adminPeer, peers: peers, presences: presences))
+                            return (currentParticipant, RenderedChannelParticipant(participant: updatedParticipant, peer: EnginePeer(adminPeer), peers: peers, presences: presences))
                         } |> mapError { _ -> UpdateChannelAdminRightsError in }
                     }
                 } else {

@@ -602,11 +602,18 @@ public enum ContextControllerTip: Equatable {
     case starsReactions(topCount: Int)
     case videoProcessing
     case collageReordering
+    case deleteReaction
     
     public static func ==(lhs: ContextControllerTip, rhs: ContextControllerTip) -> Bool {
         switch lhs {
         case .textSelection:
             if case .textSelection = rhs {
+                return true
+            } else {
+                return false
+            }
+        case .deleteReaction:
+            if case .deleteReaction = rhs {
                 return true
             } else {
                 return false

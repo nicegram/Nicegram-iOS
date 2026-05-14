@@ -3,7 +3,6 @@ import UIKit
 import Display
 import AccountContext
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import TelegramPresentationData
 import ComponentFlow
@@ -205,7 +204,7 @@ final class ComposeTodoScreenComponent: Component {
             for (id, itemView) in self.todoItemsSectionContainer.itemViews {
                 if let view = itemView.contents.view as? ListComposePollOptionComponent.View, !view.isRevealed && !view.currentText.isEmpty {
                     let viewFrame = view.convert(view.bounds, to: self.todoItemsSectionContainer)
-                    let iconFrame = CGRect(origin: CGPoint(x: viewFrame.maxX - 40.0, y: viewFrame.minY), size: CGSize(width: viewFrame.height, height: viewFrame.height))
+                    let iconFrame = CGRect(origin: CGPoint(x: viewFrame.minX, y: viewFrame.minY), size: CGSize(width: 50.0, height: viewFrame.height))
                     if iconFrame.contains(localPoint) {
                         return (id, itemView.contents)
                     }
@@ -471,7 +470,6 @@ final class ComposeTodoScreenComponent: Component {
                     mode: .standard(.default),
                     chatLocation: .peer(id: component.context.account.peerId),
                     subject: nil,
-                    peerNearbyData: nil,
                     greetingData: nil,
                     pendingUnpinnedAllMessages: false,
                     activeGroupCallInfo: nil,
@@ -786,7 +784,6 @@ final class ComposeTodoScreenComponent: Component {
             todoTextSectionItems.append(AnyComponentWithIdentity(id: 0, component: AnyComponent(ListComposePollOptionComponent(
                 externalState: self.todoTextInputState,
                 context: component.context,
-                style: .glass,
                 theme: theme,
                 strings: environment.strings,
                 isEnabled: canEdit,
@@ -876,7 +873,6 @@ final class ComposeTodoScreenComponent: Component {
                 todoItemsSectionItems.append(AnyComponentWithIdentity(id: todoItem.id, component: AnyComponent(ListComposePollOptionComponent(
                     externalState: todoItem.textInputState,
                     context: component.context,
-                    style: .glass,
                     theme: theme,
                     strings: environment.strings,
                     isEnabled: isEnabled,
@@ -975,6 +971,12 @@ final class ComposeTodoScreenComponent: Component {
                                 self.state?.updated()
                             }
                         }
+                    },
+                    present: { [weak self] c in
+                        guard let controller = self?.environment?.controller() else {
+                            return
+                        }
+                        controller.present(c, in: .window(.root))
                     },
                     tag: todoItem.textFieldTag
                 ))))

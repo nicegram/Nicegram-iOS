@@ -141,8 +141,11 @@ public extension TelegramEngine {
             return _internal_searchHashtagPosts(account: self.account, hashtag: hashtag, state: state, limit: limit)
         }
 
-        public func downloadMessage(messageId: MessageId) -> Signal<Message?, NoError> {
+        public func downloadMessage(messageId: EngineMessage.Id) -> Signal<EngineMessage?, NoError> {
             return _internal_downloadMessage(accountPeerId: self.account.peerId, postbox: self.account.postbox, network: self.account.network, messageId: messageId)
+            |> map { message -> EngineMessage? in
+                return message.flatMap(EngineMessage.init)
+            }
         }
 
         public func searchMessageIdByTimestamp(peerId: PeerId, threadId: Int64?, timestamp: Int32) -> Signal<MessageId?, NoError> {
@@ -179,6 +182,14 @@ public extension TelegramEngine {
                 _internal_deleteAllMessagesWithForwardAuthor(transaction: transaction, mediaBox: self.account.postbox.mediaBox, peerId: peerId, forwardAuthorId: forwardAuthorId, namespace: namespace)
             }
             |> ignoreValues
+        }
+        
+        public func deleteAllReactionsWithAuthor(peerId: EnginePeer.Id, authorId: EnginePeer.Id, aroundMessageId: EngineMessage.Id? = nil) -> Signal<Never, NoError> {
+            return _internal_deleteAllReactionsWithAuthor(account: self.account, peerId: peerId, authorId: authorId, aroundMessageId: aroundMessageId)
+        }
+        
+        public func deleteReaction(messageId: EngineMessage.Id, authorId: EnginePeer.Id) -> Signal<Never, NoError> {
+            return _internal_deleteReaction(account: self.account, messageId: messageId, authorId: authorId)
         }
 
         public func clearCallHistory(forEveryone: Bool) -> Signal<Never, ClearCallHistoryError> {
@@ -220,6 +231,10 @@ public extension TelegramEngine {
 
         public func forwardGameWithScore(messageId: MessageId, to peerId: PeerId, threadId: Int64?, as senderPeerId: PeerId?) -> Signal<Void, NoError> {
             return _internal_forwardGameWithScore(account: self.account, messageId: messageId, to: peerId, threadId: threadId, as: senderPeerId)
+        }
+
+        public func sendBotGame(botPeerId: PeerId, game: String, to peerId: PeerId, threadId: Int64?) -> Signal<Void, SendBotGameError> {
+            return _internal_sendBotGame(account: self.account, botPeerId: botPeerId, game: game, to: peerId, threadId: threadId)
         }
 
         public func requestUpdatePinnedMessage(peerId: PeerId, update: PinnedMessageUpdate) -> Signal<Void, UpdatePinnedMessageError> {
@@ -475,8 +490,11 @@ public extension TelegramEngine {
             return _internal_recentlyUsedHashtags(postbox: self.account.postbox)
         }
 
-        public func topPeerActiveLiveLocationMessages(peerId: PeerId) -> Signal<(Peer?, [Message]), NoError> {
+        public func topPeerActiveLiveLocationMessages(peerId: EnginePeer.Id) -> Signal<(EnginePeer?, [EngineMessage]), NoError> {
             return _internal_topPeerActiveLiveLocationMessages(viewTracker: self.account.viewTracker, accountPeerId: self.account.peerId, peerId: peerId)
+            |> map { peer, messages -> (EnginePeer?, [EngineMessage]) in
+                return (peer.flatMap(EnginePeer.init), messages.map(EngineMessage.init))
+            }
         }
 
         public func chatList(group: EngineChatList.Group, count: Int) -> Signal<EngineChatList, NoError> {
@@ -669,8 +687,32 @@ public extension TelegramEngine {
             }
         }
         
-        public func composeMessageWithAI(text: String, entities: [MessageTextEntity], proofread: Bool = false, translateToLang: String? = nil, changeTone: String? = nil, emojify: Bool = false) -> Signal<(String, [MessageTextEntity]), TranslationError> {
-            return _internal_composeMessageWithAI(network: self.account.network, text: text, entities: entities, proofread: proofread, translateToLang: translateToLang, changeTone: changeTone, emojify: emojify)
+        public func composeMessageWithAI(text: String, entities: [MessageTextEntity], proofread: Bool = false, translateToLang: String? = nil, changeStyle: TelegramComposeAIMessageMode.CloudStyle.Reference? = nil, emojify: Bool = false) -> Signal<(String, [MessageTextEntity]), TranslationError> {
+            return _internal_composeMessageWithAI(account: self.account, text: text, entities: entities, proofread: proofread, translateToLang: translateToLang, changeStyle: changeStyle, emojify: emojify)
+        }
+        
+        public func createAITextStyle(displayAuthor: Bool, emojiFileId: Int64, title: String, prompt: String) -> Signal<TelegramComposeAIMessageMode.CloudStyle, CreateAITextStyleError> {
+            return _internal_createAITextStyle(account: self.account, displayAuthor: displayAuthor, emojiFileId: emojiFileId, title: title, prompt: prompt)
+        }
+        
+        public func editAITextStyle(id: Int64, accessHash: Int64, displayAuthor: Bool, emojiFileId: Int64, title: String, prompt: String) -> Signal<TelegramComposeAIMessageMode.CloudStyle, EditAITextStyleError> {
+            return _internal_editAITextStyle(account: self.account, id: id, accessHash: accessHash, displayAuthor: displayAuthor, emojiFileId: emojiFileId, title: title, prompt: prompt)
+        }
+        
+        public func deleteAITextStyle(id: Int64, accessHash: Int64) -> Signal<Never, DeleteAITextStyleError> {
+            return _internal_deleteAITextStyle(account: self.account, id: id, accessHash: accessHash)
+        }
+
+        public func unsaveAITextStyle(id: Int64, accessHash: Int64) -> Signal<Never, DeleteAITextStyleError> {
+            return _internal_unsaveAITextStyle(account: self.account, id: id, accessHash: accessHash)
+        }
+
+        public func getAIComposeToneExample(slug: String, num: Int32) -> Signal<TelegramAIComposeToneExample?, NoError> {
+            return _internal_getAIComposeToneExample(network: self.account.network, slug: slug, num: num)
+        }
+
+        public func getAIComposeToneExample(reference: TelegramComposeAIMessageMode.CloudStyle.Reference, num: Int32) -> Signal<TelegramAIComposeToneExample?, NoError> {
+            return _internal_getAIComposeToneExample(network: self.account.network, tone: reference, num: num)
         }
 
         public func translate(texts: [(String, [MessageTextEntity])], toLang: String, tone: TranslationTone = .neutral) -> Signal<[(String, [MessageTextEntity])], TranslationError> {
@@ -933,12 +975,6 @@ public extension TelegramEngine {
             |> ignoreValues
         }
         
-        public func getSynchronizeAutosaveItemOperations() -> Signal<[(index: Int32, message: Message, mediaId: MediaId)], NoError> {
-            return self.account.postbox.transaction { transaction -> [(index: Int32, message: Message, mediaId: MediaId)] in
-                return _internal_getSynchronizeAutosaveItemOperations(transaction: transaction)
-            }
-        }
-
         func removeSyncrhonizeAutosaveItemOperations(indices: [Int32]) {
             let _ = (self.account.postbox.transaction { transaction -> Void in
                 _internal_removeSyncrhonizeAutosaveItemOperations(transaction: transaction, indices: indices)
@@ -1802,12 +1838,27 @@ public extension TelegramEngine {
             |> ignoreValues
         }
         
-        public func composeAIMessageStyles() -> Signal<[TelegramComposeAIMessageMode.Style], NoError> {
-            return _internal_composeAIMessageStyles(account: self.account)
+        public func composeAIMessageStyles() -> Signal<[TelegramComposeAIMessageMode.CloudStyle], NoError> {
+            return _internal_cachedCloudAITextStyles(postbox: self.account.postbox)
+            |> map { value in
+                return value?.items ?? []
+            }
+        }
+        
+        public func requestAIMessageStyle(slug: String) -> Signal<(style: TelegramComposeAIMessageMode.CloudStyle, initialPreview: AIMessageStylePreview?)?, NoError> {
+            return _internal_requestAIMessageStyle(account: self.account, slug: slug)
+        }
+        
+        public func installAIMessageStyle(style: TelegramComposeAIMessageMode.CloudStyle.Custom) -> Signal<Never, InstallAIMessageStyleError> {
+            return _internal_installAIMessageStyle(account: self.account, style: style)
         }
         
         public func composeAIMessage(text: TextWithEntities, mode: TelegramComposeAIMessageMode) -> Signal<TelegramAIComposeMessageResult, TelegramAIComposeMessageError> {
             return _internal_composeAIMessage(account: self.account, text: text, mode: mode)
+        }
+        
+        public func requestAIMessageStylePreview(reference: TelegramComposeAIMessageMode.CloudStyle.Reference, index: Int) -> Signal<AIMessageStylePreview?, NoError> {
+            return _internal_requestAIMessageStylePreview(account: self.account, reference: reference, index: index)
         }
         
         public func requestMiniAppButton(peerId: EnginePeer.Id, requestId: String) -> Signal<ReplyMarkupButton?, NoError> {

@@ -4,7 +4,6 @@ import Display
 import ComponentFlow
 import MultilineTextComponent
 import AccountContext
-import Postbox
 import TelegramCore
 import TextNodeWithEntities
 import TextFormat

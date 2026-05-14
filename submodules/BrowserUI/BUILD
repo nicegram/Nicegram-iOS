@@ -12,7 +12,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = NGDEPS + [
         "//submodules/SSignalKit/SwiftSignalKit",
@@ -36,6 +36,7 @@ swift_library(
         "//submodules/TelegramUI/Components/MinimizedContainer",
         "//submodules/Pasteboard",
         "//submodules/SaveToCameraRoll",
+        "//submodules/TextFormat:TextFormat",
         "//submodules/TelegramUI/Components/NavigationStackComponent",
         "//submodules/LocationUI",
         "//submodules/OpenInExternalAppUI",

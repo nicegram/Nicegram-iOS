@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import SwiftSignalKit
-import Postbox
 
 private func edgeWidth(width: CGFloat) -> CGFloat {
     return min(44.0, floor(width / 6.0))

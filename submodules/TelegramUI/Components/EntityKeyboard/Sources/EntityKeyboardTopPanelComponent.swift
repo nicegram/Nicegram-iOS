@@ -1218,11 +1218,14 @@ public final class EntityKeyboardTopPanelComponent: Component {
     let containerSideInset: CGFloat
     let defaultActiveItemId: AnyHashable?
     let forceActiveItemId: AnyHashable?
+    let displayHighlightInExpanded: Bool
+    let automaticallySelectsFirstItem: Bool
+    let itemSpacing: CGFloat
     let activeContentItemIdUpdated: ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>
     let activeContentItemMapping: [AnyHashable: AnyHashable]
     let reorderItems: ([Item]) -> Void
     
-    init(
+    public init(
         id: AnyHashable,
         theme: PresentationTheme,
         customTintColor: UIColor?,
@@ -1230,6 +1233,9 @@ public final class EntityKeyboardTopPanelComponent: Component {
         containerSideInset: CGFloat,
         defaultActiveItemId: AnyHashable? = nil,
         forceActiveItemId: AnyHashable? = nil,
+        displayHighlightInExpanded: Bool = false,
+        automaticallySelectsFirstItem: Bool = true,
+        itemSpacing: CGFloat = 8.0,
         activeContentItemIdUpdated: ActionSlot<(AnyHashable, AnyHashable?, ComponentTransition)>,
         activeContentItemMapping: [AnyHashable: AnyHashable] = [:],
         reorderItems: @escaping ([Item]) -> Void
@@ -1241,6 +1247,9 @@ public final class EntityKeyboardTopPanelComponent: Component {
         self.containerSideInset = containerSideInset
         self.defaultActiveItemId = defaultActiveItemId
         self.forceActiveItemId = forceActiveItemId
+        self.displayHighlightInExpanded = displayHighlightInExpanded
+        self.automaticallySelectsFirstItem = automaticallySelectsFirstItem
+        self.itemSpacing = itemSpacing
         self.activeContentItemIdUpdated = activeContentItemIdUpdated
         self.activeContentItemMapping = activeContentItemMapping
         self.reorderItems = reorderItems
@@ -1266,6 +1275,15 @@ public final class EntityKeyboardTopPanelComponent: Component {
             return false
         }
         if lhs.forceActiveItemId != rhs.forceActiveItemId {
+            return false
+        }
+        if lhs.displayHighlightInExpanded != rhs.displayHighlightInExpanded {
+            return false
+        }
+        if lhs.automaticallySelectsFirstItem != rhs.automaticallySelectsFirstItem {
+            return false
+        }
+        if lhs.itemSpacing != rhs.itemSpacing {
             return false
         }
         if lhs.activeContentItemIdUpdated !== rhs.activeContentItemIdUpdated {
@@ -1393,7 +1411,7 @@ public final class EntityKeyboardTopPanelComponent: Component {
             let isExpanded: Bool
             let items: [Item]
             
-            init(isExpanded: Bool, containerSideInset: CGFloat, height: CGFloat, items: [ItemDescription]) {
+            init(isExpanded: Bool, containerSideInset: CGFloat, height: CGFloat, itemSpacing: CGFloat, items: [ItemDescription]) {
                 self.sideInset = containerSideInset + 7.0
                 
                 self.isExpanded = isExpanded
@@ -1401,7 +1419,7 @@ public final class EntityKeyboardTopPanelComponent: Component {
                 self.staticItemSize = self.itemSize
                 self.staticExpandedItemSize = self.isExpanded ? self.staticItemSize : CGSize(width: 134.0, height: 28.0)
                 self.innerItemSize = self.isExpanded ? CGSize(width: 50.0, height: 62.0) : CGSize(width: 24.0, height: 24.0)
-                self.itemSpacing = 8.0
+                self.itemSpacing = itemSpacing
                 
                 var contentSize = CGSize(width: sideInset, height: height)
                 var resultItems: [Item] = []
@@ -2002,6 +2020,9 @@ public final class EntityKeyboardTopPanelComponent: Component {
             
             if let forceActiveItemId = component.forceActiveItemId {
                 self.activeContentItemId = forceActiveItemId
+            } else if component.defaultActiveItemId == nil && !component.automaticallySelectsFirstItem {
+                self.activeContentItemId = nil
+                self.activeSubcontentItemId = nil
             } else if self.activeContentItemId == nil, let defaultActiveItemId = component.defaultActiveItemId {
                 self.activeContentItemId = defaultActiveItemId
             }
@@ -2045,12 +2066,12 @@ public final class EntityKeyboardTopPanelComponent: Component {
             }
             self.items = items
             
-            if self.activeContentItemId == nil {
+            if self.activeContentItemId == nil && component.automaticallySelectsFirstItem {
                 self.activeContentItemId = items.first?.id
             }
             
             let previousItemLayout = self.itemLayout
-            let itemLayout = ItemLayout(isExpanded: isExpanded, containerSideInset: component.containerSideInset, height: availableSize.height, items: self.items.map { item -> ItemLayout.ItemDescription in
+            let itemLayout = ItemLayout(isExpanded: isExpanded, containerSideInset: component.containerSideInset, height: availableSize.height, itemSpacing: component.itemSpacing, items: self.items.map { item -> ItemLayout.ItemDescription in
                 let isStatic = item.id == AnyHashable("static")
                 return ItemLayout.ItemDescription(
                     isStatic: isStatic,
@@ -2063,7 +2084,14 @@ public final class EntityKeyboardTopPanelComponent: Component {
             
             var updatedBounds: CGRect?
             if wasExpanded != isExpanded, let previousItemLayout = previousItemLayout {
-                if !isExpanded {
+                let keepInitialScrollOffset = component.displayHighlightInExpanded && self.scrollView.bounds.origin.x <= 1.0
+                if keepInitialScrollOffset {
+                    let maxContentOffsetX = max(0.0, itemLayout.contentSize.width - availableSize.width)
+                    updatedBounds = CGRect(
+                        origin: CGPoint(x: min(max(0.0, self.scrollView.bounds.origin.x), maxContentOffsetX), y: 0.0),
+                        size: availableSize
+                    )
+                } else if !isExpanded {
                     if let draggingEndOffset = self.draggingEndOffset {
                         if abs(self.scrollView.contentOffset.x - draggingEndOffset) > 16.0 {
                             self.draggingFocusItemIndex = nil
@@ -2073,105 +2101,107 @@ public final class EntityKeyboardTopPanelComponent: Component {
                     }
                 }
                 
-                var visibleBounds = self.scrollView.bounds
-                visibleBounds.origin.x -= 280.0
-                visibleBounds.size.width += 560.0
-                
-                let previousVisibleRange = previousItemLayout.visibleItemRange(for: visibleBounds)
-                if previousVisibleRange.minIndex <= previousVisibleRange.maxIndex {
-                    var itemIndex = self.draggingFocusItemIndex ?? ((previousVisibleRange.minIndex + previousVisibleRange.maxIndex) / 2)
-                    if !isExpanded {
-                        if self.scrollView.bounds.maxX >= self.scrollView.contentSize.width {
-                            itemIndex = component.items.count - 1
-                        }
-                        if self.scrollView.bounds.minX <= 0.0 {
-                            itemIndex = 0
-                        }
-                    }
+                if !keepInitialScrollOffset {
+                    var visibleBounds = self.scrollView.bounds
+                    visibleBounds.origin.x -= 280.0
+                    visibleBounds.size.width += 560.0
                     
-                    var previousItemFrame = previousItemLayout.containerFrame(at: itemIndex)
-                    var updatedItemFrame = itemLayout.containerFrame(at: itemIndex)
-                    
-                    let previousDistanceToItem = (previousItemFrame.minX - self.scrollView.bounds.minX)
-                    let previousDistanceToItemRight = (previousItemFrame.maxX - self.scrollView.bounds.maxX)
-                    var newBounds = CGRect(origin: CGPoint(x: updatedItemFrame.minX - previousDistanceToItem, y: 0.0), size: availableSize)
-                    var useRightAnchor = false
-                    if newBounds.minX > itemLayout.contentSize.width - self.scrollView.bounds.width {
-                        newBounds.origin.x = itemLayout.contentSize.width - self.scrollView.bounds.width
-                        itemIndex = component.items.count - 1
-                        useRightAnchor = true
-                    }
-                    if itemIndex == component.items.count - 1 {
-                        useRightAnchor = true
-                    }
-                    if newBounds.minX < 0.0 {
-                        newBounds.origin.x = 0.0
-                        itemIndex = 0
-                        useRightAnchor = false
-                    }
-                    
-                    if useRightAnchor {
-                        let _ = previousDistanceToItemRight
-                        newBounds.origin.x = itemLayout.contentSize.width - self.scrollView.bounds.width
-                    }
-                    
-                    previousItemFrame = previousItemLayout.containerFrame(at: itemIndex)
-                    updatedItemFrame = itemLayout.containerFrame(at: itemIndex)
-                    
-                    self.draggingFocusItemIndex = itemIndex
-                    
-                    updatedBounds = newBounds
-                    
-                    var updatedVisibleBounds = newBounds
-                    updatedVisibleBounds.origin.x -= 280.0
-                    updatedVisibleBounds.size.width += 560.0
-                    let updatedVisibleRange = itemLayout.visibleItemRange(for: updatedVisibleBounds)
-                    
-                    if useRightAnchor {
-                        let baseFrame = CGRect(origin: CGPoint(x: updatedItemFrame.maxX - previousItemFrame.width, y: previousItemFrame.minY), size: previousItemFrame.size)
-                        for index in updatedVisibleRange.minIndex ... updatedVisibleRange.maxIndex {
-                            let indexDifference = index - itemIndex
-                            if let itemView = self.itemViews[self.items[index].id] {
-                                let itemContainerMaxX = baseFrame.maxX + CGFloat(indexDifference) * (previousItemLayout.itemSize.width + previousItemLayout.itemSpacing)
-                                let itemContainerFrame = CGRect(origin: CGPoint(x: itemContainerMaxX - baseFrame.width, y: baseFrame.minY), size: baseFrame.size)
-                                let itemOuterFrame = previousItemLayout.contentFrame(index: index, containerFrame: itemContainerFrame)
-                                
-                                let itemSize = itemView.bounds.size
-                                itemView.frame = CGRect(origin: CGPoint(x: itemOuterFrame.minX + floor((itemOuterFrame.width - itemSize.width) / 2.0), y: itemOuterFrame.minY + floor((itemOuterFrame.height - itemSize.height) / 2.0)), size: itemSize)
-                                
-                                if let activeContentItemId = self.activeContentItemId, activeContentItemId == self.items[index].id {
-                                    self.highlightedIconBackgroundView.frame = itemOuterFrame
-                                    self.highlightedIconTintBackgroundView.frame = itemOuterFrame
-                                }
+                    let previousVisibleRange = previousItemLayout.visibleItemRange(for: visibleBounds)
+                    if previousVisibleRange.minIndex <= previousVisibleRange.maxIndex {
+                        var itemIndex = self.draggingFocusItemIndex ?? ((previousVisibleRange.minIndex + previousVisibleRange.maxIndex) / 2)
+                        if !isExpanded {
+                            if self.scrollView.bounds.maxX >= self.scrollView.contentSize.width {
+                                itemIndex = component.items.count - 1
+                            }
+                            if self.scrollView.bounds.minX <= 0.0 {
+                                itemIndex = 0
                             }
                         }
-                    } else {
-                        let baseFrame = CGRect(origin: CGPoint(x: updatedItemFrame.minX, y: previousItemFrame.minY), size: previousItemFrame.size)
-                        for index in updatedVisibleRange.minIndex ... updatedVisibleRange.maxIndex {
-                            let indexDifference = index - itemIndex
-                            if let itemView = self.itemViews[self.items[index].id] {
-                                var itemContainerOriginX = baseFrame.minX
-                                if indexDifference > 0 {
-                                    for i in 0 ..< indexDifference {
-                                        itemContainerOriginX += previousItemLayout.itemSpacing
-                                        itemContainerOriginX += previousItemLayout.containerFrame(at: itemIndex + i).width
-                                    }
-                                } else if indexDifference < 0 {
-                                    for i in 0 ..< (-indexDifference) {
-                                        itemContainerOriginX -= previousItemLayout.itemSpacing
-                                        itemContainerOriginX -= previousItemLayout.containerFrame(at: itemIndex - i - 1).width
+                        
+                        var previousItemFrame = previousItemLayout.containerFrame(at: itemIndex)
+                        var updatedItemFrame = itemLayout.containerFrame(at: itemIndex)
+                        
+                        let previousDistanceToItem = (previousItemFrame.minX - self.scrollView.bounds.minX)
+                        let previousDistanceToItemRight = (previousItemFrame.maxX - self.scrollView.bounds.maxX)
+                        var newBounds = CGRect(origin: CGPoint(x: updatedItemFrame.minX - previousDistanceToItem, y: 0.0), size: availableSize)
+                        var useRightAnchor = false
+                        if newBounds.minX > itemLayout.contentSize.width - self.scrollView.bounds.width {
+                            newBounds.origin.x = itemLayout.contentSize.width - self.scrollView.bounds.width
+                            itemIndex = component.items.count - 1
+                            useRightAnchor = true
+                        }
+                        if itemIndex == component.items.count - 1 {
+                            useRightAnchor = true
+                        }
+                        if newBounds.minX < 0.0 {
+                            newBounds.origin.x = 0.0
+                            itemIndex = 0
+                            useRightAnchor = false
+                        }
+                        
+                        if useRightAnchor {
+                            let _ = previousDistanceToItemRight
+                            newBounds.origin.x = itemLayout.contentSize.width - self.scrollView.bounds.width
+                        }
+                        
+                        previousItemFrame = previousItemLayout.containerFrame(at: itemIndex)
+                        updatedItemFrame = itemLayout.containerFrame(at: itemIndex)
+                        
+                        self.draggingFocusItemIndex = itemIndex
+                        
+                        updatedBounds = newBounds
+                        
+                        var updatedVisibleBounds = newBounds
+                        updatedVisibleBounds.origin.x -= 280.0
+                        updatedVisibleBounds.size.width += 560.0
+                        let updatedVisibleRange = itemLayout.visibleItemRange(for: updatedVisibleBounds)
+                        
+                        if useRightAnchor {
+                            let baseFrame = CGRect(origin: CGPoint(x: updatedItemFrame.maxX - previousItemFrame.width, y: previousItemFrame.minY), size: previousItemFrame.size)
+                            for index in updatedVisibleRange.minIndex ... updatedVisibleRange.maxIndex {
+                                let indexDifference = index - itemIndex
+                                if let itemView = self.itemViews[self.items[index].id] {
+                                    let itemContainerMaxX = baseFrame.maxX + CGFloat(indexDifference) * (previousItemLayout.itemSize.width + previousItemLayout.itemSpacing)
+                                    let itemContainerFrame = CGRect(origin: CGPoint(x: itemContainerMaxX - baseFrame.width, y: baseFrame.minY), size: baseFrame.size)
+                                    let itemOuterFrame = previousItemLayout.contentFrame(index: index, containerFrame: itemContainerFrame)
+                                    
+                                    let itemSize = itemView.bounds.size
+                                    itemView.frame = CGRect(origin: CGPoint(x: itemOuterFrame.minX + floor((itemOuterFrame.width - itemSize.width) / 2.0), y: itemOuterFrame.minY + floor((itemOuterFrame.height - itemSize.height) / 2.0)), size: itemSize)
+                                    
+                                    if let activeContentItemId = self.activeContentItemId, activeContentItemId == self.items[index].id {
+                                        self.highlightedIconBackgroundView.frame = itemOuterFrame
+                                        self.highlightedIconTintBackgroundView.frame = itemOuterFrame
                                     }
                                 }
-                                
-                                let previousContainerFrame = previousItemLayout.containerFrame(at: index)
-                                let itemContainerFrame = CGRect(origin: CGPoint(x: itemContainerOriginX, y: previousContainerFrame.minY), size: previousContainerFrame.size)
-                                let itemOuterFrame = previousItemLayout.contentFrame(index: index, containerFrame: itemContainerFrame)
-                                
-                                let itemSize = itemView.bounds.size
-                                itemView.frame = CGRect(origin: CGPoint(x: itemOuterFrame.minX + floor((itemOuterFrame.width - itemSize.width) / 2.0), y: itemOuterFrame.minY + floor((itemOuterFrame.height - itemSize.height) / 2.0)), size: itemSize)
-                                
-                                if let activeContentItemId = self.activeContentItemId, activeContentItemId == self.items[index].id {
-                                    self.highlightedIconBackgroundView.frame = itemOuterFrame
+                            }
+                        } else {
+                            let baseFrame = CGRect(origin: CGPoint(x: updatedItemFrame.minX, y: previousItemFrame.minY), size: previousItemFrame.size)
+                            for index in updatedVisibleRange.minIndex ... updatedVisibleRange.maxIndex {
+                                let indexDifference = index - itemIndex
+                                if let itemView = self.itemViews[self.items[index].id] {
+                                    var itemContainerOriginX = baseFrame.minX
+                                    if indexDifference > 0 {
+                                        for i in 0 ..< indexDifference {
+                                            itemContainerOriginX += previousItemLayout.itemSpacing
+                                            itemContainerOriginX += previousItemLayout.containerFrame(at: itemIndex + i).width
+                                        }
+                                    } else if indexDifference < 0 {
+                                        for i in 0 ..< (-indexDifference) {
+                                            itemContainerOriginX -= previousItemLayout.itemSpacing
+                                            itemContainerOriginX -= previousItemLayout.containerFrame(at: itemIndex - i - 1).width
+                                        }
+                                    }
+                                    
+                                    let previousContainerFrame = previousItemLayout.containerFrame(at: index)
+                                    let itemContainerFrame = CGRect(origin: CGPoint(x: itemContainerOriginX, y: previousContainerFrame.minY), size: previousContainerFrame.size)
+                                    let itemOuterFrame = previousItemLayout.contentFrame(index: index, containerFrame: itemContainerFrame)
+                                    
+                                    let itemSize = itemView.bounds.size
+                                    itemView.frame = CGRect(origin: CGPoint(x: itemOuterFrame.minX + floor((itemOuterFrame.width - itemSize.width) / 2.0), y: itemOuterFrame.minY + floor((itemOuterFrame.height - itemSize.height) / 2.0)), size: itemSize)
+                                    
+                                    if let activeContentItemId = self.activeContentItemId, activeContentItemId == self.items[index].id {
+                                        self.highlightedIconBackgroundView.frame = itemOuterFrame
+                                    }
                                 }
                             }
                         }
@@ -2197,7 +2227,10 @@ public final class EntityKeyboardTopPanelComponent: Component {
             
             if let activeContentItemId = self.activeContentItemId {
                 if let index = self.items.firstIndex(where: { $0.id == activeContentItemId }) {
-                    let itemFrame = itemLayout.containerFrame(at: index)
+                    var itemFrame = itemLayout.containerFrame(at: index)
+                    if isExpanded && component.displayHighlightInExpanded {
+                        itemFrame = CGRect(origin: CGPoint(x: itemFrame.midX - itemFrame.height / 2.0, y: itemFrame.minY), size: CGSize(width: itemFrame.height, height: itemFrame.height))
+                    }
                     
                     var highlightTransition = transition
                     if self.highlightedIconBackgroundView.isHidden {
@@ -2228,8 +2261,9 @@ public final class EntityKeyboardTopPanelComponent: Component {
                 self.highlightedIconBackgroundView.isHidden = true
                 self.highlightedIconTintBackgroundView.isHidden = true
             }
-            transition.setAlpha(view: self.highlightedIconBackgroundView, alpha: isExpanded ? 0.0 : 1.0)
-            transition.setAlpha(view: self.highlightedIconTintBackgroundView, alpha: isExpanded ? 0.0 : 1.0)
+            let highlightAlpha: CGFloat = isExpanded && !component.displayHighlightInExpanded ? 0.0 : 1.0
+            transition.setAlpha(view: self.highlightedIconBackgroundView, alpha: highlightAlpha)
+            transition.setAlpha(view: self.highlightedIconTintBackgroundView, alpha: highlightAlpha)
             
             panelEnvironment.visibilityFractionUpdated.connect { [weak self] (fraction, transition) in
                 guard let strongSelf = self else {

@@ -81,7 +81,7 @@ public extension Signal {
 public extension Signal {
     func awaitForCompletion() async throws {
         let stream = self.asyncStream(.unbounded)
-        for try await value in stream {}
+        for try await _ in stream {}
     }
 }
 

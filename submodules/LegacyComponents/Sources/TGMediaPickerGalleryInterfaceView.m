@@ -439,7 +439,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
         };
         
         _captionMixin.stickersContext = stickersContext;
-        [_captionMixin createInputPanelIfNeeded];
         
         _headerWrapperView = [[TGMediaPickerGalleryWrapperView alloc] init];
         [_wrapperView addSubview:_headerWrapperView];
@@ -485,6 +484,8 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
         
         if ([UIDevice currentDevice].userInterfaceIdiom != UIUserInterfaceIdiomPad)
             [_wrapperView addSubview:_landscapeToolbarView];
+        
+        [_captionMixin createInputPanelIfNeeded];
         
         if (hasCoverButton) {
             _cancelCoverButton = [[TGModernButton alloc] init];
@@ -1480,7 +1481,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
             _portraitToolbarView.alpha = alpha;
             _landscapeToolbarView.alpha = alpha;
             _captionMixin.inputPanelView.alpha = alpha;
-            _captionMixin.backgroundView.alpha = alpha;
             _captionMixin.livePhotoButtonView.alpha = alpha;
         } completion:^(BOOL finished)
         {
@@ -1492,7 +1492,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
                 _portraitToolbarView.userInteractionEnabled = !hidden;
                 _landscapeToolbarView.userInteractionEnabled = !hidden;
                 _captionMixin.inputPanelView.userInteractionEnabled = !hidden;
-                _captionMixin.backgroundView.userInteractionEnabled = !hidden;
                 _captionMixin.livePhotoButtonView.userInteractionEnabled = !hidden;
             }
         }];
@@ -1531,9 +1530,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
         
         _captionMixin.inputPanelView.alpha = alpha;
         _captionMixin.inputPanelView.userInteractionEnabled = !hidden;
-        
-        _captionMixin.backgroundView.alpha = alpha;
-        _captionMixin.backgroundView.userInteractionEnabled = !hidden;
         
         _captionMixin.livePhotoButtonView.alpha = alpha;
         _captionMixin.livePhotoButtonView.userInteractionEnabled = !hidden;
@@ -1722,7 +1718,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
 - (void)immediateEditorTransitionIn {
     [self setSelectionInterfaceHidden:true animated:false];
     _captionMixin.inputPanelView.alpha = 0.0f;
-    _captionMixin.backgroundView.alpha = 0.0f;
     _portraitToolbarView.doneButton.alpha = 0.0f;
     _landscapeToolbarView.doneButton.alpha = 0.0f;
     
@@ -1743,7 +1738,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
     [UIView animateWithDuration:0.2 animations:^
     {
         _captionMixin.inputPanelView.alpha = 0.0f;
-        _captionMixin.backgroundView.alpha = 0.0f;
         _portraitToolbarView.doneButton.alpha = 0.0f;
         _landscapeToolbarView.doneButton.alpha = 0.0f;
     }];
@@ -1756,7 +1750,6 @@ static TGMediaLivePhotoMode TGMediaPickerGalleryResolvedLivePhotoMode(NSNumber *
     [UIView animateWithDuration:0.3 animations:^
     {
         _captionMixin.inputPanelView.alpha = 1.0f;
-        _captionMixin.backgroundView.alpha = 1.0f;
         _portraitToolbarView.doneButton.alpha = 1.0f;
         _landscapeToolbarView.doneButton.alpha = 1.0f;
     }];

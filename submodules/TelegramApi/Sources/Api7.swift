@@ -259,7 +259,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: Int32?
@@ -275,7 +275,7 @@ public extension Api {
             var _8: Buffer?
             _8 = parseBytes(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
@@ -608,35 +608,35 @@ public extension Api {
             var _4: Int32?
             _4 = reader.readInt32()
             var _5: Int32?
-            if Int(_1!) & Int(1 << 4) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
                 _5 = reader.readInt32()
             }
             var _6: Int32?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _6 = reader.readInt32()
             }
             var _7: Int32?
-            if Int(_1!) & Int(1 << 2) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
                 _7 = reader.readInt32()
             }
             var _8: Int32?
-            if Int(_1!) & Int(1 << 3) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 _8 = reader.readInt32()
             }
             var _9: Int32?
-            if Int(_1!) & Int(1 << 7) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 7) != 0 {
                 _9 = reader.readInt32()
             }
             var _10: Int32?
-            if Int(_1!) & Int(1 << 10) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
                 _10 = reader.readInt32()
             }
             var _11: String?
-            if Int(_1!) & Int(1 << 8) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 8) != 0 {
                 _11 = parseString(reader)
             }
             var _12: Api.StarsSubscriptionPricing?
-            if Int(_1!) & Int(1 << 9) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 9) != 0 {
                 if let signature = reader.readInt32() {
                     _12 = Api.parse(reader, signature: signature) as? Api.StarsSubscriptionPricing
                 }
@@ -645,14 +645,14 @@ public extension Api {
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 4) == 0) || _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 1) == 0) || _6 != nil
-            let _c7 = (Int(_1!) & Int(1 << 2) == 0) || _7 != nil
-            let _c8 = (Int(_1!) & Int(1 << 3) == 0) || _8 != nil
-            let _c9 = (Int(_1!) & Int(1 << 7) == 0) || _9 != nil
-            let _c10 = (Int(_1!) & Int(1 << 10) == 0) || _10 != nil
-            let _c11 = (Int(_1!) & Int(1 << 8) == 0) || _11 != nil
-            let _c12 = (Int(_1!) & Int(1 << 9) == 0) || _12 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _6 != nil
+            let _c7 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _7 != nil
+            let _c8 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _8 != nil
+            let _c9 = (Int(_1 ?? 0) & Int(1 << 7) == 0) || _9 != nil
+            let _c10 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _10 != nil
+            let _c11 = (Int(_1 ?? 0) & Int(1 << 8) == 0) || _11 != nil
+            let _c12 = (Int(_1 ?? 0) & Int(1 << 9) == 0) || _12 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 {
                 return Api.ExportedChatInvite.chatInviteExported(Cons_chatInviteExported(flags: _1!, link: _2!, adminId: _3!, date: _4!, startDate: _5, expireDate: _6, usageLimit: _7, usage: _8, requested: _9, subscriptionExpired: _10, title: _11, subscriptionPricing: _12))
             }
@@ -925,11 +925,11 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: String?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _2 = parseString(reader)
             }
             var _3: Api.TextWithEntities?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
                 }
@@ -937,8 +937,8 @@ public extension Api {
             var _4: Int64?
             _4 = reader.readInt64()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
             let _c4 = _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.FactCheck.factCheck(Cons_factCheck(flags: _1!, country: _2, text: _3, hash: _4!))
@@ -1055,7 +1055,7 @@ public extension Api {
             var _3: String?
             _3 = parseString(reader)
             var _4: Api.ChatPhoto?
-            if Int(_1!) & Int(1 << 3) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.ChatPhoto
                 }
@@ -1063,7 +1063,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 3) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.Folder.folder(Cons_folder(flags: _1!, id: _2!, title: _3!, photo: _4))
             }
@@ -1242,7 +1242,7 @@ public extension Api {
             var _6: Int32?
             _6 = reader.readInt32()
             var _7: Int64?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _7 = reader.readInt64()
             }
             var _8: Int32?
@@ -1268,7 +1268,7 @@ public extension Api {
                 _16 = Api.parse(reader, signature: signature) as? Api.PeerNotifySettings
             }
             var _17: Api.DraftMessage?
-            if Int(_1!) & Int(1 << 4) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
                 if let signature = reader.readInt32() {
                     _17 = Api.parse(reader, signature: signature) as? Api.DraftMessage
                 }
@@ -1279,7 +1279,7 @@ public extension Api {
             let _c4 = _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
-            let _c7 = (Int(_1!) & Int(1 << 0) == 0) || _7 != nil
+            let _c7 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _7 != nil
             let _c8 = _8 != nil
             let _c9 = _9 != nil
             let _c10 = _10 != nil
@@ -1289,7 +1289,7 @@ public extension Api {
             let _c14 = _14 != nil
             let _c15 = _15 != nil
             let _c16 = _16 != nil
-            let _c17 = (Int(_1!) & Int(1 << 4) == 0) || _17 != nil
+            let _c17 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _17 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 && _c15 && _c16 && _c17 {
                 return Api.ForumTopic.forumTopic(Cons_forumTopic(flags: _1!, id: _2!, date: _3!, peer: _4!, title: _5!, iconColor: _6!, iconEmojiId: _7, topMessage: _8!, readInboxMaxId: _9!, readOutboxMaxId: _10!, unreadCount: _11!, unreadMentionsCount: _12!, unreadReactionsCount: _13!, unreadPollVotesCount: _14!, fromId: _15!, notifySettings: _16!, draft: _17))
             }
@@ -1436,7 +1436,7 @@ public extension Api {
                 _7 = Api.parse(reader, signature: signature) as? Api.Photo
             }
             var _8: Api.Document?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _8 = Api.parse(reader, signature: signature) as? Api.Document
                 }
@@ -1448,7 +1448,7 @@ public extension Api {
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             let _c7 = _7 != nil
-            let _c8 = (Int(_1!) & Int(1 << 0) == 0) || _8 != nil
+            let _c8 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _8 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 {
                 return Api.Game.game(Cons_game(flags: _1!, id: _2!, accessHash: _3!, shortName: _4!, title: _5!, description: _6!, photo: _7!, document: _8))
             }
@@ -1521,14 +1521,14 @@ public extension Api {
             var _4: Int64?
             _4 = reader.readInt64()
             var _5: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _5 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.GeoPoint.geoPoint(Cons_geoPoint(flags: _1!, long: _2!, lat: _3!, accessHash: _4!, accuracyRadius: _5))
             }
@@ -1596,22 +1596,22 @@ public extension Api {
             var _2: String?
             _2 = parseString(reader)
             var _3: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _3 = parseString(reader)
             }
             var _4: String?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _4 = parseString(reader)
             }
             var _5: String?
-            if Int(_1!) & Int(1 << 2) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
                 _5 = parseString(reader)
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 2) == 0) || _5 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.GeoPointAddress.geoPointAddress(Cons_geoPointAddress(flags: _1!, countryIso2: _2!, state: _3, city: _4, street: _5))
             }
@@ -1666,18 +1666,18 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int64?
-            if Int(_1!) & Int(1 << 5) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
                 _2 = reader.readInt64()
             }
             var _3: Api.DisallowedGiftsSettings?
-            if Int(_1!) & Int(1 << 6) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.DisallowedGiftsSettings
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 5) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 6) == 0) || _3 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.GlobalPrivacySettings.globalPrivacySettings(Cons_globalPrivacySettings(flags: _1!, noncontactPeersPaidStars: _2, disallowedGifts: _3))
             }
@@ -1807,23 +1807,23 @@ public extension Api {
             var _4: Int32?
             _4 = reader.readInt32()
             var _5: String?
-            if Int(_1!) & Int(1 << 3) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 _5 = parseString(reader)
             }
             var _6: Int32?
-            if Int(_1!) & Int(1 << 4) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
                 _6 = reader.readInt32()
             }
             var _7: Int32?
-            if Int(_1!) & Int(1 << 5) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
                 _7 = reader.readInt32()
             }
             var _8: Int32?
-            if Int(_1!) & Int(1 << 7) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 7) != 0 {
                 _8 = reader.readInt32()
             }
             var _9: Int32?
-            if Int(_1!) & Int(1 << 10) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 10) != 0 {
                 _9 = reader.readInt32()
             }
             var _10: Int32?
@@ -1831,15 +1831,15 @@ public extension Api {
             var _11: Int32?
             _11 = reader.readInt32()
             var _12: String?
-            if Int(_1!) & Int(1 << 16) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 16) != 0 {
                 _12 = parseString(reader)
             }
             var _13: Int64?
-            if Int(_1!) & Int(1 << 20) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 20) != 0 {
                 _13 = reader.readInt64()
             }
             var _14: Api.Peer?
-            if Int(_1!) & Int(1 << 21) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 21) != 0 {
                 if let signature = reader.readInt32() {
                     _14 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
@@ -1848,16 +1848,16 @@ public extension Api {
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 4) == 0) || _6 != nil
-            let _c7 = (Int(_1!) & Int(1 << 5) == 0) || _7 != nil
-            let _c8 = (Int(_1!) & Int(1 << 7) == 0) || _8 != nil
-            let _c9 = (Int(_1!) & Int(1 << 10) == 0) || _9 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _6 != nil
+            let _c7 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _7 != nil
+            let _c8 = (Int(_1 ?? 0) & Int(1 << 7) == 0) || _8 != nil
+            let _c9 = (Int(_1 ?? 0) & Int(1 << 10) == 0) || _9 != nil
             let _c10 = _10 != nil
             let _c11 = _11 != nil
-            let _c12 = (Int(_1!) & Int(1 << 16) == 0) || _12 != nil
-            let _c13 = (Int(_1!) & Int(1 << 20) == 0) || _13 != nil
-            let _c14 = (Int(_1!) & Int(1 << 21) == 0) || _14 != nil
+            let _c12 = (Int(_1 ?? 0) & Int(1 << 16) == 0) || _12 != nil
+            let _c13 = (Int(_1 ?? 0) & Int(1 << 20) == 0) || _13 != nil
+            let _c14 = (Int(_1 ?? 0) & Int(1 << 21) == 0) || _14 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 && _c12 && _c13 && _c14 {
                 return Api.GroupCall.groupCall(Cons_groupCall(flags: _1!, id: _2!, accessHash: _3!, participantsCount: _4!, title: _5, streamDcId: _6, recordStartDate: _7, scheduleDate: _8, unmutedVideoCount: _9, unmutedVideoLimit: _10!, version: _11!, inviteLink: _12, sendPaidMessagesStars: _13, defaultSendAs: _14))
             }
@@ -1927,7 +1927,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.Peer?
-            if Int(_1!) & Int(1 << 3) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.Peer
                 }
@@ -1935,7 +1935,7 @@ public extension Api {
             var _3: Int64?
             _3 = reader.readInt64()
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 3) == 0) || _2 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.GroupCallDonor.groupCallDonor(Cons_groupCallDonor(flags: _1!, peerId: _2, stars: _3!))
@@ -2010,7 +2010,7 @@ public extension Api {
                 _5 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
             }
             var _6: Int64?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _6 = reader.readInt64()
             }
             let _c1 = _1 != nil
@@ -2018,7 +2018,7 @@ public extension Api {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.GroupCallMessage.groupCallMessage(Cons_groupCallMessage(flags: _1!, id: _2!, fromId: _3!, date: _4!, message: _5!, paidMessageStars: _6))
             }

@@ -140,13 +140,15 @@ public struct TelegramMediaPollResults: Equatable, PostboxCoding {
     public let recentVoters: [PeerId]
     public let solution: TelegramMediaPollResults.Solution?
     public let hasUnseenVotes: Bool?
+    public let canViewStats: Bool
 
-    public init(voters: [TelegramMediaPollOptionVoters]?, totalVoters: Int32?, recentVoters: [PeerId], solution: TelegramMediaPollResults.Solution?, hasUnseenVotes: Bool?) {
+    public init(voters: [TelegramMediaPollOptionVoters]?, totalVoters: Int32?, recentVoters: [PeerId], solution: TelegramMediaPollResults.Solution?, hasUnseenVotes: Bool?, canViewStats: Bool) {
         self.voters = voters
         self.totalVoters = totalVoters
         self.recentVoters = recentVoters
         self.solution = solution
         self.hasUnseenVotes = hasUnseenVotes
+        self.canViewStats = canViewStats
     }
 
     public init(decoder: PostboxDecoder) {
@@ -161,6 +163,7 @@ public struct TelegramMediaPollResults: Equatable, PostboxCoding {
             self.solution = nil
         }
         self.hasUnseenVotes = decoder.decodeOptionalBoolForKey("uns")
+        self.canViewStats = decoder.decodeBoolForKey("cvs", orElse: false)
     }
 
     public func encode(_ encoder: PostboxEncoder) {
@@ -191,6 +194,7 @@ public struct TelegramMediaPollResults: Equatable, PostboxCoding {
         } else {
             encoder.encodeNil(forKey: "uns")
         }
+        encoder.encodeBool(self.canViewStats, forKey: "cvs")
     }
 }
 
@@ -273,8 +277,10 @@ public final class TelegramMediaPoll: Media, Equatable {
     public let hideResultsUntilClose: Bool
     public let isCreator: Bool
     public let attachedMedia: Media?
+    public let restrictToSubscribers: Bool
+    public let countries: [String]
 
-    public init(pollId: MediaId, publicity: TelegramMediaPollPublicity, kind: TelegramMediaPollKind, text: String, textEntities: [MessageTextEntity], options: [TelegramMediaPollOption], correctAnswers: [Data]?, results: TelegramMediaPollResults, isClosed: Bool, deadlineTimeout: Int32?, deadlineDate: Int32?, pollHash: Int64, openAnswers: Bool = false, revotingDisabled: Bool = false, shuffleAnswers: Bool = false, hideResultsUntilClose: Bool = false, isCreator: Bool = false, attachedMedia: Media? = nil) {
+    public init(pollId: MediaId, publicity: TelegramMediaPollPublicity, kind: TelegramMediaPollKind, text: String, textEntities: [MessageTextEntity], options: [TelegramMediaPollOption], correctAnswers: [Data]?, results: TelegramMediaPollResults, isClosed: Bool, deadlineTimeout: Int32?, deadlineDate: Int32?, pollHash: Int64, openAnswers: Bool = false, revotingDisabled: Bool = false, shuffleAnswers: Bool = false, hideResultsUntilClose: Bool = false, isCreator: Bool = false, attachedMedia: Media? = nil, restrictToSubscribers: Bool = false, countries: [String] = []) {
         self.pollId = pollId
         self.publicity = publicity
         self.kind = kind
@@ -293,6 +299,8 @@ public final class TelegramMediaPoll: Media, Equatable {
         self.hideResultsUntilClose = hideResultsUntilClose
         self.isCreator = isCreator
         self.attachedMedia = attachedMedia
+        self.restrictToSubscribers = restrictToSubscribers
+        self.countries = countries
     }
 
     public init(decoder: PostboxDecoder) {
@@ -307,7 +315,7 @@ public final class TelegramMediaPoll: Media, Equatable {
         self.textEntities = decoder.decodeObjectArrayWithDecoderForKey("te")
         self.options = decoder.decodeObjectArrayWithDecoderForKey("os")
         self.correctAnswers = decoder.decodeOptionalDataArrayForKey("ca")
-        self.results = decoder.decodeObjectForKey("rs", decoder: { TelegramMediaPollResults(decoder: $0) }) as? TelegramMediaPollResults ?? TelegramMediaPollResults(voters: nil, totalVoters: nil, recentVoters: [], solution: nil, hasUnseenVotes: nil)
+        self.results = decoder.decodeObjectForKey("rs", decoder: { TelegramMediaPollResults(decoder: $0) }) as? TelegramMediaPollResults ?? TelegramMediaPollResults(voters: nil, totalVoters: nil, recentVoters: [], solution: nil, hasUnseenVotes: nil, canViewStats: false)
         self.isClosed = decoder.decodeInt32ForKey("ic", orElse: 0) != 0
         self.deadlineTimeout = decoder.decodeOptionalInt32ForKey("dt")
         self.deadlineDate = decoder.decodeOptionalInt32ForKey("dd")
@@ -318,6 +326,8 @@ public final class TelegramMediaPoll: Media, Equatable {
         self.hideResultsUntilClose = decoder.decodeInt32ForKey("hr", orElse: 0) != 0
         self.isCreator = decoder.decodeInt32ForKey("cr", orElse: 0) != 0
         self.attachedMedia = decoder.decodeObjectForKey("am") as? Media
+        self.restrictToSubscribers = decoder.decodeInt32ForKey("sub", orElse: 0) != 0
+        self.countries = decoder.decodeStringArrayForKey("cnt")
     }
 
     public func encode(_ encoder: PostboxEncoder) {
@@ -357,6 +367,8 @@ public final class TelegramMediaPoll: Media, Equatable {
         } else {
             encoder.encodeNil(forKey: "am")
         }
+        encoder.encodeInt32(self.restrictToSubscribers ? 1 : 0, forKey: "sub")
+        encoder.encodeStringArray(self.countries, forKey: "cnt")
     }
 
     public func isEqual(to other: Media) -> Bool {
@@ -427,6 +439,12 @@ public final class TelegramMediaPoll: Media, Equatable {
         } else if (lhs.attachedMedia == nil) != (rhs.attachedMedia == nil) {
             return false
         }
+        if lhs.restrictToSubscribers != rhs.restrictToSubscribers {
+            return false
+        }
+        if lhs.countries != rhs.countries {
+            return false
+        }
         return true
     }
 
@@ -446,21 +464,21 @@ public final class TelegramMediaPoll: Media, Equatable {
                 }
                 updatedResults = TelegramMediaPollResults(voters: updatedVoters.map({ voters in
                     return TelegramMediaPollOptionVoters(selected: selectedOpaqueIdentifiers.contains(voters.opaqueIdentifier), opaqueIdentifier: voters.opaqueIdentifier, count: voters.count, isCorrect: correctOpaqueIdentifiers.contains(voters.opaqueIdentifier), recentVoters: voters.recentVoters)
-                }), totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes)
+                }), totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes, canViewStats: results.canViewStats)
             } else if let updatedVoters = results.voters {
-                updatedResults = TelegramMediaPollResults(voters: updatedVoters, totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes)
+                updatedResults = TelegramMediaPollResults(voters: updatedVoters, totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes, canViewStats: results.canViewStats)
             } else {
-                updatedResults = TelegramMediaPollResults(voters: self.results.voters, totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes)
+                updatedResults = TelegramMediaPollResults(voters: self.results.voters, totalVoters: results.totalVoters, recentVoters: results.recentVoters, solution: results.solution ?? self.results.solution, hasUnseenVotes: results.hasUnseenVotes ?? self.results.hasUnseenVotes, canViewStats: results.canViewStats)
             }
         } else {
             updatedResults = results
         }
-        return TelegramMediaPoll(pollId: self.pollId, publicity: self.publicity, kind: self.kind, text: self.text, textEntities: self.textEntities, options: self.options, correctAnswers: self.correctAnswers, results: updatedResults, isClosed: self.isClosed, deadlineTimeout: self.deadlineTimeout, deadlineDate: self.deadlineDate, pollHash: self.pollHash, openAnswers: self.openAnswers, revotingDisabled: self.revotingDisabled, shuffleAnswers: self.shuffleAnswers, hideResultsUntilClose: self.hideResultsUntilClose, isCreator: self.isCreator, attachedMedia: self.attachedMedia)
+        return TelegramMediaPoll(pollId: self.pollId, publicity: self.publicity, kind: self.kind, text: self.text, textEntities: self.textEntities, options: self.options, correctAnswers: self.correctAnswers, results: updatedResults, isClosed: self.isClosed, deadlineTimeout: self.deadlineTimeout, deadlineDate: self.deadlineDate, pollHash: self.pollHash, openAnswers: self.openAnswers, revotingDisabled: self.revotingDisabled, shuffleAnswers: self.shuffleAnswers, hideResultsUntilClose: self.hideResultsUntilClose, isCreator: self.isCreator, attachedMedia: self.attachedMedia, restrictToSubscribers: self.restrictToSubscribers, countries: self.countries)
     }
     
     public func withoutUnreadResults() -> TelegramMediaPoll {
-        let updatedResults = TelegramMediaPollResults(voters: self.results.voters, totalVoters: self.results.totalVoters, recentVoters: self.results.recentVoters, solution: self.results.solution, hasUnseenVotes: false)
-        return TelegramMediaPoll(pollId: self.pollId, publicity: self.publicity, kind: self.kind, text: self.text, textEntities: self.textEntities, options: self.options, correctAnswers: self.correctAnswers, results: updatedResults, isClosed: self.isClosed, deadlineTimeout: self.deadlineTimeout, deadlineDate: self.deadlineDate, pollHash: self.pollHash, openAnswers: self.openAnswers, revotingDisabled: self.revotingDisabled, shuffleAnswers: self.shuffleAnswers, hideResultsUntilClose: self.hideResultsUntilClose, isCreator: self.isCreator, attachedMedia: self.attachedMedia)
+        let updatedResults = TelegramMediaPollResults(voters: self.results.voters, totalVoters: self.results.totalVoters, recentVoters: self.results.recentVoters, solution: self.results.solution, hasUnseenVotes: false, canViewStats: self.results.canViewStats)
+        return TelegramMediaPoll(pollId: self.pollId, publicity: self.publicity, kind: self.kind, text: self.text, textEntities: self.textEntities, options: self.options, correctAnswers: self.correctAnswers, results: updatedResults, isClosed: self.isClosed, deadlineTimeout: self.deadlineTimeout, deadlineDate: self.deadlineDate, pollHash: self.pollHash, openAnswers: self.openAnswers, revotingDisabled: self.revotingDisabled, shuffleAnswers: self.shuffleAnswers, hideResultsUntilClose: self.hideResultsUntilClose, isCreator: self.isCreator, attachedMedia: self.attachedMedia, restrictToSubscribers: self.restrictToSubscribers, countries: self.countries)
     }
 }
 

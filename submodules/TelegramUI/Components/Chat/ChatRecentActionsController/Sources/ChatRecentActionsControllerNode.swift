@@ -357,8 +357,15 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                     return .single(peer?._asPeer())
                 }
             } else {
-                resolveSignal = context.account.postbox.loadedPeerWithId(strongSelf.peer.id)
-                |> map(Optional.init)
+                resolveSignal = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: strongSelf.peer.id))
+                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                    if let peer {
+                        return .single(peer)
+                    } else {
+                        return .never()
+                    }
+                }
+                |> map { Optional($0._asPeer()) }
             }
             strongSelf.resolvePeerByNameDisposable.set((resolveSignal
             |> deliverOnMainQueue).startStrict(next: { peer in
@@ -659,7 +666,10 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
         }, requestToggleTodoMessageItem: { _, _, _ in
         }, displayTodoToggleUnavailable: { _ in
         }, openStarsPurchase: { _ in
-        }, openRankInfo: { _, _, _ in }, openSetPeerAvatar: {}, automaticMediaDownloadSettings: self.automaticMediaDownloadSettings,
+        }, openRankInfo: { _, _, _ in
+        }, openSetPeerAvatar: {
+        }, displayPollRestrictedToast: { _ in
+        }, automaticMediaDownloadSettings: self.automaticMediaDownloadSettings,
         pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: context, backgroundNode: self.backgroundNode))
         self.controllerInteraction = controllerInteraction
         
@@ -1001,7 +1011,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                     if peer is TelegramChannel, let navigationController = strongSelf.getNavigationController() {
                         strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: navigationController, context: strongSelf.context, chatLocation: .peer(EnginePeer(peer)), peekData: peekData, animated: true))
                     } else {
-                        if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                        if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: nil, peer: EnginePeer(peer), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                             strongSelf.pushController(infoController)
                         }
                     }
@@ -1021,7 +1031,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
         |> deliverOnMainQueue).startStrict(next: { [weak self] peer in
             if let strongSelf = self {
                 if let peer = peer {
-                    if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: nil, peer: peer._asPeer(), mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
+                    if let infoController = strongSelf.context.sharedContext.makePeerInfoController(context: strongSelf.context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
                         strongSelf.pushController(infoController)
                     }
                 }
@@ -1476,7 +1486,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
                         break
                     case .sendGift:
                         break
-                    case .chats, .contacts, .compose, .postStory, .settings, .unknownDeepLink, .oauth, .createBot:
+                    case .chats, .contacts, .compose, .postStory, .settings, .unknownDeepLink, .oauth, .createBot, .textStyle:
                         break
                 }
             }
@@ -1484,7 +1494,7 @@ final class ChatRecentActionsControllerNode: ViewControllerTracingNode {
     }
     
     private func presentAutoremoveSetup() {
-        /*let controller = ChatTimerScreen(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, peerId: self.peer.id, style: .default, mode: .autoremove, currentTime: currentValue, dismissByTapOutside: true, completion: { [weak self] value in
+        /*let controller = ChatTimerScreen(context: self.context, updatedPresentationData: self.controller?.updatedPresentationData, peerId: self.peer.id, style: .default, mode: .autoremove, currentTime: currentValue, completion: { [weak self] value in
             guard let strongSelf = self else {
                 return
             }

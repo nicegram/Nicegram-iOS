@@ -1,7 +1,7 @@
 import Foundation
 import Display
 import SwiftSignalKit
-import Postbox
+import TelegramCore
 import AccountContext
 import OverlayStatusController
 import UrlWhitelist
@@ -9,7 +9,7 @@ import TelegramPresentationData
 import AlertComponent
 import UrlHandling
 
-public func openUserGeneratedUrl(context: AccountContext, peerId: PeerId?, url: String, concealed: Bool, skipUrlAuth: Bool = false, skipConcealedAlert: Bool = false, forceDark: Bool = false, present: @escaping (ViewController) -> Void, openResolved: @escaping (ResolvedUrl) -> Void, progress: Promise<Bool>? = nil, alertDisplayUpdated: ((ViewController?) -> Void)? = nil) -> Disposable {
+public func openUserGeneratedUrl(context: AccountContext, peerId: EnginePeer.Id?, url: String, concealed: Bool, skipUrlAuth: Bool = false, skipConcealedAlert: Bool = false, forceDark: Bool = false, present: @escaping (ViewController) -> Void, openResolved: @escaping (ResolvedUrl) -> Void, progress: Promise<Bool>? = nil, alertDisplayUpdated: ((ViewController?) -> Void)? = nil) -> Disposable {
     var concealed = concealed
     
     var presentationData = context.sharedContext.currentPresentationData.with { $0 }

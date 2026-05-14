@@ -168,7 +168,7 @@ extension VideoChatScreenComponent.View {
             for peer in displayAsPeers {
                 if peer.peer.id == callState.myPeerId {
                     let avatarSize = CGSize(width: 28.0, height: 28.0)
-                    items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_DisplayAs, textLayout: .secondLineWithValue(EnginePeer(peer.peer).displayTitle(strings: environment.strings, displayOrder: currentCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)), icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: peerAvatarCompleteImage(account: currentCall.accountContext.account, peer: EnginePeer(peer.peer), size: avatarSize)), action: { [weak self] c, _ in
+                    items.append(.action(ContextMenuActionItem(text: environment.strings.VoiceChat_DisplayAs, textLayout: .secondLineWithValue(peer.peer.displayTitle(strings: environment.strings, displayOrder: currentCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder)), icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: avatarSize, signal: peerAvatarCompleteImage(account: currentCall.accountContext.account, peer: peer.peer, size: avatarSize)), action: { [weak self] c, _ in
                         guard let self else {
                             return
                         }
@@ -625,10 +625,10 @@ extension VideoChatScreenComponent.View {
         var isGroup = false
         if let displayAsPeers = self.displayAsPeers {
             for peer in displayAsPeers {
-                if peer.peer is TelegramGroup {
+                if case .legacyGroup = peer.peer {
                     isGroup = true
                     break
-                } else if let peer = peer.peer as? TelegramChannel, case .group = peer.info {
+                } else if case let .channel(channel) = peer.peer, case .group = channel.info {
                     isGroup = true
                     break
                 }
@@ -645,7 +645,7 @@ extension VideoChatScreenComponent.View {
                 if peer.peer.id.namespace == Namespaces.Peer.CloudUser {
                     subtitle = environment.strings.VoiceChat_PersonalAccount
                 } else if let subscribers = peer.subscribers {
-                    if let peer = peer.peer as? TelegramChannel, case .broadcast = peer.info {
+                    if case let .channel(channel) = peer.peer, case .broadcast = channel.info {
                         subtitle = environment.strings.Conversation_StatusSubscribers(subscribers)
                     } else {
                         subtitle = environment.strings.Conversation_StatusMembers(subscribers)
@@ -655,7 +655,7 @@ extension VideoChatScreenComponent.View {
                 let isSelected = peer.peer.id == myPeerId
                 let extendedAvatarSize = CGSize(width: 35.0, height: 35.0)
                 let theme = environment.theme
-                let avatarSignal = peerAvatarCompleteImage(account: groupCall.accountContext.account, peer: EnginePeer(peer.peer), size: avatarSize)
+                let avatarSignal = peerAvatarCompleteImage(account: groupCall.accountContext.account, peer: peer.peer, size: avatarSize)
                 |> map { image -> UIImage? in
                     if isSelected, let image = image {
                         return generateImage(extendedAvatarSize, rotatedContext: { size, context in
@@ -676,7 +676,7 @@ extension VideoChatScreenComponent.View {
                     }
                 }
                 
-                items.append(.action(ContextMenuActionItem(text: EnginePeer(peer.peer).displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), textLayout: subtitle.flatMap { .secondLineWithValue($0) } ?? .singleLine, icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: isSelected ? extendedAvatarSize : avatarSize, signal: avatarSignal), action: { [weak self] _, f in
+                items.append(.action(ContextMenuActionItem(text: peer.peer.displayTitle(strings: environment.strings, displayOrder: groupCall.accountContext.sharedContext.currentPresentationData.with({ $0 }).nameDisplayOrder), textLayout: subtitle.flatMap { .secondLineWithValue($0) } ?? .singleLine, icon: { _ in nil }, iconSource: ContextMenuActionItemIconSource(size: isSelected ? extendedAvatarSize : avatarSize, signal: avatarSignal), action: { [weak self] _, f in
                     f(.default)
                     
                     guard let self, case let .group(groupCall) = self.currentCall else {

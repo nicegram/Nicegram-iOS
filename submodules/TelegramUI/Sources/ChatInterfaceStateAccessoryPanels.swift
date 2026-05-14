@@ -230,6 +230,9 @@ func textInputAccessoryPanel(
                     previousTapTimestamp = CFAbsoluteTimeGetCurrent()
                     interfaceInteraction?.presentReplyOptions(sourceView)
                 },
+                longPressAction: { _ in
+                    interfaceInteraction?.navigateToMessage(replyMessageSubject.messageId, false, true, ChatLoadingMessageSubject.generic)
+                },
                 dismiss: { _ in
                     interfaceInteraction?.setupReplyMessage(nil, nil, { _, f in f() })
                 }

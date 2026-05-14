@@ -3,7 +3,6 @@ import UIKit
 import SwiftSignalKit
 import AsyncDisplayKit
 import Display
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import AccountContext
@@ -50,7 +49,7 @@ public func quickReplyNameAlertController(context: AccountContext, updatedPresen
             component: AnyComponent(
                 AlertInputFieldComponent(
                     context: context,
-                    initialValue: nil,
+                    initialValue: value,
                     placeholder: strings.QuickReply_ShortcutPlaceholder,
                     characterLimit: characterLimit,
                     hasClearButton: false,
@@ -59,6 +58,21 @@ public func quickReplyNameAlertController(context: AccountContext, updatedPresen
                     autocorrectionType: .no,
                     isInitiallyFocused: true,
                     externalState: inputState,
+                    shouldChangeText: { updatedText in
+                        if updatedText.isEmpty {
+                            return true
+                        }
+                        for scalar in updatedText.unicodeScalars {
+                            if scalar.value == 0x5f || scalar.value == 0x200c || scalar.value == 0xb7 || (scalar.value >= 0xd80 && scalar.value <= 0xdff) {
+                                continue
+                            }
+                            if CharacterSet.letters.contains(scalar) || CharacterSet.decimalDigits.contains(scalar) {
+                                continue
+                            }
+                            return false
+                        }
+                        return true
+                    },
                     returnKeyAction: {
                         applyImpl?()
                     }

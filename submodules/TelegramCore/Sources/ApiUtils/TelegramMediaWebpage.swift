@@ -44,6 +44,8 @@ func telegramMediaWebpageAttributeFromApiWebpageAttribute(_ attribute: Api.WebPa
         return .giftAuction(TelegramMediaWebpageGiftAuctionAttribute(gift: gift, endDate: endDate))
     case .webPageAttributeStory:
         return nil
+    case let .webPageAttributeAiComposeTone(webPageAttributeAiComposeTone):
+        return .aiTextStyle(TelegramMediaWebpageAITextStyleAttribute(emojiFileId: webPageAttributeAiComposeTone.emojiId))
     }
 }
 

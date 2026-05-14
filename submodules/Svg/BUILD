@@ -1,21 +1,16 @@
+load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
 
-objc_library(
+swift_library(
     name = "Svg",
-    enable_modules = True,
     module_name = "Svg",
     srcs = glob([
-        "Sources/**/*.m",
-        "Sources/**/*.c",
-        "Sources/**/*.h",
+		"Sources/**/*.swift",
     ]),
-    hdrs = glob([
-        "PublicHeaders/**/*.h",
-    ]),
-    includes = [
-        "PublicHeaders",
+    copts = [
+        "-warnings-as-errors",
     ],
-    sdk_frameworks = [
-        "Foundation",
+    deps = [
+        "//submodules/Svg/LegacyImpl",
     ],
     visibility = [
         "//visibility:public",

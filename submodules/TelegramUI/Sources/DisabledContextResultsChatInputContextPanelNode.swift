@@ -43,7 +43,8 @@ final class DisabledContextResultsChatInputContextPanelNode: ChatInputContextPan
         self.containerNode.backgroundColor = interfaceState.theme.list.plainBackgroundColor
         self.separatorNode.backgroundColor = interfaceState.theme.list.itemPlainSeparatorColor
         
-        guard let (untilDate, personal) = (interfaceState.renderedPeer?.peer as? TelegramChannel)?.hasBannedPermission(.banSendInline) else {
+        let canBypass = canBypassRestrictions(chatPresentationInterfaceState: interfaceState)
+        guard let (untilDate, personal) = (interfaceState.renderedPeer?.peer as? TelegramChannel)?.hasBannedPermission(.banSendInline, ignoreDefault: canBypass) else {
             return
         }
         let banDescription: String

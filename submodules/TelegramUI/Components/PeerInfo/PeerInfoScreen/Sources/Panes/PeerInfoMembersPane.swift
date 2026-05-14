@@ -89,7 +89,7 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
         }
     }
     
-    func item(context: AccountContext, presentationData: PresentationData, enclosingPeer: Peer, addMemberAction: @escaping () -> Void, action: @escaping (PeerInfoMember, PeerMembersListAction) -> Void, contextAction: ((PeerInfoMember, ASDisplayNode, ContextGesture?) -> Void)?) -> ListViewItem {
+    func item(context: AccountContext, presentationData: PresentationData, enclosingPeer: EnginePeer, addMemberAction: @escaping () -> Void, action: @escaping (PeerInfoMember, PeerMembersListAction) -> Void, contextAction: ((PeerInfoMember, ASDisplayNode, ContextGesture?) -> Void)?) -> ListViewItem {
         switch self {
             case let .addMember(_, text):
                 return ItemListPeerActionItem(presentationData: ItemListPresentationData(presentationData), icon: PresentationResourcesItemList.addPersonIcon(presentationData.theme), title: text, alwaysPlain: true, sectionId: 0, height: .compactPeerList, color: .accent, editing: false, action: {
@@ -110,9 +110,9 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
                     case .member:
                         var canEditRank = false
                         if member.id == context.account.peerId {
-                            if let channel = enclosingPeer as? TelegramChannel, channel.hasPermission(.editRank) {
+                            if case let .channel(channel) = enclosingPeer, channel.hasPermission(.editRank) {
                                 canEditRank = true
-                            } else if let group = enclosingPeer as? TelegramGroup, !group.hasBannedPermission(.banEditRank) {
+                            } else if case let .legacyGroup(group) = enclosingPeer, !group.hasBannedPermission(.banEditRank) {
                                 canEditRank = true
                             }
                         }
@@ -139,13 +139,13 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
                 let actions = availableActionsForMemberOfPeer(accountPeerId: context.account.peerId, peer: enclosingPeer, member: member)
                 
                 var options: [ItemListPeerItemRevealOption] = []
-                if actions.contains(.promote) && enclosingPeer is TelegramChannel {
+                if actions.contains(.promote), case .channel = enclosingPeer {
                     options.append(ItemListPeerItemRevealOption(type: .neutral, title: presentationData.strings.GroupInfo_ActionPromote, action: {
                         action(member, .promote)
                     }))
                 }
                 if actions.contains(.restrict) {
-                    if enclosingPeer is TelegramChannel {
+                    if case .channel = enclosingPeer {
                         options.append(ItemListPeerItemRevealOption(type: .warning, title: presentationData.strings.GroupInfo_ActionRestrict, action: {
                             action(member, .restrict)
                         }))
@@ -165,7 +165,7 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
                 }
             
                 var status: ContactsPeerItemStatus = .presence(presence, presentationData.dateTimeFormat)
-                if let user = member.peer as? TelegramUser, let botInfo = user.botInfo {
+                if case let .user(user) = member.peer, let botInfo = user.botInfo {
                     let botStatus: String
                     if botInfo.flags.contains(.hasAccessToChatHistory) {
                         botStatus = presentationData.strings.Bot_GroupStatusReadsHistory
@@ -188,7 +188,7 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
                     displayOrder: presentationData.nameDisplayOrder,
                     context: context,
                     peerMode: .memberList,
-                    peer: .peer(peer: EnginePeer(member.peer), chatPeer: EnginePeer(member.peer)),
+                    peer: .peer(peer: member.peer, chatPeer: member.peer),
                     status: status,
                     rightLabelText: label.flatMap { .init(text: $0, color: labelColor, hasBackground: labelBackground) },
                     enabled: true,
@@ -268,7 +268,7 @@ private enum PeerMembersListEntry: Comparable, Identifiable {
     }
 }
 
-private func preparedTransition(from fromEntries: [PeerMembersListEntry], to toEntries: [PeerMembersListEntry], context: AccountContext, presentationData: PresentationData, enclosingPeer: Peer, addMemberAction: @escaping () -> Void, action: @escaping (PeerInfoMember, PeerMembersListAction) -> Void, contextAction: ((PeerInfoMember, ASDisplayNode, ContextGesture?) -> Void)?) -> PeerMembersListTransaction {
+private func preparedTransition(from fromEntries: [PeerMembersListEntry], to toEntries: [PeerMembersListEntry], context: AccountContext, presentationData: PresentationData, enclosingPeer: EnginePeer, addMemberAction: @escaping () -> Void, action: @escaping (PeerInfoMember, PeerMembersListAction) -> Void, contextAction: ((PeerInfoMember, ASDisplayNode, ContextGesture?) -> Void)?) -> PeerMembersListTransaction {
     let (deleteIndices, indicesAndItems, updateIndices) = mergeListsStableWithUpdates(leftList: fromEntries, rightList: toEntries)
     
     let deletions = deleteIndices.map { ListViewDeleteItem(index: $0, directionHint: nil) }
@@ -290,7 +290,7 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
     private let listMaskView: UIImageView
     private let listNode: ListView
     private var currentEntries: [PeerMembersListEntry] = []
-    private var enclosingPeer: Peer?
+    private var enclosingPeer: EnginePeer?
     private var currentState: PeerInfoMembersState?
     private var canLoadMore: Bool = false
     private var enqueuedTransactions: [PeerMembersListTransaction] = []
@@ -358,9 +358,9 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
                 return
             }
             
-            strongSelf.enclosingPeer = enclosingPeer._asPeer()
+            strongSelf.enclosingPeer = enclosingPeer
             strongSelf.currentState = state
-            strongSelf.updateState(enclosingPeer: enclosingPeer._asPeer(), state: state, presentationData: presentationData)
+            strongSelf.updateState(enclosingPeer: enclosingPeer, state: state, presentationData: presentationData)
         })
         
         self.listNode.visibleBottomContentOffsetChanged = { [weak self] offset in
@@ -439,7 +439,7 @@ final class PeerInfoMembersPaneNode: ASDisplayNode, PeerInfoPaneNode {
         }
     }
     
-    private func updateState(enclosingPeer: Peer, state: PeerInfoMembersState, presentationData: PresentationData) {
+    private func updateState(enclosingPeer: EnginePeer, state: PeerInfoMembersState, presentationData: PresentationData) {
         var entries: [PeerMembersListEntry] = []
         if state.canAddMembers {
             entries.append(.addMember(presentationData.theme, presentationData.strings.GroupInfo_AddParticipant))

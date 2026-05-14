@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import AccountContext
 import TelegramCore
-import Postbox
 import SwiftSignalKit
 import ComponentFlow
 import TinyThumbnail
@@ -84,7 +83,7 @@ final class StoryItemImageView: UIView {
                 dimensions = representation.dimensions.cgSize
                 
                 if isMediaUpdated {
-                    if attemptSynchronous, let path = context.account.postbox.mediaBox.completedResourcePath(id: representation.resource.id, pathExtension: nil) {
+                    if attemptSynchronous, let path = context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(representation.resource.id), pathExtension: nil) {
                         if #available(iOS 15.0, *) {
                             if let image = UIImage(contentsOfFile: path)?.preparingForDisplay() {
                                 self.updateImage(image: image, isCaptureProtected: isCaptureProtected)
@@ -103,12 +102,12 @@ final class StoryItemImageView: UIView {
                             }
                         }
                         
-                        if let peerReference = PeerReference(peer._asPeer()) {
+                        if let peerReference = PeerReference(peer) {
                             self.fetchDisposable = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .peer(peer.id), userContentType: .story, reference: .media(media: .story(peer: peerReference, id: storyId, media: media._asMedia()), resource: representation.resource), ranges: nil).start()
                         }
-                        self.disposable = (context.account.postbox.mediaBox.resourceData(representation.resource, option: .complete(waitUntilFetchStatus: false))
+                        self.disposable = (context.engine.resources.data(resource: EngineMediaResource(representation.resource))
                         |> map { result -> UIImage? in
-                            if result.complete {
+                            if result.isComplete {
                                 if #available(iOS 15.0, *) {
                                     if let image = UIImage(contentsOfFile: result.path)?.preparingForDisplay() {
                                         return image
@@ -165,9 +164,9 @@ final class StoryItemImageView: UIView {
                     }
                     
                     let fullSize = context.account.postbox.mediaBox.cachedResourceRepresentation(file.resource, representation: CachedVideoFirstFrameRepresentation(), complete: true, fetch: true, attemptSynchronously: false)
-                    var previewSize: Signal<MediaResourceData?, NoError> = .single(nil)
+                    var previewSize: Signal<EngineMediaResource.ResourceData?, NoError> = .single(nil)
                     if let representation = file.previewRepresentations.first {
-                        previewSize = context.account.postbox.mediaBox.resourceData(representation.resource, option: .complete(waitUntilFetchStatus: false))
+                        previewSize = context.engine.resources.data(resource: EngineMediaResource(representation.resource))
                         |> map(Optional.init)
                     }
                     
@@ -190,7 +189,7 @@ final class StoryItemImageView: UIView {
                                     return nil
                                 }
                             }
-                        } else if let previewResult, previewResult.complete {
+                        } else if let previewResult, previewResult.isComplete {
                             if #available(iOS 15.0, *) {
                                 if let image = UIImage(contentsOfFile: previewResult.path)?.preparingForDisplay() {
                                     return image

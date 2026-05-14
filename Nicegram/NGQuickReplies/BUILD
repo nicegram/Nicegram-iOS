@@ -12,6 +12,9 @@ swift_library(
     srcs = glob([
         "Sources/**/*.swift",
     ]),
+    copts = [
+        "-warnings-as-errors",
+    ],
     deps = UIDEPS + [
         "//submodules/AccountContext:AccountContext",
         "//Nicegram/NGStrings:NGStrings",

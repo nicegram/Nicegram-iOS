@@ -12,7 +12,6 @@ import Display
 import AsyncDisplayKit
 import SwiftSignalKit
 import TelegramCore
-import Postbox
 import TelegramPresentationData
 import PresentationDataUtils
 import ProgressNavigationButtonNode

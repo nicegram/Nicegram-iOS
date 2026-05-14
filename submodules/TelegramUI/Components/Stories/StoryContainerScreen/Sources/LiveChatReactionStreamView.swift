@@ -107,12 +107,12 @@ private func makePeerBadgeImage(engine: TelegramEngine, peer: EnginePeer, count:
     textSize.height = ceil(textSize.height)
     
     var avatarSourceImage: UIImage?
-    if let resource = smallestImageRepresentation(peer.profileImageRepresentations)?.resource, let peerReference = PeerReference(peer._asPeer()) {
-        let disposable = fetchedMediaResource(mediaBox: engine.account.postbox.mediaBox, userLocation: .peer(peer.id), userContentType: .avatar, reference: .avatar(peer: peerReference, resource: resource)).startStrict()
-        let signal = engine.account.postbox.mediaBox.resourceData(resource)
-        |> filter { $0.complete }
+    if let resource = smallestImageRepresentation(peer.profileImageRepresentations)?.resource, let peerReference = PeerReference(peer) {
+        let disposable = engine.resources.fetch(reference: .avatar(peer: peerReference, resource: resource), userLocation: .peer(peer.id), userContentType: .avatar).startStrict()
+        let signal = engine.resources.data(resource: EngineMediaResource(resource))
+        |> filter { $0.isComplete }
         |> map { value -> Data? in
-            if value.complete {
+            if value.isComplete {
                 return try? Data(contentsOf: URL(fileURLWithPath: value.path))
             } else {
                 return nil

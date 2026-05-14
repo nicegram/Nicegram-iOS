@@ -28,6 +28,7 @@ let InstantPageMarkerColorAttribute = "MarkerColorAttribute"
 let InstantPageMediaIdAttribute = "MediaIdAttribute"
 let InstantPageMediaDimensionsAttribute = "MediaDimensionsAttribute"
 let InstantPageAnchorAttribute = "AnchorAttribute"
+let InstantPageFormulaAttribute = "FormulaAttribute"
 
 final class InstantPageTextStyleStack {
     private var items: [InstantPageTextStyle] = []

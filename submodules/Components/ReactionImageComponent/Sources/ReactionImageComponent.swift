@@ -18,7 +18,7 @@ public let sharedReactionStaticImage = Queue(name: "SharedReactionStaticImage", 
 public func reactionStaticImage(context: AccountContext, animation: TelegramMediaFile, pixelSize: CGSize, queue: Queue) -> Signal<EngineMediaResource.ResourceData, NoError> {
     return context.engine.resources.custom(id: "\(animation.resource.id.stringRepresentation):reaction-static-\(pixelSize.width)x\(pixelSize.height)-v10", fetch: EngineMediaResource.Fetch {
         return Signal { subscriber in
-            let fetchDisposable = fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: .other, userContentType: .image, reference: MediaResourceReference.standalone(resource: animation.resource)).start()
+            let fetchDisposable = context.engine.resources.fetch(reference: MediaResourceReference.standalone(resource: animation.resource), userLocation: .other, userContentType: .image).start()
             
             var customColor: UIColor?
             if animation.isCustomTemplateEmoji {
@@ -158,13 +158,13 @@ public final class ReactionImageNode: ASDisplayNode {
             
             super.init()
             
-            self.disposable = (context.account.postbox.mediaBox.resourceData(file.resource)
+            self.disposable = (context.engine.resources.data(resource: EngineMediaResource(file.resource))
             |> deliverOnMainQueue).start(next: { [weak self] data in
                 guard let strongSelf = self else {
                     return
                 }
-                
-                if data.complete, let dataValue = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
+
+                if data.isComplete, let dataValue = try? Data(contentsOf: URL(fileURLWithPath: data.path)) {
                     if let image = WebP.convert(fromWebP: dataValue) {
                         strongSelf.iconNode.image = image
                     }

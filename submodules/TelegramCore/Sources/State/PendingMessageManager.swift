@@ -117,7 +117,7 @@ public struct PeerPendingMessageDelivered {
 
 private final class PeerPendingMessagesSummaryContext {
     var messageDeliveredSubscribers = Bag<([PeerPendingMessageDelivered]) -> Void>()
-    var messageFailedSubscribers = Bag<(PendingMessageFailureReason) -> Void>()
+    var messageFailedSubscribers = Bag<(MessageId.Namespace, PendingMessageFailureReason) -> Void>()
     var newTopicEvents = Bag<(PendingMessageManager.NewTopicEvent) -> Void>()
     
     var isEmpty: Bool {
@@ -1423,7 +1423,7 @@ public final class PendingMessageManager {
                                 
                                 if let context = strongSelf.peerSummaryContexts[message.id.peerId] {
                                     for subscriber in context.messageFailedSubscribers.copyItems() {
-                                        subscriber(failureReason)
+                                        subscriber(message.id.namespace, failureReason)
                                     }
                                 }
                             }
@@ -2049,7 +2049,7 @@ public final class PendingMessageManager {
                             
                             if let context = strongSelf.peerSummaryContexts[message.id.peerId] {
                                 for subscriber in context.messageFailedSubscribers.copyItems() {
-                                    subscriber(failureReason)
+                                    subscriber(message.id.namespace, failureReason)
                                 }
                             }
                         }
@@ -2252,7 +2252,7 @@ public final class PendingMessageManager {
         }
     }
     
-    public func failedMessageEvents(peerId: PeerId) -> Signal<PendingMessageFailureReason, NoError> {
+    public func failedMessageEvents(peerId: PeerId, isScheduled: Bool) -> Signal<PendingMessageFailureReason, NoError> {
         return Signal { subscriber in
             let disposable = MetaDisposable()
             
@@ -2265,8 +2265,16 @@ public final class PendingMessageManager {
                     self.peerSummaryContexts[peerId] = summaryContext
                 }
                 
-                let index = summaryContext.messageFailedSubscribers.add({ reason in
-                    subscriber.putNext(reason)
+                let index = summaryContext.messageFailedSubscribers.add({ namespace, reason in
+                    if isScheduled {
+                        if Namespaces.Message.allScheduled.contains(namespace) {
+                            subscriber.putNext(reason)
+                        }
+                    } else {
+                        if !Namespaces.Message.allScheduled.contains(namespace) {
+                            subscriber.putNext(reason)
+                        }
+                    }
                 })
                 
                 disposable.set(ActionDisposable {

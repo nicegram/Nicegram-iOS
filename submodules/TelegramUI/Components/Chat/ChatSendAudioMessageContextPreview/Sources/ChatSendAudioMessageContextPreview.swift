@@ -86,7 +86,7 @@ public final class ChatSendContactMessageContextPreview: UIView, ChatSendMessage
         for peer in self.contactPeers {
             switch peer {
             case let .peer(contact, _, _):
-                guard let contact = contact as? TelegramUser, let phoneNumber = contact.phone else {
+                guard case let .user(contact) = contact, let phoneNumber = contact.phone else {
                     continue
                 }
                 let contactData = DeviceContactExtendedData(basicData: DeviceContactBasicData(firstName: contact.firstName ?? "", lastName: contact.lastName ?? "", phoneNumbers: [DeviceContactPhoneNumberData(label: "_$!<Mobile>!$_", value: phoneNumber)]), middleName: "", prefix: "", suffix: "", organization: "", jobTitle: "", department: "", emailAddresses: [], urls: [], addresses: [], birthdayDate: nil, socialProfiles: [], instantMessagingProfiles: [], note: "")
@@ -513,7 +513,10 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
         }, requestToggleTodoMessageItem: { _, _, _ in
         }, displayTodoToggleUnavailable: { _ in
         }, openStarsPurchase: { _ in
-        }, openRankInfo: { _, _, _ in }, openSetPeerAvatar: {}, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
+        }, openRankInfo: { _, _, _ in
+        }, openSetPeerAvatar: {
+        }, displayPollRestrictedToast: { _ in
+        }, automaticMediaDownloadSettings: MediaAutoDownloadSettings.defaultSettings,
         pollActionState: ChatInterfacePollActionState(), stickerSettings: ChatInterfaceStickerSettings(), presentationContext: ChatPresentationContext(context: self.context, backgroundNode: self.wallpaperBackgroundNode))
         
         let associatedData = ChatMessageItemAssociatedData(
@@ -530,7 +533,7 @@ public final class ChatSendGroupMediaMessageContextPreview: UIView, ChatSendMess
             accountPeer: nil
         )
         
-        let entryAttributes = ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false)
+        let entryAttributes = ChatMessageEntryAttributes(rank: nil, isContact: false, contentTypeHint: .generic, updatingMedia: nil, isPlaying: false, isCentered: false, authorStoryStats: nil, displayContinueThreadFooter: false, pinToTop: false)
         
         let items = self.messages.map { message -> ChatMessageBubbleContentItem in
             return ChatMessageBubbleContentItem(

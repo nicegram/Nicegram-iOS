@@ -201,7 +201,7 @@
                 if (strongSelf == nil)
                     return;
                 
-                strongSelf.presentScheduleController(true, ^(int32_t time) {
+                strongSelf.presentScheduleController(true, ^(int32_t time, bool silentPosting) {
                     __strong TGMediaPickerModernGalleryMixin *strongSelf = weakSelf;
                     if (strongSelf == nil)
                         return;
@@ -209,7 +209,7 @@
                     strongSelf->_galleryModel.dismiss(true, false);
                     
                     if (strongSelf.completeWithItem != nil)
-                        strongSelf.completeWithItem(item, false, time);
+                        strongSelf.completeWithItem(item, silentPosting, time);
                 });
             };
             controller.sendWithTimer = ^{

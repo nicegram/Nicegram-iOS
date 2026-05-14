@@ -6,8 +6,8 @@ import TelegramCore
 struct SecureIdEncryptedFormData {
     let form: EncryptedSecureIdForm
     let primaryLanguageByCountry: [String: String]
-    let accountPeer: Peer
-    let servicePeer: Peer
+    let accountPeer: EnginePeer
+    let servicePeer: EnginePeer
 }
 
 enum SecureIdAuthPasswordChallengeState {
@@ -64,7 +64,7 @@ struct SecureIdAuthControllerFormState: Equatable {
 }
 
 struct SecureIdAuthControllerListState: Equatable {
-    var accountPeer: Peer?
+    var accountPeer: EnginePeer?
     var twoStepEmail: String?
     var verificationState: SecureIdAuthControllerVerificationState?
     var encryptedValues: EncryptedAllSecureIdValues?
@@ -73,7 +73,7 @@ struct SecureIdAuthControllerListState: Equatable {
     var removingValues: Bool = false
     
     static func ==(lhs: SecureIdAuthControllerListState, rhs: SecureIdAuthControllerListState) -> Bool {
-        if !arePeersEqual(lhs.accountPeer, rhs.accountPeer) {
+        if lhs.accountPeer != rhs.accountPeer {
             return false
         }
         if let lhsTwoStepEmail = lhs.twoStepEmail, let rhsTwoStepEmail = rhs.twoStepEmail, lhsTwoStepEmail != rhsTwoStepEmail {

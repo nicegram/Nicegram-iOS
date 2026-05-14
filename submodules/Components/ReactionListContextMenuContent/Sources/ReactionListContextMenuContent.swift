@@ -2,6 +2,7 @@ import Foundation
 import AsyncDisplayKit
 import Display
 import ComponentFlow
+import MultilineTextComponent
 import SwiftSignalKit
 import TelegramCore
 import AccountContext
@@ -373,18 +374,26 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             let availableReactions: AvailableReactions?
             let animationCache: AnimationCache
             let animationRenderer: MultiAnimationRenderer
+            private let highlightBackgroundView: UIView
             let avatarNode: AvatarNode
             let titleLabelNode: ImmediateTextNode
             let textLabelNode: ImmediateTextNode
             let readIconView: UIImageView
             var credibilityIconView: ComponentView<Empty>?
-            
+
             private var reactionLayer: InlineStickerItemLayer?
             private var iconFrame: CGRect?
             private var file: TelegramMediaFile?
             private var fileDisposable: Disposable?
+            private var longTapRecognizer: UILongPressGestureRecognizer?
+            private var skipNextTapAction = false
             
             let action: () -> Void
+            var longTapAction: (() -> Void)? {
+                didSet {
+                    self.longTapRecognizer?.isEnabled = self.longTapAction != nil
+                }
+            }
             
             private var item: EngineMessageReactionListContext.Item?
             
@@ -412,16 +421,41 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 
                 self.readIconView = UIImageView(image: readIconImage)
                 
+                self.highlightBackgroundView = UIView()
+                self.highlightBackgroundView.alpha = 0.0
+                self.highlightBackgroundView.isUserInteractionEnabled = false
+
                 super.init()
-                
+
                 self.isAccessibilityElement = true
-                
+
+                self.view.insertSubview(self.highlightBackgroundView, at: 0)
+
                 self.addSubnode(self.avatarNode)
                 self.addSubnode(self.titleLabelNode)
                 self.addSubnode(self.textLabelNode)
                 self.view.addSubview(self.readIconView)
                 
                 self.addTarget(self, action: #selector(self.pressed), forControlEvents: .touchUpInside)
+                self.highligthedChanged = { [weak self] highlighted in
+                    guard let self else {
+                        return
+                    }
+                    if highlighted {
+                        self.highlightBackgroundView.layer.removeAnimation(forKey: "opacity")
+                        self.highlightBackgroundView.alpha = 0.1
+                    } else {
+                        let currentAlpha = self.highlightBackgroundView.alpha
+                        self.highlightBackgroundView.alpha = 0.0
+                        self.highlightBackgroundView.layer.animateAlpha(from: currentAlpha, to: 0.0, duration: 0.3)
+                    }
+                }
+                
+                let longTapRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(self.longTapGesture(_:)))
+                longTapRecognizer.isEnabled = false
+                longTapRecognizer.cancelsTouchesInView = true
+                self.view.addGestureRecognizer(longTapRecognizer)
+                self.longTapRecognizer = longTapRecognizer
             }
             
             deinit {
@@ -429,7 +463,28 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             }
             
             @objc private func pressed() {
+                if self.skipNextTapAction {
+                    self.skipNextTapAction = false
+                    return
+                }
                 self.action()
+            }
+            
+            @objc private func longTapGesture(_ recognizer: UILongPressGestureRecognizer) {
+                switch recognizer.state {
+                case .began:
+                    guard let item = self.item, item.reaction != nil else {
+                        return
+                    }
+                    self.skipNextTapAction = true
+                    self.longTapAction?()
+                case .cancelled, .ended, .failed:
+                    DispatchQueue.main.async { [weak self] in
+                        self?.skipNextTapAction = false
+                    }
+                default:
+                    break
+                }
             }
             
             private func updateReactionLayer() {
@@ -503,7 +558,12 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                 let sideInset: CGFloat = 16.0
                 
                 let reaction: MessageReaction.Reaction? = item.reaction
-                
+
+                self.highlightBackgroundView.backgroundColor = presentationData.theme.overallDarkAppearance ? UIColor.white : UIColor.black
+                self.highlightBackgroundView.setMonochromaticEffect(tintColor: self.highlightBackgroundView.backgroundColor)
+                self.highlightBackgroundView.frame = CGRect(origin: CGPoint(x: 10.0, y: 5.0), size: CGSize(width: max(0.0, size.width - 20.0), height: size.height - 10.0))
+                self.highlightBackgroundView.layer.cornerRadius = self.highlightBackgroundView.frame.height * 0.5
+
                 if self.displayReactionIcon, reaction != self.item?.reaction {
                     if let reaction = reaction {
                         switch reaction {
@@ -771,10 +831,12 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         private let requestUpdate: (ReactionsTabNode, ContainedViewLayoutTransition) -> Void
         private let requestUpdateApparentHeight: (ReactionsTabNode, ContainedViewLayoutTransition) -> Void
         private let openPeer: (EnginePeer, Bool) -> Void
+        private let deleteReaction: ((EnginePeer, MessageReaction.Reaction) -> Void)?
         
         private var hasMore: Bool = false
         
         private let scrollNode: ASScrollNode
+        private let separatorNode: ASDisplayNode
         private var ignoreScrolling: Bool = false
         private var animateIn: Bool = false
         private var bottomScrollInset: CGFloat = 0.0
@@ -791,7 +853,9 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         
         private var placeholderItemImage: UIImage?
         private var placeholderLayers: [Int: SimpleLayer] = [:]
-        
+
+        private let deleteReactionInfoText: ComponentView<Empty>
+
         init(
             context: AccountContext,
             displayReadTimestamps: Bool,
@@ -804,7 +868,8 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             readStats: MessageReadStats?,
             requestUpdate: @escaping (ReactionsTabNode, ContainedViewLayoutTransition) -> Void,
             requestUpdateApparentHeight: @escaping (ReactionsTabNode, ContainedViewLayoutTransition) -> Void,
-            openPeer: @escaping (EnginePeer, Bool) -> Void
+            openPeer: @escaping (EnginePeer, Bool) -> Void,
+            deleteReaction: ((EnginePeer, MessageReaction.Reaction) -> Void)?
         ) {
             self.context = context
             self.displayReadTimestamps = displayReadTimestamps
@@ -816,11 +881,15 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             self.requestUpdate = requestUpdate
             self.requestUpdateApparentHeight = requestUpdateApparentHeight
             self.openPeer = openPeer
+            self.deleteReaction = deleteReaction
             
             self.listContext = context.engine.messages.messageReactionList(message: message, readStats: readStats, reaction: reaction)
             self.state = ItemsState(listState: EngineMessageReactionListContext.State(message: message, readStats: readStats, reaction: reaction), readStats: readStats)
             
             self.scrollNode = ASScrollNode()
+            self.separatorNode = ASDisplayNode()
+            self.deleteReactionInfoText = ComponentView<Empty>()
+
             self.scrollNode.canCancelAllTouchesInViews = true
             self.scrollNode.view.delaysContentTouches = false
             self.scrollNode.view.showsVerticalScrollIndicator = false
@@ -834,6 +903,10 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             self.addSubnode(self.scrollNode)
             self.scrollNode.view.delegate = self.wrappedScrollViewDelegate
             
+            self.separatorNode.isHidden = true
+            self.separatorNode.isUserInteractionEnabled = false
+            self.scrollNode.addSubnode(self.separatorNode)
+
             self.clipsToBounds = true
             
             self.stateDisposable = (self.listContext.state
@@ -928,6 +1001,14 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                         }
                         
                         itemNode.update(size: itemFrame.size, presentationData: presentationData, item: item, isLast: self.state.item(at: index + 1) == nil, syncronousLoad: syncronousLoad)
+                        if let deleteReaction = self.deleteReaction, let reaction = item.reaction, item.peer.id != self.context.account.peerId {
+                            let peer = item.peer
+                            itemNode.longTapAction = {
+                                deleteReaction(peer, reaction)
+                            }
+                        } else {
+                            itemNode.longTapAction = nil
+                        }
                         itemNode.frame = itemFrame
                     } else if index < self.state.totalCount {
                         validPlaceholderIds.insert(index)
@@ -1034,7 +1115,70 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             }
             self.presentationData = presentationData
             
-            let size = CGSize(width: constrainedSize.width, height: topInset + CGFloat(self.state.totalCount) * itemHeight + topInset)
+            let baseContentHeight = topInset + CGFloat(self.state.totalCount) * itemHeight + topInset
+            var footerHeight: CGFloat = 0.0
+            let displayDeleteReactionInfoFooter: Bool
+            if self.deleteReaction != nil {
+                displayDeleteReactionInfoFooter = self.state.mergedItems.contains(where: { item in
+                    return item.reaction != nil && item.peer.id != self.context.account.peerId
+                })
+            } else {
+                displayDeleteReactionInfoFooter = false
+            }
+
+            if displayDeleteReactionInfoFooter {
+                let separatorHeight: CGFloat = 20.0
+                let horizontalInset: CGFloat = 18.0
+                let textTopInset: CGFloat = 5.0
+                let textBottomInset: CGFloat = 18.0
+                let textFont = Font.regular(floor(presentationData.listsFontSize.baseDisplaySize * 13.0 / 17.0))
+                
+                self.separatorNode.isHidden = false
+                self.separatorNode.backgroundColor = presentationData.theme.contextMenu.itemSeparatorColor
+                
+                var animateIn = false
+                var footerTransition = transition
+                if self.deleteReactionInfoText.view?.superview == nil, footerTransition.isAnimated {
+                    footerTransition = .immediate
+                    animateIn = true
+                }
+                footerTransition.updateFrame(node: self.separatorNode, frame: CGRect(
+                    origin: CGPoint(x: horizontalInset, y: baseContentHeight + floorToScreenPixels((separatorHeight - UIScreenPixel) * 0.5)),
+                    size: CGSize(width: max(0.0, constrainedSize.width - horizontalInset * 2.0), height: 1.0)
+                ))
+
+                let textSize = self.deleteReactionInfoText.update(
+                    transition: ComponentTransition(footerTransition),
+                    component: AnyComponent(MultilineTextComponent(
+                        text: .plain(NSAttributedString(
+                            string: presentationData.strings.Chat_DeleteReactionInfo,
+                            font: textFont,
+                            textColor: presentationData.theme.contextMenu.primaryColor
+                        )),
+                        maximumNumberOfLines: 0
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: max(0.0, constrainedSize.width - horizontalInset * 2.0), height: .greatestFiniteMagnitude)
+                )
+                if let textView = self.deleteReactionInfoText.view {
+                    if textView.superview == nil {
+                        self.scrollNode.view.addSubview(textView)
+                        textView.isUserInteractionEnabled = false
+                    }
+                    footerTransition.updateFrame(view: textView, frame: CGRect(origin: CGPoint(x: horizontalInset, y: baseContentHeight + separatorHeight + textTopInset), size: textSize))
+                    
+                    if animateIn {
+                        self.separatorNode.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                        textView.layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.25)
+                    }
+                }
+
+                footerHeight = separatorHeight + textTopInset + textSize.height + textBottomInset
+            } else {
+                self.separatorNode.isHidden = true
+                self.deleteReactionInfoText.view?.removeFromSuperview()
+            }
+            let size = CGSize(width: constrainedSize.width, height: baseContentHeight + footerHeight)
             
             let containerSize = CGSize(width: size.width, height: min(constrainedSize.height, size.height))
             self.currentSize = containerSize
@@ -1079,6 +1223,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         private let reactions: [(MessageReaction.Reaction?, Int)]
         private let requestUpdate: (ContainedViewLayoutTransition) -> Void
         private let requestUpdateApparentHeight: (ContainedViewLayoutTransition) -> Void
+        private let deleteReaction: ((EnginePeer, MessageReaction.Reaction) -> Void)?
         
         private var presentationData: PresentationData
         
@@ -1111,7 +1256,8 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             requestUpdate: @escaping (ContainedViewLayoutTransition) -> Void,
             requestUpdateApparentHeight: @escaping (ContainedViewLayoutTransition) -> Void,
             back: (() -> Void)?,
-            openPeer: @escaping (EnginePeer, Bool) -> Void
+            openPeer: @escaping (EnginePeer, Bool) -> Void,
+            deleteReaction: ((EnginePeer, MessageReaction.Reaction) -> Void)?
         ) {
             self.context = context
             self.displayReadTimestamps = displayReadTimestamps
@@ -1126,6 +1272,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             
             self.requestUpdate = requestUpdate
             self.requestUpdateApparentHeight = requestUpdateApparentHeight
+            self.deleteReaction = deleteReaction
             
             if let back = back {
                 self.backButtonNode = BackButtonNode()
@@ -1332,7 +1479,8 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
                                 strongSelf.requestUpdateApparentHeight(transition)
                             }
                         },
-                        openPeer: self.openPeer
+                        openPeer: self.openPeer,
+                        deleteReaction: self.deleteReaction
                     )
                     self.addSubnode(tabNode)
                     self.visibleTabNodes[index] = tabNode
@@ -1426,6 +1574,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
     let readStats: MessageReadStats?
     let back: (() -> Void)?
     let openPeer: (EnginePeer, Bool) -> Void
+    let deleteReaction: ((EnginePeer, MessageReaction.Reaction) -> Void)?
     
     public init(
         context: AccountContext,
@@ -1437,7 +1586,8 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         reaction: MessageReaction.Reaction?,
         readStats: MessageReadStats?,
         back: (() -> Void)?,
-        openPeer: @escaping (EnginePeer, Bool) -> Void
+        openPeer: @escaping (EnginePeer, Bool) -> Void,
+        deleteReaction: ((EnginePeer, MessageReaction.Reaction) -> Void)? = nil
     ) {
         self.context = context
         self.displayReadTimestamps = displayReadTimestamps
@@ -1449,6 +1599,7 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
         self.readStats = readStats
         self.back = back
         self.openPeer = openPeer
+        self.deleteReaction = deleteReaction
     }
     
     public func node(
@@ -1467,7 +1618,8 @@ public final class ReactionListContextMenuContent: ContextControllerItemsContent
             requestUpdate: requestUpdate,
             requestUpdateApparentHeight: requestUpdateApparentHeight,
             back: self.back,
-            openPeer: self.openPeer
+            openPeer: self.openPeer,
+            deleteReaction: self.deleteReaction
         )
     }
 }

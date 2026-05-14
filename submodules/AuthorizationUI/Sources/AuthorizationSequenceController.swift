@@ -37,7 +37,7 @@ private enum InnerState: Equatable {
 
 public final class AuthorizationSequenceController: NavigationController, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     static func navigationBarTheme(_ theme: PresentationTheme) -> NavigationBarTheme {
-        return NavigationBarTheme(overallDarkAppearance: theme.overallDarkAppearance, buttonColor: theme.chat.inputPanel.panelControlColor, disabledButtonColor: theme.intro.disabledTextColor, primaryTextColor: theme.intro.primaryTextColor, backgroundColor: .clear, opaqueBackgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: theme.rootController.navigationBar.badgeBackgroundColor, badgeStrokeColor: theme.rootController.navigationBar.badgeStrokeColor, badgeTextColor: theme.rootController.navigationBar.badgeTextColor, edgeEffectColor: .clear, accentButtonColor: theme.list.itemCheckColors.fillColor, accentForegroundColor: theme.list.itemCheckColors.foregroundColor, style: .glass)
+        return NavigationBarTheme(overallDarkAppearance: theme.overallDarkAppearance, buttonColor: theme.chat.inputPanel.panelControlColor, disabledButtonColor: theme.intro.disabledTextColor, primaryTextColor: theme.intro.primaryTextColor, backgroundColor: .clear, opaqueBackgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: theme.rootController.navigationBar.badgeBackgroundColor, badgeStrokeColor: theme.rootController.navigationBar.badgeStrokeColor, badgeTextColor: theme.rootController.navigationBar.badgeTextColor, edgeEffectColor: .clear, accentButtonColor: theme.list.itemCheckColors.fillColor, accentDisabledButtonColor: theme.chat.inputPanel.panelControlDisabledColor, accentForegroundColor: theme.list.itemCheckColors.foregroundColor, style: .glass)
     }
     
     private let sharedContext: SharedAccountContext
@@ -813,8 +813,8 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
         return controller
     }
     
-    private func paymentController(number: String, phoneCodeHash: String, storeProduct: String, supportEmailAddress: String, supportEmailSubject: String) -> AuthorizationSequencePaymentScreen {
-        let controller = AuthorizationSequencePaymentScreen(sharedContext: self.sharedContext, engine: self.engine, presentationData: self.presentationData, inAppPurchaseManager: self.inAppPurchaseManager, phoneNumber: number, phoneCodeHash: phoneCodeHash, storeProduct: storeProduct, supportEmailAddress: supportEmailAddress, supportEmailSubject: supportEmailSubject, back: { [weak self] in
+    private func paymentController(number: String, phoneCodeHash: String, storeProduct: String, premiumDays: Int32, supportEmailAddress: String, supportEmailSubject: String) -> AuthorizationSequencePaymentScreen {
+        let controller = AuthorizationSequencePaymentScreen(sharedContext: self.sharedContext, engine: self.engine, presentationData: self.presentationData, inAppPurchaseManager: self.inAppPurchaseManager, phoneNumber: number, phoneCodeHash: phoneCodeHash, storeProduct: storeProduct, premiumDays: premiumDays, supportEmailAddress: supportEmailAddress, supportEmailSubject: supportEmailSubject, back: { [weak self] in
             guard let self else {
                 return
             }
@@ -1000,7 +1000,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
         controller.reset = { [weak self, weak controller] in
             if let strongSelf = self, let strongController = controller {
                 strongController.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: suggestReset ? strongSelf.presentationData.strings.TwoStepAuth_RecoveryFailed : strongSelf.presentationData.strings.TwoStepAuth_RecoveryUnavailable, actions: [
-                    TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}),
+                    TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}),
                     TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.Login_ResetAccountProtected_Reset, action: {
                         if let strongSelf = self, let strongController = controller {
                             strongController.inProgress = true
@@ -1087,7 +1087,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
             controller.reset = { [weak self, weak controller] in
                 if let strongSelf = self, let strongController = controller {
                     strongController.present(textAlertController(sharedContext: strongSelf.sharedContext, title: nil, text: strongSelf.presentationData.strings.TwoStepAuth_ResetAccountConfirmation, actions: [
-                        TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}),
+                        TextAlertAction(type: .genericAction, title: strongSelf.presentationData.strings.Common_Cancel, action: {}),
                         TextAlertAction(type: .destructiveAction, title: strongSelf.presentationData.strings.Login_ResetAccountProtected_Reset, action: {
                             if let strongSelf = self, let strongController = controller {
                                 strongController.inProgress = true
@@ -1162,7 +1162,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                     let avatarVideo: Signal<UploadedPeerPhotoData?, NoError>?
                     if let avatarAsset = avatarAsset as? AVAsset {
                         let engine = strongSelf.engine
-                        avatarVideo = Signal<TelegramMediaResource?, NoError> { subscriber in
+                        avatarVideo = Signal<EngineMediaResource?, NoError> { subscriber in
                             let entityRenderer: LegacyPaintEntityRenderer? = avatarAdjustments.flatMap { adjustments in
                                 if let paintingData = adjustments.paintingData, paintingData.hasAnimation {
                                     return LegacyPaintEntityRenderer(postbox: nil, adjustments: adjustments)
@@ -1181,7 +1181,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                                         if let data = try? Data(contentsOf: result.fileURL) {
                                             let resource = LocalFileMediaResource(fileId: Int64.random(in: Int64.min ... Int64.max))
                                             engine.account.postbox.mediaBox.storeResourceData(resource.id, data: data, synchronous: true)
-                                            subscriber.putNext(resource)
+                                            subscriber.putNext(EngineMediaResource(resource))
                                             
                                             EngineTempBox.shared.dispose(tempFile)
                                         }
@@ -1388,12 +1388,12 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
                     }
                     controllers.append(self.signUpController(firstName: firstName, lastName: lastName, termsOfService: termsOfService, displayCancel: displayCancel))
                     self.setViewControllers(controllers, animated: !self.viewControllers.isEmpty)
-                case let .payment(number, codeHash, storeProduct, supportEmailAddress, supportEmailSubject, _):
+                case let .payment(number, codeHash, storeProduct, premiumDays, supportEmailAddress, supportEmailSubject, _):
                     var controllers: [ViewController] = []
                     if !self.otherAccountPhoneNumbers.1.isEmpty {
                         controllers.append(self.splashController())
                     }
-                controllers.append(self.paymentController(number: number, phoneCodeHash: codeHash, storeProduct: storeProduct, supportEmailAddress: supportEmailAddress, supportEmailSubject: supportEmailSubject))
+                controllers.append(self.paymentController(number: number, phoneCodeHash: codeHash, storeProduct: storeProduct, premiumDays: premiumDays, supportEmailAddress: supportEmailAddress, supportEmailSubject: supportEmailSubject))
                     self.setViewControllers(controllers, animated: !self.viewControllers.isEmpty)
             }
         }

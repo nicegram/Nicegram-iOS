@@ -531,7 +531,13 @@ public final class TextSelectionNode: ASDisplayNode {
             })
         }
         
-        return adjustedRange
+        func normalizedSelectionRange(_ range: NSRange, length: Int) -> NSRange {
+            let location = min(max(range.location, 0), length)
+            let upperBound = min(max(location, range.location + range.length), length)
+            return NSRange(location: location, length: upperBound - location)
+        }
+        
+        return normalizedSelectionRange(adjustedRange, length: attributedString.length)
     }
     
     private func convertSelectionFromOriginalText(attributedString: NSAttributedString, range: NSRange) -> NSRange {

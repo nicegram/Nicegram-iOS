@@ -677,6 +677,9 @@ UIImage *normalizeImage(UIImage *image)
 
 NSString *recognizeMRZ(UIImage *input, CGRect *outBoundingRect)
 {
+    if (@"".length == 0) {
+        return nil;
+    }
     input = normalizeImage(input);
     
     UIImage *binaryImage;

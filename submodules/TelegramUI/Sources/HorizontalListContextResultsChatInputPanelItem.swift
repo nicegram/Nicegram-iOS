@@ -97,7 +97,7 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
     private var currentImageResource: TelegramMediaResource?
     private var currentVideoFile: TelegramMediaFile?
     private var currentAnimatedStickerFile: TelegramMediaFile?
-    private var resourceStatus: MediaResourceStatus?
+    private var resourceStatus: EngineMediaResource.FetchStatus?
     private(set) var item: HorizontalListContextResultsChatInputPanelItem?
     private var statusDisposable = MetaDisposable()
     private let statusNode: RadialStatusNode = RadialStatusNode(backgroundNodeColor: UIColor(white: 0.0, alpha: 0.5))
@@ -202,7 +202,7 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
             let sideInset: CGFloat = 4.0
             
             var updateImageSignal: Signal<(TransformImageArguments) -> DrawingContext?, NoError>?
-            var updatedStatusSignal: Signal<MediaResourceStatus, NoError>?
+            var updatedStatusSignal: Signal<EngineMediaResource.FetchStatus, NoError>?
 
             var imageResource: TelegramMediaResource?
             var stickerFile: TelegramMediaFile?
@@ -223,9 +223,9 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
                     }
                 
                     if let file = videoFile {
-                        updatedStatusSignal = item.context.account.postbox.mediaBox.resourceStatus(file.resource)
+                        updatedStatusSignal = item.context.engine.resources.status(resource: EngineMediaResource(file.resource))
                     } else if let imageResource = imageResource {
-                        updatedStatusSignal = item.context.account.postbox.mediaBox.resourceStatus(imageResource)
+                        updatedStatusSignal = item.context.engine.resources.status(resource: EngineMediaResource(imageResource))
                     }
                 case let .internalReference(internalReference):
                     if let image = internalReference.image {
@@ -254,12 +254,12 @@ final class HorizontalListContextResultsChatInputPanelItemNode: ListViewItemNode
                         if file.isVideo && file.isAnimated {
                             videoFile = file
                             imageResource = nil
-                            updatedStatusSignal = item.context.account.postbox.mediaBox.resourceStatus(file.resource)
+                            updatedStatusSignal = item.context.engine.resources.status(resource: EngineMediaResource(file.resource))
                         } else if let imageResource = imageResource {
-                            updatedStatusSignal = item.context.account.postbox.mediaBox.resourceStatus(imageResource)
+                            updatedStatusSignal = item.context.engine.resources.status(resource: EngineMediaResource(imageResource))
                         }
                     } else if let imageResource = imageResource {
-                        updatedStatusSignal = item.context.account.postbox.mediaBox.resourceStatus(imageResource)
+                        updatedStatusSignal = item.context.engine.resources.status(resource: EngineMediaResource(imageResource))
                     }
             }
             

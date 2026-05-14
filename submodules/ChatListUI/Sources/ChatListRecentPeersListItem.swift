@@ -122,8 +122,7 @@ class ChatListRecentPeersListItemNode: ListViewItemNode {
                     } else {
                         peersNode = ChatListSearchRecentPeersNode(
                             accountPeerId: item.context.account.peerId,
-                            postbox: item.context.account.postbox,
-                            network: item.context.account.network,
+                            stateManager: item.context.account.stateManager,
                             energyUsageSettings: item.context.sharedContext.energyUsageSettings,
                             contentSettings: item.context.currentContentSettings.with { $0 },
                             animationCache: item.context.animationCache,

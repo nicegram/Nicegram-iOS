@@ -11,7 +11,7 @@ swift_library(
         "Source/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = NGDEPS + [
     	"//submodules/ObjCRuntimeUtils:ObjCRuntimeUtils",

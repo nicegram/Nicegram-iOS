@@ -57,6 +57,18 @@ public extension UnicodeScalar {
 private final class FrameworkClass: NSObject {
 }
 
+private let allowedEmojiLikeSymbols: Set<String> = [
+    "\u{2640}",
+    "\u{2640}\u{FE0E}",
+    "\u{2640}\u{FE0F}",
+    "\u{2642}",
+    "\u{2642}\u{FE0E}",
+    "\u{2642}\u{FE0F}",
+    "\u{26A7}",
+    "\u{26A7}\u{FE0E}",
+    "\u{26A7}\u{FE0F}"
+]
+
 public extension String {
     func trimmingTrailingSpaces() -> String {
         var t = self
@@ -72,6 +84,20 @@ public extension String {
     
     var containsEmoji: Bool {
         return self.contains { $0.isEmoji }
+    }
+    
+    var containsGraphicEmoji: Bool {
+        var containsEmoji = false
+        self.enumerateSubstrings(in: self.startIndex ..< self.endIndex, options: .byComposedCharacterSequences) { substring, _, _, stop in
+            guard let substring else {
+                return
+            }
+            if substring.containsEmoji && !allowedEmojiLikeSymbols.contains(substring) {
+                containsEmoji = true
+                stop = true
+            }
+        }
+        return containsEmoji
     }
     
     var containsOnlyEmoji: Bool {

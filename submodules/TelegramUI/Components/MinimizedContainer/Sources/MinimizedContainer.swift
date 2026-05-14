@@ -341,6 +341,7 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
     private var expandedTapGestureRecoginzer: UITapGestureRecognizer?
     
     private var currentTransition: Transition?
+    private var pendingAction: PendingAction?
     private var isApplyingTransition = false
     private var validLayout: ContainerViewLayout?
     
@@ -457,6 +458,9 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
             return
         }
         if let result = self.scrollView.hitTest(gestureRecognizer.location(in: self.scrollView), with: nil), result === self.scrollView {
+            guard self.canStartMutatingTransition() else {
+                return
+            }
             self.collapse()
         }
     }
@@ -607,6 +611,62 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
         }
     }
     
+    private enum PendingAction: Equatable {
+        case maximize(itemId: AnyHashable)
+    }
+    
+    private func canStartMutatingTransition() -> Bool {
+        return self.currentTransition == nil && !self.isApplyingTransition
+    }
+    
+    private func performMaximize(for item: Item) {
+        guard let navigationController = self.navigationController else {
+            return
+        }
+        item.beforeMaximize(navigationController, { [weak self] in
+            self?.navigationController?.maximizeViewController(item.controller, animated: true)
+        })
+    }
+    
+    private func requestOrQueueMaximize(for item: Item) {
+        if self.canStartMutatingTransition() {
+            self.performMaximize(for: item)
+            return
+        }
+        if case let .dismiss(dismissingItemId)? = self.currentTransition, dismissingItemId != item.id {
+            self.pendingAction = .maximize(itemId: item.id)
+        }
+    }
+    
+    private func drainPendingAction() {
+        guard self.canStartMutatingTransition(), let pendingAction = self.pendingAction else {
+            return
+        }
+        self.pendingAction = nil
+        
+        switch pendingAction {
+        case let .maximize(itemId):
+            guard let item = self.items.first(where: { $0.id == itemId }) else {
+                return
+            }
+            self.performMaximize(for: item)
+        }
+    }
+    
+    private func completeTransition(
+        _ completedTransition: Transition,
+        completion: @escaping (Transition) -> Void,
+        cleanup: () -> Void = {}
+    ) {
+        self.isApplyingTransition = false
+        if self.currentTransition == completedTransition {
+            self.currentTransition = nil
+        }
+        cleanup()
+        completion(completedTransition)
+        self.drainPendingAction()
+    }
+    
     public func maximizeController(_ viewController: MinimizableController, animated: Bool, completion: @escaping (Bool) -> Void) {
         guard let item = self.items.first(where: { $0.controller === viewController }) else {
             completion(self.items.count == 0)
@@ -653,11 +713,7 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
         }
         
         if self.items.count == 1, let item = self.items.first {
-            if let navigationController = self.navigationController {
-                item.beforeMaximize(navigationController, { [weak self] in
-                    self?.navigationController?.maximizeViewController(item.controller, animated: true)
-                })
-            }
+            self.performMaximize(for: item)
         } else {
             let contentOffset = max(0.0, self.scrollView.contentSize.height - self.scrollView.bounds.height)
             self.scrollView.contentOffset = CGPoint(x: 0.0, y: contentOffset)
@@ -681,6 +737,9 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
             return
         }
         self.requestUpdate(transition: .immediate)
+        guard self.canStartMutatingTransition() else {
+            return
+        }
         
         let contentOffset = scrollView.contentOffset
         if scrollView.contentOffset.y < -64.0, let lastItemId = self.items.last?.id, let itemNode = self.itemNodes[lastItemId] {
@@ -846,6 +905,9 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
                     return
                 }
                 if self.isExpanded {
+                    guard self.canStartMutatingTransition() else {
+                        return
+                    }
                     let proceed = { [weak self] in
                         guard let self else {
                             return
@@ -912,13 +974,7 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
                     return
                 }
                 if self.isExpanded, let itemNode {
-                    if let navigationController = self.navigationController {
-                        itemNode.item.beforeMaximize(navigationController, { [weak self, weak itemNode] in
-                            if let item = itemNode?.item {
-                                self?.navigationController?.maximizeViewController(item.controller, animated: true)
-                            }
-                        })
-                    }
+                    self.requestOrQueueMaximize(for: itemNode.item)
                 } else {
                     self.expand()
                 }
@@ -1086,11 +1142,7 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
                 }
                 
                 transition.animatePosition(node: itemNode, from: CGPoint(x: layout.size.width / 2.0, y: layout.size.height / 2.0 + initialOffset), completion: { _ in
-                    self.isApplyingTransition = false
-                    if self.currentTransition == currentTransition {
-                        self.currentTransition = nil
-                    }
-                    completion(currentTransition)
+                    self.completeTransition(currentTransition, completion: completion)
                 })
             case let .maximize(itemId):
                 let transition = ContainedViewLayoutTransition.animated(duration: 0.4, curve: .spring)
@@ -1129,31 +1181,26 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
                 }
                 
                 transition.updatePosition(node: itemNode, position: CGPoint(x: layout.size.width / 2.0, y: layout.size.height / 2.0 + maximizeTopInset + self.scrollView.contentOffset.y), completion: { _ in
-                    self.isApplyingTransition = false
-                    if self.currentTransition == currentTransition {
-                        self.currentTransition = nil
-                    }
-                                        
-                    completion(currentTransition)
-                    
-                    if let _ = itemNode.snapshotView {
-                        let snapshotContainerView = itemNode.snapshotContainerView
-                        snapshotContainerView.isUserInteractionEnabled = true
-                        snapshotContainerView.layer.allowsGroupOpacity = true
-                        snapshotContainerView.center = CGPoint(x: itemNode.item.controller.displayNode.view.bounds.width / 2.0, y: snapshotContainerView.bounds.height / 2.0)
-                        itemNode.item.controller.displayNode.view.addSubview(snapshotContainerView)
-                        Queue.mainQueue().after(0.35, {
-                            snapshotContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
-                                snapshotContainerView.removeFromSuperview()
+                    self.completeTransition(currentTransition, completion: completion, cleanup: {
+                        if let _ = itemNode.snapshotView {
+                            let snapshotContainerView = itemNode.snapshotContainerView
+                            snapshotContainerView.isUserInteractionEnabled = true
+                            snapshotContainerView.layer.allowsGroupOpacity = true
+                            snapshotContainerView.center = CGPoint(x: itemNode.item.controller.displayNode.view.bounds.width / 2.0, y: snapshotContainerView.bounds.height / 2.0)
+                            itemNode.item.controller.displayNode.view.addSubview(snapshotContainerView)
+                            Queue.mainQueue().after(0.35, {
+                                snapshotContainerView.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.25, removeOnCompletion: false, completion: { _ in
+                                    snapshotContainerView.removeFromSuperview()
+                                })
                             })
-                        })
-                    }
-                    
-                    self.itemNodes[itemId] = nil
-                    itemNode.removeFromSupernode()
-                    dimView.removeFromSuperview()
-                    
-                    self.requestUpdate(transition: .immediate)
+                        }
+                        
+                        self.itemNodes[itemId] = nil
+                        itemNode.removeFromSupernode()
+                        dimView.removeFromSuperview()
+                        
+                        self.requestUpdate(transition: .immediate)
+                    })
                 })
             case let .dismiss(itemId):
                 let transition = ContainedViewLayoutTransition.animated(duration: 0.4, curve: .spring)
@@ -1183,18 +1230,15 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
                             }
                             
                             transition.updatePosition(node: itemNode, position: CGPoint(x: layout.size.width / 2.0, y: layout.size.height / 2.0 + topInset + self.scrollView.contentOffset.y), completion: { _ in
-                                self.isApplyingTransition = false
-                                if self.currentTransition == currentTransition {
-                                    self.currentTransition = nil
-                                }
-                                completion(currentTransition)
-                                self.itemNodes[itemId] = nil
-                                itemNode.removeFromSupernode()
-                                dimView.removeFromSuperview()
-                                
-                                self.navigationController?.maximizeViewController(itemNode.item.controller, animated: false)
-                                
-                                self.requestUpdate(transition: .immediate)
+                                self.completeTransition(currentTransition, completion: completion, cleanup: {
+                                    self.itemNodes[itemId] = nil
+                                    itemNode.removeFromSupernode()
+                                    dimView.removeFromSuperview()
+                                    
+                                    self.navigationController?.maximizeViewController(itemNode.item.controller, animated: false)
+                                    
+                                    self.requestUpdate(transition: .immediate)
+                                })
                             })
                         })
                     }
@@ -1202,18 +1246,14 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
                 } else {
                     let isLast = self.items.isEmpty
                     transition.updatePosition(node: dismissedItemNode, position: CGPoint(x: -layout.size.width, y: dismissedItemNode.position.y), completion: { _ in
-                        self.isApplyingTransition = false
-                        if self.currentTransition == currentTransition {
-                            self.currentTransition = nil
-                        }
-                        completion(currentTransition)
-                        
-                        self.itemNodes[itemId] = nil
-                        dismissedItemNode.removeFromSupernode()
-                        
-                        if isLast {
-                            self.didDismiss?(self)
-                        }
+                        self.completeTransition(currentTransition, completion: completion, cleanup: {
+                            self.itemNodes[itemId] = nil
+                            dismissedItemNode.removeFromSupernode()
+                            
+                            if isLast {
+                                self.didDismiss?(self)
+                            }
+                        })
                     })
                     if isLast {
                         let dismissOffset = collapsedHeight(layout: layout)
@@ -1223,20 +1263,12 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
             case .dismissAll:
                 let dismissOffset = collapsedHeight(layout: layout)
                 transition.updatePosition(layer: self.bottomEdgeView.layer, position: self.bottomEdgeView.layer.position.offsetBy(dx: 0.0, dy: dismissOffset), completion: { _ in
-                    self.isApplyingTransition = false
-                    if self.currentTransition == currentTransition {
-                        self.currentTransition = nil
-                    }
-                    completion(currentTransition)
+                    self.completeTransition(currentTransition, completion: completion)
                 })
                 transition.updatePosition(layer: self.scrollView.layer, position: self.scrollView.center.offsetBy(dx: 0.0, dy: dismissOffset))
             case .collapse:
                 transition.updateBounds(layer: self.scrollView.layer, bounds: CGRect(origin: .zero, size: self.scrollView.bounds.size), completion: { _ in
-                    self.isApplyingTransition = false
-                    if self.currentTransition == currentTransition {
-                        self.currentTransition = nil
-                    }
-                    completion(currentTransition)
+                    self.completeTransition(currentTransition, completion: completion)
                 })
             default:
                 break

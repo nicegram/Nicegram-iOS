@@ -367,14 +367,14 @@ extension ChatControllerImpl {
                             let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: true)
                             commit(transformedMessages)
                         case .schedule:
-                            strongSelf.presentScheduleTimePicker(completion: { [weak self] scheduleTime, repeatPeriod in
+                            strongSelf.presentScheduleTimePicker(completion: { [weak self] timeResult in
                                 if let strongSelf = self {
-                                    let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: false, scheduleTime: scheduleTime, repeatPeriod: repeatPeriod)
+                                    let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: timeResult.silentPosting, scheduleTime: timeResult.time, repeatPeriod: timeResult.repeatPeriod)
                                     commit(transformedMessages)
                                 }
                             })
                         case .whenOnline:
-                            let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: false, scheduleTime: scheduleWhenOnlineTimestamp)
+                            let transformedMessages = strongSelf.transformEnqueueMessages(result, silentPosting: strongSelf.presentationInterfaceState.interfaceState.silentPosting, scheduleTime: scheduleWhenOnlineTimestamp)
                             commit(transformedMessages)
                         }
                     }

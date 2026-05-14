@@ -100,7 +100,7 @@ public final class LocationInfoListItemNode: ListViewItemNode {
         
         super.init(layerBacked: false, rotated: false, seeThrough: false)
         
-        self.addSubnode(self.backgroundNode)
+        //self.addSubnode(self.backgroundNode)
         self.addSubnode(self.buttonNode)
         self.addSubnode(self.venueIconNode)
         

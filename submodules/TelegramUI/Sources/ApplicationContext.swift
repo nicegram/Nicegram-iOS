@@ -445,35 +445,60 @@ final class AuthorizedApplicationContext {
                                             
                                             return false
                                         }
-                                        
-                                        if let minimizedContainer = strongSelf.rootController.minimizedContainer, minimizedContainer.isExpanded {
-                                            minimizedContainer.collapse()
-                                        } else if let topContoller = strongSelf.rootController.topViewController as? AttachmentController {
-                                            topContoller.minimizeIfNeeded()
-                                        }  else if let topContoller = strongSelf.rootController.topViewController as? BrowserScreen {
-                                            topContoller.requestMinimize(topEdgeOffset: nil, initialVelocity: nil)
+
+                                        let proceedAction: (Bool) -> Bool = { allowExpansion in
+                                            if let minimizedContainer = strongSelf.rootController.minimizedContainer, minimizedContainer.isExpanded {
+                                                minimizedContainer.collapse()
+                                            } else if let topContoller = strongSelf.rootController.topViewController as? AttachmentController {
+                                                topContoller.minimizeIfNeeded()
+                                            }  else if let topContoller = strongSelf.rootController.topViewController as? BrowserScreen {
+                                                topContoller.requestMinimize(topEdgeOffset: nil, initialVelocity: nil)
+                                            }
+
+                                            for controller in strongSelf.rootController.viewControllers {
+                                                if let controller = controller as? ChatControllerImpl, controller.chatLocation.peerId == chatLocation.peerId, (controller.chatLocation.threadId == nil || controller.chatLocation.threadId == chatLocation.threadId) {
+                                                    if allowExpansion {
+                                                        return true
+                                                    } else {
+                                                        strongSelf.notificationController.removeItemsWithGroupingKey(firstMessage.id.peerId)
+
+                                                        let chatController = ChatControllerImpl(context: strongSelf.context, chatLocation: chatLocation.asChatLocation, mode: .overlay(strongSelf.rootController))
+                                                        let presentationArguments = ChatControllerOverlayPresentationData(expandData: (nil, {}))
+                                                        chatController.presentationArguments = presentationArguments
+                                                        (strongSelf.rootController.viewControllers.last as? ViewController)?.present(chatController, in: .window(.root), with: presentationArguments)
+                                                        return false
+                                                    }
+                                                }
+                                            }
+
+                                            strongSelf.notificationController.removeItemsWithGroupingKey(firstMessage.id.peerId)
+
+                                            var processed = false
+                                            for media in firstMessage.media {
+                                                if let action = media as? TelegramMediaAction, case .geoProximityReached = action.action {
+                                                    strongSelf.context.sharedContext.openLocationScreen(context: strongSelf.context, messageId: firstMessage.id, navigationController: strongSelf.rootController)
+                                                    processed = true
+                                                    break
+                                                }
+                                            }
+
+                                            if !processed {
+                                                strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: strongSelf.rootController, context: strongSelf.context, chatLocation: chatLocation))
+                                            }
+
+                                            return false
                                         }
-                                        
-                                        for controller in strongSelf.rootController.viewControllers {
-                                            if let controller = controller as? ChatControllerImpl, controller.chatLocation.peerId == chatLocation.peerId, (controller.chatLocation.threadId == nil || controller.chatLocation.threadId == chatLocation.threadId) {
-                                                return true
+
+                                        if let topController = strongSelf.rootController.topViewController as? ChatControllerImpl {
+                                            let didPresentAlert = topController.presentVoiceMessageDiscardAlert(action: {
+                                                let _ = proceedAction(false)
+                                            }, discardIfVideo: true, performAction: false)
+                                            if didPresentAlert {
+                                                return false
                                             }
                                         }
                                         
-                                        strongSelf.notificationController.removeItemsWithGroupingKey(firstMessage.id.peerId)
-                                        
-                                        var processed = false
-                                        for media in firstMessage.media {
-                                            if let action = media as? TelegramMediaAction, case .geoProximityReached = action.action {
-                                                strongSelf.context.sharedContext.openLocationScreen(context: strongSelf.context, messageId: firstMessage.id, navigationController: strongSelf.rootController)
-                                                processed = true
-                                                break
-                                            }
-                                        }
-                                        
-                                        if !processed {
-                                            strongSelf.context.sharedContext.navigateToChatController(NavigateToChatControllerParams(navigationController: strongSelf.rootController, context: strongSelf.context, chatLocation: chatLocation))
-                                        }
+                                        return proceedAction(true)
                                     }
                                     return false
                                 }, expandAction: { expandData in
@@ -757,9 +782,9 @@ final class AuthorizedApplicationContext {
         })
        
         let importableContacts = self.context.sharedContext.contactDataManager?.importable() ?? .single([:])
-        let optionalImportableContacts = self.context.account.postbox.preferencesView(keys: [PreferencesKeys.contactsSettings])
+        let optionalImportableContacts = self.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.contactsSettings))
         |> mapToSignal { preferences -> Signal<[DeviceContactNormalizedPhoneNumber: ImportableDeviceContactData], NoError> in
-            let settings: ContactsSettings = preferences.values[PreferencesKeys.contactsSettings]?.get(ContactsSettings.self) ?? .defaultSettings
+            let settings: ContactsSettings = preferences?.get(ContactsSettings.self) ?? .defaultSettings
             if settings.synchronizeContacts {
                 return importableContacts
             } else {

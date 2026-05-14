@@ -7,7 +7,7 @@ public final class NicegramSettingsModule: SharedContainer {
     public static var shared = NicegramSettingsModule(
         speechToTextModule: .shared
     )
-    public var manager: ContainerManager = ContainerManager()
+    public let manager: ContainerManager = ContainerManager()
     
     private let speechToTextModule: SpeechToTextContainer
 }

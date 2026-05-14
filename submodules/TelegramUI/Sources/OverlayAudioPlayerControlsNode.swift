@@ -3,7 +3,6 @@ import UIKit
 import AsyncDisplayKit
 import Display
 import ComponentFlow
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import TelegramPresentationData
@@ -453,7 +452,7 @@ final class OverlayAudioPlayerControlsNode: ASDisplayNode {
                         case let .telegramFile(fileReference, _, _):
                             strongSelf.currentFileReference = fileReference
                             if let size = fileReference.media.size {
-                                strongSelf.scrubberNode.bufferingStatus = strongSelf.account.postbox.mediaBox.resourceRangesStatus(fileReference.media.resource)
+                                strongSelf.scrubberNode.bufferingStatus = strongSelf.engine.resources.resourceRangesStatus(resource: EngineMediaResource(fileReference.media.resource))
                                 |> map { ranges -> (RangeSet<Int64>, Int64) in
                                     return (ranges, size)
                                 }

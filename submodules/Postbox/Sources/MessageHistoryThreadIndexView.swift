@@ -1,39 +1,72 @@
 import Foundation
 
-final class MutableMessageHistoryThreadIndexView: MutablePostboxView {
-    final class Item {
-        let id: Int64
-        let pinnedIndex: Int?
-        let index: MessageIndex
-        var info: CodableEntry
-        var tagSummaryInfo: [ChatListEntryMessageTagSummaryKey: ChatListMessageTagSummaryInfo]
-        var topMessage: Message?
-        var embeddedInterfaceState: StoredPeerChatInterfaceState?
-        
-        init(
-            id: Int64,
-            pinnedIndex: Int?,
-            index: MessageIndex,
-            info: CodableEntry,
-            tagSummaryInfo: [ChatListEntryMessageTagSummaryKey: ChatListMessageTagSummaryInfo],
-            topMessage: Message?,
-            embeddedInterfaceState: StoredPeerChatInterfaceState?
-        ) {
-            self.id = id
-            self.pinnedIndex = pinnedIndex
-            self.index = index
-            self.info = info
-            self.tagSummaryInfo = tagSummaryInfo
-            self.topMessage = topMessage
-            self.embeddedInterfaceState = embeddedInterfaceState
-        }
+public final class MessageHistoryThreadIndexItem: Equatable {
+    public let id: Int64
+    public let pinnedIndex: Int?
+    public let index: MessageIndex
+    public var info: CodableEntry
+    public var tagSummaryInfo: [ChatListEntryMessageTagSummaryKey: ChatListMessageTagSummaryInfo]
+    public var topMessage: Message?
+    public var embeddedInterfaceState: StoredPeerChatInterfaceState?
+
+    public init(
+        id: Int64,
+        pinnedIndex: Int?,
+        index: MessageIndex,
+        info: CodableEntry,
+        tagSummaryInfo: [ChatListEntryMessageTagSummaryKey: ChatListMessageTagSummaryInfo],
+        topMessage: Message?,
+        embeddedInterfaceState: StoredPeerChatInterfaceState?
+    ) {
+        self.id = id
+        self.pinnedIndex = pinnedIndex
+        self.index = index
+        self.info = info
+        self.tagSummaryInfo = tagSummaryInfo
+        self.topMessage = topMessage
+        self.embeddedInterfaceState = embeddedInterfaceState
     }
-    
+
+    public static func ==(lhs: MessageHistoryThreadIndexItem, rhs: MessageHistoryThreadIndexItem) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.pinnedIndex != rhs.pinnedIndex {
+            return false
+        }
+        if lhs.index != rhs.index {
+            return false
+        }
+        if lhs.info != rhs.info {
+            return false
+        }
+        if lhs.tagSummaryInfo != rhs.tagSummaryInfo {
+            return false
+        }
+        if let lhsMessage = lhs.topMessage, let rhsMessage = rhs.topMessage {
+            if lhsMessage.index != rhsMessage.index {
+                return false
+            }
+            if lhsMessage.stableVersion != rhsMessage.stableVersion {
+                return false
+            }
+        } else if (lhs.topMessage == nil) != (rhs.topMessage == nil) {
+            return false
+        }
+        if lhs.embeddedInterfaceState != rhs.embeddedInterfaceState {
+            return false
+        }
+
+        return true
+    }
+}
+
+final class MutableMessageHistoryThreadIndexView: MutablePostboxView {
     fileprivate let peerId: PeerId
     fileprivate let summaryComponents: ChatListEntrySummaryComponents
     fileprivate var peer: Peer?
     fileprivate var peerNotificationSettings: PeerNotificationSettings?
-    fileprivate var items: [Item] = []
+    fileprivate var items: [MessageHistoryThreadIndexItem] = []
     private var hole: ForumTopicListHolesEntry?
     fileprivate var isLoading: Bool = false
     
@@ -99,7 +132,7 @@ final class MutableMessageHistoryThreadIndexView: MutablePostboxView {
                 var embeddedInterfaceState: StoredPeerChatInterfaceState?
                 embeddedInterfaceState = postbox.peerChatThreadInterfaceStateTable.get(PeerChatThreadId(peerId: self.peerId, threadId: item.threadId))
                 
-                self.items.append(Item(
+                self.items.append(MessageHistoryThreadIndexItem(
                     id: item.threadId,
                     pinnedIndex: pinnedIndex,
                     index: item.index,
@@ -152,93 +185,16 @@ final class MutableMessageHistoryThreadIndexView: MutablePostboxView {
     }
 }
 
-public final class EngineMessageHistoryThread {
-    public final class Item: Equatable {
-        public let id: Int64
-        public let pinnedIndex: Int?
-        public let index: MessageIndex
-        public let info: CodableEntry
-        public let tagSummaryInfo: [ChatListEntryMessageTagSummaryKey: ChatListMessageTagSummaryInfo]
-        public let topMessage: Message?
-        public let embeddedInterfaceState: StoredPeerChatInterfaceState?
-        
-        public init(
-            id: Int64,
-            pinnedIndex: Int?,
-            index: MessageIndex,
-            info: CodableEntry,
-            tagSummaryInfo: [ChatListEntryMessageTagSummaryKey: ChatListMessageTagSummaryInfo],
-            topMessage: Message?,
-            embeddedInterfaceState: StoredPeerChatInterfaceState?
-        ) {
-            self.id = id
-            self.pinnedIndex = pinnedIndex
-            self.index = index
-            self.info = info
-            self.tagSummaryInfo = tagSummaryInfo
-            self.topMessage = topMessage
-            self.embeddedInterfaceState = embeddedInterfaceState
-        }
-        
-        public static func ==(lhs: Item, rhs: Item) -> Bool {
-            if lhs.id != rhs.id {
-                return false
-            }
-            if lhs.pinnedIndex != rhs.pinnedIndex {
-                return false
-            }
-            if lhs.index != rhs.index {
-                return false
-            }
-            if lhs.info != rhs.info {
-                return false
-            }
-            if lhs.tagSummaryInfo != rhs.tagSummaryInfo {
-                return false
-            }
-            if let lhsMessage = lhs.topMessage, let rhsMessage = rhs.topMessage {
-                if lhsMessage.index != rhsMessage.index {
-                    return false
-                }
-                if lhsMessage.stableVersion != rhsMessage.stableVersion {
-                    return false
-                }
-            } else if (lhs.topMessage == nil) != (rhs.topMessage == nil) {
-                return false
-            }
-            if lhs.embeddedInterfaceState != rhs.embeddedInterfaceState {
-                return false
-            }
-            
-            return true
-        }
-    }
-}
-
 public final class MessageHistoryThreadIndexView: PostboxView {
     public let peer: Peer?
     public let peerNotificationSettings: PeerNotificationSettings?
-    public let items: [EngineMessageHistoryThread.Item]
+    public let items: [MessageHistoryThreadIndexItem]
     public let isLoading: Bool
-    
+
     init(_ view: MutableMessageHistoryThreadIndexView) {
         self.peer = view.peer
         self.peerNotificationSettings = view.peerNotificationSettings
-        
-        var items: [EngineMessageHistoryThread.Item] = []
-        for item in view.items {
-            items.append(EngineMessageHistoryThread.Item(
-                id: item.id,
-                pinnedIndex: item.pinnedIndex,
-                index: item.index,
-                info: item.info,
-                tagSummaryInfo: item.tagSummaryInfo,
-                topMessage: item.topMessage,
-                embeddedInterfaceState: item.embeddedInterfaceState
-            ))
-        }
-        self.items = items
-        
+        self.items = view.items
         self.isLoading = view.isLoading
     }
 }

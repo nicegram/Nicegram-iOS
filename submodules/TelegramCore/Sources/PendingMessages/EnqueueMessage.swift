@@ -877,7 +877,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                         }
                     }
                 
-                if threadId == nil, let peer = transaction.getPeer(peerId), (peer is TelegramChannel), peer.isForum {
+                    if threadId == nil, let peer = transaction.getPeer(peerId), (peer is TelegramChannel), peer.isForum {
                         threadId = 1
                     }
                     
@@ -1001,35 +1001,24 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
                                 forwardInfo = StoreMessageForwardInfo(authorId: sourceForwardInfo.author?.id, sourceId: sourceForwardInfo.source?.id, sourceMessageId: sourceForwardInfo.sourceMessageId, date: sourceForwardInfo.date, authorSignature: sourceForwardInfo.authorSignature, psaType: nil, flags: [])
                             } else {
                                 if sourceMessage.id.peerId != account.peerId {
-                                    var hasHiddenForwardMedia = false
-                                    for media in sourceMessage.media {
-                                        if let file = media as? TelegramMediaFile {
-                                            if file.isMusic {
-                                                hasHiddenForwardMedia = true
-                                            }
+                                    var sourceId: PeerId? = nil
+                                    var sourceMessageId: MessageId? = nil
+                                    if case let .channel(peer) = messageMainPeer(EngineMessage(sourceMessage)), case .broadcast = peer.info {
+                                        sourceId = peer.id
+                                        sourceMessageId = sourceMessage.id
+                                    }
+
+                                    var authorSignature: String?
+                                    for attribute in sourceMessage.attributes {
+                                        if let attribute = attribute as? AuthorSignatureMessageAttribute {
+                                            authorSignature = attribute.signature
+                                            break
                                         }
                                     }
-                                    
-                                    if !hasHiddenForwardMedia {
-                                        var sourceId: PeerId? = nil
-                                        var sourceMessageId: MessageId? = nil
-                                        if case let .channel(peer) = messageMainPeer(EngineMessage(sourceMessage)), case .broadcast = peer.info {
-                                            sourceId = peer.id
-                                            sourceMessageId = sourceMessage.id
-                                        }
-                                        
-                                        var authorSignature: String?
-                                        for attribute in sourceMessage.attributes {
-                                            if let attribute = attribute as? AuthorSignatureMessageAttribute {
-                                                authorSignature = attribute.signature
-                                                break
-                                            }
-                                        }
-                                        
-                                        let psaType: String? = nil
-                                        
-                                        forwardInfo = StoreMessageForwardInfo(authorId: author.id, sourceId: sourceId, sourceMessageId: sourceMessageId, date: sourceMessage.timestamp, authorSignature: authorSignature, psaType: psaType, flags: [])
-                                    }
+
+                                    let psaType: String? = nil
+
+                                    forwardInfo = StoreMessageForwardInfo(authorId: author.id, sourceId: sourceId, sourceMessageId: sourceMessageId, date: sourceMessage.timestamp, authorSignature: authorSignature, psaType: psaType, flags: [])
                                 } else {
                                     forwardInfo = nil
                                 }

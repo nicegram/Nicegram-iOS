@@ -660,7 +660,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         }
                         let fittedSize = isEmoji ? dimensions.cgSize.aspectFilled(CGSize(width: 384.0, height: 384.0)) : dimensions.cgSize.aspectFitted(CGSize(width: 384.0, height: 384.0))
                         
-                        let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+                        let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
                         let mode: AnimatedStickerMode = .direct(cachePathPrefix: pathPrefix)
                         self.animationSize = fittedSize
                         animationNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: file.resource, fitzModifier: fitzModifier, isVideo: file.mimeType == "video/webm"), width: Int(fittedSize.width), height: Int(fittedSize.height), playbackMode: playbackMode, mode: mode)
@@ -2257,7 +2257,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
         let incomingMessage = item.message.effectivelyIncoming(item.context.account.peerId)
 
         do {
-            let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(resource.id)
+            let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(resource.id))
             let additionalAnimationNode = DefaultAnimatedStickerNodeImpl()
             additionalAnimationNode.setup(source: source, width: Int(animationSize.width * 1.6), height: Int(animationSize.height * 1.6), playbackMode: .once, mode: .direct(cachePathPrefix: pathPrefix))
             var animationFrame: CGRect
@@ -2404,10 +2404,10 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                     let peach = 0x1F351
                     let coffin = 0x26B0
                     
-                    let appConfiguration = item.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
+                    let appConfiguration = item.context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: PreferencesKeys.appConfiguration))
                     |> take(1)
                     |> map { view in
-                        return view.values[PreferencesKeys.appConfiguration]?.get(AppConfiguration.self) ?? .defaultValue
+                        return view?.get(AppConfiguration.self) ?? .defaultValue
                     }
                     
                     let text = item.message.text

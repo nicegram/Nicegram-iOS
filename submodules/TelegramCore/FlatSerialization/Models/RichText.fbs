@@ -19,7 +19,8 @@ union RichText_Value {
     RichText_Marked,
     RichText_Phone,
     RichText_Image,
-    RichText_Anchor
+    RichText_Anchor,
+    RichText_Formula
 }
 
 table RichText {
@@ -92,4 +93,8 @@ table RichText_Image {
 table RichText_Anchor {
     text:RichText (id: 0, required);
     name:string (id: 1, required);
+}
+
+table RichText_Formula {
+    latex:string (id: 0, required);
 }

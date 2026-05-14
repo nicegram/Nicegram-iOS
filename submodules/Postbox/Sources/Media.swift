@@ -80,6 +80,7 @@ public protocol Media: AnyObject, PostboxCoding {
     var id: MediaId? { get }
     var peerIds: [PeerId] { get }
     var storyIds: [StoryId] { get }
+    var mediaIds: [MediaId] { get }
     
     var indexableText: String? { get }
     
@@ -93,6 +94,9 @@ public protocol Media: AnyObject, PostboxCoding {
 
 public extension Media {
     var storyIds: [StoryId] {
+        return []
+    }
+    var mediaIds: [MediaId] {
         return []
     }
 }

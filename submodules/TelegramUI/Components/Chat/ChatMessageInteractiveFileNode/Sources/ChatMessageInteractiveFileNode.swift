@@ -442,10 +442,10 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         guard let file = message.media.first(where: { $0 is TelegramMediaFile }) as? TelegramMediaFile else {
                             return .single(nil)
                         }
-                        return context.account.postbox.mediaBox.resourceData(id: file.resource.id)
+                        return context.engine.resources.data(id: EngineMediaResource.Id(file.resource.id))
                         |> take(1)
                         |> mapToSignal { data -> Signal<String?, NoError> in
-                            if !data.complete {
+                            if !data.isComplete {
                                 return .single(nil)
                             }
                             return .single(data.path)
@@ -803,7 +803,7 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                     displayTranscribe = false
                 } else if arguments.message.id.peerId.namespace != Namespaces.Peer.SecretChat && !isViewOnceMessage && !arguments.presentationData.isPreview {
                     let premiumConfiguration = PremiumConfiguration.with(appConfiguration: arguments.context.currentAppConfiguration.with { $0 })
-                    if arguments.associatedData.isPremium {
+                    if arguments.associatedData.isPremium || arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
                         displayTranscribe = true
                     } else if premiumConfiguration.audioTransciptionTrialCount > 0 {
                         if arguments.incoming {
@@ -817,8 +817,6 @@ public final class ChatMessageInteractiveFileNode: ASDisplayNode {
                         } else if arguments.incoming && isConsumed == false && arguments.associatedData.alwaysDisplayTranscribeButton.displayForNotConsumed {
                             displayTranscribe = true
                         }
-                    } else if arguments.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
-                        displayTranscribe = true
                     }
                     
                     // Nicegram Speech2Text
@@ -2287,4 +2285,3 @@ public final class FileMessageSelectionNode: ASDisplayNode {
         self.checkNode.frame = CGRect(origin: checkOrigin, size: checkSize)
     }
 }
-

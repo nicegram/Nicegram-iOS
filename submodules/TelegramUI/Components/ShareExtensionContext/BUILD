@@ -7,7 +7,7 @@ swift_library(
         "Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
         "//submodules/AsyncDisplayKit",
@@ -33,6 +33,7 @@ swift_library(
         "//submodules/ActivityIndicator",
         "//submodules/DebugSettingsUI",
         "//submodules/ManagedFile",
+        "//submodules/ContextUI",
         "//submodules/TelegramUI/Components/TelegramUIDeclareEncodables",
         "//submodules/TelegramUI/Components/AnimationCache",
         "//submodules/TelegramUI/Components/MultiAnimationRenderer",
@@ -41,6 +42,7 @@ swift_library(
         "//submodules/TelegramUI/Components/TelegramAccountAuxiliaryMethods",
         "//submodules/TelegramUI/Components/PeerSelectionController",
         "//submodules/TelegramUI/Components/ContextMenuScreen",
+        "//submodules/TelegramUI/Components/ContextControllerImpl",
         "//submodules/TelegramUI/Components/NavigationBarImpl",
     ],
     visibility = [

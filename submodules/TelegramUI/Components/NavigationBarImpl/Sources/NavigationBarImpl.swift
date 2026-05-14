@@ -583,11 +583,14 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
     public var secondaryContentHeight: CGFloat
     
     private var edgeEffectExtension: CGFloat = 0.0
-    private var edgeEffectView: EdgeEffectView?
+    private var edgeEffectViewImpl: EdgeEffectView?
+    public var edgeEffectView: UIView? {
+        return self.edgeEffectViewImpl
+    }
     private var backgroundContainer: GlassBackgroundContainerView?
     
     public var backgroundView: UIView {
-        if let edgeEffectView = self.edgeEffectView {
+        if let edgeEffectView = self.edgeEffectViewImpl {
             return edgeEffectView
         } else {
             return self.backgroundNode.view
@@ -654,7 +657,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         if case .glass = presentationData.theme.style {
             let edgeEffectView = EdgeEffectView()
             edgeEffectView.isUserInteractionEnabled = false
-            self.edgeEffectView = edgeEffectView
+            self.edgeEffectViewImpl = edgeEffectView
             self.view.addSubview(edgeEffectView)
             
             let backgroundContainer = GlassBackgroundContainerView()
@@ -721,6 +724,12 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                 }
             }
         }
+        self.leftButtonNodeImpl.requestUpdate = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.requestLayout()
+        }
         
         self.rightButtonNodeImpl.pressed = { [weak self] index in
             if let item = self?.item {
@@ -732,6 +741,12 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                     rightBarButtonItem.performActionOnTarget()
                 }
             }
+        }
+        self.rightButtonNodeImpl.requestUpdate = { [weak self] in
+            guard let self else {
+                return
+            }
+            self.requestLayout()
         }
     }
     
@@ -806,7 +821,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
             backgroundContainer.update(size: backgroundContainerFrame.size, isDark: self.presentationData.theme.overallDarkAppearance, transition: ComponentTransition(transition))
         }
         
-        if let edgeEffectView = self.edgeEffectView {
+        if let edgeEffectView = self.edgeEffectViewImpl {
             if let edgeEffectColor = self.presentationData.theme.edgeEffectColor, edgeEffectColor.alpha == 0.0 {
                 edgeEffectView.isHidden = true
             } else {
@@ -906,6 +921,9 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
             case .accent:
                 self.leftButtonNodeImpl.color = self.presentationData.theme.accentForegroundColor
                 self.leftButtonNodeImpl.disabledColor = self.presentationData.theme.accentForegroundColor.withMultipliedAlpha(0.5)
+            case .accentDisabled:
+                self.leftButtonNodeImpl.color = self.presentationData.theme.accentForegroundColor
+                self.leftButtonNodeImpl.disabledColor = self.presentationData.theme.accentForegroundColor.withMultipliedAlpha(0.5)
             case .generic:
                 self.leftButtonNodeImpl.color = self.presentationData.theme.buttonColor
                 self.leftButtonNodeImpl.disabledColor = self.presentationData.theme.disabledButtonColor
@@ -944,6 +962,9 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         if self.rightButtonNodeImpl.view.superview != nil {
             switch self.rightButtonNodeImpl.commonContentType {
             case .accent:
+                self.rightButtonNodeImpl.color = self.presentationData.theme.accentForegroundColor
+                self.rightButtonNodeImpl.disabledColor = self.presentationData.theme.accentForegroundColor.withMultipliedAlpha(0.5)
+            case .accentDisabled:
                 self.rightButtonNodeImpl.color = self.presentationData.theme.accentForegroundColor
                 self.rightButtonNodeImpl.disabledColor = self.presentationData.theme.accentForegroundColor.withMultipliedAlpha(0.5)
             case .generic:
@@ -994,6 +1015,8 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
             switch self.leftButtonNodeImpl.commonContentType {
             case .accent:
                 leftButtonsColor = .init(kind: .custom(style: self.presentationData.theme.glassStyle == .clear ? .clear : .default, color: self.presentationData.theme.accentButtonColor))
+            case .accentDisabled:
+                leftButtonsColor = .init(kind: .custom(style: self.presentationData.theme.glassStyle == .clear ? .clear : .default, color: self.presentationData.theme.accentDisabledButtonColor))
             case .generic:
                 break
             }
@@ -1028,6 +1051,8 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                 switch self.rightButtonNodeImpl.commonContentType {
                 case .accent:
                     rightButtonsColor = .init(kind: .custom(style: self.presentationData.theme.glassStyle == .clear ? .clear : .default, color: self.presentationData.theme.accentButtonColor))
+                case .accentDisabled:
+                    rightButtonsColor = .init(kind: .custom(style: self.presentationData.theme.glassStyle == .clear ? .clear : .default, color: self.presentationData.theme.accentDisabledButtonColor))
                 case .generic:
                     break
                 }
@@ -1048,17 +1073,18 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
         }
         
         if self.titleNode.view.superview != nil {
-            let titleSize = self.titleNode.updateLayout(CGSize(width: max(1.0, size.width - max(leftTitleInset, rightTitleInset) * 2.0), height: nominalHeight))
+            var transition = transition
+            if self.titleNode.frame.width.isZero {
+                transition = .immediate
+            }
+            self.titleNode.alpha = 1.0
             
-            do {
-                var transition = transition
-                if self.titleNode.frame.width.isZero {
-                    transition = .immediate
-                }
-                self.titleNode.alpha = 1.0
-                
-                let titleOffset: CGFloat = 0.0
-                transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: contentVerticalOrigin + titleOffset + floorToScreenPixels((nominalHeight - titleSize.height) / 2.0)), size: titleSize))
+            let titleSize = self.titleNode.updateLayout(CGSize(width: max(1.0, size.width - leftTitleInset - rightTitleInset), height: nominalHeight))
+            
+            if titleSize.width <= size.width - max(leftTitleInset, rightTitleInset) * 2.0 {
+                transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: contentVerticalOrigin + floorToScreenPixels((nominalHeight - titleSize.height) / 2.0)), size: titleSize))
+            } else {
+                transition.updateFrame(node: self.titleNode, frame: CGRect(origin: CGPoint(x: leftTitleInset + floor((size.width - leftTitleInset - rightTitleInset - titleSize.width) / 2.0), y: contentVerticalOrigin + floorToScreenPixels((nominalHeight - titleSize.height) / 2.0)), size: titleSize))
             }
         }
         
@@ -1081,6 +1107,9 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
                 
                 titleViewTransition.updateFrame(view: titleView, frame: titleFrame)
             } else {
+                leftTitleInset = max(leftTitleInset, rightTitleInset)
+                rightTitleInset = leftTitleInset
+                
                 let titleSize = CGSize(width: max(1.0, size.width - leftTitleInset - rightTitleInset), height: nominalHeight)
                 var titleFrame = CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: contentVerticalOrigin + floorToScreenPixels((nominalHeight - titleSize.height) / 2.0)), size: titleSize)
                 if titleFrame.origin.x + titleFrame.width > size.width - rightTitleInset {
@@ -1109,7 +1138,7 @@ public final class NavigationBarImpl: ASDisplayNode, NavigationBar {
     }
     
     private func applyEdgeEffectExtension(transition: ContainedViewLayoutTransition) {
-        if let edgeEffectView = self.edgeEffectView {
+        if let edgeEffectView = self.edgeEffectViewImpl {
             transition.updateTransform(layer: edgeEffectView.layer, transform: CATransform3DMakeTranslation(0.0, max(0.0, min(20.0, self.edgeEffectExtension)), 0.0))
         }
     }

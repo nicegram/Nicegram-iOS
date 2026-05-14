@@ -1,6 +1,5 @@
 import Foundation
 import AccountContext
-import Postbox
 import TelegramCore
 import SwiftSignalKit
 import Display

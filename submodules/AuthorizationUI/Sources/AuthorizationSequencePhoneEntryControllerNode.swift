@@ -12,7 +12,6 @@ import PhoneInputNode
 import CountrySelectionUI
 import QrCode
 import SwiftSignalKit
-import Postbox
 import AccountContext
 import AnimatedStickerNode
 import TelegramAnimatedStickerNode
@@ -660,8 +659,6 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         
         let animationSize = CGSize(width: 100.0, height: 100.0)
         let titleSize = self.titleNode.measure(CGSize(width: maximumWidth, height: CGFloat.greatestFiniteMagnitude))
-        
-        let noticeInset: CGFloat = self.account == nil ? 32.0 : 0.0
         
         // Nicegram Onboarding, changed width
         let noticeSize = self.noticeNode.updateLayout(CGSize(width: maximumWidth - 28.0, height: CGFloat.greatestFiniteMagnitude))

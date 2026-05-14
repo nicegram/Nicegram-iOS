@@ -228,49 +228,60 @@ private func resolveStickerPacks(network: Network, remoteInfos: [ItemCollectionI
         }
 }
 
-private func installRemoteStickerPacks(network: Network, infos: [StickerPackCollectionInfo]) -> Signal<Set<ItemCollectionId>, NoError> {
-    var signals: [Signal<Set<ItemCollectionId>, NoError>] = []
+private struct InstallRemoteStickerPacksResult {
+    var ids: Set<ItemCollectionId>
+    var archivedCount: Int
+    
+    init(ids: Set<ItemCollectionId>, archivedCount: Int) {
+        self.ids = ids
+        self.archivedCount = archivedCount
+    }
+}
+
+private func installRemoteStickerPacks(network: Network, infos: [StickerPackCollectionInfo]) -> Signal<InstallRemoteStickerPacksResult, NoError> {
+    var signals: [Signal<InstallRemoteStickerPacksResult, NoError>] = []
     for info in infos {
         let install = network.request(Api.functions.messages.installStickerSet(stickerset: .inputStickerSetID(.init(id: info.id.id, accessHash: info.accessHash)), archived: .boolFalse))
-            |> map { result -> Set<ItemCollectionId> in
-                switch result {
-                    case .stickerSetInstallResultSuccess:
-                        return Set()
-                    case let .stickerSetInstallResultArchive(stickerSetInstallResultArchiveData):
-                        let archivedSets = stickerSetInstallResultArchiveData.sets
-                        var archivedIds = Set<ItemCollectionId>()
-                        for archivedSet in archivedSets {
-                            switch archivedSet {
-                            case let .stickerSetCovered(stickerSetCoveredData):
-                                let set = stickerSetCoveredData.set
-                                archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
-                            case let .stickerSetMultiCovered(stickerSetMultiCoveredData):
-                                let set = stickerSetMultiCoveredData.set
-                                archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
-                            case let .stickerSetFullCovered(stickerSetFullCoveredData):
-                                let set = stickerSetFullCoveredData.set
-                                archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
-                                case let .stickerSetNoCovered(stickerSetNoCoveredData):
-                                    let set = stickerSetNoCoveredData.set
-                                    archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
-                            }
-                        }
-                        return archivedIds
+        |> map { result -> InstallRemoteStickerPacksResult in
+            switch result {
+            case .stickerSetInstallResultSuccess:
+                return InstallRemoteStickerPacksResult(ids: Set(), archivedCount: 0)
+            case let .stickerSetInstallResultArchive(stickerSetInstallResultArchiveData):
+                let archivedSets = stickerSetInstallResultArchiveData.sets
+                var archivedIds = Set<ItemCollectionId>()
+                for archivedSet in archivedSets {
+                    switch archivedSet {
+                    case let .stickerSetCovered(stickerSetCoveredData):
+                        let set = stickerSetCoveredData.set
+                        archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
+                    case let .stickerSetMultiCovered(stickerSetMultiCoveredData):
+                        let set = stickerSetMultiCoveredData.set
+                        archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
+                    case let .stickerSetFullCovered(stickerSetFullCoveredData):
+                        let set = stickerSetFullCoveredData.set
+                        archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
+                    case let .stickerSetNoCovered(stickerSetNoCoveredData):
+                        let set = stickerSetNoCoveredData.set
+                        archivedIds.insert(StickerPackCollectionInfo(apiSet: set, namespace: info.id.namespace).id)
+                    }
                 }
+                return InstallRemoteStickerPacksResult(ids: archivedIds, archivedCount: archivedIds.count)
             }
-            |> `catch` { _ -> Signal<Set<ItemCollectionId>, NoError> in
-                return .single(Set())
-            }
+        }
+        |> `catch` { _ -> Signal<InstallRemoteStickerPacksResult, NoError> in
+            return .single(InstallRemoteStickerPacksResult(ids: Set(), archivedCount: 0))
+        }
         signals.append(install)
     }
     return combineLatest(signals)
-        |> map { idsSets -> Set<ItemCollectionId> in
-            var result = Set<ItemCollectionId>()
-            for ids in idsSets {
-                result.formUnion(ids)
-            }
-            return result
+    |> map { results -> InstallRemoteStickerPacksResult in
+        var result = InstallRemoteStickerPacksResult(ids: Set(), archivedCount: 0)
+        for resultValue in results {
+            result.ids.formUnion(resultValue.ids)
+            result.archivedCount += resultValue.archivedCount
         }
+        return result
+    }
 }
 
 private func removeRemoteStickerPacks(network: Network, infos: [StickerPackCollectionInfo]) -> Signal<Void, NoError> {
@@ -341,12 +352,12 @@ private func reorderRemoteStickerPacks(network: Network, namespace: SynchronizeI
 private func synchronizeInstalledStickerPacks(transaction: Transaction, postbox: Postbox, network: Network, stateManager: AccountStateManager, namespace: SynchronizeInstalledStickerPacksOperationNamespace, operation: SynchronizeInstalledStickerPacksOperation) -> Signal<Void, NoError> {
     let collectionNamespace: ItemCollectionId.Namespace
     switch namespace {
-        case .stickers:
-            collectionNamespace = Namespaces.ItemCollection.CloudStickerPacks
-        case .masks:
-            collectionNamespace = Namespaces.ItemCollection.CloudMaskPacks
-        case .emoji:
-            collectionNamespace = Namespaces.ItemCollection.CloudEmojiPacks
+    case .stickers:
+        collectionNamespace = Namespaces.ItemCollection.CloudStickerPacks
+    case .masks:
+        collectionNamespace = Namespaces.ItemCollection.CloudMaskPacks
+    case .emoji:
+        collectionNamespace = Namespaces.ItemCollection.CloudEmojiPacks
     }
     
     let localCollectionInfos = transaction.getItemCollectionsInfos(namespace: collectionNamespace).map { $0.1 as! StickerPackCollectionInfo }
@@ -466,12 +477,12 @@ func debugFetchAllStickers(account: Account) -> Signal<Never, NoError> {
 private func continueSynchronizeInstalledStickerPacks(transaction: Transaction, postbox: Postbox, network: Network, stateManager: AccountStateManager, namespace: SynchronizeInstalledStickerPacksOperationNamespace, operation: SynchronizeInstalledStickerPacksOperation) -> Signal<Void, NoError> {
     let collectionNamespace: ItemCollectionId.Namespace
     switch namespace {
-        case .stickers:
-            collectionNamespace = Namespaces.ItemCollection.CloudStickerPacks
-        case .masks:
-            collectionNamespace = Namespaces.ItemCollection.CloudMaskPacks
-        case .emoji:
-            collectionNamespace = Namespaces.ItemCollection.CloudEmojiPacks
+    case .stickers:
+        collectionNamespace = Namespaces.ItemCollection.CloudStickerPacks
+    case .masks:
+        collectionNamespace = Namespaces.ItemCollection.CloudMaskPacks
+    case .emoji:
+        collectionNamespace = Namespaces.ItemCollection.CloudEmojiPacks
     }
     
     let localCollectionInfos = transaction.getItemCollectionsInfos(namespace: collectionNamespace).map { $0.1 as! StickerPackCollectionInfo }
@@ -479,12 +490,12 @@ private func continueSynchronizeInstalledStickerPacks(transaction: Transaction, 
     
     let request: Signal<Api.messages.AllStickers, MTRpcError>
     switch namespace {
-        case .stickers:
-            request = network.request(Api.functions.messages.getAllStickers(hash: initialLocalHash))
-        case .masks:
-            request = network.request(Api.functions.messages.getMaskStickers(hash: initialLocalHash))
-        case .emoji:
-            request = network.request(Api.functions.messages.getEmojiStickers(hash: initialLocalHash))
+    case .stickers:
+        request = network.request(Api.functions.messages.getAllStickers(hash: initialLocalHash))
+    case .masks:
+        request = network.request(Api.functions.messages.getMaskStickers(hash: initialLocalHash))
+    case .emoji:
+        request = network.request(Api.functions.messages.getEmojiStickers(hash: initialLocalHash))
     }
     
     let sequence = request
@@ -661,7 +672,12 @@ private func continueSynchronizeInstalledStickerPacks(transaction: Transaction, 
                 |> then(Signal<Void, NoError>.single(Void())))
                 |> mapToSignal { _ -> Signal<Set<ItemCollectionId>, NoError> in
                     return installRemoteStickerPacks(network: network, infos: addRemoteCollectionInfos)
-                    |> mapToSignal { ids -> Signal<Set<ItemCollectionId>, NoError> in
+                    |> mapToSignal { result -> Signal<Set<ItemCollectionId>, NoError> in
+                        let ids = result.ids
+                        if result.archivedCount != 0 {
+                            stateManager.installedStickerPacksArchived(count: result.archivedCount)
+                        }
+                        
                         return (reorderRemoteStickerPacks(network: network, namespace: namespace, ids: resultingCollectionInfos.map({ $0.0.id }).filter({ !ids.contains($0) }))
                         |> then(Signal<Void, NoError>.single(Void())))
                         |> map { _ -> Set<ItemCollectionId> in

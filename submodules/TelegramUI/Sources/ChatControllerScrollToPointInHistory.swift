@@ -159,7 +159,7 @@ extension ChatControllerImpl {
         let peerInfoController = self.context.sharedContext.makePeerInfoController(
             context: self.context,
             updatedPresentationData: self.updatedPresentationData,
-            peer: peer._asPeer(),
+            peer: peer,
             mode: .media(kind: kind, messageIndex: message.index),
             avatarInitiallyExpanded: false,
             fromChat: true,

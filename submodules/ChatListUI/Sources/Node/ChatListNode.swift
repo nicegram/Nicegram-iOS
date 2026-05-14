@@ -542,7 +542,7 @@ private func mappedInsertEntries(context: AccountContext, nodeInteraction: ChatL
                     } else {
                         if filter.contains(.onlyWriteable) {
                             if let peer = peer.peers[peer.peerId] {
-                                if !canSendMessagesToPeer(peer._asPeer()) {
+                                if !canSendMessagesToPeer(peer) {
                                     enabled = false
                                 }
                                 if peerEntry.requiresPremiumForMessaging {
@@ -914,7 +914,7 @@ private func mappedUpdateEntries(context: AccountContext, nodeInteraction: ChatL
                         } else {
                             if filter.contains(.onlyWriteable) {
                                 if let peer = peer.peers[peer.peerId] {
-                                    if !canSendMessagesToPeer(peer._asPeer()) {
+                                    if !canSendMessagesToPeer(peer) {
                                         enabled = false
                                     }
                                     if peerEntry.requiresPremiumForMessaging {
@@ -1976,18 +1976,22 @@ public final class ChatListNode: ListViewImpl {
         
         let savedMessagesPeer: Signal<EnginePeer?, NoError>
         if case let .peers(filter, _, _, _, _, _, _) = mode, filter.contains(.onlyWriteable), case .chatList = location, self.chatListFilter == nil {
-            savedMessagesPeer = context.account.postbox.loadedPeerWithId(context.account.peerId)
-            |> map(Optional.init)
-            |> map { peer in
-                return peer.flatMap(EnginePeer.init)
+            savedMessagesPeer = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
+            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                if let peer {
+                    return .single(peer)
+                } else {
+                    return .never()
+                }
             }
+            |> map(Optional.init)
         } else {
             savedMessagesPeer = .single(nil)
         }
         
-        let hideArchivedFolderByDefault = context.account.postbox.preferencesView(keys: [ApplicationSpecificPreferencesKeys.chatArchiveSettings])
+        let hideArchivedFolderByDefault = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.ApplicationSpecificPreference(key: ApplicationSpecificPreferencesKeys.chatArchiveSettings))
         |> map { view -> Bool in
-            let settings: ChatArchiveSettings = view.values[ApplicationSpecificPreferencesKeys.chatArchiveSettings]?.get(ChatArchiveSettings.self) ?? .default
+            let settings: ChatArchiveSettings = view?.get(ChatArchiveSettings.self) ?? .default
             return settings.isHiddenByDefault
         }
         |> distinctUntilChanged
@@ -2380,7 +2384,7 @@ public final class ChatListNode: ListViewImpl {
                         
                         if filter.contains(.onlyWriteable) && filter.contains(.excludeDisabled) {
                             if let peer = peer.peers[peer.peerId] {
-                                if !canSendMessagesToPeer(peer._asPeer()) {
+                                if !canSendMessagesToPeer(peer) {
                                     return false
                                 }
                             } else {

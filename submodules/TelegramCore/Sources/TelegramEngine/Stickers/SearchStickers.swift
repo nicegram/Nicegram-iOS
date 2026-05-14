@@ -58,6 +58,665 @@ public struct SearchStickersScope: OptionSet {
     public static let remote = SearchStickersScope(rawValue: 1 << 1)
 }
 
+private struct StickerSearchContextInitialData {
+    let localItems: [FoundStickerItem]
+    let cached: CachedStickerQueryResult?
+    let isPremium: Bool
+    let searchStickersConfiguration: SearchStickersConfiguration
+    let cacheKey: String
+}
+
+private func normalizedStickerSearchEmoticon(_ emoticon: [String]) -> [String] {
+    if emoticon == ["\u{2764}"] {
+        return ["\u{2764}\u{FE0F}"]
+    } else {
+        return emoticon
+    }
+}
+
+private func stickerSearchCacheKey(query: String?, emoticon: [String]) -> String {
+    if let query, !query.isEmpty {
+        return query
+    } else {
+        return emoticon.sorted().joined()
+    }
+}
+
+private func stickerSearchCombinedItems(localItems: [FoundStickerItem], files: [TelegramMediaFile], isPremium: Bool, searchStickersConfiguration: SearchStickersConfiguration) -> [FoundStickerItem] {
+    var premiumItems: [FoundStickerItem] = []
+    var otherItems: [FoundStickerItem] = []
+    for item in localItems {
+        if item.file.isPremiumSticker {
+            premiumItems.append(item)
+        } else {
+            otherItems.append(item)
+        }
+    }
+
+    var foundItems: [FoundStickerItem] = []
+    var foundAnimatedItems: [FoundStickerItem] = []
+    var foundPremiumItems: [FoundStickerItem] = []
+
+    var currentItemIds = Set<MediaId>(localItems.map { $0.file.fileId })
+    for file in files {
+        if currentItemIds.contains(file.fileId) {
+            continue
+        }
+        currentItemIds.insert(file.fileId)
+        
+        let item = FoundStickerItem(file: file, stringRepresentations: [])
+        if file.isPremiumSticker {
+            foundPremiumItems.append(item)
+        } else if file.isAnimatedSticker || file.isVideoSticker {
+            foundAnimatedItems.append(item)
+        } else {
+            foundItems.append(item)
+        }
+    }
+
+    let allPremiumItems = premiumItems + foundPremiumItems
+    let allOtherItems = otherItems + foundAnimatedItems + foundItems
+    
+    var result: [FoundStickerItem] = []
+    if isPremium {
+        let batchCount = Int(searchStickersConfiguration.normalStickersPerPremiumCount)
+        if batchCount == 0 {
+            result.append(contentsOf: allPremiumItems)
+            result.append(contentsOf: allOtherItems)
+        } else if allPremiumItems.isEmpty {
+            result.append(contentsOf: allOtherItems)
+        } else {
+            var i = 0
+            for premiumItem in allPremiumItems {
+                if i < allOtherItems.count {
+                    for j in i ..< min(i + batchCount, allOtherItems.count) {
+                        result.append(allOtherItems[j])
+                    }
+                    i += batchCount
+                }
+                result.append(premiumItem)
+            }
+            if i < allOtherItems.count {
+                for j in i ..< allOtherItems.count {
+                    result.append(allOtherItems[j])
+                }
+            }
+        }
+    } else {
+        result.append(contentsOf: allOtherItems)
+        result.append(contentsOf: allPremiumItems.prefix(max(0, Int(searchStickersConfiguration.premiumStickersCount))))
+    }
+    return result
+}
+
+private func stickerSearchApiFiles(_ stickers: [Api.Document]) -> [TelegramMediaFile] {
+    var files: [TelegramMediaFile] = []
+    for sticker in stickers {
+        if let file = telegramMediaFileFromApiDocument(sticker, altDocuments: []), let _ = file.id {
+            files.append(file)
+        }
+    }
+    return files
+}
+
+private func stickerSearchContextInitialData(account: Account, query: String, emoticon: [String], scope: SearchStickersScope) -> Signal<StickerSearchContextInitialData, NoError> {
+    let cacheKey = stickerSearchCacheKey(query: query, emoticon: emoticon)
+    
+    return account.postbox.transaction { transaction -> StickerSearchContextInitialData in
+        let isPremium = transaction.getPeer(account.peerId)?.isPremium ?? false
+        
+        var result: [FoundStickerItem] = []
+        if scope.contains(.installed) {
+            for entry in transaction.getOrderedListItems(collectionId: Namespaces.OrderedItemList.CloudSavedStickers) {
+                if let item = entry.contents.get(SavedStickerItem.self) {
+                    for representation in item.stringRepresentations {
+                        for queryItem in emoticon {
+                            if representation.hasPrefix(queryItem) {
+                                result.append(FoundStickerItem(file: item.file._parse(), stringRepresentations: item.stringRepresentations))
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+            
+            var currentItems = Set<MediaId>(result.map { $0.file.fileId })
+            var recentItems: [TelegramMediaFile] = []
+            var recentAnimatedItems: [TelegramMediaFile] = []
+            var recentItemsIds = Set<MediaId>()
+            var matchingRecentItemsIds = Set<MediaId>()
+            
+            for entry in transaction.getOrderedListItems(collectionId: Namespaces.OrderedItemList.CloudRecentStickers) {
+                if let item = entry.contents.get(RecentMediaItem.self) {
+                    let file = item.media
+                    if file.isPremiumSticker && !isPremium {
+                        continue
+                    }
+
+                    if !currentItems.contains(file.fileId) {
+                        currentItems.insert(file.fileId)
+                        
+                        if let displayText = file.stickerDisplayText {
+                            for queryItem in emoticon {
+                                if displayText.hasPrefix(queryItem) {
+                                    matchingRecentItemsIds.insert(file.fileId)
+                                    break
+                                }
+                            }
+                            recentItemsIds.insert(file.fileId)
+                            if file.isAnimatedSticker || file.isVideoSticker {
+                                recentAnimatedItems.append(file._parse())
+                            } else {
+                                recentItems.append(file._parse())
+                            }
+                            break
+                        }
+                    }
+                }
+            }
+            
+            let searchQueries: [ItemCollectionSearchQuery] = emoticon.map { queryItem -> ItemCollectionSearchQuery in
+                return .exact(ValueBoxKey(queryItem))
+            }
+            
+            var installedItems: [FoundStickerItem] = []
+            var installedAnimatedItems: [FoundStickerItem] = []
+            var installedPremiumItems: [FoundStickerItem] = []
+            
+            for searchQuery in searchQueries {
+                for item in transaction.searchItemCollection(namespace: Namespaces.ItemCollection.CloudStickerPacks, query: searchQuery) {
+                    if let item = item as? StickerPackItem {
+                        if !currentItems.contains(item.file.fileId) {
+                            currentItems.insert(item.file.fileId)
+                            
+                            let stringRepresentations = item.getStringRepresentationsOfIndexKeys()
+                            if !recentItemsIds.contains(item.file.fileId) {
+                                if item.file.isPremiumSticker {
+                                    installedPremiumItems.append(FoundStickerItem(file: item.file._parse(), stringRepresentations: stringRepresentations))
+                                } else if item.file.isAnimatedSticker || item.file.isVideoSticker {
+                                    installedAnimatedItems.append(FoundStickerItem(file: item.file._parse(), stringRepresentations: stringRepresentations))
+                                } else {
+                                    installedItems.append(FoundStickerItem(file: item.file._parse(), stringRepresentations: stringRepresentations))
+                                }
+                            } else {
+                                matchingRecentItemsIds.insert(item.file.fileId)
+                                if item.file.isAnimatedSticker || item.file.isVideoSticker {
+                                    recentAnimatedItems.append(item.file._parse())
+                                } else {
+                                    recentItems.append(item.file._parse())
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            for file in recentAnimatedItems {
+                if file.isPremiumSticker && !isPremium {
+                    continue
+                }
+                if matchingRecentItemsIds.contains(file.fileId) {
+                    result.append(FoundStickerItem(file: file, stringRepresentations: emoticon))
+                }
+            }
+            
+            for file in recentItems {
+                if file.isPremiumSticker && !isPremium {
+                    continue
+                }
+                if matchingRecentItemsIds.contains(file.fileId) {
+                    result.append(FoundStickerItem(file: file, stringRepresentations: emoticon))
+                }
+            }
+            
+            result.append(contentsOf: installedPremiumItems)
+            result.append(contentsOf: installedAnimatedItems)
+            result.append(contentsOf: installedItems)
+        }
+        
+        var cached = transaction.retrieveItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedStickerQueryResults, key: CachedStickerQueryResult.cacheKey(cacheKey)))?.get(CachedStickerQueryResult.self)
+        
+        let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+        let appConfiguration: AppConfiguration = transaction.getPreferencesEntry(key: PreferencesKeys.appConfiguration)?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
+        let searchStickersConfiguration = SearchStickersConfiguration.with(appConfiguration: appConfiguration)
+        
+        if let currentCached = cached, currentTime > currentCached.timestamp + searchStickersConfiguration.cacheTimeout {
+            cached = nil
+        }
+        
+        return StickerSearchContextInitialData(
+            localItems: result,
+            cached: cached,
+            isPremium: isPremium,
+            searchStickersConfiguration: searchStickersConfiguration,
+            cacheKey: cacheKey
+        )
+    }
+}
+
+private func stickerSearchContextPage(account: Account, query: String, emoticon: [String], inputLanguageCode: String, scope: SearchStickersScope = [.installed, .remote], offset: Int32) -> Signal<(items: [FoundStickerItem], isFinalResult: Bool, nextOffset: Int32?), NoError> {
+    if scope.isEmpty {
+        return .single(([], true, nil))
+    }
+    
+    let emoticon = normalizedStickerSearchEmoticon(emoticon)
+    if offset > 0 {
+        if !scope.contains(.remote) {
+            return .single(([], true, nil))
+        }
+        
+        let flags: Int32 = 0
+        return account.network.request(Api.functions.messages.searchStickers(flags: flags, q: query, emoticon: emoticon.joined(separator: ""), langCode: [inputLanguageCode], offset: offset, limit: 128, hash: 0))
+        |> `catch` { _ -> Signal<Api.messages.FoundStickers, NoError> in
+            return .single(.foundStickersNotModified(.init(flags: 0, nextOffset: nil)))
+        }
+        |> map { result -> (items: [FoundStickerItem], isFinalResult: Bool, nextOffset: Int32?) in
+            switch result {
+            case let .foundStickers(foundStickersData):
+                let files = stickerSearchApiFiles(foundStickersData.stickers)
+                return (files.map { FoundStickerItem(file: $0, stringRepresentations: []) }, true, foundStickersData.nextOffset)
+            case let .foundStickersNotModified(data):
+                return ([], true, data.nextOffset)
+            }
+        }
+    }
+    
+    return stickerSearchContextInitialData(account: account, query: query, emoticon: emoticon, scope: scope)
+    |> mapToSignal { initialData -> Signal<(items: [FoundStickerItem], isFinalResult: Bool, nextOffset: Int32?), NoError> in
+        if !scope.contains(.remote) {
+            return .single((initialData.localItems, true, nil))
+        }
+        
+        let tempResult: [FoundStickerItem]
+        if let cached = initialData.cached {
+            tempResult = stickerSearchCombinedItems(localItems: initialData.localItems, files: cached.items, isPremium: initialData.isPremium, searchStickersConfiguration: initialData.searchStickersConfiguration)
+        } else {
+            tempResult = initialData.localItems
+        }
+        
+        let flags: Int32 = 0
+        let remote = account.network.request(Api.functions.messages.searchStickers(flags: flags, q: query, emoticon: emoticon.joined(separator: ""), langCode: [inputLanguageCode], offset: 0, limit: 128, hash: initialData.cached?.hash ?? 0))
+        |> `catch` { _ -> Signal<Api.messages.FoundStickers, NoError> in
+            return .single(.foundStickersNotModified(.init(flags: 0, nextOffset: nil)))
+        }
+        |> mapToSignal { result -> Signal<(items: [FoundStickerItem], isFinalResult: Bool, nextOffset: Int32?), NoError> in
+            return account.postbox.transaction { transaction -> (items: [FoundStickerItem], isFinalResult: Bool, nextOffset: Int32?) in
+                switch result {
+                case let .foundStickers(foundStickersData):
+                    let files = stickerSearchApiFiles(foundStickersData.stickers)
+                    let resultItems = stickerSearchCombinedItems(localItems: initialData.localItems, files: files, isPremium: initialData.isPremium, searchStickersConfiguration: initialData.searchStickersConfiguration)
+                    
+                    let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                    if foundStickersData.hash != 0, let entry = CodableEntry(CachedStickerQueryResult(items: files, hash: foundStickersData.hash, timestamp: currentTime)) {
+                        transaction.putItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedStickerQueryResults, key: CachedStickerQueryResult.cacheKey(initialData.cacheKey)), entry: entry)
+                    }
+                    
+                    return (resultItems, true, foundStickersData.nextOffset)
+                case let .foundStickersNotModified(data):
+                    return (tempResult, true, data.nextOffset)
+                }
+            }
+        }
+        
+        return .single((tempResult, false, nil))
+        |> then(
+            remote
+            |> delay(0.2, queue: Queue.concurrentDefaultQueue())
+        )
+    }
+}
+
+public final class StickerSearchContext {
+    public struct State: Equatable {
+        public let items: [FoundStickerItem]
+        public let canLoadMore: Bool
+        public let isLoadingMore: Bool
+        
+        public init(items: [FoundStickerItem], canLoadMore: Bool, isLoadingMore: Bool) {
+            self.items = items
+            self.canLoadMore = canLoadMore
+            self.isLoadingMore = isLoadingMore
+        }
+    }
+    
+    private let queue: Queue = .mainQueue()
+    private let account: Account
+    private let query: String?
+    private let emoticon: [String]
+    private let inputLanguageCode: String
+    private let scope: SearchStickersScope
+    
+    private let disposable = MetaDisposable()
+    
+    private var items: [FoundStickerItem] = []
+    private var nextOffset: Int32?
+    private var canLoadMore = false
+    private var isLoadingMore = false
+    
+    private let stateValue = Promise<State>()
+    public var state: Signal<State, NoError> {
+        return self.stateValue.get()
+    }
+    
+    init(account: Account, query: String?, emoticon: [String], inputLanguageCode: String, scope: SearchStickersScope) {
+        self.account = account
+        self.query = query
+        self.emoticon = normalizedStickerSearchEmoticon(emoticon)
+        self.inputLanguageCode = inputLanguageCode
+        self.scope = scope
+        
+        self.loadInitial()
+    }
+    
+    deinit {
+        self.disposable.dispose()
+    }
+    
+    public func loadMore() {
+        guard let query = self.query, !query.isEmpty else {
+            return
+        }
+        guard !self.isLoadingMore, self.canLoadMore, let nextOffset = self.nextOffset else {
+            return
+        }
+        
+        self.isLoadingMore = true
+        self.pushState()
+        
+        self.disposable.set((stickerSearchContextPage(account: self.account, query: query, emoticon: self.emoticon, inputLanguageCode: self.inputLanguageCode, scope: self.scope, offset: nextOffset)
+        |> deliverOn(self.queue)).start(next: { [weak self] result in
+            guard let self else {
+                return
+            }
+            var currentItemIds = Set<MediaId>(self.items.map { $0.file.fileId })
+            for item in result.items {
+                if currentItemIds.contains(item.file.fileId) {
+                    continue
+                }
+                currentItemIds.insert(item.file.fileId)
+                self.items.append(item)
+            }
+            self.nextOffset = result.nextOffset
+            self.canLoadMore = result.nextOffset != nil
+            self.isLoadingMore = false
+            self.pushState()
+        }))
+    }
+    
+    private func loadInitial() {
+        self.items = []
+        self.nextOffset = nil
+        self.canLoadMore = false
+        self.isLoadingMore = true
+        self.pushState()
+        
+        let signal: Signal<(items: [FoundStickerItem], isFinalResult: Bool, nextOffset: Int32?), NoError>
+        if let query = self.query, !query.isEmpty {
+            signal = stickerSearchContextPage(account: self.account, query: query, emoticon: self.emoticon, inputLanguageCode: self.inputLanguageCode, scope: self.scope, offset: 0)
+        } else {
+            signal = _internal_searchStickers(account: self.account, query: self.query, emoticon: self.emoticon, inputLanguageCode: self.inputLanguageCode, scope: self.scope)
+            |> map { result -> (items: [FoundStickerItem], isFinalResult: Bool, nextOffset: Int32?) in
+                return (result.items, result.isFinalResult, nil)
+            }
+        }
+        
+        self.disposable.set((signal
+        |> deliverOn(self.queue)).start(next: { [weak self] result in
+            guard let self else {
+                return
+            }
+            
+            self.items = result.items
+            self.nextOffset = result.nextOffset
+            self.canLoadMore = result.nextOffset != nil
+            self.isLoadingMore = !result.isFinalResult
+            self.pushState()
+        }))
+    }
+    
+    private func pushState() {
+        self.stateValue.set(.single(State(items: self.items, canLoadMore: self.canLoadMore, isLoadingMore: self.isLoadingMore)))
+    }
+}
+
+private struct EmojiSearchContextInitialData {
+    let localItems: [TelegramMediaFile]
+    let cached: CachedStickerQueryResult?
+    let cacheKey: String
+}
+
+private func emojiSearchAppendUniqueItems(currentItems: [TelegramMediaFile], files: [TelegramMediaFile]) -> [TelegramMediaFile] {
+    var result = currentItems
+    var currentItemIds = Set<MediaId>(currentItems.map { $0.fileId })
+    for file in files {
+        if currentItemIds.contains(file.fileId) {
+            continue
+        }
+        currentItemIds.insert(file.fileId)
+        result.append(file)
+    }
+    return result
+}
+
+private func emojiSearchContextInitialData(account: Account, query: String, emoticon: [String], scope: SearchStickersScope) -> Signal<EmojiSearchContextInitialData, NoError> {
+    let cacheKey = stickerSearchCacheKey(query: query, emoticon: emoticon)
+    let querySet = Set(emoticon)
+    
+    return account.postbox.transaction { transaction -> EmojiSearchContextInitialData in
+        var result: [TelegramMediaFile] = []
+        if scope.contains(.installed) {
+            var currentItems = Set<MediaId>()
+            for info in transaction.getItemCollectionsInfos(namespace: Namespaces.ItemCollection.CloudEmojiPacks) {
+                if let info = info.1 as? StickerPackCollectionInfo {
+                    let items = transaction.getItemCollectionItems(collectionId: info.id)
+                    for item in items {
+                        if let item = item as? StickerPackItem {
+                            let file = item.file
+                            if currentItems.contains(file.fileId) {
+                                continue
+                            }
+                            
+                            let stringRepresentations = item.getStringRepresentationsOfIndexKeys()
+                            for stringRepresentation in stringRepresentations {
+                                if querySet.contains(stringRepresentation) {
+                                    currentItems.insert(file.fileId)
+                                    result.append(file._parse())
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        var cached = transaction.retrieveItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedEmojiQueryResults, key: CachedStickerQueryResult.cacheKey(cacheKey)))?.get(CachedStickerQueryResult.self)
+        
+        let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+        let appConfiguration: AppConfiguration = transaction.getPreferencesEntry(key: PreferencesKeys.appConfiguration)?.get(AppConfiguration.self) ?? AppConfiguration.defaultValue
+        let searchStickersConfiguration = SearchStickersConfiguration.with(appConfiguration: appConfiguration)
+        
+        if let currentCached = cached, currentTime > currentCached.timestamp + searchStickersConfiguration.cacheTimeout {
+            cached = nil
+        }
+        
+        return EmojiSearchContextInitialData(localItems: result, cached: cached, cacheKey: cacheKey)
+    }
+}
+
+private func emojiSearchContextPage(account: Account, query: String, emoticon: [String], inputLanguageCode: String, scope: SearchStickersScope, offset: Int32) -> Signal<(items: [TelegramMediaFile], isFinalResult: Bool, nextOffset: Int32?), NoError> {
+    if offset != 0 {
+        guard scope.contains(.remote) else {
+            return .single(([], true, nil))
+        }
+        
+        let flags: Int32 = 1 << 0
+        return account.network.request(Api.functions.messages.searchStickers(flags: flags, q: query, emoticon: emoticon.joined(separator: ""), langCode: [inputLanguageCode], offset: offset, limit: 128, hash: 0))
+        |> `catch` { _ -> Signal<Api.messages.FoundStickers, NoError> in
+            return .single(.foundStickersNotModified(.init(flags: 0, nextOffset: nil)))
+        }
+        |> map { result -> (items: [TelegramMediaFile], isFinalResult: Bool, nextOffset: Int32?) in
+            switch result {
+            case let .foundStickers(foundStickersData):
+                return (stickerSearchApiFiles(foundStickersData.stickers), true, foundStickersData.nextOffset)
+            case let .foundStickersNotModified(data):
+                return ([], true, data.nextOffset)
+            }
+        }
+    }
+    
+    return emojiSearchContextInitialData(account: account, query: query, emoticon: emoticon, scope: scope)
+    |> mapToSignal { initialData -> Signal<(items: [TelegramMediaFile], isFinalResult: Bool, nextOffset: Int32?), NoError> in
+        if !scope.contains(.remote) {
+            return .single((initialData.localItems, true, nil))
+        }
+        
+        let tempResult: [TelegramMediaFile]
+        if let cached = initialData.cached {
+            tempResult = emojiSearchAppendUniqueItems(currentItems: initialData.localItems, files: cached.items)
+        } else {
+            tempResult = initialData.localItems
+        }
+        
+        let flags: Int32 = 1 << 0
+        let remote = account.network.request(Api.functions.messages.searchStickers(flags: flags, q: query, emoticon: emoticon.joined(separator: ""), langCode: [inputLanguageCode], offset: 0, limit: 128, hash: initialData.cached?.hash ?? 0))
+        |> `catch` { _ -> Signal<Api.messages.FoundStickers, NoError> in
+            return .single(.foundStickersNotModified(.init(flags: 0, nextOffset: nil)))
+        }
+        |> mapToSignal { result -> Signal<(items: [TelegramMediaFile], isFinalResult: Bool, nextOffset: Int32?), NoError> in
+            return account.postbox.transaction { transaction -> (items: [TelegramMediaFile], isFinalResult: Bool, nextOffset: Int32?) in
+                switch result {
+                case let .foundStickers(foundStickersData):
+                    let files = stickerSearchApiFiles(foundStickersData.stickers)
+                    let resultItems = emojiSearchAppendUniqueItems(currentItems: initialData.localItems, files: files)
+                    
+                    let currentTime = Int32(CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970)
+                    if let entry = CodableEntry(CachedStickerQueryResult(items: files, hash: foundStickersData.hash, timestamp: currentTime)) {
+                        transaction.putItemCacheEntry(id: ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.cachedEmojiQueryResults, key: CachedStickerQueryResult.cacheKey(initialData.cacheKey)), entry: entry)
+                    }
+                    
+                    return (resultItems, true, foundStickersData.nextOffset)
+                case let .foundStickersNotModified(data):
+                    return (tempResult, true, data.nextOffset)
+                }
+            }
+        }
+        
+        return .single((tempResult, false, nil))
+        |> then(
+            remote
+            |> delay(0.2, queue: Queue.concurrentDefaultQueue())
+        )
+    }
+}
+
+public final class EmojiSearchContext {
+    public struct State: Equatable {
+        public let items: [TelegramMediaFile]
+        public let canLoadMore: Bool
+        public let isLoadingMore: Bool
+        
+        public init(items: [TelegramMediaFile], canLoadMore: Bool, isLoadingMore: Bool) {
+            self.items = items
+            self.canLoadMore = canLoadMore
+            self.isLoadingMore = isLoadingMore
+        }
+    }
+    
+    private let queue: Queue = .mainQueue()
+    private let account: Account
+    private let query: String?
+    private let emoticon: [String]
+    private let inputLanguageCode: String
+    private let scope: SearchStickersScope
+    
+    private let disposable = MetaDisposable()
+    
+    private var items: [TelegramMediaFile] = []
+    private var nextOffset: Int32?
+    private var canLoadMore = false
+    private var isLoadingMore = false
+    
+    private let stateValue = Promise<State>()
+    public var state: Signal<State, NoError> {
+        return self.stateValue.get()
+    }
+    
+    init(account: Account, query: String?, emoticon: [String], inputLanguageCode: String, scope: SearchStickersScope) {
+        self.account = account
+        self.query = query
+        self.emoticon = normalizedStickerSearchEmoticon(emoticon)
+        self.inputLanguageCode = inputLanguageCode
+        self.scope = scope
+        
+        self.loadInitial()
+    }
+    
+    deinit {
+        self.disposable.dispose()
+    }
+    
+    public func loadMore() {
+        guard let query = self.query, !query.isEmpty else {
+            return
+        }
+        guard !self.isLoadingMore, self.canLoadMore, let nextOffset = self.nextOffset else {
+            return
+        }
+        
+        self.isLoadingMore = true
+        self.pushState()
+        
+        self.disposable.set((emojiSearchContextPage(account: self.account, query: query, emoticon: self.emoticon, inputLanguageCode: self.inputLanguageCode, scope: self.scope, offset: nextOffset)
+        |> deliverOn(self.queue)).start(next: { [weak self] result in
+            guard let self else {
+                return
+            }
+            
+            self.items = emojiSearchAppendUniqueItems(currentItems: self.items, files: result.items)
+            self.nextOffset = result.nextOffset
+            self.canLoadMore = result.nextOffset != nil
+            self.isLoadingMore = false
+            self.pushState()
+        }))
+    }
+    
+    private func loadInitial() {
+        self.items = []
+        self.nextOffset = nil
+        self.canLoadMore = false
+        self.isLoadingMore = true
+        self.pushState()
+        
+        let signal: Signal<(items: [TelegramMediaFile], isFinalResult: Bool, nextOffset: Int32?), NoError>
+        if let query = self.query, !query.isEmpty {
+            signal = emojiSearchContextPage(account: self.account, query: query, emoticon: self.emoticon, inputLanguageCode: self.inputLanguageCode, scope: self.scope, offset: 0)
+        } else {
+            signal = _internal_searchEmoji(account: self.account, query: self.query, emoticon: self.emoticon, inputLanguageCode: self.inputLanguageCode, scope: self.scope)
+            |> map { result -> (items: [TelegramMediaFile], isFinalResult: Bool, nextOffset: Int32?) in
+                return (result.items.map(\.file), result.isFinalResult, nil)
+            }
+        }
+        
+        self.disposable.set((signal
+        |> deliverOn(self.queue)).start(next: { [weak self] result in
+            guard let self else {
+                return
+            }
+            
+            self.items = result.items
+            self.nextOffset = result.nextOffset
+            self.canLoadMore = result.nextOffset != nil
+            self.isLoadingMore = !result.isFinalResult
+            self.pushState()
+        }))
+    }
+    
+    private func pushState() {
+        self.stateValue.set(.single(State(items: self.items, canLoadMore: self.canLoadMore, isLoadingMore: self.isLoadingMore)))
+    }
+}
+
 func _internal_randomGreetingSticker(account: Account) -> Signal<FoundStickerItem?, NoError> {
     let key: PostboxViewKey = .orderedItemList(id: Namespaces.OrderedItemList.CloudGreetingStickers)
     return account.postbox.combinedView(keys: [key])
@@ -85,11 +744,7 @@ func _internal_searchStickers(account: Account, query: String?, emoticon: [Strin
     if scope.isEmpty {
         return .single(([], true))
     }
-    var emoticon = emoticon
-    if emoticon == ["\u{2764}"] {
-        emoticon = ["\u{2764}\u{FE0F}"]
-    }
-        
+    let emoticon = normalizedStickerSearchEmoticon(emoticon)
     let cacheKey: String
     if let query, !query.isEmpty {
         cacheKey = query
@@ -493,9 +1148,7 @@ func _internal_searchStickers(account: Account, category: EmojiSearchCategories.
     }
     
     var query = category.identifiers
-    if query == ["\u{2764}"] {
-        query = ["\u{2764}\u{FE0F}"]
-    }
+    query = normalizedStickerSearchEmoticon(query)
     
     return account.postbox.transaction { transaction -> ([FoundStickerItem], CachedStickerQueryResult?, Bool, SearchStickersConfiguration) in
         let isPremium = transaction.getPeer(account.peerId)?.isPremium ?? false
@@ -565,7 +1218,7 @@ func _internal_searchStickers(account: Account, category: EmojiSearchCategories.
             var searchQueries: [ItemCollectionSearchQuery] = query.map { queryItem -> ItemCollectionSearchQuery in
                 return .exact(ValueBoxKey(queryItem))
             }
-            if query == ["\u{2764}"] {
+            if query == ["\u{2764}\u{FE0F}"] {
                 searchQueries = [.any([ValueBoxKey("\u{2764}"), ValueBoxKey("\u{2764}\u{FE0F}")])]
             }
             
@@ -877,11 +1530,8 @@ func _internal_searchEmoji(account: Account, query: String?, emoticon: [String],
     if scope.isEmpty {
         return .single(([], true))
     }
-    var emoticon = emoticon
-    if emoticon == ["\u{2764}"] {
-        emoticon = ["\u{2764}\u{FE0F}"]
-    }
-    
+
+    let emoticon = normalizedStickerSearchEmoticon(emoticon)
     let cacheKey: String
     if let query, !query.isEmpty {
         cacheKey = query
@@ -1233,16 +1883,5 @@ func _internal_searchGifs(account: Account, query: String, nextOffset: String = 
         |> `catch` { error -> Signal<ChatContextResultCollection?, NoError> in
             return .single(nil)
         }
-    }
-}
-
-extension TelegramMediaFile {
-    var stickerString: String? {
-        for attr in attributes {
-            if case let .Sticker(displayText, _, _) = attr {
-                return displayText
-            }
-        }
-        return nil
     }
 }

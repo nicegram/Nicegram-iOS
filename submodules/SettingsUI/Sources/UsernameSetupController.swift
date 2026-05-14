@@ -468,10 +468,17 @@ public func usernameSetupController(context: AccountContext, mode: UsernameSetup
             }))
         }
     }, shareLink: {
-        let _ = (context.account.postbox.loadedPeerWithId(peerId)
+        let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+            if let peer {
+                return .single(peer)
+            } else {
+                return .never()
+            }
+        }
         |> take(1)
         |> deliverOnMainQueue).start(next: { peer in
-            if let user = peer as? TelegramUser, user.botInfo != nil {
+            if case let .user(user) = peer, user.botInfo != nil {
                 context.sharedContext.openExternalUrl(context: context, urlContext: .generic, url: "https://fragment.com/", forceExternal: true, presentationData: context.sharedContext.currentPresentationData.with { $0 }, navigationController: nil, dismissInput: {})
             } else {
                 var currentAddressName: String = peer.addressName ?? ""

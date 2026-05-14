@@ -826,7 +826,15 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
     let previousData = Atomic<GroupStats?>(value: nil)
     
     let presentationData = updatedPresentationData?.signal ?? context.sharedContext.presentationData
-    let signal = combineLatest(statePromise.get(), presentationData, dataPromise.get(), context.account.postbox.loadedPeerWithId(peerId), peersPromise.get(), longLoadingSignal)
+    let loadedChannelPeer = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+        if let peer {
+            return .single(peer)
+        } else {
+            return .never()
+        }
+    }
+    let signal = combineLatest(statePromise.get(), presentationData, dataPromise.get(), loadedChannelPeer, peersPromise.get(), longLoadingSignal)
     |> deliverOnMainQueue
     |> map { state, presentationData, data, channelPeer, peers, longLoading -> (ItemListControllerState, (ItemListNodeState, Any)) in
         let previous = previousData.swap(data)
@@ -838,9 +846,9 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
                 emptyStateItem = ItemListLoadingIndicatorEmptyStateItem(theme: presentationData.theme)
             }
         }
-        
+
         let controllerState = ItemListControllerState(presentationData: ItemListPresentationData(presentationData), title: .text(presentationData.strings.ChannelInfo_Stats), leftNavigationButton: nil, rightNavigationButton: nil, backNavigationButton: ItemListBackButton(title: presentationData.strings.Common_Back), animateChanges: true)
-        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: groupStatsControllerEntries(accountPeerId: context.account.peerId, state: state, data: data, channelPeer: EnginePeer(channelPeer), peers: peers, presentationData: presentationData), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
+        let listState = ItemListNodeState(presentationData: ItemListPresentationData(presentationData), entries: groupStatsControllerEntries(accountPeerId: context.account.peerId, state: state, data: data, channelPeer: channelPeer, peers: peers, presentationData: presentationData), style: .blocks, emptyStateItem: emptyStateItem, crossfadeState: previous == nil, animateChanges: false)
         
         return (controllerState, (listState, arguments))
     }
@@ -862,7 +870,14 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
     }
     openPeerImpl = { [weak controller] peer in
         if let navigationController = controller?.navigationController as? NavigationController {
-            let _ = (context.account.postbox.loadedPeerWithId(peer.id)
+            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peer.id))
+            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                if let peer {
+                    return .single(peer)
+                } else {
+                    return .never()
+                }
+            }
             |> take(1)
             |> deliverOnMainQueue).start(next: { peer in
                 if let controller = context.sharedContext.makePeerInfoController(context: context, updatedPresentationData: nil, peer: peer, mode: .generic, avatarInitiallyExpanded: false, fromChat: false, requestsContext: nil) {
@@ -887,7 +902,14 @@ public func groupStatsController(context: AccountContext, updatedPresentationDat
     }
     openPeerAdminActionsImpl = { [weak controller] participantPeerId in
         if let navigationController = controller?.navigationController as? NavigationController {
-            let _ = (context.account.postbox.loadedPeerWithId(peerId)
+            let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                if let peer {
+                    return .single(peer)
+                } else {
+                    return .never()
+                }
+            }
             |> take(1)
             |> deliverOnMainQueue).start(next: { peer in
                 let controller = context.sharedContext.makeChatRecentActionsController(context: context, peer: peer, adminPeerId: participantPeerId, starsState: nil)
