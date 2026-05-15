@@ -557,7 +557,17 @@ public extension Message {
         }
         return nil
     }
+    
+    var guestChatAttribute: GuestChatMessageAttribute? {
+        for attribute in self.attributes {
+            if let attribute = attribute as? GuestChatMessageAttribute {
+                return attribute
+            }
+        }
+        return nil
+    }
 }
+
 public extension Message {
     var reactionsAttribute: ReactionsMessageAttribute? {
         for attribute in self.attributes {

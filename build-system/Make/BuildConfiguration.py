@@ -126,13 +126,7 @@ def decrypt_codesigning_directory_recursively(source_base_path, destination_base
         destination_path = destination_base_path + '/' + file_name
         allowed_file_extensions = ['.mobileprovision', '.cer', '.p12']
         if os.path.isfile(source_path) and any(source_path.endswith(ext) for ext in allowed_file_extensions):
-            #print('Decrypting {} to {} with {}'.format(source_path, destination_path, password))
-            os.system('ruby build-system/decrypt.rb "{password}" "{source_path}" "{destination_path}"'.format(
-                password=password,
-                source_path=source_path,
-                destination_path=destination_path
-            ))
-            #decrypt_match_data(source_path, destination_path, password)
+            decrypt_match_data(source_path, destination_path, password)
         elif os.path.isdir(source_path):
             os.makedirs(destination_path, exist_ok=True)
             decrypt_codesigning_directory_recursively(source_path, destination_path, password)

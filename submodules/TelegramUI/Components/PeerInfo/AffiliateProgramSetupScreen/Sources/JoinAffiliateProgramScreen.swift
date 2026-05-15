@@ -875,7 +875,7 @@ private final class JoinAffiliateProgramScreenComponent: Component {
                         guard let infoController = component.context.sharedContext.makePeerInfoController(
                             context: component.context,
                             updatedPresentationData: nil,
-                            peer: component.sourcePeer._asPeer(),
+                            peer: component.sourcePeer,
                             mode: .generic,
                             avatarInitiallyExpanded: false,
                             fromChat: false,

@@ -697,7 +697,7 @@ final class SetupTwoStepVerificationControllerNode: ViewControllerTracingNode {
             }, transition: .animated(duration: 0.5, curve: .spring))
         }
         if case let .enterEmail(enterEmailState, enterEmailEmail)? = self.innerState.data.state, case .create = enterEmailState, enterEmailEmail.isEmpty {
-            self.present(textAlertController(sharedContext: self.context.sharedContext, title: nil, text: self.presentationData.strings.TwoStepAuth_EmailSkipAlert, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .destructiveAction, title: self.presentationData.strings.TwoStepAuth_EmailSkip, action: {
+            self.present(textAlertController(sharedContext: self.context.sharedContext, title: nil, text: self.presentationData.strings.TwoStepAuth_EmailSkipAlert, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .destructiveAction, title: self.presentationData.strings.TwoStepAuth_EmailSkip, action: {
                 continueImpl()
             })]), nil)
         } else {

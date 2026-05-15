@@ -110,7 +110,7 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
     
     private var fetchDisposable = MetaDisposable()
     private let statusDisposable = MetaDisposable()
-    private var status: MediaResourceStatus?
+    private var status: EngineMediaResource.FetchStatus?
     
     init(context: AccountContext, presentationData: PresentationData) {
         if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
@@ -182,12 +182,12 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
             self.maybeLoadContent()
             self.setupStatus(context: context, resource: fileReference.media.resource)
             
-            self.fetchDisposable.set(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: (self.message?.id.peerId).flatMap(MediaResourceUserLocation.peer) ?? .other, userContentType: .file, reference: fileReference.resourceReference(fileReference.media.resource)).start())
+            self.fetchDisposable.set(context.engine.resources.fetch(reference: fileReference.resourceReference(fileReference.media.resource), userLocation: (self.message?.id.peerId).flatMap(MediaResourceUserLocation.peer) ?? .other, userContentType: .file).start())
         }
     }
     
     private func setupStatus(context: AccountContext, resource: MediaResource) {
-        self.statusDisposable.set((context.account.postbox.mediaBox.resourceStatus(resource)
+        self.statusDisposable.set((context.engine.resources.status(resource: EngineMediaResource(resource))
         |> deliverOnMainQueue).start(next: { [weak self] status in
             if let strongSelf = self {
                 let previousStatus = strongSelf.status
@@ -237,11 +237,11 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
             if let fileName = fileReference.media.fileName {
                 pathExtension = (fileName as NSString).pathExtension
             }
-            let data = context.account.postbox.mediaBox.resourceData(fileReference.media.resource, pathExtension: pathExtension, option: .complete(waitUntilFetchStatus: false))
+            let data = context.engine.resources.data(resource: EngineMediaResource(fileReference.media.resource), pathExtension: pathExtension)
             |> deliverOnMainQueue
             self.dataDisposable.set(data.start(next: { [weak self] data in
                 if let strongSelf = self {
-                    if data.complete {
+                    if data.isComplete {
                         if let webView = strongSelf.webView as? WKWebView {
                             if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
                                 let blockRules = """
@@ -385,9 +385,9 @@ class ChatDocumentGalleryItemNode: ZoomableContentGalleryItemNode, WKNavigationD
         if let (context, fileReference) = self.contextAndFile, let status = self.status {
             switch status {
                 case .Fetching:
-                    context.account.postbox.mediaBox.cancelInteractiveResourceFetch(fileReference.media.resource)
+                    context.engine.resources.cancelInteractiveResourceFetch(id: EngineMediaResource.Id(fileReference.media.resource.id))
                 case .Remote:
-                    self.fetchDisposable.set(fetchedMediaResource(mediaBox: context.account.postbox.mediaBox, userLocation: (self.message?.id.peerId).flatMap(MediaResourceUserLocation.peer) ?? .other, userContentType: .file, reference: fileReference.resourceReference(fileReference.media.resource)).start())
+                    self.fetchDisposable.set(context.engine.resources.fetch(reference: fileReference.resourceReference(fileReference.media.resource), userLocation: (self.message?.id.peerId).flatMap(MediaResourceUserLocation.peer) ?? .other, userContentType: .file).start())
                 default:
                     break
             }

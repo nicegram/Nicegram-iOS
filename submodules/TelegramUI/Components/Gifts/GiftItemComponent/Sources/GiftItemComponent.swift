@@ -345,6 +345,7 @@ public final class GiftItemComponent: Component {
         private var selectionLayer: SimpleShapeLayer?
         private var checkLayer: CheckLayer?
         private var outlineLayer: SimpleLayer?
+        private var outlineRenderState: OutlineRenderState?
         
         private var animationFile: TelegramMediaFile?
         
@@ -360,6 +361,14 @@ public final class GiftItemComponent: Component {
         private let reselLabel = ComponentView<Empty>()
         
         private var giftAuctionTimer: SwiftSignalKit.Timer?
+        
+        private struct OutlineRenderState: Equatable {
+            let size: CGSize
+            let cornerRadius: CGFloat
+            let outline: GiftItemComponent.Outline
+            let hasRibbon: Bool
+            let themeId: ObjectIdentifier
+        }
         
         public var pattern: UIView? {
             if let view = self.patternView.view {
@@ -1537,6 +1546,14 @@ public final class GiftItemComponent: Component {
             if let outline = component.outline {
                 let lineWidth: CGFloat = 2.0
                 let outlineFrame = backgroundFrame
+                let hasRibbon = self.ribbon.layer.superlayer != nil
+                let outlineRenderState = OutlineRenderState(
+                    size: outlineFrame.size,
+                    cornerRadius: cornerRadius,
+                    outline: outline,
+                    hasRibbon: hasRibbon,
+                    themeId: ObjectIdentifier(component.theme)
+                )
                 
                 let outlineLayer: SimpleLayer
                 if let current = self.outlineLayer {
@@ -1544,12 +1561,15 @@ public final class GiftItemComponent: Component {
                 } else {
                     outlineLayer = SimpleLayer()
                     self.outlineLayer = outlineLayer
-                    if self.ribbon.layer.superlayer != nil {
-                        self.layer.insertSublayer(outlineLayer, below: self.ribbon.layer)
-                    } else {
-                        self.layer.addSublayer(outlineLayer)
-                    }
-
+                }
+                
+                if hasRibbon {
+                    self.layer.insertSublayer(outlineLayer, below: self.ribbon.layer)
+                } else if outlineLayer.superlayer == nil {
+                    self.layer.addSublayer(outlineLayer)
+                }
+                
+                if self.outlineRenderState != outlineRenderState {
                     let image = generateImage(outlineFrame.size, rotatedContext: { size, context in
                         context.clear(CGRect(origin: .zero, size: size))
                         
@@ -1588,11 +1608,13 @@ public final class GiftItemComponent: Component {
                         }
                     })
                     outlineLayer.contents = image?.cgImage
-
-                    outlineLayer.frame = outlineFrame
+                    self.outlineRenderState = outlineRenderState
                 }
+                
+                transition.setFrame(layer: outlineLayer, frame: outlineFrame)
             } else if let outlineLayer = self.outlineLayer {
                 self.outlineLayer = nil
+                self.outlineRenderState = nil
                 outlineLayer.removeFromSuperlayer()
             }
             

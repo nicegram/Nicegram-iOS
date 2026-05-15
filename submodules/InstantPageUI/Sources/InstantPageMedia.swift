@@ -20,3 +20,28 @@ public struct InstantPageMedia: Equatable {
         return lhs.index == rhs.index && lhs.media == rhs.media && lhs.url == rhs.url && lhs.caption == rhs.caption && lhs.credit == rhs.credit
     }
 }
+
+func instantPageMediaMatchesNodeIdentity(_ lhs: InstantPageMedia, _ rhs: InstantPageMedia) -> Bool {
+    if lhs.index != rhs.index {
+        return false
+    }
+    if lhs.url != rhs.url || lhs.caption != rhs.caption || lhs.credit != rhs.credit {
+        return false
+    }
+    if let lhsId = lhs.media.id, let rhsId = rhs.media.id {
+        return lhsId == rhsId
+    }
+    return lhs == rhs
+}
+
+func instantPageMediaArraysMatchNodeIdentity(_ lhs: [InstantPageMedia], _ rhs: [InstantPageMedia]) -> Bool {
+    if lhs.count != rhs.count {
+        return false
+    }
+    for i in 0 ..< lhs.count {
+        if !instantPageMediaMatchesNodeIdentity(lhs[i], rhs[i]) {
+            return false
+        }
+    }
+    return true
+}

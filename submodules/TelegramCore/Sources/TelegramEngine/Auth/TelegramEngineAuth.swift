@@ -48,8 +48,8 @@ public extension TelegramEngineUnauthorized {
             return _internal_resendTwoStepRecoveryEmail(network: self.account.network)
         }
 
-        public func uploadedPeerVideo(resource: MediaResource) -> Signal<UploadedPeerPhotoData, NoError> {
-            return _internal_uploadedPeerVideo(postbox: self.account.postbox, network: self.account.network, messageMediaPreuploadManager: nil, resource: resource)
+        public func uploadedPeerVideo(resource: EngineMediaResource) -> Signal<UploadedPeerPhotoData, NoError> {
+            return _internal_uploadedPeerVideo(postbox: self.account.postbox, network: self.account.network, messageMediaPreuploadManager: nil, resource: resource._asResource())
         }
         
         public func reportMissingCode(phoneNumber: String, phoneCodeHash: String, mnc: String) -> Signal<Never, ReportMissingCodeError> {

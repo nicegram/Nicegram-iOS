@@ -5,18 +5,14 @@ import TelegramApi
 import MtProtoKit
 
 public struct SendAsPeer: Equatable {
-    public let peer: Peer
+    public let peer: EnginePeer
     public let subscribers: Int32?
     public let isPremiumRequired: Bool
-    
-    public init(peer: Peer, subscribers: Int32?, isPremiumRequired: Bool) {
+
+    public init(peer: EnginePeer, subscribers: Int32?, isPremiumRequired: Bool) {
         self.peer = peer
         self.subscribers = subscribers
         self.isPremiumRequired = isPremiumRequired
-    }
-    
-    public static func ==(lhs: SendAsPeer, rhs: SendAsPeer) -> Bool {
-        return lhs.peer.isEqual(rhs.peer) && lhs.subscribers == rhs.subscribers && lhs.isPremiumRequired == rhs.isPremiumRequired
     }
 }
 
@@ -61,7 +57,7 @@ func _internal_cachedPeerSendAsAvailablePeers(account: Account, peerId: PeerId) 
                     if let cachedData = transaction.getPeerCachedData(peerId: peerId) as? CachedChannelData {
                         subscribers = cachedData.participantsSummary.memberCount
                     }
-                    peers.append(SendAsPeer(peer: peer, subscribers: subscribers, isPremiumRequired: cached.premiumRequiredPeerIds.contains(peer.id)))
+                    peers.append(SendAsPeer(peer: EnginePeer(peer), subscribers: subscribers, isPremiumRequired: cached.premiumRequiredPeerIds.contains(peer.id)))
                 }
             }
             return (peers, cached.timestamp)
@@ -167,7 +163,7 @@ func _internal_peerSendAsAvailablePeers(accountPeerId: PeerId, network: Network,
                             peers.append(peer)
                         }
                     }
-                    return peers.map { SendAsPeer(peer: $0, subscribers: subscribers[$0.id], isPremiumRequired: premiumRequiredPeerIds.contains($0.id)) }
+                    return peers.map { SendAsPeer(peer: EnginePeer($0), subscribers: subscribers[$0.id], isPremiumRequired: premiumRequiredPeerIds.contains($0.id)) }
                 }
             }
         }
@@ -233,7 +229,7 @@ func _internal_cachedLiveStorySendAsAvailablePeers(account: Account, peerId: Pee
                     if let cachedData = transaction.getPeerCachedData(peerId: peerId) as? CachedChannelData {
                         subscribers = cachedData.participantsSummary.memberCount
                     }
-                    peers.append(SendAsPeer(peer: peer, subscribers: subscribers, isPremiumRequired: cached.premiumRequiredPeerIds.contains(peer.id)))
+                    peers.append(SendAsPeer(peer: EnginePeer(peer), subscribers: subscribers, isPremiumRequired: cached.premiumRequiredPeerIds.contains(peer.id)))
                 }
             }
             return (peers, cached.timestamp)
@@ -327,7 +323,7 @@ func _internal_liveStorySendAsAvailablePeers(account: Account, peerId: PeerId) -
                             peers.append(peer)
                         }
                     }
-                    return peers.map { SendAsPeer(peer: $0, subscribers: subscribers[$0.id], isPremiumRequired: premiumRequiredPeerIds.contains($0.id)) }
+                    return peers.map { SendAsPeer(peer: EnginePeer($0), subscribers: subscribers[$0.id], isPremiumRequired: premiumRequiredPeerIds.contains($0.id)) }
                 }
             }
         }

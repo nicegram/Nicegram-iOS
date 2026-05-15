@@ -1013,6 +1013,11 @@ func revalidateMediaResourceReference(accountPeerId: PeerId, postbox: Postbox, n
                                     return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
                                 }
                             }
+                            if let music = item.music {
+                                if let updatedResource = findUpdatedMediaResource(media: music, previousMedia: nil, resource: resource) {
+                                    return .single(RevalidatedMediaResource(updatedResource: updatedResource, updatedReference: nil))
+                                }
+                            }
                             return .fail(.generic)
                         }
                     }

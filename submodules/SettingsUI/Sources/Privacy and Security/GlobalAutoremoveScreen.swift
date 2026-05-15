@@ -303,7 +303,7 @@ public func globalAutoremoveScreen(context: AccountContext, initialValue: Int32,
         },
         openCustomValue: {
             let currentValue = stateValue.with({ $0 }).updatedValue
-            let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .autoremove, currentTime: currentValue == 0 ? nil : currentValue, dismissByTapOutside: true, completion: { value in
+            let controller = ChatTimerScreen(context: context, updatedPresentationData: nil, style: .default, mode: .autoremove, currentTime: currentValue == 0 ? nil : currentValue, completion: { value in
                 updateValue(value)
             })
             presentControllerImpl?(controller, nil)

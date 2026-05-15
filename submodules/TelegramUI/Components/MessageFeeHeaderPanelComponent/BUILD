@@ -17,7 +17,6 @@ swift_library(
         "//submodules/ComponentFlow",
         "//submodules/Components/ComponentDisplayAdapters",
         "//submodules/PresentationDataUtils",
-        "//submodules/Postbox",
         "//submodules/TelegramCore",
         "//submodules/SSignalKit/SwiftSignalKit",
         "//submodules/TelegramUIPreferences",

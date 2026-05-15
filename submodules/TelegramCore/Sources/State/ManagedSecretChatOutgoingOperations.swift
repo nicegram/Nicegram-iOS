@@ -1889,7 +1889,7 @@ private func sendStandaloneMessage(auxiliaryMethods: AccountAuxiliaryMethods, po
             
             var attributes = contents.attributes
             if !attributes.contains(where: { $0 is AutoremoveTimeoutMessageAttribute }), let messageAutoremoveTimeout = state.messageAutoremoveTimeout {
-                attributes.append(AutoclearTimeoutMessageAttribute(timeout: messageAutoremoveTimeout, countdownBeginTime: nil))
+                attributes.append(AutoremoveTimeoutMessageAttribute(timeout: messageAutoremoveTimeout, countdownBeginTime: nil))
             }
             
             let message = Message(

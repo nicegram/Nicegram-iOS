@@ -6,6 +6,9 @@ swift_library(
     srcs = glob([
         "Sources/**/*.swift",
     ]),
+    copts = [
+        "-warnings-as-errors",
+    ],
     deps = [
         "@swiftpkg_nicegram_assistant_ios//:NGLocalization"
     ],

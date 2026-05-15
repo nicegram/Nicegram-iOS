@@ -1196,25 +1196,32 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
         })
         
         if let peerId {
-            let _ = (self.account.postbox.loadedPeerWithId(peerId)
+            let _ = (self.accountContext.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                if let peer {
+                    return .single(peer)
+                } else {
+                    return .never()
+                }
+            }
             |> deliverOnMainQueue).start(next: { [weak self] peer in
                 guard let self else {
                     return
                 }
                 var canManageCall = false
-                if let peer = peer as? TelegramGroup {
-                    if case .creator = peer.role {
+                if case let .legacyGroup(group) = peer {
+                    if case .creator = group.role {
                         canManageCall = true
-                    } else if case let .admin(rights, _) = peer.role, rights.rights.contains(.canManageCalls) {
-                        canManageCall = true
-                    }
-                } else if let peer = peer as? TelegramChannel {
-                    if peer.flags.contains(.isCreator) {
-                        canManageCall = true
-                    } else if (peer.adminRights?.rights.contains(.canManageCalls) == true) {
+                    } else if case let .admin(rights, _) = group.role, rights.rights.contains(.canManageCalls) {
                         canManageCall = true
                     }
-                    self.peerUpdatesSubscription = self.accountContext.account.viewTracker.polledChannel(peerId: peer.id).start()
+                } else if case let .channel(channel) = peer {
+                    if channel.flags.contains(.isCreator) {
+                        canManageCall = true
+                    } else if (channel.adminRights?.rights.contains(.canManageCalls) == true) {
+                        canManageCall = true
+                    }
+                    self.peerUpdatesSubscription = self.accountContext.account.viewTracker.polledChannel(peerId: channel.id).start()
                 }
                 var updatedValue = self.stateValue
                 updatedValue.canManageCall = canManageCall

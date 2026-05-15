@@ -184,7 +184,7 @@ class QuickReplyItemNode: ItemListRevealOptionsItemNode, ItemListItemNode, ItemL
         if let item = self.item {
             let text = self.textNode.attributedText ?? NSAttributedString()
                 
-            var updatedText = text.string
+            let updatedText = text.string
             let updatedAttributedText = NSAttributedString(string: updatedText, font: Font.regular(17.0), textColor: item.presentationData.theme.list.itemPrimaryTextColor)
             if text.string != updatedAttributedText.string {
                 self.textNode.attributedText = updatedAttributedText

@@ -226,7 +226,7 @@ public final class GiftCompositionComponent: Component {
 
             let node = DefaultAnimatedStickerNodeImpl()
             node.isUserInteractionEnabled = false
-            let pathPrefix = self.component!.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+            let pathPrefix = self.component!.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
             node.setup(
                 source: AnimatedStickerResourceSource(account: self.component!.context.account, resource: file.resource, isVideo: file.isVideoSticker),
                 width: Int(geom.iconSize.width * 1.6),
@@ -345,7 +345,7 @@ public final class GiftCompositionComponent: Component {
 
                 let node = DefaultAnimatedStickerNodeImpl()
                 node.isUserInteractionEnabled = false
-                let pathPrefix = self.component!.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+                let pathPrefix = self.component!.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
                 node.setup(
                     source: AnimatedStickerResourceSource(account: self.component!.context.account, resource: file.resource, isVideo: file.isVideoSticker),
                     width: Int(iconSize.width * 1.6),
@@ -957,7 +957,7 @@ public final class GiftCompositionComponent: Component {
                 node.isUserInteractionEnabled = false
                 self.animationNode = node
                 self.addSubview(node.view)
-                let pathPrefix = component.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+                let pathPrefix = component.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
                 node.setup(source: AnimatedStickerResourceSource(account: component.context.account, resource: file.resource, isVideo: file.isVideoSticker),
                            width: Int(iconSize.width * 1.6), height: Int(iconSize.height * 1.6),
                            playbackMode: loop ? .loop : .once,

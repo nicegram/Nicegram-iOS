@@ -9,7 +9,7 @@ import TelegramUIPreferences
 import AccountContext
 import ContextUI
 
-public final class InstantPageContentNode : ASDisplayNode {
+public final class InstantPageContentNode : ASDisplayNode, InstantPageExternalMediaDimensionsNode {
     private let context: AccountContext
     private let strings: PresentationStrings
     private let nameDisplayOrder: PresentationPersonNameOrder
@@ -29,13 +29,20 @@ public final class InstantPageContentNode : ASDisplayNode {
     var distanceThresholdGroupCount: [Int: Int] = [:]
     
     var visibleTiles: [Int: InstantPageTileNode] = [:]
-    var visibleItemsWithNodes: [Int: InstantPageNode] = [:]
+    public var visibleItemsWithNodes: [Int: InstantPageNode] = [:]
     
     var currentWebEmbedHeights: [Int : CGFloat] = [:]
-    var currentExpandedDetails: [Int : Bool]?
+    public var currentExpandedDetails: [Int : Bool]?
     var currentDetailsItems: [InstantPageDetailsItem] = []
     
     var requestLayoutUpdate: ((Bool) -> Void)?
+    public var updateExternalMediaDimensions: ((EngineMedia.Id, PixelDimensions) -> Void)? {
+        didSet {
+            for (_, itemNode) in self.visibleItemsWithNodes {
+                self.applyExternalMediaDimensionsUpdater(to: itemNode)
+            }
+        }
+    }
     
     var currentLayout: InstantPageLayout
     let contentSize: CGSize
@@ -223,6 +230,7 @@ public final class InstantPageContentNode : ASDisplayNode {
                         topNode = newNode
                         self.visibleItemsWithNodes[itemIndex] = newNode
                         itemNode = newNode
+                        self.applyExternalMediaDimensionsUpdater(to: newNode)
                         
                         if let itemNode = itemNode as? InstantPageDetailsNode {
                             itemNode.requestLayoutUpdate = { [weak self] animated in
@@ -300,6 +308,16 @@ public final class InstantPageContentNode : ASDisplayNode {
         }
         for index in removeItemIndices {
             self.visibleItemsWithNodes.removeValue(forKey: index)
+        }
+    }
+    
+    private func applyExternalMediaDimensionsUpdater(to itemNode: InstantPageNode) {
+        if let itemNode = itemNode as? InstantPageImageNode {
+            itemNode.updateExternalMediaDimensions = self.updateExternalMediaDimensions
+        } else if let itemNode = itemNode as? InstantPageDetailsNode {
+            itemNode.contentNode.updateExternalMediaDimensions = self.updateExternalMediaDimensions
+        } else if let itemNode = itemNode as? InstantPageSlideshowNode {
+            itemNode.updateExternalMediaDimensions = self.updateExternalMediaDimensions
         }
     }
     

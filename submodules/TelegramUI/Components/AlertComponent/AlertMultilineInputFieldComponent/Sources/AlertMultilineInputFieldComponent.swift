@@ -19,6 +19,7 @@ public final class AlertMultilineInputFieldComponent: Component {
         public fileprivate(set) var value: NSAttributedString = NSAttributedString()
         public fileprivate(set) var animateError: () -> Void = {}
         public fileprivate(set) var activateInput: () -> Void = {}
+        fileprivate var setValueImpl: ((NSAttributedString, Range<Int>) -> Void)?
         fileprivate let valuePromise = ValuePromise<NSAttributedString>(NSAttributedString())
         public var valueSignal: Signal<NSAttributedString, NoError> {
             return self.valuePromise.get()
@@ -31,6 +32,13 @@ public final class AlertMultilineInputFieldComponent: Component {
         }
         
         public init() {
+        }
+
+        public func setValue(_ value: NSAttributedString, selectionRange: Range<Int>? = nil) {
+            let selectionRange = selectionRange ?? (value.length ..< value.length)
+            self.value = value
+            self.valuePromise.set(value)
+            self.setValueImpl?(value, selectionRange)
         }
     }
     
@@ -226,12 +234,17 @@ public final class AlertMultilineInputFieldComponent: Component {
         func update(component: AlertMultilineInputFieldComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<AlertComponentEnvironment>, transition: ComponentTransition) -> CGSize {
             var resetText: NSAttributedString?
             if self.component == nil {
-                resetText = component.initialValue
+                resetText = component.initialValue ?? (component.externalState.value.length == 0 ? nil : component.externalState.value)
                 component.externalState.animateError = { [weak self] in
                     self?.animateError()
                 }
                 component.externalState.activateInput = { [weak self] in
                     self?.activateInput()
+                }
+                component.externalState.setValueImpl = { [weak self] value, selectionRange in
+                    if let textFieldView = self?.textField.view as? TextFieldComponent.View {
+                        textFieldView.updateText(value, selectionRange: selectionRange)
+                    }
                 }
             }
             

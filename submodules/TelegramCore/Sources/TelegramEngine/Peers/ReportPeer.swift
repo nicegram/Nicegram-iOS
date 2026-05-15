@@ -5,7 +5,7 @@ import TelegramApi
 import MtProtoKit
 
 
-func _internal_reportPeer(account: Account, peerId: PeerId) -> Signal<Void, NoError> {
+func _internal_reportPeer(account: Account, peerId: PeerId, sourceMessageId: MessageId? = nil) -> Signal<Void, NoError> {
     return account.postbox.transaction { transaction -> Signal<Void, NoError> in
         if let peer = transaction.getPeer(peerId) {
             if let peer = peer as? TelegramSecretChat {
@@ -37,7 +37,7 @@ func _internal_reportPeer(account: Account, peerId: PeerId) -> Signal<Void, NoEr
                         }
                     }
                 }
-            } else if let inputPeer = apiInputPeer(peer) {
+            } else if let inputPeer = apiInputPeer(peer, sourceMessageId: sourceMessageId, transaction: transaction) {
                 return account.network.request(Api.functions.messages.reportSpam(peer: inputPeer))
                 |> map(Optional.init)
                 |> `catch` { _ -> Signal<Api.Bool?, NoError> in
@@ -115,9 +115,9 @@ private extension ReportReason {
     }
 }
 
-func _internal_reportPeer(account: Account, peerId: PeerId, reason: ReportReason, message: String) -> Signal<Void, NoError> {
+func _internal_reportPeer(account: Account, peerId: PeerId, reason: ReportReason, message: String, sourceMessageId: MessageId? = nil) -> Signal<Void, NoError> {
     return account.postbox.transaction { transaction -> Signal<Void, NoError> in
-        if let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer) {
+        if let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer, sourceMessageId: sourceMessageId, transaction: transaction) {
             return account.network.request(Api.functions.account.reportPeer(peer: inputPeer, reason: reason.apiReason, message: message))
             |> `catch` { _ -> Signal<Api.Bool, NoError> in
                 return .single(.boolFalse)
@@ -131,9 +131,9 @@ func _internal_reportPeer(account: Account, peerId: PeerId, reason: ReportReason
     } |> switchToLatest
 }
 
-func _internal_reportPeerPhoto(account: Account, peerId: PeerId, reason: ReportReason, message: String) -> Signal<Void, NoError> {
+func _internal_reportPeerPhoto(account: Account, peerId: PeerId, reason: ReportReason, message: String, sourceMessageId: MessageId? = nil) -> Signal<Void, NoError> {
     return account.postbox.transaction { transaction -> Signal<Void, NoError> in
-        if let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer) {
+        if let peer = transaction.getPeer(peerId), let inputPeer = apiInputPeer(peer, sourceMessageId: sourceMessageId, transaction: transaction) {
             return account.network.request(Api.functions.account.reportProfilePhoto(peer: inputPeer, photoId: .inputPhotoEmpty, reason: reason.apiReason, message: message))
             |> `catch` { _ -> Signal<Api.Bool, NoError> in
                 return .single(.boolFalse)
@@ -193,7 +193,7 @@ func _internal_reportPeerReaction(account: Account, authorId: PeerId, messageId:
         guard let peer = transaction.getPeer(messageId.peerId).flatMap(apiInputPeer) else {
             return nil
         }
-        guard let author = transaction.getPeer(authorId).flatMap(apiInputPeer) else {
+        guard let authorPeer = transaction.getPeer(authorId), let author = apiInputPeer(authorPeer, sourceMessageId: messageId, transaction: transaction) else {
             return nil
         }
         return (peer, author)

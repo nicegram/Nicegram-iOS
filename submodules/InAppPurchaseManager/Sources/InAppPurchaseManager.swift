@@ -3,7 +3,6 @@ import CoreLocation
 import SwiftSignalKit
 import StoreKit
 import TelegramCore
-import Postbox
 import TelegramStringFormatting
 import TelegramUIPreferences
 import PersistentStringHash
@@ -29,6 +28,7 @@ private let productIdentifiers = [
     "org.telegram.telegramPremium.twelveMonths.code_x10",
     
     "org.telegram.telegramPremium.oneWeek.auth",
+    "org.telegram.telegramPremium.threeDays.auth",
     
     "org.telegram.telegramStars.topup.x15",
     "org.telegram.telegramStars.topup.x25",
@@ -623,9 +623,9 @@ extension InAppPurchaseManager: SKPaymentTransactionObserver {
         }
         let id = Int64.random(in: Int64.min ... Int64.max)
         let fileResource = LocalFileMediaResource(fileId: id, size: Int64(receiptData.count), isSecretRelated: false)
-        engine.account.postbox.mediaBox.storeResourceData(fileResource.id, data: receiptData)
+        engine.resources.storeResourceData(id: EngineMediaResource.Id(fileResource.id), data: receiptData)
 
-        let file = TelegramMediaFile(fileId: MediaId(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(receiptData.count), attributes: [.FileName(fileName: "Receipt.dat")], alternativeRepresentations: [])
+        let file = TelegramMediaFile(fileId: EngineMedia.Id(namespace: Namespaces.Media.LocalFile, id: id), partialReference: nil, resource: fileResource, previewRepresentations: [], videoThumbnails: [], immediateThumbnailData: nil, mimeType: "application/text", size: Int64(receiptData.count), attributes: [.FileName(fileName: "Receipt.dat")], alternativeRepresentations: [])
         let message: EnqueueMessage = .message(text: "", attributes: [], inlineStickers: [:], mediaReference: .standalone(media: file), threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])
 
         let _ = enqueueMessages(account: engine.account, peerId: engine.account.peerId, messages: [message]).start()
@@ -663,6 +663,7 @@ private final class PendingInAppPurchaseState: Codable {
             case restore
             case phoneNumber
             case phoneCodeHash
+            case premiumDays
         }
         
         enum PurposeType: Int32 {
@@ -687,7 +688,7 @@ private final class PendingInAppPurchaseState: Codable {
         case stars(count: Int64, peerId: EnginePeer.Id?)
         case starsGift(peerId: EnginePeer.Id, count: Int64)
         case starsGiveaway(stars: Int64, boostPeer: EnginePeer.Id, additionalPeerIds: [EnginePeer.Id], countries: [String], onlyNewSubscribers: Bool, showWinners: Bool, prizeDescription: String?, randomId: Int64, untilDate: Int32, users: Int32)
-        case authCode(restore: Bool, phoneNumber: String, phoneCodeHash: String)
+        case authCode(restore: Bool, phoneNumber: String, phoneCodeHash: String, premiumDays: Int32)
         
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -749,7 +750,8 @@ private final class PendingInAppPurchaseState: Codable {
                 self = .authCode(
                     restore: try container.decode(Bool.self, forKey: .restore),
                     phoneNumber: try container.decode(String.self, forKey: .phoneNumber),
-                    phoneCodeHash: try container.decode(String.self, forKey: .phoneCodeHash)
+                    phoneCodeHash: try container.decode(String.self, forKey: .phoneCodeHash),
+                    premiumDays: try container.decode(Int32.self, forKey: .premiumDays),
                 )
             default:
                 throw DecodingError.generic
@@ -805,11 +807,12 @@ private final class PendingInAppPurchaseState: Codable {
                 try container.encode(randomId, forKey: .randomId)
                 try container.encode(untilDate, forKey: .untilDate)
                 try container.encode(users, forKey: .users)
-            case let .authCode(restore, phoneNumber, phoneCodeHash):
+            case let .authCode(restore, phoneNumber, phoneCodeHash, premiumDays):
                 try container.encode(PurposeType.authCode.rawValue, forKey: .type)
                 try container.encode(restore, forKey: .restore)
                 try container.encode(phoneNumber, forKey: .phoneNumber)
                 try container.encode(phoneCodeHash, forKey: .phoneCodeHash)
+                try container.encode(premiumDays, forKey: .premiumDays)
             }
         }
         
@@ -833,8 +836,8 @@ private final class PendingInAppPurchaseState: Codable {
                 self = .starsGift(peerId: peerId, count: count)
             case let .starsGiveaway(stars, boostPeer, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, _, _, users):
                 self = .starsGiveaway(stars: stars, boostPeer: boostPeer, additionalPeerIds: additionalPeerIds, countries: countries, onlyNewSubscribers: onlyNewSubscribers, showWinners: showWinners, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, users: users)
-            case let .authCode(restore, phoneNumber, phoneCodeHash, _, _):
-                self = .authCode(restore: restore, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash)
+            case let .authCode(restore, phoneNumber, phoneCodeHash, premiumDays, _, _):
+                self = .authCode(restore: restore, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, premiumDays: premiumDays)
             }
         }
         
@@ -859,8 +862,8 @@ private final class PendingInAppPurchaseState: Codable {
                 return .starsGift(peerId: peerId, count: count, currency: currency, amount: amount)
             case let .starsGiveaway(stars, boostPeer, additionalPeerIds, countries, onlyNewSubscribers, showWinners, prizeDescription, randomId, untilDate, users):
                 return .starsGiveaway(stars: stars, boostPeer: boostPeer, additionalPeerIds: additionalPeerIds, countries: countries, onlyNewSubscribers: onlyNewSubscribers, showWinners: showWinners, prizeDescription: prizeDescription, randomId: randomId, untilDate: untilDate, currency: currency, amount: amount, users: users)
-            case let .authCode(restore, phoneNumber, phoneCodeHash):
-                return .authCode(restore: restore, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, currency: currency, amount: amount)
+            case let .authCode(restore, phoneNumber, phoneCodeHash, premiumDays):
+                return .authCode(restore: restore, phoneNumber: phoneNumber, phoneCodeHash: phoneCodeHash, premiumDays: premiumDays, currency: currency, amount: amount)
             }
         }
     }

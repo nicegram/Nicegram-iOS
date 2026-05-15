@@ -323,19 +323,19 @@ public extension Api {
             var _4: Int32?
             _4 = reader.readInt32()
             var _5: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _5 = reader.readInt32()
             }
             var _6: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _6 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 0) == 0) || _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.InputFileLocation.inputGroupCallStream(Cons_inputGroupCallStream(flags: _1!, call: _2!, timeMs: _3!, scale: _4!, videoChannel: _5, videoQuality: _6))
             }
@@ -640,13 +640,13 @@ public extension Api {
             var _3: Double?
             _3 = reader.readDouble()
             var _4: Int32?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _4 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputGeoPoint.inputGeoPoint(Cons_inputGeoPoint(flags: _1!, lat: _2!, long: _3!, accuracyRadius: _4))
             }
@@ -1196,7 +1196,7 @@ public extension Api {
             var _3: Int32?
             _3 = reader.readInt32()
             var _4: Api.TextWithEntities?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
                 }
@@ -1204,7 +1204,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputInvoice.inputInvoicePremiumGiftStars(Cons_inputInvoicePremiumGiftStars(flags: _1!, userId: _2!, months: _3!, message: _4))
             }
@@ -1233,7 +1233,7 @@ public extension Api {
             var _3: Int64?
             _3 = reader.readInt64()
             var _4: Api.TextWithEntities?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
                 }
@@ -1241,7 +1241,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 1) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.InputInvoice.inputInvoiceStarGift(Cons_inputInvoiceStarGift(flags: _1!, peer: _2!, giftId: _3!, message: _4))
             }
@@ -1253,7 +1253,7 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.InputPeer?
-            if Int(_1!) & Int(1 << 3) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.InputPeer
                 }
@@ -1263,16 +1263,16 @@ public extension Api {
             var _4: Int64?
             _4 = reader.readInt64()
             var _5: Api.TextWithEntities?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _5 = Api.parse(reader, signature: signature) as? Api.TextWithEntities
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 3) == 0) || _2 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _5 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 {
                 return Api.InputInvoice.inputInvoiceStarGiftAuctionBid(Cons_inputInvoiceStarGiftAuctionBid(flags: _1!, peer: _2, giftId: _3!, bidAmount: _4!, message: _5))
             }

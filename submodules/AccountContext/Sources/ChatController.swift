@@ -66,6 +66,9 @@ public final class ChatMessageItemAssociatedData: Equatable {
     public let showSensitiveContent: Bool
     public let isSuspiciousPeer: Bool
     public let showTextAsPlaceholder: Bool
+    public let accountCountry: String?
+    public let isParticipant: Bool
+    public let invitedOn: Int32?
     
     public init(
         automaticDownloadPeerType: MediaAutoDownloadPeerType,
@@ -102,7 +105,10 @@ public final class ChatMessageItemAssociatedData: Equatable {
         isInline: Bool = false,
         showSensitiveContent: Bool = false,
         isSuspiciousPeer: Bool = false,
-        showTextAsPlaceholder: Bool = false
+        showTextAsPlaceholder: Bool = false,
+        accountCountry: String? = nil,
+        isParticipant: Bool = false,
+        invitedOn: Int32? = nil
     ) {
         self.automaticDownloadPeerType = automaticDownloadPeerType
         self.automaticDownloadPeerId = automaticDownloadPeerId
@@ -139,6 +145,9 @@ public final class ChatMessageItemAssociatedData: Equatable {
         self.showSensitiveContent = showSensitiveContent
         self.isSuspiciousPeer = isSuspiciousPeer
         self.showTextAsPlaceholder = showTextAsPlaceholder
+        self.accountCountry = accountCountry
+        self.isParticipant = isParticipant
+        self.invitedOn = invitedOn
     }
     
     public static func == (lhs: ChatMessageItemAssociatedData, rhs: ChatMessageItemAssociatedData) -> Bool {
@@ -233,6 +242,15 @@ public final class ChatMessageItemAssociatedData: Equatable {
             return false
         }
         if lhs.isSuspiciousPeer != rhs.isSuspiciousPeer {
+            return false
+        }
+        if lhs.accountCountry != rhs.accountCountry {
+            return false
+        }
+        if lhs.isParticipant != rhs.isParticipant {
+            return false
+        }
+        if lhs.invitedOn != rhs.invitedOn {
             return false
         }
         return true
@@ -1110,6 +1128,7 @@ public protocol ChatController: ViewController {
     func activateSearch(domain: ChatSearchDomain, query: String)
     func activateInput(type: ChatControllerActivateInput)
     func beginClearHistory(type: InteractiveHistoryClearingType)
+    func presentReactionDeletionOptions(author: Peer, messageId: MessageId)
     
     func performScrollToTop() -> Bool
     func transferScrollingVelocity(_ velocity: CGFloat)

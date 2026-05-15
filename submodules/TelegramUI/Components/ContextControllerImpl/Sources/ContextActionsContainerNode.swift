@@ -424,6 +424,12 @@ final class InnerTextSelectionTipContainerNode: ASDisplayNode {
             self.text = self.presentationData.strings.Camera_CollageReorderingInfo
             self.targetSelectionIndex = nil
             icon = UIImage(bundleImageName: "Chat/Context Menu/Tip")
+        case .deleteReaction:
+            self.action = nil
+            self.text = self.presentationData.strings.Chat_DeleteReactionInfo
+            self.targetSelectionIndex = nil
+            icon = nil
+            isUserInteractionEnabled = false
         }
         
         self.iconNode = ASImageNode()

@@ -511,7 +511,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
                             }
                             strongSelf.animatedStickerNode = animatedStickerNode
                             strongSelf.emojiContainerNode.insertSubnode(animatedStickerNode, belowSubnode: strongSelf.placeholderNode)
-                            let pathPrefix = item.context.account.postbox.mediaBox.shortLivedResourceCachePathPrefix(file.resource.id)
+                            let pathPrefix = item.context.engine.resources.shortLivedResourceCachePathPrefix(id: EngineMediaResource.Id(file.resource.id))
                             animatedStickerNode.setup(source: AnimatedStickerResourceSource(account: item.context.account, resource: file.resource), width: 128, height: 128, playbackMode: .still(.start), mode: .direct(cachePathPrefix: pathPrefix))
                             
                             animatedStickerNode.anchorPoint = CGPoint(x: 0.5, y: 1.0)
@@ -519,7 +519,7 @@ private final class ThemeSettingsThemeItemIconNode : ListViewItemNode {
                         animatedStickerNode.autoplay = true
                         animatedStickerNode.visibility = strongSelf.visibilityStatus
                         
-                        strongSelf.stickerFetchedDisposable.set(fetchedMediaResource(mediaBox: item.context.account.postbox.mediaBox, userLocation: .other, userContentType: .sticker, reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource)).startStrict())
+                        strongSelf.stickerFetchedDisposable.set(item.context.engine.resources.fetch(reference: MediaResourceReference.media(media: .standalone(media: file), resource: file.resource), userLocation: .other, userContentType: .sticker).startStrict())
                         
                         let thumbnailDimensions = PixelDimensions(width: 512, height: 512)
                         strongSelf.placeholderNode.update(backgroundColor: nil, foregroundColor: UIColor(rgb: 0xffffff, alpha: 0.2), shimmeringColor: UIColor(rgb: 0xffffff, alpha: 0.3), data: file.immediateThumbnailData, size: emojiFrame.size, enableEffect: item.context.sharedContext.energyUsageSettings.fullTranslucency, imageSize: thumbnailDimensions.cgSize)
@@ -571,7 +571,7 @@ public final class ChatQrCodeScreenImpl: ViewController, ChatQrCodeScreen {
     public static let themeCrossfadeDelay: Double = 0.05
     
     public enum Subject {
-        case peer(peer: Peer, threadId: Int64?, temporary: Bool)
+        case peer(peer: EnginePeer, threadId: Int64?, temporary: Bool)
         case messages([Message])
         
         public var fileName: String {
@@ -580,7 +580,7 @@ public final class ChatQrCodeScreenImpl: ViewController, ChatQrCodeScreen {
                 var result: String
                 if let addressName = peer.addressName, !addressName.isEmpty {
                     result = "t_me-\(peer.addressName ?? "")"
-                } else if let peer = peer as? TelegramUser {
+                } else if case let .user(peer) = peer {
                     result = "t_me-\(peer.phone ?? "")"
                 } else {
                     result = "t_me-\(Int32.random(in: 0 ..< Int32.max))"
@@ -1576,7 +1576,7 @@ private protocol ContentNode: ASDisplayNode {
 
 private class QrContentNode: ASDisplayNode, ContentNode {
     private let context: AccountContext
-    private let peer: Peer
+    private let peer: EnginePeer
     private let threadId: Int64?
     private let isStatic: Bool
     private let temporary: Bool
@@ -1618,7 +1618,7 @@ private class QrContentNode: ASDisplayNode, ContentNode {
     private var tokenUpdated = false
     var requestNextToken: () -> Void = {}
     
-    init(context: AccountContext, peer: Peer, threadId: Int64?, isStatic: Bool = false, temporary: Bool) {
+    init(context: AccountContext, peer: EnginePeer, threadId: Int64?, isStatic: Bool = false, temporary: Bool) {
         self.context = context
         self.peer = peer
         self.threadId = threadId
@@ -1706,7 +1706,7 @@ private class QrContentNode: ASDisplayNode, ContentNode {
         
         self.avatarNode = ImageNode()
         self.avatarNode.displaysAsynchronously = false
-        self.avatarNode.setSignal(peerAvatarCompleteImage(account: context.account, peer: EnginePeer(peer), size: CGSize(width: 180.0, height: 180.0), font: avatarPlaceholderFont(size: 78.0), fullSize: true))
+        self.avatarNode.setSignal(peerAvatarCompleteImage(account: context.account, peer: peer, size: CGSize(width: 180.0, height: 180.0), font: avatarPlaceholderFont(size: 78.0), fullSize: true))
         
         super.init()
         
@@ -1739,9 +1739,9 @@ private class QrContentNode: ASDisplayNode, ContentNode {
         var codeLink: String
         if let addressName = peer.addressName, !addressName.isEmpty {
             codeLink = "https://t.me/\(peer.addressName ?? "")"
-        } else if let peer = peer as? TelegramUser {
+        } else if case let .user(peer) = peer {
             codeLink = "https://t.me/+\(peer.phone ?? "")"
-        } else if let _ = peer as? TelegramChannel {
+        } else if case .channel = peer {
             codeLink = "https://t.me/c/\(peer.id.id._internalGetInt64Value())"
         } else {
             codeLink = ""
@@ -2502,9 +2502,9 @@ private enum RenderVideoResult {
 }
 
 private func renderVideo(context: AccountContext, backgroundImage: UIImage, userLocation: MediaResourceUserLocation, media: TelegramMediaFile, videoFrame: CGRect, completion: @escaping (URL?) -> Void) {
-    let _ = (fetchMediaData(context: context, postbox: context.account.postbox, userLocation: userLocation, mediaReference: AnyMediaReference.standalone(media: media))
+    let _ = (fetchMediaData(context: context, userLocation: userLocation, mediaReference: AnyMediaReference.standalone(media: media))
     |> deliverOnMainQueue).startStandalone(next: { value, isImage in
-        guard case let .data(data) = value, data.complete else {
+        guard case let .data(data) = value, data.isComplete else {
             return
         }
         

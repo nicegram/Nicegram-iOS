@@ -17,7 +17,7 @@ public extension TgContact {
             username = ""
         }
         
-        let canSendMessage = canSendMessagesToPeer(peer._asPeer())
+        let canSendMessage = canSendMessagesToPeer(peer)
         
         self.init(
             id: .init(peer.id),

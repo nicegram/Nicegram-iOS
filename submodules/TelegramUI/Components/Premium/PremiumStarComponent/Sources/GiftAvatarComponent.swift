@@ -394,7 +394,7 @@ public final class GiftAvatarComponent: Component {
                     self.mergedAvatarsNode = mergedAvatarsNode
                 }
                 
-                mergedAvatarsNode.update(context: component.context, peers: Array(component.peers.map { $0._asPeer() }.prefix(3)), synchronousLoad: false, imageSize: avatarSize.width, imageSpacing: 30.0, borderWidth: 2.0, avatarFontSize: 26.0)
+                mergedAvatarsNode.update(context: component.context, peers: Array(component.peers.prefix(3)), synchronousLoad: false, imageSize: avatarSize.width, imageSpacing: 30.0, borderWidth: 2.0, avatarFontSize: 26.0)
                 let avatarsSize = CGSize(width: avatarSize.width + 30.0 * CGFloat(min(3, component.peers.count) - 1), height: avatarSize.height)
                 mergedAvatarsNode.updateLayout(size: avatarsSize)
                 mergedAvatarsNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((availableSize.width - avatarsSize.width) / 2.0), y: 113.0 - avatarSize.height / 2.0), size: avatarsSize)

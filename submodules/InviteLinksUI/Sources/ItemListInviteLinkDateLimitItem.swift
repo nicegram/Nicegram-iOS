@@ -73,14 +73,16 @@ enum InviteLinkTimeLimit: Equatable {
 
 final class ItemListInviteLinkTimeLimitItem: ListViewItem, ItemListItem {
     let theme: PresentationTheme
+    let systemStyle: ItemListSystemStyle
     let strings: PresentationStrings
     let value: InviteLinkTimeLimit
     let enabled: Bool
     let sectionId: ItemListSectionId
     let updated: (InviteLinkTimeLimit) -> Void
     
-    init(theme: PresentationTheme, strings: PresentationStrings, value: InviteLinkTimeLimit, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (InviteLinkTimeLimit) -> Void) {
+    init(theme: PresentationTheme, systemStyle: ItemListSystemStyle, strings: PresentationStrings, value: InviteLinkTimeLimit, enabled: Bool, sectionId: ItemListSectionId, updated: @escaping (InviteLinkTimeLimit) -> Void) {
         self.theme = theme
+        self.systemStyle = systemStyle
         self.strings = strings
         self.value = value
         self.enabled = enabled
@@ -326,7 +328,7 @@ private final class ItemListInviteLinkTimeLimitItemNode: ListViewItemNode {
                         strongSelf.bottomStripeNode.isHidden = hasCorners
                     }
                     
-                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners) : nil
+                    strongSelf.maskNode.image = hasCorners ? PresentationResourcesItemList.cornersImage(item.theme, top: hasTopCorners, bottom: hasBottomCorners, glass: item.systemStyle == .glass) : nil
                     
                     strongSelf.backgroundNode.frame = CGRect(origin: CGPoint(x: 0.0, y: -min(insets.top, separatorHeight)), size: CGSize(width: params.width, height: contentSize.height + min(insets.top, separatorHeight) + min(insets.bottom, separatorHeight)))
                     strongSelf.maskNode.frame = strongSelf.backgroundNode.frame.insetBy(dx: params.leftInset, dy: 0.0)

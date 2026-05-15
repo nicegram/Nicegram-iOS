@@ -338,7 +338,7 @@ final class StoryItemContentComponent: Component {
                 return
             }
             
-            if case let .file(file) = currentMessageMedia, let peerReference = PeerReference(component.peer._asPeer()) {
+            if case let .file(file) = currentMessageMedia, let peerReference = PeerReference(component.peer) {
                 if self.videoNode == nil {
                     let videoNode = UniversalVideoNode(
                         context: component.context,
@@ -850,7 +850,7 @@ final class StoryItemContentComponent: Component {
             
             let startTime = CFAbsoluteTimeGetCurrent()
             
-            let peerReference = PeerReference(component.peer._asPeer())
+            let peerReference = PeerReference(component.peer)
             
             let selectedMedia: EngineMedia
             var messageMedia: EngineMedia?

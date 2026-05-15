@@ -356,7 +356,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             contentMediaValue = file
                         } else if file.isVideo {
                             contentMediaValue = file
-                        } else if file.isSticker || file.isAnimatedSticker {
+                        } else if file.isSticker || file.isAnimatedSticker || file.isCustomEmoji {
                             contentMediaValue = file
                         } else {
                             contentFileValue = file
@@ -377,7 +377,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                             if case .full = contentMediaAutomaticDownload {
                                 willDownloadOrLocal = true
                             } else {
-                                willDownloadOrLocal = context.account.postbox.mediaBox.completedResourcePath(file.resource) != nil
+                                willDownloadOrLocal = context.engine.resources.completedResourcePath(id: EngineMediaResource.Id(file.resource.id)) != nil
                             }
                             if willDownloadOrLocal {
                                 contentMediaAutomaticPlayback = true
@@ -1115,7 +1115,7 @@ public final class ChatMessageAttachedContentNode: ASDisplayNode {
                                         inlineMedia.setSignal(updateInlineImageSignal)
                                     }
                                 case let .peerAvatar(peer):
-                                    if let peerReference = PeerReference(peer._asPeer()) {
+                                    if let peerReference = PeerReference(peer) {
                                         if let signal = peerAvatarImage(account: context.account, peerReference: peerReference, authorOfMessage: nil, representation: peer.largeProfileImage, displayDimensions: inlineMediaSize, clipStyle: .none, blurred: false, inset: 0.0, emptyColor: mainColor.withMultipliedAlpha(0.1), synchronousLoad: synchronousLoads, provideUnrounded: false) {
                                             let updateInlineImageSignal = signal |> map { images -> (TransformImageArguments) -> DrawingContext? in
                                                 let image = images?.0

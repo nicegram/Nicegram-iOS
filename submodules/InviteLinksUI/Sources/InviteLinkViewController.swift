@@ -741,13 +741,20 @@ public final class InviteLinkViewController: ViewController {
                             }, action: { [weak self] _, f in
                                 f(.dismissWithoutContent)
                                 
-                                let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                                let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                                    if let peer {
+                                        return .single(peer)
+                                    } else {
+                                        return .never()
+                                    }
+                                }
                                 |> deliverOnMainQueue).start(next: { [weak self] peer in
                                     guard let strongSelf = self, let parentController = strongSelf.controller else {
                                         return
                                     }
                                     let isGroup: Bool
-                                    if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                                    if case let .channel(channel) = peer, case .broadcast = channel.info {
                                         isGroup = false
                                     } else {
                                         isGroup = true
@@ -763,10 +770,17 @@ public final class InviteLinkViewController: ViewController {
                             }, action: { [weak self] _, f in
                                 f(.dismissWithoutContent)
                                 
-                                let _ = (context.account.postbox.loadedPeerWithId(peerId)
+                                let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+                                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                                    if let peer {
+                                        return .single(peer)
+                                    } else {
+                                        return .never()
+                                    }
+                                }
                                 |> deliverOnMainQueue).start(next: { peer in
                                     let isGroup: Bool
-                                    if let peer = peer as? TelegramChannel, case .broadcast = peer.info {
+                                    if case let .channel(channel) = peer, case .broadcast = channel.info {
                                         isGroup = false
                                     } else {
                                         isGroup = true
@@ -823,11 +837,19 @@ public final class InviteLinkViewController: ViewController {
             }
                         
             if case let .link(_, _, _, _, _, adminId, date, _, _, usageLimit, _, _, _) = invite {
+                let creatorPeerSignal = context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: adminId))
+                |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                    if let peer {
+                        return .single(peer)
+                    } else {
+                        return .never()
+                    }
+                }
                 self.disposable = (combineLatest(
                     self.presentationDataPromise.get(),
                     self.importersContext.state,
                     requestsState,
-                    context.account.postbox.loadedPeerWithId(adminId)
+                    creatorPeerSignal
                 ) |> deliverOnMainQueue).start(next: { [weak self] presentationData, state, requestsState, creatorPeer in
                     if let strongSelf = self {
                         let usdRate = Double(configuration.usdWithdrawRate) / 1000.0 / 100.0
@@ -849,7 +871,7 @@ public final class InviteLinkViewController: ViewController {
                         }
                         
                         entries.append(.creatorHeader(presentationData.theme, presentationData.strings.InviteLink_CreatedBy.uppercased()))
-                        entries.append(.creator(presentationData.theme, presentationData.dateTimeFormat, EnginePeer(creatorPeer), date))
+                        entries.append(.creator(presentationData.theme, presentationData.dateTimeFormat, creatorPeer, date))
                                             
                         if !requestsState.importers.isEmpty || (state.isLoadingMore && requestsState.count > 0) {
                             entries.append(.requestHeader(presentationData.theme, presentationData.strings.MemberRequests_PeopleRequested(Int32(requestsState.count)).uppercased(), "", false))

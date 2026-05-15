@@ -8,7 +8,6 @@
 @interface TGPhotoCaptionInputMixin : NSObject
 
 @property (nonatomic, strong) id<TGPhotoPaintStickersContext> stickersContext;
-@property (nonatomic, readonly) UIView *backgroundView;
 @property (nonatomic, readonly) id<TGCaptionPanelView> inputPanel;
 @property (nonatomic, readonly) UIView *inputPanelView;
 @property (nonatomic, readonly) UIView *dismissView;

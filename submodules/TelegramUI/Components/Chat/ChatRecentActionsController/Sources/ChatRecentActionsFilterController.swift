@@ -213,7 +213,7 @@ private enum ChatRecentActionsFilterEntry: ItemListNodeEntry {
                         peerText = strings.ChatAdmins_AdminLabel.lowercased()
                     }
                 }
-                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: EnginePeer(participant.peer), presence: nil, text: .text(peerText, .secondary), label: .none, editing: ItemListPeerItemEditing(editable: false, editing: false, revealed: false), switchValue: ItemListPeerItemSwitch(value: checked, style: .check), enabled: true, selectable: true, sectionId: self.section, action: {
+                return ItemListPeerItem(presentationData: presentationData, dateTimeFormat: dateTimeFormat, nameDisplayOrder: nameDisplayOrder, context: arguments.context, peer: participant.peer, presence: nil, text: .text(peerText, .secondary), label: .none, editing: ItemListPeerItemEditing(editable: false, editing: false, revealed: false), switchValue: ItemListPeerItemSwitch(value: checked, style: .check), enabled: true, selectable: true, sectionId: self.section, action: {
                     arguments.toggleAdmin(participant.peer.id)
                 }, setPeerIdWithRevealedOptions: { _, _ in
                 }, removePeer: { _ in })
@@ -442,7 +442,7 @@ public func channelRecentActionsFilterController(context: AccountContext, update
         antiSpamBotPeerPromise.set(context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: antiSpamBotId))
         |> map { peer in
             if let peer = peer, case let .user(user) = peer {
-                return RenderedChannelParticipant(participant: .member(id: user.id, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil), peer: user)
+                return RenderedChannelParticipant(participant: .member(id: user.id, invitedAt: 0, adminInfo: nil, banInfo: nil, rank: nil, subscriptionUntilDate: nil), peer: peer)
             } else {
                 return nil
             }

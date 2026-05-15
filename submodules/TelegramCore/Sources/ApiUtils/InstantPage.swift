@@ -121,7 +121,7 @@ extension InstantPageBlock {
                 self = .paragraph(RichText(apiText: text))
             case let .pageBlockPreformatted(pageBlockPreformattedData):
                 let text = pageBlockPreformattedData.text
-                self = .preformatted(RichText(apiText: text))
+                self = .preformatted(text: RichText(apiText: text), language: nil)
             case let .pageBlockFooter(pageBlockFooterData):
                 let text = pageBlockFooterData.text
                 self = .footer(RichText(apiText: text))

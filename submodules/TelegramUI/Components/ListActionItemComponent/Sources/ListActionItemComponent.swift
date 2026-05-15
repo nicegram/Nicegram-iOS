@@ -93,15 +93,23 @@ public final class ListActionItemComponent: Component {
     
     public enum LeftIcon: Equatable {
         public final class Check: Equatable {
+            public enum Style {
+                case round
+                case rectangle
+            }
+            
+            public let style: Style
             public let isSelected: Bool
             public let isEnabled: Bool
             public let toggle: (() -> Void)?
             
             public init(
+                style: Style = .round,
                 isSelected: Bool,
                 isEnabled: Bool = true,
                 toggle: (() -> Void)?
             ) {
+                self.style = style
                 self.isSelected = isSelected
                 self.isEnabled = isEnabled
                 self.toggle = toggle
@@ -110,6 +118,9 @@ public final class ListActionItemComponent: Component {
             public static func ==(lhs: Check, rhs: Check) -> Bool {
                 if lhs === rhs {
                     return true
+                }
+                if lhs.style != rhs.style {
+                    return false
                 }
                 if lhs.isSelected != rhs.isSelected {
                     return false
@@ -318,12 +329,12 @@ public final class ListActionItemComponent: Component {
             self.action?()
         }
         
-        func update(size: CGSize, theme: PresentationTheme, isSelected: Bool, transition: ComponentTransition) {
+        func update(size: CGSize, theme: PresentationTheme, isSelected: Bool, isRectangle: Bool = false, transition: ComponentTransition) {
             let checkLayer: CheckLayer
             if let current = self.checkLayer {
                 checkLayer = current
             } else {
-                checkLayer = CheckLayer(theme: CheckNodeTheme(theme: theme, style: .plain), content: .check(isRectangle: false))
+                checkLayer = CheckLayer(theme: CheckNodeTheme(theme: theme, style: .plain), content: .check(isRectangle: isRectangle))
                 self.checkLayer = checkLayer
                 self.layer.addSublayer(checkLayer)
             }
@@ -625,11 +636,11 @@ public final class ListActionItemComponent: Component {
                         leftCheckView.frame = CGRect(origin: CGPoint(x: -checkSize.width, y: self.bounds.height == 0.0 ? checkFrame.minY : floor((self.bounds.height - checkSize.height) * 0.5)), size: checkFrame.size)
                         transition.setPosition(view: leftCheckView, position: checkFrame.center)
                         transition.setBounds(view: leftCheckView, bounds: CGRect(origin: CGPoint(), size: checkFrame.size))
-                        leftCheckView.update(size: checkFrame.size, theme: component.theme, isSelected: check.isSelected, transition: .immediate)
+                        leftCheckView.update(size: checkFrame.size, theme: component.theme, isSelected: check.isSelected, isRectangle: check.style == .rectangle, transition: .immediate)
                     } else {
                         transition.setPosition(view: leftCheckView, position: checkFrame.center)
                         transition.setBounds(view: leftCheckView, bounds: CGRect(origin: CGPoint(), size: checkFrame.size))
-                        leftCheckView.update(size: checkFrame.size, theme: component.theme, isSelected: check.isSelected, transition: transition)
+                        leftCheckView.update(size: checkFrame.size, theme: component.theme, isSelected: check.isSelected, isRectangle: check.style == .rectangle, transition: transition)
                     }
                 case let .custom(customLeftIcon, adjustLeftInset):
                     var resetLeftIcon = false
@@ -716,7 +727,8 @@ public final class ListActionItemComponent: Component {
                 }
             }
             
-            if case .arrow = component.accessory {
+            switch component.accessory {
+            case .arrow:
                 let arrowView: UIImageView
                 var arrowTransition = transition
                 if let current = self.arrowView {
@@ -735,14 +747,7 @@ public final class ListActionItemComponent: Component {
                     let arrowFrame = CGRect(origin: CGPoint(x: availableSize.width - 7.0 - image.size.width, y: floor((contentHeight - image.size.height) * 0.5)), size: image.size)
                     arrowTransition.setFrame(view: arrowView, frame: arrowFrame)
                 }
-            } else {
-                if let arrowView = self.arrowView {
-                    self.arrowView = nil
-                    arrowView.removeFromSuperview()
-                }
-            }
-            
-            if case .expandArrows = component.accessory {
+            case .expandArrows:
                 let arrowView: UIImageView
                 var arrowTransition = transition
                 if let current = self.arrowView {
@@ -761,7 +766,7 @@ public final class ListActionItemComponent: Component {
                     let arrowFrame = CGRect(origin: CGPoint(x: availableSize.width - 16.0 - image.size.width, y: floor((contentHeight - image.size.height) * 0.5)), size: image.size)
                     arrowTransition.setFrame(view: arrowView, frame: arrowFrame)
                 }
-            } else {
+            default:
                 if let arrowView = self.arrowView {
                     self.arrowView = nil
                     arrowView.removeFromSuperview()

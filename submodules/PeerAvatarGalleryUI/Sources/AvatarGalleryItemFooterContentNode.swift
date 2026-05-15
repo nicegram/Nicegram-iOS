@@ -125,7 +125,7 @@ final class AvatarGalleryItemFooterContentNode: GalleryFooterContentNode {
                 }
             
                 if let peer = peer {
-                    canShare = !peer._asPeer().isCopyProtectionEnabled
+                    canShare = !peer.isCopyProtectionEnabled
                 }
             default:
                 break

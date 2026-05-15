@@ -57,7 +57,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         
     private let options: ComponentView<Empty>?
     
-    private let optionsBackgroundView: GlassBackgroundView?
+    private let optionsBackgroundView: GlassContextExtractableContainer?
     private let optionsBackgroundNode: ASImageNode
     private let optionsSeparatorNode: ASDisplayNode
     private let optionsSecondSeparatorNode: ASDisplayNode
@@ -66,7 +66,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
     private let notificationButtonNode: HighlightableButtonNode
     private let placesBackgroundView: GlassBackgroundView?
     private let placesBackgroundNode: ASImageNode
-    private let placesButtonNode: HighlightableButtonNode
+    private let placesButtonNode: HighlightTrackingButtonNode
     private let shadowNode: ASImageNode
     
     private var validLayout: (ContainerViewLayout, CGFloat, CGFloat, CGFloat, CGFloat, CGFloat, CGSize)?
@@ -132,7 +132,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         self.placesBackgroundNode.image = generateBackgroundImage(theme: presentationData.theme)
         self.placesBackgroundNode.isUserInteractionEnabled = true
         
-        self.placesButtonNode = HighlightableButtonNode()
+        self.placesButtonNode = HighlightTrackingButtonNode()
         self.placesButtonNode.setTitle(presentationData.strings.Map_PlacesInThisArea, with: Font.medium(17.0), with: self.glass ? presentationData.theme.rootController.navigationBar.primaryTextColor : buttonColor, for: .normal)
         
         self.shadowNode = ASImageNode()
@@ -142,7 +142,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         self.shadowNode.image = generateShadowImage(theme: presentationData.theme, highlighted: false)
         
         if glass {
-            self.optionsBackgroundView = GlassBackgroundView()
+            self.optionsBackgroundView = GlassContextExtractableContainer()
             self.optionsBackgroundNode.image = nil
             
             self.placesBackgroundView = GlassBackgroundView()
@@ -169,16 +169,16 @@ public final class LocationMapHeaderNode: ASDisplayNode {
                     self.view.addSubview(optionsBackgroundView)
                 }
                 self.addSubnode(self.optionsBackgroundNode)
-                self.optionsBackgroundNode.addSubnode(self.optionsSeparatorNode)
-                self.optionsBackgroundNode.addSubnode(self.optionsSecondSeparatorNode)
-                self.optionsBackgroundNode.addSubnode(self.infoButtonNode)
-                self.optionsBackgroundNode.addSubnode(self.locationButtonNode)
-                self.optionsBackgroundNode.addSubnode(self.notificationButtonNode)
+                self.optionsBackgroundView?.contentView.addSubview(self.optionsSeparatorNode.view)
+                self.optionsBackgroundView?.contentView.addSubview(self.optionsSecondSeparatorNode.view)
+                self.optionsBackgroundView?.contentView.addSubview(self.infoButtonNode.view)
+                self.optionsBackgroundView?.contentView.addSubview(self.locationButtonNode.view)
+                self.optionsBackgroundView?.contentView.addSubview(self.notificationButtonNode.view)
             }
         }
             
         self.addSubnode(self.placesBackgroundNode)
-        self.placesBackgroundNode.addSubnode(self.placesButtonNode)
+        self.placesBackgroundView?.contentView.addSubview(self.placesButtonNode.view)
         //self.addSubnode(self.shadowNode)
         
         self.infoButtonNode.addTarget(self, action: #selector(self.infoPressed), forControlEvents: .touchUpInside)
@@ -252,16 +252,16 @@ public final class LocationMapHeaderNode: ASDisplayNode {
         let inset: CGFloat = 6.0
         
         let placesButtonSize = CGSize(width: 180.0 + panelInset * 2.0, height: 45.0 + panelInset * 2.0)
-        let placesButtonFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - placesButtonSize.width) / 2.0), y: navigationBarHeight + topPadding - 6.0), size: placesButtonSize)
+        let placesButtonFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - placesButtonSize.width) / 2.0), y: navigationBarHeight + topPadding - 6.0), size: placesButtonSize).insetBy(dx: 5.0, dy: 6.0)
         transition.updateFrame(node: self.placesBackgroundNode, frame: placesButtonFrame)
         
         if let placesBackgroundView = self.placesBackgroundView {
-            let backgroundViewFrame = CGRect(origin: .zero, size: placesButtonFrame.size).insetBy(dx: 5.0, dy: 6.0)
+            let backgroundViewFrame = CGRect(origin: .zero, size: placesButtonFrame.size)
             transition.updateFrame(view: placesBackgroundView, frame: backgroundViewFrame)
-            placesBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: .immediate)
+            placesBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.height * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: .immediate)
         }
         
-        transition.updateFrame(node: self.placesButtonNode, frame: CGRect(origin: CGPoint(), size: placesButtonSize))
+        transition.updateFrame(node: self.placesButtonNode, frame: CGRect(origin: CGPoint(), size: placesButtonFrame.size))
         transition.updateAlpha(node: self.placesBackgroundNode, alpha: self.displayingPlacesButton ? 1.0 : 0.0)
         transition.updateAlpha(node: self.placesButtonNode, alpha: self.displayingPlacesButton ? 1.0 : 0.0)
         
@@ -327,7 +327,7 @@ public final class LocationMapHeaderNode: ASDisplayNode {
             if let optionsBackgroundView = self.optionsBackgroundView {
                 let backgroundViewFrame = backgroundFrame.insetBy(dx: 4.0, dy: 4.0)
                 transition.updateFrame(view: optionsBackgroundView, frame: backgroundViewFrame)
-                optionsBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.width * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), transition: .immediate)
+                optionsBackgroundView.update(size: backgroundViewFrame.size, cornerRadius: backgroundViewFrame.width * 0.5, isDark: self.presentationData.theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: true, transition: .immediate)
             }
             
             let alphaTransition = ContainedViewLayoutTransition.animated(duration: 0.2, curve: .easeInOut)

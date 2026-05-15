@@ -1,5 +1,14 @@
 public extension Api {
     indirect enum WebPageAttribute: TypeConstructorDescription {
+        public class Cons_webPageAttributeAiComposeTone: TypeConstructorDescription {
+            public var emojiId: Int64
+            public init(emojiId: Int64) {
+                self.emojiId = emojiId
+            }
+            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
+                return ("webPageAttributeAiComposeTone", [("emojiId", ConstructorParameterDescription(self.emojiId))])
+            }
+        }
         public class Cons_webPageAttributeStarGiftAuction: TypeConstructorDescription {
             public var gift: Api.StarGift
             public var endDate: Int32
@@ -68,6 +77,7 @@ public extension Api {
                 return ("webPageAttributeUniqueStarGift", [("gift", ConstructorParameterDescription(self.gift))])
             }
         }
+        case webPageAttributeAiComposeTone(Cons_webPageAttributeAiComposeTone)
         case webPageAttributeStarGiftAuction(Cons_webPageAttributeStarGiftAuction)
         case webPageAttributeStarGiftCollection(Cons_webPageAttributeStarGiftCollection)
         case webPageAttributeStickerSet(Cons_webPageAttributeStickerSet)
@@ -77,6 +87,12 @@ public extension Api {
 
         public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
             switch self {
+            case .webPageAttributeAiComposeTone(let _data):
+                if boxed {
+                    buffer.appendInt32(2005007896)
+                }
+                serializeInt64(_data.emojiId, buffer: buffer, boxed: false)
+                break
             case .webPageAttributeStarGiftAuction(let _data):
                 if boxed {
                     buffer.appendInt32(29770178)
@@ -143,6 +159,8 @@ public extension Api {
 
         public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
             switch self {
+            case .webPageAttributeAiComposeTone(let _data):
+                return ("webPageAttributeAiComposeTone", [("emojiId", ConstructorParameterDescription(_data.emojiId))])
             case .webPageAttributeStarGiftAuction(let _data):
                 return ("webPageAttributeStarGiftAuction", [("gift", ConstructorParameterDescription(_data.gift)), ("endDate", ConstructorParameterDescription(_data.endDate))])
             case .webPageAttributeStarGiftCollection(let _data):
@@ -158,6 +176,17 @@ public extension Api {
             }
         }
 
+        public static func parse_webPageAttributeAiComposeTone(_ reader: BufferReader) -> WebPageAttribute? {
+            var _1: Int64?
+            _1 = reader.readInt64()
+            let _c1 = _1 != nil
+            if _c1 {
+                return Api.WebPageAttribute.webPageAttributeAiComposeTone(Cons_webPageAttributeAiComposeTone(emojiId: _1!))
+            }
+            else {
+                return nil
+            }
+        }
         public static func parse_webPageAttributeStarGiftAuction(_ reader: BufferReader) -> WebPageAttribute? {
             var _1: Api.StarGift?
             if let signature = reader.readInt32() {
@@ -213,7 +242,7 @@ public extension Api {
             var _3: Int32?
             _3 = reader.readInt32()
             var _4: Api.StoryItem?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _4 = Api.parse(reader, signature: signature) as? Api.StoryItem
                 }
@@ -221,7 +250,7 @@ public extension Api {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
             if _c1 && _c2 && _c3 && _c4 {
                 return Api.WebPageAttribute.webPageAttributeStory(Cons_webPageAttributeStory(flags: _1!, peer: _2!, id: _3!, story: _4))
             }
@@ -233,20 +262,20 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: [Api.Document]?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _2 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Document.self)
                 }
             }
             var _3: Api.ThemeSettings?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.ThemeSettings
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.WebPageAttribute.webPageAttributeTheme(Cons_webPageAttributeTheme(flags: _1!, documents: _2, settings: _3))
             }
@@ -309,13 +338,13 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.InputBotInlineMessageID?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.InputBotInlineMessageID
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
             if _c1 && _c2 {
                 return Api.WebViewMessageSent.webViewMessageSent(Cons_webViewMessageSent(flags: _1!, msgId: _2))
             }
@@ -368,13 +397,13 @@ public extension Api {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int64?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _2 = reader.readInt64()
             }
             var _3: String?
             _3 = parseString(reader)
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
             let _c3 = _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.WebViewResult.webViewResultUrl(Cons_webViewResultUrl(flags: _1!, queryId: _2, url: _3!))
@@ -469,7 +498,7 @@ public extension Api.account {
                 _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
             var _6: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _6 = parseString(reader)
             }
             let _c1 = _1 != nil
@@ -477,7 +506,7 @@ public extension Api.account {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.account.AuthorizationForm.authorizationForm(Cons_authorizationForm(flags: _1!, requiredTypes: _2!, values: _3!, errors: _4!, users: _5!, privacyPolicyUrl: _6))
             }
@@ -863,7 +892,7 @@ public extension Api.account {
                 _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
             var _6: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _6 = parseString(reader)
             }
             let _c1 = _1 != nil
@@ -871,7 +900,7 @@ public extension Api.account {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.account.ChatThemes.chatThemes(Cons_chatThemes(flags: _1!, hash: _2!, themes: _3!, chats: _4!, users: _5!, nextOffset: _6))
             }
@@ -1357,25 +1386,25 @@ public extension Api.account {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.PasswordKdfAlgo?
-            if Int(_1!) & Int(1 << 2) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.PasswordKdfAlgo
                 }
             }
             var _3: Buffer?
-            if Int(_1!) & Int(1 << 2) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
                 _3 = parseBytes(reader)
             }
             var _4: Int64?
-            if Int(_1!) & Int(1 << 2) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
                 _4 = reader.readInt64()
             }
             var _5: String?
-            if Int(_1!) & Int(1 << 3) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 3) != 0 {
                 _5 = parseString(reader)
             }
             var _6: String?
-            if Int(_1!) & Int(1 << 4) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 4) != 0 {
                 _6 = parseString(reader)
             }
             var _7: Api.PasswordKdfAlgo?
@@ -1389,24 +1418,24 @@ public extension Api.account {
             var _9: Buffer?
             _9 = parseBytes(reader)
             var _10: Int32?
-            if Int(_1!) & Int(1 << 5) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 5) != 0 {
                 _10 = reader.readInt32()
             }
             var _11: String?
-            if Int(_1!) & Int(1 << 6) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 6) != 0 {
                 _11 = parseString(reader)
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 2) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 2) == 0) || _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 2) == 0) || _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 3) == 0) || _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 4) == 0) || _6 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _3 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _4 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 3) == 0) || _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 4) == 0) || _6 != nil
             let _c7 = _7 != nil
             let _c8 = _8 != nil
             let _c9 = _9 != nil
-            let _c10 = (Int(_1!) & Int(1 << 5) == 0) || _10 != nil
-            let _c11 = (Int(_1!) & Int(1 << 6) == 0) || _11 != nil
+            let _c10 = (Int(_1 ?? 0) & Int(1 << 5) == 0) || _10 != nil
+            let _c11 = (Int(_1 ?? 0) & Int(1 << 6) == 0) || _11 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 && _c10 && _c11 {
                 return Api.account.Password.password(Cons_password(flags: _1!, currentAlgo: _2, srpB: _3, srpId: _4, hint: _5, emailUnconfirmedPattern: _6, newAlgo: _7!, newSecureAlgo: _8!, secureRandom: _9!, pendingResetDate: _10, loginEmailPattern: _11))
             }
@@ -1476,35 +1505,35 @@ public extension Api.account {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Api.PasswordKdfAlgo?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let signature = reader.readInt32() {
                     _2 = Api.parse(reader, signature: signature) as? Api.PasswordKdfAlgo
                 }
             }
             var _3: Buffer?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _3 = parseBytes(reader)
             }
             var _4: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _4 = parseString(reader)
             }
             var _5: String?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _5 = parseString(reader)
             }
             var _6: Api.SecureSecretSettings?
-            if Int(_1!) & Int(1 << 2) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 2) != 0 {
                 if let signature = reader.readInt32() {
                     _6 = Api.parse(reader, signature: signature) as? Api.SecureSecretSettings
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 0) == 0) || _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = (Int(_1!) & Int(1 << 1) == 0) || _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 2) == 0) || _6 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _3 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
+            let _c5 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _5 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 2) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.account.PasswordInputSettings.passwordInputSettings(Cons_passwordInputSettings(flags: _1!, newAlgo: _2, newPasswordHash: _3, hint: _4, email: _5, newSecureSettings: _6))
             }
@@ -1559,18 +1588,18 @@ public extension Api.account {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _2 = parseString(reader)
             }
             var _3: Api.SecureSecretSettings?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 if let signature = reader.readInt32() {
                     _3 = Api.parse(reader, signature: signature) as? Api.SecureSecretSettings
                 }
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 0) == 0) || _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _2 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.account.PasswordSettings.passwordSettings(Cons_passwordSettings(flags: _1!, email: _2, secureSettings: _3))
             }
@@ -1731,104 +1760,6 @@ public extension Api.account {
             let _c1 = _1 != nil
             if _c1 {
                 return Api.account.ResetPasswordResult.resetPasswordRequestedWait(Cons_resetPasswordRequestedWait(untilDate: _1!))
-            }
-            else {
-                return nil
-            }
-        }
-    }
-}
-public extension Api.account {
-    enum ResolvedBusinessChatLinks: TypeConstructorDescription {
-        public class Cons_resolvedBusinessChatLinks: TypeConstructorDescription {
-            public var flags: Int32
-            public var peer: Api.Peer
-            public var message: String
-            public var entities: [Api.MessageEntity]?
-            public var chats: [Api.Chat]
-            public var users: [Api.User]
-            public init(flags: Int32, peer: Api.Peer, message: String, entities: [Api.MessageEntity]?, chats: [Api.Chat], users: [Api.User]) {
-                self.flags = flags
-                self.peer = peer
-                self.message = message
-                self.entities = entities
-                self.chats = chats
-                self.users = users
-            }
-            public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-                return ("resolvedBusinessChatLinks", [("flags", ConstructorParameterDescription(self.flags)), ("peer", ConstructorParameterDescription(self.peer)), ("message", ConstructorParameterDescription(self.message)), ("entities", ConstructorParameterDescription(self.entities)), ("chats", ConstructorParameterDescription(self.chats)), ("users", ConstructorParameterDescription(self.users))])
-            }
-        }
-        case resolvedBusinessChatLinks(Cons_resolvedBusinessChatLinks)
-
-        public func serialize(_ buffer: Buffer, _ boxed: Swift.Bool) {
-            switch self {
-            case .resolvedBusinessChatLinks(let _data):
-                if boxed {
-                    buffer.appendInt32(-1708937439)
-                }
-                serializeInt32(_data.flags, buffer: buffer, boxed: false)
-                _data.peer.serialize(buffer, true)
-                serializeString(_data.message, buffer: buffer, boxed: false)
-                if Int(_data.flags) & Int(1 << 0) != 0 {
-                    buffer.appendInt32(481674261)
-                    buffer.appendInt32(Int32(_data.entities!.count))
-                    for item in _data.entities! {
-                        item.serialize(buffer, true)
-                    }
-                }
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.chats.count))
-                for item in _data.chats {
-                    item.serialize(buffer, true)
-                }
-                buffer.appendInt32(481674261)
-                buffer.appendInt32(Int32(_data.users.count))
-                for item in _data.users {
-                    item.serialize(buffer, true)
-                }
-                break
-            }
-        }
-
-        public func descriptionFields() -> (String, [(String, ConstructorParameterDescription)]) {
-            switch self {
-            case .resolvedBusinessChatLinks(let _data):
-                return ("resolvedBusinessChatLinks", [("flags", ConstructorParameterDescription(_data.flags)), ("peer", ConstructorParameterDescription(_data.peer)), ("message", ConstructorParameterDescription(_data.message)), ("entities", ConstructorParameterDescription(_data.entities)), ("chats", ConstructorParameterDescription(_data.chats)), ("users", ConstructorParameterDescription(_data.users))])
-            }
-        }
-
-        public static func parse_resolvedBusinessChatLinks(_ reader: BufferReader) -> ResolvedBusinessChatLinks? {
-            var _1: Int32?
-            _1 = reader.readInt32()
-            var _2: Api.Peer?
-            if let signature = reader.readInt32() {
-                _2 = Api.parse(reader, signature: signature) as? Api.Peer
-            }
-            var _3: String?
-            _3 = parseString(reader)
-            var _4: [Api.MessageEntity]?
-            if Int(_1!) & Int(1 << 0) != 0 {
-                if let _ = reader.readInt32() {
-                    _4 = Api.parseVector(reader, elementSignature: 0, elementType: Api.MessageEntity.self)
-                }
-            }
-            var _5: [Api.Chat]?
-            if let _ = reader.readInt32() {
-                _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.Chat.self)
-            }
-            var _6: [Api.User]?
-            if let _ = reader.readInt32() {
-                _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
-            }
-            let _c1 = _1 != nil
-            let _c2 = _2 != nil
-            let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
-            let _c5 = _5 != nil
-            let _c6 = _6 != nil
-            if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
-                return Api.account.ResolvedBusinessChatLinks.resolvedBusinessChatLinks(Cons_resolvedBusinessChatLinks(flags: _1!, peer: _2!, message: _3!, entities: _4, chats: _5!, users: _6!))
             }
             else {
                 return nil

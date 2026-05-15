@@ -863,6 +863,8 @@ public final class FeaturedStickersScreen: ViewController {
     
     fileprivate var searchNavigationNode: SearchNavigationContentNode?
     
+    private var eventsDisposable: Disposable?
+    
     public init(context: AccountContext, highlightedPackId: ItemCollectionId?, forceTheme: PresentationTheme? = nil, stickerActionTitle: String? = nil, sendSticker: ((FileMediaReference, UIView?, CGRect?) -> Bool)? = nil) {
         self.context = context
         self.highlightedPackId = highlightedPackId
@@ -906,6 +908,18 @@ public final class FeaturedStickersScreen: ViewController {
                 }
             }
         })
+        
+        self.eventsDisposable = (context.account.stateManager.installedStickerPacksArchivedEvents
+        |> deliverOnMainQueue).startStrict(next: { [weak self] count in
+            guard let self else {
+                return
+            }
+            if count == 0 {
+                return
+            }
+            let presentationData = self.presentationData
+            self.push(textAlertController(context: self.context, updatedPresentationData: nil, title: nil, text: presentationData.strings.ArchivedPacksAlert_Title, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]))
+        })
     }
     
     required init(coder aDecoder: NSCoder) {
@@ -914,6 +928,7 @@ public final class FeaturedStickersScreen: ViewController {
     
     deinit {
         self.presentationDataDisposable?.dispose()
+        self.eventsDisposable?.dispose()
     }
     
     private func updatePresentationData() {
@@ -1167,7 +1182,8 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
     private var enqueuedTransitions: [FeaturedSearchGridTransition] = []
     
     private let searchDisposable = MetaDisposable()
-    
+    private var stickerSearchContext: StickerSearchContext?
+
     private let queue = Queue()
     private let currentEntries = Atomic<[FeaturedSearchEntry]?>(value: nil)
     private let currentRemotePacks = Atomic<FoundStickerSets?>(value: nil)
@@ -1221,6 +1237,14 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
         self.gridNode.scrollView.alwaysBounceVertical = true
         self.gridNode.scrollingInitiated = { [weak self] in
             self?.deactivateSearchBar?()
+        }
+        self.gridNode.visibleItemsUpdated = { [weak self] visibleItems in
+            guard let self, let (bottomIndex, _) = visibleItems.bottomVisible else {
+                return
+            }
+            if bottomIndex >= self.gridNode.items.count - 15 {
+                self.stickerSearchContext?.loadMore()
+            }
         }
         
         self.interaction = StickerPaneSearchInteraction(open: { [weak self] info in
@@ -1284,56 +1308,52 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
     }
     
     func updateText(_ text: String, languageCode: String?) {
-        let signal: Signal<([(String?, FoundStickerItem)], FoundStickerSets, Bool, FoundStickerSets?)?, NoError>
+        let signal: Signal<([(String?, FoundStickerItem)], FoundStickerSets, Bool, FoundStickerSets?, Bool, StickerSearchContext?)?, NoError>
         if !text.isEmpty {
             let context = self.context
-            let stickers: Signal<[(String?, FoundStickerItem)], NoError> = Signal { subscriber in
-                var signals: Signal<[Signal<(String?, [FoundStickerItem]), NoError>], NoError> = .single([])
-                
-                let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                if query.isSingleEmoji {
-                    signals = .single([context.engine.stickers.searchStickers(query: nil, emoticon: [text.basicEmoji.0], inputLanguageCode: "")
-                    |> map { (nil, $0.items) }])
-                } else if query.count > 1, let languageCode = languageCode, !languageCode.isEmpty && languageCode != "emoji" {
-                    var signal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query.lowercased(), completeMatch: query.count < 3)
-                    if !languageCode.lowercased().hasPrefix("en") {
-                        signal = signal
-                        |> mapToSignal { keywords in
-                            return .single(keywords)
-                            |> then(
-                                context.engine.stickers.searchEmojiKeywords(inputLanguageCode: "en-US", query: query.lowercased(), completeMatch: query.count < 3)
-                                |> map { englishKeywords in
-                                    return keywords + englishKeywords
-                                }
-                            )
-                        }
-                    }
-                    signals = signal
-                    |> map { keywords -> [Signal<(String?, [FoundStickerItem]), NoError>] in
-                        let emoticon = keywords.flatMap { $0.emoticons }.map { $0.basicEmoji.0 }
-                        return [context.engine.stickers.searchStickers(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
-                        |> map { (nil, $0.items) }]
+            let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let _ = self.currentRemotePacks.swap(nil)
+            self.stickerSearchContext = nil
+            
+            let stickers: Signal<(items: [(String?, FoundStickerItem)], isSearching: Bool, searchContext: StickerSearchContext?), NoError>
+            if query.isSingleEmoji {
+                let searchContext = context.engine.stickers.stickerSearchContext(query: nil, emoticon: [query.basicEmoji.0], inputLanguageCode: "")
+                stickers = searchContext.state
+                |> map { state -> (items: [(String?, FoundStickerItem)], isSearching: Bool, searchContext: StickerSearchContext?) in
+                    return (state.items.map { (nil, $0) }, state.items.isEmpty && state.isLoadingMore, searchContext)
+                }
+            } else if query.count > 1, let languageCode = languageCode, !languageCode.isEmpty && languageCode != "emoji" {
+                var keywordsSignal = context.engine.stickers.searchEmojiKeywords(inputLanguageCode: languageCode, query: query.lowercased(), completeMatch: query.count < 3)
+                if !languageCode.lowercased().hasPrefix("en") {
+                    keywordsSignal = keywordsSignal
+                    |> mapToSignal { keywords in
+                        return .single(keywords)
+                        |> then(
+                            context.engine.stickers.searchEmojiKeywords(inputLanguageCode: "en-US", query: query.lowercased(), completeMatch: query.count < 3)
+                            |> map { englishKeywords in
+                                return keywords + englishKeywords
+                            }
+                        )
                     }
                 }
-                
-                return (signals
-                |> mapToSignal { signals in
-                    return combineLatest(signals)
-                }).start(next: { results in
-                    var result: [(String?, FoundStickerItem)] = []
-                    for (emoji, stickers) in results {
-                        for sticker in stickers {
-                            result.append((emoji, sticker))
-                        }
+                stickers = keywordsSignal
+                |> mapToSignal { keywords -> Signal<(items: [(String?, FoundStickerItem)], isSearching: Bool, searchContext: StickerSearchContext?), NoError> in
+                    let emoticon = Array(Set(keywords.flatMap { $0.emoticons }.map { $0.basicEmoji.0 }))
+                    guard !emoticon.isEmpty else {
+                        return .single(([], false, nil))
                     }
-                    subscriber.putNext(result)
-                }, completed: {
-                    subscriber.putCompletion()
-                })
+                    let searchContext = context.engine.stickers.stickerSearchContext(query: query, emoticon: emoticon, inputLanguageCode: languageCode)
+                    return searchContext.state
+                    |> map { state -> (items: [(String?, FoundStickerItem)], isSearching: Bool, searchContext: StickerSearchContext?) in
+                        return (state.items.map { (nil, $0) }, state.items.isEmpty && state.isLoadingMore, searchContext)
+                    }
+                }
+            } else {
+                stickers = .single(([], false, nil))
             }
             
-            let local = context.engine.stickers.searchStickerSets(query: text)
-            let remote = context.engine.stickers.searchStickerSetsRemotely(query: text)
+            let local = context.engine.stickers.searchStickerSets(query: query)
+            let remote = context.engine.stickers.searchStickerSetsRemotely(query: query)
             |> delay(0.2, queue: Queue.mainQueue())
             let rawPacks = local
             |> mapToSignal { result -> Signal<(FoundStickerSets, Bool, FoundStickerSets?), NoError> in
@@ -1387,11 +1407,12 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
             }
             
             signal = combineLatest(stickers, packs)
-            |> map { stickers, packs -> ([(String?, FoundStickerItem)], FoundStickerSets, Bool, FoundStickerSets?)? in
-                return (stickers, packs.0, packs.1, packs.2)
+            |> map { stickers, packs -> ([(String?, FoundStickerItem)], FoundStickerSets, Bool, FoundStickerSets?, Bool, StickerSearchContext?)? in
+                return (stickers.items, packs.0, packs.1, packs.2, stickers.isSearching, stickers.searchContext)
             }
-            self.updateActivity?(true)
         } else {
+            self.stickerSearchContext = nil
+            let _ = self.currentRemotePacks.swap(nil)
             signal = .single(nil)
             self.updateActivity?(false)
         }
@@ -1406,14 +1427,13 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
                 var displayResults: Bool = false
                 
                 var entries: [FeaturedSearchEntry] = []
-                if let (stickers, packs, final, remote) = result {
+                if let (stickers, packs, final, remote, isSearching, searchContext) = result {
+                    strongSelf.stickerSearchContext = searchContext
                     if let remote = remote {
                         let _ = strongSelf.currentRemotePacks.swap(remote)
                     }
                     
-                    if final {
-                        strongSelf.updateActivity?(false)
-                    }
+                    strongSelf.updateActivity?(isSearching)
                     
                     var index = 0
                     var existingStickerIds = Set<MediaId>()
@@ -1444,12 +1464,15 @@ private final class FeaturedPaneSearchContentNode: ASDisplayNode {
                         }
                     }
                     
-                    if final || !entries.isEmpty {
+                    if !isSearching && (final || !entries.isEmpty) {
                         strongSelf.notFoundNode.isHidden = !entries.isEmpty
+                    } else {
+                        strongSelf.notFoundNode.isHidden = true
                     }
                     
                     displayResults = true
                 } else {
+                    strongSelf.stickerSearchContext = nil
                     let _ = strongSelf.currentRemotePacks.swap(nil)
                     strongSelf.updateActivity?(false)
                 }

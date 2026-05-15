@@ -125,15 +125,15 @@ func getGlobalSettingsUrl(_ build: String) -> String {
 }
 
 func parseAndSetGlobalData(data: Data) -> Bool {
+    let parsedSettings: GlobalNGSettingsObj
     do {
-        try JSONDecoder().decode(GlobalNGSettingsObj.self, from: data)
+        parsedSettings = try JSONDecoder().decode(GlobalNGSettingsObj.self, from: data)
     } catch let error as NSError {
         ngLog("Error: Couldn't decode data into globalsettings model \(error)", LOGTAG)
         return false
     }
     
     
-    let parsedSettings = try! JSONDecoder().decode(GlobalNGSettingsObj.self, from: data)
     let currentSettings = VarGNGSettings
     currentSettings.gmod = parsedSettings.gmod
     currentSettings.youtube_pip = parsedSettings.youtube_pip
@@ -149,7 +149,7 @@ func parseAndSetGlobalData(data: Data) -> Bool {
 public func updateGlobalNGSettings(_ build: String = (Bundle.main.infoDictionary?["CFBundleShortVersionString"]) as! String) {
     let url = getGlobalSettingsUrl(build)
 
-    RequestsGet(url: URL(string: url)!).start(next: { data, _ in
+    _ = RequestsGet(url: URL(string: url)!).start(next: { data, _ in
         ngLog("Got global settings for \(build)", LOGTAG)
         let settingsResult = parseAndSetGlobalData(data: data)
         

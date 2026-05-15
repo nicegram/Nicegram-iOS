@@ -20,6 +20,31 @@ build --spawn_strategy=standalone
 
 build --strategy=SwiftCompile=worker
 
+# Nicegram fork policy: our min-iOS bump (13 -> 15) introduced many deprecation
+# warnings in upstream-owned files that we deliberately don't fix ourselves —
+# upstream Telegram will clean them up when they bump min-iOS. To keep strict-
+# warnings policy (`-warnings-as-errors` for Swift, `-Werror` for Clang) intact
+# everywhere else, we demote only deprecation diagnostics back to warning.
+#
+# Swift: `-Wwarning DeprecatedDeclaration` re-classifies the diagnostic group
+# back to warning even under `-warnings-as-errors`. rules_swift appends
+# `--@//swift:copt` flags AFTER per-target `copts`, so this override wins.
+# Requires Swift 5.10+ / Xcode 15.3+ (older toolchains reject `-Wwarning`).
+#
+# Clang: `-Wno-error=deprecated-declarations` via --per_file_copt does the
+# same for `.m`/`.mm` sources. Per-file copts are appended AFTER target-level
+# `copts`, so the override wins over `-Werror`. Scoped to ObjC because the
+# affected APIs are iOS-SDK constants like UTTypeConformsTo / kUTTypeGIF;
+# pure C/C++ targets (boringssl, td, brotli, libphonenumber, libjxl) don't
+# touch them and stay strict.
+#
+# TODO: remove these four lines once upstream Telegram bumps its min-iOS to
+# >= 15 and the deprecation warnings are gone.
+build --@build_bazel_rules_swift//swift:copt=-Wwarning
+build --@build_bazel_rules_swift//swift:copt=DeprecatedDeclaration
+build --per_file_copt=".*\.m$","@-Wno-error=deprecated-declarations"
+build --per_file_copt=".*\.mm$","@-Wno-error=deprecated-declarations"
+
 #common --registry=https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/
 
 # SourceKit BSP: Swift indexing features

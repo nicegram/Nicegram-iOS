@@ -11,7 +11,6 @@ import AppBundle
 import CoreLocation
 import PresentationDataUtils
 import OpenInExternalAppUI
-
 import DeviceAccess
 import UndoUI
 import MapKit
@@ -32,12 +31,6 @@ public class LocationViewParams {
     }
 }
 
-enum LocationViewRightBarButton {
-    case none
-    case share
-    case showAll
-}
-
 class LocationViewInteraction {
     let toggleMapModeSelection: () -> Void
     let updateMapMode: (LocationMapMode) -> Void
@@ -49,10 +42,9 @@ class LocationViewInteraction {
     let updateSendActionHighlight: (Bool) -> Void
     let sendLiveLocation: (Int32?, Bool, EngineMessage.Id?) -> Void
     let stopLiveLocation: () -> Void
-    let updateRightBarButton: (LocationViewRightBarButton) -> Void
     let present: (ViewController) -> Void
     
-    init(toggleMapModeSelection: @escaping () -> Void, updateMapMode: @escaping (LocationMapMode) -> Void, toggleTrackingMode: @escaping () -> Void, goToCoordinate: @escaping (CLLocationCoordinate2D) -> Void, requestDirections: @escaping (TelegramMediaMap, String?, OpenInLocationDirections) -> Void, share: @escaping () -> Void, setupProximityNotification: @escaping (Bool, EngineMessage.Id?) -> Void, updateSendActionHighlight: @escaping (Bool) -> Void, sendLiveLocation: @escaping (Int32?, Bool, EngineMessage.Id?) -> Void, stopLiveLocation: @escaping () -> Void, updateRightBarButton: @escaping (LocationViewRightBarButton) -> Void, present: @escaping (ViewController) -> Void) {
+    init(toggleMapModeSelection: @escaping () -> Void, updateMapMode: @escaping (LocationMapMode) -> Void, toggleTrackingMode: @escaping () -> Void, goToCoordinate: @escaping (CLLocationCoordinate2D) -> Void, requestDirections: @escaping (TelegramMediaMap, String?, OpenInLocationDirections) -> Void, share: @escaping () -> Void, setupProximityNotification: @escaping (Bool, EngineMessage.Id?) -> Void, updateSendActionHighlight: @escaping (Bool) -> Void, sendLiveLocation: @escaping (Int32?, Bool, EngineMessage.Id?) -> Void, stopLiveLocation: @escaping () -> Void, present: @escaping (ViewController) -> Void) {
         self.toggleMapModeSelection = toggleMapModeSelection
         self.updateMapMode = updateMapMode
         self.toggleTrackingMode = toggleTrackingMode
@@ -63,7 +55,6 @@ class LocationViewInteraction {
         self.updateSendActionHighlight = updateSendActionHighlight
         self.sendLiveLocation = sendLiveLocation
         self.stopLiveLocation = stopLiveLocation
-        self.updateRightBarButton = updateRightBarButton
         self.present = present
     }
 }
@@ -83,9 +74,7 @@ public final class LocationViewController: ViewController {
     private let locationManager = LocationManager()
     
     private var interaction: LocationViewInteraction?
-    
-    private var rightBarButtonAction: LocationViewRightBarButton = .none
-    
+        
     public var dismissed: () -> Void = {}
 
     public init(context: AccountContext, updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>)? = nil, subject: EngineMessage, isStoryLocation: Bool = false, isPreview: Bool = false, params: LocationViewParams) {
@@ -97,33 +86,19 @@ public final class LocationViewController: ViewController {
         
         self.presentationData = updatedPresentationData?.initial ?? context.sharedContext.currentPresentationData.with { $0 }
                      
-        let navigationBarPresentationData: NavigationBarPresentationData?
-        if !isPreview {
-            navigationBarPresentationData = NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: self.presentationData.theme).withUpdatedSeparatorColor(.clear), strings: NavigationBarStrings(presentationStrings: self.presentationData.strings))
-        } else {
-            navigationBarPresentationData = nil
-        }
+        super.init(navigationBarPresentationData: nil)
         
-        super.init(navigationBarPresentationData: navigationBarPresentationData)
+        self._hasGlassStyle = true
         
         self.navigationPresentation = .modal
-        
-        if !self.isPreview {
-            self.title = self.presentationData.strings.Map_LocationTitle
-            self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Close, style: .plain, target: self, action: #selector(self.cancelPressed))
-        }
-        
+                
         self.presentationDataDisposable = ((updatedPresentationData?.signal ?? context.sharedContext.presentationData)
         |> deliverOnMainQueue).start(next: { [weak self] presentationData in
             guard let strongSelf = self, strongSelf.presentationData.theme !== presentationData.theme else {
                 return
             }
             strongSelf.presentationData = presentationData
-            
-            strongSelf.navigationBar?.updatePresentationData(NavigationBarPresentationData(theme: NavigationBarTheme(rootControllerTheme: strongSelf.presentationData.theme).withUpdatedSeparatorColor(.clear), strings: NavigationBarStrings(presentationStrings: strongSelf.presentationData.strings)), transition: .immediate)
-            
-            strongSelf.updateRightBarButton()
-            
+                                    
             if strongSelf.isNodeLoaded {
                 strongSelf.controllerNode.updatePresentationData(presentationData)
             }
@@ -265,17 +240,24 @@ public final class LocationViewController: ViewController {
                     }
                     strongSelf.controllerNode.setProximityIndicator(radius: 0)
                     
-                    let _ = (strongSelf.context.account.postbox.loadedPeerWithId(strongSelf.subject.id.peerId)
+                    let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: strongSelf.subject.id.peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     |> deliverOnMainQueue).start(next: { [weak self] peer in
                         guard let strongSelf = self else {
                             return
                         }
-                        
+
                         var compactDisplayTitle: String?
-                        if let peer = peer as? TelegramUser {
-                            compactDisplayTitle = EnginePeer(peer).compactDisplayTitle
+                        if case .user = peer {
+                            compactDisplayTitle = peer.compactDisplayTitle
                         }
-                        
+
                         let controller = LocationDistancePickerScreen(context: context, style: .default, compactDisplayTitle: compactDisplayTitle, distances: strongSelf.controllerNode.headerNode.mapNode.distancesToAllAnnotations, updated: { [weak self] distance in
                             guard let strongSelf = self else {
                                 return
@@ -370,17 +352,24 @@ public final class LocationViewController: ViewController {
                         params.sendLiveLocation(TelegramMediaMap(coordinate: coordinate, liveBroadcastingTimeout: 30 * 60, proximityNotificationRadius: distance))
                     })
                     
-                    let _ = (strongSelf.context.account.postbox.loadedPeerWithId(strongSelf.subject.id.peerId)
+                    let _ = (strongSelf.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: strongSelf.subject.id.peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     |> deliverOnMainQueue).start(next: { [weak self] peer in
                         guard let strongSelf = self else {
                             return
                         }
-                        
+
                         var compactDisplayTitle: String?
-                        if let peer = peer as? TelegramUser {
-                            compactDisplayTitle = EnginePeer(peer).compactDisplayTitle
+                        if case .user = peer {
+                            compactDisplayTitle = peer.compactDisplayTitle
                         }
-                        
+
                         var text: String
                         let distanceString = shortStringForDistance(strings: strongSelf.presentationData.strings, distance: distance)
                         if let compactDisplayTitle = compactDisplayTitle {
@@ -407,7 +396,14 @@ public final class LocationViewController: ViewController {
                         )
                     })
                 } else {
-                    let _  = (context.account.postbox.loadedPeerWithId(subject.id.peerId)
+                    let _  = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: subject.id.peerId))
+                    |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+                        if let peer {
+                            return .single(peer)
+                        } else {
+                            return .never()
+                        }
+                    }
                     |> deliverOnMainQueue).start(next: { peer in
                         let controller = ActionSheetController(presentationData: strongSelf.presentationData)
                         var title: String
@@ -415,8 +411,8 @@ public final class LocationViewController: ViewController {
                             title = strongSelf.presentationData.strings.Map_LiveLocationExtendDescription
                         } else {
                             title = strongSelf.presentationData.strings.Map_LiveLocationGroupNewDescription
-                            if let user = peer as? TelegramUser {
-                                title = strongSelf.presentationData.strings.Map_LiveLocationPrivateNewDescription(EnginePeer(user).compactDisplayTitle).string
+                            if case .user = peer {
+                                title = strongSelf.presentationData.strings.Map_LiveLocationPrivateNewDescription(peer.compactDisplayTitle).string
                             }
                         }
                         
@@ -466,15 +462,6 @@ public final class LocationViewController: ViewController {
         }, stopLiveLocation: { [weak self] in
             params.stopLiveLocation(nil)
             self?.dismiss()
-        }, updateRightBarButton: { [weak self] action in
-            guard let strongSelf = self else {
-                return
-            }
-            
-            if action != strongSelf.rightBarButtonAction {
-                strongSelf.rightBarButtonAction = action
-                strongSelf.updateRightBarButton()
-            }
         }, present: { [weak self] c in
             if let strongSelf = self {
                 strongSelf.present(c, in: .window(.root))
@@ -515,7 +502,7 @@ public final class LocationViewController: ViewController {
             return
         }
         
-        self.displayNode = LocationViewControllerNode(context: self.context, presentationData: self.presentationData, subject: self.subject, interaction: interaction, locationManager: self.locationManager, isStoryLocation: self.isStoryLocation, isPreview: self.isPreview)
+        self.displayNode = LocationViewControllerNode(context: self.context, controller: self, presentationData: self.presentationData, subject: self.subject, interaction: interaction, locationManager: self.locationManager, isStoryLocation: self.isStoryLocation, isPreview: self.isPreview)
         self.displayNodeDidLoad()
         
         self.controllerNode.onAnnotationsReady = { [weak self] in
@@ -528,39 +515,12 @@ public final class LocationViewController: ViewController {
         self.controllerNode.headerNode.mapNode.disableHorizontalTransitionGesture = self.isStoryLocation
     }
     
-    private func updateRightBarButton() {
-        guard !self.isPreview else {
-            return
-        }
-        switch self.rightBarButtonAction {
-            case .none:
-                self.navigationItem.rightBarButtonItem = nil
-            case .share:
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: PresentationResourcesRootController.navigationShareIcon(self.presentationData.theme), style: .plain, target: self, action: #selector(self.sharePressed))
-                self.navigationItem.rightBarButtonItem?.accessibilityLabel = self.presentationData.strings.VoiceOver_MessageContextShare
-            case .showAll:
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Map_LiveLocationShowAll, style: .plain, target: self, action: #selector(self.showAllPressed))
-        }
-    }
-    
     override public func containerLayoutUpdated(_ layout: ContainerViewLayout, transition: ContainedViewLayoutTransition) {
         super.containerLayoutUpdated(layout, transition: transition)
     
         self.controllerNode.containerLayoutUpdated(layout, navigationHeight: self.navigationLayout(layout: layout).navigationFrame.maxY, transition: transition)
     }
-    
-    @objc private func cancelPressed() {
-        self.dismiss()
-    }
-    
-    @objc private func sharePressed() {
-        self.interaction?.share()
-    }
-    
-    @objc private func showAllPressed() {
-        self.controllerNode.showAll()
-    }
-    
+            
     private var didDismiss = false
     public override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)

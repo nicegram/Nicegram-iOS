@@ -21,6 +21,7 @@ import TooltipUI
 import TopMessageReactions
 import TelegramNotices
 import PresentationDataUtils
+import ChatPresentationInterfaceState
 
 extension ChatControllerImpl {
     func openMessageContextMenu(message: Message, selectAll: Bool, node: ASDisplayNode, frame: CGRect, anyRecognizer: UIGestureRecognizer?, location: CGPoint?) -> Void {
@@ -48,13 +49,15 @@ extension ChatControllerImpl {
             guard let topMessage = messages.first else {
                 return
             }
-            
+
+            let canBypassReactionRestrictions = canBypassRestrictions(chatPresentationInterfaceState: self.presentationInterfaceState)
+
             let _ = combineLatest(queue: .mainQueue(),
                 self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: self.context.account.peerId)),
                 contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState: self.presentationInterfaceState, context: self.context, messages: updatedMessages, controllerInteraction: self.controllerInteraction, selectAll: selectAll, interfaceInteraction: self.interfaceInteraction, messageNode: node as? ChatMessageItemView),
-                peerMessageAllowedReactions(context: self.context, message: topMessage),
+                peerMessageAllowedReactions(context: self.context, message: topMessage, ignoreDefault: canBypassReactionRestrictions),
                 peerMessageSelectedReactions(context: self.context, message: topMessage),
-                topMessageReactions(context: self.context, message: topMessage, subPeerId: self.chatLocation.threadId.flatMap(EnginePeer.Id.init)),
+                topMessageReactions(context: self.context, message: topMessage, subPeerId: self.chatLocation.threadId.flatMap(EnginePeer.Id.init), ignoreDefault: canBypassReactionRestrictions),
                 ApplicationSpecificNotice.getChatTextSelectionTips(accountManager: self.context.sharedContext.accountManager)
             ).startStandalone(next: { [weak self] peer, actions, allowedReactionsAndStars, selectedReactions, topReactions, chatTextSelectionTips in
                 guard let self else {
@@ -373,6 +376,17 @@ extension ChatControllerImpl {
                     controller?.view.endEditing(true)
                     
                     if case .stars = chosenUpdatedReaction.reaction {
+                        if !canSendReactionsToChat(self.presentationInterfaceState) {
+                            if let controller {
+                                controller.dismiss(completion: { [weak self] in
+                                    self?.displaySendReactionRestrictedToast()
+                                })
+                            } else {
+                                self.displaySendReactionRestrictedToast()
+                            }
+                            return
+                        }
+
                         if isLarge {
                             if let controller {
                                 controller.dismiss(completion: { [weak self] in
@@ -508,6 +522,17 @@ extension ChatControllerImpl {
                             isFirst = !currentReactions.contains(where: { $0.value == chosenReaction })
                         }
                         
+                        if removedReaction == nil && !canSendReactionsToChat(self.presentationInterfaceState) {
+                            if let controller {
+                                controller.dismiss(completion: { [weak self] in
+                                    self?.displaySendReactionRestrictedToast()
+                                })
+                            } else {
+                                self.displaySendReactionRestrictedToast()
+                            }
+                            return
+                        }
+
                         if message.areReactionsTags(accountPeerId: self.context.account.peerId) {
                             if removedReaction == nil, !topReactions.contains(where: { $0.reaction.rawValue == chosenReaction }) {
                                 if !self.presentationInterfaceState.isPremium {

@@ -313,7 +313,7 @@ func createPasswordController(context: AccountContext, createPasswordContext: Cr
                 }
                 
                 if emailAlert {
-                    presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.TwoStepAuth_EmailSkipAlert, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .destructiveAction, title: presentationData.strings.TwoStepAuth_EmailSkip, action: {
+                    presentControllerImpl?(textAlertController(context: context, title: nil, text: presentationData.strings.TwoStepAuth_EmailSkipAlert, actions: [TextAlertAction(type: .genericAction, title: presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .destructiveAction, title: presentationData.strings.TwoStepAuth_EmailSkip, action: {
                         saveImpl()
                     })]), nil)
                 } else {

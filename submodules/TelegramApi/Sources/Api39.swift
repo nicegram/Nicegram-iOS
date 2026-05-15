@@ -322,7 +322,7 @@ public extension Api.stories {
                 _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.FoundStory.self)
             }
             var _4: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _4 = parseString(reader)
             }
             var _5: [Api.Chat]?
@@ -336,7 +336,7 @@ public extension Api.stories {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
@@ -492,7 +492,7 @@ public extension Api.stories {
                 _3 = Api.parseVector(reader, elementSignature: 0, elementType: Api.StoryItem.self)
             }
             var _4: [Int32]?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 if let _ = reader.readInt32() {
                     _4 = Api.parseVector(reader, elementSignature: -1471112230, elementType: Int32.self)
                 }
@@ -508,7 +508,7 @@ public extension Api.stories {
             let _c1 = _1 != nil
             let _c2 = _2 != nil
             let _c3 = _3 != nil
-            let _c4 = (Int(_1!) & Int(1 << 0) == 0) || _4 != nil
+            let _c4 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
@@ -598,7 +598,7 @@ public extension Api.stories {
                 _5 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
             var _6: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _6 = parseString(reader)
             }
             let _c1 = _1 != nil
@@ -606,7 +606,7 @@ public extension Api.stories {
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
-            let _c6 = (Int(_1!) & Int(1 << 0) == 0) || _6 != nil
+            let _c6 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _6 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 {
                 return Api.stories.StoryReactionsList.storyReactionsList(Cons_storyReactionsList(flags: _1!, count: _2!, reactions: _3!, chats: _4!, users: _5!, nextOffset: _6))
             }
@@ -771,7 +771,7 @@ public extension Api.stories {
                 _8 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
             var _9: String?
-            if Int(_1!) & Int(1 << 0) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 0) != 0 {
                 _9 = parseString(reader)
             }
             let _c1 = _1 != nil
@@ -782,7 +782,7 @@ public extension Api.stories {
             let _c6 = _6 != nil
             let _c7 = _7 != nil
             let _c8 = _8 != nil
-            let _c9 = (Int(_1!) & Int(1 << 0) == 0) || _9 != nil
+            let _c9 = (Int(_1 ?? 0) & Int(1 << 0) == 0) || _9 != nil
             if _c1 && _c2 && _c3 && _c4 && _c5 && _c6 && _c7 && _c8 && _c9 {
                 return Api.stories.StoryViewsList.storyViewsList(Cons_storyViewsList(flags: _1!, count: _2!, viewsCount: _3!, forwardsCount: _4!, reactionsCount: _5!, views: _6!, chats: _7!, users: _8!, nextOffset: _9))
             }
@@ -938,7 +938,7 @@ public extension Api.updates {
             var _2: Int32?
             _2 = reader.readInt32()
             var _3: Int32?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _3 = reader.readInt32()
             }
             var _4: [Api.Message]?
@@ -959,7 +959,7 @@ public extension Api.updates {
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil
             let _c6 = _6 != nil
@@ -977,12 +977,12 @@ public extension Api.updates {
             var _2: Int32?
             _2 = reader.readInt32()
             var _3: Int32?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _3 = reader.readInt32()
             }
             let _c1 = _1 != nil
             let _c2 = _2 != nil
-            let _c3 = (Int(_1!) & Int(1 << 1) == 0) || _3 != nil
+            let _c3 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _3 != nil
             if _c1 && _c2 && _c3 {
                 return Api.updates.ChannelDifference.channelDifferenceEmpty(Cons_channelDifferenceEmpty(flags: _1!, pts: _2!, timeout: _3))
             }
@@ -994,7 +994,7 @@ public extension Api.updates {
             var _1: Int32?
             _1 = reader.readInt32()
             var _2: Int32?
-            if Int(_1!) & Int(1 << 1) != 0 {
+            if Int(_1 ?? 0) & Int(1 << 1) != 0 {
                 _2 = reader.readInt32()
             }
             var _3: Api.Dialog?
@@ -1014,7 +1014,7 @@ public extension Api.updates {
                 _6 = Api.parseVector(reader, elementSignature: 0, elementType: Api.User.self)
             }
             let _c1 = _1 != nil
-            let _c2 = (Int(_1!) & Int(1 << 1) == 0) || _2 != nil
+            let _c2 = (Int(_1 ?? 0) & Int(1 << 1) == 0) || _2 != nil
             let _c3 = _3 != nil
             let _c4 = _4 != nil
             let _c5 = _5 != nil

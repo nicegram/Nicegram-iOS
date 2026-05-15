@@ -122,7 +122,7 @@ final class WebSearchVideoGalleryItemNode: ZoomableContentGalleryItemNode {
                 switch gesture {
                     case .tap:
                         if let item = self.item, let selectionState = item.controllerInteraction?.selectionState {
-                            let legacyItem = legacyWebSearchItem(account: item.context.account, result: item.result)
+                            let legacyItem = legacyWebSearchItem(engine: item.context.engine, result: item.result)
                             selectionState.toggleItemSelection(legacyItem, success: nil)
                         }
                     case .doubleTap:
@@ -176,10 +176,7 @@ final class WebSearchVideoGalleryItemNode: ZoomableContentGalleryItemNode {
             self.requiresDownload = true
             var mediaFileStatus: Signal<EngineMediaResource.FetchStatus?, NoError> = .single(nil)
             if let mediaResource = mediaResource {
-                mediaFileStatus = item.context.account.postbox.mediaBox.resourceStatus(mediaResource._asResource())
-                |> map { status in
-                    return EngineMediaResource.FetchStatus(status)
-                }
+                mediaFileStatus = item.context.engine.resources.status(resource: mediaResource)
                 |> map(Optional.init)
             }
             

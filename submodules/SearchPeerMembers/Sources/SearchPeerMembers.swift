@@ -27,13 +27,13 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
                                     return nil
                                 }
                                 if normalizedQuery.isEmpty {
-                                    return EnginePeer(participant.peer)
+                                    return participant.peer
                                 } else {
                                     if participant.peer.indexName.matchesByTokens(normalizedQuery) || participant.peer.indexName.matchesByTokens(transformedQuery) {
-                                        return EnginePeer(participant.peer)
+                                        return participant.peer
                                     }
                                     if let addressName = participant.peer.addressName, addressName.lowercased().hasPrefix(normalizedQuery) || addressName.lowercased().hasPrefix(transformedQuery) {
-                                        return EnginePeer(participant.peer)
+                                        return participant.peer
                                     }
                                     
                                     return nil
@@ -58,7 +58,7 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
                                 if participant.peer.isDeleted {
                                     return nil
                                 }
-                                return EnginePeer(participant.peer)
+                                return participant.peer
                             }, true))
                         }
                     })
@@ -73,7 +73,7 @@ public func searchPeerMembers(context: AccountContext, peerId: EnginePeer.Id, ch
                                 if participant.peer.isDeleted {
                                     return nil
                                 }
-                                return EnginePeer(participant.peer)
+                                return participant.peer
                             }, true))
                         }
                     })

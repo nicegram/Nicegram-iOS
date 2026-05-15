@@ -273,10 +273,19 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
     
     public var failed: Bool {
         switch self.content {
-            case let .message(message, _, _, _, _):
-                return message.flags.contains(.Failed)
-            case let .group(messages):
-                return messages[0].0.flags.contains(.Failed)
+        case let .message(message, _, _, _, _):
+            return message.flags.contains(.Failed)
+        case let .group(messages):
+            return messages[0].0.flags.contains(.Failed)
+        }
+    }
+    
+    public var pinToEdgeWithInset: Bool {
+        switch self.content {
+        case let .message(_, _, _, attributes, _):
+            return attributes.pinToTop
+        case let .group(messages):
+            return messages[0].3.pinToTop
         }
     }
     
@@ -333,6 +342,10 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
                     }
                 }
                 displayAuthorInfo = incoming && peerId.isGroupOrChannel && effectiveAuthor != nil
+                
+                if let _ = content.firstMessage.guestChatAttribute {
+                    displayAuthorInfo = true
+                }
                 
                 if let chatPeer = content.firstMessage.peers[content.firstMessage.id.peerId], chatPeer.isForumOrMonoForum {
                     if case .replyThread = chatLocation {
@@ -525,7 +538,7 @@ public final class ChatMessageItemImpl: ChatMessageItem, CustomStringConvertible
             }
         }
         
-        if viewClassName == ChatMessageBubbleItemNode.self && self.presentationData.largeEmoji && self.message.media.isEmpty {
+        if viewClassName == ChatMessageBubbleItemNode.self && self.presentationData.largeEmoji && self.message.media.isEmpty && !self.message.attributes.contains(where: { $0 is TypingDraftMessageAttribute }) {
             if case let .message(_, _, _, attributes, _) = self.content {
                 switch attributes.contentTypeHint {
                     case .largeEmoji:

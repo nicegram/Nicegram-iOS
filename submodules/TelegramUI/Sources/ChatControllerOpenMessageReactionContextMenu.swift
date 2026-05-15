@@ -188,9 +188,29 @@ extension ChatControllerImpl {
                 }
                 
                 var dismissController: ((@escaping () -> Void) -> Void)?
+                let canDeleteReactions: Bool
+                if let channel = message.peers[message.id.peerId] as? TelegramChannel {
+                    canDeleteReactions = channel.hasPermission(.deleteAllMessages)
+                } else {
+                    canDeleteReactions = false
+                }
+                let canViewReactions = canViewMessageReactionList(message: message)
+                let deleteReaction: ((EnginePeer, MessageReaction.Reaction) -> Void)?
+                if canDeleteReactions && canViewReactions {
+                    deleteReaction = { [weak self] peer, _ in
+                        dismissController?({ [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            self.presentReactionDeletionOptions(author: peer._asPeer(), messageId: message.id)
+                        })
+                    }
+                } else {
+                    deleteReaction = nil
+                }
                 
                 var items: ContextController.Items
-                if canViewMessageReactionList(message: message) {
+                if canViewReactions {
                     items = ContextController.Items(content: .custom(ReactionListContextMenuContent(
                         context: self.context,
                         displayReadTimestamps: true,
@@ -198,7 +218,10 @@ extension ChatControllerImpl {
                         animationCache: self.controllerInteraction!.presentationContext.animationCache,
                         animationRenderer: self.controllerInteraction!.presentationContext.animationRenderer,
                         message: EngineMessage(message),
-                        reaction: value, readStats: nil, back: nil, openPeer: { peer, hasReaction in
+                        reaction: value,
+                        readStats: nil,
+                        back: nil,
+                        openPeer: { peer, hasReaction in
                             dismissController?({ [weak self] in
                                 guard let self else {
                                     return
@@ -206,7 +229,8 @@ extension ChatControllerImpl {
                                 
                                 self.openPeer(peer: peer, navigation: .default, fromMessage: MessageReference(message), fromReactionMessageId: hasReaction ? message.id : nil)
                             })
-                        }
+                        },
+                        deleteReaction: deleteReaction
                     )))
                 } else {
                     items = ContextController.Items(content: .list([]))
@@ -370,6 +394,10 @@ extension ChatControllerImpl {
     }
     
     func openMessageSendStarsScreen(message: Message) {
+        guard canSendReactionsToChat(self.presentationInterfaceState) else {
+            return
+        }
+
         if let current = self.currentSendStarsUndoController {
             self.currentSendStarsUndoController = nil
             current.dismiss()

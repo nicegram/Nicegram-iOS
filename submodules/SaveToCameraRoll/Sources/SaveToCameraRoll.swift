@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 import SwiftSignalKit
-import Postbox
 import TelegramCore
 import Photos
 import Display
@@ -12,11 +11,11 @@ import LegacyComponents
 
 public enum FetchMediaDataState {
     case progress(Float)
-    case data(MediaResourceData)
+    case data(EngineMediaResource.ResourceData)
 }
 
-public func fetchMediaData(context: AccountContext, postbox: Postbox, userLocation: MediaResourceUserLocation, customUserContentType: MediaResourceUserContentType? = nil, mediaReference: AnyMediaReference, forceVideo: Bool = false) -> Signal<(FetchMediaDataState, Bool), NoError> {
-    var resource: MediaResource?
+public func fetchMediaData(context: AccountContext, userLocation: MediaResourceUserLocation, customUserContentType: MediaResourceUserContentType? = nil, mediaReference: AnyMediaReference, forceVideo: Bool = false) -> Signal<(FetchMediaDataState, Bool), NoError> {
+    var resource: TelegramMediaResource?
     var isImage = true
     var fileExtension: String?
     var userContentType: MediaResourceUserContentType = .other
@@ -53,11 +52,16 @@ public func fetchMediaData(context: AccountContext, postbox: Postbox, userLocati
     if let customUserContentType {
         userContentType = customUserContentType
     }
-    
+
     if let resource = resource {
+        let engineResource = EngineMediaResource(resource)
         let fetchedData: Signal<FetchMediaDataState, NoError> = Signal { subscriber in
-            let fetched = fetchedMediaResource(mediaBox: postbox.mediaBox, userLocation: userLocation, userContentType: userContentType, reference: mediaReference.resourceReference(resource)).start()
-            let status = postbox.mediaBox.resourceStatus(resource).start(next: { status in
+            let fetched = context.engine.resources.fetch(
+                reference: mediaReference.resourceReference(resource),
+                userLocation: userLocation,
+                userContentType: userContentType
+            ).start()
+            let status = context.engine.resources.status(resource: engineResource).start(next: { status in
                 switch status {
                     case .Local:
                         subscriber.putNext(.progress(1.0))
@@ -69,7 +73,11 @@ public func fetchMediaData(context: AccountContext, postbox: Postbox, userLocati
                         subscriber.putNext(.progress(progress))
                 }
             })
-            let data = postbox.mediaBox.resourceData(resource, pathExtension: fileExtension, option: .complete(waitUntilFetchStatus: true)).start(next: { next in
+            let data = context.engine.resources.data(
+                resource: engineResource,
+                pathExtension: fileExtension,
+                waitUntilFetchStatus: true
+            ).start(next: { next in
                 subscriber.putNext(.data(next))
             }, completed: {
                 subscriber.putCompletion()
@@ -89,11 +97,11 @@ public func fetchMediaData(context: AccountContext, postbox: Postbox, userLocati
     }
 }
 
-public func saveToCameraRoll(context: AccountContext, postbox: Postbox, userLocation: MediaResourceUserLocation, customUserContentType: MediaResourceUserContentType? = nil, mediaReference: AnyMediaReference, video: AnyMediaReference? = nil) -> Signal<Float, NoError> {
-    let mediaData: Signal<(FetchMediaDataState, Bool), NoError> = fetchMediaData(context: context, postbox: postbox, userLocation: userLocation, customUserContentType: customUserContentType, mediaReference: mediaReference)
+public func saveToCameraRoll(context: AccountContext, userLocation: MediaResourceUserLocation, customUserContentType: MediaResourceUserContentType? = nil, mediaReference: AnyMediaReference, video: AnyMediaReference? = nil) -> Signal<Float, NoError> {
+    let mediaData: Signal<(FetchMediaDataState, Bool), NoError> = fetchMediaData(context: context, userLocation: userLocation, customUserContentType: customUserContentType, mediaReference: mediaReference)
     let videoData: Signal<FetchMediaDataState?, NoError>
     if let video {
-        videoData = fetchMediaData(context: context, postbox: postbox, userLocation: userLocation, customUserContentType: customUserContentType, mediaReference: video)
+        videoData = fetchMediaData(context: context, userLocation: userLocation, customUserContentType: customUserContentType, mediaReference: video)
         |> map { state, _ in
             return state
         }
@@ -101,7 +109,7 @@ public func saveToCameraRoll(context: AccountContext, postbox: Postbox, userLoca
     } else {
         videoData = .single(nil)
     }
-    
+
     return combineLatest(
         queue: Queue.mainQueue(),
         mediaData,
@@ -109,8 +117,8 @@ public func saveToCameraRoll(context: AccountContext, postbox: Postbox, userLoca
     )
     |> mapToSignal { stateAndIsImage, videoStateAndIsImage -> Signal<Float, NoError> in
         let isImage = stateAndIsImage.1
-        var mainData: MediaResourceData?
-        var videoData: MediaResourceData?
+        var mainData: EngineMediaResource.ResourceData?
+        var videoData: EngineMediaResource.ResourceData?
         var waitForVideo = false
         if let videoState = videoStateAndIsImage {
             switch videoState {
@@ -134,7 +142,7 @@ public func saveToCameraRoll(context: AccountContext, postbox: Postbox, userLoca
                 mainData = data
             }
         }
-        if let mainData, mainData.complete, videoData != nil || !waitForVideo {
+        if let mainData, mainData.isComplete, videoData != nil || !waitForVideo {
             return Signal<Float, NoError> { subscriber in
                 DeviceAccess.authorizeAccess(to: .mediaLibrary(.save), presentationData: context.sharedContext.currentPresentationData.with { $0 }, present: { c, a in
                     context.sharedContext.presentGlobalController(c, a)
@@ -143,16 +151,16 @@ public func saveToCameraRoll(context: AccountContext, postbox: Postbox, userLoca
                         subscriber.putCompletion()
                         return
                     }
-                    
+
                     let tempVideoPath = NSTemporaryDirectory() + "\(Int64.random(in: Int64.min ... Int64.max)).mp4"
                     if isImage, let videoData, let imageData = try? Data(contentsOf: URL(fileURLWithPath: mainData.path)) {
                         let id = UUID().uuidString
 
                         let jpegWithID = addAssetIdentifierToJPEG(imageData, assetIdentifier: id)!
                         let outputVideoURL = URL(fileURLWithPath: NSTemporaryDirectory() + "\(id).mov")
-                        
+
                         try? FileManager.default.copyItem(atPath: videoData.path, toPath: tempVideoPath)
-                        
+
                         addAssetIdentifierToVideo(inputURL: URL(fileURLWithPath: tempVideoPath), outputURL: outputVideoURL, assetIdentifier: id) { success in
                             guard success else { return }
 
@@ -188,7 +196,7 @@ public func saveToCameraRoll(context: AccountContext, postbox: Postbox, userLoca
                         })
                     }
                 })
-                
+
                 return ActionDisposable {
                 }
             }
@@ -198,13 +206,13 @@ public func saveToCameraRoll(context: AccountContext, postbox: Postbox, userLoca
     }
 }
 
-public func copyToPasteboard(context: AccountContext, postbox: Postbox, userLocation: MediaResourceUserLocation, mediaReference: AnyMediaReference) -> Signal<Void, NoError> {
-    return fetchMediaData(context: context, postbox: postbox, userLocation: userLocation, mediaReference: mediaReference)
+public func copyToPasteboard(context: AccountContext, userLocation: MediaResourceUserLocation, mediaReference: AnyMediaReference) -> Signal<Void, NoError> {
+    return fetchMediaData(context: context, userLocation: userLocation, mediaReference: mediaReference)
     |> mapToSignal { state, isImage -> Signal<Void, NoError> in
-        if case let .data(data) = state, data.complete {
+        if case let .data(data) = state, data.isComplete {
             return Signal<Void, NoError> { subscriber in
                 let pasteboard = UIPasteboard.general
-                
+
                 if mediaReference.media is TelegramMediaImage {
                     if let fileData = try? Data(contentsOf: URL(fileURLWithPath: data.path), options: .mappedIfSafe) {
                         pasteboard.setData(fileData, forPasteboardType: kUTTypeJPEG as String)
@@ -212,7 +220,7 @@ public func copyToPasteboard(context: AccountContext, postbox: Postbox, userLoca
                 }
                 subscriber.putNext(Void())
                 subscriber.putCompletion()
-                
+
                 return EmptyDisposable
             }
         } else {

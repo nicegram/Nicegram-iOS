@@ -7,12 +7,11 @@ swift_library(
 		"Sources/**/*.swift",
     ]),
     copts = [
-        #"-warnings-as-errors",
+        "-warnings-as-errors",
     ],
     deps = [
     	"//submodules/SSignalKit/SwiftSignalKit:SwiftSignalKit",
         "//submodules/Display:Display",
-        "//submodules/Postbox:Postbox",
         "//submodules/TelegramCore:TelegramCore",
         "//submodules/TelegramPresentationData:TelegramPresentationData",
         "//submodules/ItemListUI:ItemListUI",

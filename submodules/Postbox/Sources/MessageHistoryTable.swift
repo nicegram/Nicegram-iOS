@@ -1263,13 +1263,13 @@ final class MessageHistoryTable: Table {
             if let mediaId = media.id {
                 let mediaInsertResult = self.messageMediaTable.set(media, index: message.index, messageHistoryTable: self)
                 switch mediaInsertResult {
-                    case let .Embed(media):
-                        embeddedMedia.append(media)
-                    case .Reference:
-                        referencedMedia.append(mediaId)
-                        if media.isLikelyToBeUpdated() {
-                            updateExistingMedia[mediaId] = media
-                        }
+                case let .Embed(media):
+                    embeddedMedia.append(media)
+                case .Reference:
+                    referencedMedia.append(mediaId)
+                    if media.isLikelyToBeUpdated() {
+                        updateExistingMedia[mediaId] = media
+                    }
                 }
             } else {
                 embeddedMedia.append(media)
@@ -2759,12 +2759,6 @@ final class MessageHistoryTable: Table {
                 }
             }
             
-            /*#if DEBUG
-            for key in associatedStories.keys {
-                associatedStories[key] = CodableEntry(data: Data())
-            }
-            #endif*/
-            
             associatedMessageIds.append(contentsOf: attribute.associatedMessageIds)
             if addAssociatedMessages {
                 for messageId in attribute.associatedMessageIds {
@@ -2784,6 +2778,16 @@ final class MessageHistoryTable: Table {
         
         if let threadId = message.threadId, let possibleThreadPeer = peerTable.get(PeerId(threadId)) {
             peers[possibleThreadPeer.id] = possibleThreadPeer
+        }
+        
+        for media in parsedMedia {
+            for id in media.mediaIds {
+                if associatedMedia[id] == nil {
+                    if let media = self.getMedia(id) {
+                        associatedMedia[id] = media
+                    }
+                }
+            }
         }
         
         return Message(stableId: message.stableId, stableVersion: message.stableVersion, id: message.id, globallyUniqueId: message.globallyUniqueId, groupingKey: message.groupingKey, groupInfo: message.groupInfo, threadId: message.threadId, timestamp: message.timestamp, flags: message.flags, tags: message.tags, globalTags: message.globalTags, localTags: message.localTags, customTags: message.customTags, forwardInfo: forwardInfo, author: author, text: message.text, attributes: parsedAttributes, media: parsedMedia, peers: peers, associatedMessages: associatedMessages, associatedMessageIds: associatedMessageIds, associatedMedia: associatedMedia, associatedThreadInfo: associatedThreadInfo, associatedStories: associatedStories)

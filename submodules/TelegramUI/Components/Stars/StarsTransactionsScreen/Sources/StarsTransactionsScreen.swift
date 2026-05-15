@@ -1285,7 +1285,7 @@ public final class StarsTransactionsScreen: ViewControllerComponentContainer {
                     
                     var hasLeft = false
                     var isKicked = false
-                    if let channel = subscription.peer._asPeer() as? TelegramChannel {
+                    if case let .channel(channel) = subscription.peer {
                         switch channel.participationStatus {
                         case .left:
                             hasLeft = true

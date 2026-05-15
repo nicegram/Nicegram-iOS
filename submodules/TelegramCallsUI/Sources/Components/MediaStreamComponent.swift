@@ -1185,12 +1185,20 @@ public final class MediaStreamComponentController: ViewControllerComponentContai
             return
         }
         
-        let _ = (combineLatest(queue: .mainQueue(), self.context.account.postbox.loadedPeerWithId(peerId), self.callImpl.state |> take(1))
+        let sharedPeerSignal = self.context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+        |> mapToSignal { peer -> Signal<EnginePeer, NoError> in
+            if let peer {
+                return .single(peer)
+            } else {
+                return .never()
+            }
+        }
+        let _ = (combineLatest(queue: .mainQueue(), sharedPeerSignal, self.callImpl.state |> take(1))
         |> deliverOnMainQueue).start(next: { [weak self] peer, callState in
             if let strongSelf = self {
                 var inviteLinks = inviteLinks
-                
-                if let peer = peer as? TelegramChannel, case .group = peer.info, !peer.flags.contains(.isGigagroup), !(peer.addressName ?? "").isEmpty, let defaultParticipantMuteState = callState.defaultParticipantMuteState {
+
+                if case let .channel(channel) = peer, case .group = channel.info, !channel.flags.contains(.isGigagroup), !(channel.addressName ?? "").isEmpty, let defaultParticipantMuteState = callState.defaultParticipantMuteState {
                     let isMuted = defaultParticipantMuteState == .muted
                     
                     if !isMuted {

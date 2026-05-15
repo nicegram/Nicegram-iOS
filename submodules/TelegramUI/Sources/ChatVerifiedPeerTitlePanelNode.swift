@@ -2,7 +2,6 @@ import Foundation
 import UIKit
 import Display
 import AsyncDisplayKit
-import Postbox
 import TelegramCore
 import TelegramPresentationData
 import LocalizedPeerData
@@ -78,7 +77,7 @@ final class ChatVerifiedPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
             self.separatorNode.backgroundColor = interfaceState.theme.rootController.navigationBar.separatorColor
         }
         
-        var panelHeight: CGFloat = 8.0
+        var panelHeight: CGFloat = 12.0
         
         if let peer = interfaceState.renderedPeer?.peer, let verification = interfaceState.peerVerification {
             if isFirstTime {
@@ -94,6 +93,7 @@ final class ChatVerifiedPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
             
             let attributedText = NSMutableAttributedString(attributedString: NSAttributedString(string: plainText, font: Font.regular(12.0), textColor: interfaceState.theme.rootController.navigationBar.secondaryTextColor, paragraphAlignment: .center))
             attributedText.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: emojiStatus.fileId, file: nil), range: NSMakeRange(0, 1))
+            attributedText.addAttribute(.baselineOffset, value: 1.0, range: NSMakeRange(0, 1))
             if let entity = entities.first {
                 let range = NSRange(location: entity.range.lowerBound, length: entity.range.upperBound - entity.range.lowerBound)
                 attributedText.addAttribute(NSAttributedString.Key.foregroundColor, value: interfaceState.theme.rootController.navigationBar.accentTextColor, range: range)
@@ -125,8 +125,8 @@ final class ChatVerifiedPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
                 placeholderColor: interfaceState.theme.list.mediaPlaceholderColor,
                 attemptSynchronous: false
             ))
-            transition.updateFrame(node: emojiStatusTextNode.textNode, frame: CGRect(origin: CGPoint(x: floor((width - emojiStatusLayout.size.width) / 2.0), y: panelHeight), size: emojiStatusLayout.size))
-            panelHeight += emojiStatusLayout.size.height + 8.0
+            transition.updateFrame(node: emojiStatusTextNode.textNode, frame: CGRect(origin: CGPoint(x: floor((width - emojiStatusLayout.size.width) / 2.0), y: panelHeight + 1.0), size: emojiStatusLayout.size))
+            panelHeight += emojiStatusLayout.size.height + 12.0
             
             emojiStatusTextNode.visibilityRect = .infinite
         }

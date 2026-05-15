@@ -8,8 +8,85 @@ import Display
 import UndoUI
 import AccountContext
 import ChatControllerInteraction
+import TelegramStringFormatting
 
 extension ChatControllerImpl {
+    func displaySendReactionRestrictedToast() {
+        self.controllerInteraction?.presentControllerInCurrent(UndoOverlayController(
+            presentationData: self.presentationData,
+            content: .banned(text: self.presentationData.strings.Chat_SendReactionRestricted),
+            elevatedLayout: false,
+            position: .bottom,
+            animateInAsReplacement: false,
+            action: { _ in return true }
+        ), nil)
+    }
+    
+    func displayPollRestrictedToast(messageId: EngineMessage.Id) {
+        let _ = (self.context.engine.data.get(
+            TelegramEngine.EngineData.Item.Messages.Message(id: messageId),
+            TelegramEngine.EngineData.Item.Peer.Peer(id: messageId.peerId)
+        )
+        |> deliverOnMainQueue).startStandalone(next: { [weak self] message, peer in
+            guard let self, let message, let peer else {
+                return
+            }
+            let peerName = peer.compactDisplayTitle
+            guard let poll = message.media.first(where: { $0 is TelegramMediaPoll }) as? TelegramMediaPoll else {
+                return
+            }
+
+            var accountCountry = ""
+            if let data = self.context.currentAppConfiguration.with({ $0 }).data, let country = data["phone_country_iso2"] as? String {
+                accountCountry = (country)
+            }
+            var text = ""
+            if !poll.countries.isEmpty && !poll.countries.contains(accountCountry) {
+                let locale = localeWithStrings(self.presentationData.strings)
+                let countryNames = poll.countries.map { id in
+                    if id == "FT" {
+                        return "Fragment"
+                    } else if let countryName = locale.localizedString(forRegionCode: id) {
+                        return countryName
+                    } else {
+                        return id
+                    }
+                }
+                var countries: String = ""
+                if countryNames.count == 1, let country = countryNames.first {
+                    countries = "**\(country)**"
+                } else {
+                    for i in 0 ..< countryNames.count {
+                        countries.append("**\(countryNames[i])**")
+                        if i == countryNames.count - 2 {
+                            countries.append(self.presentationData.strings.Chat_Poll_Restriction_Country_CountriesLastDelimiter)
+                        } else if i < countryNames.count - 2 {
+                            countries.append(self.presentationData.strings.Chat_Poll_Restriction_Country_CountriesDelimiter)
+                        }
+                    }
+                }
+                if poll.restrictToSubscribers {
+                    text = self.presentationData.strings.Chat_Poll_Restriction_SubscribersCountry(peerName, countries).string
+                } else {
+                    text = self.presentationData.strings.Chat_Poll_Restriction_Country(countries).string
+                }
+            } else {
+                if case let .channel(channel) = peer, case .member = channel.participationStatus {
+                    text = self.presentationData.strings.Chat_Poll_Restriction_Subscribers_TimeLimit
+                } else {
+                    text = self.presentationData.strings.Chat_Poll_Restriction_Subscribers(peerName).string
+                }
+            }
+            let controller = UndoOverlayController(
+                presentationData: self.presentationData,
+                content: .banned(text: text),
+                position: .bottom,
+                action: { _ in return true }
+            )
+            self.controllerInteraction?.presentControllerInCurrent(controller, nil)
+        })
+    }
+
     func displayPostedScheduledMessagesToast(ids: [EngineMessage.Id]) {
         let timestamp = CFAbsoluteTimeGetCurrent()
         if self.lastPostedScheduledMessagesToastTimestamp + 0.4 >= timestamp {

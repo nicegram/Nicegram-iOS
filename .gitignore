@@ -90,5 +90,7 @@ xcode-files
 .bsp/**
 .sourcekit-lsp/**
 /.claude/
+**/.claude/settings.local.json
+**/.vscode/launch.json
 /buildbox/*
 MODULE.bazel.lock

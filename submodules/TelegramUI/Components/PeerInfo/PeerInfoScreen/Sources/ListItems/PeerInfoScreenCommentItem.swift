@@ -167,7 +167,11 @@ private final class PeerInfoScreenCommentItemNode: PeerInfoScreenItemNode {
         
         let height = textSize.height + verticalInset * 2.0
         
-        transition.updateFrame(node: self.textNode, frame: textFrame)
+        if self.textNode.frame.size != textFrame.size {
+            self.textNode.frame = textFrame
+        } else {
+            transition.updateFrame(node: self.textNode, frame: textFrame)
+        }
         
         self.activateArea.frame = CGRect(origin: CGPoint(x: safeInsets.left, y: 0.0), size: CGSize(width: width - safeInsets.left - safeInsets.right, height: height))
         

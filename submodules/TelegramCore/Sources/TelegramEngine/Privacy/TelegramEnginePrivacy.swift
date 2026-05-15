@@ -9,8 +9,8 @@ public extension TelegramEngine {
             self.account = account
         }
 
-        public func requestUpdatePeerIsBlocked(peerId: PeerId, isBlocked: Bool) -> Signal<Void, NoError> {
-            return _internal_requestUpdatePeerIsBlocked(account: self.account, peerId: peerId, isBlocked: isBlocked)
+        public func requestUpdatePeerIsBlocked(peerId: PeerId, isBlocked: Bool, sourceMessageId: MessageId? = nil) -> Signal<Void, NoError> {
+            return _internal_requestUpdatePeerIsBlocked(account: self.account, peerId: peerId, isBlocked: isBlocked, sourceMessageId: sourceMessageId)
         }
 
         public func requestUpdatePeerIsBlockedFromStories(peerId: PeerId, isBlocked: Bool) -> Signal<Void, NoError> {
