@@ -283,11 +283,40 @@ filegroup(
     ], exclude = ["Telegram-iOS/Icons.xcassets/**/.*"]),
 )
 
+# Nicegram: every app icon (primary, in-app switchable, PPO test) lives in a
+# single asset catalog and is shipped via rules_apple's `app_icons` so that
+# `actool` (not `alticonstool`) emits the final `CFBundleIcons` /
+# `CFBundleAlternateIcons`. This is required for ASC Product Page Optimization
+# to enumerate alternate App Icons.
+#
+# The catalog also carries per-icon `.imageset` siblings so the in-app icon
+# switcher can render preview thumbnails via `UIImage(named:)`. rules_apple's
+# `app_icons` attribute rejects anything that is not a `.appiconset/` / `.icon/`
+# file (plus the root `.xcassets/Contents.json`), so the globs below split the
+# same catalog across two attributes:
+#
+#   * `:AppIcons` (shipped via `app_icons`)        - .appiconset/** + root
+#   * `:AppIconImagesets` (shipped via `resources`) - .imageset/**
+#
+# Both filegroups feed into a single `actool` invocation - rules_apple merges
+# every `.xcassets/**` file into one `asset_catalogs` bucket before compiling.
 filegroup(
-    name = "PrimaryIcon",
+    name = "AppIcons",
     srcs = glob([
-        "Telegram-iOS/AppIcons/PrimaryIcon.xcassets/**/*",
-    ], exclude = ["Telegram-iOS/AppIcons/PrimaryIcon.xcassets/**/.*"]),
+        "Telegram-iOS/AppIcons.xcassets/Contents.json",
+        "Telegram-iOS/AppIcons.xcassets/**/*.appiconset/**",
+    ], exclude = [
+        "Telegram-iOS/AppIcons.xcassets/**/.*",
+    ]),
+)
+
+filegroup(
+    name = "AppIconImagesets",
+    srcs = glob([
+        "Telegram-iOS/AppIcons.xcassets/**/*.imageset/**",
+    ], exclude = [
+        "Telegram-iOS/AppIcons.xcassets/**/.*",
+    ]),
 )
 
 # Nicegram
@@ -305,61 +334,6 @@ filegroup(
         "Telegram-iOS/FirebaseRemoteConfigDefaults.plist",
     ], allow_empty=True),
 )
-
-# Nicegram InAppIcons (user-switchable alternate icons)
-in_app_icons = [
-    "BlackIcon",
-    "BlackFilledIcon",
-    "BlueIcon",
-    "BlueFilledIcon",
-    "WhiteFilledIcon",
-    "New1",
-    "New2",
-    "New3",
-    "NicegramAlt",
-    "NicegramBetaIcon",
-    "CommunityClassic",
-    "CommunityOnyx",
-    "CommunityRuby",
-    "CommunityWatercolor",
-    "Premium",
-    "PremiumBlack",
-    "PremiumTurbo",
-    "NewBlack",
-    "NewWhite",
-    "PaperPlane",
-]
-
-[
-    filegroup(
-        name = "{}".format(name),
-        srcs = glob([
-            "Telegram-iOS/AppIcons/InAppIcons/{}.alticon/*.png".format(name),
-        ]),
-    ) for name in in_app_icons
-]
-
-# Icons used only for App Store Connect Product Page Optimization (PPO) A/B
-# testing. They are not exposed to the in-app icon switcher; only the
-# 1024x1024 PNG is needed so App Store Connect lists them in the PPO
-# App Icon tab.
-ppo_icons = [
-    "RadASO_1",
-    "RadASO_2",
-    "RadASO_3",
-    "RadASO_4",
-    "RadASO_5",
-    "RadASO_6",
-]
-
-[
-    filegroup(
-        name = "{}".format(name),
-        srcs = glob([
-            "Telegram-iOS/AppIcons/ProductPageOptimizationIcons/{}.alticon/*.png".format(name),
-        ]),
-    ) for name in ppo_icons
-]
 
 filegroup(
     name = "LaunchScreen",
@@ -2042,7 +2016,7 @@ plist_fragment(
             <string>Telegram iOS Color Theme File</string>
             <key>UTTypeIconFiles</key>
             <array>
-                <string>BlueIcon@3x.png</string>
+                <string>BlueIcon60x60@3x.png</string>
             </array>
             <key>UTTypeIdentifier</key>
             <string>org.telegram.Telegram-iOS.theme</string>
@@ -2126,11 +2100,10 @@ ios_application(
         ":RequiredDeviceCapabilitiesPlist",
         ":UrlTypesInfoPlist",
     ],
-    app_icons = [":PrimaryIcon"],
-    alternate_icons = [
-        ":{}".format(name) for name in in_app_icons + ppo_icons
-    ],
+    app_icons = [":AppIcons"],
+    primary_app_icon = "PrimaryIcon",
     resources = [
+        ":AppIconImagesets",
         ":LaunchScreen",
     ],
     frameworks = [

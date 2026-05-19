@@ -1,0 +1,38 @@
+Subject: [PATCH] Don't force_load static xcframework imports
+
+Two of our SPM deps each ship an ios-arm64 static archive that
+statically embeds the Rust standard library plus the `object`
+crate:
+
+  * tkey-ios's       libtkey.xcframework/ios-arm64/libtkey.a
+  * curvelib.swift's curve_secp256k1.xcframework/ios-arm64/libsecp256k1_rs.a
+
+rules_swift_package_manager generates `alwayslink = True` for every
+static xcframework import, which translates to `-force_load <archive>`
+at link time. With both archives force-loaded, ld pulls every .o from
+both — producing ~3500 duplicate-symbol errors for the shared Rust
+stdlib / `object` crate symbols. Disabling `alwayslink` lets ld load
+symbols on demand and the collisions resolve naturally (ld picks up
+the symbols from the first archive that defines them and skips the
+already-defined copies in the second).
+
+TODO(nicegram): drop this patch (and the `single_version_override`
+in MODULE.bazel that applies it) once upstream removes the explicit
+`alwayslink = True` on static xcframework imports. The xcframework
+case is part of the same removal pass tracked in
+https://github.com/cgrindel/rules_swift_package_manager/issues/2216
+(post-rules_swift-3.0, alwayslink becomes the default and these
+explicit attributes become redundant).
+
+--- a/swiftpkg/internal/swiftpkg_build_files.bzl
++++ b/swiftpkg/internal/swiftpkg_build_files.bzl
+@@ -965,9 +965,6 @@
+         ]
+         kind = apple_kinds.static_xcframework_import
+ 
+-        # Firebase example requires that GoogleAppMeasurement symbols are
+-        # passed along.
+-        attrs["alwayslink"] = True
+     elif artifact_info.link_type == link_types.dynamic:
+         load_stmts = [
+             apple_dynamic_xcframework_import_load_stmt,

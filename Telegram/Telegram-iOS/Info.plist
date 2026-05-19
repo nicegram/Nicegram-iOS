@@ -191,7 +191,7 @@
 			<string>Telegram iOS Color Theme File</string>
 			<key>UTTypeIconFiles</key>
 			<array>
-				<string>BlueIcon@3x.png</string>
+				<string>BlueIcon60x60@3x.png</string>
 			</array>
 			<key>UTTypeIdentifier</key>
 			<string>org.telegram.Telegram-iOS.theme</string>

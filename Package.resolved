@@ -276,7 +276,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "9d7d50513f0a928691da49f409f92372e2511c5b"
+        "revision" : "ef7baa080b801978d86144b7a9224192ed8d7b45"
       }
     },
     {
@@ -285,7 +285,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "504f138a065f1e54a4ffd71220bbeef4d73f3cc5"
+        "revision" : "d87d57e11554dc58fcfa2fb4f34bfb3488a90bfe"
       }
     },
     {
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "7313c6b1340bcf490071434d07a06c83e52071fe",
-        "version" : "6.20.2"
+        "revision" : "0bab74395b47df0423be3c1b3eec0e86751889b2",
+        "version" : "6.20.3"
       }
     },
     {
@@ -419,8 +419,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-async-algorithms.git",
       "state" : {
-        "revision" : "9d349bcc328ac3c31ce40e746b5882742a0d1272",
-        "version" : "1.1.3"
+        "revision" : "d0b4a06d0f173a2f3be27d3ea21b3c3aa18db440",
+        "version" : "1.1.4"
       }
     },
     {
@@ -446,8 +446,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
-        "revision" : "03cc312c2c933ed87abace34044a5dff7a3117c1",
-        "version" : "1.5.0"
+        "revision" : "fea17c02d767f46b23070fdfdacc28a03a39232a",
+        "version" : "1.5.1"
       }
     },
     {
@@ -608,8 +608,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "358a8bc073b21820bae091cc24b40a60b5e0a32f",
-        "version" : "4.6.8"
+        "revision" : "62ef27c56c6769b3aec3c5167d925dc085646a5c",
+        "version" : "4.6.9"
       }
     },
     {
